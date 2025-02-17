@@ -15,8 +15,9 @@ def test_codebase_valid_path_with_slash(tmp_path) -> None:
     """Test that a valid path containing slashes works correctly."""
     # Initialize git repo at tmp_path
     import subprocess
+
     subprocess.run(["git", "init"], cwd=str(tmp_path), check=True)
-    
+
     path = tmp_path / "some/nested/path"
     os.makedirs(path)
     # Create a Python file so language detection works
