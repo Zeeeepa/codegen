@@ -24,4 +24,5 @@ def test_codebase_valid_path_with_slash(tmp_path) -> None:
     with open(path / "test.py", "w") as f:
         f.write("# Test file")
     codebase: Codebase = Codebase(repo_path=str(path))
-    assert str(codebase.repo_path) == str(path)
+    # When initializing a Codebase from a path within a git repo, it uses the repo root
+    assert str(codebase.repo_path) == str(tmp_path)
