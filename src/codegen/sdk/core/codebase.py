@@ -177,6 +177,11 @@ class Codebase(Generic[TSourceFile, TDirectory, TSymbol, TClass, TFunction, TImp
 
         # Initialize project with repo_path if projects is None
         if repo_path is not None:
+            # Add validation to detect GitHub repo paths
+            if "/" in repo_path and not os.path.exists(repo_path):
+                if len(repo_path.split("/")) == 2:  # Looks like "owner/repo"
+                    msg = f"Path '{repo_path}' looks like a GitHub repository path. To create a Codebase from a GitHub repo, use Codebase.from_repo() instead."
+                    raise ValueError(msg)
             main_project = ProjectConfig.from_path(repo_path, programming_language=ProgrammingLanguage(language.upper()) if language else None)
             projects = [main_project]
         else:
