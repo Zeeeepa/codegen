@@ -1,13 +1,15 @@
 import os
+
 import pytest
-from pathlib import Path
 
 from codegen.sdk.core.codebase import Codebase
+
 
 def test_codebase_github_repo_path() -> None:
     """Test that trying to create a Codebase with a GitHub repo path raises an error."""
     with pytest.raises(ValueError, match="looks like a GitHub repository path"):
         Codebase(repo_path="fastapi/fastapi")
+
 
 def test_codebase_valid_path_with_slash(tmp_path) -> None:
     """Test that a valid path containing slashes works correctly."""
