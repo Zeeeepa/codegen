@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar, Unpack, overload
+from urllib.parse import urlparse
 
 import plotly.graph_objects as go
 import rich.repr
@@ -177,11 +178,31 @@ class Codebase(Generic[TSourceFile, TDirectory, TSymbol, TClass, TFunction, TImp
 
         # Initialize project with repo_path if projects is None
         if repo_path is not None:
-            # Add validation to detect GitHub repo paths
-            if "/" in repo_path and not os.path.exists(repo_path):
-                if len(repo_path.split("/")) == 2:  # Looks like "owner/repo"
-                    msg = f"Path '{repo_path}' looks like a GitHub repository path. To create a Codebase from a GitHub repo, use Codebase.from_repo() instead."
+            # Add validation to detect GitHub repo paths and URLs
+            # Clean up the path - remove angle brackets and whitespace
+            cleaned_path = repo_path.strip("<> \t\n")
+
+            if not os.path.exists(cleaned_path):
+                # Parse URL to handle various GitHub URL formats
+                parsed_url = urlparse(cleaned_path)
+                path_parts = parsed_url.path.strip("/").split("/")
+
+                # Check for GitHub URLs (e.g., https://github.com/owner/repo)
+                if parsed_url.netloc == "github.com" or parsed_url.path.startswith("github.com/"):
+                    owner_repo = "/".join(path_parts[-2:]) if len(path_parts) >= 2 else ""
+                    msg = f"Path '{repo_path}' is a GitHub URL. To create a Codebase from a GitHub repo, use Codebase.from_repo('{owner_repo}') instead."
                     raise ValueError(msg)
+                # Check for GitHub repo paths (e.g., owner/repo)
+                if len(path_parts) == 2 and "/" in cleaned_path and not parsed_url.scheme and not parsed_url.netloc:
+                    msg = f"Path '{repo_path}' looks like a GitHub repository path. To create a Codebase from a GitHub repo, use Codebase.from_repo('{cleaned_path}') instead."
+                    raise ValueError(msg)
+
+                # For non-GitHub paths that don't exist, provide a clearer error
+                if os.path.isabs(cleaned_path):
+                    msg = f"Local path '{repo_path}' does not exist. Please provide a valid local directory path."
+                else:
+                    msg = f"Local path '{repo_path}' does not exist. Please provide a valid local directory path (relative paths like '{cleaned_path}' are allowed if they exist)."
+                raise ValueError(msg)
             main_project = ProjectConfig.from_path(repo_path, programming_language=ProgrammingLanguage(language.upper()) if language else None)
             projects = [main_project]
         else:

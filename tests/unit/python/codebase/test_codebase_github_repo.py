@@ -11,6 +11,43 @@ def test_codebase_github_repo_path() -> None:
         Codebase(repo_path="fastapi/fastapi")
 
 
+def test_codebase_github_url_formats() -> None:
+    """Test that trying to create a Codebase with various GitHub URL formats raises an error."""
+    urls = [
+        "https://github.com/fastapi/fastapi",
+        "https://github.com/fastapi/fastapi.git",
+        "http://github.com/fastapi/fastapi",
+        "github.com/fastapi/fastapi",
+        "<https://github.com/fastapi/fastapi>",
+        "git@github.com:fastapi/fastapi.git",
+    ]
+    for url in urls:
+        with pytest.raises(ValueError, match="is a GitHub URL"):
+            Codebase(repo_path=url)
+
+
+def test_codebase_github_url_with_path() -> None:
+    """Test that trying to create a Codebase with a GitHub URL containing extra path components raises an error."""
+    with pytest.raises(ValueError, match="is a GitHub URL"):
+        Codebase(repo_path="https://github.com/fastapi/fastapi/tree/main")
+
+
+def test_codebase_nonexistent_local_paths() -> None:
+    """Test that trying to create a Codebase with nonexistent local paths raises appropriate errors."""
+    # Absolute path
+    with pytest.raises(ValueError, match="Local path .* does not exist"):
+        Codebase(repo_path="/nonexistent/path")
+
+    # Relative path
+    with pytest.raises(ValueError, match="relative paths like"):
+        Codebase(repo_path="path/to/file")
+
+    # String variable
+    test_string = "some/code/here"
+    with pytest.raises(ValueError, match="relative paths like"):
+        Codebase(repo_path=test_string)
+
+
 def test_codebase_valid_path_with_slash(tmp_path) -> None:
     """Test that a valid path containing slashes works correctly."""
     # Initialize git repo at tmp_path
