@@ -1,7 +1,7 @@
 """Demo implementation of an agent with Codegen tools."""
 
 from langchain.agents import AgentExecutor
-from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
+from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent, create_openai_functions_agent
 from langchain.hub import pull
 from langchain.tools import BaseTool
 from langchain_core.chat_history import InMemoryChatMessageHistory
@@ -197,7 +197,7 @@ def create_agent_with_tools(
     prompt = pull("hwchase17/openai-functions-agent")
 
     # Create the agent
-    agent = OpenAIFunctionsAgent(
+    agent = create_openai_functions_agent(
         llm=llm,
         tools=tools,
         prompt=prompt,

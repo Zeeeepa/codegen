@@ -1,10 +1,13 @@
+import os
 import uuid
 import warnings
 
 import rich_click as click
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.prompt import Prompt
 
 from codegen import Codebase
@@ -21,12 +24,31 @@ from codegen.extensions.langchain.tools import (
     ViewFileTool,
 )
 
+# Initialize console
+console = Console()
+
+# Load in environment variables
+load_dotenv()
+if not os.getenv("OPENAI_API_KEY"):
+    console.print(
+        Panel.fit(
+            "[bold red]Error: Missing OpenAI API Key[/bold red]\n\n"
+            "To use the Codegen CLI Agent, you need to set your OpenAI API key.\n\n"
+            "[dim]1. Create a .env file in your project root[/dim]\n"
+            "[dim]2. Add the following line:[/dim]\n"
+            "   [green]OPENAI_API_KEY=sk-...[/green]\n\n"
+            "[dim]Or set it as an environment variable:[/dim]\n"
+            "   [green]export OPENAI_API_KEY=sk-...[/green]",
+            title="🔑 API Key Required",
+            border_style="red",
+        )
+    )
+    raise click.Abort()
+
 # Suppress specific warnings
 warnings.filterwarnings("ignore", message=".*Helicone.*")
 warnings.filterwarnings("ignore", message=".*LangSmith.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-console = Console()
 
 WELCOME_ART = r"""[bold blue]
    ____          _
