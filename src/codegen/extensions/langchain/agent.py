@@ -1,13 +1,15 @@
 """Demo implementation of an agent with Codegen tools."""
 
 from langchain.agents import AgentExecutor
-from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
+from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent, create_openai_functions_agent
 from langchain.hub import pull
 from langchain.tools import BaseTool
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import create_react_agent
 
 from codegen import Codebase
 
@@ -50,6 +52,11 @@ def create_codebase_agent(
         Initialized agent with message history
     """
     # Initialize language model
+    # llm = ChatOpenAI(
+    #     model_name=model_name,
+    #     temperature=temperature,
+    # )
+
     llm = ChatOpenAI(
         model_name=model_name,
         temperature=temperature,
@@ -79,7 +86,7 @@ def create_codebase_agent(
     prompt = pull("hwchase17/openai-functions-agent")
 
     # Create the agent
-    agent = OpenAIFunctionsAgent(
+    agent = create_openai_functions_agent(
         llm=llm,
         tools=tools,
         prompt=prompt,
@@ -188,35 +195,12 @@ def create_agent_with_tools(
         Initialized agent with message history
     """
     # Initialize language model
-    llm = ChatOpenAI(
+    model = ChatOpenAI(
         model_name=model_name,
         temperature=temperature,
     )
 
-    # Get the prompt to use
-    prompt = pull("hwchase17/openai-functions-agent")
-
     # Create the agent
-    agent = OpenAIFunctionsAgent(
-        llm=llm,
-        tools=tools,
-        prompt=prompt,
-    )
-
-    # Create the agent executor
-    agent_executor = AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=verbose,
-    )
-
-    # Create message history handler
-    message_history = InMemoryChatMessageHistory(messages=chat_history)
-
-    # Wrap with message history
-    return RunnableWithMessageHistory(
-        agent_executor,
-        lambda session_id: message_history,
-        input_messages_key="input",
-        history_messages_key="chat_history",
-    )
+    memory = MemorySaver()
+    executor = create_react_agent(model=model, tools=tools, checkpointer=memory)
+    return executor

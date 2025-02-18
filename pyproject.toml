@@ -38,7 +38,7 @@ dependencies = [
   "typing-extensions>=4.12.2",
   "termcolor>=2.4.0",
   "sentry-sdk==2.22.0",
-  "tenacity>=9.0.0",
+  "tenacity>=8.1.0,<9.0.0",
   "click>=8.1.7",
   "requests>=2.32.3",
   "lazy-object-proxy>=0.0.0",
@@ -65,13 +65,14 @@ dependencies = [
   "uvicorn[standard]>=0.30.0",
   "packaging>=24.2",
   "langchain[openai]",
-  "langchain_core",
+  "langchain_core==0.3.35",
   "langchain_openai",
   "numpy>=2.2.2",
   "mcp[cli]",
   "neo4j",
   "modal>=0.73.45",
   "slack-sdk",
+  "langgraph",
 ]
 
 license = { text = "Apache-2.0" }

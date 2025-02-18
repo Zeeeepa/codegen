@@ -1,10 +1,10 @@
 import json
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 import anthropic
 import anthropic.types as anthropic_types
-import anthropic.types.beta.tools as anthropic_tool_types
 import backoff
 import openai
 import openai.types.chat as openai_types
@@ -14,7 +14,6 @@ from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 from codegen.sdk.ai.converters import convert_openai_messages_to_claude
-from codegen.sdk.utils import XMLUtils
 
 CLAUDE_OPENAI_MODEL_MAP = {
     "gpt-4o": "claude-3-5-sonnet-20240620",
@@ -199,7 +198,7 @@ class AnthropicHelper(AbstractAIHelper):
         # Dont add /v1 to the path. Anthropic already adds it, so it will be a double /v1/v1
         api_base: str = "https://api.anthropic.com",
         headers=None,
-        openai_anthropic_translation: bool = True,
+        openai_anthropic_translation: bool = True,  # TODO - deprecate this
         cache: bool | None = True,
     ) -> None:
         if anthropic_key is None:
@@ -216,7 +215,7 @@ class AnthropicHelper(AbstractAIHelper):
     def set_up_claude_key(self) -> None:
         self.client = Anthropic(api_key=self.anthropic_key, base_url=self.api_base, default_headers=self.headers)
 
-    def _convert_openai_functions_to_claude(self, functions: list[dict]) -> list[anthropic_tool_types.ToolParam]:
+    def _convert_openai_functions_to_claude(self, functions: list[dict]) -> list[Any]:
         new_functions = []
         for function in functions:
             if function["type"] == "function":
@@ -227,61 +226,10 @@ class AnthropicHelper(AbstractAIHelper):
         return new_functions
 
     def _convert_claude_response_to_openai(
-        self, response: anthropic_types.Message | anthropic_tool_types.ToolsBetaMessage, parse_function_calls: bool = False, parse_result_block: bool = False
+        self, response: anthropic_types.Message | Any, parse_function_calls: bool = False, parse_result_block: bool = False
     ) -> openai_types.chat_completion.ChatCompletion:
-        choices = []
-        if len(response.content) != 0:
-            for resp in response.content:
-                if isinstance(resp, anthropic_types.ContentBlock):
-                    if "result" in resp.text and parse_result_block:
-                        xml_result = XMLUtils.extract_elements(resp.text, "result", keep_tag=False)
-                        resp.text = resp.text if len(xml_result) <= 1 else xml_result[0]
-                    elif isinstance(resp, anthropic_tool_types.ToolUseBlock) and parse_result_block:
-                        xml_answer = XMLUtils.extract_elements(resp.text, "answer", keep_tag=False)[0]
-                        resp.text = resp.text if len(xml_answer) <= 1 else xml_answer[0]
-                    choices.append(
-                        openai_types.chat_completion.Choice(
-                            index=0,
-                            finish_reason="stop" if response.stop_reason in ("end_turn", "stop_sequence") else "length",
-                            message=openai_types.chat_completion_message.ChatCompletionMessage(content=resp.text, role="assistant"),
-                        )
-                    )
-                elif isinstance(resp, anthropic_tool_types.ToolUseBlock):
-                    # If the previous choice is a chat message, then we can add the tool call to it
-                    if len(choices) > 0 and isinstance(choices[-1].message, openai_types.chat_completion_message.ChatCompletionMessage) and choices[-1].message.tool_calls is None:
-                        text_response = choices[-1].message.content
-                        choices = choices[:-1]
-                    else:
-                        text_response = None
-                    choices.append(
-                        openai_types.chat_completion.Choice(
-                            index=0,
-                            finish_reason="tool_calls",
-                            message=openai_types.chat_completion_message.ChatCompletionMessage(
-                                content=text_response,
-                                role="assistant",
-                                function_call=None,  # Function calls are deprecated
-                                tool_calls=[
-                                    openai_types.chat_completion_message_tool_call.ChatCompletionMessageToolCall(
-                                        id=resp.id,
-                                        function=openai_types.chat_completion_message_tool_call.Function(
-                                            name=resp.name,
-                                            arguments=json.dumps(resp.input),
-                                        ),
-                                        type="function",
-                                    )
-                                ],
-                            ),
-                        )
-                    )
-        return openai_types.chat_completion.ChatCompletion(
-            id=response.id,
-            choices=choices,
-            created=0,  # TODO: Use current time
-            model=response.model,
-            object="chat.completion",
-            system_fingerprint=None,  # TODO: What is this?
-        )
+        # TODO: d
+        raise NotImplementedError()
 
     @backoff.on_exception(backoff.expo, anthropic.RateLimitError)
     def embeddings_with_backoff(self, **kwargs):
@@ -327,10 +275,7 @@ class AnthropicHelper(AbstractAIHelper):
         else:
             claude_system_prompt = system_prompt
         response = self.client.beta.tools.messages.create(max_tokens=max_tokens, system=claude_system_prompt, messages=messages, model=model, **kwargs)
-        if self.openai_anthropic_translation:
-            return self._convert_claude_response_to_openai(response)
-        else:
-            return response
+        return response
 
     @retry(wait=wait_random_exponential(min=70, max=600), stop=stop_after_attempt(10))
     def llm_query_functions_with_retry(self, **kwargs):
@@ -357,10 +302,7 @@ class AnthropicHelper(AbstractAIHelper):
                 tools=claude_functions,
                 **kwargs,
             )
-            if self.openai_anthropic_translation:
-                return self._convert_claude_response_to_openai(response, parse_function_calls=True, parse_result_block=True)
-            else:
-                return response
+            return response
         else:
             response = self.llm_query_no_retry(
                 model=model,
