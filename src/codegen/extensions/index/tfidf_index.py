@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class TfidfVectorizer:
     """Simple TF-IDF vectorizer implementation using numpy."""
 
-    def __init__(self, max_features: int = 10000, min_df: int = 2):
+    def __init__(self, max_features: int = 10000, min_df: int = 1):
         """Initialize the vectorizer.
 
         Args:
@@ -30,15 +30,14 @@ class TfidfVectorizer:
         self.vocabulary_ = {}
         self.idf_ = None
         # Match:
-        # 1. CamelCase as separate words
-        # 2. snake_case as separate words
+        # 1. CamelCase -> split into words (e.g., AuthenticationManager -> Authentication, Manager)
+        # 2. snake_case -> split into words
         # 3. Preserve numbers in identifiers
-        # 4. Split on symbol boundaries
-        self._word_pattern = re.compile(r"[A-Z]?[a-z]+[A-Z][a-z]*|[A-Z]{2,}(?=[A-Z][a-z]|\d|\W|$)[\d]*|[A-Z]{2,}|[A-Z][a-z]+[\d]*|[a-z]+[\d]*|[A-Z][\d]*|[a-z]+|[A-Z]+[\d]*")
+        # 4. Handle acronyms (e.g., JWT, HTTP)
+        self._word_pattern = re.compile(r"(?:[A-Z][a-z]+)|(?:[A-Z]{2,}(?=[A-Z][a-z]|\d|\W|$))|(?:[A-Z]{2,})|(?:[a-z]+)|(?:[A-Z](?=[a-z]))")
 
     def _tokenize(self, text: str) -> list[str]:
         """Convert text to tokens, handling code-specific patterns."""
-        # First split on symbol boundaries
         words = []
         for line in text.split("\n"):
             # Skip comments and empty lines
@@ -47,13 +46,12 @@ class TfidfVectorizer:
                 continue
 
             # Find all word-like tokens
-            tokens = self._word_pattern.findall(line)
-
-            # Split snake_case
-            for token in tokens:
+            for token in self._word_pattern.findall(line):
                 if "_" in token:
+                    # Handle snake_case
                     words.extend(part.lower() for part in token.split("_") if part)
                 else:
+                    # Handle CamelCase and other patterns
                     words.append(token.lower())
 
         return words
@@ -75,15 +73,32 @@ class TfidfVectorizer:
         # Create vocabulary mapping
         self.vocabulary_ = {word: idx for idx, word in enumerate(top_words)}
 
-        # Calculate IDF
+        # Create TF matrix
+        X = np.zeros((len(texts), len(self.vocabulary_)))
+        for i, text in enumerate(texts):
+            word_counts = Counter(self._tokenize(text))
+            doc_length = sum(word_counts.values())
+            if doc_length > 0:  # Avoid division by zero
+                for word, count in word_counts.items():
+                    if word in self.vocabulary_:
+                        idx = self.vocabulary_[word]
+                        X[i, idx] = count / doc_length
+
+        # Calculate and apply IDF
         n_docs = len(texts)
         self.idf_ = np.zeros(len(self.vocabulary_))
         for word, idx in self.vocabulary_.items():
             doc_freq = word_doc_freq[word]
             self.idf_[idx] = np.log(n_docs / (1 + doc_freq)) + 1
 
-        # Now that vocabulary is built, transform the texts
-        return self.transform(texts)
+        X *= self.idf_
+
+        # Normalize rows
+        norms = np.linalg.norm(X, axis=1)
+        norms[norms == 0] = 1  # Avoid division by zero
+        X /= norms[:, np.newaxis]
+
+        return X
 
     def transform(self, texts: list[str]) -> np.ndarray:
         """Transform texts to TF-IDF matrix."""
@@ -133,7 +148,7 @@ class TfidfIndex(CodeIndex):
         super().__init__(codebase)
         self.vectorizer = TfidfVectorizer(
             max_features=10000,  # Limit vocabulary size
-            min_df=2,  # Word must appear in at least 2 documents
+            min_df=1,  # Allow words that appear in just one document
         )
 
     @property
@@ -158,7 +173,16 @@ class TfidfIndex(CodeIndex):
     def _get_items_to_index(self) -> list[tuple[str, str]]:
         """Get all files and their content to index."""
         items_to_index = []
-        files_to_process = [f for f in self.codebase.files if f.content]
+        # Only process text files
+        files_to_process = []
+        for file in self.codebase.files:
+            try:
+                if file.content and not file.filepath.startswith(".codegen"):
+                    files_to_process.append(file)
+            except ValueError:
+                # Skip binary files that raise ValueError on content access
+                continue
+
         logger.info(f"Found {len(files_to_process)} files to index")
 
         # Process each file
@@ -183,7 +207,8 @@ class TfidfIndex(CodeIndex):
                 if not path:
                     continue
                 file = self.codebase.get_file(path)
-                if file and file.content:
+                # Only include non-binary files
+                if file and not getattr(file, "_binary", False) and not file.filepath.startswith(".codegen") and file.content:
                     changed_files.add(file)
 
         logger.info(f"Found {len(changed_files)} changed files")
