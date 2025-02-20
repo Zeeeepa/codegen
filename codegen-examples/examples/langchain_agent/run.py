@@ -88,10 +88,9 @@ def create_codebase_agent(
         history_messages_key="chat_history",
     )
 
-
 if __name__ == "__main__":
     # Initialize codebase
-    print("Initializing codebase...")
+    print("Initializing codebase... 🚀")
     codebase = Codebase.from_repo("fastapi/fastapi", language="python")
 
     # Create agent with history
