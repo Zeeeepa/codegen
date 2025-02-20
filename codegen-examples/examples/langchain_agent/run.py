@@ -1,3 +1,5 @@
+# 🚀
+
 """Demo implementation of an agent with Codegen tools."""
 
 from codegen import Codebase
@@ -20,7 +22,6 @@ from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain_core.chat_history import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
-
 
 def create_codebase_agent(
     codebase: Codebase,
