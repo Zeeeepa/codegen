@@ -29,7 +29,11 @@ class BaseConfig(BaseSettings, ABC):
         if env_filepath and env_filepath.exists() and env_filepath != GLOBAL_ENV_FILE:
             env_filepaths.append(env_filepath)
 
-        self.model_config["env_prefix"] = f"{prefix.upper()}_"
+        if prefix != "":
+            self.model_config["env_prefix"] = f"{prefix.upper()}_"
+        else:
+            self.model_config["env_prefix"] = ""
+
         self.model_config["env_file"] = env_filepaths
 
         super().__init__(*args, **kwargs)
@@ -41,6 +45,7 @@ class BaseConfig(BaseSettings, ABC):
     def set(self, env_filepath: Path, key: str, value: str) -> None:
         """Update configuration values"""
         if key.lower() in self.model_fields:
+            print(key.lower())
             setattr(self, key.lower(), value)
             set_key(env_filepath, f"{self.model_config['env_prefix']}{key.upper()}", str(value))
 
