@@ -15,7 +15,7 @@ codegen.function("pr-review-bot")
 def run(codebase: Codebase):
     context_symbols = set()
 
-    modified_symbols , patch= codebase.get_modified_symbols_in_pr(pr_number)
+    modified_symbols, patch = codebase.get_modified_symbols_in_pr(pr_number)
     for symbol in modified_symbols:
         # Get direct dependencies
         deps = symbol.dependencies(max_depth=2)
