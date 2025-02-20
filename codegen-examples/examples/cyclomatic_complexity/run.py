@@ -48,17 +48,20 @@ def run(codebase: Codebase):
     results.sort(key=lambda x: x[1], reverse=True)
 
     # Print summary
-    print("\n"); print("Cyclomatic Complexity Analysis")
+    print("\n")
+    print("Cyclomatic Complexity Analysis")
     print("=" * 60)
 
     if total_functions > 0:
         average = total_complexity / total_functions
-        print("\n"); print("Overall Stats:")
+        print("\n")
+        print("Overall Stats:")
         print(f"  • Total Functions: {total_functions}")
         print(f"  • Average Complexity: {average:.2f}")
         print(f"  • Total Complexity: {total_complexity}")
 
-        print("\n"); print("Top 10 Most Complex Functions:")
+        print("\n")
+        print("Top 10 Most Complex Functions:")
         print("-" * 60)
         for name, complexity, filepath in results[:10]:
             # Truncate filepath if too long
@@ -71,7 +74,8 @@ def run(codebase: Codebase):
         medium = sum(1 for _, c, _ in results if 5 < c <= 10)
         high = sum(1 for _, c, _ in results if c > 10)
 
-        print("\n"); print("Complexity Distribution:")
+        print("\n")
+        print("Complexity Distribution:")
         print(f"  • Low (1-5): {low} functions ({low / total_functions * 100:.1f}%)")
         print(f"  • Medium (6-10): {medium} functions ({medium / total_functions * 100:.1f}%)")
         print(f"  • High (>10): {high} functions ({high / total_functions * 100:.1f}%)")
@@ -85,4 +89,3 @@ if __name__ == "__main__":
 
     print("Running analysis...")
     run(codebase)
-

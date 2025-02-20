@@ -150,4 +150,3 @@ def research(repo_name: Optional[str] = None, query: Optional[str] = None):
 
 if __name__ == "__main__":
     cli()
-
