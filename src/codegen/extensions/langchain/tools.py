@@ -6,7 +6,6 @@ from typing import Callable, ClassVar, Literal, Optional
 from langchain_core.tools.base import BaseTool
 from pydantic import BaseModel, Field
 
-from codegen import Codebase
 from codegen.extensions.linear.linear_client import LinearClient
 from codegen.extensions.tools.bash import run_bash_command
 from codegen.extensions.tools.linear.linear import (
@@ -20,10 +19,10 @@ from codegen.extensions.tools.linear.linear import (
 from codegen.extensions.tools.link_annotation import add_links_to_message
 from codegen.extensions.tools.replacement_edit import replacement_edit
 from codegen.extensions.tools.reveal_symbol import reveal_symbol
-from codegen.extensions.tools.run_codemod import run_codemod
 from codegen.extensions.tools.search import search
 from codegen.extensions.tools.semantic_edit import semantic_edit
 from codegen.extensions.tools.semantic_search import semantic_search
+from codegen.sdk.core.codebase import Codebase
 
 from ..tools import (
     commit,
@@ -46,21 +45,41 @@ class ViewFileInput(BaseModel):
     """Input for viewing a file."""
 
     filepath: str = Field(..., description="Path to the file relative to workspace root")
+    start_line: Optional[int] = Field(None, description="Starting line number to view (1-indexed, inclusive)")
+    end_line: Optional[int] = Field(None, description="Ending line number to view (1-indexed, inclusive)")
+    max_lines: Optional[int] = Field(None, description="Maximum number of lines to view at once, defaults to 250")
+    line_numbers: Optional[bool] = Field(True, description="If True, add line numbers to the content (1-indexed)")
 
 
 class ViewFileTool(BaseTool):
     """Tool for viewing file contents and metadata."""
 
     name: ClassVar[str] = "view_file"
-    description: ClassVar[str] = "View the contents and metadata of a file in the codebase"
+    description: ClassVar[str] = """View the contents and metadata of a file in the codebase.
+For large files (>250 lines), content will be paginated. Use start_line and end_line to navigate through the file.
+The response will indicate if there are more lines available to view."""
     args_schema: ClassVar[type[BaseModel]] = ViewFileInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, filepath: str) -> str:
-        result = view_file(self.codebase, filepath)
+    def _run(
+        self,
+        filepath: str,
+        start_line: Optional[int] = None,
+        end_line: Optional[int] = None,
+        max_lines: Optional[int] = None,
+        line_numbers: Optional[bool] = True,
+    ) -> str:
+        result = view_file(
+            self.codebase,
+            filepath,
+            line_numbers=line_numbers if line_numbers is not None else True,
+            start_line=start_line,
+            end_line=end_line,
+            max_lines=max_lines if max_lines is not None else 250,
+        )
         return result.render()
 
 
@@ -712,8 +731,7 @@ def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
         RenameFileTool(codebase),
         ReplacementEditTool(codebase),
         RevealSymbolTool(codebase),
-        RunBashCommandTool(),
-        RunCodemodTool(codebase),
+        RunBashCommandTool(),  # Note: This tool doesn't need the codebase
         SearchTool(codebase),
         SemanticEditTool(codebase),
         SemanticSearchTool(codebase),
@@ -773,39 +791,4 @@ class ReplacementEditTool(BaseTool):
             end=end,
             count=count,
         )
-        return json.dumps(result, indent=2)
-
-
-class RunCodemodInput(BaseModel):
-    """Input for running a codemod."""
-
-    codemod_source: str = Field(
-        ...,
-        description="""Source code of the codemod function. Must define a 'run(codebase: Codebase)' function that makes the desired changes.
-Example:
-```python
-def run(codebase: Codebase):
-    for file in codebase.files:
-        if file.filepath.endswith('.py'):
-            content = file.content
-            # Make changes to content
-            file.edit(new_content)
-```
-""",
-    )
-
-
-class RunCodemodTool(BaseTool):
-    """Tool for running custom codemod functions."""
-
-    name: ClassVar[str] = "run_codemod"
-    description: ClassVar[str] = "Run a custom codemod function to make systematic changes across the codebase"
-    args_schema: ClassVar[type[BaseModel]] = RunCodemodInput
-    codebase: Codebase = Field(exclude=True)
-
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(self, codemod_source: str) -> str:
-        result = run_codemod(self.codebase, codemod_source)
         return json.dumps(result, indent=2)
