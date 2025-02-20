@@ -65,7 +65,7 @@ def run(codebase: Codebase):
                         model_def = f"""class {class_name}(BaseModel):
     {dict_content.replace(",", "\n    ")}"""
 
-                        print(f"\nConverting'{attr.name}' to schema")
+                        print(f"\nConverting '{attr.name}' to schema")
                         print("\nOriginal code:")
                         print(attr.source)
                         print("\nNew code:")
@@ -100,3 +100,4 @@ if __name__ == "__main__":
 
     print("Running codemod...")
     run(codebase)
+

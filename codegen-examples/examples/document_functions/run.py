@@ -97,7 +97,7 @@ def run(codebase: Codebase):
         # Set the generated docstring for the function
         if docstring:
             function.set_docstring(docstring)
-            print("  ✓ Generated docstring")
+            print("  ✔ Generated docstring")
         else:
             print("  ✗ Failed to generate docstring")
 
@@ -117,3 +117,4 @@ if __name__ == "__main__":
 
     print("Running function...")
     run(codebase)
+
