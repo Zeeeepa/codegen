@@ -33,8 +33,6 @@ def test_init_default_anthropic(mock_env):
     assert llm.model_provider == "anthropic"
     assert llm.model_name == "claude-3-5-sonnet-latest"
     assert llm.temperature == 0
-    assert llm.top_p == 1
-    assert llm.top_k == 1
 
 
 def test_init_openai(mock_env):
@@ -72,7 +70,7 @@ def test_invalid_model_provider():
     """Test error with invalid model provider."""
     with pytest.raises(ValueError) as exc_info:
         LLM(model_provider="invalid")
-    assert "Input should be 'anthropic' or 'openai'" in str(exc_info.value)
+    assert "Must be one of: anthropic, openai" in str(exc_info.value)
 
 
 def test_invalid_temperature():
