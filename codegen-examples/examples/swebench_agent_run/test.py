@@ -10,5 +10,5 @@ app = modal.App(name="codegen-examples", image=image, secrets=[modal.Secret.from
 def run_agent(AgentClass):
     codebase = Codebase.from_repo(repo_full_name="pallets/flask")
     agent = AgentClass(codebase)
-    agent.run(prompt="What is the main purpose of the LangChain library?")
+    agent.run(prompt="Tell me about the codebase and the files in it.")
     return True
