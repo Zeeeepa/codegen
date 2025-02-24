@@ -1,6 +1,3 @@
-ARG LOCAL_REPO_PATH
-ARG REPO_NAME
-
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 # Set environment variables to prevent interactive prompts during installation
@@ -62,7 +59,4 @@ RUN chown -R user:user /home/user
 USER user
 
 WORKDIR /app
-
-COPY ${LOCAL_REPO_PATH} /app/git/${REPO_NAME}
-
 ENTRYPOINT ["/bin/bash", "-c"]
