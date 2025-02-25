@@ -816,8 +816,8 @@ class Codebase(Generic[TSourceFile, TDirectory, TSymbol, TClass, TFunction, TImp
     def checkout(self, *, commit: str | GitCommit | None = None, branch: str | None = None, create_if_missing: bool = False, remote: bool = False) -> CheckoutResult:
         """Checks out a git branch or commit and syncs the codebase graph to the new state.
 
-        This method discards any pending changes, performs a git checkout of the specified branch or commit,
-        and then syncs the codebase graph to reflect the new state.
+        This method stashes any pending changes, performs a git checkout of the specified branch or commit,
+        syncs the codebase graph to reflect the new state, and then restores the stashed changes.
 
         Args:
             commit (str | GitCommit | None): Hash or GitCommit object to checkout. Cannot be used with branch.
@@ -831,7 +831,14 @@ class Codebase(Generic[TSourceFile, TDirectory, TSymbol, TClass, TFunction, TImp
         Raises:
             AssertionError: If neither commit nor branch is specified, or if both are specified.
         """
-        self.reset()
+        # Instead of calling reset() which uses discard_changes(), use stash to preserve .gitignore'd files
+        self._num_ai_requests = 0
+        self.reset_logs()
+        self.ctx.undo_applied_diffs()
+        
+        # Stash changes to preserve .gitignore'd files
+        self.stash_changes()
+        
         if commit is None:
             assert branch is not None, "Commit or branch must be specified"
             logger.info(f"Checking out branch {branch}")
@@ -840,11 +847,18 @@ class Codebase(Generic[TSourceFile, TDirectory, TSymbol, TClass, TFunction, TImp
             assert branch is None, "Cannot specify branch and commit"
             logger.info(f"Checking out commit {commit}")
             result = self._op.checkout_commit(commit_hash=commit)
+        
         if result == CheckoutResult.SUCCESS:
             logger.info(f"Checked out {branch or commit}")
             self.sync_to_commit(self._op.head_commit)
+            
+            # Restore stashed changes to bring back .gitignore'd files
+            self.restore_stashed_changes()
         elif result == CheckoutResult.NOT_FOUND:
             logger.info(f"Could not find branch {branch or commit}")
+            
+            # Restore stashed changes even if checkout failed
+            self.restore_stashed_changes()
 
         return result
 
