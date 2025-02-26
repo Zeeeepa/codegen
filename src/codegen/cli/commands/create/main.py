@@ -16,19 +16,6 @@ from codegen.cli.utils.default_code import DEFAULT_CODEMOD
 from codegen.cli.workspace.decorators import requires_init
 
 
-def get_prompts_dir() -> Path:
-    """Get the directory for storing prompts, creating it if needed."""
-    PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Ensure .gitignore exists and contains the prompts directory
-    gitignore = Path.cwd() / ".gitignore"
-    if not gitignore.exists() or "codegen-sh/prompts" not in gitignore.read_text():
-        with open(gitignore, "a") as f:
-            f.write("\n# Codegen prompts\ncodegen-sh/prompts/\n")
-
-    return PROMPTS_DIR
-
-
 def get_target_paths(name: str, path: Path) -> tuple[Path, Path]:
     """Get the target path for the new function file.
 

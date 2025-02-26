@@ -105,10 +105,6 @@ def _has_decorator(decorator_name: str) -> Callable[[ast.FunctionDef], bool]:
     return test
 
 
-def _matches_regex(pattern: str) -> Callable[[ast.FunctionDef], bool]:
-    return lambda node: re.match(pattern, node.name) is not None
-
-
 def _strip_internal_symbols(file: str, root: str) -> None:
     if file.endswith(".pyi"):
         file_path = os.path.join(root, file)
@@ -128,10 +124,3 @@ def _strip_internal_symbols(file: str, root: str) -> None:
         with open(file_path, "w") as f:
             f.write(modified_content)
         logger.debug(f"Typestub file {file_path} has been modified.")
-
-
-def strip_internal_symbols(typing_directory: str) -> None:
-    with ThreadPoolExecutor() as exec:
-        for root, _, files in os.walk(typing_directory):
-            for file in files:
-                exec.submit(_strip_internal_symbols, file, root)

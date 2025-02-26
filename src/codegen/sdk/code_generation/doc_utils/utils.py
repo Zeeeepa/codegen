@@ -93,14 +93,6 @@ def is_language_base_class(cls_obj: Class):
     return any(sub_class.name.lower() in [f"py{base_name}", f"ts{base_name}"] for sub_class in sub_classes)
 
 
-def get_section(symbol: Symbol, parent_class: Class | None = None):
-    if parent_class:
-        doc_section = parent_class.filepath.split("/")[1]
-    else:
-        doc_section = symbol.filepath.split("/")[1]
-    return doc_section
-
-
 def get_language(symbol: Class | Function | PyAttribute) -> str:
     """Gets the language of which the symbol is an abstract representation.
 

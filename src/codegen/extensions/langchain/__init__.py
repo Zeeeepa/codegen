@@ -30,25 +30,3 @@ __all__ = [
     # Helper functions
     "get_workspace_tools",
 ]
-
-
-def get_workspace_tools(codebase: Codebase) -> list[BaseTool]:
-    """Get all workspace tools initialized with a codebase.
-
-    Args:
-        codebase: The codebase to operate on
-
-    Returns:
-        List of initialized Langchain tools
-    """
-    return [
-        ViewFileTool(codebase),
-        ListDirectoryTool(codebase),
-        SearchTool(codebase),
-        EditFileTool(codebase),
-        CreateFileTool(codebase),
-        DeleteFileTool(codebase),
-        CommitTool(codebase),
-        RevealSymbolTool(codebase),
-        SemanticEditTool(codebase),
-    ]

@@ -65,20 +65,3 @@ class DeterministicJSONEncoder(json.JSONEncoder):
         if hasattr(obj, "__dict__"):
             return {key: self.default(value) for key, value in obj.__dict__.items()}
         return super().default(obj)
-
-
-def deterministic_json_dumps(data, **kwargs):
-    def sort_dict(item):
-        if isinstance(item, dict):
-            return {key: sort_dict(value) for key, value in sorted(item.items())}
-        elif isinstance(item, list):
-            if len(item) > 0 and isinstance(item[0], dict):
-                # Sort list of dictionaries based on all keys
-                return sorted([sort_dict(i) for i in item], key=lambda x: json.dumps(x, sort_keys=True))
-            else:
-                return [sort_dict(i) for i in item]
-        else:
-            return item
-
-    sorted_data = sort_dict(data)
-    return json.dumps(sorted_data, cls=DeterministicJSONEncoder, **kwargs)

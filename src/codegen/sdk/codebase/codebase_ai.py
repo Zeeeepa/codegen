@@ -103,40 +103,6 @@ REMEMBER: When giving the final answer, you must use the set_answer tool to prov
     return prompt
 
 
-def generate_flag_system_prompt(target: Editable, context: None | str | Editable | list[Editable] | dict[str, str | Editable | list[Editable]] = None) -> str:
-    prompt = f"""Hey CodegenBot!
-You are an incredibly precise and thoughtful AI who helps developers accomplish complex transformations on their codebase.
-
-You are now tasked with determining whether to flag the symbol, file, attribute, or message using AI.
-Flagging a symbol means to mark it as a chunk of code that should be modified in a later step.
-You will be given the user prompt, and the code snippet that the user is requesting a response on.
-Use the should_flag tool to return either a true or false answer to the question of whether to flag the symbol, file, attribute, or message.
-
-Here is the code snippet that the user is requesting a response on:
-
-[[[CODE SNIPPET BEGIN]]]
-{target.extended_source}
-[[[CODE SNIPPET END]]]
-"""
-
-    if context:
-        prompt += """
-The user has provided some additional context that you can use to assist with your response.
-You may use this context to inform your answer, but you're not required to directly include it in your response.
-
-Here is the additional context:
-"""
-        prompt += generate_context(context)
-
-    prompt += """
-Please intelligently determine whether the user's request on the given code snippet should be flagged.
-Remember, use the should_flag tool to return either a true or false answer to the question of whether to flag the symbol, file, attribute, or message
-as a chunk of code that should be modified, edited, or changed in a later step.
-    """
-
-    return prompt
-
-
 def generate_context(context: None | str | Editable | list[Editable | File] | dict[str, str | Editable | list[Editable] | File] | File = None) -> str:
     output = ""
     if not context:
@@ -180,28 +146,6 @@ def generate_tools() -> list:
                         },
                     },
                     "required": ["answer"],
-                },
-            },
-        }
-    ]
-
-
-def generate_flag_tools() -> list:
-    return [
-        {
-            "type": "function",
-            "function": {
-                "name": "should_flag",
-                "description": "Use this function to determine whether to flag the symbol, file, attribute, or message using AI.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "flag": {
-                            "type": "boolean",
-                            "description": "Whether to flag the symbol, file, attribute, or message.",
-                        },
-                    },
-                    "required": ["flag"],
                 },
             },
         }

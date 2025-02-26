@@ -58,11 +58,6 @@ def _contains_container_chars(text: bytes) -> bool:
     return any([char in text for char in CONTAINER_CHARS])
 
 
-def _is_empty_container(text: str) -> bool:
-    stripped_str = re.sub(r"\s+", "", text)
-    return len(stripped_str) == 2 and all([char in CONTAINER_CHARS for char in text])
-
-
 _EXCLUDE_FROM_REPR: list[str] = [
     "ctx",
     "autocommit_cache",

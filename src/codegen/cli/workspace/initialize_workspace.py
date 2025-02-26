@@ -86,13 +86,6 @@ def initialize_codegen(session: CodegenSession, status: Status | str = "Initiali
     return CODEGEN_FOLDER, DOCS_FOLDER, EXAMPLES_FOLDER
 
 
-def add_to_gitignore_if_not_present(gitignore: Path, line: str):
-    if not gitignore.exists():
-        gitignore.write_text(line)
-    elif line not in gitignore.read_text():
-        gitignore.write_text(gitignore.read_text() + "\n" + line)
-
-
 def modify_gitignore(codegen_folder: Path):
     """Update .gitignore to track only specific Codegen files."""
     gitignore_path = codegen_folder / ".gitignore"

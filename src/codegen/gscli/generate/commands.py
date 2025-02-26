@@ -120,12 +120,6 @@ def system_prompt(filepath: str) -> None:
     print(f"Successfully wrote system prompt to {filepath}.")
 
 
-def get_snippet_pattern(target_name: str) -> str:
-    pattern = rf"\[//\]: # \(--{re.escape(target_name)}--\)\s*(?:\[//\]: # \(--{re.escape(AUTO_GENERATED_COMMENT)}--\)\s*)?"
-    pattern += CODE_SNIPPETS_REGEX
-    return pattern
-
-
 def generate_codegen_sdk_docs(docs_dir: str) -> None:
     """Generate the docs for the codegen_sdk API and update the mint.json"""
     print(colored("Generating codegen_sdk docs", "green"))

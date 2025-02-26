@@ -62,19 +62,6 @@ def post_reset_validation(init_nodes, nodes, init_edges, edges, repo_name: str, 
         log_or_throw(post_message, message)
 
 
-def post_sync_validation(codebase: CodebaseType) -> bool:
-    """Post codebase.sync, checks that the codebase graph is in a valid state (i.e. not corrupted by codebase.sync)"""
-    if len(codebase.ctx.all_syncs) > 0 or len(codebase.ctx.pending_syncs) > 0 or len(codebase.ctx.transaction_manager.to_commit()) > 0:
-        msg = "Can only be called on a reset codebase"
-        raise NotImplementedError(msg)
-    if not codebase.ctx.config.codebase.track_graph:
-        msg = "Can only be called with track_graph=true"
-        raise NotImplementedError(msg)
-    return len(dict.fromkeys(codebase.ctx.old_graph.nodes())) == len(dict.fromkeys(codebase.ctx.nodes)) and len(dict.fromkeys(codebase.ctx.old_graph.weighted_edge_list())) == len(
-        dict.fromkeys(codebase.ctx.edges)
-    )
-
-
 def log_or_throw(message, thread_message: str):
     hostname = socket.gethostname()
     logger.error(message)

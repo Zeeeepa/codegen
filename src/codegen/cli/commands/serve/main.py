@@ -33,42 +33,6 @@ def setup_logging(debug: bool):
     )
 
 
-def load_app_from_file(file_path: Path) -> CodegenApp:
-    """Load a CodegenApp instance from a Python file.
-
-    Args:
-        file_path: Path to the Python file containing the CodegenApp
-
-    Returns:
-        The CodegenApp instance from the file
-
-    Raises:
-        click.ClickException: If no CodegenApp instance is found
-    """
-    try:
-        # Import the module from file path
-        spec = importlib.util.spec_from_file_location("app_module", file_path)
-        if not spec or not spec.loader:
-            msg = f"Could not load module from {file_path}"
-            raise click.ClickException(msg)
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        # Find CodegenApp instance
-        for attr_name in dir(module):
-            attr = getattr(module, attr_name)
-            if isinstance(attr, CodegenApp):
-                return attr
-
-        msg = f"No CodegenApp instance found in {file_path}"
-        raise click.ClickException(msg)
-
-    except Exception as e:
-        msg = f"Error loading app from {file_path}: {e!s}"
-        raise click.ClickException(msg)
-
-
 def create_app_module(file_path: Path) -> str:
     """Create a temporary module that exports the app for uvicorn."""
     # Add the file's directory to Python path

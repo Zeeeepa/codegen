@@ -44,8 +44,3 @@ class CodemodRunResult(BaseModel):
 class CreatedBranch(BaseModel):
     base_branch: str
     head_ref: str | None = None
-
-
-class SandboxRunnerTag(BaseModel):
-    repo_id: str
-    runner_id: str

@@ -140,19 +140,6 @@ def render_mdx_for_method(method: MethodDoc) -> str:
     return mdx_string
 
 
-def get_mdx_route_for_class(cls_doc: ClassDoc) -> str:
-    """Get the expected MDX route for a class
-    split by /core, /python, and /typescript
-    """
-    lower_class_name = cls_doc.title.lower()
-    if lower_class_name.startswith("py"):
-        return f"codebase-sdk/python/{cls_doc.title}"
-    elif lower_class_name.startswith(("ts", "jsx")):
-        return f"codebase-sdk/typescript/{cls_doc.title}"
-    else:
-        return f"codebase-sdk/core/{cls_doc.title}"
-
-
 def format_type_string(type_string: str) -> str:
     type_string = type_string.split("|")
     return " | ".join([type_str.strip() for type_str in type_string])
@@ -169,13 +156,6 @@ def format_builtin_type_string(type_string: str) -> str:
     if "|" in type_string:
         type_strings = type_string.split("|")
         return " | ".join([type_str.strip() for type_str in type_strings])
-    return type_string
-
-
-def span_type_string_by_pipe(type_string: str) -> str:
-    if "|" in type_string:
-        type_strings = type_string.split("|")
-        return " | ".join([f"<span>{type_str.strip()}</span>" for type_str in type_strings])
     return type_string
 
 

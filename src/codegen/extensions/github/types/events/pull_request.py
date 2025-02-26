@@ -25,20 +25,6 @@ class Label(BaseModel):
     default: bool
 
 
-class SimplePullRequest(BaseModel):
-    id: int
-    number: int
-    state: str
-    locked: bool
-    title: str
-    user: User
-    body: str | None = None
-    labels: list[Label] = []
-    created_at: str
-    updated_at: str
-    draft: bool = False
-
-
 class PullRequestLabeledEvent(BaseModel):
     """Simplified version of the PR labeled event for testing"""
 
@@ -48,17 +34,6 @@ class PullRequestLabeledEvent(BaseModel):
     label: Label
     repository: dict  # Simplified for now
     sender: User
-
-
-class PullRequestOpenedEvent(BaseModel):
-    action: str = "opened"  # Always "opened" for this event
-    number: int
-    pull_request: PullRequest
-    repository: GitHubRepository
-    organization: GitHubOrganization
-    enterprise: GitHubEnterprise
-    sender: GitHubUser
-    installation: GitHubInstallation
 
 
 class PullRequestUnlabeledEvent(BaseModel):

@@ -27,12 +27,3 @@ def execute_action(server: "CodegenLanguageServer", action: CodeAction, args: An
         return
     action.execute(server, node, *args[2:])
     server.codebase.commit()
-
-
-def get_execute_action(action: CodeAction) -> Callable[["CodegenLanguageServer", Any], None]:
-    def execute_action(server: "CodegenLanguageServer", args: Any) -> None:
-        logger.info(f"Executing action {action.command_name()} with args {args}")
-        execute_action(server, action, args)
-        server.workspace_apply_edit(types.ApplyWorkspaceEditParams(edit=server.io.get_workspace_edit())).result()
-
-    return execute_action

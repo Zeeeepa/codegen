@@ -61,14 +61,6 @@ def get_parser_by_filepath_or_extension(filepath_or_extension: str | PathLike = 
     return _ts_parser_factory.extension_to_parser[extension]
 
 
-def get_lang_by_filepath_or_extension(filepath_or_extension: str = ".py") -> Language:
-    extension = to_extension(filepath_or_extension)
-    # HACK: we do not currently use a plain text parser, so default to python for now
-    if extension not in _ts_parser_factory.extension_to_parser:
-        extension = ".py"
-    return _ts_parser_factory.extension_to_lang[extension]
-
-
 def parse_file(filepath: PathLike, content: str) -> TSNode:
     parser = get_parser_by_filepath_or_extension(filepath)
     ts_node = parser.parse(bytes(content, "utf-8")).root_node

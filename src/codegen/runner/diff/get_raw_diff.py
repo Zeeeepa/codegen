@@ -85,10 +85,3 @@ def get_raw_diff(codebase: Codebase, base: str = "HEAD", max_lines: int = 10000)
     raw_diff_trunc = patch_to_limited_diff_string(patch=patch_set, max_lines=max_lines, codebase=codebase)
 
     return raw_diff_trunc
-
-
-def get_filenames_from_diff(diff: str) -> list[str]:
-    patch_set = PatchSet(io.StringIO(diff))
-    filenames = [patched_file.path for patched_file in patch_set]
-
-    return filenames

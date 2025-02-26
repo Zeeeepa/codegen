@@ -17,17 +17,6 @@ class NodeType(IntEnum):
     EXPRESSION = auto()  # Node representing an expression within a statement.
 
 
-class FileGraphNodeType(IntEnum):
-    # File graph nodes
-    STATEMENT = auto()  # Node representing a statement in code block.
-    EXPRESSION = auto()  # Node representing an expression within a statement.
-
-
-class FileGraphEdgeType(IntEnum):
-    # File graph edges
-    STATEMENT_CONTAINS_EXPRESSION = auto()  # Edge from statement to expression.
-
-
 class EdgeType(IntEnum):
     # === [ External Edges Between Files ] ===
     # Edge from Import => resolved Symbol.

@@ -120,15 +120,6 @@ def find_first_child_by_field_name(node: TSNode, field_name: str) -> TSNode | No
     return None
 
 
-def has_descendant(node: TSNode, type_name: str) -> bool:
-    def traverse(current_node: TSNode, depth: int = 0) -> bool:
-        if current_node.type == type_name:
-            return True
-        return any(traverse(child, depth + 1) for child in current_node.children)
-
-    return traverse(node)
-
-
 def get_first_identifier(node: TSNode) -> TSNode | None:
     """Get the text of the first identifier child of a tree-sitter node. Recursive implementation"""
     if node.type in ("identifier", "shorthand_property_identifier_pattern"):
@@ -228,17 +219,6 @@ __all__ = [
     "get_all_identifiers",
     "has_descendant",
 ]
-
-
-def get_language_file_extensions(language: ProgrammingLanguage):
-    """Returns the file extensions for the given language."""
-    from codegen.sdk.python import PyFile
-    from codegen.sdk.typescript.file import TSFile
-
-    if language == ProgrammingLanguage.PYTHON:
-        return set(PyFile.get_extensions())
-    elif language == ProgrammingLanguage.TYPESCRIPT:
-        return set(TSFile.get_extensions())
 
 
 def truncate_line(input: str, max_chars: int) -> str:

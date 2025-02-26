@@ -12,20 +12,6 @@ if TYPE_CHECKING:
     from codegen.sdk.core.codebase import Codebase, Editable, File
 
 
-def get_merge_base(git_repo_client: Repository, pull: PullRequest | PullRequestContext) -> str:
-    """Gets the merge base of a pull request using a remote GitHub API client.
-
-    Args:
-        git_repo_client (GitRepoClient): The GitHub repository client.
-        pull (PullRequest): The pull request object.
-
-    Returns:
-        str: The SHA of the merge base commit.
-    """
-    comparison = git_repo_client.compare(pull.base.sha, pull.head.sha)
-    return comparison.merge_base_commit.sha
-
-
 def get_file_to_changed_ranges(pull_patch_set: PatchSet) -> dict[str, list]:
     file_to_changed_ranges = {}
     for patched_file in pull_patch_set:

@@ -78,12 +78,3 @@ class PullRequest(BaseModel):
     additions: int
     deletions: int
     changed_files: int
-
-
-class PullRequestLabeledEvent(BaseModel):
-    action: Literal["labeled"]
-    number: int
-    pull_request: PullRequest
-    label: Label
-    repository: dict  # Simplified for now
-    sender: dict  # Simplified for now

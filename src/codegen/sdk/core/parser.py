@@ -27,10 +27,6 @@ if TYPE_CHECKING:
 Parent = TypeVar("Parent", bound="Editable")
 
 
-class CanParse(Protocol, Generic[Parent]):
-    def __init__(self, node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent) -> None: ...
-
-
 Expression = TypeVar("Expression", bound="CanParse")
 Parent = TypeVar("Parent", bound="Editable")
 

@@ -52,11 +52,3 @@ class GitHubUser:
     type: str
     site_admin: bool
     # Other URL fields omitted for brevity
-
-
-class GitHubInstallationEvent:
-    action: str
-    installation: GitHubInstallation
-    repositories: list[GitHubRepository]
-    requester: Optional[dict]
-    sender: GitHubUser

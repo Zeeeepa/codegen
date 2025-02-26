@@ -24,11 +24,6 @@ def format_codeblock(code: str) -> str:
     return f"\n\t[cyan]{code}[/cyan]\n"
 
 
-def format_code(code: str) -> str:
-    """Just blue for a span"""
-    return f"[cyan]{code}[/cyan]"
-
-
 def format_path(path: str) -> str:
     """Format a path in a consistent style.
 

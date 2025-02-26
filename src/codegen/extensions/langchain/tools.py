@@ -709,47 +709,6 @@ class SlackSendMessageTool(BaseTool):
 ########################################################################################################################
 
 
-def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
-    """Get all workspace tools initialized with a codebase.
-
-    Args:
-        codebase: The codebase to operate on
-
-    Returns:
-        List of initialized Langchain tools
-    """
-    return [
-        CommitTool(codebase),
-        CreateFileTool(codebase),
-        DeleteFileTool(codebase),
-        EditFileTool(codebase),
-        GithubViewPRTool(codebase),
-        ListDirectoryTool(codebase),
-        MoveSymbolTool(codebase),
-        RenameFileTool(codebase),
-        ReplacementEditTool(codebase),
-        RevealSymbolTool(codebase),
-        RunBashCommandTool(),  # Note: This tool doesn't need the codebase
-        SearchTool(codebase),
-        # SemanticEditTool(codebase),
-        SemanticSearchTool(codebase),
-        ViewFileTool(codebase),
-        RelaceEditTool(codebase),
-        # Github
-        GithubCreatePRTool(codebase),
-        GithubCreatePRCommentTool(codebase),
-        GithubCreatePRReviewCommentTool(codebase),
-        GithubViewPRTool(codebase),
-        # Linear
-        LinearGetIssueTool(codebase),
-        LinearGetIssueCommentsTool(codebase),
-        LinearCommentOnIssueTool(codebase),
-        LinearSearchIssuesTool(codebase),
-        LinearCreateIssueTool(codebase),
-        LinearGetTeamsTool(codebase),
-    ]
-
-
 class ReplacementEditInput(BaseModel):
     """Input for regex-based replacement editing."""
 
