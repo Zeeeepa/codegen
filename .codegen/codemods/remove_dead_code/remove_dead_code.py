@@ -2,7 +2,7 @@ import codegen
 from codegen.sdk.core.codebase import Codebase
 
 
-@codegen.function('remove-dead-code')
+@codegen.function("remove-dead-code")
 def run(codebase: Codebase):
     # Codemod: Remove dead code in the src/codegen directory
 
@@ -15,11 +15,7 @@ def run(codebase: Codebase):
         # Iterate over all functions in the file
         for function in file.functions:
             # Skip test functions, decorated functions, and those used as endpoints
-            if (
-                "test" not in function.file.filepath
-                and not function.decorators
-                and not function.usages
-            ):
+            if "test" not in function.file.filepath and not function.decorators and not function.usages:
                 # If function has no usages or call sites, remove it
                 if not function.usages and not function.call_sites:
                     print(f"Removing unused function: {function.name} in {function.file.filepath}")
@@ -45,8 +41,8 @@ def run(codebase: Codebase):
 
 
 if __name__ == "__main__":
-    print('Parsing codebase...')
+    print("Parsing codebase...")
     codebase = Codebase("./")
 
-    print('Running function...')
-    codegen.run(run)
+    print("Running function...")
+    run(codebase)

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 Parent = TypeVar("Parent", bound="Editable")
 
 
-Expression = TypeVar("Expression")
+Expression = TypeVar("Expression", bound="Value")
 Parent = TypeVar("Parent", bound="Editable")
 
 
