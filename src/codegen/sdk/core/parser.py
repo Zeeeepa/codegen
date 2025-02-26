@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Generic, Protocol, Self, TypeVar
+from typing import TYPE_CHECKING, Generic, Self, TypeVar
 
 from rich.console import Console
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 Parent = TypeVar("Parent", bound="Editable")
 
 
-Expression = TypeVar("Expression", bound="CanParse")
+Expression = TypeVar("Expression")
 Parent = TypeVar("Parent", bound="Editable")
 
 

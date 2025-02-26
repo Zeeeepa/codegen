@@ -12,7 +12,6 @@ from tree_sitter import Node as TSNode
 
 from codegen.sdk.extensions.utils import find_all_descendants, find_first_descendant, get_all_identifiers
 from codegen.sdk.typescript.enums import TSFunctionTypeNames
-from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 """
 Utility functions for traversing the tree sitter structure.
@@ -217,7 +216,6 @@ __all__ = [
     "find_first_child_by_field_name",
     "find_first_descendant",
     "get_all_identifiers",
-    "has_descendant",
 ]
 
 
