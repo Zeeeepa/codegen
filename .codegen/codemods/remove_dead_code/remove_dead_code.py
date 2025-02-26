@@ -31,7 +31,7 @@ def run(codebase: Codebase):
                     if method.decorators and any("route" in d.source for d in method.decorators):
                         is_endpoint = True
                         break
-                
+
                 if not cls.usages and not is_endpoint:
                     print(f"Removing unused class: {cls.name} in {cls.file.filepath}")
                     cls.remove()

@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 import requests
-from github import Repository
 from github.PullRequest import PullRequest
 from unidiff import PatchSet
 

@@ -1,7 +1,6 @@
 import logging
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
-from lsprotocol import types
 from lsprotocol.types import Position, Range
 
 from codegen.extensions.lsp.codemods.base import CodeAction

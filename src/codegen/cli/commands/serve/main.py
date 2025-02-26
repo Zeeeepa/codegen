@@ -1,4 +1,3 @@
-import importlib.util
 import logging
 import socket
 import subprocess
@@ -11,8 +10,6 @@ import rich_click as click
 import uvicorn
 from rich.logging import RichHandler
 from rich.panel import Panel
-
-from codegen.extensions.events.codegen_app import CodegenApp
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,4 @@
 # TODO: refactor this file out
-import functools
-
-import rich
-import rich_click as click
-from rich.panel import Panel
 
 
 class AuthError(Exception):

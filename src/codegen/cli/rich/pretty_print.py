@@ -3,8 +3,6 @@ from rich import box
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from codegen.cli.api.schemas import RunCodemodOutput
-
 
 def pretty_print_logs(logs: str):
     """Pretty print logs in a panel."""
