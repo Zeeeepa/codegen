@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from codegen.sdk.core.expressions.type import Type
     from codegen.sdk.core.interfaces.editable import Editable
     from codegen.sdk.core.node_id_factory import NodeId
-    from codegen.sdk.core.statements.statement import Statement
     from codegen.sdk.core.symbol import Symbol
     from codegen.sdk.python.detached_symbols.code_block import PyCodeBlock
     from codegen.sdk.typescript.detached_symbols.code_block import TSCodeBlock
@@ -58,9 +57,6 @@ class Parser(Generic[Expression]):
 
     def parse_expression(self, node: TSNode | None, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, *args, default: type[Expression] = Value, **kwargs):
         # Type checking will be handled at runtime
-        if TYPE_CHECKING:
-            # This is only for type checking purposes
-            pass
 
         if node is None:
             return None
@@ -103,8 +99,8 @@ class Parser(Generic[Expression]):
         # Type checking will be handled at runtime
         if TYPE_CHECKING:
             from codegen.sdk.core.statements.statement import Statement
-            from typing import List
-            return List[Statement]  # This is only for type checking purposes
+
+            return list[Statement]  # This is only for type checking purposes
 
         from codegen.sdk.core.statements.export_statement import ExportStatement
         from codegen.sdk.core.statements.expression_statement import ExpressionStatement
@@ -207,8 +203,8 @@ class Parser(Generic[Expression]):
         # Type checking will be handled at runtime
         if TYPE_CHECKING:
             from codegen.sdk.core.statements.statement import Statement
-            from typing import List
-            return List[Statement]  # This is only for type checking purposes
+
+            return list[Statement]  # This is only for type checking purposes
 
         from codegen.sdk.core.statements.expression_statement import ExpressionStatement
         from codegen.sdk.core.statements.raise_statement import RaiseStatement
