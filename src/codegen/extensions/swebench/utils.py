@@ -1,12 +1,12 @@
-from codegen.extensions.swebench.types import SweBenchExample
 import json
-from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from pprint import pprint
-from typing import Literal, Optional
+from typing import Literal
 
 import requests
+
+from codegen.extensions.swebench.types import SweBenchExample
 
 
 class SWEBenchDataset(Enum):

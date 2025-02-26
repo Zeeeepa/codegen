@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from enum import IntEnum, IntFlag, auto, unique
+
 from dataclasses_json import dataclass_json
-from codegen.shared.decorators.docs import apidoc
+
 from codegen.sdk.core.detached_symbols.function_call import FunctionCall
 from codegen.sdk.core.export import Export
 from codegen.sdk.core.expressions import Name
@@ -8,7 +10,7 @@ from codegen.sdk.core.expressions.chained_attribute import ChainedAttribute
 from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.import_resolution import Import
 from codegen.sdk.core.symbol import Symbol
-from enum import IntEnum, IntFlag, auto, unique
+from codegen.shared.decorators.docs import apidoc
 
 
 @unique
@@ -27,6 +29,7 @@ class UsageType(IntFlag):
     CHAINED = auto()
     INDIRECT = auto()
     ALIASED = auto()
+
 
 @apidoc
 class UsageKind(IntEnum):
@@ -61,6 +64,7 @@ class UsageKind(IntEnum):
     IMPORTED = auto()
     IMPORTED_WILDCARD = auto()
     DEFAULT_VALUE = auto()
+
 
 @apidoc
 @dataclass_json

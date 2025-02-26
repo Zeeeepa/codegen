@@ -895,8 +895,8 @@ iconType: "solid"
     </Tip>
   </Accordion>
   <Accordion title="Can I use Codegen with my existing tools?" icon="screwdriver-wrench">
-    Yes - [by design](/introduction/guiding-principles#python-first-composability). 
-    
+    Yes - [by design](/introduction/guiding-principles#python-first-composability).
+
     Codegen works like any other python package. It works alongside your IDE, version control system, and other development tools.
   </Accordion>
   <Accordion
@@ -2495,7 +2495,7 @@ for module, imports in module_imports.items():
 
 <Note>
 Always check if imports resolve to external modules before modification to avoid breaking third-party package imports.
-</Note> 
+</Note>
 
 ## Import Statements vs Imports
 
@@ -2697,7 +2697,7 @@ for exp in file.exports:
         # Get original and current symbols
         current = exp.exported_symbol
         original = exp.resolved_symbol
-        
+
         print(f"Re-exporting {original.name} from {exp.from_file.filepath}")
         print(f"Through: {' -> '.join(e.file.filepath for e in exp.export_chain)}")
 ```
@@ -2747,7 +2747,7 @@ for from_file, exports in file_exports.items():
 
 <Note>
 When managing exports, consider the impact on your module's public API. Not all symbols that can be exported should be exported.
-</Note> 
+</Note>
 
 ---
 title: "Inheritable Behaviors"
@@ -3240,9 +3240,9 @@ If `A` depends on `B`, then `B` is used by `A`. This relationship is tracked in 
 
 flowchart LR
     B(BaseClass)
-    
-    
-    
+
+
+
     A(MyClass)
     B ---| used by |A
     A ---|depends on |B
@@ -5565,7 +5565,7 @@ for call in old_api.call_sites:
         f"data={call.get_arg_by_parameter_name('input').value}",
         f"timeout={call.get_arg_by_parameter_name('wait').value}"
     ]
-    
+
     # Replace the old call with the new API
     call.replace(f"new_process_data({', '.join(args)})")
 ```
@@ -5579,10 +5579,10 @@ When updating chained method calls, like database queries or builder patterns:
 for execute_call in codebase.function_calls:
     if execute_call.name != "execute":
         continue
-        
+
     # Get the full chain
     chain = execute_call.call_chain
-    
+
     # Example: Add .timeout() before .execute()
     if "timeout" not in {call.name for call in chain}:
         execute_call.insert_before("timeout(30)")
@@ -5601,45 +5601,45 @@ Here's a comprehensive example:
 ```python
 def migrate_api_v1_to_v2(codebase):
     old_api = codebase.get_function("create_user_v1")
-    
+
     # Document all existing call patterns
     call_patterns = {}
     for call in old_api.call_sites:
         args = [arg.source for arg in call.args]
         pattern = ", ".join(args)
         call_patterns[pattern] = call_patterns.get(pattern, 0) + 1
-    
+
     print("Found call patterns:")
     for pattern, count in call_patterns.items():
         print(f"  {pattern}: {count} occurrences")
-    
+
     # Create new API version
     new_api = old_api.copy()
     new_api.rename("create_user_v2")
-    
+
     # Update parameter types
     new_api.get_parameter("email").type = "EmailStr"
     new_api.get_parameter("role").type = "UserRole"
-    
+
     # Add new required parameters
     new_api.add_parameter("tenant_id: UUID")
-    
+
     # Update all call sites
     for call in old_api.call_sites:
         # Get current arguments
         email_arg = call.get_arg_by_parameter_name("email")
         role_arg = call.get_arg_by_parameter_name("role")
-        
+
         # Build new argument list with type conversions
         new_args = [
             f"email=EmailStr({email_arg.value})",
             f"role=UserRole({role_arg.value})",
             "tenant_id=get_current_tenant_id()"
         ]
-        
+
         # Replace old call with new version
         call.replace(f"create_user_v2({', '.join(new_args)})")
-    
+
     # Add deprecation notice to old version
     old_api.add_decorator('@deprecated("Use create_user_v2 instead")')
 
@@ -5661,10 +5661,10 @@ migrate_api_v1_to_v2(codebase)
    ```python
    # First update parameter names
    param.rename("new_name")
-   
+
    # Then update types
    param.type = "new_type"
-   
+
    # Finally update call sites
    for call in api.call_sites:
        # ... update calls
@@ -5674,7 +5674,7 @@ migrate_api_v1_to_v2(codebase)
    ```python
    # Add new parameter with default
    api.add_parameter("new_param: str = None")
-   
+
    # Later make it required
    api.get_parameter("new_param").remove_default()
    ```
@@ -5689,7 +5689,7 @@ migrate_api_v1_to_v2(codebase)
 
 <Note>
 Remember to test thoroughly after making bulk changes to APIs. While Codegen ensures syntactic correctness, you'll want to verify the semantic correctness of the changes.
-</Note> 
+</Note>
 
 ---
 title: "Organizing Your Codebase"
@@ -5977,16 +5977,16 @@ from collections import defaultdict
 # Create a graph of file dependencies
 def create_dependency_graph():
     G = nx.DiGraph()
-    
+
     for file in codebase.files:
         # Add node for this file
         G.add_node(file.filepath)
-        
+
         # Add edges for each import
         for imp in file.imports:
             if imp.from_file:  # Skip external imports
                 G.add_edge(file.filepath, imp.from_file.filepath)
-    
+
     return G
 
 # Create and analyze the graph
@@ -6015,18 +6015,18 @@ def break_circular_dependency(cycle):
     # Get the first two files in the cycle
     file1 = codebase.get_file(cycle[0])
     file2 = codebase.get_file(cycle[1])
-    
+
     # Create a shared module for common code
     shared_dir = "shared"
     if not codebase.has_directory(shared_dir):
         codebase.create_directory(shared_dir)
-    
+
     # Find symbols used by both files
     shared_symbols = []
     for symbol in file1.symbols:
         if any(usage.file == file2 for usage in symbol.usages):
             shared_symbols.append(symbol)
-    
+
     # Move shared symbols to a new file
     if shared_symbols:
         shared_file = codebase.create_file(f"{shared_dir}/shared_types.py")
@@ -6048,7 +6048,7 @@ def organize_file_imports(file):
     std_lib_imports = []
     third_party_imports = []
     local_imports = []
-    
+
     for imp in file.imports:
         if imp.is_standard_library:
             std_lib_imports.append(imp)
@@ -6056,26 +6056,26 @@ def organize_file_imports(file):
             third_party_imports.append(imp)
         else:
             local_imports.append(imp)
-    
+
     # Sort each group
     for group in [std_lib_imports, third_party_imports, local_imports]:
         group.sort(key=lambda x: x.module_name)
-    
+
     # Remove all existing imports
     for imp in file.imports:
         imp.remove()
-    
+
     # Add imports back in organized groups
     if std_lib_imports:
         for imp in std_lib_imports:
             file.add_import_from_import_string(imp.source)
         file.insert_after_imports("")  # Add newline
-        
+
     if third_party_imports:
         for imp in third_party_imports:
             file.add_import_from_import_string(imp.source)
         file.insert_after_imports("")  # Add newline
-        
+
     if local_imports:
         for imp in local_imports:
             file.add_import_from_import_string(imp.source)
@@ -6094,22 +6094,22 @@ from collections import defaultdict
 
 def analyze_module_coupling():
     coupling_scores = defaultdict(int)
-    
+
     for file in codebase.files:
         # Count unique files imported from
         imported_files = {imp.from_file for imp in file.imports if imp.from_file}
         coupling_scores[file.filepath] = len(imported_files)
-        
+
         # Count files that import this file
-        importing_files = {usage.file for symbol in file.symbols 
+        importing_files = {usage.file for symbol in file.symbols
                          for usage in symbol.usages if usage.file != file}
         coupling_scores[file.filepath] += len(importing_files)
-    
+
     # Sort by coupling score
-    sorted_files = sorted(coupling_scores.items(), 
-                         key=lambda x: x[1], 
+    sorted_files = sorted(coupling_scores.items(),
+                         key=lambda x: x[1],
                          reverse=True)
-    
+
     print("\n🔍 Module Coupling Analysis:")
     print("\nMost coupled files:")
     for filepath, score in sorted_files[:5]:
@@ -6127,9 +6127,9 @@ def extract_shared_code(file, min_usages=3):
     # Find symbols used by multiple files
     for symbol in file.symbols:
         # Get unique files using this symbol
-        using_files = {usage.file for usage in symbol.usages 
+        using_files = {usage.file for usage in symbol.usages
                       if usage.file != file}
-        
+
         if len(using_files) >= min_usages:
             # Create appropriate shared module
             module_name = determine_shared_module(symbol)
@@ -6137,7 +6137,7 @@ def extract_shared_code(file, min_usages=3):
                 shared_file = codebase.create_file(f"shared/{module_name}.py")
             else:
                 shared_file = codebase.get_file(f"shared/{module_name}.py")
-            
+
             # Move symbol to shared module
             symbol.move_to_file(shared_file, strategy="update_all_imports")
 
@@ -7246,7 +7246,7 @@ Let's break down how this works:
         if export.is_reexport() and export.is_default_export():
             print(f"  🔄 Converting default export '{export.name}'")
     ```
-    
+
     The code identifies default exports by checking:
     1. If it's a re-export (`is_reexport()`)
     2. If it's a default export (`is_default_export()`)
@@ -7354,7 +7354,7 @@ for file in codebase.files:
 
     print(f"✨ Fixed exports in {target_file.filepath}")
 
-``` 
+```
 
 ---
 title: "Creating Documentation"
@@ -7443,11 +7443,11 @@ for directory in codebase.directories:
     # Skip test, sql and alembic directories
     if any(x in directory.path.lower() for x in ['test', 'sql', 'alembic']):
         continue
-        
+
     # Get undecorated functions
     funcs = [f for f in directory.functions if not f.is_decorated]
     total = len(funcs)
-    
+
     # Only analyze dirs with >10 functions
     if total > 10:
         documented = sum(1 for f in funcs if f.docstring)
@@ -7462,12 +7462,12 @@ for directory in codebase.directories:
 if dir_stats:
     lowest_dir = min(dir_stats.items(), key=lambda x: x[1]['coverage'])
     path, stats = lowest_dir
-    
+
     print(f"📉 Lowest coverage directory: '{path}'")
     print(f"  • Total functions: {stats['total']}")
     print(f"  • Documented: {stats['documented']}")
     print(f"  • Coverage: {stats['coverage']:.1f}%")
-    
+
     # Print all directory stats for comparison
     print("\n📊 All directory coverage rates:")
     for path, stats in sorted(dir_stats.items(), key=lambda x: x[1]['coverage']):
@@ -8755,21 +8755,21 @@ Moves all Enum classes across the codebase into a single enums.py file in each d
 for file in codebase.files:
     if file.name == "enums.py":
         continue
-        
+
     # Find enum classes in the file
     enum_classes = [cls for cls in file.classes if cls.is_subclass_of("Enum")]
-    
+
     if enum_classes:
         # Get directory path and create enums.py path
         parent_dir = "/".join(file.filepath.split("/")[:-1])
         enums_path = f"{parent_dir}/enums.py"
-        
+
         # Get or create enums.py file
         if not codebase.has_file(enums_path):
             dst_file = codebase.create_file(enums_path, "from enum import Enum\n\n")
         else:
             dst_file = codebase.get_file(enums_path)
-            
+
         # Move each enum class
         for enum_class in enum_classes:
             enum_class.move_to_file(dst_file, include_dependencies=True, strategy="add_back_edge")
@@ -8820,7 +8820,7 @@ This codemod moves all enums (Enum subclasses) to a designated enums.py file wit
     file they're defined in. It ensures that the enums are moved to the correct file and creates the enums.py file if
     it does not exist. Furthermore, it flags the class for movement which is necessary for splitting up the
     modifications into separate pull requests.
-    
+
 ```python
 for cls in codebase.classes:
     # Check if the class is a subclass of Enum
@@ -8871,10 +8871,10 @@ for file_path, symbols in symbol_mappings.items():
     if not codebase.has_file(file_path):
         print(f":green_book: Creating file: {file_path}")
         codebase.create_file(file_path, "")
-    
+
     # Retrieve the destination file object for moving symbols
     destination_file = codebase.get_file(file_path)
-    
+
     # For each symbol in the list, retrieve and move it to the destination file
     for symbol_name in symbols:
         # Get the symbol object from the codebase
@@ -8907,7 +8907,7 @@ for function in codebase.functions:
 This codemod moves functions that starts with "pylsp_" in their names to a new file called pylsp_shared.py
 
     When it moves them to this file, all imports across the codebase will get updated to reflect the new location.
-    
+
 ```python
 new_file: SourceFile = codebase.create_file("pylsp/pylsp_shared.py", "")
 for file in codebase.files:
@@ -8921,7 +8921,7 @@ for file in codebase.files:
 ### Example 10: Refactor Enums to Dedicated File
 Moves any enums within a file into a file called: `enums.py`. Creates the `enums.py` if it does not
         exist. If the original file only contains enums this skill renames it to `enums.py`
-        
+
 ```python
 # for each file in the codebase
 for file in codebase.files:
@@ -8954,7 +8954,7 @@ Moves specified symbols from the source file to the destination file.
     This code snippet retrieves a function and a class from the source file and stores them in a list. It then
     iterates over this list, moving each symbol to the destination file while including dependencies and updating all
     imports accordingly.
-    
+
 ```python
 # get the source file where the symbols are defined
 source_file = codebase.get_file("codegen-backend/app/utils/slack/streaming.py")
@@ -8971,7 +8971,7 @@ for symbol in symbols_to_move:
 ### Example 12: Remove Classes Without Usage
 Iterates through all files in the codebase and checks each class for usages. If a class has no usages,
     it prints a message indicating that the class is being removed and then removes the class from the file.
-    
+
 ```python
 for cls in codebase.classes:
     # Check if the class has no usages
@@ -9052,7 +9052,7 @@ for file_path in TEST_FILES:
         for test_function in file.functions:
             # Create a new file for each test function using its name
             new_file = codebase.create_file(f'{file.directory.path}/{test_function.name}.py', sync=False)
-            
+
             print(f'🚠 🚠 Moving `{test_function.name}` to new file `{new_file.name}`')
             # Move the test function to the newly created file
             test_function.move_to_file(new_file)
@@ -9095,7 +9095,7 @@ This codemod replaces all imports of a legacy function with it's new replacement
         from new_mode import func
 
         func()
-    
+
 ```python
 
 # for each file in the codebase
@@ -9106,13 +9106,13 @@ for file in codebase.files:
         if f_call.source == 'datetime.utcnow()':
             # update the function call
             f_call.edit('datetime.now(datetime.UTC)')
-    
+
 ```
 
 ### Example 19: Replace Indirect with Direct Imports
 This codemod removes all indirect imports from a codebase (i.e. an import that points to another import),
     replacing them instead with direct imports
-    
+
 ```python
 for file in codebase.files:
     if "codegen-backend/app/db" not in file.file_path and "codegen-backend/app/models" not in file.file_path:
@@ -9157,7 +9157,7 @@ for cls in codebase.classes:
         # Add the class as a node in the graph
         name = cls.name.replace('Model', '')
         G.add_node(name, color='red' if 'Linear' in cls.name else None, code=cls.source)
-        
+
         # Iterate through the attributes of the class
         for attr in cls.attributes:
             # Check if the attribute's source contains a ForeignKey definition
@@ -9200,7 +9200,7 @@ for imported in codebase.imports:
 Converts all functions to use named kwargs if there are more than >= 2 args being used.
 
     In general you can use FunctionCall.convert_args_to_kwargs() once you have filtered properly
-    
+
 ```python
 for file in codebase.files:
     # TODO: doesn't handle global function calls
@@ -9249,7 +9249,7 @@ Moves the symbol to the specified destination file.
 
     If include_dependencies is set to True, any dependencies associated with the symbol will also be moved to the
     destination file.
-    
+
 ```python
 # symbol to move
 my_symbol = codebase.get_symbol("report_install_progress")

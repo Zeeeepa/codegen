@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional
 from codegen.sdk.core.autocommit.constants import AutoCommitSymbol
 from codegen.sdk.core.node_id_factory import NodeId
 from pathlib import Path
@@ -20,6 +20,7 @@ class AutoCommitNode:
     generation: int
     new_id: NodeId | None = None
     new_file: Optional["File"] = None
+
 
 @dataclass
 class PendingFiles:

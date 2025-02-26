@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from codegen.sdk.core.detached_symbols.function_call import FunctionCall
 
 

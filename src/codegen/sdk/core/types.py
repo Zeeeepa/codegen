@@ -1,36 +1,24 @@
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Generic, Literal, Self, TypeVar, override
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.symbol import Symbol
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Generic, Protocol, Self, TypeVar
+from typing import Generic, Self, TypeVar
+
 from rich.console import Console
-from codegen.sdk.core.expressions.value import Value
-from codegen.sdk.utils import find_first_function_descendant
 from tree_sitter import Node as TSNode
+
 from codegen.sdk.codebase.codebase_context import CodebaseContext
 from codegen.sdk.codebase.node_classes.node_classes import NodeClasses
-from codegen.sdk.core.expressions.type import Type
-from codegen.sdk.core.node_id_factory import NodeId
-from codegen.sdk.python.detached_symbols.code_block import PyCodeBlock
-from codegen.sdk.typescript.detached_symbols.code_block import TSCodeBlock
 from codegen.sdk.core.expressions.placeholder_type import PlaceholderType
+from codegen.sdk.core.expressions.type import Type
+from codegen.sdk.core.expressions.value import Value
+from codegen.sdk.core.external_module import ExternalModule
+from codegen.sdk.core.node_id_factory import NodeId
 from codegen.sdk.core.statements.export_statement import ExportStatement
-from codegen.sdk.core.statements.symbol_statement import SymbolStatement
-from codegen.sdk.typescript.function import _VALID_TYPE_NAMES
-from codegen.sdk.typescript.statements.assignment_statement import TSAssignmentStatement
-from codegen.sdk.typescript.statements.attribute import TSAttribute
-from codegen.sdk.typescript.statements.comment import TSComment
-from codegen.sdk.typescript.statements.for_loop_statement import TSForLoopStatement
-from codegen.sdk.typescript.statements.if_block_statement import TSIfBlockStatement
-from codegen.sdk.typescript.statements.labeled_statement import TSLabeledStatement
-from codegen.sdk.typescript.statements.switch_statement import TSSwitchStatement
-from codegen.sdk.typescript.statements.try_catch_statement import TSTryCatchStatement
-from codegen.sdk.typescript.statements.while_statement import TSWhileStatement
 from codegen.sdk.core.statements.expression_statement import ExpressionStatement
 from codegen.sdk.core.statements.raise_statement import RaiseStatement
 from codegen.sdk.core.statements.return_statement import ReturnStatement
 from codegen.sdk.core.statements.statement import Statement
+from codegen.sdk.core.statements.symbol_statement import SymbolStatement
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.python.detached_symbols.code_block import PyCodeBlock
 from codegen.sdk.python.statements.assignment_statement import PyAssignmentStatement
 from codegen.sdk.python.statements.attribute import PyAttribute
 from codegen.sdk.python.statements.break_statement import PyBreakStatement
@@ -42,10 +30,21 @@ from codegen.sdk.python.statements.pass_statement import PyPassStatement
 from codegen.sdk.python.statements.try_catch_statement import PyTryCatchStatement
 from codegen.sdk.python.statements.while_statement import PyWhileStatement
 from codegen.sdk.python.statements.with_statement import WithStatement
-from codegen.sdk.core.class_definition import Class
-
+from codegen.sdk.typescript.detached_symbols.code_block import TSCodeBlock
+from codegen.sdk.typescript.function import _VALID_TYPE_NAMES
+from codegen.sdk.typescript.statements.assignment_statement import TSAssignmentStatement
+from codegen.sdk.typescript.statements.attribute import TSAttribute
+from codegen.sdk.typescript.statements.comment import TSComment
+from codegen.sdk.typescript.statements.for_loop_statement import TSForLoopStatement
+from codegen.sdk.typescript.statements.if_block_statement import TSIfBlockStatement
+from codegen.sdk.typescript.statements.labeled_statement import TSLabeledStatement
+from codegen.sdk.typescript.statements.switch_statement import TSSwitchStatement
+from codegen.sdk.typescript.statements.try_catch_statement import TSTryCatchStatement
+from codegen.sdk.typescript.statements.while_statement import TSWhileStatement
+from codegen.sdk.utils import find_first_function_descendant
 
 TSourceFile = TypeVar("TSourceFile", bound="SourceFile")
+
 
 @dataclass
 class ImportResolution(Generic[TSourceFile]):
@@ -61,9 +60,11 @@ class ImportResolution(Generic[TSourceFile]):
     symbol: Symbol | ExternalModule | None = None  # None when we import the entire file (e.g. `from a.b.c import foo`)
     imports_file: bool = False  # True when we import the entire file (e.g. `from a.b.c import foo`)
 
+
 Expression = TypeVar("Expression", bound="CanParse")
 
 Parent = TypeVar("Parent", bound="Editable")
+
 
 @dataclass
 class Parser(Generic[Expression]):
@@ -127,21 +128,9 @@ class Parser(Generic[Expression]):
         return PlaceholderType(node, file_node_id, ctx, parent)
 
     def parse_ts_statements(self, node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TSCodeBlock) -> list[Statement]:
-        from codegen.sdk.core.statements.export_statement import ExportStatement
         from codegen.sdk.core.statements.expression_statement import ExpressionStatement
-        from codegen.sdk.core.statements.return_statement import ReturnStatement
         from codegen.sdk.core.statements.statement import Statement
         from codegen.sdk.core.statements.symbol_statement import SymbolStatement
-        from codegen.sdk.typescript.function import _VALID_TYPE_NAMES
-        from codegen.sdk.typescript.statements.assignment_statement import TSAssignmentStatement
-        from codegen.sdk.typescript.statements.attribute import TSAttribute
-        from codegen.sdk.typescript.statements.comment import TSComment
-        from codegen.sdk.typescript.statements.for_loop_statement import TSForLoopStatement
-        from codegen.sdk.typescript.statements.if_block_statement import TSIfBlockStatement
-        from codegen.sdk.typescript.statements.labeled_statement import TSLabeledStatement
-        from codegen.sdk.typescript.statements.switch_statement import TSSwitchStatement
-        from codegen.sdk.typescript.statements.try_catch_statement import TSTryCatchStatement
-        from codegen.sdk.typescript.statements.while_statement import TSWhileStatement
 
         statements = []
 
@@ -224,21 +213,8 @@ class Parser(Generic[Expression]):
         return statements
 
     def parse_py_statements(self, node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock) -> list[Statement]:
-        from codegen.sdk.core.statements.expression_statement import ExpressionStatement
-        from codegen.sdk.core.statements.raise_statement import RaiseStatement
         from codegen.sdk.core.statements.return_statement import ReturnStatement
         from codegen.sdk.core.statements.statement import Statement
-        from codegen.sdk.python.statements.assignment_statement import PyAssignmentStatement
-        from codegen.sdk.python.statements.attribute import PyAttribute
-        from codegen.sdk.python.statements.break_statement import PyBreakStatement
-        from codegen.sdk.python.statements.comment import PyComment
-        from codegen.sdk.python.statements.for_loop_statement import PyForLoopStatement
-        from codegen.sdk.python.statements.if_block_statement import PyIfBlockStatement
-        from codegen.sdk.python.statements.match_statement import PyMatchStatement
-        from codegen.sdk.python.statements.pass_statement import PyPassStatement
-        from codegen.sdk.python.statements.try_catch_statement import PyTryCatchStatement
-        from codegen.sdk.python.statements.while_statement import PyWhileStatement
-        from codegen.sdk.python.statements.with_statement import WithStatement
 
         statements = []
 

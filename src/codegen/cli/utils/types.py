@@ -1,10 +1,11 @@
-from dataclasses import dataclass
-from pathlib import Path
-from codegen.cli.api.webapp_routes import generate_webapp_url
-from codegen.cli.utils.schema import CodemodConfig
 import dataclasses
 import importlib
 import importlib.util
+from dataclasses import dataclass
+from pathlib import Path
+
+from codegen.cli.api.webapp_routes import generate_webapp_url
+from codegen.cli.utils.schema import CodemodConfig
 
 
 @dataclass
@@ -39,6 +40,7 @@ class Codemod:
         if not path.exists():
             return ""
         return path.read_text()
+
 
 @dataclass
 class DecoratedFunction:
