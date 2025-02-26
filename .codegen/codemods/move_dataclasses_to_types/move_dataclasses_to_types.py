@@ -8,11 +8,16 @@ from codegen.sdk.core.codebase import Codebase
 def run(codebase: Codebase):
     # Only process files in src/codegen
     src_codegen_prefix = "src/codegen"
+    
+    # Special cases that should not be moved
+    special_cases = [
+        "src/codegen/sdk/core/dataclasses/usage.py"  # UsageType and UsageKind are widely used
+    ]
 
     # For each file in the codebase
     for file in codebase.files:
-        # Skip files that are not in src/codegen
-        if not file.filepath.startswith(src_codegen_prefix):
+        # Skip files that are not in src/codegen or are in special cases
+        if not file.filepath.startswith(src_codegen_prefix) or file.filepath in special_cases:
             continue
 
         # For each class in the file
