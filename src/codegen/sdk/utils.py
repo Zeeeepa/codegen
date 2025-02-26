@@ -81,7 +81,7 @@ class XMLUtils:
             return [match.strip(f"<{tag}>").strip(f"</{tag}>") for match in matches]
 
 
-def find_first_function_descendant(node: TSNode) -> TSNode:
+def find_first_function_descendant(node: TSNode) -> TSNode | None:
     type_names = [function_type.value for function_type in TSFunctionTypeNames]
     return find_first_descendant(node=node, type_names=type_names, max_depth=2)
 
@@ -103,7 +103,10 @@ def find_first_ancestor(node: TSNode, type_names: list[str], max_depth: int | No
     while node is not None and (max_depth is None or depth <= max_depth):
         if node.type in type_names:
             return node
-        node = node.parent
+        parent = node.parent
+        if parent is None:
+            break
+        node = parent
         depth += 1
     return None
 
@@ -132,6 +135,7 @@ def get_first_identifier(node: TSNode) -> TSNode | None:
 
 def descendant_for_byte_range(node: TSNode, start_byte: int, end_byte: int, allow_comment_boundaries: bool = True) -> TSNode | None:
     """Proper implementation of descendant_for_byte_range, which returns the lowest node that contains the byte range."""
+    # Type checking will be handled at runtime
     ts_match = node.descendant_for_byte_range(start_byte, end_byte)
 
     # We don't care if the match overlaps with comments
