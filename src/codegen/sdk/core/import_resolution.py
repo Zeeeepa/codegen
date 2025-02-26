@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from codegen.sdk.core.types import TSourceFile
+from codegen.sdk.core.types import ImportResolution
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Generic, Literal, Self, TypeVar, override
@@ -34,24 +36,6 @@ if TYPE_CHECKING:
     from codegen.sdk.core.interfaces.importable import Importable
     from codegen.sdk.core.node_id_factory import NodeId
     from codegen.sdk.core.symbol import Symbol
-
-
-TSourceFile = TypeVar("TSourceFile", bound="SourceFile")
-
-
-@dataclass
-class ImportResolution(Generic[TSourceFile]):
-    """Represents the resolution of an import statement to a symbol defined in another file.
-
-    Has the following properties:
-    - from_file: Optional[SourceFile]. None when import resolves to an external module
-    - symbol: Optional[Union[Symbol, ExternalModule]]. None when import resolves to an external module
-    - imports_file: bool. True when we import the entire file (e.g. `from a.b.c import foo`)
-    """
-
-    from_file: TSourceFile | None = None  # SourceFile object. None when import resolves to an external module
-    symbol: Symbol | ExternalModule | None = None  # None when we import the entire file (e.g. `from a.b.c import foo`)
-    imports_file: bool = False  # True when we import the entire file (e.g. `from a.b.c import foo`)
 
 
 TSourceFile = TypeVar("TSourceFile", bound="SourceFile")

@@ -1,21 +1,9 @@
+from codegen.shared.decorators.types import DocumentedObject
 import bisect
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TypeVar
-
-
-@dataclass
-class DocumentedObject:
-    name: str
-    module: str
-    object: any
-
-    def __lt__(self, other):
-        return self.module < other.module
-
-    def signature(self) -> str:
-        return f"{self.name}"
 
 
 apidoc_objects: list[DocumentedObject] = []

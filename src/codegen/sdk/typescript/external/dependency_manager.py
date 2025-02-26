@@ -1,3 +1,4 @@
+from codegen.sdk.typescript.external.types import PackageJsonData
 import concurrent.futures
 import json
 import logging
@@ -22,13 +23,6 @@ class InstallerType(Enum):
     YARN = "yarn"
     PNPM = "pnpm"
     UNKNOWN = "unknown"
-
-
-@dataclass
-class PackageJsonData:
-    dependencies: dict[str, str]
-    dev_dependencies: dict[str, str]
-    package_data: dict
 
 
 class TypescriptDependencyManager(DependencyManager):

@@ -1,18 +1,9 @@
 """Consistent spinner styles for the CLI."""
 
+from codegen.cli.rich.types import SpinnerConfig
 from dataclasses import dataclass
 
 from rich.status import Status
-
-
-@dataclass
-class SpinnerConfig:
-    """Configuration for a consistent spinner style."""
-
-    text: str
-    spinner: str = "dots"
-    style: str = "bold"
-    spinner_style: str = "blue"
 
 
 def create_spinner(text: str) -> Status:

@@ -1,82 +1,10 @@
+from codegen.cli.utils.types import DecoratedFunction
 import ast
 import dataclasses
 import importlib
 import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
-
-
-@dataclass
-class DecoratedFunction:
-    """Represents a function decorated with @codegen."""
-
-    name: str
-    source: str
-    lint_mode: bool
-    lint_user_whitelist: list[str]
-    filepath: Path | None = None
-    parameters: list[tuple[str, str | None]] = dataclasses.field(default_factory=list)
-    arguments_type_schema: dict | None = None
-
-    def run(self, codebase) -> str | None:
-        """Import and run the actual function from its file.
-
-        Args:
-            codebase: The codebase to run the function on
-
-        Returns:
-            The result of running the function (usually a diff string)
-        """
-        if not self.filepath:
-            msg = "Cannot run function without filepath"
-            raise ValueError(msg)
-
-        # Import the module containing the function
-        spec = importlib.util.spec_from_file_location("module", self.filepath)
-        if not spec or not spec.loader:
-            msg = f"Could not load module from {self.filepath}"
-            raise ImportError(msg)
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        # Find the decorated function
-        for item_name in dir(module):
-            item = getattr(module, item_name)
-            if hasattr(item, "__codegen_name__") and item.__codegen_name__ == self.name:
-                # Found our function, run it
-                return item(codebase)
-
-        msg = f"Could not find function '{self.name}' in {self.filepath}"
-        raise ValueError(msg)
-
-    def validate(self) -> None:
-        """Verify that this function can be imported and accessed.
-
-        Raises:
-            ValueError: If the function can't be found or imported
-        """
-        if not self.filepath:
-            msg = "Cannot validate function without filepath"
-            raise ValueError(msg)
-
-        # Import the module containing the function
-        spec = importlib.util.spec_from_file_location("module", self.filepath)
-        if not spec or not spec.loader:
-            msg = f"Could not load module from {self.filepath}"
-            raise ImportError(msg)
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        # Find the decorated function
-        for item_name in dir(module):
-            item = getattr(module, item_name)
-            if hasattr(item, "__codegen_name__") and item.__codegen_name__ == self.name:
-                return  # Found it!
-
-        msg = f"Could not find function '{self.name}' in {self.filepath}"
-        raise ValueError(msg)
 
 
 class CodegenFunctionVisitor(ast.NodeVisitor):
