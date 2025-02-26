@@ -4,7 +4,6 @@ import rich
 import rich_click as click
 
 from codegen.cli.api.client import RestAPI
-from codegen.cli.auth.constants import PROMPTS_DIR
 from codegen.cli.auth.session import CodegenSession
 from codegen.cli.auth.token_manager import get_current_token
 from codegen.cli.codemod.convert import convert_to_cli

@@ -1,9 +1,7 @@
 import ast
 import logging
 import os
-import re
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 
 import astor
 

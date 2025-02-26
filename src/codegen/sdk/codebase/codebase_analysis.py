@@ -1,11 +1,8 @@
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.external_module import ExternalModule
 from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
 from codegen.sdk.core.import_resolution import Import
 from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
+from codegen.sdk.enums import SymbolType
 
 
 def get_symbol_summary(symbol: Symbol) -> str:
