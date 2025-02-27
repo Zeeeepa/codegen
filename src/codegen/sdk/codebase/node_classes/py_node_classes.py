@@ -15,7 +15,6 @@ from codegen.sdk.core.expressions.subscript_expression import SubscriptExpressio
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.expressions.unpack import Unpack
 from codegen.sdk.core.statements.comment import Comment
-from codegen.sdk.core.symbol_groups.dict import Dict
 from codegen.sdk.core.symbol_groups.list import List
 from codegen.sdk.core.symbol_groups.tuple import Tuple
 from codegen.sdk.core.symbol_groups.type_parameters import TypeParameters

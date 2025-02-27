@@ -9,14 +9,14 @@ params = {'a': 1, 'b': 2, **extra_props}
 """
     with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={"test.py": file}) as codebase:
         file = codebase.get_file("test.py")
-        
+
         # Get the params assignment
         params = file.get_symbol("params")
         assert params is not None
-        
+
         # Get the statement (PyDict) from the params assignment
         params_dict = params.value
-        
+
         # Check that we can access the regular key-value pairs
         assert params_dict["a"] == "1"
         assert params_dict["b"] == "2"
