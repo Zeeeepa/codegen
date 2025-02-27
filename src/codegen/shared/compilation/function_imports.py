@@ -195,6 +195,7 @@ from codegen.sdk.typescript.symbol import TSSymbol
 from codegen.sdk.typescript.symbol_groups.comment_group import TSCommentGroup
 from codegen.sdk.typescript.symbol_groups.dict import TSDict
 from codegen.sdk.typescript.symbol_groups.dict import TSPair
+from codegen.sdk.typescript.symbol_groups.dict import merge
 from codegen.sdk.typescript.ts_config import TSConfig
 from codegen.sdk.typescript.type_alias import TSTypeAlias
 """

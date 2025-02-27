@@ -147,6 +147,7 @@ extend-generics = [
   "codegen.sdk.typescript.statements.block_statement.TSBlockStatement",
   "codegen.sdk.typescript.statements.catch_statement.TSCatchStatement",
   "codegen.sdk.typescript.statements.if_block_statement.TSIfBlockStatement",
+  "codegen.sdk.typescript.symbol_groups.dict.merge",
   "codegen.sdk.typescript.symbol_groups.dict.TSDict",
   "codegen.sdk.core.codebase.PyCodebaseType",
   "codegen.sdk.core.codebase.TSCodebaseType",
