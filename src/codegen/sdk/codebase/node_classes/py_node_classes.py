@@ -37,9 +37,11 @@ def parse_subscript(node: TSNode, file_node_id, ctx, parent):
     return SubscriptExpression(node, file_node_id, ctx, parent)
 
 
+from codegen.sdk.python.symbol_groups.dict import PyDict
+
 PyExpressionMap = {
     "string": PyString,
-    "dictionary": Dict,
+    "dictionary": PyDict,
     "list": List,
     "name": Name,
     "true": Boolean,
