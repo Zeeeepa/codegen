@@ -28,15 +28,13 @@ from codegen.sdk.python.expressions.named_type import PyNamedType
 from codegen.sdk.python.expressions.string import PyString
 from codegen.sdk.python.expressions.union_type import PyUnionType
 from codegen.sdk.python.statements.import_statement import PyImportStatement
+from codegen.sdk.python.symbol_groups.dict import PyDict
 
 
 def parse_subscript(node: TSNode, file_node_id, ctx, parent):
     if (node.prev_named_sibling and node.prev_named_sibling.text.decode("utf-8") == "TypeAlias") or isinstance(parent, Type):
         return PyGenericType(node, file_node_id, ctx, parent)
     return SubscriptExpression(node, file_node_id, ctx, parent)
-
-
-from codegen.sdk.python.symbol_groups.dict import PyDict
 
 PyExpressionMap = {
     "string": PyString,
