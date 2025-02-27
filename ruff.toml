@@ -144,6 +144,7 @@ extend-generics = [
   "codegen.sdk.enums.ImportType",
   "codegen.sdk.python.statements.if_block_statement.PyIfBlockStatement",
   "codegen.sdk.python.statements.with_statement.WithStatement",
+  "codegen.sdk.python.symbol_groups.dict.merge",
   "codegen.sdk.typescript.statements.block_statement.TSBlockStatement",
   "codegen.sdk.typescript.statements.catch_statement.TSCatchStatement",
   "codegen.sdk.typescript.statements.if_block_statement.TSIfBlockStatement",
