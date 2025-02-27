@@ -16,6 +16,7 @@ params = {'a': 1, 'b': 2, **extra_props}
 
         # Get the statement (PyDict) from the params assignment
         params_dict = params.value
+        assert params_dict is not None
 
         # Check that we can access the regular key-value pairs
         assert params_dict["a"] == "1"

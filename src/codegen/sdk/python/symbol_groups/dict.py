@@ -125,4 +125,7 @@ class PyDict(Dict, HasAttribute):
             with get_codebase_session(tmpdir=tmpdir, files={"temp.py": f"temp = {merged_source}"}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
                 file = codebase.get_file("temp.py")
                 temp = file.get_symbol("temp")
+                if temp is None:
+                    msg = "Failed to get symbol 'temp' from temporary file"
+                    raise ValueError(msg)
                 return temp.value
