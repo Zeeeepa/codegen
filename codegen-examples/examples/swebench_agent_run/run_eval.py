@@ -1,13 +1,18 @@
 import asyncio
 import json
 import traceback
-from pathlib import Path
 import uuid
-import modal
-import click
 from datetime import datetime
-from codegen.extensions.swebench.utils import SWEBenchDataset, SweBenchExample, get_swe_bench_examples
+from pathlib import Path
+
+import click
+import modal
 from codegen.extensions.swebench.report import generate_report
+from codegen.extensions.swebench.utils import (
+    SWEBenchDataset,
+    SweBenchExample,
+    get_swe_bench_examples,
+)
 
 PREDS_DNAME = Path(__file__).parent / "predictions"
 LOG_DIR = Path(__file__).parent / "logs"
@@ -61,11 +66,26 @@ async def process_batch(examples: list[SweBenchExample], batch_size=10):
                     print("Traceback:")
                     print("".join(error_info["traceback"]))
 
-                    results.append({"instance_id": example.instance_id, "status": "error", "error_info": error_info})
+                    results.append(
+                        {
+                            "instance_id": example.instance_id,
+                            "status": "error",
+                            "error_info": error_info,
+                        }
+                    )
                 else:
                     if result is None:
                         print(f"Warning: Null result for {example.instance_id}")
-                        results.append({"instance_id": example.instance_id, "status": "error", "error_info": {"error_type": "NullResult", "error_message": "Process returned None"}})
+                        results.append(
+                            {
+                                "instance_id": example.instance_id,
+                                "status": "error",
+                                "error_info": {
+                                    "error_type": "NullResult",
+                                    "error_message": "Process returned None",
+                                },
+                            }
+                        )
                     else:
                         results.append(result)
 
@@ -81,14 +101,24 @@ async def process_batch(examples: list[SweBenchExample], batch_size=10):
                     {
                         "instance_id": example.instance_id,
                         "status": "error",
-                        "error_info": {"error_type": type(e).__name__, "error_message": str(e), "traceback": traceback.format_exc(), "batch_failure": True},
+                        "error_info": {
+                            "error_type": type(e).__name__,
+                            "error_message": str(e),
+                            "traceback": traceback.format_exc(),
+                            "batch_failure": True,
+                        },
                     }
                 )
 
     return results
 
 
-async def run_eval(use_existing_preds: str | None, dataset: str, length: int, instance_id: str | None = None):
+async def run_eval(
+    use_existing_preds: str | None,
+    dataset: str,
+    length: int,
+    instance_id: str | None = None,
+):
     run_id = use_existing_preds or str(uuid.uuid4())
     predictions_dir = PREDS_DNAME / f"results_{run_id}"
     dataset = SWEBenchDataset(dataset)
@@ -155,10 +185,25 @@ async def run_eval(use_existing_preds: str | None, dataset: str, length: int, in
 
 
 @click.command()
-@click.option("--use-existing-preds", help="The run ID of the existing predictions to use.", type=str, default=None)
-@click.option("--dataset", help="The dataset to use.", type=click.Choice([dataset.value for dataset in SWEBenchDataset]), default=SWEBenchDataset.LITE.value)
+@click.option(
+    "--use-existing-preds",
+    help="The run ID of the existing predictions to use.",
+    type=str,
+    default=None,
+)
+@click.option(
+    "--dataset",
+    help="The dataset to use.",
+    type=click.Choice([dataset.value for dataset in SWEBenchDataset]),
+    default=SWEBenchDataset.LITE.value,
+)
 @click.option("--length", help="The number of examples to process.", type=int, default=10)
-@click.option("--instance-id", help="The instance ID of the example to process.", type=str, default=None)
+@click.option(
+    "--instance-id",
+    help="The instance ID of the example to process.",
+    type=str,
+    default=None,
+)
 def run_eval_command(use_existing_preds, dataset, length, instance_id):
     asyncio.run(run_eval(use_existing_preds, dataset, length, instance_id))
 
