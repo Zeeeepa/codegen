@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage
 from langsmith import Client
 
 from codegen.extensions.langchain.agent import create_codebase_agent
+from codegen.extensions.langchain.utils.get_langsmith_url import find_and_print_langsmith_run_url
 
 if TYPE_CHECKING:
     from codegen import Codebase
@@ -83,52 +84,8 @@ class CodeAgent:
 
         # Try to find run IDs in the LangSmith client's recent runs
         try:
-            # Get the most recent runs with proper filter parameters
-            # We need to provide at least one filter parameter as required by the API
-            recent_runs = list(
-                self.langsmith_client.list_runs(
-                    # Use the project name from environment variable
-                    project_name=self.project_name,
-                    # Limit to just the most recent run
-                    limit=1,
-                )
-            )
-
-            if recent_runs and len(recent_runs) > 0:
-                # Make sure we have a valid run object with an id attribute
-                if hasattr(recent_runs[0], "id"):
-                    # Convert the ID to string to ensure it's in the right format
-                    run_id = str(recent_runs[0].id)
-
-                    # Get the run URL using the run_id parameter
-                    run_url = self.get_langsmith_url(run_id=run_id)
-
-                    separator = "=" * 60
-                    print(f"\n{separator}\n🔍 LangSmith Run URL: {run_url}\n{separator}")
-                else:
-                    separator = "=" * 60
-                    print(f"\n{separator}\nRun object has no 'id' attribute: {recent_runs[0]}\n{separator}")
-            else:
-                # If no runs found with project name, try a more general approach
-                # Use a timestamp filter to get recent runs (last 10 minutes)
-                import datetime
-
-                ten_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=10)
-
-                recent_runs = list(self.langsmith_client.list_runs(start_time=ten_minutes_ago.isoformat(), limit=1))
-
-                if recent_runs and len(recent_runs) > 0 and hasattr(recent_runs[0], "id"):
-                    # Convert the ID to string to ensure it's in the right format
-                    run_id = str(recent_runs[0].id)
-
-                    # Get the run URL using the run_id parameter
-                    run_url = self.get_langsmith_url(run_id=run_id)
-
-                    separator = "=" * 60
-                    print(f"\n{separator}\n🔍 LangSmith Run URL: {run_url}\n{separator}")
-                else:
-                    separator = "=" * 60
-                    print(f"\n{separator}\nNo valid runs found\n{separator}")
+            # Find and print the LangSmith run URL
+            find_and_print_langsmith_run_url(self.langsmith_client, self.project_name)
         except Exception as e:
             separator = "=" * 60
             print(f"\n{separator}\nCould not retrieve LangSmith URL: {e}")
@@ -138,32 +95,3 @@ class CodeAgent:
             print(separator)
 
         return result
-
-    def get_langsmith_url(self, run_id: str, project_name: Optional[str] = None) -> str:
-        """Get the URL for a run in LangSmith.
-
-        Args:
-            run_id: The ID of the run
-            project_name: Optional name of the project
-
-        Returns:
-            The URL for the run in LangSmith
-        """
-        # Construct the URL directly using the host URL and run ID
-        # This avoids the issue with the client's get_run_url method expecting a run object
-        host_url = self.langsmith_client._host_url
-        tenant_id = self.langsmith_client._get_tenant_id()
-
-        # If project_name is not provided, use the default one
-        if project_name is None:
-            project_name = self.project_name
-
-        try:
-            # Get the project ID from the project name
-            project_id = self.langsmith_client.read_project(project_name=project_name).id
-            # Construct the URL
-            return f"{host_url}/o/{tenant_id}/projects/p/{project_id}/r/{run_id}?poll=true"
-        except Exception as e:
-            # If we can't get the project ID, construct a URL without it
-            print(f"Could not get project ID for {project_name}: {e}")
-            return f"{host_url}/o/{tenant_id}/r/{run_id}?poll=true"
