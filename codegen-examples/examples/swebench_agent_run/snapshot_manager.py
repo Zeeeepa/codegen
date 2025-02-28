@@ -21,7 +21,7 @@ class VolumeSnapshotManager(SnapshotManager):
 
     def get_snapshot_uid(self, example: SWEbenchInstance) -> str:
         snapshot_meta = self.read_snapshot_meta()
-        return snapshot_meta[example.repo][example.base_commit]
+        return snapshot_meta[example.repo][example.environment_setup_commit]
 
     def save_snapshot_uid(self, example: SWEbenchInstance, snapshot_uid: str) -> None:
         snapshot_meta = self.read_snapshot_meta()
