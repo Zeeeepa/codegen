@@ -1,12 +1,12 @@
-from codegen.extensions.swebench.types import SweBenchExample
 import json
-from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from pprint import pprint
-from typing import Literal, Optional
+from typing import Literal
 
 from datasets import load_dataset
+
+from codegen.extensions.swebench.types import SweBenchExample
 
 # Add constant for cache directory
 CACHE_DIR = Path.home() / ".cache" / "swebench"

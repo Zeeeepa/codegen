@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
+
 from lsprotocol import types
-from lsprotocol.types import CreateFile, CreateFileOptions, DeleteFile, Position, Range, RenameFile, TextEdit
-from pygls.workspace import TextDocument, Workspace
+from lsprotocol.types import CreateFile, DeleteFile, RenameFile, TextEdit
+from pygls.workspace import TextDocument
 
 
 @dataclass

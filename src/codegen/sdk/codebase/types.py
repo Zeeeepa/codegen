@@ -1,11 +1,12 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Generic, TypeVar
+
 from codegen.sdk.core.detached_symbols.function_call import FunctionCall
 from codegen.sdk.core.function import Function
 
-
 TFunction = TypeVar("TFunction", bound=Function)
+
 
 @dataclass
 class MultiGraph(Generic[TFunction]):

@@ -1,9 +1,6 @@
-from codegen.extensions.graph.types import Relation
-from codegen.extensions.graph.types import BaseNode
-from codegen.extensions.graph.types import Node
-import uuid
-from dataclasses import dataclass, field
 from enum import Enum
+
+from codegen.extensions.graph.types import Node, Relation
 
 
 class NodeLabel(Enum):

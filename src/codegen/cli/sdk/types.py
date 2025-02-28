@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
+
 from codegen.cli.api.client import RestAPI
-from codegen.cli.api.schemas import RunCodemodOutput
-from codegen.cli.api.schemas import CodemodRunType
+from codegen.cli.api.schemas import CodemodRunType, RunCodemodOutput
 from codegen.cli.auth.token_manager import get_current_token
 from codegen.cli.utils.codemods import Codemod
 from codegen.cli.utils.schema import CodemodConfig
@@ -15,6 +15,7 @@ class PullRequest:
     url: str
     number: int
     title: str
+
 
 @dataclass
 class Function:
@@ -69,6 +70,7 @@ class Function:
 
         # Don't include source code since we want to use the deployed version
         return self._api_client.run(codemod, include_source=False, run_type=CodemodRunType.PR if pr else CodemodRunType.DIFF, template_context=kwargs)
+
 
 @dataclass
 class Function:

@@ -19,6 +19,7 @@ class Relation(BaseNode):
             return NotImplemented
         return self.id == other.id
 
+
 @dataclass(kw_only=True)
 class BaseNode:
     label: str
@@ -34,6 +35,7 @@ class BaseNode:
         if not isinstance(other, Relation):
             return NotImplemented
         return self.id == other.id
+
 
 @dataclass(kw_only=True)
 class Node(BaseNode):

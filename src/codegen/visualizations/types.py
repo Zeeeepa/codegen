@@ -14,6 +14,7 @@ class VizNode:
     file_path: str | None = None
     symbol_name: str | None = None
 
+
 @dataclass(frozen=True)
 class GraphJson:
     type: str

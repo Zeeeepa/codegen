@@ -1,17 +1,17 @@
-from dataclasses import dataclass
-from typing import Generic, TypeVar
-from codegen.sdk.codebase.flagging.enums import MessageType
-from codegen.sdk.core.interfaces.editable import Editable
 from dataclasses import dataclass, field
-from codegen.sdk.codebase.flagging.code_flag import CodeFlag
-from codegen.sdk.codebase.flagging.group import Group
-from codegen.shared.decorators.docs import noapidoc
-from typing import TypeVar
-from dataclasses_json import dataclass_json
-from codegen.sdk.codebase.flagging.groupers.enums import GroupBy
+from typing import Generic, TypeVar
 
+from dataclasses_json import dataclass_json
+
+from codegen.sdk.codebase.flagging.code_flag import CodeFlag
+from codegen.sdk.codebase.flagging.enums import MessageType
+from codegen.sdk.codebase.flagging.group import Group
+from codegen.sdk.codebase.flagging.groupers.enums import GroupBy
+from codegen.sdk.core.interfaces.editable import Editable
+from codegen.shared.decorators.docs import noapidoc
 
 Symbol = TypeVar("Symbol", bound=Editable | None)
+
 
 @dataclass
 class CodeFlag(Generic[Symbol]):
@@ -40,7 +40,9 @@ class CodeFlag(Generic[Symbol]):
     def __repr__(self):
         return f"<CodeFlag symbol={self.symbol.span} message={self.message} message_type={self.message_type}>"
 
+
 Symbol = TypeVar("Symbol", bound=Editable)
+
 
 @dataclass
 class Flags:
@@ -108,7 +110,9 @@ class Flags:
         self._find_mode = False
         self._active_group_hashes = set(flag.hash for flag in group.flags)
 
+
 DEFAULT_GROUP_ID = 0
+
 
 @dataclass_json
 @dataclass

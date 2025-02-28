@@ -1,6 +1,4 @@
-from codegen.sdk.code_generation.types import ContextMock
 import json
-from dataclasses import dataclass
 from pathlib import Path
 
 from git import Repo
@@ -11,6 +9,7 @@ from semantic_release.cli.cli_context import CliContextObj
 from semantic_release.cli.config import GlobalCommandLineOptions
 
 import codegen
+from codegen.sdk.code_generation.types import ContextMock
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)

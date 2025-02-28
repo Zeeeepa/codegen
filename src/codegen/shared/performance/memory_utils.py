@@ -1,8 +1,8 @@
-from codegen.shared.performance.types import MemoryStats
 import os
-from dataclasses import dataclass
 
 import psutil
+
+from codegen.shared.performance.types import MemoryStats
 
 
 def get_memory_stats() -> MemoryStats:
