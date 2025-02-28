@@ -1,7 +1,8 @@
 import datetime
-from typing import Optional, Union, List
+from typing import Optional
+
 from langsmith import Client
-from langsmith.schemas import Run
+
 
 def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] = None) -> str:
     """Get the URL for a run in LangSmith.
@@ -33,6 +34,7 @@ def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] =
         print(f"Could not get project ID for {project_name}: {e}")
         return f"{host_url}/o/{tenant_id}/r/{run_id}?poll=true"
 
+
 def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str] = None) -> Optional[str]:
     """Find the most recent LangSmith run and print its URL.
 
@@ -44,7 +46,7 @@ def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str]
         The URL for the run in LangSmith if found, None otherwise
     """
     separator = "=" * 60
-    
+
     try:
         # Get the most recent runs with proper filter parameters
         # We need to provide at least one filter parameter as required by the API
