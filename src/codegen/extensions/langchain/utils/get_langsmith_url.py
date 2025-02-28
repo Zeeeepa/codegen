@@ -1,10 +1,8 @@
 import datetime
-from typing import Optional
-
-from langsmith import Client
+from typing import Any, Optional
 
 
-def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] = None) -> str:
+def get_langsmith_url(client: Any, run_id: str, project_name: Optional[str] = None) -> str:
     """Get the URL for a run in LangSmith.
 
     Args:
@@ -35,7 +33,7 @@ def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] =
         return f"{host_url}/o/{tenant_id}/r/{run_id}?poll=true"
 
 
-def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str] = None) -> Optional[str]:
+def find_and_print_langsmith_run_url(client: Any, project_name: Optional[str] = None) -> Optional[str]:
     """Find the most recent LangSmith run and print its URL.
 
     Args:
@@ -76,7 +74,7 @@ def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str]
         else:
             # If no runs found with project name, try a more general approach
             # Use a timestamp filter to get recent runs (last 10 minutes)
-            ten_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=10)
+            ten_minutes_ago = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(minutes=10)
 
             recent_runs = list(client.list_runs(start_time=ten_minutes_ago.isoformat(), limit=1))
 

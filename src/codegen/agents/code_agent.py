@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from langchain.tools import BaseTool
 from langchain_core.messages import AIMessage
-from langsmith import Client
 
 from codegen.extensions.langchain.agent import create_codebase_agent
 from codegen.extensions.langchain.utils.get_langsmith_url import find_and_print_langsmith_run_url
@@ -36,6 +35,12 @@ class CodeAgent:
         """
         self.codebase = codebase
         self.agent = create_codebase_agent(self.codebase, model_provider=model_provider, model_name=model_name, memory=memory, additional_tools=tools, **kwargs)
+
+        # Use dynamic import to avoid direct dependency
+        import importlib
+
+        langsmith_module = importlib.import_module("langsmith")
+        Client = getattr(langsmith_module, "Client")
         self.langsmith_client = Client()
 
         # Get project name from environment variable or use a default
