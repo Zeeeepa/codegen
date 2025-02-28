@@ -17,23 +17,6 @@ if TYPE_CHECKING:
     from codegen.sdk.core.symbol import Symbol
 
 
-@dataclass
-class FunctionCallDefinition:
-    """Represents a function call and its definitions.
-
-    This class encapsulates information about a function call and the possible
-    callable entities that define it.
-
-    Attributes:
-        call (FunctionCall): The function call object representing the invocation.
-        callables (List[Union[Function, Class, ExternalModule]]): A list of callable
-            entities that define the function being called.
-    """
-
-    call: FunctionCall
-    callables: list["Function | Class | ExternalModule"]
-
-
 TParameter = TypeVar("TParameter", bound="Parameter")
 TType = TypeVar("TType", bound="Type")
 

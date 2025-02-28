@@ -1,13 +1,8 @@
+from codegen.shared.performance.types import MemoryStats
 import os
 from dataclasses import dataclass
 
 import psutil
-
-
-@dataclass
-class MemoryStats:
-    memory_rss_gb: float
-    memory_vms_gb: float
 
 
 def get_memory_stats() -> MemoryStats:

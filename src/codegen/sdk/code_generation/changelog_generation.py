@@ -1,3 +1,4 @@
+from codegen.sdk.code_generation.types import ContextMock
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,16 +59,6 @@ Please do not include specific details about pull requests or commits, only summ
 - "Platform support updates"
 - "ARM support for Linux"
 """
-
-
-@dataclass
-class ContextMock:
-    config_file = "/Users/jesusmeza/Documents/codegen-sdk/pyproject.toml"
-
-    def get_parameter_source(self, param_name):
-        if hasattr(self, param_name):
-            return getattr(self, param_name)
-        return None
 
 
 def generate_release_summary_context(release: Release):
