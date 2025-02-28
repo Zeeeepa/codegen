@@ -73,8 +73,7 @@ class CGModalSandboxRuntime(ModalSandboxRuntime):
         LOCAL_SANDBOX_ENTRYPOINT_PATH,
         REMOTE_SANDBOX_ENTRYPOINT_PATH,
     ),
-    timeout=120
-    * 60,  # Much larger than default timeout to account for image build time
+    timeout=120 * 60,  # Much larger than default timeout to account for image build time
 )
 def run_instance_modal(
     test_spec: TestSpec,
@@ -187,9 +186,7 @@ def run_instance_modal(
             test_log_path=test_output_path,
             include_tests_status=True,
         )
-        logger.info(
-            f"report: {report}\nResult for {instance_id}: resolved: {report[instance_id]['resolved']}"
-        )
+        logger.info(f"report: {report}\nResult for {instance_id}: resolved: {report[instance_id]['resolved']}")
 
         return TestOutput(
             instance_id=instance_id,
@@ -256,9 +253,7 @@ def run_instances_modal(
 
             # Check for instances that have already been run
             for test_spec in test_specs:
-                log_dir = get_log_dir(
-                    predictions[test_spec.instance_id], run_id, test_spec.instance_id
-                )
+                log_dir = get_log_dir(predictions[test_spec.instance_id], run_id, test_spec.instance_id)
                 if log_dir.exists():
                     continue
                 run_test_specs.append(test_spec)
