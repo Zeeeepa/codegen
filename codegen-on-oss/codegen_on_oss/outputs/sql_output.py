@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import Column, Float, Integer, String, UniqueConstraint
+from sqlalchemy import JSONB, Boolean, Column, Float, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -61,7 +61,18 @@ class ParseMetrics(Base):
     )
 
 
-class PostgresSQLOutput(BaseOutput):
+class SWEBenchResult(Base):
+    __tablename__ = "swebench_output"
+
+    id = Column(Integer, primary_key=True)
+    instance_id = Column(String, index=True)
+    modal_function_call_id = Column(String)
+    errored = Column(Boolean, index=True)
+    output = Column(String)
+    report = Column(JSONB)
+
+
+class ParseMetricsSQLOutput(BaseOutput):
     extras: dict[str, Any]
 
     def __init__(self, modal_function_call_id: str):
@@ -108,6 +119,30 @@ class PostgresSQLOutput(BaseOutput):
                         "id",
                     )
                 },
+            )
+            session.execute(stmt)
+            session.commit()
+
+
+class SWEBenchSQLOutput(BaseOutput):
+    def __init__(self, modal_function_call_id: str):
+        self.modal_function_call_id = modal_function_call_id
+        settings = SQLSettings()
+        self.session_maker = get_session_maker(settings)
+        super().__init__(
+            fields=[
+                "instance_id",
+                "modal_function_call_id",
+                "errored",
+                "output",
+                "report",
+            ]
+        )
+
+    def write_output(self, value: dict[str, Any]):
+        with self.session_maker() as session:
+            stmt = insert(SWEBenchResult).values(
+                **value, modal_function_call_id=self.modal_function_call_id
             )
             session.execute(stmt)
             session.commit()

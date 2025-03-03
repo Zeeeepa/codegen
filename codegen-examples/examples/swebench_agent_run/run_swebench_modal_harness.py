@@ -12,6 +12,7 @@ import traceback
 from typing import cast
 
 import modal
+from codegen_on_oss.outputs.sql_output import SWEBenchSQLOutput
 from swebench.harness.constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
@@ -73,7 +74,8 @@ class CGModalSandboxRuntime(ModalSandboxRuntime):
         LOCAL_SANDBOX_ENTRYPOINT_PATH,
         REMOTE_SANDBOX_ENTRYPOINT_PATH,
     ),
-    timeout=120 * 60,  # Much larger than default timeout to account for image build time
+    timeout=120
+    * 60,  # Much larger than default timeout to account for image build time
 )
 def run_instance_modal(
     test_spec: TestSpec,
@@ -186,7 +188,9 @@ def run_instance_modal(
             test_log_path=test_output_path,
             include_tests_status=True,
         )
-        logger.info(f"report: {report}\nResult for {instance_id}: resolved: {report[instance_id]['resolved']}")
+        logger.info(
+            f"report: {report}\nResult for {instance_id}: resolved: {report[instance_id]['resolved']}"
+        )
 
         return TestOutput(
             instance_id=instance_id,
@@ -253,7 +257,9 @@ def run_instances_modal(
 
             # Check for instances that have already been run
             for test_spec in test_specs:
-                log_dir = get_log_dir(predictions[test_spec.instance_id], run_id, test_spec.instance_id)
+                log_dir = get_log_dir(
+                    predictions[test_spec.instance_id], run_id, test_spec.instance_id
+                )
                 if log_dir.exists():
                     continue
                 run_test_specs.append(test_spec)
@@ -272,24 +278,14 @@ def run_instances_modal(
                     ],
                 )
 
+                swebench_sql_output = SWEBenchSQLOutput(modal_function_call_id=run_id)
                 for result in results:
                     result = cast(TestOutput, result)
-
-                    # log_dir = result.log_dir
-                    # log_dir.mkdir(parents=True, exist_ok=True)
-                    # with open(log_dir / "run_instance.log", "w") as f:
-                    #     f.write(result.run_instance_log)
-                    # with open(log_dir / "test_output.txt", "w") as f:
-                    #     f.write(result.test_output)
-                    # with open(log_dir / "patch.diff", "w") as f:
-                    #     f.write(result.patch_diff)
-                    # with open(log_dir / "report.json", "w") as f:
-                    #     try:
-                    #         report_json = json.loads(result.report_json_str)
-                    #         json.dump(report_json, f, indent=4)
-                    #     except Exception:
-                    #         # This happens if the test fails with any exception
-                    #         print(f"{result.instance_id}: no report.json")
-
-                    # TODO: DO SOMETHING WITH OUTPUTS AND LOGS.
-                    # TODO: SAVE THINGS TO POSTGRESQL FOR DASHBOARD
+                    swebench_sql_output.write_output(
+                        {
+                            "instance_id": result.instance_id,
+                            "output": result.test_output,
+                            "errored": result.errored,
+                            "report": json.loads(result.report_json_str),
+                        }
+                    )

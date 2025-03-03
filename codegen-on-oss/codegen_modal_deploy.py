@@ -6,7 +6,7 @@ from loguru import logger
 
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
-from codegen_on_oss.outputs.sql_output import PostgresSQLOutput
+from codegen_on_oss.outputs.sql_output import ParseMetricsSQLOutput
 from codegen_on_oss.parser import CodegenParser
 
 app = modal.App("codegen-oss-parse")
@@ -60,7 +60,9 @@ def parse_repo(
     """
     logger.add(sys.stdout, format="{time: HH:mm:ss} {level} {message}", level="DEBUG")
 
-    output = PostgresSQLOutput(modal_function_call_id=modal.current_function_call_id())
+    output = ParseMetricsSQLOutput(
+        modal_function_call_id=modal.current_function_call_id()
+    )
     metrics_profiler = MetricsProfiler(output)
     parser = CodegenParser(Path(cachedir) / "repositories", metrics_profiler)
     # Refresh any updating repo data from other instances
