@@ -25,7 +25,7 @@ class GitAttributionTracker:
         self.repo = pygit2.Repository(self.repo_path)
 
         # Default AI authors if none provided
-        self.ai_authors = ai_authors or ['devin[bot]', 'codegen[bot]']
+        self.ai_authors = ai_authors or ["devin[bot]", "codegen[bot]"]
 
         # Cache structures
         self._file_history = {}  # file path -> list of commit info
@@ -101,11 +101,7 @@ class GitAttributionTracker:
 
         if len(self._author_contributions) > 0:
             print("Top contributors:")
-            top_contributors = sorted(
-                [(author, len(commits)) for author, commits in self._author_contributions.items()],
-                key=lambda x: x[1],
-                reverse=True
-            )[:5]
+            top_contributors = sorted([(author, len(commits)) for author, commits in self._author_contributions.items()], key=lambda x: x[1], reverse=True)[:5]
             for author, count in top_contributors:
                 print(f"  • {author}: {count} commits")
         else:
@@ -123,11 +119,11 @@ class GitAttributionTracker:
         commit_id = str(commit.id)
 
         commit_info = {
-            'author': author_name,
-            'email': author_email,
-            'timestamp': timestamp,
-            'commit_id': commit_id,
-            'message': commit.message.strip(),
+            "author": author_name,
+            "email": author_email,
+            "timestamp": timestamp,
+            "commit_id": commit_id,
+            "message": commit.message.strip(),
         }
 
         # Track by author
@@ -145,7 +141,7 @@ class GitAttributionTracker:
                 self._file_history[file_path] = []
 
             file_commit = commit_info.copy()
-            file_commit['file_path'] = file_path
+            file_commit["file_path"] = file_path
             self._file_history[file_path].append(file_commit)
 
     def _is_tracked_file(self, file_path: str) -> bool:
@@ -155,7 +151,7 @@ class GitAttributionTracker:
 
         # If we can't determine extensions, track common source files
         if not extensions:
-            extensions = ['.py', '.js', '.ts', '.tsx', '.jsx']
+            extensions = [".py", ".js", ".ts", ".tsx", ".jsx"]
 
         return any(file_path.endswith(ext) for ext in extensions)
 
@@ -173,7 +169,7 @@ class GitAttributionTracker:
 
         # For each symbol, find commits that modified its file
         for symbol in self.codebase.symbols:
-            if not hasattr(symbol, 'filepath') or not symbol.filepath:
+            if not hasattr(symbol, "filepath") or not symbol.filepath:
                 continue
 
             symbol_id = f"{symbol.filepath}:{symbol.name}"
@@ -201,7 +197,7 @@ class GitAttributionTracker:
         """
         self._ensure_history_built()
 
-        if not hasattr(symbol, 'filepath') or not symbol.filepath:
+        if not hasattr(symbol, "filepath") or not symbol.filepath:
             return []
 
         symbol_id = f"{symbol.filepath}:{symbol.name}"
@@ -221,8 +217,8 @@ class GitAttributionTracker:
             return None
 
         # Sort by timestamp (newest first) and return the author
-        sorted_history = sorted(history, key=lambda x: x['timestamp'], reverse=True)
-        return sorted_history[0]['author']
+        sorted_history = sorted(history, key=lambda x: x["timestamp"], reverse=True)
+        return sorted_history[0]["author"]
 
     def get_ai_contribution_stats(self) -> dict:
         """Get statistics about AI contributions to the codebase.
@@ -239,7 +235,7 @@ class GitAttributionTracker:
         for file_path, commits in self._file_history.items():
             for commit in commits:
                 total_file_commits[file_path] += 1
-                if commit['author'] in self.ai_authors or commit['email'] in self.ai_authors:
+                if commit["author"] in self.ai_authors or commit["email"] in self.ai_authors:
                     ai_file_commits[file_path] += 1
 
         # Find files with highest AI contribution percentage
@@ -249,17 +245,10 @@ class GitAttributionTracker:
                 ai_contribution_percentage[file_path] = (ai_file_commits[file_path] / total) * 100
 
         # Get top files by AI contribution
-        top_ai_files = sorted(
-            ai_contribution_percentage.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:20]
+        top_ai_files = sorted(ai_contribution_percentage.items(), key=lambda x: x[1], reverse=True)[:20]
 
         # Count total AI commits
-        ai_commits = sum(
-            len(commits) for author, commits in self._author_contributions.items()
-            if any(name in author for name in self.ai_authors)
-        )
+        ai_commits = sum(len(commits) for author, commits in self._author_contributions.items() if any(name in author for name in self.ai_authors))
 
         total_commits = sum(len(commits) for commits in self._author_contributions.values())
 
@@ -270,12 +259,12 @@ class GitAttributionTracker:
             ai_percentage = 0.0
 
         return {
-            'total_commits': total_commits,
-            'ai_commits': ai_commits,
-            'ai_percentage': ai_percentage,
-            'top_ai_files': top_ai_files,
-            'ai_file_count': len([f for f, p in ai_contribution_percentage.items() if p > 50]),
-            'total_file_count': len(total_file_commits),
+            "total_commits": total_commits,
+            "ai_commits": ai_commits,
+            "ai_percentage": ai_percentage,
+            "top_ai_files": top_ai_files,
+            "ai_file_count": len([f for f, p in ai_contribution_percentage.items() if p > 50]),
+            "total_file_count": len(total_file_commits),
         }
 
     def get_ai_touched_symbols(self) -> list[Symbol]:
@@ -292,10 +281,7 @@ class GitAttributionTracker:
             history = self.get_symbol_history(symbol)
 
             # Check if any commit is from an AI author
-            if any(
-                commit['author'] in self.ai_authors or commit['email'] in self.ai_authors
-                for commit in history
-            ):
+            if any(commit["author"] in self.ai_authors or commit["email"] in self.ai_authors for commit in history):
                 ai_symbols.append(symbol)
 
         return ai_symbols
@@ -315,7 +301,7 @@ class GitAttributionTracker:
             if any(name in author for name in self.ai_authors):
                 for commit in commits:
                     # Convert timestamp to year-month
-                    dt = datetime.fromtimestamp(commit['timestamp'])
+                    dt = datetime.fromtimestamp(commit["timestamp"])
                     month_key = f"{dt.year}-{dt.month:02d}"
                     monthly_counts[month_key] += 1
 

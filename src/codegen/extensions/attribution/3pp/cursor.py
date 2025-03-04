@@ -577,9 +577,9 @@ async def main():
     if search_results:
         print(f"Found {len(search_results)} results:")
         for i, result in enumerate(search_results[:10]):  # Show first 10 results
-            print(f"  {i+1}. [{result['type']}] {result['chatTitle']} ({result['workspaceName']})")
+            print(f"  {i + 1}. [{result['type']}] {result['chatTitle']} ({result['workspaceName']})")
             # Show a snippet of the matching text
-            matching_text = result['matchingText']
+            matching_text = result["matchingText"]
             if len(matching_text) > 100:
                 matching_text = matching_text[:97] + "..."
             print(f"     Match: {matching_text}")
