@@ -2,10 +2,10 @@ from typing import Any
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import JSONB, Boolean, Column, Float, Integer, String, UniqueConstraint
+from sqlalchemy import Float, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from .base import BaseOutput
 
@@ -36,19 +36,19 @@ def get_session_maker(settings: SQLSettings):
 class ParseMetrics(Base):
     __tablename__ = "parse_metrics"
 
-    id = Column(Integer, primary_key=True)
-    repo = Column(String, index=True)
-    revision = Column(String, index=True)
-    language = Column(String, index=True)
-    action = Column(String, index=True)
-    codegen_version = Column(String, index=True)
-    delta_time = Column(Float, index=True)
-    cumulative_time = Column(Float, index=True)
-    cpu_time = Column(Float, index=True)
-    memory_usage = Column(Integer, index=True)
-    memory_delta = Column(Integer, index=True)
-    error = Column(String, index=True)
-    modal_function_call_id = Column(String)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repo: Mapped[str] = mapped_column(String, index=True)
+    revision: Mapped[str] = mapped_column(String, index=True)
+    language: Mapped[str] = mapped_column(String, index=True)
+    action: Mapped[str] = mapped_column(String, index=True)
+    codegen_version: Mapped[str] = mapped_column(String, index=True)
+    delta_time: Mapped[float] = mapped_column(Float, index=True)
+    cumulative_time: Mapped[float] = mapped_column(Float, index=True)
+    cpu_time: Mapped[float] = mapped_column(Float, index=True)
+    memory_usage: Mapped[int] = mapped_column(Integer, index=True)
+    memory_delta: Mapped[int] = mapped_column(Integer, index=True)
+    error: Mapped[str] = mapped_column(String, index=True)
+    modal_function_call_id: Mapped[str] = mapped_column(String)
 
     __table_args__ = (
         UniqueConstraint(
@@ -64,12 +64,14 @@ class ParseMetrics(Base):
 class SWEBenchResult(Base):
     __tablename__ = "swebench_output"
 
-    id = Column(Integer, primary_key=True)
-    instance_id = Column(String, index=True)
-    modal_function_call_id = Column(String)
-    errored = Column(Boolean, index=True)
-    output = Column(String)
-    report = Column(JSONB)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    codegen_version: Mapped[str] = mapped_column(index=True)
+    submitted: Mapped[int]
+    completed_instances: Mapped[int]
+    resolved_instances: Mapped[int]
+    unresolved_instances: Mapped[int]
+    empty_patches: Mapped[int]
+    error_instances: Mapped[int]
 
 
 class ParseMetricsSQLOutput(BaseOutput):

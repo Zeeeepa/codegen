@@ -1,91 +1,99 @@
-import asyncio
 import json
 import traceback
-from pathlib import Path
 import uuid
-import modal
-import click
 from datetime import datetime
+from pathlib import Path
+
+import click
+import modal
 from codegen.extensions.swebench.harness import run_agent_on_entry
-from codegen.extensions.swebench.utils import SWEBenchDataset, SweBenchExample, get_swe_bench_examples
 from codegen.extensions.swebench.report import generate_report
+from codegen.extensions.swebench.utils import (
+    SWEBenchDataset,
+    SweBenchExample,
+    get_swe_bench_examples,
+)
 from codegen.sdk.core.codebase import Codebase
 
 PREDS_DNAME = Path(__file__).parent / "predictions"
 LOG_DIR = Path(__file__).parent / "logs"
 
-run_agent_modal = modal.Function.from_name(app_name="swebench-agent-run", name="run_agent_modal")
+run_agent_modal = modal.Function.from_name(
+    app_name="swebench-agent-run",
+    name="run_agent_modal",
+)
 
 
-async def process_batch_modal(examples: list[SweBenchExample], batch_size=10):
-    """Process a batch of examples concurrently.
+def process_modal(examples: list[SweBenchExample]):
+    """Process all examples using Modal's map function.
 
     Args:
         examples: List of SweBenchExample objects to process
-        batch_size: Number of examples to process concurrently.
-                   Default is 50 which provides good parallelization
-                   while staying well within Modal's limits.
     """
     results = []
 
-    # Process examples in batches
-    for i in range(0, len(examples), batch_size):
-        batch = examples[i : i + batch_size]
+    try:
+        batch_results = run_agent_modal.map(examples)
 
-        # Create tasks for this batch
-        batch_tasks = [run_agent_modal.remote.aio(example) for example in batch]
+        for example, result in zip(examples, batch_results):
+            if isinstance(result, Exception):
+                error_info = {
+                    "error_type": type(result).__name__,
+                    "error_message": str(result),
+                    "traceback": traceback.format_exception(type(result), result, result.__traceback__),
+                }
 
-        # Wait for all tasks in this batch to complete
-        print(f"Processing batch {i // batch_size + 1}/{len(examples) // batch_size + 1} (examples {i + 1}-{min(i + batch_size, len(examples))})")
+                if isinstance(result, modal.exception.Error):
+                    error_info["modal_error_code"] = getattr(result, "code", None)
+                    error_info["modal_error_details"] = getattr(result, "details", None)
 
-        try:
-            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+                print(f"Error processing {example.instance_id}:")
+                print(f"Type: {error_info['error_type']}")
+                print(f"Message: {error_info['error_message']}")
+                print("Traceback:")
+                print("".join(error_info["traceback"]))
 
-            # Store results
-            for example, result in zip(batch, batch_results):
-                error_info = None
-
-                if isinstance(result, Exception):
-                    error_type = type(result).__name__
-                    error_info = {
-                        "error_type": error_type,
-                        "error_message": str(result),
-                        "traceback": traceback.format_exception(type(result), result, result.__traceback__),
-                    }
-
-                    if isinstance(result, modal.exception.Error):
-                        error_info["modal_error_code"] = getattr(result, "code", None)
-                        error_info["modal_error_details"] = getattr(result, "details", None)
-
-                    print(f"Error processing {example.instance_id}:")
-                    print(f"Type: {error_type}")
-                    print(f"Message: {str(result)}")
-                    print("Traceback:")
-                    print("".join(error_info["traceback"]))
-
-                    results.append({"instance_id": example.instance_id, "status": "error", "error_info": error_info})
-                else:
-                    if result is None:
-                        print(f"Warning: Null result for {example.instance_id}")
-                        results.append({"instance_id": example.instance_id, "status": "error", "error_info": {"error_type": "NullResult", "error_message": "Process returned None"}})
-                    else:
-                        results.append(result)
-
-        except Exception as e:
-            print("Batch processing error:")
-            print(f"Type: {type(e).__name__}")
-            print(f"Message: {str(e)}")
-            traceback.print_exc()
-
-            # Mark all examples in the batch as failed
-            for example in batch:
                 results.append(
                     {
                         "instance_id": example.instance_id,
                         "status": "error",
-                        "error_info": {"error_type": type(e).__name__, "error_message": str(e), "traceback": traceback.format_exc(), "batch_failure": True},
+                        "error_info": error_info,
                     }
                 )
+            elif result is None:
+                print(f"Warning: Null result for {example.instance_id}")
+                results.append(
+                    {
+                        "instance_id": example.instance_id,
+                        "status": "error",
+                        "error_info": {
+                            "error_type": "NullResult",
+                            "error_message": "Process returned None",
+                        },
+                    }
+                )
+            else:
+                results.append(result)
+
+    except Exception as e:
+        print("Processing error:")
+        print(f"Type: {type(e).__name__}")
+        print(f"Message: {str(e)}")
+        traceback.print_exc()
+
+        # Mark all examples as failed
+        for example in examples:
+            results.append(
+                {
+                    "instance_id": example.instance_id,
+                    "status": "error",
+                    "error_info": {
+                        "error_type": type(e).__name__,
+                        "error_message": str(e),
+                        "traceback": traceback.format_exc(),
+                    },
+                }
+            )
 
     return results
 
@@ -129,12 +137,26 @@ def process_batch_local(examples: list[SweBenchExample], batch_size=10, codebase
                 print("Traceback:")
                 print(error_info["traceback"])
 
-                results.append({"instance_id": example.instance_id, "status": "error", "error_info": error_info})
+                results.append(
+                    {
+                        "instance_id": example.instance_id,
+                        "status": "error",
+                        "error_info": error_info,
+                    }
+                )
 
     return results
 
 
-async def run_eval(use_existing_preds: str | None, dataset: str, length: int, instance_id: str | None = None, local: bool = False, codebases: dict[str, Codebase] = {}, repo: str | None = None):
+def run_eval(
+    use_existing_preds: str | None,
+    dataset: str,
+    length: int,
+    instance_id: str | None = None,
+    local: bool = False,
+    codebases: dict[str, Codebase] = {},
+    repo: str | None = None,
+):
     run_id = use_existing_preds or str(uuid.uuid4())
     print(f"Run ID: {run_id}")
     predictions_dir = PREDS_DNAME / f"results_{run_id}"
@@ -162,7 +184,7 @@ async def run_eval(use_existing_preds: str | None, dataset: str, length: int, in
             if local:
                 results = process_batch_local(examples, codebases=codebases)
             else:
-                results = await process_batch_modal(examples)
+                results = process_modal(examples)
 
             # Save individual results
             for result in results:
@@ -212,16 +234,48 @@ async def run_eval(use_existing_preds: str | None, dataset: str, length: int, in
 
 
 @click.command()
-@click.option("--use-existing-preds", help="The run ID of the existing predictions to use.", type=str, default=None)
-@click.option("--dataset", help="The dataset to use.", type=click.Choice(["lite", "full", "verified"]), default="lite")
+@click.option(
+    "--use-existing-preds",
+    help="The run ID of the existing predictions to use.",
+    type=str,
+    default=None,
+)
+@click.option(
+    "--dataset",
+    help="The dataset to use.",
+    type=click.Choice(["lite", "full", "verified"]),
+    default="lite",
+)
 @click.option("--length", help="The number of examples to process.", type=int, default=10)
-@click.option("--instance-id", help="The instance ID of the example to process.", type=str, default=None)
+@click.option(
+    "--instance-id",
+    help="The instance ID of the example to process.",
+    type=str,
+    default=None,
+)
 @click.option("--local", help="Run the evaluation locally.", is_flag=True, default=False)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
 def run_eval_command(use_existing_preds, dataset, length, instance_id, local, repo):
     print(f"Repo: {repo}")
-    asyncio.run(run_eval(use_existing_preds=use_existing_preds, dataset=dataset, length=length, instance_id=instance_id, codebases=None, local=local, repo=repo))
+    run_eval(
+        use_existing_preds=use_existing_preds,
+        dataset=dataset,
+        length=length,
+        instance_id=instance_id,
+        codebases=None,
+        local=local,
+        repo=repo,
+    )
 
 
 if __name__ == "__main__":
+    # Generate Report on Modal
+    # generate_report(
+    #     Path(
+    #         "/home/chris/codegen/codegen/codegen-examples/examples/swebench_agent_run/predictions/results_5761ef09-2bd7-4d90-8346-0a8adefb4439/"
+    #     ),
+    #     LOG_DIR,
+    #     SWEBenchDataset.LITE,
+    #     "5761ef09-2bd7-4d90-8346-0a8adefb4439",
+    # )
     run_eval_command()

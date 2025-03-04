@@ -1,31 +1,38 @@
 #!/usr/bin/env python
 
 import json
-import subprocess
+import traceback
 from collections import defaultdict
 from pathlib import Path
 
+from codegen.extensions.swebench.modal_harness import (
+    patched_swebench_eval,
+    write_report_to_db,
+)
 from codegen.extensions.swebench.tests import remove_patches_to_tests
 from codegen.extensions.swebench.utils import SWEBenchDataset
 
 NUM_EVAL_PROCS = 5
 
 
-def run_evals(predictions_jsonl, logs_dir: Path, dataset: SWEBenchDataset, run_id: str):
-    """Run the evaluations on the predictions on modal."""
-    run_evals_cmd = f"""
-python -m swebench.harness.run_evaluation
-    --predictions_path {predictions_jsonl}
-    --run_id {run_id}
-    --dataset_name {dataset.value}
-    --cache_level instance
-    --report_dir {logs_dir}
-    --modal true
-"""
-    run_evals_cmd = " ".join([line.strip() for line in run_evals_cmd.split() if line.strip()])
-    print("Running evaluation command:", run_evals_cmd)
+def run_evals(predictions_jsonl, logs_dir: Path, dataset: SWEBenchDataset, run_id: str) -> str:
+    """Returns report path"""
+    report_path = patched_swebench_eval(
+        predictions_jsonl,
+        run_id,
+        dataset_name=dataset.value,
+        cache_level="instance",
+        report_dir=logs_dir,
+        modal=True,
+    )
 
-    subprocess.run(run_evals_cmd.split(), check=True)
+    if report_path is not None:
+        try:
+            write_report_to_db(report_path)
+        except Exception:
+            print("Error writing report to db")
+            traceback.print_exc()
+    return report_path
 
 
 def get_report(predictions_jsonl, logs_dir: Path):
