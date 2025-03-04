@@ -647,7 +647,8 @@ class RepoOperator:
                         content = self.get_file(filepath)
                         yield rel_filepath, content
                     else:
-                        yield rel_filepath, ""
+                        if os.path.exists(filepath):
+                            yield rel_filepath, ""
                 except Exception as e:
                     logger.warning(f"Error reading file {filepath}: {e}")
 
