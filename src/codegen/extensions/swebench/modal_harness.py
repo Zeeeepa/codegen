@@ -10,10 +10,11 @@ import json
 import time
 import traceback
 from collections import defaultdict
+from contextlib import nullcontext
 from importlib.metadata import version
 from unittest.mock import patch
 
-import modal
+import modal as modal_lib
 from swebench.harness.constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
@@ -27,6 +28,7 @@ from swebench.harness.modal_eval.run_evaluation_modal import (
     ModalSandboxRuntime,
     TestOutput,
     get_log_dir,
+    swebench_image,
 )
 from swebench.harness.run_evaluation import main
 from swebench.harness.test_spec.test_spec import TestSpec, make_test_spec
@@ -45,7 +47,7 @@ class SnapshotManager:
 
 class VolumeSnapshotManager(SnapshotManager):
     def __init__(self, volume_name: str = "swebench-agent-snapshot-volume"):
-        self.snapshot_volume = modal.Volume.from_name(volume_name, create_if_missing=True)
+        self.snapshot_volume = modal_lib.Volume.from_name(volume_name, create_if_missing=True)
         self.snapshot_meta_file_path: str = "/root/snapshot_meta.json"
 
     def get_snapshot_uid(self, example: SWEbenchInstance) -> str:
@@ -74,7 +76,7 @@ class VolumeSnapshotManager(SnapshotManager):
 
 class ModalDictSnapshotManager(SnapshotManager):
     def __init__(self, name: str = "swebench-agent-snapshot-dict"):
-        self.snapshot_dict = modal.Dict.from_name(name, create_if_missing=True)
+        self.snapshot_dict = modal_lib.Dict.from_name(name, create_if_missing=True)
 
     def get_snapshot_uid(self, example: SWEbenchInstance) -> str | None:
         try:
@@ -104,7 +106,7 @@ class CGModalSandboxRuntime(ModalSandboxRuntime):
         self.write_file("/sys/fs/cgroup/cpu/cpu.shares", "2048")
 
     @property
-    def image(self) -> modal.Image:
+    def image(self) -> modal_lib.Image:
         return ModalSandboxRuntime.get_instance_image(self.test_spec)
 
     def _get_sandbox(self, timeout: int | None = None):
@@ -115,17 +117,17 @@ class CGModalSandboxRuntime(ModalSandboxRuntime):
             snapshot = sandbox._experimental_snapshot()
             self.snapshot_manager.save_snapshot_uid(self.example, snapshot.object_id)
         else:
-            return modal.Sandbox._experimental_from_snapshot(uid)
+            return modal_lib.Sandbox._experimental_from_snapshot(uid)
 
 
-app = modal.App.lookup("swebench-agent-run", create_if_missing=True)
+app = modal_lib.App.lookup("swebench-agent-run", create_if_missing=True)
 
 
 @app.function(
-    image=modal.Image.debian_slim().add_local_file(
+    image=swebench_image.add_local_file(
         LOCAL_SANDBOX_ENTRYPOINT_PATH,
         REMOTE_SANDBOX_ENTRYPOINT_PATH,
-    ),
+    ).add_local_python_source("modal_harness"),
     timeout=120 * 60,  # Much larger than default timeout to account for image build time
 )
 def run_instance_modal(
@@ -249,7 +251,7 @@ def run_instance_modal(
             log_dir=log_dir,
             errored=False,
         )
-    except modal.exception.SandboxTimeoutError as e:
+    except modal_lib.exception.SandboxTimeoutError as e:
         raise EvaluationError(
             instance_id,
             f"Test timed out after {timeout} seconds.",
@@ -300,10 +302,21 @@ def patched_swebench_eval(  # Defaults from swebench harness
     modal=False,
     **kwargs,
 ):
-    with patch(
-        "swebench.harness.modal_eval.run_evaluation_modal.run_instance_modal",
-        run_instance_modal,
+    with (
+        patch(
+            "swebench.harness.modal_eval.run_evaluation_modal.run_instance_modal",
+            modal_lib.Function.from_name(
+                app_name="swebench-agent-run",
+                name="run_instance_modal",
+            ),
+        ),
+        patch(
+            "swebench.harness.modal_eval.run_evaluation_modal.app",
+            app,
+        ),
     ):
+        # Don't want swebench to run app.run() again
+        app.run = nullcontext
         return main(
             dataset_name=dataset_name,
             split=split,

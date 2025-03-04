@@ -270,12 +270,4 @@ def run_eval_command(use_existing_preds, dataset, length, instance_id, local, re
 
 if __name__ == "__main__":
     # Generate Report on Modal
-    # generate_report(
-    #     Path(
-    #         "/home/chris/codegen/codegen/codegen-examples/examples/swebench_agent_run/predictions/results_5761ef09-2bd7-4d90-8346-0a8adefb4439/"
-    #     ),
-    #     LOG_DIR,
-    #     SWEBenchDataset.LITE,
-    #     "5761ef09-2bd7-4d90-8346-0a8adefb4439",
-    # )
     run_eval_command()
