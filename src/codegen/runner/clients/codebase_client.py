@@ -1,6 +1,5 @@
 """Client used to abstract the weird stdin/stdout communication we have with the sandbox"""
 
-import logging
 import os
 import subprocess
 import time
@@ -9,13 +8,14 @@ from codegen.configs.models.secrets import SecretsConfig
 from codegen.git.schemas.repo_config import RepoConfig
 from codegen.runner.clients.client import Client
 from codegen.runner.models.apis import SANDBOX_SERVER_PORT
+from codegen.shared.logging.get_logger import get_logger
 
 DEFAULT_SERVER_PORT = 4002
 EPHEMERAL_SERVER_PATH = "codegen.runner.sandbox.ephemeral_server:app"
 RUNNER_SERVER_PATH = "codegen.runner.sandbox.server:app"
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CodebaseClient(Client):
@@ -66,9 +66,9 @@ class CodebaseClient(Client):
     def _get_envs(self) -> dict:
         envs = os.environ.copy()
         codebase_envs = {
-            "REPOSITORY_LANGUAGE": self.repo_config.language.value,
-            "REPOSITORY_OWNER": self.repo_config.organization_name,
             "REPOSITORY_PATH": str(self.repo_config.repo_path),
+            "REPOSITORY_OWNER": self.repo_config.organization_name,
+            "REPOSITORY_LANGUAGE": self.repo_config.language.value,
             "GITHUB_TOKEN": SecretsConfig().github_token,
         }
 

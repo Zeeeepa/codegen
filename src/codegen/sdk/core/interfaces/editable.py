@@ -189,14 +189,14 @@ class Editable(JSONable, Generic[Parent]):
     def transaction_manager(self) -> TransactionManager:
         return self.ctx.transaction_manager
 
-    @cached_property
+    @property
     @noapidoc
     @reader
     def start_byte(self) -> int:
         """The start byte of the Editable instance that appears in file."""
         return self.ts_node.start_byte
 
-    @cached_property
+    @property
     @noapidoc
     @reader
     @final
@@ -227,7 +227,7 @@ class Editable(JSONable, Generic[Parent]):
         """The 0-indexed line/row range that the Editable instance spans in the file."""
         return range(self.start_point[0], self.end_point[0] + 1)  # +1 b/c end_point[0] is inclusive
 
-    @cached_property
+    @property
     @noapidoc
     @reader
     def _source(self) -> str:
@@ -657,7 +657,7 @@ class Editable(JSONable, Generic[Parent]):
 
         t = EditTransaction(
             self.start_byte,
-            self.ts_node.end_byte,
+            self.end_byte,
             self.file,
             new_src,
             priority=priority,
@@ -823,7 +823,7 @@ class Editable(JSONable, Generic[Parent]):
     @reader
     @noapidoc
     def child_by_field_types(self, field_types: str | Iterable[str]) -> Expression[Self] | None:
-        """Get child by field types."""
+        """Get child by fiexld types."""
         return next(self.children_by_field_types(field_types), None)
 
     @property
@@ -1095,6 +1095,14 @@ class Editable(JSONable, Generic[Parent]):
             return self.parent
         if self.parent is not self and self.parent is not None:
             return self.parent.parent_of_type(type)
+        return None
+
+    def parent_of_types(self, types: set[type[T]]) -> T | None:
+        """Find the first ancestor of the node of the given type. Does not return itself"""
+        if self.parent and any(isinstance(self.parent, t) for t in types):
+            return self.parent
+        if self.parent is not self and self.parent is not None:
+            return self.parent.parent_of_types(types)
         return None
 
     @reader

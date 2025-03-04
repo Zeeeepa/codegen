@@ -12,6 +12,7 @@ import lox
 
 from codegen import Codebase
 from codegen.agents.code_agent import CodeAgent
+from codegen.configs.models.codebase import CodebaseConfig
 from codegen.extensions.swebench.utils import (
     SweBenchExample,
     get_swe_bench_examples,
@@ -64,7 +65,10 @@ def run_agent_on_entry(entry: SweBenchExample, codebase: Codebase | None = None)
     gold_files = files_in_patch(entry.patch)
 
     if codebase is None:
-        codebase = Codebase.from_repo(repo_full_name=entry.repo, commit=base_commit, language="python")  # check out the repo
+        config = CodebaseConfig(
+            disable_file_parse=True,  # Disable the graph AND disable file parsing (file.edit only)
+        )
+        codebase = Codebase.from_repo(repo_full_name=entry.repo, commit=base_commit, language="python", config=config)  # check out the repo
 
     agent = CodeAgent(codebase=codebase)
 
@@ -79,6 +83,18 @@ You are working with an old version of the repo!
 Filenames, directory names, file contents, etc may be different than what you're used to.
 
 Propose changes to update the repo to fix the problem below.
+*** IMPORTANT: *** DO NOT MODIFY ANY TESTS!
+*** IMPORTANT: *** DO NOT ADD ANY TESTS!
+
+Before commiting to do any modifications, double check your work with the Reflection tool.
+you can also use that tool to check your work after you think you are done.
+if you ever get stuck using other tools, use the Reflection tool to re asses your situation.
+after every file edit, use the Reflection tool to check your work and sanity check yourself.
+after editing a file you need to double check your work and use the ViewFiles tool to make sure you didn't break anything and that your edits are indeed correct.
+
+You should follow the advices of the Reflection tool when ever they seem reasonable.
+
+Also DO NOT ADD OR EDIT ANY TESTS!
 
 """
     message += problem_statement
@@ -105,8 +121,9 @@ Propose changes to update the repo to fix the problem below.
 
     # Did we get a successful patch?
     if not model_patch:
-        msg = "Failed to generate a patch"
-        raise ValueError(msg)
+        pprint.pprint("=" * 60)
+        pprint.pprint("Failed to generate a patch")
+        pprint.pprint("=" * 60)
 
     return result
 

@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Iterable, Iterator
 from typing import Callable, Generic, Literal
 
@@ -18,8 +17,9 @@ from codegen.sdk.core.interfaces.has_symbols import (
 )
 from codegen.sdk.core.utils.cache_utils import cached_generator
 from codegen.shared.decorators.docs import apidoc, noapidoc
+from codegen.shared.logging.get_logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @apidoc
@@ -37,6 +37,7 @@ class CodeOwner(
         files_source: A callable that returns an iterable of all files in the codebase.
     """
 
+    _instance_iterator: Iterator[TFile]
     owner_type: Literal["USERNAME", "TEAM", "EMAIL"]
     owner_value: str
     files_source: Callable[FilesParam, Iterable[TFile]]
@@ -91,7 +92,11 @@ class CodeOwner(
         return self.owner_value
 
     def __iter__(self) -> Iterator[TFile]:
-        return iter(self.files_generator())
+        self._instance_iterator = iter(self.files_generator())
+        return self
+
+    def __next__(self) -> str:
+        return next(self._instance_iterator)
 
     def __repr__(self) -> str:
         return f"CodeOwner(owner_type={self.owner_type}, owner_value={self.owner_value})"
