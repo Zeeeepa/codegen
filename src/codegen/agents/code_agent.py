@@ -34,7 +34,7 @@ class CodeAgent:
         self.codebase = codebase
         if tools is None:
             tools = []
-        tools = [tool for tool in tools if tool.name not in ['reveal_symbol', 'move_symbol']]
+        tools = [tool for tool in tools if tool.name not in ["reveal_symbol", "move_symbol"]]
         self.agent = create_codebase_agent(self.codebase, model_provider=model_provider, model_name=model_name, memory=memory, additional_tools=tools, **kwargs)
         self.langsmith_client = Client()
 
