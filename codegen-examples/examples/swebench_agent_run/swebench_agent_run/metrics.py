@@ -1,9 +1,20 @@
 import json
+import os
 from importlib.metadata import version
+from pathlib import Path
+
+import psycopg2
+from dotenv import load_dotenv
 
 
 def write_report_to_db(report_file: str):
-    import psycopg2
+    load_dotenv(str((Path(__file__).parent.parent / ".env.db").resolve()))
+
+    postgres_host = os.getenv("POSTGRES_HOST")
+    postgres_database = os.getenv("POSTGRES_DATABASE")
+    postgres_user = os.getenv("POSTGRES_USER")
+    postgres_password = os.getenv("POSTGRES_PASSWORD")
+    postgres_port = os.getenv("POSTGRES_PORT")
 
     try:
         codegen_version = version("codegen")
@@ -15,7 +26,11 @@ def write_report_to_db(report_file: str):
 
     # Establish connection
     conn = psycopg2.connect(
-        host="localhost", database="swebench", user="swebench", password="swebench"
+        host=postgres_host,
+        database=postgres_database,
+        user=postgres_user,
+        password=postgres_password,
+        port=postgres_port,
     )
 
     # Create a cursor

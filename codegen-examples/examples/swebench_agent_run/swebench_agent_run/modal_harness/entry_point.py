@@ -9,11 +9,10 @@ import json
 import time
 import traceback
 from contextlib import nullcontext
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import modal as modal_lib
-from codegen.extensions.swebench.harness import run_agent_on_entry
-from codegen.extensions.swebench.utils import SweBenchExample
 from swebench.harness.constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
@@ -32,13 +31,51 @@ from swebench.harness.run_evaluation import main
 from swebench.harness.test_spec.test_spec import TestSpec
 from swebench.harness.utils import EvaluationError
 
+if TYPE_CHECKING:
+    from codegen.extensions.swebench.utils import SweBenchExample
+
 image = (
     modal_lib.Image.debian_slim(python_version="3.13")
     .apt_install(["git", "ripgrep"])
-    .copy_local_dir(
-        "../../../", "/root/codegen", ignore=[".venv", "**/.venv", "tests", "**/tests"]
+    .add_local_dir(
+        "../../../",
+        "/root/codegen",
+        ignore=[
+            "__pycache__",
+            "**/__pycache__",
+            ".venv",
+            "**/.venv",
+            "tests",
+            "**/tests",
+            "codegen-on-oss/",
+            "codegen-examples/",
+            "build/",
+            ".vscode/",
+            ".codegen/",
+            ".github/",
+            ".architecture/",
+            "docs/",
+            "*cache/",
+        ],
+        copy=True,
     )
-    .run_commands("pip install -e /root/codegen")
+    .add_local_dir(
+        ".",
+        "/root/swebench_agent_run",
+        ignore=[
+            "__pycache__",
+            "**/__pycache__",
+            ".venv",
+            "**/.venv",
+            ".env*",
+        ],
+        copy=True,
+    )
+    .run_commands(
+        "pip install -e /root/codegen",
+        "rm -r /root/codegen/.git",
+        "pip install -e /root/swebench_agent_run",
+    )
 )
 
 app = modal_lib.App(
@@ -47,18 +84,18 @@ app = modal_lib.App(
 
 
 @app.function(timeout=10 * 60)
-async def run_agent_modal(entry: SweBenchExample):
+async def run_agent_modal(entry: "SweBenchExample"):
+    from codegen.extensions.swebench.harness import run_agent_on_entry
+
     """Modal function to process a single example from the SWE-bench dataset."""
     return run_agent_on_entry(entry)
 
 
 @app.function(
     image=swebench_image.add_local_file(
-        LOCAL_SANDBOX_ENTRYPOINT_PATH,
-        REMOTE_SANDBOX_ENTRYPOINT_PATH,
-    ).add_local_python_source("modal_harness"),
-    timeout=120
-    * 60,  # Much larger than default timeout to account for image build time
+        LOCAL_SANDBOX_ENTRYPOINT_PATH, REMOTE_SANDBOX_ENTRYPOINT_PATH, copy=True
+    ).add_local_python_source("eval_cli", "swebench_agent_run", copy=True),
+    timeout=120 * 60,  # Much larger than default timeout to account for image build time
 )
 def run_instance_modal(
     test_spec: TestSpec,
