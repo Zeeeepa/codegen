@@ -1,5 +1,5 @@
 from collections.abc import Iterator, MutableMapping
-from typing import TYPE_CHECKING, Generic, Self, TypeVar, overload
+from typing import TYPE_CHECKING, Generic, Self, TypeVar
 
 from tree_sitter import Node as TSNode
 
@@ -250,27 +250,6 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
                     # Recursively check its unpacks
                     unpacked_dict._get_all_unpacks_and_keys(seen_unpacks, seen_keys)
 
-    def _get_unpack_name(self, unpack_source: str) -> str:
-        """Get the name being unpacked from the source.
-
-        Args:
-            unpack_source: Source code of the unpack (e.g., "**base1" or "...base1")
-
-        Returns:
-            Name being unpacked (e.g., "base1")
-        """
-        if unpack_source.startswith("**"):
-            return unpack_source.strip("*")
-        elif unpack_source.startswith("..."):
-            return unpack_source[3:]  # Remove the three dots
-        return unpack_source
-
-    @overload
-    def merge(self, *others: "Dict[TExpression, Parent]") -> None: ...
-
-    @overload
-    def merge(self, dict_str: str) -> None: ...
-
     def merge(self, *others: "Dict[TExpression, Parent] | str") -> None:
         """Merge multiple dictionaries into a new dictionary
 
@@ -278,9 +257,9 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
         Later dictionaries take precedence over earlier ones for duplicate keys.
 
         Args:
-            *others: Other Dict objects or a dictionary string to merge.
-                    The string can be either a Python dict (e.g. "{'x': 1}")
-                    or a TypeScript object (e.g. "{x: 1}")
+            *others: Other Dict objects or dictionary strings.
+                    The strings can be either Python dicts (e.g. "{'x': 1}")
+                    or TypeScript objects (e.g. "{x: 1}")
 
         Raises:
             ValueError: If attempting to merge dictionaries with duplicate keys or unpacks
@@ -292,7 +271,7 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
         seen_keys = set()
         seen_unpacks = set()
 
-        # Get all unpacks and their keys from the current dictionary and its dependencies
+        # Get all unpacks and their keys from its dependencies
         self._get_all_unpacks_and_keys(seen_unpacks, seen_keys)
 
         # Keep track of all items in order
@@ -320,7 +299,7 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
                     if isinstance(child, Unpack):
                         unpack_source = child.source
                         # Get the name being unpacked (e.g., "base1" from "**base1")
-                        unpack_name = self._get_unpack_name(unpack_source)
+                        unpack_name = unpack_source.strip("*")
                         if unpack_name in seen_unpacks:
                             msg = f"Duplicate unpack found: {unpack_source}"
                             raise ValueError(msg)
@@ -335,7 +314,7 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
                             seen_keys.add(key)
                             merged_items.append(f"{key}: {child.value.source}")
             elif isinstance(other, str):
-                # Handle dictionary strings
+                # Handle dictionary string
                 # Strip curly braces and whitespace
                 content = other.strip().strip("{}").strip()
                 if not content:  # Skip empty dicts
@@ -347,7 +326,7 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
                     part = part.strip()
                     if part.startswith("**"):
                         # Get the name being unpacked (e.g., "base1" from "**base1")
-                        unpack_name = self._get_unpack_name(part)
+                        unpack_name = part.strip("*").strip()  # Fix unpack name extraction
                         if unpack_name in seen_unpacks:
                             msg = f"Duplicate unpack found: {part}"
                             raise ValueError(msg)

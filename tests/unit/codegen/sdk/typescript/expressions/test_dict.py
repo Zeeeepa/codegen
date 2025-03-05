@@ -840,3 +840,119 @@ const base2 = {z: 3, ...base1}
 const dict1 = {a: 1, b: 2, z: 3, ...base1}
 """
         )
+
+
+def test_dict_merge_variadic(tmpdir) -> None:
+    """Test merging multiple dictionaries using variadic arguments."""
+    file = "test.ts"
+    content = """
+const dict1 = {a: 1}
+const dict2 = {b: 2}
+const dict3 = {c: 3}
+const result = {m: 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict2 = file.get_symbol("dict2").value
+        dict3 = file.get_symbol("dict3").value
+
+        # Test merging multiple Dict objects and strings
+        result.merge(dict2, dict3, "{x: 4}", "{y: 5}")
+        codebase.commit()
+        assert (
+            file.content
+            == """
+const dict1 = {a: 1}
+const dict2 = {b: 2}
+const dict3 = {c: 3}
+const result = {m: 0, b: 2, c: 3, x: 4, y: 5}
+"""
+        )
+
+
+def test_dict_merge_variadic_with_spreads(tmpdir) -> None:
+    """Test merging multiple dictionaries with spreads using variadic arguments."""
+    file = "test.ts"
+    content = """
+const base1 = {x: 1}
+const base2 = {y: 2}
+const dict1 = {a: 1, ...base1}
+const dict2 = {b: 2, ...base2}
+const result = {m: 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict1 = file.get_symbol("dict1").value
+        dict2 = file.get_symbol("dict2").value
+
+        # Test merging multiple Dict objects with spreads
+        result.merge(dict1, dict2, "{z: 3}")
+        codebase.commit()
+        assert (
+            file.content
+            == """
+const base1 = {x: 1}
+const base2 = {y: 2}
+const dict1 = {a: 1, ...base1}
+const dict2 = {b: 2, ...base2}
+const result = {m: 0, a: 1, ...base1, b: 2, ...base2, z: 3}
+"""
+        )
+
+
+def test_dict_merge_variadic_duplicate_keys(tmpdir) -> None:
+    """Test merging multiple dictionaries with duplicate keys using variadic arguments."""
+    file = "test.ts"
+    content = """
+const dict1 = {a: 1, b: 2}
+const dict2 = {c: 3, d: 4}
+const result = {m: 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict1 = file.get_symbol("dict1").value
+        dict2 = file.get_symbol("dict2").value
+
+        # Test merging with duplicate keys - should work in TypeScript
+        result.merge(dict1, dict2, "{a: 5}")  # Duplicate 'a' key is allowed
+        codebase.commit()
+        assert (
+            file.content
+            == """
+const dict1 = {a: 1, b: 2}
+const dict2 = {c: 3, d: 4}
+const result = {m: 0, a: 1, b: 2, c: 3, d: 4, a: 5}
+"""
+        )
+
+
+def test_dict_merge_variadic_duplicate_spreads(tmpdir) -> None:
+    """Test merging multiple dictionaries with duplicate spreads using variadic arguments."""
+    file = "test.ts"
+    content = """
+const base1 = {x: 1}
+const dict1 = {...base1}
+const dict2 = {y: 2}
+const result = {m: 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict1 = file.get_symbol("dict1").value
+        dict2 = file.get_symbol("dict2").value
+
+        # Test merging with duplicate spreads - should work in TypeScript
+        result.merge(dict1, dict2, "{...base1}")  # Duplicate spread is allowed
+        codebase.commit()
+        assert (
+            file.content
+            == """
+const base1 = {x: 1}
+const dict1 = {...base1}
+const dict2 = {y: 2}
+const result = {m: 0, ...base1, y: 2, ...base1}
+"""
+        )

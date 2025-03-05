@@ -151,9 +151,9 @@ class TSDict(Dict[Expression, Parent]):
         In TypeScript, duplicate keys and spreads are allowed - later ones override earlier ones.
 
         Args:
-            *others: Other Dict objects or a dictionary string to merge.
-                    The string can be either a Python dict (e.g. "{'x': 1}")
-                    or a TypeScript object (e.g. "{x: 1}")
+            *others: Other Dict objects or dictionary strings.
+                    The strings can be either Python dicts (e.g. "{'x': 1}")
+                    or TypeScript objects (e.g. "{x: 1}")
 
         Returns:
             None
@@ -178,7 +178,7 @@ class TSDict(Dict[Expression, Parent]):
                     elif child.key is not None:
                         merged_items.append(f"{child.key.source}: {child.value.source}")
             elif isinstance(other, str):
-                # Handle dictionary strings
+                # Handle dictionary string
                 content = other.strip().strip("{}").strip()
                 if not content:  # Skip empty dicts
                     continue

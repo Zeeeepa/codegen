@@ -585,3 +585,82 @@ dict1 = {'a': 1, **base2, 'b': 2}
 dict2 = {'c': 3, **base1, **base2, 'd': 4, 'e': 5}
 """
         )
+
+
+def test_dict_merge_variadic(tmpdir) -> None:
+    """Test merging multiple dictionaries using variadic arguments."""
+    file = "test.py"
+    content = """
+dict1 = {'a': 1}
+dict2 = {'b': 2}
+dict3 = {'c': 3}
+result = {'m': 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict2 = file.get_symbol("dict2").value
+        dict3 = file.get_symbol("dict3").value
+
+        # Test merging multiple Dict objects and strings
+        result.merge(dict2, dict3, "{'x': 4}", "{'y': 5}")
+        codebase.commit()
+        assert (
+            file.content
+            == """
+dict1 = {'a': 1}
+dict2 = {'b': 2}
+dict3 = {'c': 3}
+result = {'m': 0, 'b': 2, 'c': 3, 'x': 4, 'y': 5}
+"""
+        )
+
+
+def test_dict_merge_variadic_with_unpacks(tmpdir) -> None:
+    """Test merging multiple dictionaries with unpacks using variadic arguments."""
+    file = "test.py"
+    content = """
+base1 = {'x': 1}
+base2 = {'y': 2}
+dict1 = {'a': 1, **base1}
+dict2 = {'b': 2, **base2}
+result = {'m': 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict1 = file.get_symbol("dict1").value
+        dict2 = file.get_symbol("dict2").value
+
+        # Test merging multiple Dict objects with unpacks
+        result.merge(dict1, dict2, "{'z': 3}")
+        codebase.commit()
+        assert (
+            file.content
+            == """
+base1 = {'x': 1}
+base2 = {'y': 2}
+dict1 = {'a': 1, **base1}
+dict2 = {'b': 2, **base2}
+result = {'m': 0, 'a': 1, **base1, 'b': 2, **base2, 'z': 3}
+"""
+        )
+
+
+def test_dict_merge_variadic_duplicate_keys(tmpdir) -> None:
+    """Test merging multiple dictionaries with duplicate keys using variadic arguments."""
+    file = "test.py"
+    content = """
+dict1 = {'a': 1, 'b': 2}
+dict2 = {'c': 3, 'd': 4}
+result = {'m': 0}
+"""
+    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
+        file = codebase.get_file(file)
+        result = file.get_symbol("result").value
+        dict1 = file.get_symbol("dict1").value
+        dict2 = file.get_symbol("dict2").value
+
+        # Should fail - trying to add duplicate key 'a'
+        with pytest.raises(ValueError, match="Duplicate key found: 'a'"):
+            result.merge(dict1, dict2, "{'a': 5}")
