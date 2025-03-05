@@ -1,4 +1,5 @@
 import os
+from typing import Self
 
 from codegen.configs.models.base_config import BaseConfig
 
@@ -13,16 +14,14 @@ class RepositoryConfig(BaseConfig):
     language: str | None = None
     user_name: str | None = None
     user_email: str | None = None
+    subdirectories: list[str] | None = None
 
     def __init__(self, prefix: str = "REPOSITORY", *args, **kwargs) -> None:
         super().__init__(prefix=prefix, *args, **kwargs)
 
-    def _initialize(
-        self,
-    ) -> None:
-        """Initialize the repository config"""
-        if self.path is None:
-            self.path = os.getcwd()
+    @classmethod
+    def from_path(cls, path: str) -> Self:
+        return cls(root_path=path, path=path)
 
     @property
     def base_dir(self) -> str:

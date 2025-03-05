@@ -4,8 +4,9 @@ import os
 import subprocess
 import time
 
+from codegen.configs.models.repository import RepositoryConfig
 from codegen.configs.models.secrets import SecretsConfig
-from codegen.git.schemas.repo_config import RepoConfig
+from codegen.git.repo_operator.local_git_repo import LocalGitRepo
 from codegen.runner.clients.client import Client
 from codegen.runner.models.apis import SANDBOX_SERVER_PORT
 from codegen.shared.logging.get_logger import get_logger
@@ -21,11 +22,11 @@ logger = get_logger(__name__)
 class CodebaseClient(Client):
     """Client for interacting with the locally hosted sandbox server."""
 
-    repo_config: RepoConfig
+    repo_config: RepositoryConfig
 
-    def __init__(self, repo_config: RepoConfig, host: str = "127.0.0.1", port: int = SANDBOX_SERVER_PORT, server_path: str = RUNNER_SERVER_PATH):
+    def __init__(self, repo_path: str, host: str = "127.0.0.1", port: int = SANDBOX_SERVER_PORT, server_path: str = RUNNER_SERVER_PATH):
         super().__init__(host=host, port=port)
-        self.repo_config = repo_config
+        self.repo_config = LocalGitRepo(repo_path=repo_path).get_repo_config()
         self._process = None
         self._start_server(server_path)
 
@@ -66,10 +67,10 @@ class CodebaseClient(Client):
     def _get_envs(self) -> dict:
         envs = os.environ.copy()
         codebase_envs = {
-            "REPOSITORY_PATH": str(self.repo_config.repo_path),
-            "REPOSITORY_OWNER": self.repo_config.organization_name,
-            "REPOSITORY_LANGUAGE": self.repo_config.language.value,
-            "GITHUB_TOKEN": SecretsConfig().github_token,
+            "REPOSITORY_PATH": str(self.repo_config.path),
+            "REPOSITORY_OWNER": self.repo_config.owner,
+            "REPOSITORY_LANGUAGE": self.repo_config.language,
+            "GITHUB_TOKEN": SecretsConfig(root_path=self.repo_config.path).github_token,
         }
 
         envs.update(codebase_envs)
@@ -77,7 +78,5 @@ class CodebaseClient(Client):
 
 
 if __name__ == "__main__":
-    test_config = RepoConfig.from_repo_path("/Users/caroljung/git/codegen/codegen-agi")
-    test_config.full_name = "codegen-sh/codegen-agi"
-    client = CodebaseClient(test_config)
+    client = CodebaseClient(repo_path="/Users/caroljung/git/codegen/codegen-agi")
     print(client.is_running())
