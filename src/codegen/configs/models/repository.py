@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Self
 
 from codegen.configs.models.base_config import BaseConfig
@@ -21,7 +22,7 @@ class RepositoryConfig(BaseConfig):
 
     @classmethod
     def from_path(cls, path: str) -> Self:
-        return cls(root_path=path, path=path)
+        return cls(root_path=Path(path), path=str(path))
 
     @property
     def base_dir(self) -> str:

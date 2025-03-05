@@ -3,6 +3,7 @@
 import os
 import subprocess
 import time
+from pathlib import Path
 
 from codegen.configs.models.repository import RepositoryConfig
 from codegen.configs.models.secrets import SecretsConfig
@@ -26,7 +27,7 @@ class CodebaseClient(Client):
 
     def __init__(self, repo_path: str, host: str = "127.0.0.1", port: int = SANDBOX_SERVER_PORT, server_path: str = RUNNER_SERVER_PATH):
         super().__init__(host=host, port=port)
-        self.repo_config = LocalGitRepo(repo_path=repo_path).get_repo_config()
+        self.repo_config = LocalGitRepo(repo_path=Path(repo_path)).get_repo_config()
         self._process = None
         self._start_server(server_path)
 
@@ -67,10 +68,10 @@ class CodebaseClient(Client):
     def _get_envs(self) -> dict:
         envs = os.environ.copy()
         codebase_envs = {
-            "REPOSITORY_PATH": str(self.repo_config.path),
+            "REPOSITORY_PATH": self.repo_config.path,
             "REPOSITORY_OWNER": self.repo_config.owner,
             "REPOSITORY_LANGUAGE": self.repo_config.language,
-            "GITHUB_TOKEN": SecretsConfig(root_path=self.repo_config.path).github_token,
+            "GITHUB_TOKEN": SecretsConfig(root_path=Path(self.repo_config.path)).github_token,
         }
 
         envs.update(codebase_envs)

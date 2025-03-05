@@ -126,11 +126,12 @@ def _run_docker_container(repo_config: RepositoryConfig, port: int, detached: bo
     rich.print("[bold blue]Starting Docker container...[/bold blue]")
     container_repo_path = f"/app/git/{repo_config.name}"
     name_args = ["--name", f"{repo_config.name}"]
+    repo_path = Path(repo_config.path)
     envvars = {
         "REPOSITORY_LANGUAGE": repo_config.language,
-        "REPOSITORY_OWNER": LocalGitRepo(repo_config.path).owner,
+        "REPOSITORY_OWNER": LocalGitRepo(repo_path=repo_path).owner,
         "REPOSITORY_PATH": container_repo_path,
-        "GITHUB_TOKEN": SecretsConfig(root_path=repo_config.path).github_token,
+        "GITHUB_TOKEN": SecretsConfig(root_path=repo_path).github_token,
         "PYTHONUNBUFFERED": "1",  # Ensure Python output is unbuffered
         "CODEBASE_SYNC_ENABLED": "True",
     }

@@ -81,8 +81,8 @@ class LocalGitRepo:
     def has_remote(self) -> bool:
         return bool(self.git_cli.remotes)
 
-    def get_repo_config(self, access_token: str | None = None) -> RepositoryConfig:
-        config = RepositoryConfig()
+    def get_repo_config(self, access_token: str | None = None, repo_config: RepositoryConfig | None = None) -> RepositoryConfig:
+        config = repo_config or RepositoryConfig()
         config.path = config.path or str(self.repo_path)
         config.owner = config.owner or self.owner
         config.user_name = config.user_name or self.user_name

@@ -5,6 +5,7 @@ import os
 from collections.abc import Generator
 from datetime import UTC, datetime
 from functools import cached_property
+from pathlib import Path
 from time import perf_counter
 from typing import Self
 
@@ -27,6 +28,7 @@ from codegen.git.utils.clone_url import add_access_token_to_url, get_authenticat
 from codegen.git.utils.codeowner_utils import create_codeowners_parser_for_repo
 from codegen.git.utils.file_utils import create_files
 from codegen.git.utils.remote_progress import CustomRemoteProgress
+from codegen.shared.enums.programming_language import ProgrammingLanguage
 from codegen.shared.logging.get_logger import get_logger
 from codegen.shared.performance.stopwatch_utils import stopwatch
 from codegen.shared.performance.time_utils import humanize_duration
@@ -58,9 +60,9 @@ class RepoOperator:
     ) -> None:
         os.makedirs(repo_config.path, exist_ok=True)
         GitCLI.init(repo_config.path)
-        self.access_token = access_token or SecretsConfig(root_path=repo_config.path).github_token
-        self._local_git_repo = LocalGitRepo(repo_path=repo_config.path)
-        self.repo_config = self._local_git_repo.get_repo_config(self.access_token)
+        self.access_token = access_token or SecretsConfig(root_path=Path(repo_config.path)).github_token
+        self._local_git_repo = LocalGitRepo(repo_path=Path(repo_config.path))
+        self.repo_config = self._local_git_repo.get_repo_config(self.access_token, repo_config)
         self.bot_commit = bot_commit
         self.respect_gitignore = respect_gitignore
 
@@ -806,7 +808,7 @@ class RepoOperator:
     # CLASS METHODS
     ####################################################################################################################
     @classmethod
-    def create_from_files(cls, repo_path: str, files: dict[str, str], bot_commit: bool = True) -> Self:
+    def create_from_files(cls, repo_path: str, files: dict[str, str], programming_language: ProgrammingLanguage, bot_commit: bool = True) -> Self:
         """Used when you want to create a directory from a set of files and then create a RepoOperator that points to that directory.
         Use cases:
         - Unit testing
@@ -822,7 +824,9 @@ class RepoOperator:
         create_files(base_dir=repo_path, files=files)
 
         # Step 2: Init git repo
-        op = cls(repo_path=repo_path, bot_commit=bot_commit)
+        repo_config = RepositoryConfig.from_path(path=repo_path)
+        repo_config.language = programming_language
+        op = cls(repo_config=repo_config, bot_commit=bot_commit)
         if op.stage_and_commit_all_changes("[Codegen] initial commit"):
             op.checkout_branch(None, create_if_missing=True)
         return op
@@ -837,8 +841,11 @@ class RepoOperator:
             url (str): Git URL of the repository
             access_token (str | None): Optional GitHub API key for operations that need GitHub access
         """
-        op = cls(repo_path=repo_path, bot_commit=False, access_token=access_token)
+        repo_config = RepositoryConfig.from_path(path=repo_path)
+        if full_name:
+            repo_config.owner = full_name.split("/")[0]
 
+        op = cls(repo_config=repo_config, bot_commit=False, access_token=access_token)
         op.discard_changes()
         if op.get_active_branch_or_commit() != commit:
             op.create_remote("origin", url)
@@ -893,4 +900,4 @@ class RepoOperator:
             logger.exception("Failed to initialize Git repository:")
             logger.exception("Please authenticate with a valid token and ensure the repository is properly initialized.")
             return None
-        return cls(repo_path=repo_path, bot_commit=False, access_token=access_token)
+        return cls(repo_config=RepositoryConfig.from_path(path=repo_path), bot_commit=False, access_token=access_token)
