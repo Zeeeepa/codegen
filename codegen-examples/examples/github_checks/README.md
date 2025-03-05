@@ -1,10 +1,10 @@
 # Github Checks
 
-This application is a GitHub integration that analyzes import cycles in Python codebases. It automatically runs when a pull request is labeled and checks for potentially problematic import patterns in the modified codebase.
+This application is a GitHub integration that analyzes import cycles in codebases. It automatically runs when a pull request is labeled and checks for potentially problematic import patterns in the modified codebase.
 
 ## Features
 
-- Analyzes import relationships in Python codebases
+- Analyzes import relationships in codebases
 - Detects circular import dependencies
 - Identifies problematic cycles with mixed static and dynamic imports
 - Automatically comments on pull requests with detailed analysis

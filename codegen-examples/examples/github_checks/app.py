@@ -107,7 +107,6 @@ def handle_pr(event: PullRequestLabeledEvent):
     cycles = find_import_cycles(G)
     problematic_loops = find_problematic_import_loops(G, cycles)
 
-    # Build comment message
     message = ["### Import Cycle Analysis - GitHub Check\n"]
 
     if problematic_loops:
