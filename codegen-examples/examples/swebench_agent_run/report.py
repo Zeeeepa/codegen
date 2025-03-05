@@ -1,38 +1,15 @@
 #!/usr/bin/env python
 
 import json
-import traceback
 from collections import defaultdict
 from pathlib import Path
 
-from codegen.extensions.swebench.modal_harness import (
-    patched_swebench_eval,
-    write_report_to_db,
-)
 from codegen.extensions.swebench.tests import remove_patches_to_tests
 from codegen.extensions.swebench.utils import SWEBenchDataset
 
+from .modal_harness import patched_swebench_eval
+
 NUM_EVAL_PROCS = 5
-
-
-def run_evals(predictions_jsonl, logs_dir: Path, dataset: SWEBenchDataset, run_id: str) -> str:
-    """Returns report path"""
-    report_path = patched_swebench_eval(
-        predictions_jsonl,
-        run_id,
-        dataset_name=dataset.value,
-        cache_level="instance",
-        report_dir=logs_dir,
-        modal=True,
-    )
-
-    if report_path is not None:
-        try:
-            write_report_to_db(report_path)
-        except Exception:
-            print("Error writing report to db")
-            traceback.print_exc()
-    return report_path
 
 
 def get_report(predictions_jsonl, logs_dir: Path):
@@ -107,18 +84,22 @@ def preds_to_jsonl(predictions, predictions_dir: Path):
         for inst, pred in predictions.items():
             minimal_pred = {
                 "model_name_or_path": model_name,  # Use default model name
-                "model_patch": remove_patches_to_tests(pred["model_patch"]) if "model_patch" in pred else pred.get("patch", ""),
+                "model_patch": remove_patches_to_tests(pred["model_patch"])
+                if "model_patch" in pred
+                else pred.get("patch", ""),
                 "instance_id": pred["instance_id"],
             }
             fh.write(json.dumps(minimal_pred) + "\n")
     return predictions_jsonl
 
 
-def generate_report(predictions_dir: Path, logs_dir: Path, dataset: SWEBenchDataset, run_id: str):
+def generate_report(
+    predictions_dir: Path, logs_dir: Path, dataset: SWEBenchDataset, run_id: str
+) -> str | None:
     # Automatically find all JSON files in predictions/results
     if not predictions_dir.exists():
         print(f"Directory does not exist: {predictions_dir}")
-        return 1
+        return None
 
     prediction_files = list(predictions_dir.glob("*.json"))
     print(f"Found {len(prediction_files)} prediction files")
@@ -147,8 +128,14 @@ def generate_report(predictions_dir: Path, logs_dir: Path, dataset: SWEBenchData
         print(f"Using log directory: {log_dir}")
 
         # Run evaluations
-        run_evals(predictions_jsonl, logs_dir, dataset, run_id)
-
+        evaluation_result_file = patched_swebench_eval(
+            predictions_jsonl,
+            run_id,
+            dataset_name=dataset.value,
+            cache_level="instance",
+            report_dir=logs_dir,
+            modal=True,
+        )
         # Get and display report
         report = get_report(predictions_jsonl, logs_dir)
 
@@ -156,6 +143,6 @@ def generate_report(predictions_dir: Path, logs_dir: Path, dataset: SWEBenchData
         predictions = update_pred_json(predictions, report, predictions_dir)
     else:
         print("No valid predictions found")
-        return 1
+        return None
 
-    return 0
+    return evaluation_result_file

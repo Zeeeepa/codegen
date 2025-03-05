@@ -15,6 +15,8 @@ from codegen.extensions.swebench.utils import (
 )
 from codegen.sdk.core.codebase import Codebase
 
+from metrics import write_report_to_db
+
 PREDS_DNAME = Path(__file__).parent / "predictions"
 LOG_DIR = Path(__file__).parent / "logs"
 
@@ -40,7 +42,9 @@ def process_modal(examples: list[SweBenchExample]):
                 error_info = {
                     "error_type": type(result).__name__,
                     "error_message": str(result),
-                    "traceback": traceback.format_exception(type(result), result, result.__traceback__),
+                    "traceback": traceback.format_exception(
+                        type(result), result, result.__traceback__
+                    ),
                 }
 
                 if isinstance(result, modal.exception.Error):
@@ -98,7 +102,9 @@ def process_modal(examples: list[SweBenchExample]):
     return results
 
 
-def process_batch_local(examples: list[SweBenchExample], batch_size=10, codebases: dict[str, Codebase] = {}):
+def process_batch_local(
+    examples: list[SweBenchExample], batch_size=10, codebases: dict[str, Codebase] = {}
+):
     """Process a batch of examples synchronously.
 
     Args:
@@ -111,14 +117,18 @@ def process_batch_local(examples: list[SweBenchExample], batch_size=10, codebase
     # Process examples in batches
     for i in range(0, len(examples), batch_size):
         batch = examples[i : i + batch_size]
-        print(f"Processing batch {i // batch_size + 1}/{len(examples) // batch_size + 1} (examples {i + 1}-{min(i + batch_size, len(examples))})")
+        print(
+            f"Processing batch {i // batch_size + 1}/{len(examples) // batch_size + 1} (examples {i + 1}-{min(i + batch_size, len(examples))})"
+        )
 
         # Process each example in the batch
         for example in batch:
             try:
                 # Run the agent locally instead of using modal
                 if codebases and example.instance_id in codebases:
-                    result = run_agent_on_entry(example, codebase=codebases[example.instance_id])
+                    result = run_agent_on_entry(
+                        example, codebase=codebases[example.instance_id]
+                    )
                 else:
                     result = run_agent_on_entry(example)
                 results.append(result)
@@ -166,9 +176,12 @@ def run_eval(
         "verified": SWEBenchDataset.VERIFIED,
     }
     dataset_enum = dataset_dict[dataset]
-    print(repo)
-    examples = get_swe_bench_examples(dataset=dataset_enum, length=length, instance_id=instance_id, repo=repo)
-    print(f"Examples:\n{'\n'.join([f'{e.instance_id} - {e.repo} - {e.base_commit}' for e in examples])}")
+    examples = get_swe_bench_examples(
+        dataset=dataset_enum, length=length, instance_id=instance_id, repo=repo
+    )
+    print(
+        f"Examples:\n{'\n'.join([f'{e.instance_id} - {e.repo} - {e.base_commit}' for e in examples])}"
+    )
 
     try:
         if use_existing_preds is None:
@@ -201,7 +214,13 @@ def run_eval(
                 "timestamp": timestamp,
                 "total_examples": len(examples),
                 "successful": len([r for r in results if r and "status" not in r]),
-                "failed": len([r for r in results if r and "status" in r and r["status"] == "error"]),
+                "failed": len(
+                    [
+                        r
+                        for r in results
+                        if r and "status" in r and r["status"] == "error"
+                    ]
+                ),
                 "error_types": {},
                 "results": results,
             }
@@ -209,8 +228,12 @@ def run_eval(
             # Collect error statistics
             for result in results:
                 if result and "status" in result and result["status"] == "error":
-                    error_type = result.get("error_info", {}).get("error_type", "Unknown")
-                    summary["error_types"][error_type] = summary["error_types"].get(error_type, 0) + 1
+                    error_type = result.get("error_info", {}).get(
+                        "error_type", "Unknown"
+                    )
+                    summary["error_types"][error_type] = (
+                        summary["error_types"].get(error_type, 0) + 1
+                    )
 
             with open(summary_file, "w") as f:
                 json.dump(summary, f, indent=4)
@@ -226,7 +249,7 @@ def run_eval(
                     print(f"  {error_type}: {count}")
 
         # Generate Report on Modal
-        generate_report(predictions_dir, LOG_DIR, dataset_enum, run_id)
+        return predictions_dir, LOG_DIR, dataset_enum, run_id
     except Exception:
         print("Fatal error in run_eval:")
         traceback.print_exc()
@@ -246,26 +269,45 @@ def run_eval(
     type=click.Choice(["lite", "full", "verified"]),
     default="lite",
 )
-@click.option("--length", help="The number of examples to process.", type=int, default=10)
+@click.option(
+    "--length", help="The number of examples to process.", type=int, default=10
+)
 @click.option(
     "--instance-id",
     help="The instance ID of the example to process.",
     type=str,
     default=None,
 )
-@click.option("--local", help="Run the evaluation locally.", is_flag=True, default=False)
+@click.option(
+    "--local", help="Run the evaluation locally.", is_flag=True, default=False
+)
+@click.option(
+    "--push-metrics", help="Push metrics to the database.", is_flag=True, default=False
+)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
-def run_eval_command(use_existing_preds, dataset, length, instance_id, local, repo):
+def run_eval_command(
+    use_existing_preds, dataset, length, instance_id, local, repo, push_metrics
+):
     print(f"Repo: {repo}")
-    run_eval(
-        use_existing_preds=use_existing_preds,
-        dataset=dataset,
-        length=length,
-        instance_id=instance_id,
-        codebases=None,
-        local=local,
-        repo=repo,
+
+    evaluation_result_file = generate_report(
+        run_eval(
+            use_existing_preds=use_existing_preds,
+            dataset=dataset,
+            length=length,
+            instance_id=instance_id,
+            codebases=None,
+            local=local,
+            repo=repo,
+        )
     )
+
+    if evaluation_result_file is not None and push_metrics:
+        try:
+            write_report_to_db(evaluation_result_file)
+        except Exception:
+            print("Error writing report to db")
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
