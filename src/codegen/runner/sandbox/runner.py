@@ -10,6 +10,7 @@ from codegen.sdk.codebase.config import ProjectConfig, SessionOptions
 from codegen.sdk.codebase.factory.codebase_factory import CodebaseType
 from codegen.sdk.core.codebase import Codebase
 from codegen.shared.compilation.string_to_code import create_execute_function_from_codeblock
+from codegen.shared.enums.programming_language import ProgrammingLanguage
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +41,8 @@ class SandboxRunner:
 
     async def _build_graph(self, codebase_config: CodebaseConfig | None = None) -> Codebase:
         logger.info("> Building graph...")
-        projects = [ProjectConfig(programming_language=self.repo.language, repo_operator=self.op, base_path=self.repo.base_path, subdirectories=self.repo.subdirectories)]
+        programming_language = ProgrammingLanguage(self.repo.language.upper())
+        projects = [ProjectConfig(programming_language=programming_language, repo_operator=self.op, base_path=self.repo.base_path, subdirectories=self.repo.subdirectories)]
         return Codebase(projects=projects, config=codebase_config)
 
     async def get_diff(self, request: GetDiffRequest) -> GetDiffResponse:

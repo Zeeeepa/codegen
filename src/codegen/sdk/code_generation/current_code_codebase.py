@@ -44,7 +44,7 @@ def get_current_code_codebase(config: CodebaseConfig | None = None, secrets: Sec
     repo_config = RepositoryConfig.from_path(path=codegen_repo_path)
     op = RepoOperator(repo_config=repo_config, bot_commit=False, respect_gitignore=False)
 
-    config = (config or CodebaseConfig()).model_copy(update={"base_path": base_dir})
+    config = config or CodebaseConfig()
     projects = [ProjectConfig(repo_operator=op, programming_language=ProgrammingLanguage.PYTHON, subdirectories=subdirectories, base_path=base_dir)]
     codebase = Codebase(projects=projects, config=config, secrets=secrets)
     return codebase

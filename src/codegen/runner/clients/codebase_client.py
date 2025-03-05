@@ -7,7 +7,6 @@ from pathlib import Path
 
 from codegen.configs.models.repository import RepositoryConfig
 from codegen.configs.models.secrets import SecretsConfig
-from codegen.git.repo_operator.local_git_repo import LocalGitRepo
 from codegen.runner.clients.client import Client
 from codegen.runner.models.apis import SANDBOX_SERVER_PORT
 from codegen.shared.logging.get_logger import get_logger
@@ -25,9 +24,9 @@ class CodebaseClient(Client):
 
     repo_config: RepositoryConfig
 
-    def __init__(self, repo_path: str, host: str = "127.0.0.1", port: int = SANDBOX_SERVER_PORT, server_path: str = RUNNER_SERVER_PATH):
+    def __init__(self, repo_config: RepositoryConfig, host: str = "127.0.0.1", port: int = SANDBOX_SERVER_PORT, server_path: str = RUNNER_SERVER_PATH):
         super().__init__(host=host, port=port)
-        self.repo_config = LocalGitRepo(repo_path=Path(repo_path)).get_repo_config()
+        self.repo_config = repo_config
         self._process = None
         self._start_server(server_path)
 
@@ -41,6 +40,8 @@ class CodebaseClient(Client):
         """Start the FastAPI server in a subprocess"""
         envs = self._get_envs()
         logger.info(f"Starting local server on {self.base_url} with envvars: {envs}")
+        for key, value in envs.items():
+            logger.info(f"{key}={value}")
 
         self._process = subprocess.Popen(
             [
@@ -79,5 +80,5 @@ class CodebaseClient(Client):
 
 
 if __name__ == "__main__":
-    client = CodebaseClient(repo_path="/Users/caroljung/git/codegen/codegen-agi")
+    client = CodebaseClient(repo_config=RepositoryConfig.from_path("/Users/caroljung/git/codegen/codegen-agi"))
     print(client.is_running())

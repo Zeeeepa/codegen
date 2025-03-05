@@ -20,7 +20,11 @@ class LocalGitRepo:
 
     @cached_property
     def git_cli(self) -> Repo:
-        return Repo(self.repo_path)
+        if not os.path.exists(self.repo_path):
+            os.makedirs(self.repo_path)
+            return Repo.init(self.repo_path)
+        else:
+            return Repo(self.repo_path)
 
     @cached_property
     def name(self) -> str:

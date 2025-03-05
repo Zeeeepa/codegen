@@ -58,8 +58,6 @@ class RepoOperator:
         setup_option: SetupOption | None = None,
         shallow: bool | None = None,
     ) -> None:
-        os.makedirs(repo_config.path, exist_ok=True)
-        GitCLI.init(repo_config.path)
         self.access_token = access_token or SecretsConfig(root_path=Path(repo_config.path)).github_token
         self._local_git_repo = LocalGitRepo(repo_path=Path(repo_config.path))
         self.repo_config = self._local_git_repo.get_repo_config(self.access_token, repo_config)
@@ -278,8 +276,6 @@ class RepoOperator:
     def clone_or_pull_repo(self, shallow: bool = True) -> None:
         """If repo exists, pulls changes. otherwise, clones the repo."""
         # TODO(CG-7804): if repo is not valid we should delete it and re-clone. maybe we can create a pull_repo util + use the existing clone_repo util
-        if self.repo_exists():
-            self.clean_repo()
         clone_or_pull_repo(repo_path=self.repo_path, clone_url=self.clone_url, shallow=shallow)
 
     ####################################################################################################################

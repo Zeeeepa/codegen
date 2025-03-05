@@ -47,7 +47,7 @@ class ProjectConfig(BaseModel):
         git_root, base_path = split_git_path(repo_path)
         subdirectories = [base_path] if base_path else None
         programming_language = programming_language or determine_project_language(repo_path)
-        repo_config = RepositoryConfig.from_path(path=repo_path, language=programming_language.value, subdirectories=subdirectories)
+        repo_config = RepositoryConfig.from_path(path=repo_path, language=programming_language.value, subdirectories=subdirectories, base_path=base_path)
         # Create main project
         return cls(
             repo_operator=RepoOperator(repo_config=repo_config),
@@ -61,6 +61,7 @@ class ProjectConfig(BaseModel):
         language = programming_language or determine_project_language(repo_operator.repo_path)
         repo_operator.repo_config.language = language.value
         repo_operator.repo_config.subdirectories = [base_path] if base_path else None
+        repo_operator.repo_config.base_path = base_path
         return cls(
             repo_operator=repo_operator,
             programming_language=language,

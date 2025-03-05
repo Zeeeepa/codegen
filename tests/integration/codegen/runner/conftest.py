@@ -14,10 +14,9 @@ from codegen.shared.network.port import get_free_port
 @pytest.fixture()
 def repo_config(tmpdir) -> Generator[RepositoryConfig, None, None]:
     yield RepositoryConfig(
-        name="Kevin-s-Adventure-Game",
+        path=str(tmpdir / "Kevin-s-Adventure-Game"),
         owner="codegen-sh",
         language="PYTHON",
-        base_dir=str(tmpdir),
     )
 
 
@@ -33,6 +32,6 @@ def git_repo_client(op: RepoOperator, repo_config: RepositoryConfig) -> Generato
 
 @pytest.fixture
 def codebase_client(repo_config: RepositoryConfig) -> Generator[CodebaseClient, None, None]:
-    sb_client = CodebaseClient(repo_path=repo_config.path, port=get_free_port())
+    sb_client = CodebaseClient(repo_config=repo_config, port=get_free_port())
     sb_client.runner = Mock()
     yield sb_client

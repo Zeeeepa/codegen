@@ -16,6 +16,7 @@ class RepositoryConfig(BaseConfig):
     user_name: str | None = None
     user_email: str | None = None
     subdirectories: list[str] | None = None
+    base_path: str | None = None  # root module of the parsed codebase
 
     def __init__(self, prefix: str = "REPOSITORY", *args, **kwargs) -> None:
         super().__init__(prefix=prefix, *args, **kwargs)
