@@ -24,7 +24,7 @@ from codegen.git.configs.constants import CODEGEN_BOT_EMAIL, CODEGEN_BOT_NAME
 from codegen.git.repo_operator.local_git_repo import LocalGitRepo
 from codegen.git.schemas.enums import CheckoutResult, FetchResult, SetupOption
 from codegen.git.utils.clone import clone_or_pull_repo, clone_repo, pull_repo
-from codegen.git.utils.clone_url import add_access_token_to_url, get_authenticated_clone_url_for_repo_config, get_clone_url_for_repo_config, url_to_github
+from codegen.git.utils.clone_url import get_authenticated_clone_url_for_repo_config, get_clone_url_for_repo_config, url_to_github
 from codegen.git.utils.codeowner_utils import create_codeowners_parser_for_repo
 from codegen.git.utils.file_utils import create_files
 from codegen.git.utils.remote_progress import CustomRemoteProgress
@@ -852,52 +852,3 @@ class RepoOperator:
             op.git_cli.remotes["origin"].fetch(commit, depth=1)
             op.checkout_commit(commit)
         return op
-
-    @classmethod
-    def create_from_repo(cls, repo_path: str, url: str, access_token: str | None = None) -> Self | None:
-        """Create a fresh clone of a repository or use existing one if up to date.
-
-        Args:
-            repo_path (str): Path where the repo should be cloned
-            url (str): Git URL of the repository
-            access_token (str | None): Optional GitHub API key for operations that need GitHub access
-        """
-        access_token = access_token or SecretsConfig().github_token
-        if access_token:
-            url = add_access_token_to_url(url=url, token=access_token)
-
-        # Check if repo already exists
-        if os.path.exists(repo_path):
-            try:
-                # Try to initialize git repo from existing path
-                git_cli = GitCLI(repo_path)
-                # Check if it has our remote URL
-                if any(remote.url == url for remote in git_cli.remotes):
-                    # Fetch to check for updates
-                    git_cli.remotes.origin.fetch()
-                    # Get current and remote HEADs
-                    local_head = git_cli.head.commit
-                    remote_head = git_cli.remotes.origin.refs[git_cli.active_branch.name].commit
-                    # If up to date, use existing repo
-                    if local_head.hexsha == remote_head.hexsha:
-                        return cls(repo_path=repo_path, bot_commit=False, access_token=access_token)
-            except Exception:
-                # If any git operations fail, fallback to fresh clone
-                pass
-
-            # If we get here, repo exists but is not up to date or valid
-            # Remove the existing directory to do a fresh clone
-            import shutil
-
-            shutil.rmtree(repo_path)
-        try:
-            # Clone the repository
-            GitCLI.clone_from(url=url, to_path=repo_path, depth=1)
-
-            # Initialize with the cloned repo
-            git_cli = GitCLI(repo_path)
-        except (GitCommandError, ValueError) as e:
-            logger.exception("Failed to initialize Git repository:")
-            logger.exception("Please authenticate with a valid token and ensure the repository is properly initialized.")
-            return None
-        return cls(repo_config=RepositoryConfig.from_path(path=repo_path), bot_commit=False, access_token=access_token)
