@@ -1,7 +1,7 @@
 """LLM implementation supporting both OpenAI and Anthropic models."""
 
-import os
 import logging
+import os
 from collections.abc import Sequence
 from typing import Any, Optional
 
@@ -35,9 +35,9 @@ class LLM(BaseChatModel):
     top_k: Optional[int] = Field(default=None, description="Top-k sampling parameter.", ge=1)
 
     max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.", ge=1)
-    
+
     max_retries: int = Field(default=3, description="Maximum number of retries for rate limit errors.")
-    
+
     retry_base_delay: float = Field(default=45.0, description="Base delay in seconds for retry backoff.")
 
     def __init__(self, model_provider: str = "anthropic", model_name: str = "claude-3-5-sonnet-latest", **kwargs: Any) -> None:
@@ -59,10 +59,7 @@ class LLM(BaseChatModel):
         kwargs["model_name"] = model_name
 
         # Filter out unsupported kwargs
-        supported_kwargs = {
-            "model_provider", "model_name", "temperature", "top_p", "top_k", "max_tokens", 
-            "callbacks", "tags", "metadata", "max_retries", "retry_base_delay"
-        }
+        supported_kwargs = {"model_provider", "model_name", "temperature", "top_p", "top_k", "max_tokens", "callbacks", "tags", "metadata", "max_retries", "retry_base_delay"}
         filtered_kwargs = {k: v for k, v in kwargs.items() if k in supported_kwargs}
 
         super().__init__(**filtered_kwargs)
@@ -130,15 +127,12 @@ class LLM(BaseChatModel):
             ChatResult containing the generated completion
         """
         # Use instance-specific retry settings if provided
-        retry_decorator = retry_on_rate_limit(
-            max_retries=self.max_retries, 
-            base_delay=self.retry_base_delay
-        )
-        
+        retry_decorator = retry_on_rate_limit(max_retries=self.max_retries, base_delay=self.retry_base_delay)
+
         # Apply the retry decorator to the underlying model's _generate method
         # This is a bit of a hack, but it allows us to use the decorator with the instance settings
         generate_with_retry = retry_decorator(self._model._generate)
-        
+
         return generate_with_retry(messages, stop=stop, run_manager=run_manager, **kwargs)
 
     def bind_tools(
