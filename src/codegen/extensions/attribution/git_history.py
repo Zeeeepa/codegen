@@ -1,11 +1,15 @@
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime
 from typing import Optional
 
 import pygit2
+from intervaltree import IntervalTree
+from pygit2 import Commit, Patch
+from pygit2.enums import CheckoutStrategy, DeltaStatus, SortMode
 
 from codegen.sdk.core.codebase import Codebase
+from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.symbol import Symbol
 
 
@@ -23,17 +27,22 @@ class GitAttributionTracker:
         self.codebase = codebase
         self.repo_path = codebase.ctx.projects[0].repo_operator.repo_path
         self.repo = pygit2.Repository(self.repo_path)
+        self.org_branch_reference = self.repo.head
 
         # Default AI authors if none provided
         self.ai_authors = ai_authors or ["devin[bot]", "codegen[bot]"]
 
         # Cache structures
         self._file_history = {}  # file path -> list of commit info
-        self._symbol_history = {}  # symbol id -> list of commit info
+        self._symbol_history:defaultdict[str,list] = defaultdict(list)  # symbol id -> list of commit info
         self._author_contributions = defaultdict(list)  # author -> list of commit info
 
         # Track if history has been built
         self._history_built = False
+
+        self._file_symbol_location_state:dict[str,IntervalTree] = {}
+
+        self._commits:deque[Commit]
 
     def build_history(self, max_commits: Optional[int] = None) -> None:
         """Build the git history for the codebase.
@@ -57,12 +66,13 @@ class GitAttributionTracker:
         commit_count = 0
         author_set = set()
 
+        self._commits=deque()
         try:
-            for commit in self.repo.walk(self.repo.head.target, pygit2.GIT_SORT_TIME):
+            for commit in self.repo.walk(self.repo.head.target, SortMode.TIME):
                 # Track unique authors
                 author_id = f"{commit.author.name} <{commit.author.email}>"
                 author_set.add(author_id)
-
+                self._commits.append(commit)
                 # Process each diff in the commit
                 if len(commit.parents) > 0:
                     try:
@@ -144,6 +154,35 @@ class GitAttributionTracker:
             file_commit["file_path"] = file_path
             self._file_history[file_path].append(file_commit)
 
+
+    def _process_symbol_location_state(self, filepaths:list[str]):
+        for filepath in filepaths:
+            file = self.codebase.get_file(filepath)
+            filetree = IntervalTree()
+            try:
+                for symbol in file.symbols:
+                    symbol:Symbol
+                    start_line=symbol.range.start_point.row+1 # 1 Indexing
+                    end_line=symbol.range.end_point.row+2 # Intervaltree is end non-inclusive
+                    filetree.addi(start_line,end_line,symbol)
+            except Exception as e:
+                pass
+            self._file_symbol_location_state[filepath] = filetree
+
+    def _get_symbols_affected_by_patch(self,patch:Patch,filepath):
+        if filepath not in self._file_symbol_location_state:
+            return []
+        symbols_affected=set()
+        for hunk in patch.hunks:
+            start = hunk.new_start
+            end = start+hunk.new_lines # Intervaltree is end non-inclusive
+            for interval in self._file_symbol_location_state[filepath].overlap(start,end):
+                symbols_affected.add(interval[2])
+
+        return symbols_affected
+
+
+
     def _is_tracked_file(self, file_path: str) -> bool:
         """Check if a file should be tracked based on extension."""
         # Get file extensions from the codebase
@@ -160,31 +199,90 @@ class GitAttributionTracker:
         if not self._history_built:
             self.build_history()
 
-    def map_symbols_to_history(self) -> None:
-        """Map symbols in the codebase to their git history."""
+    def map_symbols_to_history(self,force=False) -> None:
+        """Map symbols in the codebase to their git history. force ensures a rerun even if data is already found!"""
         self._ensure_history_built()
+        if self._symbol_history:
+            print("Already built, run with force if you want to rerun anyway!")
+            return
 
         print("Mapping symbols to git history...")
         start_time = time.time()
 
-        # For each symbol, find commits that modified its file
-        for symbol in self.codebase.symbols:
-            if not hasattr(symbol, "filepath") or not symbol.filepath:
-                continue
+        print("Turning off graph mapping!")
 
-            symbol_id = f"{symbol.filepath}:{symbol.name}"
-            self._symbol_history[symbol_id] = []
-
-            # Get file history
-            file_history = self._file_history.get(symbol.filepath, [])
-
-            # For now, just associate all file changes with the symbol
-            # A more sophisticated approach would use line ranges
-            for commit in file_history:
-                self._symbol_history[symbol_id].append(commit)
+        print("Generating initial symbol state...")
+        filepaths = [file.filepath for file in self.codebase.files]
+        self._process_symbol_location_state(filepaths)
 
         elapsed = time.time() - start_time
-        print(f"Finished mapping symbols in {elapsed:.2f} seconds.")
+        print(f"Finished initial symbol state generation in {elapsed:.2f} seconds.")
+        symbol_tracking_checkpoint=time.time()
+        try:
+            print("Starting symbol tracking procedure....")
+            for commit in self._commits:
+                author_name = commit.author.name
+                author_email = commit.author.email
+                timestamp = commit.author.time
+                commit_id = str(commit.id)
+
+                commit_info = {
+                    "author": author_name,
+                    "email": author_email,
+                    "timestamp": timestamp,
+                    "commit_id": commit_id,
+                    "message": commit.message.strip(),
+                }
+                commit_previous = commit.parents[0] if commit.parents else None
+                if not commit_previous:
+                    #If Last commit
+                    empty_tree_old = self.repo.TreeBuilder().write()
+                    empty_tree=self.repo.get(empty_tree_old)
+                    diff = self.repo.diff(empty_tree,commit.tree)
+                else:
+                    diff = self.repo.diff(commit_previous, commit,context_lines=0) #We don't need context lines
+
+                if isinstance(diff,Patch):
+                    diff=[diff]
+                sync_past_filepaths=[] #Files to sync in the past commit
+                for patch in diff:
+                    filepath=patch.delta.new_file.path
+                    if not self._is_tracked_file(filepath):
+                        continue #Ignore files we don't track
+                    if not patch.delta.status==DeltaStatus.ADDED: #Reversed since we're going backwards, if it doesn't exist in the past commits don't sync!
+                        sync_past_filepaths.append(filepath)
+                    symbols_affected = self._get_symbols_affected_by_patch(patch,filepath)
+                    for symbol in symbols_affected:
+                        symbol_id = f"{symbol.filepath}:{symbol.name}" #For future stuff might want to do this more neatly and allow for future dead symbols/renames
+                        self._symbol_history[symbol_id].append(commit_info)
+
+                if commit_previous:
+                    #If not last commit
+                    self.repo.checkout_tree(commit_previous,strategy=CheckoutStrategy.FORCE)
+                    self.repo.set_head(commit_previous.id)
+                    files = [self.codebase.get_file(fp) for fp in sync_past_filepaths]
+                    exclude_state_files=[]
+                    for file in files:
+                        if not isinstance(file,SourceFile):
+                            #What kind of pyfiles are not source files? To investigate!
+                            exclude_state_files.append(file.filepath)
+                            continue
+                        file.sync_with_file_content()
+                    self._process_symbol_location_state([fp for fp in sync_past_filepaths if fp not in exclude_state_files])
+
+        finally:
+            print("Finished, restoring git repo state...")
+            self.repo.checkout(self.org_branch_reference,strategy=CheckoutStrategy.FORCE)
+
+        print(f"Restored, newest commit id in repo is {self.repo.revparse_single(self.org_branch_reference.name).id}")
+
+
+
+        end_time = time.time()
+        elapsed_total = end_time - start_time
+        elapsed_symbol_tracking = end_time-symbol_tracking_checkpoint
+        print(f"Finished symbol tracking in {elapsed_symbol_tracking:.2f} seconds.")
+        print(f"Finished mapping symbols in {elapsed_total:.2f} seconds.")
 
     def get_symbol_history(self, symbol: Symbol) -> list[dict]:
         """Get the edit history for a symbol.
