@@ -28,7 +28,6 @@ class AgentGraph:
     def __init__(self, model: "LLM", tools: list[BaseTool], system_message: SystemMessage):
         self.model = model.bind_tools(tools)
         self.tools = tools
-        self.tools_by_name = {tool.name: tool for tool in self.tools}
         self.system_message = system_message
 
     # =================================== NODES ====================================
@@ -63,7 +62,14 @@ class AgentGraph:
 
         # the retry policy has an initial interval, a backoff factor, and a max interval of controlling the
         # amount of time between retries
-        retry_policy = RetryPolicy(retry_on=[anthropic.RateLimitError, openai.RateLimitError], max_attempts=10)
+        retry_policy = RetryPolicy(
+            retry_on=[anthropic.RateLimitError, openai.RateLimitError],
+            max_attempts=10,
+            initial_interval=30.0,  # Start with 10 second wait
+            backoff_factor=0.5,  # Double the wait time each retry
+            max_interval=60.0,  # Cap at 1 minute max wait
+            jitter=True,
+        )
 
         # Add nodes
         builder.add_node("reasoner", self.reasoner, retry=retry_policy)
