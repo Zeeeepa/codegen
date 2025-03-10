@@ -37,7 +37,7 @@ def create_pr(codebase: Codebase, title: str, body: str) -> CreatePRObservation:
     """
     try:
         # Check for uncommitted changes and commit them
-        if len(codebase.get_diff()) == 0:
+        if len(codebase.get_diff(stage_files=True)) == 0:
             return CreatePRObservation(
                 status="error",
                 error="No changes to create a PR.",
