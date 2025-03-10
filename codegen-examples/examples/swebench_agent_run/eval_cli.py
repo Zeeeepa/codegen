@@ -16,6 +16,7 @@ from codegen.extensions.swebench.utils import (
 )
 from codegen.sdk.core.codebase import Codebase
 
+from swebench_agent_run.constants import DATASET_DICT
 from swebench_agent_run.report import generate_report
 from swebench_agent_run.utils import track_batches
 
@@ -100,12 +101,18 @@ def create_error_info(error: Exception, example_id: str = "") -> ErrorInfo:
     return error_info
 
 
-def process_modal(examples: list[SweBenchExample]) -> List[ProcessingResult]:
+def process_modal(
+    examples: list[SweBenchExample],
+    model: str,
+    run_id: str,
+) -> List[ProcessingResult]:
     """Process examples using Modal's parallel execution."""
     results: List[ProcessingResult] = []
 
     try:
-        batch_results = run_agent_modal.map(examples)
+        batch_results = run_agent_modal.starmap(
+            [(ex, run_id, model) for ex in examples],
+        )
 
         for example, result in zip(examples, batch_results):
             if isinstance(result, Exception):
@@ -139,6 +146,8 @@ def process_batch_local(
     examples: list[SweBenchExample],
     batch_size: int = 10,
     codebases: dict[str, Codebase] = {},
+    model: str = "claude-3-7-sonnet-latest",
+    run_id: str | None = None,
 ) -> List[ProcessingResult]:
     """Process examples in local batches."""
     results: List[ProcessingResult] = []
@@ -146,7 +155,12 @@ def process_batch_local(
     for _, batch in track_batches(examples, batch_size, desc="Processing examples"):
         for example in batch:
             try:
-                result = run_agent_on_entry(example, codebase=codebases.get(example.instance_id))
+                result = run_agent_on_entry(
+                    example,
+                    model=model,
+                    codebase=codebases.get(example.instance_id),
+                    run_id=run_id,
+                )
                 results.append(ProcessingResult(instance_id=example.instance_id, result=result))
             except Exception as e:
                 error_info = create_error_info(e, example.instance_id)
@@ -206,23 +220,19 @@ def print_summary(summary: dict, predictions_dir: Path, summary_file: Path) -> N
 
 def run_eval(
     use_existing_preds: Optional[str],
-    dataset: str,
+    dataset_enum: SWEBenchDataset,
     length: int,
     instance_id: Optional[str] = None,
     local: bool = False,
     codebases: Dict[str, Codebase] = {},
     repo: Optional[str] = None,
+    model: str = "claude-3-7-sonnet-latest",
 ) -> Tuple[Path, Path, SWEBenchDataset, str]:
     """Main evaluation function."""
     run_id = use_existing_preds or str(uuid.uuid4())
     print(f"Run ID: {run_id}")
 
     predictions_dir = PREDS_DNAME / f"results_{run_id}"
-    dataset_enum = {
-        "lite": SWEBenchDataset.LITE,
-        "full": SWEBenchDataset.FULL,
-        "verified": SWEBenchDataset.VERIFIED,
-    }[dataset]
 
     examples = get_swe_bench_examples(
         dataset=dataset_enum, length=length, instance_id=instance_id, repo=repo
@@ -233,14 +243,24 @@ def run_eval(
 
     try:
         if use_existing_preds is None:
+            print(f"Repo: {repo}")
+            print(
+                f"Examples:\n{'\n'.join([f'{e.instance_id} - {e.repo} - {e.base_commit}' for e in examples])}"
+            )
             print(f"Processing {len(examples)} examples...")
+
             predictions_dir.mkdir(exist_ok=True, parents=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
             results = (
-                process_batch_local(examples, codebases=codebases)
+                process_batch_local(
+                    examples,
+                    codebases=codebases,
+                    model=model,
+                    run_id=run_id,
+                )
                 if local
-                else process_modal(examples)
+                else process_modal(examples, model=model, run_id=run_id)
             )
             summary_file, summary = save_results(results, predictions_dir, timestamp)
             print_summary(summary, predictions_dir, summary_file)
@@ -274,6 +294,13 @@ def run_eval(
 @click.option("--local", help="Run the evaluation locally.", is_flag=True, default=False)
 @click.option("--push-metrics", help="Push metrics to the database.", is_flag=True, default=False)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
+@click.option(
+    "--num-workers",
+    help="The number of workers to use. This is the number of examples that will be processed concurrently. A large number may lead to rate limiting issues.",
+    type=int,
+    default=5,
+)
+@click.option("--model", help="The model to use.", type=str, default="claude-3-7-sonnet-latest")
 def main(
     use_existing_preds: Optional[str],
     dataset: str,
@@ -281,6 +308,8 @@ def main(
     instance_id: Optional[str],
     local: bool,
     repo: Optional[str],
+    num_workers: int,
+    model: str,
     push_metrics: bool,
 ) -> None:
     """Command-line interface for running evaluations."""
@@ -289,12 +318,14 @@ def main(
     evaluation_result_file = generate_report(
         *run_eval(
             use_existing_preds=use_existing_preds,
-            dataset=dataset,
+            dataset_enum=DATASET_DICT[dataset],
             length=length,
             instance_id=instance_id,
             codebases=None,
             local=local,
             repo=repo,
+            num_workers=num_workers,
+            model=model,
         )
     )
 

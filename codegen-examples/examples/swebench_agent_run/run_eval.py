@@ -1,17 +1,23 @@
+"""
+!!! REFACTORED INTO eval_cli.py !!!
+"""
+
 import asyncio
 import json
-import traceback
-from pathlib import Path
-import uuid
-import modal
-import click
 import time
+import traceback
+import uuid
+from pathlib import Path
+
+import click
+import modal
 from codegen.extensions.swebench.enums import SWEBenchDataset, SWEBenchLiteSubset
-from constants import DATASET_DICT
 from codegen.extensions.swebench.harness import run_agent_on_entry
-from codegen.extensions.swebench.utils import SweBenchExample, get_swe_bench_examples
 from codegen.extensions.swebench.report import generate_report
+from codegen.extensions.swebench.utils import SweBenchExample, get_swe_bench_examples
 from codegen.sdk.core.codebase import Codebase
+
+from swebench_agent_run.constants import DATASET_DICT
 
 PREDS_DNAME = Path(__file__).parent / "predictions"
 LOG_DIR = Path(__file__).parent / "logs"
@@ -197,7 +203,11 @@ async def process_batch_modal(
                 await queue.put((example, attempt + 1))
                 return None
 
-            return {"status": "error", "instance_id": example.instance_id, "error_info": error_info}
+            return {
+                "status": "error",
+                "instance_id": example.instance_id,
+                "error_info": error_info,
+            }
 
     async def worker():
         # Store this task reference to allow targeted cancellation
@@ -259,7 +269,10 @@ async def process_batch_modal(
 
     # Return results in the same order as input examples
     return [
-        results.get(example.instance_id, {"instance_id": example.instance_id, "status": "missing"})
+        results.get(
+            example.instance_id,
+            {"instance_id": example.instance_id, "status": "missing"},
+        )
         for example in examples
     ]
 
@@ -293,7 +306,10 @@ def process_batch_local(
                 # Run the agent locally instead of using modal
                 if codebases and example.instance_id in codebases:
                     result = run_agent_on_entry(
-                        example, model=model, codebase=codebases[example.instance_id], run_id=run_id
+                        example,
+                        model=model,
+                        codebase=codebases[example.instance_id],
+                        run_id=run_id,
                     )
                 else:
                     result = run_agent_on_entry(example, model=model, run_id=run_id)
@@ -435,7 +451,10 @@ async def run_eval(
 )
 @click.option("--length", help="The number of examples to process.", type=int, default=None)
 @click.option(
-    "--instance-id", help="The instance ID of the example to process.", type=str, default=None
+    "--instance-id",
+    help="The instance ID of the example to process.",
+    type=str,
+    default=None,
 )
 @click.option("--local", help="Run the evaluation locally.", is_flag=True, default=False)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
