@@ -2,15 +2,13 @@ import os
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
+from langchain.callbacks import tracing_v2_enabled
 from langchain.tools import BaseTool
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables.config import RunnableConfig
 from langsmith import Client
 
 from codegen.extensions.langchain.agent import create_codebase_agent
-from codegen.extensions.langchain.utils.get_langsmith_url import (
-    find_and_print_langsmith_run_url,
-)
 
 if TYPE_CHECKING:
     from codegen import Codebase
@@ -106,6 +104,7 @@ class CodeAgent:
             metadata["swebench_instance_id"] = self.instance_id
             tags.append(self.instance_id)
 
+        # This specific run_id parameter is ONLY added so that we can get back the agent traces correctly.
         config = RunnableConfig(configurable={"thread_id": thread_id}, tags=tags, metadata=metadata, recursion_limit=100)
         # we stream the steps instead of invoke because it allows us to access intermediate nodes
         stream = self.agent.stream(input, config=config, stream_mode="values")
@@ -113,58 +112,33 @@ class CodeAgent:
         # Keep track of run IDs from the stream
         run_ids = []
 
-        for s in stream:
-            if len(s["messages"]) == 0:
-                message = HumanMessage(content=prompt)
-            else:
-                message = s["messages"][-1]
-
-            if isinstance(message, tuple):
-                print(message)
-            else:
-                if isinstance(message, AIMessage) and isinstance(message.content, list) and "text" in message.content[0]:
-                    AIMessage(message.content[0]["text"]).pretty_print()
+        with tracing_v2_enabled() as cb:
+            for s in stream:
+                if len(s["messages"]) == 0:
+                    message = HumanMessage(content=prompt)
                 else:
-                    message.pretty_print()
+                    message = s["messages"][-1]
 
-                # Try to extract run ID if available in metadata
-                if hasattr(message, "additional_kwargs") and "run_id" in message.additional_kwargs:
-                    run_ids.append(message.additional_kwargs["run_id"])
+                if isinstance(message, tuple):
+                    print(message)
+                else:
+                    if isinstance(message, AIMessage) and isinstance(message.content, list) and "text" in message.content[0]:
+                        AIMessage(message.content[0]["text"]).pretty_print()
+                    else:
+                        message.pretty_print()
 
-        # Get the last message content
-        result = s["final_answer"]
+                    # Try to extract run ID if available in metadata
+                    if hasattr(message, "additional_kwargs") and "run_id" in message.additional_kwargs:
+                        run_ids.append(message.additional_kwargs["run_id"])
 
-        # Try to find run IDs in the LangSmith client's recent runs
-        try:
-            # Find and print the LangSmith run URL
-            find_and_print_langsmith_run_url(self.langsmith_client, self.project_name)
-        except Exception as e:
+            # Get the last message content
+
+            result = s["final_answer"]
+
             separator = "=" * 60
-            print(f"\n{separator}\nCould not retrieve LangSmith URL: {e}")
-            import traceback
+            print(f"\n{separator}\n🔍 LangSmith Run URL: {cb.get_run_url()}\n{separator}")
 
-            print(traceback.format_exc())
-            print(separator)
-
-        return result
-
-    def get_agent_trace_url(self) -> str | None:
-        """Get the URL for the most recent agent run in LangSmith.
-
-        Returns:
-            The URL for the run in LangSmith if found, None otherwise
-        """
-        try:
-            # TODO - this is definitely not correct, we should be able to get the URL directly...
-            return find_and_print_langsmith_run_url(client=self.langsmith_client, project_name=self.project_name)
-        except Exception as e:
-            separator = "=" * 60
-            print(f"\n{separator}\nCould not retrieve LangSmith URL: {e}")
-            import traceback
-
-            print(traceback.format_exc())
-            print(separator)
-            return None
+            return result
 
     def get_tools(self) -> list[BaseTool]:
         return list(self.agent.get_graph().nodes["tools"].data.tools_by_name.values())
