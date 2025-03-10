@@ -156,7 +156,7 @@ class RepoOperator:
             self._set_bot_username(git_cli)
         elif self.bot_commit:
             self._set_bot_username(git_cli)
-            
+
         if not email:
             self._set_bot_email(git_cli)
         elif self.bot_commit:
