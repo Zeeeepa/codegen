@@ -87,7 +87,7 @@ class CodeAgent:
                 "thread_id": thread_id,
                 "metadata": {"project": self.project_name},
             },
-            "recursion_limit": 100,
+            "recursion_limit": 200,
         }
 
         # this message has a reducer which appends the current message to the existing history
