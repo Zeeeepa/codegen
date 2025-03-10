@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import modal as modal_lib
+import tenacity
 from swebench.harness.constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
@@ -83,12 +84,38 @@ app = modal_lib.App(
 )
 
 
+class ShouldRetry(Exception):
+    pass
+
+
 @app.function(timeout=43200)
 async def run_agent_modal(entry: "SweBenchExample", run_id: str, model: str):
     from codegen.extensions.swebench.harness import run_agent_on_entry
 
     """Modal function to process a single example from the SWE-bench dataset."""
-    return run_agent_on_entry(entry, run_id=run_id, model=model)
+    for attempt in tenacity.Retrying(
+        wait=tenacity.wait_exponential_jitter(max=600),
+        retry=tenacity.retry_if_exception_type(ShouldRetry),
+    ):
+        with attempt:
+            try:
+                return run_agent_on_entry(entry, run_id=run_id, model=model)
+            except Exception as e:
+                if any(
+                    msg in str(e).lower()
+                    for msg in (
+                        "rate limit",
+                        "too many requests",
+                        "429",
+                        "throttle",
+                        "quota exceeded",
+                        "capacity",
+                        "limit exceeded",
+                    )
+                ):
+                    raise ShouldRetry() from e
+                else:
+                    raise e
 
 
 @app.function(

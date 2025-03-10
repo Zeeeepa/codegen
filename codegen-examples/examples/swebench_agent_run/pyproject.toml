@@ -10,6 +10,7 @@ dependencies = [
   "click>=8.1.0",
   "codegen",
   "swebench>=3.0.15",
+  "tenacity>=9.0.0",
 ]
 
 [project.optional-dependencies]

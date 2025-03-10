@@ -294,12 +294,6 @@ def run_eval(
 @click.option("--local", help="Run the evaluation locally.", is_flag=True, default=False)
 @click.option("--push-metrics", help="Push metrics to the database.", is_flag=True, default=False)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
-@click.option(
-    "--num-workers",
-    help="The number of workers to use. This is the number of examples that will be processed concurrently. A large number may lead to rate limiting issues.",
-    type=int,
-    default=5,
-)
 @click.option("--model", help="The model to use.", type=str, default="claude-3-7-sonnet-latest")
 def main(
     use_existing_preds: Optional[str],
@@ -308,7 +302,6 @@ def main(
     instance_id: Optional[str],
     local: bool,
     repo: Optional[str],
-    num_workers: int,
     model: str,
     push_metrics: bool,
 ) -> None:
@@ -324,7 +317,6 @@ def main(
             codebases=None,
             local=local,
             repo=repo,
-            num_workers=num_workers,
             model=model,
         )
     )

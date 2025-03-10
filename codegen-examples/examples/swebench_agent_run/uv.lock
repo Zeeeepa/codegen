@@ -3068,6 +3068,7 @@ dependencies = [
     { name = "codegen" },
     { name = "modal" },
     { name = "swebench" },
+    { name = "tenacity" },
     { name = "tqdm" },
 ]
 
@@ -3095,6 +3096,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "swebench", specifier = ">=3.0.15" },
     { name = "swebench-agent-run", extras = ["metrics", "dev"], marker = "extra == 'all'" },
+    { name = "tenacity", specifier = ">=9.0.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
 ]
 
