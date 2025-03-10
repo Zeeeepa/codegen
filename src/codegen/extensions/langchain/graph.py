@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 import anthropic
 import openai
 from langchain.tools import BaseTool
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledGraph, StateGraph
+from langgraph.prebuilt import ToolNode
 from langgraph.pregel import RetryPolicy
 
 
@@ -47,16 +48,6 @@ class AgentGraph:
 
         return {"messages": [*messages, result]}
 
-    # Tool node
-    def tool_node(self, state: GraphState) -> dict[str, Any]:
-        """Performs the tool call"""
-        result = []
-        for tool_call in state["messages"][-1].tool_calls:
-            tool = self.tools_by_name[tool_call["name"]]
-            observation = tool.invoke(tool_call["args"])
-            result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
-        return {"messages": result}
-
     # =================================== EDGE CONDITIONS ====================================
     def should_continue(self, state: GraphState) -> Literal["tools", END]:
         messages = state["messages"]
@@ -76,7 +67,7 @@ class AgentGraph:
 
         # Add nodes
         builder.add_node("reasoner", self.reasoner, retry=retry_policy)
-        builder.add_node("tools", self.tool_node, retry=retry_policy)
+        builder.add_node("tools", ToolNode(self.tools), retry=retry_policy)
 
         # Add edges
         builder.add_edge(START, "reasoner")
