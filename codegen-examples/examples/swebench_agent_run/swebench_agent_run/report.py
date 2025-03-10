@@ -4,8 +4,8 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+from codegen.extensions.swebench.enums import SWEBenchDataset
 from codegen.extensions.swebench.tests import remove_patches_to_tests
-from codegen.extensions.swebench.utils import SWEBenchDataset
 
 from .modal_harness import patched_swebench_eval
 
@@ -101,6 +101,8 @@ def generate_report(
         print(f"Directory does not exist: {predictions_dir}")
         return None
 
+    predictions_jsonl = predictions_dir / "all_preds.jsonl"
+    existing_preds = predictions_jsonl.exists()
     prediction_files = list(predictions_dir.glob("*.json"))
     print(f"Found {len(prediction_files)} prediction files")
 
@@ -114,35 +116,32 @@ def generate_report(
         except json.JSONDecodeError:
             print(f"Error reading JSON from {file_path}")
             continue
+    if not existing_preds:
+        if not predictions:
+            print("No valid predictions found")
+            return 1
 
-    print(f"Successfully loaded {len(predictions)} predictions")
+        print(f"Successfully loaded {len(predictions)} predictions")
 
-    if predictions:
-        # Create predictions JSONL file
         predictions_jsonl = preds_to_jsonl(predictions, predictions_dir)
-        print(f"\nCreated predictions JSONL: {predictions_jsonl}")
 
-        # Setup log directory
-        log_dir = logs_dir / "results"
-        log_dir.mkdir(exist_ok=True, parents=True)
-        print(f"Using log directory: {log_dir}")
+    # Setup log directory
+    log_dir = logs_dir / "results"
+    log_dir.mkdir(exist_ok=True, parents=True)
+    print(f"Using log directory: {log_dir}")
 
-        # Run evaluations
-        evaluation_result_file = patched_swebench_eval(
-            predictions_jsonl,
-            run_id,
-            dataset_name=dataset.value,
-            cache_level="instance",
-            report_dir=logs_dir,
-            modal=True,
-        )
-        # Get and display report
-        report = get_report(predictions_jsonl, logs_dir)
+    evaluation_result_file = patched_swebench_eval(
+        predictions_jsonl,
+        run_id,
+        dataset_name=dataset.value,
+        cache_level="instance",
+        report_dir=logs_dir,
+        modal=True,
+    )
+    # Get and display report
+    report = get_report(predictions_jsonl, logs_dir)
 
-        # Update prediction JSONs with results
-        predictions = update_pred_json(predictions, report, predictions_dir)
-    else:
-        print("No valid predictions found")
-        return None
+    # Update prediction JSONs with results
+    predictions = update_pred_json(predictions, report, predictions_dir)
 
     return evaluation_result_file

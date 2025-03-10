@@ -42,10 +42,6 @@ Tool for running and evaluating model fixes using SWE-bench.
      ```bash
      python -m modal profile activate <profile_name>
      ```
-   - Deploy the Modal app:
-     ```bash
-     python -m modal deploy entry_point.py
-     ```
 
 ## Usage
 
@@ -85,8 +81,9 @@ swe-eval --dataset lite --length 10
 # Options
 swe-eval --help
 Options:
-  --use-existing-preds TEXT       Run ID of existing predictions
-  --dataset [lite|full|verified]  Dataset to use
+  --use-existing-preds TEXT      Run ID of existing predictions
+  --dataset [lite|full|verified|lite_small|lite_medium|lite_large]
+                                 Dataset to use
   --length INTEGER               Number of examples to process
   --instance-id TEXT             Specific instance ID to process
   --repo TEXT                    Specific repo to evaluate
