@@ -65,9 +65,9 @@ class AgentGraph:
         retry_policy = RetryPolicy(
             retry_on=[anthropic.RateLimitError, openai.RateLimitError],
             max_attempts=10,
-            initial_interval=30.0,  # Start with 10 second wait
-            backoff_factor=0.5,  # Double the wait time each retry
-            max_interval=60.0,  # Cap at 1 minute max wait
+            initial_interval=30.0,  # Start with 30 second wait
+            backoff_factor=2,  # Double the wait time each retry
+            max_interval=1000.0,  # Cap at 1000 second max wait
             jitter=True,
         )
 
