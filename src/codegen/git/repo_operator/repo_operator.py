@@ -151,12 +151,19 @@ class RepoOperator:
                     email_level = email_level or level
 
         # We need a username and email to commit, so if they're not set, set them to the bot's
-        if not username or self.bot_commit:
+        # Only set bot credentials if explicitly requested via bot_commit or if no credentials exist
+        if not username:
             self._set_bot_username(git_cli)
-        if not email or self.bot_commit:
+        elif self.bot_commit:
+            self._set_bot_username(git_cli)
+            
+        if not email:
+            self._set_bot_email(git_cli)
+        elif self.bot_commit:
             self._set_bot_email(git_cli)
 
         # If user config is set at a level above the repo level: unset it
+        # Only unset if bot_commit is False (preserving user credentials)
         if not self.bot_commit:
             if username and username != CODEGEN_BOT_NAME and user_level != "repository":
                 self._unset_bot_username(git_cli)

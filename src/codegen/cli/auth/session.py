@@ -22,7 +22,7 @@ class CodegenSession:
     config: UserConfig
     existing: bool
 
-    def __init__(self, repo_path: Path, git_token: str | None = None) -> None:
+    def __init__(self, repo_path: Path, git_token: str | None = None, preserve_git_credentials: bool = False) -> None:
         if not repo_path.exists() or get_git_repo(repo_path) is None:
             rich.print(f"\n[bold red]Error:[/bold red] Path to git repo does not exist at {self.repo_path}")
             raise click.Abort()
@@ -33,6 +33,7 @@ class CodegenSession:
         self.config = UserConfig(env_filepath=repo_path / ENV_FILENAME)
         self.config.secrets.github_token = git_token or self.config.secrets.github_token
         self.existing = session_manager.get_session(repo_path) is not None
+        self.preserve_git_credentials = preserve_git_credentials
 
         self._initialize()
         session_manager.set_active_session(repo_path)

@@ -16,7 +16,8 @@ from codegen.shared.path import get_git_root_path
 @click.option("--token", type=str, help="Access token for the git repository. Required for full functionality.")
 @click.option("--language", type=click.Choice(["python", "typescript"], case_sensitive=False), help="Override automatic language detection")
 @click.option("--fetch-docs", is_flag=True, help="Fetch docs and examples (requires auth)")
-def init_command(path: str | None = None, token: str | None = None, language: str | None = None, fetch_docs: bool = False):
+@click.option("--preserve-git-credentials", is_flag=True, help="Preserve existing git user.name and user.email credentials")
+def init_command(path: str | None = None, token: str | None = None, language: str | None = None, fetch_docs: bool = False, preserve_git_credentials: bool = False):
     """Initialize or update the Codegen folder."""
     # Print a message if not in a git repo
     path = Path.cwd() if path is None else Path(path)
@@ -31,7 +32,7 @@ def init_command(path: str | None = None, token: str | None = None, language: st
         rich.print(format_command("codegen init"))
         sys.exit(1)
 
-    session = CodegenSession(repo_path=repo_path, git_token=token)
+    session = CodegenSession(repo_path=repo_path, git_token=token, preserve_git_credentials=preserve_git_credentials)
     if language:
         session.config.repository.language = language.upper()
         session.config.save()

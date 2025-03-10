@@ -18,7 +18,7 @@ from codegen.cli.workspace.examples_workspace import populate_examples
 from codegen.cli.workspace.venv_manager import VenvManager
 
 
-def initialize_codegen(session: CodegenSession, status: Status | str = "Initializing", fetch_docs: bool = False) -> CodegenSession:
+def initialize_codegen(session: CodegenSession, status: Status | str = "Initializing", fetch_docs: bool = False) -> tuple[Path, Path, Path]:
     """Initialize or update the codegen directory structure and content.
 
     Args:
