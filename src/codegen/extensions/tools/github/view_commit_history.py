@@ -1,6 +1,6 @@
 """Tool for viewing commit history with URLs."""
 
-from typing import ClassVar, List
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -12,7 +12,7 @@ from ..observation import Observation
 class CommitHistoryObservation(Observation):
     """Response from viewing commit history."""
 
-    commits: List[dict] = Field(
+    commits: list[dict] = Field(
         description="List of commits with their details including URLs",
     )
 
@@ -26,7 +26,7 @@ class CommitHistoryObservation(Observation):
 def view_commit_history(
     codebase: Codebase,
     max_results: int = 20,
-    path: str = None,
+    path: Optional[str] = None,
 ) -> CommitHistoryObservation:
     """Get the commit history for a repository or specific path.
 
@@ -42,7 +42,7 @@ def view_commit_history(
         # Get commits
         commits_data = []
         commits = repo.repo.get_commits(path=path)
-        
+
         for commit in commits[:max_results]:
             commit_data = {
                 "sha": commit.sha,
