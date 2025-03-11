@@ -20,6 +20,7 @@ from codegen.sdk.core.autocommit import commiter, mover, reader, remover, writer
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.dataclasses.usage import UsageType
 from codegen.sdk.core.directory import Directory
+from codegen.sdk.core.function import Function
 from codegen.sdk.core.import_resolution import Import, WildcardImport
 from codegen.sdk.core.interfaces.editable import Editable
 from codegen.sdk.core.interfaces.has_attribute import HasAttribute
@@ -41,7 +42,6 @@ from codegen.visualizations.enums import VizNode
 if TYPE_CHECKING:
     from codegen.sdk.core.assignment import Assignment
     from codegen.sdk.core.detached_symbols.code_block import CodeBlock
-    from codegen.sdk.core.function import Function
     from codegen.sdk.core.interface import Interface
 
 logger = get_logger(__name__)
