@@ -88,7 +88,7 @@ class ShouldRetry(Exception):
     pass
 
 
-@app.function(timeout=43200)
+@app.function(timeout=43200, max_containers=10)
 async def run_agent_modal(entry: "SweBenchExample", run_id: str, model: str):
     from codegen.extensions.swebench.harness import run_agent_on_entry
 
