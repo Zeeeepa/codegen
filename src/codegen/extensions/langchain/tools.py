@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from codegen.extensions.linear.linear_client import LinearClient
 from codegen.extensions.tools.bash import run_bash_command
 from codegen.extensions.tools.github.checkout_pr import checkout_pr
+from codegen.extensions.tools.github.view_commit_history import view_commit_history
 from codegen.extensions.tools.github.view_pr_checks import view_pr_checks
 from codegen.extensions.tools.linear.linear import (
     linear_comment_on_issue_tool,
@@ -629,6 +630,29 @@ class GithubViewPRCheckTool(BaseTool):
         return result.render()
 
 
+class GithubViewCommitHistoryInput(BaseModel):
+    """Input for viewing commit history."""
+
+    max_results: int = Field(default=20, description="Maximum number of commits to return")
+    path: str | None = Field(default=None, description="Optional path to filter commits by")
+
+
+class GithubViewCommitHistoryTool(BaseTool):
+    """Tool for viewing commit history with URLs."""
+
+    name: ClassVar[str] = "view_commit_history"
+    description: ClassVar[str] = "View the commit history for a repository or specific path with URLs for linking"
+    args_schema: ClassVar[type[BaseModel]] = GithubViewCommitHistoryInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, max_results: int = 20, path: str | None = None) -> str:
+        result = view_commit_history(self.codebase, max_results=max_results, path=path)
+        return result.render()
+
+
 ########################################################################################################################
 # LINEAR
 ########################################################################################################################
@@ -838,6 +862,7 @@ def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
         GithubCreatePRCommentTool(codebase),
         GithubCreatePRReviewCommentTool(codebase),
         GithubViewPRTool(codebase),
+        GithubViewCommitHistoryTool(codebase),
         GithubSearchIssuesTool(codebase),
         # Linear
         LinearGetIssueTool(codebase),
