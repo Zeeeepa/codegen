@@ -67,6 +67,7 @@ def create_codebase_agent(
     linear_tools = []
     try:
         from codegen.extensions.linear.linear_client import LinearClient
+
         linear_client = LinearClient()
         # Add Linear tools
         linear_tools = [
@@ -139,6 +140,7 @@ def create_chat_agent(
     linear_tools = []
     try:
         from codegen.extensions.linear.linear_client import LinearClient
+
         linear_client = LinearClient()
         # Add Linear tools
         linear_tools = [
