@@ -119,7 +119,7 @@ def relace_edit(codebase: Codebase, filepath: str, edit_snippet: str, api_key: O
     try:
         file = codebase.get_file(filepath)
     except ValueError:
-        msg = f"File {filepath} does not exist. Make sure to speficy the full filepath from the repo root, e.g. `a/b/c.tsx`."
+        msg = f"File {filepath} does not exist. Make sure to specify the full filepath from the repo root, e.g. `a/b/c.tsx`."
         return RelaceEditObservation(
             status="error",
             error=msg,
