@@ -131,13 +131,14 @@ def generate_report(
     print(f"Using log directory: {log_dir}")
 
     evaluation_result_file = patched_swebench_eval(
-        predictions_jsonl,
+        str(predictions_jsonl),
         run_id,
         dataset_name=dataset.value,
         cache_level="instance",
         report_dir=logs_dir,
         modal=True,
     )
+
     # Get and display report
     report = get_report(predictions_jsonl, logs_dir)
 

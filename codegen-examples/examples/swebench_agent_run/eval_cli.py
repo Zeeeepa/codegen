@@ -321,7 +321,14 @@ def main(
         )
     )
 
-    if evaluation_result_file is not None and push_metrics:
+    if push_metrics:
+        if evaluation_result_file is None:
+            if use_existing_preds is None:
+                print("Evaluation was not run - no metrics were pushed")
+                return
+            else:
+                evaluation_result_file = f"results.{use_existing_preds}.json"
+
         try:
             from swebench_agent_run.metrics import (
                 write_report_to_db,  # delay import because of extras

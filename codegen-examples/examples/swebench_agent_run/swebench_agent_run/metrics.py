@@ -8,13 +8,16 @@ from dotenv import load_dotenv
 
 
 def write_report_to_db(report_file: str):
-    load_dotenv(str((Path(__file__).parent.parent / ".env.db").resolve()))
+    path = Path(__file__).parent.parent / ".env.db"
+    if not path.exists():
+        raise FileNotFoundError(f"DB credentials not found: {path}")
+    load_dotenv(str(path.resolve()))
 
-    postgres_host = os.getenv("POSTGRES_HOST")
-    postgres_database = os.getenv("POSTGRES_DATABASE")
-    postgres_user = os.getenv("POSTGRES_USER")
-    postgres_password = os.getenv("POSTGRES_PASSWORD")
-    postgres_port = os.getenv("POSTGRES_PORT")
+    postgres_host = os.getenv("POSTGRESQL_HOST")
+    postgres_database = os.getenv("POSTGRESQL_DATABASE")
+    postgres_user = os.getenv("POSTGRESQL_USER")
+    postgres_password = os.getenv("POSTGRESQL_PASSWORD")
+    postgres_port = os.getenv("POSTGRESQL_PORT")
 
     try:
         codegen_version = version("codegen")
@@ -25,6 +28,7 @@ def write_report_to_db(report_file: str):
         report = json.load(f)
 
     # Establish connection
+
     conn = psycopg2.connect(
         host=postgres_host,
         database=postgres_database,
@@ -39,7 +43,7 @@ def write_report_to_db(report_file: str):
     try:
         # Single row insert
         cur.execute(
-            "INSERT INTO table_name (codegen_version, submitted, completed_instances, resolved_instances, unresolved_instances, empty_patches, error_instances) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO swebench_output (codegen_version, submitted, completed_instances, resolved_instances, unresolved_instances, empty_patches, error_instances) VALUES (%s, %s, %s, %s, %s, %s, %s)",
             (
                 codegen_version,
                 report["submitted_instances"],
