@@ -92,7 +92,7 @@ from codegen.shared.performance.stopwatch_utils import stopwatch
 from codegen.visualizations.visualization_manager import VisualizationManager
 
 logger = get_logger(__name__)
-MAX_LINES = 10000 
+MAX_LINES = 10000
 
 TSourceFile = TypeVar("TSourceFile", bound="SourceFile", default=SourceFile)
 TDirectory = TypeVar("TDirectory", bound="Directory", default=Directory)
@@ -251,7 +251,7 @@ class Codebase(
     ####################################################################################################################
     # SIMPLE META
     ####################################################################################################################
-    
+
     @property
     def name(self) -> str:
         """The name of the repository."""
@@ -277,7 +277,7 @@ class Codebase(
     def files(self, *, extensions: Literal["*"]) -> list[File]: ...
     @overload
     def files(self, *, extensions: None = ...) -> list[TSourceFile]: ...
-    
+
     @proxy_property
     def files(self, *, extensions: list[str] | Literal["*"] | None = None) -> list[TSourceFile] | list[File]:
         """A list property that returns all files in the codebase.
@@ -520,7 +520,7 @@ class Codebase(
     def get_file(self, filepath: str, *, optional: Literal[False] = ..., ignore_case: bool = ...) -> TSourceFile: ...
     @overload
     def get_file(self, filepath: str, *, optional: Literal[True], ignore_case: bool = ...) -> TSourceFile | None: ...
-    
+
     def get_file(self, filepath: str, *, optional: bool = False, ignore_case: bool = False) -> TSourceFile | None:
         """Retrieves a file from the codebase by its filepath.
 
@@ -814,7 +814,7 @@ class Codebase(
         """
         logger.info("Resetting codebase ...")
         if git_reset:
-            self._op.discard_changes()  
+            self._op.discard_changes()
         self._num_ai_requests = 0
         self.reset_logs()
         self.ctx.undo_applied_diffs()
@@ -891,7 +891,7 @@ class Codebase(
     def get_diff(self, base: str | None = None, stage_files: bool = False) -> str:
         """Produce a single git diff for all files."""
         if stage_files:
-            self._op.git_cli.git.add(A=True)  
+            self._op.git_cli.git.add(A=True)
         if base is None:
             diff = self._op.git_cli.git.diff("HEAD", patch=True, full_index=True)
             return diff
@@ -1052,7 +1052,7 @@ class Codebase(
         """
         self.ctx.transaction_manager.check_max_preview_time()
         if self.console.export_text(clear=False).count("\n") >= MAX_LINES:
-            return  
+            return
         for arg in args:
             if self.__is_markup_loggable__(arg):
                 fullName = arg.get_name() if isinstance(arg, HasName) and arg.get_name() else ""
@@ -1412,7 +1412,7 @@ class Codebase(
 
         logger.info("Creating codebase from files")
 
-        prog_lang = ProgrammingLanguage.PYTHON  
+        prog_lang = ProgrammingLanguage.PYTHON
 
         if files:
             py_extensions = {".py"}
