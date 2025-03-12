@@ -89,7 +89,7 @@ def create_codebase_agent(
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug)
+    return create_react_agent(model=llm, tools=tools, prompt=system_message, checkpointer=memory, debug=debug)
 
 
 def create_chat_agent(
