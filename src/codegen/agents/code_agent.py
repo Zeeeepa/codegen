@@ -1,15 +1,15 @@
 import os
+import random
 import time
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
-import random
 
+import anthropic
+import openai
 from langchain.tools import BaseTool
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables.config import RunnableConfig
 from langsmith import Client
-import anthropic
-import openai
 
 from codegen.extensions.langchain.agent import create_codebase_agent
 from codegen.extensions.langchain.utils.get_langsmith_url import (
@@ -112,13 +112,13 @@ class CodeAgent:
         input = {"query": prompt}
 
         config = RunnableConfig(configurable={"thread_id": thread_id}, tags=self.tags, metadata=self.metadata, recursion_limit=100)
-        
+
         # Implement retry mechanism for RateLimitError
         max_retries = 10
         initial_retry_delay = 30  # seconds
         max_retry_delay = 1000  # seconds
         retry_count = 0
-        
+
         while True:
             try:
                 # we stream the steps instead of invoke because it allows us to access intermediate nodes
@@ -147,20 +147,21 @@ class CodeAgent:
 
                 # Get the last message content
                 result = s["final_answer"]
-                
+
                 # Successfully completed, break out of retry loop
                 break
-                
+
             except (anthropic.RateLimitError, openai.RateLimitError) as e:
                 retry_count += 1
                 if retry_count > max_retries:
-                    raise Exception(f"Maximum retry attempts ({max_retries}) exceeded for RateLimitError: {str(e)}")
-                
+                    msg = f"Maximum retry attempts ({max_retries}) exceeded for RateLimitError: {e!s}"
+                    raise Exception(msg)
+
                 # Calculate backoff with exponential increase and some jitter
                 retry_delay = min(initial_retry_delay * (2 ** (retry_count - 1)), max_retry_delay)
                 jitter = retry_delay * 0.1 * (2 * (0.5 - random.random()))
                 retry_delay = retry_delay + jitter
-                
+
                 print(f"Rate limit exceeded. Retrying in {retry_delay:.1f} seconds... (Attempt {retry_count}/{max_retries})")
                 time.sleep(retry_delay)
                 continue
