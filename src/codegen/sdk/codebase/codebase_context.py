@@ -224,7 +224,9 @@ class CodebaseContext:
 
         # =====[ Add all files to the graph in parallel ]=====
         syncs = defaultdict(lambda: [])
-        if not self.config.disable_file_parse:
+        if self.config.disable_file_parse:
+            logger.warning("WARNING: File parsing is disabled!")
+        else:
             for filepath, _ in repo_operator.iter_files(subdirs=self.projects[0].subdirectories, extensions=self.extensions, ignore_list=GLOBAL_FILE_IGNORE_LIST):
                 syncs[SyncType.ADD].append(self.to_absolute(filepath))
         logger.info(f"> Parsing {len(syncs[SyncType.ADD])} files in {self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions")
@@ -266,7 +268,9 @@ class CodebaseContext:
             else:
                 logger.warning(f"Unhandled diff change type: {diff.change_type}")
         by_sync_type = defaultdict(lambda: [])
-        if not self.config.disable_file_parse:
+        if self.config.disable_file_parse:
+            logger.warning("WARNING: File parsing is disabled!")
+        else:
             for filepath, sync_type in files_to_sync.items():
                 if self.get_file(filepath) is None:
                     if sync_type is SyncType.DELETE:
@@ -381,7 +385,7 @@ class CodebaseContext:
         """
         # If not part of repo path, return None
         absolute_path = self.to_absolute(directory_path)
-        if not self.is_subdir(absolute_path):
+        if not self.is_subdir(absolute_path) and not self.config.allow_external:
             assert False, f"Directory {absolute_path} is not part of repo path {self.repo_path}"
             return None
 
@@ -611,7 +615,7 @@ class CodebaseContext:
     def get_file(self, file_path: os.PathLike, ignore_case: bool = False) -> SourceFile | None:
         # If not part of repo path, return None
         absolute_path = self.to_absolute(file_path)
-        if not self.is_subdir(absolute_path):
+        if not self.is_subdir(absolute_path) and not self.config.allow_external:
             assert False, f"File {file_path} is not part of the repository path"
 
         # Check if file exists in graph

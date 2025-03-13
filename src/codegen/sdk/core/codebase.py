@@ -213,6 +213,13 @@ class Codebase(
         self.ctx = CodebaseContext(projects, config=config, secrets=secrets, io=io, progress=progress)
         self.console = Console(record=True, soft_wrap=True)
 
+        # Assert config assertions
+        # External import resolution must be enabled if syspath is enabled
+        if self.ctx.config.py_resolve_syspath:
+            if not self.ctx.config.allow_external:
+                msg = "allow_external must be set to True when py_resolve_syspath is enabled"
+                raise ValueError(msg)
+
     @noapidoc
     def __str__(self) -> str:
         return f"<Codebase(name={self.name}, language={self.language}, path={self.repo_path})>"
@@ -482,16 +489,13 @@ class Codebase(
             ValueError: If the provided content cannot be parsed according to the file extension.
         """
         # Check if file already exists
-        # TODO: These checks break parse tests ???
-        # Look into this!
-        # if self.has_file(filepath):
-        #     raise ValueError(f"File {filepath} already exists in codebase.")
-        # if os.path.exists(filepath):
-        #     raise ValueError(f"File {filepath} already exists on disk.")
+        # NOTE: This check is also important to ensure the filepath is valid within the repo!
+        if self.has_file(filepath):
+            logger.warning(f"File {filepath} already exists in codebase. Overwriting...")
 
         file_exts = self.ctx.extensions
         # Create file as source file if it has a registered extension
-        if any(filepath.endswith(ext) for ext in file_exts):
+        if any(filepath.endswith(ext) for ext in file_exts) and not self.ctx.config.disable_file_parse:
             file_cls = self.ctx.node_classes.file_cls
             file = file_cls.from_content(filepath, content, self.ctx, sync=sync)
             if file is None:
@@ -516,6 +520,11 @@ class Codebase(
         Raises:
             FileExistsError: If the directory already exists and exist_ok is False.
         """
+        # Check if directory already exists
+        # NOTE: This check is also important to ensure the filepath is valid within the repo!
+        if self.has_directory(dir_path):
+            logger.warning(f"Directory {dir_path} already exists in codebase. Overwriting...")
+
         self.ctx.to_absolute(dir_path).mkdir(parents=parents, exist_ok=exist_ok)
 
     def has_file(self, filepath: str, ignore_case: bool = False) -> bool:
