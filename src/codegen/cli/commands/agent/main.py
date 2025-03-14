@@ -5,8 +5,8 @@ import rich_click as click
 from langchain_core.messages import SystemMessage
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.prompt import Prompt
 from rich.panel import Panel
+from rich.prompt import Prompt
 from rich.text import Text
 
 from codegen.extensions.langchain.agent import create_agent_with_tools
@@ -105,7 +105,7 @@ Always explain what you're planning to do before taking actions."""
         console.print("I'm an AI assistant that can help you explore and modify code in this repository.")
         console.print("I can help with tasks like viewing files, searching code, making edits, and more.")
         console.print()
-        
+
         # Display suggested prompts in a panel
         prompt_text = Text()
         prompt_text.append("Try asking me:\n", style="bold")
@@ -113,14 +113,14 @@ Always explain what you're planning to do before taking actions."""
             prompt_text.append(f"{i}. ", style="bold cyan")
             prompt_text.append(f"{prompt}\n", style="cyan")
         prompt_text.append("\nOr type 'help' to see more suggested prompts", style="dim")
-        
+
         console.print(Panel(prompt_text, title="Suggested Prompts", border_style="blue"))
         console.print()
-        
+
         console.print("What would you like help with today?")
         console.print()
         query = Prompt.ask("[bold]>[/bold]")  # Simple arrow prompt
-        
+
         # Handle 'help' command to show more suggested prompts
         if query.lower() in ["help", "--help", "man", "?", "examples"]:
             console.print("[bold]Suggested Starting Prompts:[/bold]")
@@ -142,7 +142,7 @@ Always explain what you're planning to do before taking actions."""
 
         if user_input.lower() in ["exit", "quit"]:
             break
-            
+
         # Handle 'help' command to show suggested prompts
         if user_input.lower() in ["help", "--help", "man", "?", "examples"]:
             console.print("[bold]Suggested Starting Prompts:[/bold]")
