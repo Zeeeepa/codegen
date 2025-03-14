@@ -682,7 +682,8 @@ class LinearGetIssueTool(BaseTool):
             # Create a new LinearClient instance
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
-                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+                msg = "LINEAR_ACCESS_TOKEN environment variable not set"
+                raise ValueError(msg)
             self.client = LinearClient(access_token)
         return self.client
 
@@ -716,7 +717,8 @@ class LinearGetIssueCommentsTool(BaseTool):
             # Create a new LinearClient instance
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
-                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+                msg = "LINEAR_ACCESS_TOKEN environment variable not set"
+                raise ValueError(msg)
             self.client = LinearClient(access_token)
         return self.client
 
@@ -751,7 +753,8 @@ class LinearCommentOnIssueTool(BaseTool):
             # Create a new LinearClient instance
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
-                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+                msg = "LINEAR_ACCESS_TOKEN environment variable not set"
+                raise ValueError(msg)
             self.client = LinearClient(access_token)
         return self.client
 
@@ -786,7 +789,8 @@ class LinearSearchIssuesTool(BaseTool):
             # Create a new LinearClient instance
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
-                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+                msg = "LINEAR_ACCESS_TOKEN environment variable not set"
+                raise ValueError(msg)
             self.client = LinearClient(access_token)
         return self.client
 
@@ -822,7 +826,8 @@ class LinearCreateIssueTool(BaseTool):
             # Create a new LinearClient instance
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
-                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+                msg = "LINEAR_ACCESS_TOKEN environment variable not set"
+                raise ValueError(msg)
             # Initialize without a default team_id to allow explicit team selection
             self.client = LinearClient(access_token)
         return self.client
@@ -850,7 +855,8 @@ class LinearGetTeamsTool(BaseTool):
             # Create a new LinearClient instance
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
-                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+                msg = "LINEAR_ACCESS_TOKEN environment variable not set"
+                raise ValueError(msg)
             self.client = LinearClient(access_token)
         return self.client
 
