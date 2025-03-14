@@ -1,5 +1,6 @@
 """Langchain tools for workspace operations."""
 
+import os
 from typing import Callable, ClassVar, Literal, Optional
 
 from langchain_core.tools.base import BaseTool
@@ -668,13 +669,26 @@ class LinearGetIssueTool(BaseTool):
     name: ClassVar[str] = "linear_get_issue"
     description: ClassVar[str] = "Get details of a Linear issue by its ID"
     args_schema: ClassVar[type[BaseModel]] = LinearGetIssueInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
+    client: LinearClient | None = Field(default=None, exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        # Initialize with codebase and create LinearClient on first use
+        super().__init__(codebase=codebase)
+
+    def _get_client(self) -> LinearClient:
+        """Get or create a LinearClient instance."""
+        if self.client is None:
+            # Create a new LinearClient instance
+            access_token = os.getenv("LINEAR_ACCESS_TOKEN")
+            if not access_token:
+                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+            self.client = LinearClient(access_token)
+        return self.client
 
     def _run(self, issue_id: str) -> str:
-        result = linear_get_issue_tool(self.client, issue_id)
+        client = self._get_client()
+        result = linear_get_issue_tool(client, issue_id)
         return result.render()
 
 
@@ -690,13 +704,25 @@ class LinearGetIssueCommentsTool(BaseTool):
     name: ClassVar[str] = "linear_get_issue_comments"
     description: ClassVar[str] = "Get all comments on a Linear issue"
     args_schema: ClassVar[type[BaseModel]] = LinearGetIssueCommentsInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
+    client: LinearClient | None = Field(default=None, exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _get_client(self) -> LinearClient:
+        """Get or create a LinearClient instance."""
+        if self.client is None:
+            # Create a new LinearClient instance
+            access_token = os.getenv("LINEAR_ACCESS_TOKEN")
+            if not access_token:
+                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+            self.client = LinearClient(access_token)
+        return self.client
 
     def _run(self, issue_id: str) -> str:
-        result = linear_get_issue_comments_tool(self.client, issue_id)
+        client = self._get_client()
+        result = linear_get_issue_comments_tool(client, issue_id)
         return result.render()
 
 
@@ -713,13 +739,25 @@ class LinearCommentOnIssueTool(BaseTool):
     name: ClassVar[str] = "linear_comment_on_issue"
     description: ClassVar[str] = "Add a comment to a Linear issue"
     args_schema: ClassVar[type[BaseModel]] = LinearCommentOnIssueInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
+    client: LinearClient | None = Field(default=None, exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _get_client(self) -> LinearClient:
+        """Get or create a LinearClient instance."""
+        if self.client is None:
+            # Create a new LinearClient instance
+            access_token = os.getenv("LINEAR_ACCESS_TOKEN")
+            if not access_token:
+                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+            self.client = LinearClient(access_token)
+        return self.client
 
     def _run(self, issue_id: str, body: str) -> str:
-        result = linear_comment_on_issue_tool(self.client, issue_id, body)
+        client = self._get_client()
+        result = linear_comment_on_issue_tool(client, issue_id, body)
         return result.render()
 
 
@@ -734,15 +772,27 @@ class LinearSearchIssuesTool(BaseTool):
     """Tool for searching Linear issues."""
 
     name: ClassVar[str] = "linear_search_issues"
-    description: ClassVar[str] = "Search for Linear issues using a query string"
+    description: ClassVar[str] = "Search for Linear issues using a search string"
     args_schema: ClassVar[type[BaseModel]] = LinearSearchIssuesInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
+    client: LinearClient | None = Field(default=None, exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _get_client(self) -> LinearClient:
+        """Get or create a LinearClient instance."""
+        if self.client is None:
+            # Create a new LinearClient instance
+            access_token = os.getenv("LINEAR_ACCESS_TOKEN")
+            if not access_token:
+                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+            self.client = LinearClient(access_token)
+        return self.client
 
     def _run(self, query: str, limit: int = 10) -> str:
-        result = linear_search_issues_tool(self.client, query, limit)
+        client = self._get_client()
+        result = linear_search_issues_tool(client, query, limit)
         return result.render()
 
 
@@ -760,13 +810,26 @@ class LinearCreateIssueTool(BaseTool):
     name: ClassVar[str] = "linear_create_issue"
     description: ClassVar[str] = "Create a new Linear issue"
     args_schema: ClassVar[type[BaseModel]] = LinearCreateIssueInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
+    client: LinearClient | None = Field(default=None, exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _get_client(self) -> LinearClient:
+        """Get or create a LinearClient instance."""
+        if self.client is None:
+            # Create a new LinearClient instance
+            access_token = os.getenv("LINEAR_ACCESS_TOKEN")
+            if not access_token:
+                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+            # Initialize without a default team_id to allow explicit team selection
+            self.client = LinearClient(access_token)
+        return self.client
 
     def _run(self, title: str, description: str | None = None, team_id: str | None = None) -> str:
-        result = linear_create_issue_tool(self.client, title, description, team_id)
+        client = self._get_client()
+        result = linear_create_issue_tool(client, title, description, team_id)
         return result.render()
 
 
@@ -775,13 +838,25 @@ class LinearGetTeamsTool(BaseTool):
 
     name: ClassVar[str] = "linear_get_teams"
     description: ClassVar[str] = "Get all Linear teams the authenticated user has access to"
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
+    client: LinearClient | None = Field(default=None, exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _get_client(self) -> LinearClient:
+        """Get or create a LinearClient instance."""
+        if self.client is None:
+            # Create a new LinearClient instance
+            access_token = os.getenv("LINEAR_ACCESS_TOKEN")
+            if not access_token:
+                raise ValueError("LINEAR_ACCESS_TOKEN environment variable not set")
+            self.client = LinearClient(access_token)
+        return self.client
 
     def _run(self) -> str:
-        result = linear_get_teams_tool(self.client)
+        client = self._get_client()
+        result = linear_get_teams_tool(client)
         return result.render()
 
 
