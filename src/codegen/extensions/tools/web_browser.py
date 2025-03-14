@@ -4,11 +4,10 @@ This tool allows fetching web pages and extracting their content,
 enabling Codegen to browse websites and retrieve information.
 """
 
-import re
-import requests
-from typing import ClassVar, Optional
+from typing import ClassVar
 from urllib.parse import urlparse
 
+import requests
 from bs4 import BeautifulSoup
 from pydantic import Field
 
@@ -90,26 +89,24 @@ def browse_web(
 
     try:
         # Set user agent to avoid being blocked
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+
         # Make the request
         response = requests.get(url, headers=headers, timeout=timeout)
         response.raise_for_status()
-        
+
         # Parse the HTML
         soup = BeautifulSoup(response.text, "html.parser")
-        
+
         # Extract title
         title = soup.title.string if soup.title else "No title found"
-        
+
         # Extract content based on preference
         if extract_text_only:
             # Remove script and style elements
             for script in soup(["script", "style"]):
                 script.extract()
-                
+
             # Get text and clean it up
             text = soup.get_text()
             # Break into lines and remove leading/trailing space
@@ -121,11 +118,11 @@ def browse_web(
         else:
             # Return simplified HTML
             content = str(soup)
-        
+
         # Truncate content if too long
         if len(content) > max_content_length:
             content = content[:max_content_length] + "... (content truncated)"
-        
+
         return WebBrowserObservation(
             status="success",
             url=url,
@@ -133,11 +130,11 @@ def browse_web(
             content=content,
             status_code=response.status_code,
         )
-        
+
     except requests.exceptions.RequestException as e:
         return WebBrowserObservation(
             status="error",
-            error=f"Error accessing URL: {str(e)}",
+            error=f"Error accessing URL: {e!s}",
             url=url,
             title="",
             content="",

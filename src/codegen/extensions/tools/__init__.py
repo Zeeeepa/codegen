@@ -28,6 +28,8 @@ from .view_file import view_file
 from .web_browser import browse_web
 
 __all__ = [
+    # Web operations
+    "browse_web",
     # Git operations
     "commit",
     # File operations
@@ -58,6 +60,4 @@ __all__ = [
     "semantic_search",
     "view_file",
     "view_pr",
-    # Web operations
-    "browse_web",
 ]

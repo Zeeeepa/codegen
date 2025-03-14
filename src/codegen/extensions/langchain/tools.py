@@ -1030,18 +1030,9 @@ class WebBrowserInput(BaseModel):
     """Input for web browser tool."""
 
     url: str = Field(..., description="URL to browse (must include http:// or https://)")
-    extract_text_only: bool = Field(
-        default=True, 
-        description="Whether to extract only text content (True) or include HTML (False)"
-    )
-    timeout: int = Field(
-        default=10,
-        description="Request timeout in seconds"
-    )
-    max_content_length: int = Field(
-        default=10000,
-        description="Maximum content length to return"
-    )
+    extract_text_only: bool = Field(default=True, description="Whether to extract only text content (True) or include HTML (False)")
+    timeout: int = Field(default=10, description="Request timeout in seconds")
+    max_content_length: int = Field(default=10000, description="Maximum content length to return")
 
 
 class WebBrowserTool(BaseTool):
