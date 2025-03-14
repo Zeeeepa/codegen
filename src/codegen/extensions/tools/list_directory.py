@@ -142,11 +142,11 @@ def list_directory(codebase: Codebase, path: str = "./", depth: int = 2) -> List
         # Get direct files using os.listdir instead of dir_obj.files
         all_files = []
         full_path = os.path.join(codebase.workspace_root, dir_obj.dirpath)
-        
+
         try:
             # Get all items in the directory
             items = os.listdir(full_path)
-            
+
             # Filter out directories to get only files
             for item in items:
                 item_path = os.path.join(full_path, item)
