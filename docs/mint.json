@@ -179,7 +179,7 @@
 		},
 		{
 			"group": "codegen",
-			"pages": ["gen/introduction", "gen/quickstart", "gen/capabilities"]
+			"pages": ["gen/introduction", "gen/capabilities", "gen/faq"]
 		},
 		{
 			"group": "API Reference",
