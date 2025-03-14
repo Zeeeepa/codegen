@@ -25,6 +25,7 @@ from .search import search
 from .semantic_edit import semantic_edit
 from .semantic_search import semantic_search
 from .view_file import view_file
+from .web_browser import browse_web
 
 __all__ = [
     # Git operations
@@ -57,4 +58,6 @@ __all__ = [
     "semantic_search",
     "view_file",
     "view_pr",
+    # Web operations
+    "browse_web",
 ]
