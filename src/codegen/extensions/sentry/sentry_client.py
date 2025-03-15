@@ -1,7 +1,7 @@
 """Sentry API client for interacting with the Sentry API."""
 
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional
 
 import requests
 from pydantic import BaseModel, Field
@@ -16,7 +16,7 @@ class SentryIssue(BaseModel):
     culprit: str = Field(..., description="Culprit")
     status: str = Field(..., description="Issue status")
     level: str = Field(..., description="Issue level (e.g., error, warning)")
-    project: Dict[str, Any] = Field(..., description="Project information")
+    project: dict[str, Any] = Field(..., description="Project information")
     count: int = Field(..., description="Number of events")
     userCount: int = Field(..., description="Number of users affected")
     firstSeen: str = Field(..., description="First seen timestamp")
@@ -32,12 +32,12 @@ class SentryEvent(BaseModel):
     title: str = Field(..., description="Event title")
     message: Optional[str] = Field(None, description="Event message")
     dateCreated: str = Field(..., description="Date created")
-    user: Optional[Dict[str, Any]] = Field(None, description="User information")
-    tags: List[Dict[str, str]] = Field(..., description="Event tags")
-    entries: List[Dict[str, Any]] = Field(..., description="Event entries")
-    contexts: Dict[str, Any] = Field(..., description="Event contexts")
-    sdk: Dict[str, Any] = Field(..., description="SDK information")
-    metadata: Dict[str, Any] = Field(..., description="Event metadata")
+    user: Optional[dict[str, Any]] = Field(None, description="User information")
+    tags: list[dict[str, str]] = Field(..., description="Event tags")
+    entries: list[dict[str, Any]] = Field(..., description="Event entries")
+    contexts: dict[str, Any] = Field(..., description="Event contexts")
+    sdk: dict[str, Any] = Field(..., description="SDK information")
+    metadata: dict[str, Any] = Field(..., description="Event metadata")
 
 
 class SentryOrganization(BaseModel):
@@ -49,7 +49,7 @@ class SentryOrganization(BaseModel):
     dateCreated: str = Field(..., description="Date created")
     isEarlyAdopter: bool = Field(..., description="Is early adopter")
     require2FA: bool = Field(..., description="Requires 2FA")
-    status: Dict[str, Any] = Field(..., description="Organization status")
+    status: dict[str, Any] = Field(..., description="Organization status")
 
 
 class SentryProject(BaseModel):
@@ -62,10 +62,10 @@ class SentryProject(BaseModel):
     dateCreated: str = Field(..., description="Date created")
     isBookmarked: bool = Field(..., description="Is bookmarked")
     isMember: bool = Field(..., description="Is member")
-    features: List[str] = Field(..., description="Project features")
+    features: list[str] = Field(..., description="Project features")
     firstEvent: Optional[str] = Field(None, description="First event timestamp")
     firstTransactionEvent: Optional[bool] = Field(None, description="Has first transaction event")
-    access: List[str] = Field(..., description="Access levels")
+    access: list[str] = Field(..., description="Access levels")
     hasAccess: bool = Field(..., description="Has access")
     hasMinifiedStackTrace: bool = Field(..., description="Has minified stack trace")
     hasMonitors: bool = Field(..., description="Has monitors")
@@ -74,7 +74,7 @@ class SentryProject(BaseModel):
     hasSessions: bool = Field(..., description="Has sessions")
     isInternal: bool = Field(..., description="Is internal")
     isPublic: bool = Field(..., description="Is public")
-    organization: Dict[str, Any] = Field(..., description="Organization information")
+    organization: dict[str, Any] = Field(..., description="Organization information")
 
 
 class SentryClient:
@@ -89,17 +89,18 @@ class SentryClient:
         """
         self.auth_token = auth_token or os.environ.get("SENTRY_AUTH_TOKEN")
         self.installation_uuid = installation_uuid or os.environ.get("SENTRY_INSTALLATION_UUID")
-        
+
         if not self.auth_token:
-            raise ValueError("Sentry auth token not provided. Set SENTRY_AUTH_TOKEN environment variable.")
-        
+            msg = "Sentry auth token not provided. Set SENTRY_AUTH_TOKEN environment variable."
+            raise ValueError(msg)
+
         self.base_url = "https://sentry.io/api/0"
         self.headers = {
             "Authorization": f"Bearer {self.auth_token}",
             "Content-Type": "application/json",
         }
 
-    def _make_request(self, method: str, endpoint: str, params: Optional[Dict[str, Any]] = None, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _make_request(self, method: str, endpoint: str, params: Optional[dict[str, Any]] = None, data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Make a request to the Sentry API.
 
         Args:
@@ -116,7 +117,7 @@ class SentryClient:
         response.raise_for_status()
         return response.json()
 
-    def get_organizations(self) -> List[SentryOrganization]:
+    def get_organizations(self) -> list[SentryOrganization]:
         """Get a list of organizations the user has access to.
 
         Returns:
@@ -125,7 +126,7 @@ class SentryClient:
         data = self._make_request("GET", "/organizations/")
         return [SentryOrganization(**org) for org in data]
 
-    def get_projects(self, organization_slug: str) -> List[SentryProject]:
+    def get_projects(self, organization_slug: str) -> list[SentryProject]:
         """Get a list of projects for an organization.
 
         Args:
@@ -138,14 +139,14 @@ class SentryClient:
         return [SentryProject(**project) for project in data]
 
     def get_issues(
-        self, 
-        organization_slug: str, 
+        self,
+        organization_slug: str,
         project_slug: Optional[str] = None,
         query: Optional[str] = None,
         status: Optional[str] = None,
         limit: int = 100,
         cursor: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a list of issues for an organization or project.
 
         Args:
@@ -162,16 +163,16 @@ class SentryClient:
         params = {
             "limit": limit,
         }
-        
+
         if project_slug:
             params["project"] = project_slug
-        
+
         if query:
             params["query"] = query
-            
+
         if status:
             params["status"] = status
-            
+
         if cursor:
             params["cursor"] = cursor
 
@@ -191,12 +192,12 @@ class SentryClient:
         return SentryIssue(**data)
 
     def get_issue_events(
-        self, 
-        issue_id: str, 
+        self,
+        issue_id: str,
         organization_slug: str,
         limit: int = 100,
         cursor: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get events for a specific issue.
 
         Args:
@@ -211,7 +212,7 @@ class SentryClient:
         params = {
             "limit": limit,
         }
-        
+
         if cursor:
             params["cursor"] = cursor
 

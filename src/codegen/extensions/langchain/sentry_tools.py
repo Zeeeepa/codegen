@@ -1,6 +1,6 @@
 """LangChain tools for Sentry integration."""
 
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar, Optional
 
 from langchain_core.tools.base import BaseTool
 from pydantic import BaseModel, Field
@@ -87,7 +87,7 @@ class ViewSentryIssuesTool(BaseTool):
     name: ClassVar[str] = "view_sentry_issues"
     description: ClassVar[str] = """
     View a list of Sentry issues for an organization or project.
-    
+
     This tool allows you to retrieve and filter Sentry issues by organization, project, status, and search query.
     Results are paginated, and you can use the cursor parameter to fetch additional pages.
     """
@@ -124,7 +124,7 @@ class ViewSentryIssueDetailsTool(BaseTool):
     name: ClassVar[str] = "view_sentry_issue"
     description: ClassVar[str] = """
     View detailed information about a specific Sentry issue, including its events.
-    
+
     This tool retrieves comprehensive information about a Sentry issue, including its metadata and associated events.
     Events are paginated, and you can use the cursor parameter to fetch additional pages.
     """
@@ -157,7 +157,7 @@ class ViewSentryEventDetailsTool(BaseTool):
     name: ClassVar[str] = "view_sentry_event"
     description: ClassVar[str] = """
     View detailed information about a specific Sentry event.
-    
+
     This tool retrieves comprehensive information about a Sentry event, including its metadata, tags, user information,
     and stack trace (if available).
     """
@@ -229,12 +229,12 @@ class ViewSentryTool(BaseTool):
     name: ClassVar[str] = "view_sentry"
     description: ClassVar[str] = """
     View Sentry issues and events.
-    
+
     This tool allows you to:
     1. View a list of Sentry issues for an organization or project
     2. View details of a specific Sentry issue, including its events
     3. View details of a specific Sentry event, including stack traces
-    
+
     Specify the action parameter to choose which operation to perform:
     - 'view_issues': List issues (default)
     - 'view_issue': View a specific issue (requires issue_id)
@@ -271,7 +271,7 @@ class ViewSentryTool(BaseTool):
         elif action == "view_issue":
             if not issue_id:
                 return "Error: Missing required parameter 'issue_id' for action 'view_issue'"
-                
+
             result = view_sentry_issue_details(
                 codebase=self.codebase,
                 issue_id=issue_id,
@@ -282,10 +282,10 @@ class ViewSentryTool(BaseTool):
         elif action == "view_event":
             if not event_id:
                 return "Error: Missing required parameter 'event_id' for action 'view_event'"
-                
+
             if not project_slug:
                 return "Error: Missing required parameter 'project_slug' for action 'view_event'"
-                
+
             result = view_sentry_event_details(
                 codebase=self.codebase,
                 event_id=event_id,
@@ -294,11 +294,11 @@ class ViewSentryTool(BaseTool):
             )
         else:
             return f"Error: Unknown action '{action}'. Supported actions: 'view_issues', 'view_issue', 'view_event'"
-            
+
         return result.render()
 
 
-def get_sentry_tools(codebase: Codebase) -> List[BaseTool]:
+def get_sentry_tools(codebase: Codebase) -> list[BaseTool]:
     """Get all Sentry tools initialized with a codebase.
 
     Args:

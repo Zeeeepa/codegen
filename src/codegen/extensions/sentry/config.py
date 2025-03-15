@@ -1,7 +1,7 @@
 """Configuration for Sentry integration."""
 
 import os
-from typing import Dict, Optional
+from typing import Optional
 
 # Environment variable names
 SENTRY_AUTH_TOKEN_ENV = "SENTRY_AUTH_TOKEN"
@@ -37,20 +37,20 @@ def get_installation_uuid(organization_slug: str) -> Optional[str]:
     return None
 
 
-def get_available_organizations() -> Dict[str, Optional[str]]:
+def get_available_organizations() -> dict[str, Optional[str]]:
     """Get a dictionary of available organizations and their installation UUIDs.
 
     Returns:
         A dictionary mapping organization slugs to installation UUIDs.
     """
     orgs = {}
-    
+
     codegen_uuid = os.environ.get(SENTRY_CODEGEN_INSTALLATION_UUID_ENV)
     if codegen_uuid:
         orgs["codegen-sh"] = codegen_uuid
-        
+
     ramp_uuid = os.environ.get(SENTRY_RAMP_INSTALLATION_UUID_ENV)
     if ramp_uuid:
         orgs["ramp"] = ramp_uuid
-        
+
     return orgs
