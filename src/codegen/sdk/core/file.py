@@ -943,7 +943,6 @@ class SourceFile(
             None
         """
 
-
     def remove_unused_imports(self) -> None:
         # Process each import statement
         for import_stmt in self.imports:

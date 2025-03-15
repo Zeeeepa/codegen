@@ -368,6 +368,7 @@ def bar():
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
     assert file3.content.strip() == EXPECTED_FILE_3_CONTENT.strip()
 
+
 def test_move_to_file_add_back_edge_external_use(tmpdir) -> None:
     # ========== [ BEFORE ] ==========
     # language=python
@@ -406,7 +407,6 @@ from file2 import bar
 def bla():
     return bar() + 1
 """
-
 
     # ========== [ AFTER ] ==========
     # language=python
@@ -455,7 +455,6 @@ def bla():
             "file2.py": FILE_2_CONTENT,
             "file3.py": FILE_3_CONTENT,
             "file4.py": FILE_4_CONTENT,
-
         },
     ) as codebase:
         file1 = codebase.get_file("file1.py")
@@ -1480,7 +1479,6 @@ class ExtendedConfig(Config):
     assert file2_types.content.strip() == EXPECTED_FILE_2_TYPES_CONTENT.strip()
 
 
-
 def test_move_to_file_decorators(tmpdir) -> None:
     # ========== [ BEFORE ] ==========
     # language=python
@@ -1500,13 +1498,12 @@ def test_move_to_file_decorators(tmpdir) -> None:
     """
 
     with get_codebase_session(
-            tmpdir=tmpdir,
-            files={
-                "file1.py": FILE_1_CONTENT,
-                "file2.py": FILE_2_CONTENT,
-            },
-        ) as codebase:
-
+        tmpdir=tmpdir,
+        files={
+            "file1.py": FILE_1_CONTENT,
+            "file2.py": FILE_2_CONTENT,
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -1546,10 +1543,10 @@ def boo():
     # language=python
     FILE_2_CONTENT = "NO_MOVE_FILE_2 = 6"
 
-    FILE_1_EXPECTED ="""
+    FILE_1_EXPECTED = """
 NO_MOVE=2
 """
-    FILE_2_EXPECTED ="""
+    FILE_2_EXPECTED = """
 from test.foo import TEST
 NO_MOVE_FILE_2 = 6
 
@@ -1573,13 +1570,12 @@ def boo():
 """
 
     with get_codebase_session(
-            tmpdir=tmpdir,
-            files={
-                "file1.py": FILE_1_CONTENT,
-                "file2.py": FILE_2_CONTENT,
-            },
-        ) as codebase:
-
+        tmpdir=tmpdir,
+        files={
+            "file1.py": FILE_1_CONTENT,
+            "file2.py": FILE_2_CONTENT,
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -1595,7 +1591,6 @@ def boo():
         file2 = codebase.get_file("file2.py")
         assert file1.source.strip() == FILE_1_EXPECTED.strip()
         assert file2.source.strip() == FILE_2_EXPECTED.strip()
-
 
 
 def test_move_to_file_multiple_same_transaction_partial(tmpdir) -> None:
@@ -1626,7 +1621,7 @@ def boo():
     # language=python
     FILE_2_CONTENT = "NO_MOVE_FILE_2 = 6"
 
-    FILE_1_EXPECTED ="""
+    FILE_1_EXPECTED = """
 from file2 import useful
 NO_MOVE=2
 
@@ -1634,7 +1629,7 @@ def boo():
     print(6)
     useful()
 """
-    FILE_2_EXPECTED ="""
+    FILE_2_EXPECTED = """
 from test.foo import TEST
 NO_MOVE_FILE_2 = 6
 
@@ -1654,13 +1649,12 @@ def bar():
 """
 
     with get_codebase_session(
-            tmpdir=tmpdir,
-            files={
-                "file1.py": FILE_1_CONTENT,
-                "file2.py": FILE_2_CONTENT,
-            },
-        ) as codebase:
-
+        tmpdir=tmpdir,
+        files={
+            "file1.py": FILE_1_CONTENT,
+            "file2.py": FILE_2_CONTENT,
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 

@@ -232,8 +232,6 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             return False
         return True
 
-
-
     @reader
     def is_wildcard_import(self) -> bool:
         """Returns True if the import symbol is a wildcard import.
@@ -249,13 +247,13 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
 
     @reader
     def is_sideffect_import(self) -> bool:
-        #Maybe better name for this
+        # Maybe better name for this
         """Determines if this is a sideffect.
 
         Returns:
             bool: True if this is a sideffect import, False otherwise
         """
-        return self.import_type==ImportType.SIDE_EFFECT
+        return self.import_type == ImportType.SIDE_EFFECT
 
     @property
     @abstractmethod

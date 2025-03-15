@@ -97,7 +97,7 @@ def test_remove_unused_imports_with_moved_symbols(tmpdir):
 
         # Move foo to a new file
         new_file = codebase.create_file("new.ts")
-        foo.move_to_file(new_file,cleanup_unused_imports=False)
+        foo.move_to_file(new_file, cleanup_unused_imports=False)
         codebase.commit()
         # Confirm cleanup false is respected
         assert main_file.content.strip() == "import { helper } from './utils';"

@@ -290,20 +290,20 @@ class TransactionManager:
 
         return matching_transactions
 
-    def get_transaction_containing_range(self, file_path: Path, start_byte: int, end_byte: int, transaction_order: TransactionPriority | None = None) -> Transaction|None:
+    def get_transaction_containing_range(self, file_path: Path, start_byte: int, end_byte: int, transaction_order: TransactionPriority | None = None) -> Transaction | None:
         """Returns the nearest transaction that includes the range specified given the filtering criteria."""
         if file_path not in self.queued_transactions:
             return None
 
-        smallest_difference=math.inf
-        best_fit_transaction=None
+        smallest_difference = math.inf
+        best_fit_transaction = None
         for t in self.queued_transactions[file_path]:
-            if t.start_byte <= start_byte and t.end_byte>=end_byte:
+            if t.start_byte <= start_byte and t.end_byte >= end_byte:
                 if transaction_order is None or t.transaction_order == transaction_order:
-                    smallest_difference = min(smallest_difference,abs(t.start_byte-start_byte)+abs(t.end_byte-end_byte))
-                    if smallest_difference==0:
+                    smallest_difference = min(smallest_difference, abs(t.start_byte - start_byte) + abs(t.end_byte - end_byte))
+                    if smallest_difference == 0:
                         return t
-                    best_fit_transaction=t
+                    best_fit_transaction = t
         return best_fit_transaction
 
     def _get_conflicts(self, transaction: Transaction) -> list[Transaction]:

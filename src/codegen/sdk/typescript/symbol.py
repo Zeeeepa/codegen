@@ -255,7 +255,7 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
 
     @noapidoc
     @override
-    def _update_dependencies_on_move(self,file:SourceFile):
+    def _update_dependencies_on_move(self, file: SourceFile):
         for dep in self.dependencies:
             if isinstance(dep, Assignment):
                 msg = "Assignment not implemented yet"
@@ -277,55 +277,56 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
 
     @noapidoc
     @override
-    def _execute_post_move_correction_strategy(self,
-                                               file:SourceFile,
-                                               encountered_symbols: set[Symbol | Import],
-                                               strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"],
-                                            ):
-            import_line = self.get_import_string(module=file.import_module_name)
-            # =====[ Checks if symbol is used in original file ]=====
-            # Takes into account that it's dependencies will be moved
-            is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL and usage not in encountered_symbols for usage in self.symbol_usages)
+    def _execute_post_move_correction_strategy(
+        self,
+        file: SourceFile,
+        encountered_symbols: set[Symbol | Import],
+        strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"],
+    ):
+        import_line = self.get_import_string(module=file.import_module_name)
+        # =====[ Checks if symbol is used in original file ]=====
+        # Takes into account that it's dependencies will be moved
+        is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL and usage not in encountered_symbols for usage in self.symbol_usages)
 
-            match strategy:
-                case "duplicate_dependencies":
-                    # If not used in the original file. or if not imported from elsewhere, we can just remove the original symbol
-                    is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL for usage in self.symbol_usages)
-                    if not is_used_in_file and not any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
-                        self.remove()
-                case "add_back_edge":
-                    if is_used_in_file:
-                        back_edge_line = import_line
-                        if self.is_exported:
-                            back_edge_line=back_edge_line.replace('import','export')
-                        self.file.add_import(back_edge_line)
-                    elif self.is_exported:
-                        module_name = file.name
-                        self.file.add_import(f"export {{ {self.name} }} from '{module_name}'")
-                    # Delete the original symbol
+        match strategy:
+            case "duplicate_dependencies":
+                # If not used in the original file. or if not imported from elsewhere, we can just remove the original symbol
+                is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL for usage in self.symbol_usages)
+                if not is_used_in_file and not any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
                     self.remove()
-                case "update_all_imports":
-                    for usage in self.usages:
-                        if isinstance(usage.usage_symbol, TSImport):
-                            # Add updated import
-                            if usage.usage_symbol.resolved_symbol is not None and usage.usage_symbol.resolved_symbol.node_type == NodeType.SYMBOL and usage.usage_symbol.resolved_symbol == self:
-                                if usage.usage_symbol.file!=file:
-                                    # Just remove if the dep is now going to the file
-                                    usage.usage_symbol.file.add_import(import_line)
-                                usage.usage_symbol.remove()
-                        elif usage.usage_type == UsageType.CHAINED:
-                            # Update all previous usages of import * to the new import name
-                            if usage.match and "." + self.name in usage.match:
-                                if isinstance(usage.match, FunctionCall):
-                                    usage.match.get_name().edit(self.name)
-                                if isinstance(usage.match, ChainedAttribute):
-                                    usage.match.edit(self.name)
+            case "add_back_edge":
+                if is_used_in_file:
+                    back_edge_line = import_line
+                    if self.is_exported:
+                        back_edge_line = back_edge_line.replace("import", "export")
+                    self.file.add_import(back_edge_line)
+                elif self.is_exported:
+                    module_name = file.name
+                    self.file.add_import(f"export {{ {self.name} }} from '{module_name}'")
+                # Delete the original symbol
+                self.remove()
+            case "update_all_imports":
+                for usage in self.usages:
+                    if isinstance(usage.usage_symbol, TSImport):
+                        # Add updated import
+                        if usage.usage_symbol.resolved_symbol is not None and usage.usage_symbol.resolved_symbol.node_type == NodeType.SYMBOL and usage.usage_symbol.resolved_symbol == self:
+                            if usage.usage_symbol.file != file:
+                                # Just remove if the dep is now going to the file
                                 usage.usage_symbol.file.add_import(import_line)
+                            usage.usage_symbol.remove()
+                    elif usage.usage_type == UsageType.CHAINED:
+                        # Update all previous usages of import * to the new import name
+                        if usage.match and "." + self.name in usage.match:
+                            if isinstance(usage.match, FunctionCall):
+                                usage.match.get_name().edit(self.name)
+                            if isinstance(usage.match, ChainedAttribute):
+                                usage.match.edit(self.name)
+                            usage.usage_symbol.file.add_import(import_line)
 
-                    if is_used_in_file:
-                        self.file.add_import(import_line)
-                    # Delete the original symbol
-                    self.remove()
+                if is_used_in_file:
+                    self.file.add_import(import_line)
+                # Delete the original symbol
+                self.remove()
 
     def _convert_proptype_to_typescript(self, prop_type: Editable, param: Parameter | None, level: int) -> str:
         """Converts a PropType definition to its TypeScript equivalent."""
@@ -333,7 +334,6 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         type_map = {"string": "string", "number": "number", "bool": "boolean", "object": "object", "array": "any[]", "func": "CallableFunction"}
         if prop_type.source in type_map:
             return type_map[prop_type.source]
-
 
         if isinstance(prop_type, ChainedAttribute):
             if prop_type.attribute.source == "node":
