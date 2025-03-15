@@ -222,6 +222,19 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
         return not self.is_module_import()
 
     @reader
+    def usage_is_ascertainable(self) -> bool:
+        """Returns True if we can determine for sure whether the import is unused or not.
+
+        Returns:
+            bool: True if the usage can be ascertained for the import, False otherwise.
+        """
+        if self.is_wildcard_import() or self.is_sideffect_import():
+            return False
+        return True
+
+
+
+    @reader
     def is_wildcard_import(self) -> bool:
         """Returns True if the import symbol is a wildcard import.
 
@@ -233,6 +246,16 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             bool: True if this is a wildcard import, False otherwise.
         """
         return self.import_type == ImportType.WILDCARD
+
+    @reader
+    def is_sideffect_import(self) -> bool:
+        #Maybe better name for this
+        """Determines if this is a sideffect.
+
+        Returns:
+            bool: True if this is a sideffect import, False otherwise
+        """
+        return self.import_type==ImportType.SIDE_EFFECT
 
     @property
     @abstractmethod
@@ -663,7 +686,7 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
     @reader
     def remove_if_unused(self) -> None:
         if all(
-            self.transaction_manager.get_transactions_at_range(self.filepath, start_byte=usage.match.start_byte, end_byte=usage.match.end_byte, transaction_order=TransactionPriority.Remove)
+            self.transaction_manager.get_transaction_containing_range(self.file.path, start_byte=usage.match.start_byte, end_byte=usage.match.end_byte, transaction_order=TransactionPriority.Remove)
             for usage in self.usages
         ):
             self.remove()
