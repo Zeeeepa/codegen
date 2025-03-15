@@ -25,6 +25,7 @@ from codegen.extensions.tools.reveal_symbol import reveal_symbol
 from codegen.extensions.tools.search import search
 from codegen.extensions.tools.semantic_edit import semantic_edit
 from codegen.extensions.tools.semantic_search import semantic_search
+from codegen.extensions.langchain.sentry_tools import get_sentry_tools
 from codegen.sdk.core.codebase import Codebase
 
 from ..tools import (
@@ -837,7 +838,7 @@ def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
     Returns:
         List of initialized Langchain tools
     """
-    return [
+    tools = [
         CommitTool(codebase),
         CreateFileTool(codebase),
         DeleteFileTool(codebase),
@@ -869,6 +870,11 @@ def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
         LinearCreateIssueTool(codebase),
         LinearGetTeamsTool(codebase),
     ]
+    
+    # Add Sentry tools
+    tools.extend(get_sentry_tools(codebase))
+    
+    return tools
 
 
 class ReplacementEditInput(BaseModel):
