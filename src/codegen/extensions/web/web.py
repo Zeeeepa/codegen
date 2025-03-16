@@ -1,12 +1,12 @@
 """Tools for web browsing functionality."""
 
-from typing import ClassVar, List
+from typing import ClassVar
 
 import requests
 from pydantic import Field
 
-from codegen.extensions.web.web_client import WebClient
 from codegen.extensions.tools.observation import Observation
+from codegen.extensions.web.web_client import WebClient
 
 
 class WebBrowsePageObservation(Observation):
@@ -24,7 +24,7 @@ class WebSearchObservation(Observation):
     """Response from web search."""
 
     query: str = Field(description="Search query used")
-    results: List[dict] = Field(description="List of search results")
+    results: list[dict] = Field(description="List of search results")
 
     str_template: ClassVar[str] = "Found {result_count} results for '{query}'"
 
@@ -40,7 +40,7 @@ class WebExtractImagesObservation(Observation):
     """Response from extracting images from a web page."""
 
     url: str = Field(description="URL of the web page")
-    images: List[dict] = Field(description="List of extracted images")
+    images: list[dict] = Field(description="List of extracted images")
 
     str_template: ClassVar[str] = "Extracted {image_count} images from {url}"
 
@@ -54,11 +54,11 @@ class WebExtractImagesObservation(Observation):
 
 def web_browse_page_tool(client: WebClient, url: str) -> WebBrowsePageObservation:
     """Browse a web page and extract its content.
-    
+
     Args:
         client: WebClient instance
         url: URL of the web page to browse
-        
+
     Returns:
         WebBrowsePageObservation with the page content
     """
@@ -105,12 +105,12 @@ def web_browse_page_tool(client: WebClient, url: str) -> WebBrowsePageObservatio
 
 def web_search_tool(client: WebClient, query: str, num_results: int = 10) -> WebSearchObservation:
     """Search the web using a search engine.
-    
+
     Args:
         client: WebClient instance
         query: Search query string
         num_results: Maximum number of results to return
-        
+
     Returns:
         WebSearchObservation with search results
     """
@@ -149,12 +149,12 @@ def web_search_tool(client: WebClient, query: str, num_results: int = 10) -> Web
 
 def web_extract_images_tool(client: WebClient, url: str, max_images: int = 20) -> WebExtractImagesObservation:
     """Extract images from a web page.
-    
+
     Args:
         client: WebClient instance
         url: URL of the web page
         max_images: Maximum number of images to extract
-        
+
     Returns:
         WebExtractImagesObservation with extracted images
     """

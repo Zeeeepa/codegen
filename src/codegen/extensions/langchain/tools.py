@@ -25,12 +25,12 @@ from codegen.extensions.tools.reveal_symbol import reveal_symbol
 from codegen.extensions.tools.search import search
 from codegen.extensions.tools.semantic_edit import semantic_edit
 from codegen.extensions.tools.semantic_search import semantic_search
-from codegen.extensions.web.web_client import WebClient
 from codegen.extensions.web.web import (
     web_browse_page_tool,
-    web_search_tool,
     web_extract_images_tool,
+    web_search_tool,
 )
+from codegen.extensions.web.web_client import WebClient
 from codegen.sdk.core.codebase import Codebase
 
 from ..tools import (
@@ -49,7 +49,7 @@ from ..tools import (
 )
 from ..tools.relace_edit_prompts import RELACE_EDIT_PROMPT
 from ..tools.semantic_edit_prompts import FILE_EDIT_PROMPT
-from .web_tools import WebBrowsePageTool, WebSearchTool, WebExtractImagesTool
+from .web_tools import WebBrowsePageTool, WebExtractImagesTool, WebSearchTool
 
 
 class ViewFileInput(BaseModel):

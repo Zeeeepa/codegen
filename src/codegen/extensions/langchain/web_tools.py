@@ -1,16 +1,16 @@
 """LangChain tools for web browsing."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from langchain_core.tools.base import BaseTool
 from pydantic import BaseModel, Field
 
-from codegen.extensions.web.web_client import WebClient
 from codegen.extensions.web.web import (
     web_browse_page_tool,
-    web_search_tool,
     web_extract_images_tool,
+    web_search_tool,
 )
+from codegen.extensions.web.web_client import WebClient
 
 
 class WebBrowsePageInput(BaseModel):
