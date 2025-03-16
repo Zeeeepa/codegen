@@ -319,13 +319,13 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
         """
         if not self.is_async:
             return
-        
+
         # Remove the 'async' keyword
         for child in self.ts_node.children:
             if child.type == "async":
                 self.remove_byte_range(child.start_byte, child.end_byte + 1)  # +1 for the space after 'async'
                 break
-        
+
         # Unwrap the return type from Promise if it exists
         if self.return_type and self.return_type.name == "Promise":
             # Extract the type parameter from Promise<T>

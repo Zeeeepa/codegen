@@ -341,7 +341,7 @@ def test_deasyncify_void_return_type(tmpdir) -> None:
         # After deAsyncify, should be non-async with void return type
         func.deAsyncify()
         codebase.commit()
-        
+
         # Check file content directly
         assert file.content.strip() == EXPECTED_CONTENT.strip()
 
@@ -378,6 +378,6 @@ def test_deasyncify_no_return_type(tmpdir) -> None:
         # After deAsyncify, should be non-async with no return type
         func.deAsyncify()
         codebase.commit()
-        
+
         # Check file content directly
         assert file.content.strip() == EXPECTED_CONTENT.strip()
