@@ -25,8 +25,8 @@ from codegen.extensions.tools.reveal_symbol import reveal_symbol
 from codegen.extensions.tools.search import search
 from codegen.extensions.tools.semantic_edit import semantic_edit
 from codegen.extensions.tools.semantic_search import semantic_search
-from codegen.extensions.tools.web_search import web_search
 from codegen.extensions.tools.web_page_view import web_page_view
+from codegen.extensions.tools.web_search import web_search
 from codegen.sdk.core.codebase import Codebase
 
 from ..tools import (

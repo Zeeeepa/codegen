@@ -21,10 +21,10 @@ from codegen.extensions.langchain.tools import (
     ReplacementEditTool,
     RevealSymbolTool,
     SearchTool,
-    WebSearchTool,
-    WebPageViewTool,
     # SemanticEditTool,
     ViewFileTool,
+    WebPageViewTool,
+    WebSearchTool,
 )
 
 from .graph import create_react_agent
