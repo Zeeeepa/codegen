@@ -38,7 +38,10 @@ class ViewFileObservation(Observation):
         default=None,
         description="Maximum number of lines that can be viewed at once",
     )
-
+    raw_content: Optional[str] = Field(
+        default=None,
+        description="unformatted content of the file",
+    )
     str_template: ClassVar[str] = "File {filepath} (showing lines {start_line}-{end_line} of {line_count})"
 
     def render(self) -> str:
@@ -126,7 +129,8 @@ def view_file(
     # Extract the requested lines (convert to 0-based indexing)
     content_lines = lines[start_line - 1 : end_line]
     content = "\n".join(content_lines)
-
+    
+    raw_content = content
     # Add line numbers if requested
     if line_numbers:
         # Pass the actual line numbers for proper numbering
@@ -136,12 +140,15 @@ def view_file(
             numbered_lines.append(f"{i:>{width}}|{line}")
         content = "\n".join(numbered_lines)
 
+    
+
     # Create base observation with common fields
     observation = ViewFileObservation(
         status="success",
         filepath=file.filepath,
         content=content,
         line_count=total_lines,
+        raw_content=raw_content,
     )
 
     # Only include pagination fields if file exceeds max_lines

@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Any, Optional
 
-from langchain.schema import AIMessage, HumanMessage
+from langchain.schema import AIMessage as LCAIMessage, HumanMessage as LCHumanMessage
 from langchain.schema import FunctionMessage as LCFunctionMessage
 from langchain.schema import SystemMessage as LCSystemMessage
 from langchain_core.messages import ToolMessage as LCToolMessage
@@ -60,7 +60,7 @@ class MessageStreamTracer:
         # Determine message type
         message_type = self._get_message_type(latest_message)
         content = self._get_message_content(latest_message)
-
+        artifact = self._get_message_artifact(latest_message)
         # Create the appropriate message type
         if message_type == "user":
             return UserMessage(type=message_type, content=content)
@@ -71,7 +71,7 @@ class MessageStreamTracer:
             tool_calls = [ToolCall(name=tc.get("name"), arguments=tc.get("arguments"), id=tc.get("id")) for tc in tool_calls_data]
             return AssistantMessage(type=message_type, content=content, tool_calls=tool_calls)
         elif message_type == "tool":
-            return ToolMessageData(type=message_type, content=content, tool_name=getattr(latest_message, "name", None), tool_response=content, tool_id=getattr(latest_message, "tool_call_id", None))
+            return ToolMessageData(type=message_type, structured_data=artifact, content=content, tool_name=getattr(latest_message, "name", None), tool_response=content, tool_id=getattr(latest_message, "tool_call_id", None))
         elif message_type == "function":
             return FunctionMessageData(type=message_type, content=content)
         else:
@@ -79,9 +79,9 @@ class MessageStreamTracer:
 
     def _get_message_type(self, message) -> str:
         """Determine the type of message."""
-        if isinstance(message, HumanMessage):
+        if isinstance(message, LCHumanMessage):
             return "user"
-        elif isinstance(message, AIMessage):
+        elif isinstance(message, LCAIMessage):
             return "assistant"
         elif isinstance(message, LCSystemMessage):
             return "system"
@@ -93,6 +93,13 @@ class MessageStreamTracer:
             return message.type
         else:
             return "unknown"
+        
+    def _get_message_artifact(self, message) -> Optional[Any]:
+        """Extract artifact from a message."""
+        if hasattr(message, "artifact"):
+            return message.artifact
+        else:
+            return None
 
     def _get_message_content(self, message) -> str:
         """Extract content from a message."""
