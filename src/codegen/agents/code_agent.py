@@ -70,13 +70,13 @@ class CodeAgent:
                 - max_tokens: Maximum number of tokens to generate
         """
         self.codebase = codebase
-        
+
         # If multimodal is enabled, ensure we're using a multimodal model
         if multimodal and model_provider == "anthropic" and "claude-3" not in model_name:
             # Default to Claude 3 Sonnet if multimodal is requested but model isn't Claude 3
             model_name = "claude-3-sonnet-20240229"
             print(f"Multimodal support requested, using {model_name}")
-        
+
         self.agent = create_codebase_agent(
             self.codebase,
             model_provider=model_provider,

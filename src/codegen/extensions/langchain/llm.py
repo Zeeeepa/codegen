@@ -3,7 +3,7 @@
 import os
 import re
 from collections.abc import Sequence
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.callbacks import CallbackManagerForLLMRun
@@ -107,74 +107,63 @@ class LLM(BaseChatModel):
         msg = f"Unknown model provider: {self.model_provider}. Must be one of: anthropic, openai, xai"
         raise ValueError(msg)
 
-    def _process_messages_for_multimodal(self, messages: List[BaseMessage]) -> List[BaseMessage]:
+    def _process_messages_for_multimodal(self, messages: list[BaseMessage]) -> list[BaseMessage]:
         """Process messages to handle multimodal content (images).
-        
+
         This function looks for image URLs in the format [Image: filename](URL) in message content
         and converts them to the appropriate format for multimodal models.
-        
+
         Args:
             messages: List of messages to process
-            
+
         Returns:
             Processed messages with multimodal content
         """
         processed_messages = []
-        
+
         for message in messages:
             if not isinstance(message, HumanMessage):
                 # Only process human messages for now
                 processed_messages.append(message)
                 continue
-                
+
             content = message.content
             if isinstance(content, str):
                 # Check for image URLs in the format [Image: filename](URL)
-                image_pattern = r'\[Image(?:\s+\d+)?:\s+([^\]]+)\]\(([^)]+)\)'
+                image_pattern = r"\[Image(?:\s+\d+)?:\s+([^\]]+)\]\(([^)]+)\)"
                 matches = re.findall(image_pattern, content)
-                
+
                 if not matches:
                     # No images found, keep the message as is
                     processed_messages.append(message)
                     continue
-                
+
                 # Convert to multimodal format
                 multimodal_content = []
                 last_end = 0
-                
+
                 for match in re.finditer(image_pattern, content):
                     # Add text before the image
                     if match.start() > last_end:
-                        multimodal_content.append({
-                            "type": "text",
-                            "text": content[last_end:match.start()]
-                        })
-                    
+                        multimodal_content.append({"type": "text", "text": content[last_end : match.start()]})
+
                     # Add the image
                     image_url = match.group(2)
-                    multimodal_content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image_url
-                        }
-                    })
-                    
+                    multimodal_content.append({"type": "image_url", "image_url": {"url": image_url}})
+
                     last_end = match.end()
-                
+
                 # Add any remaining text after the last image
                 if last_end < len(content):
-                    multimodal_content.append({
-                        "type": "text",
-                        "text": content[last_end:]
-                    })
-                
+                    multimodal_content.append({"type": "text", "text": content[last_end:]})
+
                 # Create a new message with multimodal content
                 new_message = HumanMessage(content=multimodal_content)
                 processed_messages.append(new_message)
             else:
                 # Content is already in a different format, keep as is
                 processed_messages.append(message)
-        
+
         return processed_messages
 
     def _generate(
@@ -199,7 +188,7 @@ class LLM(BaseChatModel):
         if self.model_provider == "anthropic" and "claude-3" in self.model_name:
             processed_messages = self._process_messages_for_multimodal(messages)
             return self._model._generate(processed_messages, stop=stop, run_manager=run_manager, **kwargs)
-        
+
         return self._model._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
 
     def bind_tools(
