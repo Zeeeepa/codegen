@@ -64,7 +64,7 @@ For large files (>250 lines), content will be paginated. Use start_line and end_
 The response will indicate if there are more lines available to view."""
     args_schema: ClassVar[type[BaseModel]] = ViewFileInput
     codebase: Codebase = Field(exclude=True)
-    response_format = 'content_and_artifact'
+    response_format: str = 'content_and_artifact'
 
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
