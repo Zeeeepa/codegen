@@ -35,7 +35,7 @@ def checkout_pr(codebase: Codebase, pr_number: int) -> CheckoutPRObservation:
                 success=False,
             )
         branch = pr.head.ref
-        res = codebase.checkout(branch=branch)
+        res = codebase.checkout(branch=branch, remote=True)
         if res != CheckoutResult.SUCCESS:
             return CheckoutPRObservation(
                 pr_number=pr_number,
