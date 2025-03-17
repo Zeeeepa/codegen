@@ -33,6 +33,7 @@ def checkout_pr(codebase: Codebase, pr_number: int) -> CheckoutPRObservation:
             return CheckoutPRObservation(
                 pr_number=pr_number,
                 success=False,
+                status="error",
             )
         branch = pr.head.ref
         res = codebase.checkout(branch=branch, remote=True)
@@ -41,14 +42,17 @@ def checkout_pr(codebase: Codebase, pr_number: int) -> CheckoutPRObservation:
                 pr_number=pr_number,
                 success=False,
                 error=f"Failed to checkout branch {branch} with error: {res}",
+                status="error",
             )
         return CheckoutPRObservation(
             pr_number=pr_number,
             success=True,
+            status="success",
         )
     except Exception as e:
         return CheckoutPRObservation(
             pr_number=pr_number,
             success=False,
             error=f"Failed to checkout PR: {e!s}",
+            status="error",
         )
