@@ -1,9 +1,9 @@
 {
-  "buildCommand": "echo 'Mintlify docs deployment'",
-  "outputDirectory": "docs",
-  "framework": "other",
-  "github": {
-    "enabled": true,
-    "silent": true
-  }
+	"buildCommand": "echo 'Mintlify docs deployment'",
+	"outputDirectory": "docs",
+	"framework": "other",
+	"github": {
+		"enabled": true,
+		"silent": true
+	}
 }
