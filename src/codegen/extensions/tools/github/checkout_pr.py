@@ -2,6 +2,7 @@
 
 from pydantic import Field
 
+from codegen.git.schemas.enums import CheckoutResult
 from codegen.sdk.core.codebase import Codebase
 
 from ..observation import Observation
@@ -33,8 +34,14 @@ def checkout_pr(codebase: Codebase, pr_number: int) -> CheckoutPRObservation:
                 pr_number=pr_number,
                 success=False,
             )
-
-        codebase.checkout(branch=pr.head.ref)
+        branch = pr.head.ref
+        res = codebase.checkout(branch=branch)
+        if res != CheckoutResult.SUCCESS:
+            return CheckoutPRObservation(
+                pr_number=pr_number,
+                success=False,
+                error=f"Failed to checkout branch {branch} with error: {res}",
+            )
         return CheckoutPRObservation(
             pr_number=pr_number,
             success=True,
