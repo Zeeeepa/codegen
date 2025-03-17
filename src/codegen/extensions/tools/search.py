@@ -227,10 +227,10 @@ def _search_with_ripgrep(
         filename_cmd = ["find", search_path, "-type", "f"]
         if file_extensions:
             # Add file extension filters
-            extension_pattern = " -o ".join([f"-name \"*.{ext.lstrip('.')}\"" for ext in file_extensions])
+            extension_pattern = " -o ".join([f'-name "*.{ext.lstrip(".")}"' for ext in file_extensions])
             filename_cmd.extend(["-a", "(", "-name", f"*{query}*"])
             if extension_pattern:
-                filename_cmd.extend(["-a", "("] + extension_pattern.split() + [")"])
+                filename_cmd.extend(["-a", "(", *extension_pattern.split(), ")"])
             filename_cmd.append(")")
         else:
             filename_cmd.extend(["-name", f"*{query}*"])
@@ -243,7 +243,7 @@ def _search_with_ripgrep(
                 encoding="utf-8",
                 check=False,
             )
-            
+
             if filename_result.returncode == 0 and filename_result.stdout:
                 for filepath in filename_result.stdout.splitlines():
                     if not filepath:
@@ -338,7 +338,7 @@ def _search_with_python(
 
     all_results = []
     filename_matches = set()
-    
+
     # First, check for filename matches
     for file in codebase.files(extensions=extensions):
         # Check if the filename contains the query
