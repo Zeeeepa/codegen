@@ -307,34 +307,31 @@ def main(
 ) -> None:
     """Command-line interface for running evaluations."""
     print(f"Repo: {repo}")
-
-    evaluation_result_file = generate_report(
-        *run_eval(
-            use_existing_preds=use_existing_preds,
-            dataset_enum=DATASET_DICT[dataset],
-            length=length,
-            instance_id=instance_id,
-            codebases=None,
-            local=local,
-            repo=repo,
-            model=model,
-        )
+    result = run_eval(
+        use_existing_preds=use_existing_preds,
+        dataset_enum=DATASET_DICT[dataset],
+        length=length,
+        instance_id=instance_id,
+        local=local,
+        repo=repo,
+        model=model,
     )
 
+    generate_report(*result)
+
+    evaluation_result_file = Path(f"results.{result[3]}.json")
+
     if push_metrics:
-        if evaluation_result_file is None:
-            if use_existing_preds is None:
-                print("Evaluation was not run - no metrics were pushed")
-                return
-            else:
-                evaluation_result_file = f"results.{use_existing_preds}.json"
+        if not evaluation_result_file.exists() and use_existing_preds is None:
+            print("Evaluation was not run - no metrics were pushed")
+            return
 
         try:
             from swebench_agent_run.metrics import (
                 write_report_to_db,  # delay import because of extras
             )
 
-            write_report_to_db(evaluation_result_file)
+            write_report_to_db(str(evaluation_result_file.resolve()))
         except Exception:
             print("Error writing report to db")
             traceback.print_exc()

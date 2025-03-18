@@ -284,7 +284,7 @@ def patched_swebench_eval(  # Defaults from swebench harness
     run_id,  # Required argument
     dataset_name="princeton-nlp/SWE-bench_Lite",
     split="test",
-    instance_ids=None,  # Default None since it's optional
+    instance_ids=None,
     max_workers=4,
     open_file_limit=4096,
     timeout=1800,
