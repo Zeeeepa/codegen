@@ -30,7 +30,7 @@ class SearchFilesByNameResultObservation(Observation):
     total_files: int = Field(
         description="Total number of files with matches",
     )
-    files_per_page: int = Field(
+    files_per_page: int | float = Field(
         description="Number of files shown per page",
     )
 
