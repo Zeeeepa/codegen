@@ -1097,6 +1097,8 @@ class SearchFilesByNameTool(BaseTool):
     """Tool for searching files by filename across a codebase."""
 
     name: ClassVar[str] = "search_files_by_name"
+    page: int = 1
+    files_per_page: int = 10
     description: ClassVar[str] = """
 Search for files and directories by glob pattern across the active codebase. This is useful when you need to:
 - Find specific file types (e.g., '*.py', '*.tsx')
@@ -1106,9 +1108,11 @@ Search for files and directories by glob pattern across the active codebase. Thi
     args_schema: ClassVar[type[BaseModel]] = SearchFilesByNameInput
     codebase: Codebase = Field(exclude=True)
 
+    
+
     def __init__(self, codebase: Codebase):
         super().__init__(codebase=codebase)
 
     def _run(self, pattern: str) -> str:
         """Execute the glob pattern search using fd."""
-        return search_files_by_name(self.codebase, pattern).render()
+        return search_files_by_name(self.codebase, pattern, page=self.page, files_per_page=self.files_per_page).render()
