@@ -54,7 +54,7 @@ class ViewFileInput(BaseModel):
     filepath: str = Field(..., description="Path to the file relative to workspace root")
     start_line: int | None = Field(None, description="Starting line number to view (1-indexed, inclusive)")
     end_line: int | None = Field(None, description="Ending line number to view (1-indexed, inclusive)")
-    max_lines: int | None = Field(None, description="Maximum number of lines to view at once, defaults to 250")
+    max_lines: int | None = Field(None, description="Maximum number of lines to view at once, defaults to 500")
     line_numbers: bool | None = Field(True, description="If True, add line numbers to the content (1-indexed)")
 
 
@@ -63,7 +63,7 @@ class ViewFileTool(BaseTool):
 
     name: ClassVar[str] = "view_file"
     description: ClassVar[str] = """View the contents and metadata of a file in the codebase.
-For large files (>250 lines), content will be paginated. Use start_line and end_line to navigate through the file.
+For large files (>500 lines), content will be paginated. Use start_line and end_line to navigate through the file.
 The response will indicate if there are more lines available to view."""
     args_schema: ClassVar[type[BaseModel]] = ViewFileInput
     codebase: Codebase = Field(exclude=True)
@@ -85,7 +85,7 @@ The response will indicate if there are more lines available to view."""
             line_numbers=line_numbers if line_numbers is not None else True,
             start_line=start_line,
             end_line=end_line,
-            max_lines=max_lines if max_lines is not None else 250,
+            max_lines=max_lines if max_lines is not None else 500,
         )
 
         return result.render()
