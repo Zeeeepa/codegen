@@ -1,6 +1,7 @@
+import math
 import shutil
 import subprocess
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from pydantic import Field
 
@@ -44,7 +45,7 @@ def search_files_by_name(
     codebase: Codebase,
     pattern: str,
     page: int = 1,
-    files_per_page: int = 10,
+    files_per_page: int | float = 10,
 ) -> SearchFilesByNameResultObservation:
     """Search for files by name pattern in the codebase.
 
@@ -58,8 +59,8 @@ def search_files_by_name(
         # Validate pagination parameters
         if page < 1:
             page = 1
-        if files_per_page < 1:
-            files_per_page = 10
+        if files_per_page is not None and files_per_page < 1:
+            files_per_page = 20
 
         if shutil.which("fd") is None:
             logger.warning("fd is not installed, falling back to find")
