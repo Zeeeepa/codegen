@@ -48,10 +48,10 @@ class SearchFilesByNameResultObservation(Observation):
             return f"No files found matching pattern: {self.pattern}"
 
         lines = [f"Found {self.total_files} files matching pattern: {self.pattern} (showing page {self.page} of {self.total_pages})"]
-        
+
         for file_path in self.files:
             lines.append(f"- {file_path}")
-        
+
         return "\n".join(lines)
 
 
@@ -72,7 +72,7 @@ def search_files_by_name(
     try:
         # Get all matching files
         all_files = []
-        
+
         if shutil.which("fd") is None:
             logger.warning("fd is not installed, falling back to find")
             results = subprocess.check_output(
@@ -90,17 +90,17 @@ def search_files_by_name(
                 timeout=30,
             )
             all_files = results.decode("utf-8").strip().split("\n") if results.strip() else []
-        
+
         # Sort files alphabetically
         all_files.sort()
-        
+
         # Calculate pagination
         total_files = len(all_files)
         total_pages = (total_files + files_per_page - 1) // files_per_page if total_files > 0 else 1
-        
+
         # Adjust page number if out of bounds
         page = max(1, min(page, total_pages))
-        
+
         # Get the current page of results
         start_idx = (page - 1) * files_per_page
         end_idx = start_idx + files_per_page
