@@ -85,6 +85,8 @@ def search_files_by_name(
 
         # Calculate pagination
         total_files = len(all_files)
+        if files_per_page == math.inf:
+            files_per_page = total_files
         total_pages = (total_files + files_per_page - 1) // files_per_page if total_files > 0 else 1
         
         # Ensure page is within valid range
