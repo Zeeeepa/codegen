@@ -45,7 +45,7 @@ def view_pr(codebase: Codebase, pr_id: int) -> ViewPRObservation:
     """
     try:
         patch, file_commit_sha, moddified_symbols = codebase.get_modified_symbols_in_pr(pr_id)
-        
+
         # Get the PR object to extract URL and repo name
         pr = codebase._op.get_pull_request(pr_id)
         pr_url = pr.html_url if pr else ""
