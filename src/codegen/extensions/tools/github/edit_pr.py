@@ -85,6 +85,10 @@ def edit_pr(
 
     return Observation(
         success=True,
-        message=f"Successfully updated PR #{pr_number} ({', '.join(updates)}). Note that this tool only updates PR metadata and does not push code changes to the PR branch. To add code changes to a PR, make your edits and then use the `create_pr` tool while on the PR branch.",
+        message=(
+            f"Successfully updated PR #{pr_number} ({', '.join(updates)}). "
+            "Note that this tool only updates PR metadata and does not push code changes to the PR branch. "
+            "To add code changes to a PR, make your edits and then use the `create_pr` tool while on the PR branch."
+        ),
         url=pr.html_url,
     )

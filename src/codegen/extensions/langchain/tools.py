@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from codegen.extensions.linear.linear_client import LinearClient
 from codegen.extensions.tools.bash import run_bash_command
 from codegen.extensions.tools.github.checkout_pr import checkout_pr
+from codegen.extensions.tools.github.edit_pr import edit_pr
 from codegen.extensions.tools.github.view_pr_checks import view_pr_checks
 from codegen.extensions.tools.global_replacement_edit import replacement_edit_global
 from codegen.extensions.tools.linear.linear import (
@@ -515,6 +516,46 @@ class GithubCreatePRTool(BaseTool):
         return result.render()
 
 
+class GithubEditPRInput(BaseModel):
+    """Input for editing a PR."""
+
+    pr_number: int = Field(..., description="The PR number to edit")
+    title: Optional[str] = Field(None, description="The new title for the PR (optional)")
+    body: Optional[str] = Field(None, description="The new body/description for the PR (optional)")
+    state: Optional[str] = Field(
+        None, 
+        description="The new state for the PR (optional, can be 'open', 'closed', 'draft', or 'ready_for_review')"
+    )
+
+
+class GithubEditPRTool(BaseTool):
+    """Tool for editing a PR's title, body, and/or state."""
+
+    name: ClassVar[str] = "edit_pr"
+    description: ClassVar[str] = "Edit a PR's title and/or body and/or state. The (optional) state parameter can be 'open', 'closed', 'draft', or 'ready_for_review'."
+    args_schema: ClassVar[type[BaseModel]] = GithubEditPRInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(
+        self,
+        pr_number: int,
+        title: Optional[str] = None,
+        body: Optional[str] = None,
+        state: Optional[str] = None,
+    ) -> str:
+        result = edit_pr(
+            self.codebase,
+            pr_number=pr_number,
+            title=title,
+            body=body,
+            state=state,
+        )
+        return result.render()
+
+
 class GithubSearchIssuesInput(BaseModel):
     """Input for searching GitHub issues."""
 
@@ -657,7 +698,7 @@ class GithubViewPRCheckTool(BaseTool):
 
     name: ClassVar[str] = "view_pr_checks"
     description: ClassVar[str] = "View the check suites for a PR"
-    args_schema: ClassVar[type[BaseModel]] = GithubCreatePRReviewCommentInput
+    args_schema: ClassVar[type[BaseModel]] = GithubViewPRCheckInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
@@ -876,9 +917,12 @@ def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
         ReflectionTool(codebase),
         # Github
         GithubCreatePRTool(codebase),
+        GithubEditPRTool(codebase),
         GithubCreatePRCommentTool(codebase),
         GithubCreatePRReviewCommentTool(codebase),
         GithubViewPRTool(codebase),
+        GithubViewPRCheckTool(codebase),
+        GithubCheckoutPRTool(codebase),
         GithubSearchIssuesTool(codebase),
         # Linear
         LinearGetIssueTool(codebase),
