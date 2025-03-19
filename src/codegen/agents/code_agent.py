@@ -70,11 +70,11 @@ class CodeAgent:
                 - max_tokens: Maximum number of tokens to generate
         """
         self.codebase = codebase
-        
+
         # Add prompt caching to kwargs if using Anthropic
         if model_provider == "anthropic" and enable_prompt_caching:
             kwargs["enable_prompt_caching"] = True
-            
+
         self.agent = create_codebase_agent(
             self.codebase,
             model_provider=model_provider,
