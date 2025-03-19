@@ -227,6 +227,7 @@ def run_eval(
     codebases: Dict[str, Codebase] = {},
     repo: Optional[str] = None,
     model: str = "claude-3-7-sonnet-latest",
+    instance_ids: list[str] | None = None,
 ) -> Tuple[Path, Path, SWEBenchDataset, str]:
     """Main evaluation function."""
     run_id = use_existing_preds or str(uuid.uuid4())
@@ -235,7 +236,11 @@ def run_eval(
     predictions_dir = PREDS_DNAME / f"results_{run_id}"
 
     examples = get_swe_bench_examples(
-        dataset=dataset_enum, length=length, instance_id=instance_id, repo=repo
+        dataset=dataset_enum,
+        length=length,
+        instance_id=instance_id,
+        repo=repo,
+        instance_ids=instance_ids or [],
     )
     print(
         "Examples:\n" + "\n".join(f"{e.instance_id} - {e.repo} - {e.base_commit}" for e in examples)
@@ -271,6 +276,12 @@ def run_eval(
         raise
 
 
+def list_of_strings(value: str) -> list[str]:
+    if value == "":
+        return []
+    return value.split(",")
+
+
 @click.command()
 @click.option(
     "--use-existing-preds",
@@ -295,6 +306,12 @@ def run_eval(
 @click.option("--push-metrics", help="Push metrics to the database.", is_flag=True, default=False)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
 @click.option("--model", help="The model to use.", type=str, default="claude-3-7-sonnet-latest")
+@click.option(
+    "--instance-ids",
+    help="The instance IDs of the examples to process. Example: --instance-ids <instance_id1>,<instance_id2>,...",
+    type=list_of_strings,
+    default="",
+)
 def main(
     use_existing_preds: Optional[str],
     dataset: str,
@@ -304,6 +321,7 @@ def main(
     repo: Optional[str],
     model: str,
     push_metrics: bool,
+    instance_ids: list[str],
 ) -> None:
     """Command-line interface for running evaluations."""
     print(f"Repo: {repo}")
@@ -315,6 +333,7 @@ def main(
         local=local,
         repo=repo,
         model=model,
+        instance_ids=instance_ids,
     )
 
     generate_report(*result)

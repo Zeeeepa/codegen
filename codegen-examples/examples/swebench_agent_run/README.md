@@ -83,11 +83,12 @@ swe-eval --help
 Options:
   --use-existing-preds TEXT      Run ID of existing predictions
   --dataset [lite|full|verified|lite_small|lite_medium|lite_large]
-                                 Dataset to use
   --length INTEGER               Number of examples to process
   --instance-id TEXT             Specific instance ID to process
   --repo TEXT                    Specific repo to evaluate
   --local                        Run evaluation locally
+  --instance-ids LIST_OF_STRINGS  The instance IDs of the examples to process.
+                                  Example: --instance-ids <instance_id1>,<instance_id2>,...
   --push-metrics                 Push results to metrics database (Requires additional database environment variables)
   --help                         Show this message and exit
 ```

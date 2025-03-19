@@ -89,19 +89,20 @@ class LLM(BaseChatModel):
             if not os.getenv("ANTHROPIC_API_KEY"):
                 msg = "ANTHROPIC_API_KEY not found in environment. Please set it in your .env file or environment variables."
                 raise ValueError(msg)
-            return ChatAnthropic(**self._get_model_kwargs(), max_retries=10, timeout=1000)
+            max_tokens = 16384 if "claude-3-7" in self.model_name else 8192
+            return ChatAnthropic(**self._get_model_kwargs(), max_tokens=max_tokens, max_retries=10, timeout=1000)
 
         elif self.model_provider == "openai":
             if not os.getenv("OPENAI_API_KEY"):
                 msg = "OPENAI_API_KEY not found in environment. Please set it in your .env file or environment variables."
                 raise ValueError(msg)
-            return ChatOpenAI(**self._get_model_kwargs(), max_retries=10, timeout=1000)
+            return ChatOpenAI(**self._get_model_kwargs(), max_tokens=4096, max_retries=10, timeout=1000)
 
         elif self.model_provider == "xai":
             if not os.getenv("XAI_API_KEY"):
                 msg = "XAI_API_KEY not found in environment. Please set it in your .env file or environment variables."
                 raise ValueError(msg)
-            return ChatXAI(**self._get_model_kwargs())
+            return ChatXAI(**self._get_model_kwargs(), max_tokens=12000)
 
         msg = f"Unknown model provider: {self.model_provider}. Must be one of: anthropic, openai, xai"
         raise ValueError(msg)
