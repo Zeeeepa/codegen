@@ -521,10 +521,7 @@ class GithubEditPRInput(BaseModel):
     pr_number: int = Field(..., description="The PR number to edit")
     title: Optional[str] = Field(None, description="The new title for the PR (optional)")
     body: Optional[str] = Field(None, description="The new body/description for the PR (optional)")
-    state: Optional[str] = Field(
-        None, 
-        description="The new state for the PR (optional, can be 'open', 'closed', 'draft', or 'ready_for_review')"
-    )
+    state: Optional[str] = Field(None, description="The new state for the PR (optional, can be 'open', 'closed', 'draft', or 'ready_for_review')")
 
 
 class GithubEditPRTool(BaseTool):
