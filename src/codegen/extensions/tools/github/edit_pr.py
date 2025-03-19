@@ -1,11 +1,12 @@
 """Tool for editing a PR's title, body, and/or state."""
 
-from typing import Optional
-
-from github.PullRequest import PullRequest
+from typing import TYPE_CHECKING, Optional
 
 from codegen.extensions.tools.observation import Observation
 from codegen.sdk.core.codebase import Codebase
+
+if TYPE_CHECKING:
+    from github.PullRequest import PullRequest
 
 
 def edit_pr(
