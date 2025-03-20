@@ -7,15 +7,12 @@ from rich.markup import escape
 
 from codegen.sdk.codebase.transactions import TransactionPriority
 from codegen.sdk.core.autocommit import commiter, reader, writer
-from codegen.sdk.core.dataclasses.usage import UsageKind, UsageType
 from codegen.sdk.core.detached_symbols.argument import Argument
-from codegen.sdk.core.detached_symbols.function_call import FunctionCall
 from codegen.sdk.core.expressions import Name, Value
-from codegen.sdk.core.expressions.chained_attribute import ChainedAttribute
 from codegen.sdk.core.expressions.defined_name import DefinedName
 from codegen.sdk.core.interfaces.usable import Usable
 from codegen.sdk.core.statements.statement import Statement
-from codegen.sdk.enums import ImportType, NodeType, SymbolType
+from codegen.sdk.enums import NodeType, SymbolType
 from codegen.sdk.extensions.sort import sort_editables
 from codegen.sdk.output.constants import ANGULAR_STYLE
 from codegen.shared.decorators.docs import apidoc, noapidoc
