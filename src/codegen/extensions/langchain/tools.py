@@ -744,6 +744,7 @@ class LinearSearchIssuesInput(BaseModel):
 
     query: str = Field(..., description="Search query string")
     limit: int = Field(default=10, description="Maximum number of issues to return")
+    assignee_id: str | None = Field(default=None, description="Optional assignee ID to filter issues by")
 
 
 class LinearSearchIssuesTool(BaseTool):
@@ -757,8 +758,8 @@ class LinearSearchIssuesTool(BaseTool):
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self, query: str, limit: int = 10) -> str:
-        result = linear_search_issues_tool(self.client, query, limit)
+    def _run(self, query: str, limit: int = 10, assignee_id: str | None = None) -> str:
+        result = linear_search_issues_tool(self.client, query, limit, assignee_id)
         return result.render()
 
 
