@@ -1,7 +1,7 @@
 import math
 import shutil
 import subprocess
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -88,13 +88,13 @@ def search_files_by_name(
         if files_per_page == math.inf:
             files_per_page = total_files
             total_pages = 1
-        else: 
+        else:
             total_pages = (total_files + files_per_page - 1) // files_per_page if total_files > 0 else 1
-        
-        
+
+
         # Ensure page is within valid range
         page = min(page, total_pages)
-        
+
         # Get paginated results
         start_idx = (page - 1) * files_per_page
         end_idx = start_idx + files_per_page

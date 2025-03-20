@@ -221,17 +221,6 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
         return not self.is_module_import()
 
     @reader
-    def usage_is_ascertainable(self) -> bool:
-        """Returns True if we can determine for sure whether the import is unused or not.
-
-        Returns:
-            bool: True if the usage can be ascertained for the import, False otherwise.
-        """
-        if self.is_wildcard_import() or self.is_sideffect_import():
-            return False
-        return True
-
-    @reader
     def is_wildcard_import(self) -> bool:
         """Returns True if the import symbol is a wildcard import.
 
@@ -691,7 +680,7 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             bool: True if removed, False if not
         """
         if all(usage.match.get_transaction_if_pending_removal() for usage in self.usages):
-            if not force and not self.usage_is_ascertainable():
+            if not force and (self.is_wildcard_import() or self.is_sideffect_import()):
                 return False
             self.remove()
             return True

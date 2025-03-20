@@ -7,12 +7,15 @@ from rich.markup import escape
 
 from codegen.sdk.codebase.transactions import TransactionPriority
 from codegen.sdk.core.autocommit import commiter, reader, writer
+from codegen.sdk.core.dataclasses.usage import UsageKind, UsageType
 from codegen.sdk.core.detached_symbols.argument import Argument
+from codegen.sdk.core.detached_symbols.function_call import FunctionCall
 from codegen.sdk.core.expressions import Name, Value
+from codegen.sdk.core.expressions.chained_attribute import ChainedAttribute
 from codegen.sdk.core.expressions.defined_name import DefinedName
 from codegen.sdk.core.interfaces.usable import Usable
 from codegen.sdk.core.statements.statement import Statement
-from codegen.sdk.enums import NodeType, SymbolType
+from codegen.sdk.enums import ImportType, NodeType, SymbolType
 from codegen.sdk.extensions.sort import sort_editables
 from codegen.sdk.output.constants import ANGULAR_STYLE
 from codegen.shared.decorators.docs import apidoc, noapidoc
@@ -264,6 +267,7 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
                 return first_node.insert_before(new_src, fix_indentation, newline, priority, dedupe)
         return super().insert_before(new_src, fix_indentation, newline, priority, dedupe)
 
+    @noapidoc
     def _post_move_import_cleanup(self, encountered_symbols, strategy):
         # =====[ Remove any imports that are no longer used ]=====
         from codegen.sdk.core.import_resolution import Import
@@ -289,6 +293,88 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
                             ]:
                                 self.transaction_manager.queued_transactions[self.file.path].remove(insert_import_list[0])
                                 self.file._pending_imports.remove(imp_list[0])
+
+    def _move_dependencies(
+        self, file: SourceFile, encountered_symbols: set[Symbol | Import], strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"] = "update_all_imports"
+    ):
+        from codegen.sdk.core.import_resolution import Import
+
+        for dep in self.dependencies:
+            if dep in encountered_symbols:
+                continue
+
+            # =====[ Symbols - move over ]=====
+            if isinstance(dep, Symbol) and dep.is_top_level:
+                encountered_symbols.add(dep)
+                dep._move_to_file(
+                    file=file,
+                    encountered_symbols=encountered_symbols,
+                    include_dependencies=True,
+                    strategy=strategy,
+                )
+
+            # =====[ Imports - copy over ]=====
+            elif isinstance(dep, Import):
+                if dep.imported_symbol:
+                    file.add_import(imp=dep.imported_symbol, alias=dep.alias.source, import_type=dep.import_type)
+                else:
+                    file.add_import(imp=dep.source)
+
+    def _update_dependencies_on_move(self, file: SourceFile):
+        from codegen.sdk.core.import_resolution import Import
+
+        for dep in self.dependencies:
+            # =====[ Symbols - add back edge ]=====
+            if isinstance(dep, Symbol) and dep.is_top_level:
+                file.add_import(imp=dep, alias=dep.name, import_type=ImportType.NAMED_EXPORT, is_type_import=False)
+            elif isinstance(dep, Import):
+                if dep.imported_symbol:
+                    file.add_import(imp=dep.imported_symbol, alias=dep.alias.source)
+                else:
+                    file.add_import(imp=dep.source)
+
+
+    def _execute_post_move_correction_strategy(
+        self,
+        file: SourceFile,
+        encountered_symbols: set[Symbol | Import],
+        strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"],
+    ):
+        from codegen.sdk.core.import_resolution import Import
+
+        import_line = self.get_import_string(module=file.import_module_name)
+        is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL and usage not in encountered_symbols for usage in self.symbol_usages)
+        match strategy:
+            case "duplicate_dependencies":
+                # If not used in the original file. or if not imported from elsewhere, we can just remove the original symbol
+                if not is_used_in_file and not any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
+                    self.remove()
+            case "add_back_edge":
+                if is_used_in_file or any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
+                    self.file.add_import(imp=import_line)
+
+                # Delete the original symbol
+                self.remove()
+            case "update_all_imports":
+                for usage in self.usages:
+                    if isinstance(usage.usage_symbol, Import) and usage.usage_symbol.file != file:
+                        # Add updated import
+                        usage.usage_symbol.file.add_import(import_line)
+                        usage.usage_symbol.remove()
+                    elif usage.usage_type == UsageType.CHAINED:
+                        # Update all previous usages of import * to the new import name
+                        if usage.match and "." + self.name in usage.match:
+                            if isinstance(usage.match, FunctionCall) and self.name in usage.match.get_name():
+                                usage.match.get_name().edit(self.name)
+                            if isinstance(usage.match, ChainedAttribute):
+                                usage.match.edit(self.name)
+                            usage.usage_symbol.file.add_import(imp=import_line)
+
+                # Add the import to the original file
+                if is_used_in_file:
+                    self.file.add_import(imp=import_line)
+                # Delete the original symbol
+                self.remove()
 
     def move_to_file(
         self,
@@ -351,48 +437,17 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
                 usage
                 for usage in self.usages
                 if usage.usage_symbol not in encountered_symbols
-                and not self.transaction_manager.get_transaction_containing_range(usage.usage_symbol.file.path, usage.usage_symbol.start_byte, usage.usage_symbol.end_byte, TransactionPriority.Remove)
+                and not usage.usage_symbol.get_transaction_if_pending_removal()
             ]
         ):
             should_export = True
         file.add_symbol(self, should_export=should_export)
         # =====[ Checks if symbol is used in original file ]=====
         # Takes into account that it's dependencies will be moved
-        from codegen.sdk.core.import_resolution import Import
 
         self._execute_post_move_correction_strategy(file, encountered_symbols, strategy)
 
         # =====[ Remove any imports that are no longer used ]=====
-        if cleanup_unused_imports:
-            for dep in self.dependencies:
-                if strategy != "duplicate_dependencies":
-                    other_usages = [usage.usage_symbol for usage in dep.usages if usage.usage_symbol not in encountered_symbols]
-                else:
-                    other_usages = [usage.usage_symbol for usage in dep.usages]
-                if isinstance(dep, Import):
-                    dep.remove_if_unused()
-
-                    if not other_usages:
-                        # Clean up forward...
-                        dep.remove()
-                elif isinstance(dep, Symbol):
-                    usages_in_file = [
-                        symb
-                        for symb in other_usages
-                        if symb.file == self.file and not self.transaction_manager.get_transaction_containing_range(symb.file.path, symb.start_byte, symb.end_byte, TransactionPriority.Remove)
-                    ]
-                    if self.transaction_manager.get_transaction_containing_range(dep.file.path, dep.start_byte, dep.end_byte, transaction_order=TransactionPriority.Remove):
-                        if not usages_in_file and strategy != "add_back_edge":
-                            # We are going to assume there is only one such import
-                            if imp_list := [import_str for import_str in self.file._pending_imports if dep.name and dep.name in import_str]:
-                                if insert_import_list := [
-                                    transaction
-                                    for transaction in self.transaction_manager.queued_transactions[self.file.path]
-                                    if imp_list[0] and transaction.new_content and imp_list[0] in transaction.new_content and transaction.transaction_order == TransactionPriority.Insert
-                                ]:
-                                    self.transaction_manager.queued_transactions[self.file.path].remove(insert_import_list[0])
-                                    self.file._pending_imports.remove(imp_list[0])
-
         if cleanup_unused_imports:
             self._post_move_import_cleanup(encountered_symbols, strategy)
 
