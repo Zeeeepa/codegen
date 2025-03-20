@@ -518,20 +518,27 @@ class GithubSearchIssuesInput(BaseModel):
     """Input for searching GitHub issues."""
 
     query: str = Field(..., description="Search query string to find issues")
+    assignee_id: str | None = Field(default=None, description="Optional GitHub username or ID to filter issues by assignee")
 
 
 class GithubSearchIssuesTool(BaseTool):
     """Tool for searching GitHub issues."""
 
     name: ClassVar[str] = "search_issues"
-    description: ClassVar[str] = "Search for GitHub issues/PRs using a query string from pygithub, e.g. 'is:pr is:open test_query'"
+    description: ClassVar[str] = "Search for GitHub issues/PRs using a query string from pygithub, e.g. 'is:pr is:open test_query'. You can also filter by assignee using the assignee_id parameter."
     args_schema: ClassVar[type[BaseModel]] = GithubSearchIssuesInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, query: str) -> str:
+    def _run(self, query: str, assignee_id: str | None = None) -> str:
+        # If assignee_id is provided, add it to the query
+        if assignee_id:
+            # Check if the query already contains an assignee filter
+            if "assignee:" not in query:
+                query = f"{query} assignee:{assignee_id}"
+        
         result = search(self.codebase, query)
         return result.render()
 
