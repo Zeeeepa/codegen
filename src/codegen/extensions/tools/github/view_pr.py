@@ -41,7 +41,7 @@ def view_pr(codebase: Codebase, pr_id: int) -> ViewPRObservation:
     """
     try:
         patch, file_commit_sha, moddified_symbols = codebase.get_modified_symbols_in_pr(pr_id)
-        
+
         # Get the PR object to extract the branch name
         pr = codebase._op.get_pull_request(pr_id)
         head_branch = pr.head.ref if pr else ""
