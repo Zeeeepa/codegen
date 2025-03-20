@@ -36,7 +36,7 @@ def search(
     To search for pull requests specifically, include 'is:pr' in your query.
     To search for issues specifically, include 'is:issue' in your query.
     If neither is specified, both issues and PRs will be included in results.
-    
+
     To filter by assignee, include 'assignee:USERNAME' in your query or use the assignee_id parameter
     in the search_issues tool.
 

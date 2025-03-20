@@ -538,7 +538,7 @@ class GithubSearchIssuesTool(BaseTool):
             # Check if the query already contains an assignee filter
             if "assignee:" not in query:
                 query = f"{query} assignee:{assignee_id}"
-        
+
         result = search(self.codebase, query)
         return result.render()
 
