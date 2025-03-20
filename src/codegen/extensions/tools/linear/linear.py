@@ -275,7 +275,7 @@ def linear_register_webhook_tool(
 
 def linear_search_issues_tool(client: LinearClient, query: str, limit: int = 10, assignee_id: str | None = None) -> LinearSearchObservation:
     """Search for issues using a query string.
-    
+
     Args:
         client: LinearClient instance
         query: Search query string
@@ -285,7 +285,7 @@ def linear_search_issues_tool(client: LinearClient, query: str, limit: int = 10,
     # If assignee_id is provided and not already in the query, add it
     if assignee_id and "assignee:" not in query:
         query = f"{query} assignee:{assignee_id}"
-    
+
     try:
         issues = client.search_issues(query, limit)
         return LinearSearchObservation(
