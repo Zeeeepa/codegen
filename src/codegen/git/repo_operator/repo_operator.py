@@ -418,11 +418,11 @@ class RepoOperator:
             # Check if we need to preserve changes
             is_dirty = self.git_cli.is_dirty()
             need_to_create_branch = create_if_missing and branch_name not in self.git_cli.heads
-            
+
             # If we're creating a new branch and there are changes, stash them
             stashed_changes = False
             if is_dirty and need_to_create_branch:
-                logger.info(f"Environment is dirty and creating new branch. Stashing changes before checkout.")
+                logger.info("Environment is dirty and creating new branch. Stashing changes before checkout.")
                 self.stash_push()
                 stashed_changes = True
             # Otherwise, if we're not creating a new branch and there are changes, discard them
@@ -437,14 +437,14 @@ class RepoOperator:
                     self.git_cli.git.checkout(branch_name)
                     # Apply stashed changes if needed
                     if stashed_changes:
-                        logger.info(f"Applying stashed changes after checkout.")
+                        logger.info("Applying stashed changes after checkout.")
                         self.stash_pop()
                     return CheckoutResult.SUCCESS
                 if res is FetchResult.REFSPEC_NOT_FOUND:
                     logger.warning(f"Branch {branch_name} not found in remote {remote_name}. Unable to checkout remote branch.")
                     # Apply stashed changes if needed
                     if stashed_changes:
-                        logger.info(f"Applying stashed changes after failed checkout.")
+                        logger.info("Applying stashed changes after failed checkout.")
                         self.stash_pop()
                     return CheckoutResult.NOT_FOUND
 
@@ -453,7 +453,7 @@ class RepoOperator:
                 self.git_cli.heads[branch_name].checkout()
                 # Apply stashed changes if needed
                 if stashed_changes:
-                    logger.info(f"Applying stashed changes after checkout.")
+                    logger.info("Applying stashed changes after checkout.")
                     self.stash_pop()
                 return CheckoutResult.SUCCESS
 
@@ -464,25 +464,25 @@ class RepoOperator:
                 new_branch.checkout()
                 # Apply stashed changes if needed
                 if stashed_changes:
-                    logger.info(f"Applying stashed changes after creating new branch.")
+                    logger.info("Applying stashed changes after creating new branch.")
                     self.stash_pop()
                 return CheckoutResult.SUCCESS
             else:
                 # Apply stashed changes if needed
                 if stashed_changes:
-                    logger.info(f"Applying stashed changes after failed checkout.")
+                    logger.info("Applying stashed changes after failed checkout.")
                     self.stash_pop()
                 return CheckoutResult.NOT_FOUND
 
         except GitCommandError as e:
             # Apply stashed changes if needed
-            if 'stashed_changes' in locals() and stashed_changes:
-                logger.info(f"Applying stashed changes after error.")
+            if "stashed_changes" in locals() and stashed_changes:
+                logger.info("Applying stashed changes after error.")
                 try:
                     self.stash_pop()
                 except Exception as stash_error:
-                    logger.error(f"Failed to apply stashed changes: {stash_error}")
-            
+                    logger.exception(f"Failed to apply stashed changes: {stash_error}")
+
             if "fatal: ambiguous argument" in e.stderr:
                 logger.warning(f"Branch {branch_name} was not found in remote {remote_name}. Unable to checkout.")
                 return CheckoutResult.NOT_FOUND
