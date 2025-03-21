@@ -88,7 +88,7 @@ def checkout_branch(self, branch_name: str | None, *, remote: bool = False, remo
                     logger.info("An error occurred. Attempting to restore stashed changes.")
                     self.stash_pop()
                 except Exception as stash_error:
-                    logger.error(f"Failed to restore stashed changes: {stash_error}")
+                    logger.exception(f"Failed to restore stashed changes: {stash_error}")
             raise e
 
     except GitCommandError as e:
