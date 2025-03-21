@@ -1,6 +1,6 @@
 """Tool for viewing PR contents and modified symbols."""
 
-from typing import ClassVar, Dict, List, Any
+from typing import Any, ClassVar
 
 from pydantic import Field
 
@@ -24,11 +24,11 @@ class ViewPRObservation(Observation):
     modified_symbols: list[str] = Field(
         description="Names of modified symbols in the PR",
     )
-    comments: List[Dict[str, Any]] = Field(
+    comments: list[dict[str, Any]] = Field(
         description="Comments on the PR",
         default_factory=list,
     )
-    reviews: List[Dict[str, Any]] = Field(
+    reviews: list[dict[str, Any]] = Field(
         description="Reviews on the PR",
         default_factory=list,
     )

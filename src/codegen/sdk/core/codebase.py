@@ -1533,54 +1533,60 @@ class Codebase(
         cg_pr = CodegenPR(self._op, self, pr)
         patch = cg_pr.get_pr_diff()
         commit_sha = cg_pr.get_file_commit_shas()
-        
+
         # Get comments and reviews
         comments = []
         reviews = []
-        
+
         try:
             # Get PR comments (issue comments)
             issue_comments = pr.get_issue_comments()
             for comment in issue_comments:
-                comments.append({
-                    "id": comment.id,
-                    "user": comment.user.login,
-                    "body": comment.body,
-                    "created_at": comment.created_at.isoformat(),
-                    "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
-                    "type": "issue_comment"
-                })
-                
+                comments.append(
+                    {
+                        "id": comment.id,
+                        "user": comment.user.login,
+                        "body": comment.body,
+                        "created_at": comment.created_at.isoformat(),
+                        "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
+                        "type": "issue_comment",
+                    }
+                )
+
             # Get PR review comments (comments on specific lines)
             review_comments = pr.get_comments()
             for comment in review_comments:
-                comments.append({
-                    "id": comment.id,
-                    "user": comment.user.login,
-                    "body": comment.body,
-                    "created_at": comment.created_at.isoformat(),
-                    "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
-                    "path": comment.path,
-                    "position": comment.position,
-                    "commit_id": comment.commit_id,
-                    "type": "review_comment"
-                })
-                
+                comments.append(
+                    {
+                        "id": comment.id,
+                        "user": comment.user.login,
+                        "body": comment.body,
+                        "created_at": comment.created_at.isoformat(),
+                        "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
+                        "path": comment.path,
+                        "position": comment.position,
+                        "commit_id": comment.commit_id,
+                        "type": "review_comment",
+                    }
+                )
+
             # Get PR reviews
             pr_reviews = pr.get_reviews()
             for review in pr_reviews:
-                reviews.append({
-                    "id": review.id,
-                    "user": review.user.login,
-                    "body": review.body,
-                    "state": review.state,
-                    "submitted_at": review.submitted_at.isoformat() if review.submitted_at else None,
-                    "commit_id": review.commit_id,
-                    "type": "review"
-                })
+                reviews.append(
+                    {
+                        "id": review.id,
+                        "user": review.user.login,
+                        "body": review.body,
+                        "state": review.state,
+                        "submitted_at": review.submitted_at.isoformat() if review.submitted_at else None,
+                        "commit_id": review.commit_id,
+                        "type": "review",
+                    }
+                )
         except Exception as e:
             print(f"Error fetching PR comments or reviews: {e}")
-            
+
         return patch, commit_sha, cg_pr.modified_symbols, comments, reviews
 
     def create_pr_comment(self, pr_number: int, body: str) -> None:
