@@ -415,7 +415,18 @@ class RepoOperator:
                     logger.info(f"Branch {branch_name} is already checked out! Skipping checkout_branch.")
                     return CheckoutResult.SUCCESS
 
-            if self.git_cli.is_dirty():
+            # Check if we need to preserve changes
+            is_dirty = self.git_cli.is_dirty()
+            need_to_create_branch = create_if_missing and branch_name not in self.git_cli.heads
+            
+            # If we're creating a new branch and there are changes, stash them
+            stashed_changes = False
+            if is_dirty and need_to_create_branch:
+                logger.info(f"Environment is dirty and creating new branch. Stashing changes before checkout.")
+                self.stash_push()
+                stashed_changes = True
+            # Otherwise, if we're not creating a new branch and there are changes, discard them
+            elif is_dirty:
                 logger.info(f"Environment is dirty, discarding changes before checking out branch: {branch_name}.")
                 self.discard_changes()
 
@@ -424,14 +435,26 @@ class RepoOperator:
                 res = self.fetch_remote(remote_name, refspec=f"{branch_name}:{branch_name}")
                 if res is FetchResult.SUCCESS:
                     self.git_cli.git.checkout(branch_name)
+                    # Apply stashed changes if needed
+                    if stashed_changes:
+                        logger.info(f"Applying stashed changes after checkout.")
+                        self.stash_pop()
                     return CheckoutResult.SUCCESS
                 if res is FetchResult.REFSPEC_NOT_FOUND:
                     logger.warning(f"Branch {branch_name} not found in remote {remote_name}. Unable to checkout remote branch.")
+                    # Apply stashed changes if needed
+                    if stashed_changes:
+                        logger.info(f"Applying stashed changes after failed checkout.")
+                        self.stash_pop()
                     return CheckoutResult.NOT_FOUND
 
             # If the branch already exists, checkout onto it
             if branch_name in self.git_cli.heads:
                 self.git_cli.heads[branch_name].checkout()
+                # Apply stashed changes if needed
+                if stashed_changes:
+                    logger.info(f"Applying stashed changes after checkout.")
+                    self.stash_pop()
                 return CheckoutResult.SUCCESS
 
             # If the branch does not exist and create_if_missing=True, create and checkout a new branch from the current commit
@@ -439,11 +462,27 @@ class RepoOperator:
                 logger.info(f"Creating new branch {branch_name} from current commit: {self.git_cli.head.commit.hexsha}")
                 new_branch = self.git_cli.create_head(branch_name)
                 new_branch.checkout()
+                # Apply stashed changes if needed
+                if stashed_changes:
+                    logger.info(f"Applying stashed changes after creating new branch.")
+                    self.stash_pop()
                 return CheckoutResult.SUCCESS
             else:
+                # Apply stashed changes if needed
+                if stashed_changes:
+                    logger.info(f"Applying stashed changes after failed checkout.")
+                    self.stash_pop()
                 return CheckoutResult.NOT_FOUND
 
         except GitCommandError as e:
+            # Apply stashed changes if needed
+            if 'stashed_changes' in locals() and stashed_changes:
+                logger.info(f"Applying stashed changes after error.")
+                try:
+                    self.stash_pop()
+                except Exception as stash_error:
+                    logger.error(f"Failed to apply stashed changes: {stash_error}")
+            
             if "fatal: ambiguous argument" in e.stderr:
                 logger.warning(f"Branch {branch_name} was not found in remote {remote_name}. Unable to checkout.")
                 return CheckoutResult.NOT_FOUND
