@@ -1,8 +1,8 @@
 """Tool for creating pull requests."""
 
-import uuid
 import re
-from typing import ClassVar, List, Dict, Tuple
+import uuid
+from typing import ClassVar
 
 from github import GithubException
 from pydantic import Field
@@ -34,47 +34,47 @@ class CreatePRObservation(Observation):
 
 def generate_changes_summary(diff_text: str) -> str:
     """Generate a human-readable summary of changes from a git diff.
-    
+
     Args:
         diff_text: The git diff text
-        
+
     Returns:
         A formatted summary of the changes
     """
     if not diff_text:
         return "No changes detected."
-    
+
     # Parse the diff to extract file information
     file_pattern = re.compile(r"diff --git a/(.*?) b/(.*?)\n")
     file_matches = file_pattern.findall(diff_text)
-    
+
     # Count additions and deletions
     addition_pattern = re.compile(r"^\+[^+]", re.MULTILINE)
     deletion_pattern = re.compile(r"^-[^-]", re.MULTILINE)
-    
+
     additions = len(addition_pattern.findall(diff_text))
     deletions = len(deletion_pattern.findall(diff_text))
-    
+
     # Get unique files changed
     files_changed = set()
     for match in file_matches:
         # Use the second part of the match (b/file) as it represents the new file
         files_changed.add(match[1])
-    
+
     # Group files by extension
-    file_extensions: Dict[str, List[str]] = {}
+    file_extensions: dict[str, list[str]] = {}
     for file in files_changed:
         ext = file.split(".")[-1] if "." in file else "other"
         if ext not in file_extensions:
             file_extensions[ext] = []
         file_extensions[ext].append(file)
-    
+
     # Build the summary
     summary = []
     summary.append(f"**Files Changed:** {len(files_changed)}")
     summary.append(f"**Lines Added:** {additions}")
     summary.append(f"**Lines Deleted:** {deletions}")
-    
+
     # Add file details grouped by extension
     if file_extensions:
         summary.append("\n**Modified Files:**")
@@ -82,7 +82,7 @@ def generate_changes_summary(diff_text: str) -> str:
             summary.append(f"\n*{ext.upper()} Files:*")
             for file in sorted(files):
                 summary.append(f"- {file}")
-    
+
     return "\n".join(summary)
 
 
