@@ -1,15 +1,10 @@
 """CLI command for detecting and refactoring code smells."""
 
 import json
-import os
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import click
-import rich
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 from rich.tree import Tree
 
 from codegen.cli.sdk.decorator import command
@@ -53,14 +48,7 @@ console = Console()
 @click.option(
     "--category",
     "-c",
-    type=click.Choice([
-        "bloaters", 
-        "object_orientation_abusers", 
-        "change_preventers", 
-        "dispensables", 
-        "couplers", 
-        "all"
-    ]),
+    type=click.Choice(["bloaters", "object_orientation_abusers", "change_preventers", "dispensables", "couplers", "all"]),
     default="all",
     help="Category of code smells to detect",
 )
@@ -106,11 +94,11 @@ def code_smells(
     duplicate_code_min_lines: int,
 ) -> None:
     """Detect and optionally refactor code smells in a codebase.
-    
+
     This command analyzes a codebase for common code smells like long functions,
     duplicate code, dead code, etc. It can also automatically refactor some of
     these issues.
-    
+
     Args:
         path: Path to the codebase to analyze
         language: Programming language of the codebase
@@ -126,32 +114,32 @@ def code_smells(
     prog_language = None
     if language != "auto":
         prog_language = ProgrammingLanguage(language.upper())
-    
+
     # Initialize the codebase
     console.print(f"[bold blue]Analyzing codebase at [cyan]{path}[/cyan]...[/bold blue]")
     codebase = Codebase(path, language=prog_language)
-    
+
     # Configure the detector
     config = DetectionConfig(
         long_function_lines=long_function_lines,
         long_parameter_list_threshold=long_parameter_list,
         duplicate_code_min_lines=duplicate_code_min_lines,
     )
-    
+
     # Initialize the detector and refactorer
     detector = CodeSmellDetector(codebase, config)
     refactorer = CodeSmellRefactorer(codebase)
-    
+
     # Detect code smells
     console.print("[bold blue]Detecting code smells...[/bold blue]")
     with console.status("[bold green]Analyzing code...[/bold green]"):
         all_smells = detector.detect_all()
-    
+
     # Filter by severity
     if severity != "all":
         severity_level = CodeSmellSeverity[severity.upper()]
         all_smells = [smell for smell in all_smells if smell.severity.value >= severity_level.value]
-    
+
     # Filter by category
     if category != "all":
         category_map = {
@@ -163,87 +151,80 @@ def code_smells(
         }
         category_enum = category_map[category]
         all_smells = [smell for smell in all_smells if smell.category == category_enum]
-    
+
     # Display results
     if not all_smells:
         console.print("[bold green]No code smells detected![/bold green]")
         return
-    
+
     console.print(f"[bold yellow]Detected {len(all_smells)} code smells:[/bold yellow]")
-    
+
     # Group by category
-    smells_by_category: Dict[CodeSmellCategory, List[CodeSmell]] = {}
+    smells_by_category: dict[CodeSmellCategory, list[CodeSmell]] = {}
     for smell in all_smells:
         if smell.category not in smells_by_category:
             smells_by_category[smell.category] = []
         smells_by_category[smell.category].append(smell)
-    
+
     # Create a tree view of the results
     tree = Tree("[bold]Code Smells by Category[/bold]")
     for category, smells in smells_by_category.items():
         category_node = tree.add(f"[bold]{category.name}[/bold] ({len(smells)} issues)")
-        
+
         # Group by severity within each category
-        smells_by_severity: Dict[CodeSmellSeverity, List[CodeSmell]] = {}
+        smells_by_severity: dict[CodeSmellSeverity, list[CodeSmell]] = {}
         for smell in smells:
             if smell.severity not in smells_by_severity:
                 smells_by_severity[smell.severity] = []
             smells_by_severity[smell.severity].append(smell)
-        
+
         # Add severity nodes
-        for severity, severity_smells in sorted(
-            smells_by_severity.items(), key=lambda x: x[0].value, reverse=True
-        ):
+        for severity, severity_smells in sorted(smells_by_severity.items(), key=lambda x: x[0].value, reverse=True):
             severity_color = {
                 CodeSmellSeverity.LOW: "green",
                 CodeSmellSeverity.MEDIUM: "yellow",
                 CodeSmellSeverity.HIGH: "orange",
                 CodeSmellSeverity.CRITICAL: "red",
             }[severity]
-            
-            severity_node = category_node.add(
-                f"[bold {severity_color}]{severity.name}[/bold {severity_color}] ({len(severity_smells)} issues)"
-            )
-            
+
+            severity_node = category_node.add(f"[bold {severity_color}]{severity.name}[/bold {severity_color}] ({len(severity_smells)} issues)")
+
             # Add individual smells
             for smell in severity_smells:
                 refactorable = " [bold green](auto-refactorable)[/bold green]" if refactorer.can_refactor(smell) else ""
                 severity_node.add(f"{smell.symbol.name}: {smell.description}{refactorable}")
-    
+
     console.print(tree)
-    
+
     # Refactor if requested
     if refactor:
         refactorable_smells = [smell for smell in all_smells if refactorer.can_refactor(smell)]
-        
+
         if not refactorable_smells:
             console.print("[bold yellow]No automatically refactorable code smells found.[/bold yellow]")
         else:
             console.print(f"[bold blue]Refactoring {len(refactorable_smells)} code smells...[/bold blue]")
-            
+
             with console.status("[bold green]Refactoring code...[/bold green]"):
                 results = refactorer.refactor_all(refactorable_smells)
-            
+
             # Display refactoring results
             success_count = sum(1 for success in results.values() if success)
             console.print(f"[bold green]Successfully refactored {success_count}/{len(results)} code smells.[/bold green]")
-            
+
             if success_count < len(results):
                 console.print("[bold yellow]Some refactorings failed. See details below:[/bold yellow]")
                 for smell, success in results.items():
                     if not success:
                         console.print(f"[bold red]Failed to refactor:[/bold red] {smell}")
-    
+
     # Output JSON report if requested
     if output:
         report = {
             "summary": {
                 "total_smells": len(all_smells),
                 "by_category": {category.name: len(smells) for category, smells in smells_by_category.items()},
-                "by_severity": {
-                    severity.name: len([s for s in all_smells if s.severity == severity])
-                    for severity in CodeSmellSeverity
-                },
+                "by_severity": {severity.name: len([s for s in all_smells if s.severity == severity]) for severity in CodeSmellSeverity},
                 "refactorable": len([s for s in all_smells if refactorer.can_refactor(s)]),
             },
             "smells": [
@@ -260,9 +241,9 @@ def code_smells(
                 for smell in all_smells
             ],
         }
-        
+
         # Write the report
         with open(output, "w") as f:
             json.dump(report, f, indent=2)
-        
+
         console.print(f"[bold blue]Report written to [cyan]{output}[/cyan][/bold blue]")

@@ -17,14 +17,14 @@ from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 __all__ = [
     "CodeAgent",
+    "CodeSmell",
+    "CodeSmellCategory",
+    "CodeSmellDetector",
+    "CodeSmellRefactorer",
+    "CodeSmellSeverity",
     "Codebase",
     "CodegenApp",
     "Function",
     "ProgrammingLanguage",
     "function",
-    "CodeSmellDetector",
-    "CodeSmellRefactorer",
-    "CodeSmell",
-    "CodeSmellCategory",
-    "CodeSmellSeverity",
 ]

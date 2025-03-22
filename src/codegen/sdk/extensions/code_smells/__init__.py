@@ -8,22 +8,22 @@ from codegen.sdk.extensions.code_smells.detector import CodeSmellDetector
 from codegen.sdk.extensions.code_smells.refactorer import CodeSmellRefactorer
 from codegen.sdk.extensions.code_smells.smells import (
     CodeSmell,
+    ComplexConditional,
+    DataClump,
+    DeadCode,
     DuplicateCode,
     LongFunction,
     LongParameterList,
-    DeadCode,
-    ComplexConditional,
-    DataClump,
 )
 
 __all__ = [
+    "CodeSmell",
     "CodeSmellDetector",
     "CodeSmellRefactorer",
-    "CodeSmell",
+    "ComplexConditional",
+    "DataClump",
+    "DeadCode",
     "DuplicateCode",
     "LongFunction",
     "LongParameterList",
-    "DeadCode",
-    "ComplexConditional",
-    "DataClump",
 ]
