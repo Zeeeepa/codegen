@@ -126,19 +126,21 @@ class SearchInput(BaseModel):
 
     query: str = Field(
         ...,
-        description="""ripgrep query (or regex pattern) to run. For regex searches, set use_regex=True. Ripgrep is the preferred method.""",
+        description="""The search query to find in the codebase. When ripgrep is available, this will be passed as a ripgrep pattern. For regex searches, set use_regex=True.
+        Ripgrep is the preferred method.""",
     )
     file_extensions: list[str] | None = Field(default=None, description="Optional list of file extensions to search (e.g. ['.py', '.ts'])")
     page: int = Field(default=1, description="Page number to return (1-based, default: 1)")
     files_per_page: int = Field(default=10, description="Number of files to return per page (default: 10)")
     use_regex: bool = Field(default=False, description="Whether to treat query as a regex pattern (default: False)")
+    fractional_search: bool = Field(default=False, description="Whether to search for individual words if full query returns no results (default: False)")
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class RipGrepTool(BaseTool):
     """Tool for searching the codebase via RipGrep."""
 
-    name: ClassVar[str] = "search"
+    name: ClassVar[str] = "ripgrep_search"
     description: ClassVar[str] = "Search the codebase using `ripgrep` or regex pattern matching"
     args_schema: ClassVar[type[BaseModel]] = SearchInput
     codebase: Codebase = Field(exclude=True)
@@ -146,8 +148,8 @@ class RipGrepTool(BaseTool):
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, tool_call_id: str, query: str, file_extensions: Optional[list[str]] = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False) -> ToolMessage:
-        result = search(self.codebase, query, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex)
+    def _run(self, tool_call_id: str, query: str, file_extensions: Optional[list[str]] = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False, fractional_search: bool = False) -> ToolMessage:
+        result = search(self.codebase, query, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex, fractional_search=fractional_search)
         return result.render(tool_call_id)
 
 
@@ -1128,3 +1130,4 @@ Search for files and directories by glob pattern (with pagination) across the ac
     def _run(self, pattern: str, page: int = 1, files_per_page: int | float = 10) -> str:
         """Execute the glob pattern search using fd."""
         return search_files_by_name(self.codebase, pattern, page=page, files_per_page=files_per_page).render()
+
