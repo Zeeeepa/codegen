@@ -241,13 +241,13 @@ def _search_with_ripgrep(
             words = query.split()
             # Filter out very short words (less than 3 characters)
             words = [word for word in words if len(word) >= 3]
-            
+
             # Search for each word individually and combine results
             for word in words:
                 word_cmd = cmd.copy()
                 # Replace the query with the individual word
                 word_cmd[-2] = word
-                
+
                 logger.info(f"Running fractional search with: {' '.join(word_cmd)}")
                 word_result = subprocess.run(
                     word_cmd,
@@ -256,7 +256,7 @@ def _search_with_ripgrep(
                     encoding="utf-8",
                     check=False,
                 )
-                
+
                 # Parse output lines for this word
                 for line in word_result.stdout.splitlines():
                     # ripgrep output format: file:line:content
@@ -277,11 +277,8 @@ def _search_with_ripgrep(
                             all_results[rel_path] = []
 
                         # Check if this line is already in the results to avoid duplicates
-                        line_exists = any(
-                            match.line_number == line_number and match.line.strip() == content.strip()
-                            for match in all_results[rel_path]
-                        )
-                        
+                        line_exists = any(match.line_number == line_number and match.line.strip() == content.strip() for match in all_results[rel_path])
+
                         if not line_exists:
                             all_results[rel_path].append(
                                 SearchMatch(
@@ -419,7 +416,7 @@ def _search_with_python(
     extensions = file_extensions if file_extensions is not None else "*"
 
     all_results = []
-    
+
     # Function to search files with a given pattern
     def search_files_with_pattern(search_pattern, match_text):
         file_results = []
@@ -439,11 +436,8 @@ def _search_with_python(
                 match = search_pattern.search(line)
                 if match:
                     # Check if this match is already in the results to avoid duplicates
-                    match_exists = any(
-                        m.line_number == line_number and m.line.strip() == line.strip()
-                        for m in file_matches
-                    )
-                    
+                    match_exists = any(m.line_number == line_number and m.line.strip() == line.strip() for m in file_matches)
+
                     if not match_exists:
                         file_matches.append(
                             SearchMatch(
@@ -466,7 +460,7 @@ def _search_with_python(
 
     # First try with the full query
     all_results = search_files_with_pattern(pattern, query if not use_regex else None)
-    
+
     # If no results and fractional search is enabled, try individual words
     if not all_results and fractional_search and " " in query and not use_regex:
         logger.info(f"No results found for '{query}', trying fractional search")
@@ -474,28 +468,25 @@ def _search_with_python(
         words = query.split()
         # Filter out very short words (less than 3 characters)
         words = [word for word in words if len(word) >= 3]
-        
+
         # Search for each word individually
         for word in words:
             word_pattern = re.compile(re.escape(word), re.IGNORECASE)
             word_results = search_files_with_pattern(word_pattern, word)
-            
+
             # Merge results
             for word_result in word_results:
                 # Check if this file is already in all_results
                 existing_file = next((r for r in all_results if r.filepath == word_result.filepath), None)
-                
+
                 if existing_file:
                     # Merge matches, avoiding duplicates
                     for match in word_result.matches:
-                        match_exists = any(
-                            m.line_number == match.line_number and m.line.strip() == match.line.strip()
-                            for m in existing_file.matches
-                        )
-                        
+                        match_exists = any(m.line_number == match.line_number and m.line.strip() == match.line.strip() for m in existing_file.matches)
+
                         if not match_exists:
                             existing_file.matches.append(match)
-                    
+
                     # Re-sort matches by line number
                     existing_file.matches.sort(key=lambda x: x.line_number)
                 else:
@@ -541,7 +532,7 @@ def search(
     Otherwise, performs a case-insensitive text search.
     Returns matching lines with their line numbers, grouped by file.
     Results are paginated by files, with a default of 10 files per page.
-    
+
     If fractional_search is True and no results are found for the full query,
     it will automatically search for individual words from the query.
 
