@@ -180,7 +180,7 @@ def _search_with_ripgrep(
     """Search the codebase using ripgrep.
 
     This is faster than the Python implementation, especially for large codebases.
-    
+
     If fractional_search is True and the initial search returns no results,
     it will automatically split the query into individual words and search for each one.
     """
@@ -234,26 +234,26 @@ def _search_with_ripgrep(
                 files_per_page=files_per_page,
                 results=[],
             )
-        
+
         # If no matches found and fractional search is enabled, try searching for individual words
         if result.stdout.strip() == "" and fractional_search and " " in query:
             logger.info(f"No matches found for '{query}'. Trying fractional search.")
-            
+
             # Split the query into individual words
             words = query.split()
-            
+
             # Create a combined result from searching for each word
             combined_results: dict[str, list[SearchMatch]] = {}
             original_query = query  # Save the original query
-            
+
             for word in words:
                 # Skip very short words (optional, can be adjusted)
                 if len(word) < 3:
                     continue
-                    
+
                 # Update the command with the new word
                 cmd[-2] = word
-                
+
                 logger.info(f"Running fractional search with word: '{word}'")
                 word_result = subprocess.run(
                     cmd,
@@ -262,7 +262,7 @@ def _search_with_ripgrep(
                     encoding="utf-8",
                     check=False,
                 )
-                
+
                 # Parse output lines for this word
                 for line in word_result.stdout.splitlines():
                     # ripgrep output format: file:line:content
@@ -284,11 +284,8 @@ def _search_with_ripgrep(
 
                         # Check if we already have this line for this file
                         # (to avoid duplicates from different word matches)
-                        line_exists = any(
-                            match.line_number == line_number 
-                            for match in combined_results.get(rel_path, [])
-                        )
-                        
+                        line_exists = any(match.line_number == line_number for match in combined_results.get(rel_path, []))
+
                         if not line_exists:
                             combined_results[rel_path].append(
                                 SearchMatch(
@@ -301,12 +298,12 @@ def _search_with_ripgrep(
                     except ValueError:
                         # Skip lines with invalid line numbers
                         continue
-            
+
             # If we found results with fractional search, use them
             if combined_results:
                 all_results = combined_results
                 # Note: we keep the original query in the results for clarity
-            
+
         else:
             # Parse output lines from the original search
             for line in result.stdout.splitlines():
@@ -400,7 +397,7 @@ def _search_with_python(
     """Search the codebase using Python's regex engine.
 
     This is a fallback for when ripgrep is not available.
-    
+
     If fractional_search is True and the initial search returns no results,
     it will automatically split the query into individual words and search for each one.
     """
@@ -433,7 +430,7 @@ def _search_with_python(
     extensions = file_extensions if file_extensions is not None else "*"
 
     all_results = []
-    
+
     # First try with the full query
     for file in codebase.files(extensions=extensions):
         # Skip binary files
@@ -467,39 +464,39 @@ def _search_with_python(
                     matches=sorted(file_matches, key=lambda x: x.line_number),
                 )
             )
-    
+
     # If no results found and fractional search is enabled, try with individual words
     if not all_results and fractional_search and " " in query and not use_regex:
         logger.info(f"No matches found for '{query}'. Trying fractional search.")
-        
+
         # Split the query into individual words
         words = query.split()
-        
+
         # Dictionary to track files and matches to avoid duplicates
         combined_results: dict[str, dict[int, SearchMatch]] = {}
-        
+
         for word in words:
             # Skip very short words (optional, can be adjusted)
             if len(word) < 3:
                 continue
-                
+
             # Create pattern for this word
             word_pattern = re.compile(re.escape(word), re.IGNORECASE)
-            
+
             for file in codebase.files(extensions=extensions):
                 # Skip binary files
                 try:
                     content = file.content
                 except ValueError:  # File is binary
                     continue
-                
+
                 # Initialize file in combined results if not present
                 if file.filepath not in combined_results:
                     combined_results[file.filepath] = {}
-                
+
                 # Split content into lines and store with line numbers (1-based)
                 lines = enumerate(content.splitlines(), 1)
-                
+
                 # Search each line for the word pattern
                 for line_number, line in lines:
                     match = word_pattern.search(line)
@@ -510,7 +507,7 @@ def _search_with_python(
                             line=line.strip(),
                             match=match.group(0),
                         )
-        
+
         # Convert combined results to the expected format
         for filepath, matches_dict in combined_results.items():
             if matches_dict:  # Only include files with matches
