@@ -58,26 +58,26 @@ class GitRepoClient:
     @property
     def default_branch(self) -> str:
         return self.repo.default_branch
-    
+
     def accepts_draft_prs(self) -> bool:
         """Determines if a repository supports draft PRs.
-        
+
         This uses a heuristic based on repository visibility and plan features.
         Public repositories always support draft PRs.
         For private repositories, we use a cached result if available to avoid repeated checks.
-        
+
         Returns:
             bool: True if the repository supports draft PRs, False otherwise.
         """
         # If we've already checked, return the cached result
         if self._supports_draft_prs is not None:
             return self._supports_draft_prs
-        
+
         # Public repositories always support draft PRs
         if self.repo.visibility == "public":
             self._supports_draft_prs = True
             return True
-            
+
         # For private repositories, we'll use a conservative approach
         # and assume they don't support draft PRs by default
         # This can be refined in the future with more specific checks
@@ -227,16 +227,10 @@ class GitRepoClient:
 
         # Determine if we should attempt to create a draft PR
         should_try_draft = draft and self.accepts_draft_prs()
-        
+
         try:
             # First attempt to create the PR with the requested draft status
-            pr = self.repo.create_pull(
-                title=title or f"PR for {head_branch_name}", 
-                body=body or "", 
-                head=head_branch_name, 
-                base=base_branch_name, 
-                draft=should_try_draft
-            )
+            pr = self.repo.create_pull(title=title or f"PR for {head_branch_name}", body=body or "", head=head_branch_name, base=base_branch_name, draft=should_try_draft)
             logger.info(f"Created {'draft ' if should_try_draft else ''}pull request for head branch: {head_branch_name} at {pr.html_url}")
             # Return a read-only copy to prevent people from editing it
             return self.repo.get_pull(pr.number)
@@ -246,16 +240,10 @@ class GitRepoClient:
                 logger.info(f"Draft PRs not supported in repository {self.repo.name}. Trying to create a regular PR instead.")
                 # Update our cached knowledge about draft PR support
                 self._supports_draft_prs = False
-                
+
                 # Try again with draft=False
                 try:
-                    pr = self.repo.create_pull(
-                        title=title or f"PR for {head_branch_name}", 
-                        body=body or "", 
-                        head=head_branch_name, 
-                        base=base_branch_name, 
-                        draft=False
-                    )
+                    pr = self.repo.create_pull(title=title or f"PR for {head_branch_name}", body=body or "", head=head_branch_name, base=base_branch_name, draft=False)
                     logger.info(f"Created regular pull request for head branch: {head_branch_name} at {pr.html_url}")
                     # Return a read-only copy
                     return self.repo.get_pull(pr.number)
