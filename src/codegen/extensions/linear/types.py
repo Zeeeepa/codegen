@@ -1,5 +1,6 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Optional
 
 
 class LinearUser(BaseModel):
@@ -31,7 +32,7 @@ class LinearIssue(BaseModel):
 
 class LinearAttachment(BaseModel):
     """Represents a file attachment in Linear."""
-    
+
     id: str
     url: str
     title: str
@@ -44,22 +45,22 @@ class LinearAttachment(BaseModel):
 
 class LinearUploadHeader(BaseModel):
     """Header for file upload."""
-    
+
     key: str
     value: str
 
 
 class LinearUploadFile(BaseModel):
     """Response from file upload request."""
-    
+
     assetUrl: str
     uploadUrl: str
-    headers: List[LinearUploadHeader]
+    headers: list[LinearUploadHeader]
 
 
 class LinearUploadResponse(BaseModel):
     """Response from fileUpload mutation."""
-    
+
     success: bool
     uploadFile: LinearUploadFile
 
@@ -74,4 +75,4 @@ class LinearEvent(BaseModel):
     created_at: str | None = None  # ISO timestamp
     organization_id: str | None = None
     team_id: str | None = None
-    attachments: List[LinearAttachment] = Field(default_factory=list)  # Attachments associated with the event
+    attachments: list[LinearAttachment] = Field(default_factory=list)  # Attachments associated with the event
