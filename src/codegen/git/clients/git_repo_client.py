@@ -209,13 +209,7 @@ class GitRepoClient:
 
         try:
             # First attempt - try with draft if requested
-            pr = self.repo.create_pull(
-                title=title or f"PR for {head_branch_name}", 
-                body=body or "", 
-                head=head_branch_name, 
-                base=base_branch_name, 
-                draft=should_try_draft
-            )
+            pr = self.repo.create_pull(title=title or f"PR for {head_branch_name}", body=body or "", head=head_branch_name, base=base_branch_name, draft=should_try_draft)
             logger.info(f"Created pull request for head branch: {head_branch_name} at {pr.html_url}")
             # NOTE: return a read-only copy to prevent people from editing it
             return self.repo.get_pull(pr.number)
@@ -225,13 +219,7 @@ class GitRepoClient:
                 logger.warning(f"Draft PRs not supported in repository {self.repo.name}. Retrying with draft=False.")
                 try:
                     # Second attempt - try without draft
-                    pr = self.repo.create_pull(
-                        title=title or f"PR for {head_branch_name}", 
-                        body=body or "", 
-                        head=head_branch_name, 
-                        base=base_branch_name, 
-                        draft=False
-                    )
+                    pr = self.repo.create_pull(title=title or f"PR for {head_branch_name}", body=body or "", head=head_branch_name, base=base_branch_name, draft=False)
                     logger.info(f"Created non-draft pull request for head branch: {head_branch_name} at {pr.html_url}")
                     return self.repo.get_pull(pr.number)
                 except Exception as retry_e:
@@ -470,11 +458,10 @@ class GitRepoClient:
     ####################################################################################################################
 
     def accepts_draft_prs(self) -> bool:
-        """
-        Check if the repository supports draft PRs.
-        
+        """Check if the repository supports draft PRs.
+
         This method uses a cached result if available to avoid making unnecessary API calls.
-        
+
         Returns:
             bool: True if the repository supports draft PRs, False otherwise.
         """
@@ -484,7 +471,7 @@ class GitRepoClient:
             # We'll still return True here and let the create_pull method handle the fallback
             # This avoids an extra API call just to check
             return True
-            
+
         # For public repos, draft PRs are generally supported
         return True
 
