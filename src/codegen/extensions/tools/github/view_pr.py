@@ -24,7 +24,7 @@ class ViewPRObservation(Observation):
     modified_symbols: list[str] = Field(
         description="Names of modified symbols in the PR",
     )
-    comments: list[dict[str, Any]] = Field(
+    github_comments: list[dict[str, Any]] = Field(
         description="Comments on the PR",
         default_factory=list,
     )
@@ -52,7 +52,7 @@ def view_pr(codebase: Codebase, pr_id: int) -> ViewPRObservation:
             patch=patch,
             file_commit_sha=file_commit_sha,
             modified_symbols=modified_symbols,
-            comments=comments,
+            github_comments=comments,
             reviews=reviews,
         )
 
@@ -64,6 +64,6 @@ def view_pr(codebase: Codebase, pr_id: int) -> ViewPRObservation:
             patch="",
             file_commit_sha={},
             modified_symbols=[],
-            comments=[],
+            github_comments=[],
             reviews=[],
         )
