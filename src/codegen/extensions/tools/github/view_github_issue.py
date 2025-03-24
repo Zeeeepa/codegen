@@ -1,7 +1,5 @@
 """Tool for viewing GitHub issues."""
 
-from typing import Dict, Optional
-
 from github import Github
 from github.GithubException import UnknownObjectException
 
@@ -15,9 +13,8 @@ def view_github_issue(
     codebase: Codebase,
     repo_full_name: str,
     issue_number: int,
-) -> Dict:
-    """
-    View a GitHub issue by its number.
+) -> dict:
+    """View a GitHub issue by its number.
 
     Args:
         codebase: The codebase instance
@@ -35,14 +32,14 @@ def view_github_issue(
 
         # Initialize GitHub client
         g = Github(token)
-        
+
         try:
             # Get repository
             repo = g.get_repo(repo_full_name)
-            
+
             # Get issue
             issue = repo.get_issue(issue_number)
-            
+
             # Format issue data
             issue_data = {
                 "number": issue.number,
@@ -55,35 +52,39 @@ def view_github_issue(
                     "login": issue.user.login,
                     "id": issue.user.id,
                     "type": issue.user.type,
-                } if issue.user else None,
+                }
+                if issue.user
+                else None,
                 "body": issue.body,
                 "labels": [label.name for label in issue.labels],
                 "assignees": [assignee.login for assignee in issue.assignees],
                 "comments_count": issue.comments,
                 "html_url": issue.html_url,
             }
-            
+
             # Get comments if available
             if issue.comments > 0:
                 comments = []
                 for comment in issue.get_comments():
-                    comments.append({
-                        "id": comment.id,
-                        "user": comment.user.login if comment.user else None,
-                        "created_at": comment.created_at.isoformat() if comment.created_at else None,
-                        "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
-                        "body": comment.body,
-                    })
+                    comments.append(
+                        {
+                            "id": comment.id,
+                            "user": comment.user.login if comment.user else None,
+                            "created_at": comment.created_at.isoformat() if comment.created_at else None,
+                            "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
+                            "body": comment.body,
+                        }
+                    )
                 issue_data["comments"] = comments
-            
+
             return {"success": True, "issue": issue_data}
-            
+
         except UnknownObjectException:
             return {"success": False, "error": f"Issue #{issue_number} not found in repository {repo_full_name}"}
         except Exception as e:
-            logger.error(f"Error fetching GitHub issue: {str(e)}")
-            return {"success": False, "error": f"Error fetching GitHub issue: {str(e)}"}
-            
+            logger.exception(f"Error fetching GitHub issue: {e!s}")
+            return {"success": False, "error": f"Error fetching GitHub issue: {e!s}"}
+
     except Exception as e:
-        logger.error(f"Error in view_github_issue: {str(e)}")
-        return {"success": False, "error": f"Error in view_github_issue: {str(e)}"}
+        logger.exception(f"Error in view_github_issue: {e!s}")
+        return {"success": False, "error": f"Error in view_github_issue: {e!s}"}
