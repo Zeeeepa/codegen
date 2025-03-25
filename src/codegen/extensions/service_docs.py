@@ -1,20 +1,18 @@
-"""
-Codegen Service Documentation Tool
+"""Codegen Service Documentation Tool
 
 This module provides information about how the Codegen service works,
 including how to add repositories, connect to Linear, pricing, and more.
 """
 
-from typing import Dict, Any
+from typing import Any, Optional
 
 
-def codegen_service_docs(query: str = None) -> Dict[str, Any]:
-    """
-    Returns information about how the Codegen service works.
-    
+def codegen_service_docs(query: Optional[str] = None) -> dict[str, Any]:
+    """Returns information about how the Codegen service works.
+
     Args:
         query: Optional query to filter the information returned.
-        
+
     Returns:
         A dictionary containing information about the Codegen service.
     """
@@ -53,29 +51,29 @@ def codegen_service_docs(query: str = None) -> Dict[str, Any]:
             "contact": "support@codegen.sh",
         },
     }
-    
+
     # If a query is provided, try to find the relevant information
     if query:
         query = query.lower()
-        
+
         # Handle common queries
         if "repo" in query or "repository" in query or "add" in query:
             return {"repositories": service_docs["repositories"]}
-        
+
         if "linear" in query or "connect" in query:
             return {"linear": service_docs["integrations"]["linear"]}
-        
+
         if "cost" in query or "price" in query or "pricing" in query:
             return {"pricing": service_docs["pricing"]}
-        
+
         if "slack" in query:
             return {"slack": service_docs["integrations"]["slack"]}
-        
+
         if "github" in query:
             return {"github": service_docs["integrations"]["github"]}
-        
+
         if "support" in query or "help" in query:
             return {"support": service_docs["support"]}
-    
+
     # Return all information if no query or no match
     return service_docs
