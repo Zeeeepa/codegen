@@ -17,7 +17,7 @@
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
   "editor.guides.indentation": true,
-  
+
   // File settings
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
@@ -29,7 +29,7 @@
     "**/*.pyc": true,
     "**/.DS_Store": true
   },
-  
+
   // Python settings
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
@@ -41,7 +41,7 @@
   "python.linting.pylintEnabled": true,
   "python.linting.mypyEnabled": true,
   "python.linting.flake8Enabled": true,
-  
+
   // TypeScript/JavaScript settings
   "[typescript]": {
     "editor.tabSize": 2,
@@ -58,15 +58,15 @@
   "[yaml]": {
     "editor.tabSize": 2
   },
-  
+
   // Terminal settings
   "terminal.integrated.cursorBlinking": true,
   "terminal.integrated.cursorStyle": "line",
-  
+
   // Git settings
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
-  
+
   // EditorConfig settings
   "editor.formatOnSaveMode": "file"
 }
