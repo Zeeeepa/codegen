@@ -22,7 +22,7 @@
 
 <br />
 
-[Codegen](https://docs.codegen.com) is a Python library for manipulating codebases at scale.
+[Codegen](https://docs.codegen.com) is a Python library for manipulating codebases at scale with a natural, intuitive API.
 
 ```python
 from codegen import Codebase
@@ -62,10 +62,10 @@ uv tool install codegen --python 3.13
 # Create a codemod for a given repo
 cd path/to/repo
 codegen init
-codegen create test-function . -d "describe what you want to do"
+codegen create my-function . -d "describe what you want to do"
 
 # Run the codemod
-codegen run test-function
+codegen run my-function --apply-local
 
 # Create an isolated venv with codegen => open jupyter
 codegen notebook
@@ -77,7 +77,28 @@ See [Getting Started](https://docs.codegen.com/introduction/getting-started) for
 
 ```python
 from codegen import Codebase
+
+# Initialize a codebase object
+codebase = Codebase("./")
+
+# Find and manipulate functions
+for function in codebase.functions:
+    # Analyze function properties
+    print(f"Function: {function.name}, Lines: {len(function.body_lines)}")
+    
+    # Rename functions matching a pattern
+    if function.name.startswith("old_"):
+        new_name = function.name.replace("old_", "new_")
+        function.rename(new_name)
 ```
+
+## Features
+
+- **Intuitive API**: Work with code using natural operations like `rename()`, `move_to_file()`, and `add_parameter()`
+- **Multi-language support**: Works with Python, TypeScript, JavaScript, and React
+- **Comprehensive analysis**: Automatically tracks references, dependencies, and usages
+- **Import management**: Handles import statements automatically when moving or renaming code
+- **Codemod framework**: Create, share, and run code transformations with the CLI
 
 ## Troubleshooting
 
@@ -93,6 +114,8 @@ If you run into additional issues not listed here, please [join our slack commun
 
 - [Documentation](https://docs.codegen.com)
 - [Getting Started](https://docs.codegen.com/introduction/getting-started)
+- [API Reference](https://docs.codegen.com/api-reference/codebase)
+- [CLI Commands](https://docs.codegen.com/cli/about)
 - [Contributing](CONTRIBUTING.md)
 - [Contact Us](https://codegen.com/contact)
 
