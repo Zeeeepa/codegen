@@ -100,9 +100,7 @@ for module in codebase.modules:
 # Refactor code
 for class_def in codebase.find_classes(name_pattern="*Service"):
     # Add a new method to all service classes
-    class_def.add_method(
-        "async def health_check(self) -> bool:\n    return True"
-    )
+    class_def.add_method("async def health_check(self) -> bool:\n    return True")
 ```
 
 ## Common Use Cases
