@@ -22,7 +22,7 @@
 
 <br />
 
-[Codegen](https://docs.codegen.com) is a python library for manipulating codebases.
+[Codegen](https://docs.codegen.com) is a Python library for manipulating codebases at scale.
 
 ```python
 from codegen import Codebase
@@ -43,16 +43,16 @@ Write code that transforms code. Codegen combines the parsing power of [Tree-sit
 
 ## Installation and Usage
 
-We support
+We support:
 
 - Running Codegen in Python 3.12 - 3.13 (recommended: Python 3.13+)
 - macOS and Linux
-  - macOS is supported
+  - macOS is fully supported
   - Linux is supported on x86_64 and aarch64 with glibc 2.34+
   - Windows is supported via WSL. See [here](https://docs.codegen.com/building-with-codegen/codegen-with-wsl) for more details.
-- Python, Typescript, Javascript and React codebases
+- Python, TypeScript, JavaScript and React codebases
 
-```
+```bash
 # Install inside existing project
 uv pip install codegen
 
@@ -75,7 +75,7 @@ codegen notebook
 
 See [Getting Started](https://docs.codegen.com/introduction/getting-started) for a full tutorial.
 
-```
+```python
 from codegen import Codebase
 ```
 
@@ -91,7 +91,7 @@ If you run into additional issues not listed here, please [join our slack commun
 
 ## Resources
 
-- [Docs](https://docs.codegen.com)
+- [Documentation](https://docs.codegen.com)
 - [Getting Started](https://docs.codegen.com/introduction/getting-started)
 - [Contributing](CONTRIBUTING.md)
 - [Contact Us](https://codegen.com/contact)
