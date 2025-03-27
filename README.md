@@ -52,7 +52,7 @@ We support 🛠️
   - Windows is supported via WSL. See [here](https://docs.codegen.com/building-with-codegen/codegen-with-wsl) for more details. 🪟
 - Python, Typescript, Javascript and React codebases 🧰
 
-``` 📝
+```📝
 # Install inside existing project 🏗️
 uv pip install codegen 📦
 
@@ -75,7 +75,7 @@ codegen notebook 📓
 
 See [Getting Started](https://docs.codegen.com/introduction/getting-started) for a full tutorial. 📚
 
-``` 💻
+```💻
 from codegen import Codebase 🧩
 ```
 
