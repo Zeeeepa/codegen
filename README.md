@@ -85,7 +85,7 @@ codebase = Codebase("./")
 for function in codebase.functions:
     # Analyze function properties
     print(f"Function: {function.name}, Lines: {len(function.body_lines)}")
-    
+
     # Rename functions matching a pattern
     if function.name.startswith("old_"):
         new_name = function.name.replace("old_", "new_")
