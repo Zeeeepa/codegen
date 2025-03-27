@@ -62,7 +62,7 @@ uv tool install codegen --python 3.13
 # Create a codemod for a given repo
 cd path/to/repo
 codegen init
-codegen create test-function
+codegen create test-function . -d "describe what you want to do"
 
 # Run the codemod
 codegen run test-function
