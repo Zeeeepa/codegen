@@ -95,17 +95,17 @@ for function in codebase.functions:
     # Add type hints to parameters
     if function.name == "process_data" and not function.return_type:
         function.set_return_type("Dict[str, Any]")
-        
+
     # Rename variables consistently
     for variable in function.variables:
         if variable.name == "data" and function.name.startswith("process_"):
             variable.rename("input_data")
-            
+
 # Move classes between files
 user_class = codebase.classes.find(name="User")
 if user_class:
     user_class.move_to_file("models/user.py")
-    
+
 # Add imports where needed
 for py_file in codebase.files(extension=".py"):
     if "process_data" in py_file.content and "typing" not in py_file.imports:
