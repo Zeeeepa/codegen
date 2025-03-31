@@ -1,6 +1,5 @@
 from itertools import chain
 from pathlib import Path
-from typing import Dict, List, Set
 
 import tomlkit
 from termcolor import colored
@@ -52,9 +51,9 @@ def get_generated_imports():
 )
 
 
-def fix_ruff_imports(objects: List[DocumentedObject]) -> None:
+def fix_ruff_imports(objects: list[DocumentedObject]) -> None:
     root, _ = split_git_path(str(Path(__file__)))
-    to_add: List[str] = []
+    to_add: list[str] = []
     for obj in objects:
         to_add.append(f"{obj.module}.{obj.name}")
     generics = tomlkit.array()
@@ -72,7 +71,7 @@ def get_runner_imports(include_codegen: bool = True, include_private_imports: bo
     gs_objects = get_documented_objects()
     gs_public_objects = list(chain(gs_objects["apidoc"], gs_objects["py_apidoc"], gs_objects["ts_apidoc"]))
     fix_ruff_imports(gs_public_objects)
-    gs_public_imports: Set[str] = {f"from {obj.module} import {obj.name}" for obj in gs_public_objects}
+    gs_public_imports: set[str] = {f"from {obj.module} import {obj.name}" for obj in gs_public_objects}
 
     # construct import string with all imports
     ret = IMPORT_STRING_TEMPLATE.format(

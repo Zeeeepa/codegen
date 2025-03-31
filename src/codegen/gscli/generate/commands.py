@@ -3,7 +3,7 @@ import os
 import re
 import shutil
 import sys
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 import click
 from termcolor import colored
@@ -157,9 +157,9 @@ def generate_codegen_sdk_docs(docs_dir: str) -> None:
 
     # Write the generated docs to the file system, splitting between core, python, and typescript
     # keep track of where we put each one so we can update the mint.json
-    python_set: Set[str] = set()
-    typescript_set: Set[str] = set()
-    core_set: Set[str] = set()
+    python_set: set[str] = set()
+    typescript_set: set[str] = set()
+    core_set: set[str] = set()
     # TODO replace this with new `get_mdx_for_class` function
     for class_doc in gs_docs.classes:
         class_name = class_doc.title
@@ -182,7 +182,7 @@ def generate_codegen_sdk_docs(docs_dir: str) -> None:
     # Update the core, python, and typescript page sets in mint.json
     mint_file_path = os.path.join(docs_dir, "mint.json")
     with open(mint_file_path) as mint_file:
-        mint_data: Dict[str, Any] = json.load(mint_file)
+        mint_data: dict[str, Any] = json.load(mint_file)
 
     # Find the "Codebase SDK" group where we want to add the pages
     codebase_sdk_group = next(group for group in mint_data["navigation"] if group["group"] == "API Reference")

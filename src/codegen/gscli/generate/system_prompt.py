@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional
 
 docs = Path("./docs")
-mint: Dict[str, Any] = json.load(open(docs / "mint.json"))
+mint: dict[str, Any] = json.load(open(docs / "mint.json"))
 
 
 def render_page(page_str: str) -> str:
@@ -11,12 +11,12 @@ def render_page(page_str: str) -> str:
     return open(docs / (page_str + ".mdx")).read()
 
 
-def render_group(page_strs: List[str]) -> str:
+def render_group(page_strs: list[str]) -> str:
     """Render a group of pages from the docs"""
     return "\n\n".join([render_page(x) for x in page_strs])
 
 
-def get_group(name: str) -> Optional[List[str]]:
+def get_group(name: str) -> Optional[list[str]]:
     """Get a group of pages by name from the mint.json file"""
     group = next((x for x in mint["navigation"] if x.get("group") == name), None)
     if group:
@@ -24,7 +24,7 @@ def get_group(name: str) -> Optional[List[str]]:
     return None
 
 
-def render_groups(group_names: List[str]) -> str:
+def render_groups(group_names: list[str]) -> str:
     """Render multiple groups of pages from the docs"""
     groups = [get_group(x) for x in group_names]
     # Filter out None values
