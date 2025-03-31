@@ -12,7 +12,7 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 
 # Define a type variable for AST nodes
-ASTNode = TypeVar('ASTNode', ast.FunctionDef, ast.AnnAssign, ast.Assign)
+ASTNode = TypeVar("ASTNode", ast.FunctionDef, ast.AnnAssign, ast.Assign)
 
 
 class MethodRemover(ast.NodeTransformer):
