@@ -1,6 +1,7 @@
 import inspect
 from enum import StrEnum
 from itertools import chain
+from typing import List, Set
 
 from codegen.sdk.code_generation.current_code_codebase import get_documented_objects
 from codegen.sdk.core import codebase
@@ -12,11 +13,11 @@ class LanguageType(StrEnum):
     BOTH = "BOTH"
 
 
-def generate_builtins_file(path_to_builtins: str, language_type: LanguageType):
+def generate_builtins_file(path_to_builtins: str, language_type: LanguageType) -> None:
     """Generates and writes the builtins file"""
     documented_imports = get_documented_objects()
     all_objects = chain(documented_imports["apidoc"], documented_imports["py_apidoc"], documented_imports["ts_apidoc"])
-    unique_imports = {f"from {obj.module} import {obj.name} as {obj.name}" for obj in all_objects}
+    unique_imports: Set[str] = {f"from {obj.module} import {obj.name} as {obj.name}" for obj in all_objects}
     all_imports = "\n".join(sorted(unique_imports))
     # TODO: re-use code with runner_imports list
     # TODO: also auto generate import string for CodemodContext + MessageType
