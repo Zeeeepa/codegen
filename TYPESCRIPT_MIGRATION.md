@@ -78,27 +78,27 @@ The TypeScript version will use the following key dependencies:
 
 1. **Python-specific Libraries**: Some Python libraries may not have direct TypeScript equivalents. We'll need to find alternatives or implement custom solutions.
 
-2. **Performance**: Ensure the TypeScript version maintains or improves upon the performance of the Python version.
+1. **Performance**: Ensure the TypeScript version maintains or improves upon the performance of the Python version.
 
-3. **Interoperability**: During the migration, we may need to maintain interoperability between Python and TypeScript components.
+1. **Interoperability**: During the migration, we may need to maintain interoperability between Python and TypeScript components.
 
-4. **Testing**: Comprehensive testing will be crucial to ensure functionality is preserved.
+1. **Testing**: Comprehensive testing will be crucial to ensure functionality is preserved.
 
 ## Next Steps
 
 1. Review and merge this initial setup PR
-2. Begin identifying core modules for migration
-3. Create a detailed roadmap with milestones for each phase
-4. Set up CI/CD for the TypeScript version
+1. Begin identifying core modules for migration
+1. Create a detailed roadmap with milestones for each phase
+1. Set up CI/CD for the TypeScript version
 
 ## Contributing to the Migration
 
 Contributors can help with the migration by:
 
 1. Identifying Python modules that can be migrated to TypeScript
-2. Creating TypeScript equivalents of Python functions and classes
-3. Writing tests for migrated functionality
-4. Reviewing PRs related to the migration
+1. Creating TypeScript equivalents of Python functions and classes
+1. Writing tests for migrated functionality
+1. Reviewing PRs related to the migration
 
 ## Timeline
 
