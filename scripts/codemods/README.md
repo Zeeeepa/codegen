@@ -23,28 +23,32 @@ python scripts/codemods/remove_empty_presenter_params.py
 This script:
 
 1. Searches for all JavaScript and TypeScript files in your codebase
-2. Finds all calls to `usePresenter` where the second parameter is an empty object (`{}`)
-3. Removes the empty object parameter while preserving the rest of the function call
-4. Reports all changes made
+1. Finds all calls to `usePresenter` where the second parameter is an empty object (`{}`)
+1. Removes the empty object parameter while preserving the rest of the function call
+1. Reports all changes made
 
 #### Examples
 
 Before:
+
 ```javascript
 const presenter = usePresenter(data, {});
 ```
 
 After:
+
 ```javascript
 const presenter = usePresenter(data);
 ```
 
 Before:
+
 ```javascript
 const presenter = usePresenter(data, {}, options);
 ```
 
 After:
+
 ```javascript
 const presenter = usePresenter(data, options);
 ```
