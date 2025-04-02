@@ -1,10 +1,9 @@
-from pathlib import Path
 import gc
 import os
-import psutil
 import time
-from typing import Optional
+from pathlib import Path
 
+import psutil
 import rich
 from rich.panel import Panel
 from rich.status import Status
@@ -34,7 +33,7 @@ def parse_codebase(
     """
     # Force garbage collection before parsing to free up memory
     gc.collect()
-    
+
     codebase = Codebase(
         projects=[
             ProjectConfig(
@@ -62,7 +61,7 @@ def run_local(
     # Get initial memory usage
     process = psutil.Process(os.getpid())
     initial_memory = process.memory_info().rss / (1024 * 1024)  # Convert to MB
-    
+
     # Parse codebase and run
     with Status(f"[bold]Parsing codebase at {session.repo_path} with subdirectories {function.subdirectories or 'ALL'} and language {function.language or 'AUTO'} ...", spinner="dots") as status:
         start_time = time.time()
@@ -72,7 +71,7 @@ def run_local(
 
         # Memory usage after parsing
         post_parse_memory = process.memory_info().rss / (1024 * 1024)
-        
+
         status.update("[bold]Running codemod...")
         start_time = time.time()
         function.run(codebase)  # Run the function
@@ -81,10 +80,10 @@ def run_local(
 
     # Get the diff from the codebase
     result = codebase.get_diff()
-    
+
     # Final memory usage
     final_memory = process.memory_info().rss / (1024 * 1024)
-    
+
     # Handle no changes case
     if not result:
         rich.print("\n[yellow]No changes were produced by this codemod[/yellow]")
@@ -107,11 +106,11 @@ def run_local(
     # Apply changes
     rich.print("")
     rich.print("[green]✓ Changes have been applied to your local filesystem[/green]")
-    
+
     # Print memory usage statistics
     rich.print(f"\n[dim]Memory usage: {initial_memory:.2f}MB → {final_memory:.2f}MB (Δ {final_memory - initial_memory:.2f}MB)[/dim]")
     rich.print(f"[dim]Parsing: {parse_time:.2f}s, Execution: {run_time:.2f}s[/dim]")
-    
+
     # Clean up to free memory
     del codebase
     gc.collect()
