@@ -9,7 +9,7 @@ from codegen.extensions.tools.websearch.base import SearchItem, WebSearchEngine
 class BaiduSearchEngine(WebSearchEngine):
     """Baidu search engine implementation."""
 
-    name = "baidu"
+    name: str = "baidu"
 
     def search(self, query: str, num_results: int = 10) -> List[SearchItem]:
         """Search Baidu for the given query.

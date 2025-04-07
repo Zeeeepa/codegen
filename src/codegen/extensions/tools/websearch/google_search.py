@@ -10,7 +10,7 @@ from codegen.extensions.tools.websearch.base import SearchItem, WebSearchEngine
 class GoogleSearchEngine(WebSearchEngine):
     """Google search engine implementation."""
 
-    name = "google"
+    name: str = "google"
 
     def __init__(self, api_key: Optional[str] = None, cse_id: Optional[str] = None):
         """Initialize the Google search engine.
