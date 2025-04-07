@@ -21,6 +21,9 @@ from .compatibility import (
     GithubCreatePRReviewCommentTool
 )
 
+# Import Slack notifier
+from ..utils.slack_notifier import SlackNotifier
+
 # Try to import AI models
 try:
     from langchain_core.prompts import ChatPromptTemplate
@@ -39,14 +42,19 @@ class PRReviewer:
     Provides methods for reviewing PRs and checking them against requirements.
     """
     
-    def __init__(self, github_token: str):
+    def __init__(self, github_token: str, slack_channel: Optional[str] = None):
         """
         Initialize the PR reviewer.
         
         Args:
             github_token: GitHub API token
+            slack_channel: Slack channel to send notifications to
         """
         self.github_token = github_token
+        self.slack_channel = slack_channel or os.environ.get("SLACK_NOTIFICATION_CHANNEL")
+        
+        # Initialize Slack notifier
+        self.slack_notifier = SlackNotifier(default_channel=self.slack_channel)
         
         # Initialize AI models
         self.llm = None
@@ -132,6 +140,11 @@ class PRReviewer:
                             merge_method="merge"
                         )
                         logger.info(f"PR #{pr_number} automatically merged after review")
+                        
+                        # Send notification to Slack
+                        if self.slack_channel:
+                            self.notify_pr_merged(repo_name, pr)
+                        
                         return {
                             "pr_number": pr_number,
                             "repo_name": repo_name,
@@ -170,6 +183,44 @@ class PRReviewer:
             logger.error(f"Error reviewing PR: {e}")
             logger.error(traceback.format_exc())
             raise
+    
+    def notify_pr_merged(self, repo_name: str, pr: PullRequest) -> bool:
+        """
+        Send a notification to Slack about a merged PR.
+        
+        Args:
+            repo_name: Repository name
+            pr: Pull request object
+            
+        Returns:
+            True if notification was sent successfully, False otherwise
+        """
+        try:
+            # Get PR details
+            pr_number = pr.number
+            pr_title = pr.title
+            pr_url = pr.html_url
+            author = pr.user.login
+            
+            # Send notification to Slack
+            result = self.slack_notifier.notify_pr_merged(
+                repo_name=repo_name,
+                pr_number=pr_number,
+                pr_title=pr_title,
+                pr_url=pr_url,
+                author=author
+            )
+            
+            if result:
+                logger.info(f"Slack notification sent for PR #{pr_number}")
+            else:
+                logger.warning(f"Failed to send Slack notification for PR #{pr_number}")
+            
+            return result
+        except Exception as e:
+            logger.error(f"Error sending Slack notification: {e}")
+            logger.error(traceback.format_exc())
+            return False
     
     def _run_agent_review(self, codebase, pr_number: int, pr_url: str) -> Dict[str, Any]:
         """
