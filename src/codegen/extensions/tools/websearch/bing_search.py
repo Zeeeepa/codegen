@@ -10,7 +10,7 @@ from codegen.extensions.tools.websearch.base import SearchItem, WebSearchEngine
 class BingSearchEngine(WebSearchEngine):
     """Bing search engine implementation."""
 
-    name = "bing"
+    name: str = "bing"
 
     def __init__(self, api_key: Optional[str] = None):
         """Initialize the Bing search engine.
