@@ -124,12 +124,14 @@ Configure your projects in the Settings dialog:
 
 ### Python 3.13 Compatibility
 
-If you're using Python 3.13, you may encounter the following error:
+If you're using Python 3.13, you may encounter the following errors:
+
 ```
 TypeError: ForwardRef._evaluate() missing 1 required keyword-only argument: 'recursive_guard'
 ```
 
 Or:
+
 ```
 ModuleNotFoundError: No module named 'langgraph'
 ```
@@ -153,12 +155,22 @@ To fix these issues:
    ./scripts/start_frontend.sh
    ```
 
-The update script will install the correct versions of:
-- Pydantic (>=2.4.0)
-- FastAPI (>=0.103.1)
-- Uvicorn (>=0.23.2)
-- Langchain (>=0.1.0)
-- Langgraph (>=0.3.20)
+The update script will:
+- Install the correct versions of dependencies compatible with Python 3.13
+- Set up the proper PYTHONPATH to find the codegen modules
+- Create a .env file with the necessary environment variables
+
+### PYTHONPATH Issues
+
+If you see errors related to missing modules like `langgraph` or `codegen`, it's likely a PYTHONPATH issue:
+
+1. Make sure the update_dependencies.sh script has been run
+2. Check that the .env file in the projector directory contains the correct PYTHONPATH
+3. If needed, manually set the PYTHONPATH before starting the backend:
+   ```bash
+   export PYTHONPATH="/path/to/codegen/src:$PYTHONPATH"
+   ./scripts/start_backend.sh
+   ```
 
 ### Connection Refused Errors
 
@@ -168,6 +180,7 @@ If you see "Failed to proxy http://localhost:8000/api/projects Error: connect EC
 2. Check if there are any Python compatibility issues (especially with Python 3.13)
 3. Run the update dependencies script and restart both the backend and frontend
 4. Verify the backend is running by visiting http://localhost:8000 directly
+5. Check the backend logs for any errors (they should be displayed in the terminal)
 
 ### Dependency Conflicts
 
@@ -193,3 +206,7 @@ If you're having issues with the virtual environment:
    ```bash
    ./scripts/update_dependencies.sh
    ```
+
+### Streamlit Warnings
+
+If you see warnings like "Warning: Could not access Streamlit secrets: name 'st' is not defined", these can be safely ignored. They're related to an optional feature and don't affect the core functionality.

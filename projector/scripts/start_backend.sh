@@ -29,10 +29,22 @@ if ! pip show langgraph > /dev/null; then
     pip install langgraph>=0.3.20
 fi
 
+# Add the codegen src directory to PYTHONPATH
+CODEGEN_SRC=$(realpath "$ROOT_DIR/../src")
+echo "Adding $CODEGEN_SRC to PYTHONPATH..."
+
+# Load environment variables from .env file if it exists
+if [ -f "$ROOT_DIR/.env" ]; then
+    echo "Loading environment variables from .env file..."
+    set -a
+    source "$ROOT_DIR/.env"
+    set +a
+fi
+
 # Start the FastAPI backend
 echo "Starting FastAPI backend..."
 cd "$ROOT_DIR"
-PYTHONPATH="$ROOT_DIR:$PYTHONPATH" uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+PYTHONPATH="$CODEGEN_SRC:$ROOT_DIR:$PYTHONPATH" uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
 # Deactivate virtual environment on exit
 trap "deactivate" EXIT
