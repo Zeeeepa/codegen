@@ -5,6 +5,7 @@ from codegen import Codebase
 from langchain_core.messages import SystemMessage
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import uvicorn
 from typing import List, Dict, Any, Optional
 from fastapi.responses import StreamingResponse
 import json
@@ -23,6 +24,7 @@ from agentgen.extensions.langchain.tools import (
     ViewFileTool,
 )
 
+# Modal configuration for cloud deployment
 image = (
     modal.Image.debian_slim()
     .apt_install("git")
@@ -42,6 +44,7 @@ app = modal.App(
     secrets=[modal.Secret.from_name("agent-secret")],
 )
 
+# Create FastAPI app
 fastapi_app = FastAPI()
 
 fastapi_app.add_middleware(
@@ -212,14 +215,23 @@ async def symbol_info(request: SymbolRequest) -> SymbolResponse:
         return SymbolResponse(symbol_info={"status": "error", "error": str(e)})
 
 
+# Function to get similar files - used in both Modal and local environments
+async def get_similar_files_func(repo_name: str, query: str) -> List[str]:
+    """
+    Function to find similar files
+    """
+    codebase = Codebase.from_repo(repo_name)
+    search_result = semantic_search(codebase, query, k=6, index_type="file")
+    return [result.filepath for result in search_result.results if result.score > 0.2]
+
+
+# Modal function for cloud deployment
 @app.function()
 async def get_similar_files(repo_name: str, query: str) -> List[str]:
     """
     Separate Modal function to find similar files
     """
-    codebase = Codebase.from_repo(repo_name)
-    search_result = semantic_search(codebase, query, k=6, index_type="file")
-    return [result.filepath for result in search_result.results if result.score > 0.2]
+    return await get_similar_files_func(repo_name, query)
 
 
 @fastapi_app.post("/research/stream")
@@ -228,13 +240,17 @@ async def research_stream(request: ResearchRequest):
     Streaming endpoint to perform code research on a GitHub repository.
     """
     try:
-
         async def event_generator():
             final_response = ""
 
-            similar_files_future = get_similar_files.remote.aio(
-                request.repo_name, request.query
-            )
+            # Handle similar files differently based on environment
+            if os.environ.get("RUNNING_LOCALLY") == "true":
+                similar_files = await get_similar_files_func(request.repo_name, request.query)
+            else:
+                similar_files_future = get_similar_files.remote.aio(
+                    request.repo_name, request.query
+                )
+                similar_files = await similar_files_future
 
             codebase = Codebase.from_repo(request.repo_name)
             tools = [
@@ -258,8 +274,7 @@ async def research_stream(request: ResearchRequest):
                 config={"configurable": {"session_id": "research"}},
             )
 
-            similar_files = await similar_files_future
-            yield f"data: {json.dumps({'type': 'similar_files', 'content': similar_files})}\n\n"
+            yield f"data: {json.dumps({'type': 'similar_files', 'content': similar_files})}\\n\\n"
 
             async for event in research_task:
                 kind = event["event"]
@@ -267,11 +282,11 @@ async def research_stream(request: ResearchRequest):
                     content = event["data"]["chunk"].content
                     if content:
                         final_response += content
-                        yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
+                        yield f"data: {json.dumps({'type': 'content', 'content': content})}\\n\\n"
                 elif kind in ["on_tool_start", "on_tool_end"]:
-                    yield f"data: {json.dumps({'type': kind, 'data': event['data']})}\n\n"
+                    yield f"data: {json.dumps({'type': kind, 'data': event['data']})}\\n\\n"
 
-            yield f"data: {json.dumps({'type': 'complete', 'content': final_response})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'content': final_response})}\\n\\n"
 
         return StreamingResponse(
             event_generator(),
@@ -283,19 +298,29 @@ async def research_stream(request: ResearchRequest):
         return StreamingResponse(
             iter(
                 [
-                    f"data: {json.dumps(error_status)}\n\n",
-                    f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n",
+                    f"data: {json.dumps(error_status)}\\n\\n",
+                    f"data: {json.dumps({'type': 'error', 'content': str(e)})}\\n\\n",
                 ]
             ),
             media_type="text/event-stream",
         )
 
 
+# Modal app deployment
 @app.function(image=image, secrets=[modal.Secret.from_name("agent-secret")])
 @modal.asgi_app()
 def fastapi_modal_app():
     return fastapi_app
 
 
+# Run locally if executed directly
 if __name__ == "__main__":
-    app.deploy("code-research-app")
+    # Check if we're running locally or deploying to Modal
+    if os.environ.get("DEPLOY_TO_MODAL") == "true":
+        app.deploy("code-research-app")
+    else:
+        # Set environment variable to indicate we're running locally
+        os.environ["RUNNING_LOCALLY"] = "true"
+        # Run the FastAPI app locally with uvicorn
+        print("Starting local API server at http://localhost:8000")
+        uvicorn.run(fastapi_app, host="0.0.0.0", port=8000)

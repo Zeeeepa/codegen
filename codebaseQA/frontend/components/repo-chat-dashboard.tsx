@@ -7,6 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import ReactMarkdown from 'react-markdown'
 
+// API URL based on environment
+const API_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:8000' 
+  : 'https://codegen-sh--code-research-app-fastapi-modal-app.modal.run';
+
 async function cleanLogWithGPT4Mini(logData: string): Promise<string> {
   try {
     const response = await fetch('/api/clean-log', {
@@ -83,7 +88,7 @@ export default function RepoChatDashboard() {
       if (question) {
         setLogs(prev => [...prev, "Looking through files"]);
         
-        const response = await fetch('https://codegen-sh--code-research-app-fastapi-modal-app.modal.run/research/stream', {
+        const response = await fetch(`${API_URL}/research/stream`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
