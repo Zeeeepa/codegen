@@ -1,7 +1,7 @@
 # Core dependencies
 fastapi>=0.103.1
 uvicorn>=0.23.2
-python-dotenv==0.21.1
+python-dotenv==1.1.0
 python-multipart==0.0.6
 requests==2.28.2
 pydantic>=2.4.0  # Updated to be compatible with Python 3.13
