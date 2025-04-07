@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import cached_property as cached_property
-from typing import Generic
+from typing import Generic, Optional, Union, Any
 
 from typing_extensions import TypeVar
 
@@ -8,6 +8,11 @@ from codegen.sdk.codebase.codebase_context import CodebaseContext
 from codegen.sdk.core.dataclasses.usage import UsageKind, UsageType
 from codegen.sdk.core.interfaces.editable import Editable
 from codegen.sdk.core.interfaces.has_name import HasName
+from codegen.sdk.core.codebase import Codebase
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.variable import Variable
 
 NodeType = TypeVar("NodeType")
 
@@ -46,3 +51,9 @@ class ResolutionStack(Generic[NodeType]):
     def with_new_base(self, base, *args, **kwargs) -> ResolutionStack: ...
     def with_new_base_frame(self, base: ResolutionStack) -> ResolutionStack: ...
     def __init__(self, node, parent_frame=..., aliased=..., direct=..., _seen=...) -> None: ...
+
+def resolve_symbol(
+    codebase: Codebase,
+    symbol_name: str,
+    filepath: Optional[str] = None
+) -> Optional[Union[Symbol, Function, Class, Variable, Any]]: ...
