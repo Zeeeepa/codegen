@@ -55,7 +55,7 @@ def _validate_data(data):
 """
             },
             "missing_docstring": {
-                "pattern": r"def\s+(\w+)\([^)]*\):\s*(?!\s*[\"\']{"3})",
+                "pattern": r"def\s+(\w+)\([^)]*\):\s*(?!\s*(?:\"\"\"|\'\'\''))",
                 "suggestion": "Add docstrings to improve code documentation and maintainability.",
                 "example": """
 def calculate_total(items):
