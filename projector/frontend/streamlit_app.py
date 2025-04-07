@@ -21,8 +21,12 @@ from projector.backend.project_database import ProjectDatabase
 from projector.backend.project_manager import ProjectManager
 from projector.backend.thread_pool import ThreadPool
 from projector.frontend.ui_components import (
-    render_header, render_sidebar, render_project_list,
+    render_header, render_project_list,
     render_project_details, render_create_project_form
+)
+from projector.frontend.sidebar import render_sidebar
+from projector.frontend.merge_ui_components import (
+    render_merge_history, render_project_tabs_with_merges
 )
 from projector.frontend.session_state import initialize_session_state
 
@@ -89,6 +93,9 @@ def initialize_session_state():
     if "open_prs_count" not in st.session_state:
         st.session_state.open_prs_count = 0
     
+    if "merges_count" not in st.session_state:
+        st.session_state.merges_count = 0
+    
     # Backend connector
     if "backend_connector" not in st.session_state:
         st.session_state.backend_connector = None
@@ -118,6 +125,14 @@ def update_session_data():
         pull_requests = connector.list_pull_requests()
         open_prs = [pr for pr in pull_requests if pr.get("state") == "open"]
         st.session_state.open_prs_count = len(open_prs) if open_prs else 0
+        
+        # Update merges count
+        if st.session_state.current_project_id:
+            project = connector.get_project(st.session_state.current_project_id)
+            if project and hasattr(project, 'merges'):
+                st.session_state.merges_count = len(project.merges)
+            else:
+                st.session_state.merges_count = 0
 
 def render_auth_page():
     """Render the authentication page."""
@@ -136,6 +151,20 @@ def render_dashboard():
     """Render the dashboard page."""
     st.title("Dashboard")
     st.write("Welcome to the MultiThread Slack GitHub Tool!")
+    
+    # Create columns for KPIs
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.metric("Active Threads", st.session_state.get("thread_count", 0))
+    with col2:
+        st.metric("Features", st.session_state.get("features_count", 0))
+    with col3:
+        st.metric("Open PRs", st.session_state.get("open_prs_count", 0))
+    with col4:
+        st.metric("Documents", st.session_state.get("documents_count", 0))
+    with col5:
+        st.metric("Merges", st.session_state.get("merges_count", 0))
     
     # Placeholder for dashboard content
     st.write("Dashboard content would go here.")
@@ -175,6 +204,22 @@ def render_ai_assistant_panel(ai_assistant):
     # Placeholder for AI assistant content
     st.write("AI assistant content would go here.")
 
+def render_merge_management():
+    """Render the merge management page."""
+    st.title("Merge Management")
+    
+    # Get current project
+    if st.session_state.current_project_id and hasattr(st.session_state, "backend_connector"):
+        connector = st.session_state.backend_connector
+        project = connector.get_project(st.session_state.current_project_id)
+        
+        if project:
+            render_merge_history(project)
+        else:
+            st.warning("No project selected. Please select a project from the sidebar.")
+    else:
+        st.warning("No project selected. Please select a project from the sidebar.")
+
 def main():
     """Main Streamlit application."""
     st.set_page_config(
@@ -192,11 +237,10 @@ def main():
         return
     
     # Update session data from backend
-    # update_session_data()
+    update_session_data()
     
     # Render sidebar and get selected page
-    # page = render_sidebar()
-    page = "Dashboard"  # Default to dashboard for now
+    page = render_sidebar()
     
     # Render selected page
     if page == "Dashboard":
@@ -211,6 +255,8 @@ def main():
         render_planning_page(None, None)  # Placeholder for now
     elif page == "AI Assistant":
         render_ai_assistant_panel(None)  # Placeholder for now
+    elif page == "Merge Management":
+        render_merge_management()
 
 if __name__ == "__main__":
     main()

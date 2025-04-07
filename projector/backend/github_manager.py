@@ -6,6 +6,7 @@ from codegen.git.utils.pr_review import CodegenPR
 from codegen.git.utils.language import determine_project_language
 from codegen.git.utils.clone import clone_or_pull_repo
 from projector.backend.code_analyzer import CodeAnalyzer
+from datetime import datetime
 
 class GitHubManager:
     """Manager for GitHub integration with code generation capabilities."""
@@ -246,17 +247,35 @@ class GitHubManager:
                 pr = temp_operator.get_pull_request(pr_number)
                 if pr:
                     pr.merge()
-                    return True
-                return False
+                    # Return merge information
+                    return {
+                        "success": True,
+                        "pr_number": pr_number,
+                        "title": pr.title,
+                        "head_branch": pr.head.ref,
+                        "base_branch": pr.base.ref,
+                        "merged_at": datetime.now().isoformat(),
+                        "type": "pull_request"
+                    }
+                return {"success": False, "error": "PR not found"}
             
             pr = self.repo_operator.get_pull_request(pr_number)
             if pr:
                 pr.merge()
-                return True
-            return False
+                # Return merge information
+                return {
+                    "success": True,
+                    "pr_number": pr_number,
+                    "title": pr.title,
+                    "head_branch": pr.head.ref,
+                    "base_branch": pr.base.ref,
+                    "merged_at": datetime.now().isoformat(),
+                    "type": "pull_request"
+                }
+            return {"success": False, "error": "PR not found"}
         except Exception as e:
             self.logger.error(f"Error merging pull request: {e}")
-            return False
+            return {"success": False, "error": str(e)}
     
     def analyze_repository(self, branch=None, repo_name=None):
         """Analyze the repository structure and code."""

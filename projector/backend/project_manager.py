@@ -522,6 +522,55 @@ class ProjectManager:
             
             return {"error": str(e)}
     
+    def handle_pr_merged(self, project_id, pr_number):
+        """Handle a merged PR for a project."""
+        project = self.get_project(project_id)
+        if not project:
+            return {"error": f"Project with ID {project_id} not found"}
+        
+        # Get PR information from GitHub
+        merge_info = self.github_manager.merge_pull_request(pr_number)
+        
+        if not merge_info.get("success"):
+            return {"error": f"Failed to merge PR: {merge_info.get('error')}"}
+        
+        # Add merge to project's merge history
+        project.merges.append(merge_info)
+        
+        # Find the feature associated with this PR
+        feature_name = None
+        for fname, pr_info in project.pr_status.items():
+            if pr_info.get("pr_number") == pr_number:
+                feature_name = fname
+                break
+        
+        # Update feature status if found
+        if feature_name and feature_name in project.features:
+            feature = project.features[feature_name]
+            feature["status"] = "completed"
+            feature["completed_at"] = datetime.now().isoformat()
+            
+            # Notify in the feature thread
+            if "thread_ts" in feature:
+                self.slack_manager.send_message(
+                    channel=project.slack_channel,
+                    text=f"PR for feature *{feature_name}* has been merged! 🎉\n\nFeature is now complete.",
+                    thread_ts=feature["thread_ts"]
+                )
+            
+            # Update progress tracking
+            self.project_progress[project_id]["completed_features"] += 1
+            self.project_progress[project_id]["in_progress_features"] -= 1
+        
+        # Save project changes
+        self.db.save_project(project)
+        
+        return {
+            "success": True,
+            "merge_info": merge_info,
+            "feature_name": feature_name
+        }
+    
     def _notify_planning_agent_about_pr(self, project_id, feature_name, pr_url, review_result):
         """Notify the planning agent about a PR review."""
         # Initialize planning agent if needed
