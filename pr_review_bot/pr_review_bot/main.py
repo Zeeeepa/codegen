@@ -52,6 +52,7 @@ def parse_args():
     parser.add_argument("--show-merges", action="store_true", help="Show recent merges on startup")
     parser.add_argument("--show-projects", action="store_true", help="Show project implementation stats on startup")
     parser.add_argument("--slack-channel", type=str, help="Slack channel to send notifications to")
+    parser.add_argument("--skip-empty-branches", action="store_true", help="Skip branches with no commits")
     return parser.parse_args()
 
 def load_env():
@@ -100,7 +101,7 @@ def monitor_ip_changes(webhook_manager, ngrok_manager, interval=300):
             logger.error(f"Error in IP monitor: {e}")
             print(f"\n❌ Error in IP monitor: {e}")
 
-def run_monitors(github_client, pr_reviewer, monitor_interval, threads=10, monitor_prs=True, monitor_branches=True, show_merges=False, show_projects=False):
+def run_monitors(github_client, pr_reviewer, monitor_interval, threads=10, monitor_prs=True, monitor_branches=True, show_merges=False, show_projects=False, skip_empty_branches=False):
     """
     Run PR and branch monitors.
     
@@ -113,6 +114,7 @@ def run_monitors(github_client, pr_reviewer, monitor_interval, threads=10, monit
         monitor_branches: Whether to monitor branches
         show_merges: Whether to show recent merges on startup
         show_projects: Whether to show project implementation stats on startup
+        skip_empty_branches: Whether to skip branches with no commits
     """
     pr_monitor = None
     branch_monitor = None
@@ -123,6 +125,12 @@ def run_monitors(github_client, pr_reviewer, monitor_interval, threads=10, monit
         
         branch_monitor = BranchMonitor(github_client, pr_reviewer)
         branch_monitor.max_workers = threads
+        branch_monitor.skip_empty_branches = skip_empty_branches
+        
+        if skip_empty_branches:
+            logger.info("Branch monitor will skip branches with no commits")
+            print("\n⚙️ Branch monitor will skip branches with no commits")
+        
         branch_monitor_thread = threading.Thread(
             target=branch_monitor.run_monitor,
             args=(monitor_interval,),
@@ -242,7 +250,8 @@ def main():
         monitor_prs=args.monitor_prs,
         monitor_branches=args.monitor_branches,
         show_merges=args.show_merges,
-        show_projects=args.show_projects
+        show_projects=args.show_projects,
+        skip_empty_branches=args.skip_empty_branches
     )
     
     # Start the server
