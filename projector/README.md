@@ -1,68 +1,64 @@
 # Projector
 
-A simple project management system with a focus on tracking implementation progress.
-
-## Overview
-
-Projector is a streamlined project management tool that helps teams track the implementation progress of their projects. It provides a visual representation of project tasks, their dependencies, and completion status.
+A simple project management system with LLM-powered document analysis and planning.
 
 ## Features
 
-- **Project Management**: Create and manage multiple projects
-- **Task Tracking**: Track tasks and subtasks with completion status
-- **Implementation Tree**: Visualize project structure and progress
-- **Chat Interface**: Communicate about project details
-- **GitHub Integration**: Link projects to GitHub repositories
-- **Slack Integration**: Connect projects to Slack channels
+- **Three-column layout** with step-by-step structure, document view, and tree structure
+- **Tabbed project interface** with closable tabs
+- **Concurrency settings** for each project (1-10)
+- **Project settings** with GitHub URL and Slack channel ID
+- **Document upload** for requirements and specifications
+- **LLM-powered initialization** to create structural trees and step-by-step plans
+- **Chat interface** for project-specific conversations
 
-## Simplified Implementation
+## Installation
 
-This is a simplified implementation of the Projector system, with all functionality contained in a single Streamlit application. The frontend/backend separation has been removed to make the codebase more maintainable and easier to understand.
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- Streamlit
-
-### Installation
-
-1. Clone the repository
-2. Install the requirements:
-   ```
-   pip install -r requirements.txt
-   ```
-
-### Running the Application
-
-Run the application using the CLI:
-
-```
-python -m projector.cli
+1. Clone the repository:
+```bash
+git clone https://github.com/Zeeeepa/codegen.git
+cd codegen/projector
 ```
 
-Or directly with Streamlit:
-
+2. Create a virtual environment (optional but recommended):
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
-streamlit run projector/frontend/streamlit_app.py
+
+3. Install the requirements:
+```bash
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-1. Create a new project by clicking the "Add Project" button
-2. Fill in the project details (name, GitHub URL, Slack channel)
-3. Initialize the project to generate a sample implementation plan
-4. View the step-by-step structure and implementation tree
-5. Use the chat interface to discuss project details
+1. Start the application:
+```bash
+python main.py
+```
+
+2. Open your browser and navigate to:
+```
+http://localhost:8501
+```
+
+3. Create a new project by clicking the "Add Project +" button.
+
+4. Upload documents or paste content directly.
+
+5. Initialize the project to generate the tree structure and step-by-step plan.
+
+6. Use the chat interface to discuss and refine the project requirements.
 
 ## Project Structure
 
-- `frontend/streamlit_app.py`: Main Streamlit application
+- `main.py`: Entry point for the application
+- `streamlit_app.py`: Main Streamlit application
+- `project_database.py`: Simple JSON-based project database
 - `cli.py`: Command-line interface
-- `main.py`: Main entry point
-- `projects_db.json`: Project database file
+- `start.sh`: Shell script to start the application
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT
