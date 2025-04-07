@@ -1,3 +1,7 @@
+"""
+GitHub event handler for Codegen.
+"""
+
 import os
 import json
 import hmac
@@ -7,9 +11,9 @@ from typing import Any, Callable, TypeVar, Dict, List, Optional, Union
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 
-from agentgen.extensions.events.interface import EventHandlerManagerProtocol
-from agentgen.extensions.github.types.base import GitHubInstallation, GitHubWebhookPayload
-from agentgen.shared.logging.get_logger import get_logger
+from codegen.extensions.events.interface import EventHandlerManagerProtocol
+from codegen.extensions.github.types.base import GitHubInstallation, GitHubWebhookPayload
+from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 logger.setLevel(logging.DEBUG)

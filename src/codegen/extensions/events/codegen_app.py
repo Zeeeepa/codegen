@@ -1,18 +1,18 @@
-import os
-import sys
-import logging
+"""
+Codegen App for handling events from various sources.
+"""
+
 from typing import Dict, List, Any, Optional, Callable, Union
 
-from agentgen.configs.models.codebase import CodebaseConfig
-from agentgen.configs.models.secrets import SecretsConfig
-from agentgen.sdk.core.codebase import Codebase
-from agentgen.shared.logging.get_logger import get_logger
-
-from .github import GitHub
-from .slack import Slack
+from codegen.configs.models.codebase import CodebaseConfig
+from codegen.configs.models.secrets import SecretsConfig
+from codegen.sdk.core.codebase import Codebase
+from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 
+from .github import GitHub
+from .slack import Slack
 
 class CodegenApp:
     """A FastAPI-based application for handling various code-related events."""

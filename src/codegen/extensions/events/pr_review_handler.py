@@ -14,9 +14,9 @@ from github import Github
 from github.Repository import Repository
 from github.PullRequest import PullRequest
 
-from agentgen.extensions.github.types.events import PullRequestEvent
-from agentgen.agents.pr_review.agent import PRReviewAgent
-from agentgen.shared.logging.get_logger import get_logger
+from codegen.extensions.github.types.events import PullRequestEvent
+from codegen.agents.pr_review.agent import PRReviewAgent
+from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 

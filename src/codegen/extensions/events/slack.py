@@ -1,3 +1,7 @@
+"""
+Slack event handler for Codegen.
+"""
+
 import os
 import json
 import logging
@@ -7,9 +11,9 @@ from typing import Dict, List, Any, Optional, Callable, Union
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 
-from agentgen.extensions.events.interface import EventHandlerManagerProtocol
-from agentgen.extensions.slack.types import SlackWebhookPayload
-from agentgen.shared.logging.get_logger import get_logger
+from codegen.extensions.events.interface import EventHandlerManagerProtocol
+from codegen.extensions.slack.types import SlackWebhookPayload
+from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 logger.setLevel(logging.DEBUG)
