@@ -25,7 +25,9 @@ from projector.backend.github_manager import GitHubManager
 from projector.backend.project_database import ProjectDatabase
 from projector.backend.project_manager import ProjectManager
 from projector.backend.thread_pool import ThreadPool
-from projector.frontend.ui_components import (
+
+# Import UI components
+from projector.frontend.components import (
     render_header, render_project_list,
     render_project_details, render_create_project_form
 )
