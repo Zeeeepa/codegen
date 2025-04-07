@@ -197,20 +197,24 @@ class Project:
 db = ProjectDatabase()
 
 # Initialize session state
-if "active_project" not in st.session_state:
-    st.session_state.active_project = None
-if "projects" not in st.session_state:
-    st.session_state.projects = {}
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = {}
-if "open_tabs" not in st.session_state:
-    st.session_state.open_tabs = []
+def init_session_state():
+    if "active_project" not in st.session_state:
+        st.session_state.active_project = None
+    if "projects" not in st.session_state:
+        st.session_state.projects = {}
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = {}
+    if "open_tabs" not in st.session_state:
+        st.session_state.open_tabs = []
+    if "show_create_form" not in st.session_state:
+        st.session_state.show_create_form = False
 
 # Load projects from database
-for project_id, project_data in db.get_all_projects().items():
-    st.session_state.projects[project_id] = Project.from_dict(project_data)
-    if project_id not in st.session_state.open_tabs:
-        st.session_state.open_tabs.append(project_id)
+def load_projects():
+    for project_id, project_data in db.get_all_projects().items():
+        st.session_state.projects[project_id] = Project.from_dict(project_data)
+        if project_id not in st.session_state.open_tabs and st.session_state.open_tabs:
+            st.session_state.open_tabs.append(project_id)
 
 # Callback functions
 def add_project():
@@ -224,6 +228,8 @@ def add_project():
             st.session_state.open_tabs.append(project.id)
         db.add_project(project.id, project.to_dict())
         st.session_state.new_project_name = ""
+        st.session_state.show_create_form = False
+        st.rerun()
 
 def close_tab(project_id):
     """Close a project tab."""
@@ -231,6 +237,7 @@ def close_tab(project_id):
         st.session_state.open_tabs.remove(project_id)
     if st.session_state.active_project == project_id:
         st.session_state.active_project = st.session_state.open_tabs[0] if st.session_state.open_tabs else None
+    st.rerun()
 
 def update_project_settings(project_id):
     """Update project settings."""
@@ -245,6 +252,7 @@ def initialize_project(project_id):
     project = st.session_state.projects[project_id]
     project.initialize()
     db.update_project(project_id, project.to_dict())
+    st.rerun()
 
 def send_message(project_id):
     """Send a chat message."""
@@ -262,6 +270,7 @@ def send_message(project_id):
         
         # Clear input
         st.session_state[f"chat_input_{project_id}"] = ""
+        st.rerun()
 
 def upload_document(project_id):
     """Upload a document to a project."""
@@ -283,123 +292,137 @@ def upload_document(project_id):
         
         # Update project in database
         db.update_project(project_id, project.to_dict())
+        st.rerun()
 
-# Main app layout
-def main():
-    # Header
-    st.title("Projector - Project Management System")
-    
-    # Top navigation
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col1:
-        st.button("Settings", key="settings_button")
-    with col2:
-        st.button("Dashboard", key="dashboard_button")
-    with col3:
-        st.text_input("New Project Name", key="new_project_name")
-        st.button("Add Project", key="add_project_button", on_click=add_project)
-    
-    # Main content area with three columns
-    left_col, middle_col, right_col = st.columns([1, 2, 1])
-    
-    # Left column - Step by Step Structure
-    with left_col:
-        st.subheader("Step by Step Structure")
-        if st.session_state.active_project and st.session_state.active_project in st.session_state.projects:
-            project = st.session_state.projects[st.session_state.active_project]
-            if project.initialized:
-                for step in project.step_by_step:
-                    status_icon = "✅" if step["status"] == "completed" else "🔄" if step["status"] == "in_progress" else "⏳"
-                    st.write(f"{status_icon} {step['name']}")
-            else:
-                st.info("Initialize the project to generate step-by-step structure.")
-        else:
-            st.info("Select a project to view its step-by-step structure.")
-    
-    # Middle column - Project Tabs and Content
-    with middle_col:
-        # Project tabs
-        if st.session_state.open_tabs:
-            tabs = []
-            for project_id in st.session_state.open_tabs:
-                if project_id in st.session_state.projects:
-                    project = st.session_state.projects[project_id]
-                    tabs.append(project.name)
-                else:
-                    st.session_state.open_tabs.remove(project_id)
+def show_create_project_form():
+    st.session_state.show_create_form = True
+    st.rerun()
+
+def render_create_project_form():
+    if st.session_state.show_create_form:
+        with st.form("create_project_form"):
+            st.text_input("Project Name", key="new_project_name")
+            submitted = st.form_submit_button("Create Project")
+            if submitted:
+                add_project()
+                st.rerun()
+
+def select_tab(tab_index):
+    if tab_index < len(st.session_state.open_tabs):
+        st.session_state.active_project = st.session_state.open_tabs[tab_index]
+        st.rerun()
+
+def render_step_by_step_view(project):
+    st.subheader("Step by Step Structure")
+    if project.initialized:
+        for step in project.step_by_step:
+            status_icon = "✅" if step["status"] == "completed" else "🔄" if step["status"] == "in_progress" else "⏳"
+            st.write(f"{status_icon} {step['name']}")
+    else:
+        st.info("No implementation plan found. Initialize the project to generate a plan.")
+
+def render_tree_structure_view(project):
+    st.subheader("Tree Structure View")
+    if project.initialized and project.tree_structure:
+        # Display tree structure
+        st.write(f"{project.tree_structure['name']} [{project.tree_structure['progress']}%]")
+        
+        for module in project.tree_structure.get("children", []):
+            status_icon = "✅" if module.get("status") == "completed" else "🔄" if module.get("status") == "in_progress" else "⏳"
+            st.write(f"├── {module['name']} {status_icon} [{module.get('progress', 0)}%]")
             
-            tab_index = 0
-            if st.session_state.active_project in st.session_state.open_tabs:
-                tab_index = st.session_state.open_tabs.index(st.session_state.active_project)
-            
-            selected_tab = st.tabs(tabs)
-            for i, tab in enumerate(selected_tab):
-                with tab:
-                    if i < len(st.session_state.open_tabs):
-                        project_id = st.session_state.open_tabs[i]
-                        st.session_state.active_project = project_id
-                        project = st.session_state.projects[project_id]
-                        
-                        # Project settings and controls
-                        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-                        with col1:
-                            st.number_input("Concurrency", min_value=1, max_value=10, value=project.concurrency, key=f"concurrency_{project_id}")
-                        with col2:
-                            st.button("Project Settings", key=f"settings_{project_id}")
-                        with col3:
-                            st.button("Initialize", key=f"initialize_{project_id}", on_click=initialize_project, args=(project_id,))
-                        with col4:
-                            st.button("Close Tab", key=f"close_{project_id}", on_click=close_tab, args=(project_id,))
-                        
-                        # Project settings form
-                        with st.expander("Project Settings"):
-                            st.text_input("GitHub URL", value=project.github_url, key=f"github_url_{project_id}")
-                            st.text_input("Slack Channel ID", value=project.slack_channel, key=f"slack_channel_{project_id}")
-                            st.button("Save Settings", key=f"save_settings_{project_id}", on_click=update_project_settings, args=(project_id,))
-                        
-                        # Document upload
-                        with st.expander("Upload Documents"):
-                            st.file_uploader("Upload Document", key=f"document_upload_{project_id}", on_change=upload_document, args=(project_id,))
-                            
-                            # Display uploaded documents
-                            if project.documents:
-                                st.subheader("Uploaded Documents")
-                                for doc in project.documents:
-                                    st.write(f"📄 {doc['name']}")
-                                    with st.expander(f"View {doc['name']}"):
-                                        st.text(doc['content'][:1000] + "..." if len(doc['content']) > 1000 else doc['content'])
-                        
-                        # Project content
-                        if project.initialized:
-                            st.subheader("Project Content")
-                            st.write("Project has been initialized with LLM processing.")
-                        else:
-                            st.info("Click 'Initialize' to process project documents with LLM.")
-        else:
-            st.info("Add a project to get started.")
+            for item in module.get("children", []):
+                status_icon = "✅" if item.get("status") == "completed" else "🔄" if item.get("status") == "in_progress" else "⏳"
+                st.write(f"│   ├── {item['name']} {status_icon}")
+    else:
+        st.info("No implementation plan found. Initialize the project to generate a plan.")
+
+def render_tabbed_interface(projects):
+    if not st.session_state.open_tabs:
+        st.info("No open projects. Add a project to get started.")
+        return
     
-    # Right column - Tree Structure View
-    with right_col:
-        st.subheader("Tree Structure View")
-        if st.session_state.active_project and st.session_state.active_project in st.session_state.projects:
-            project = st.session_state.projects[st.session_state.active_project]
-            if project.initialized and project.tree_structure:
-                # Display tree structure
-                st.write(f"{project.tree_structure['name']} [{project.tree_structure['progress']}%]")
+    # Create tabs
+    tab_names = []
+    for project_id in st.session_state.open_tabs:
+        if project_id in projects:
+            tab_names.append(f"{projects[project_id].name} [X]")
+    
+    if not tab_names:
+        st.info("No open projects. Add a project to get started.")
+        return
+    
+    # Determine active tab index
+    active_tab_index = 0
+    if st.session_state.active_project in st.session_state.open_tabs:
+        active_tab_index = st.session_state.open_tabs.index(st.session_state.active_project)
+    
+    # Create tabs
+    tabs = st.tabs(tab_names)
+    
+    # Render content for each tab
+    for i, tab in enumerate(tabs):
+        with tab:
+            if i < len(st.session_state.open_tabs):
+                project_id = st.session_state.open_tabs[i]
+                project = projects[project_id]
                 
-                for module in project.tree_structure.get("children", []):
-                    status_icon = "✅" if module.get("status") == "completed" else "🔄" if module.get("status") == "in_progress" else "⏳"
-                    st.write(f"├── {module['name']} {status_icon} [{module.get('progress', 0)}%]")
+                # Project controls
+                col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+                with col1:
+                    concurrency = st.number_input(
+                        "Concurrency",
+                        min_value=1,
+                        max_value=10,
+                        value=project.concurrency,
+                        key=f"concurrency_{project_id}",
+                        help="Set the maximum number of concurrent feature lifecycles"
+                    )
+                with col2:
+                    if st.button("Project Settings", key=f"settings_{project_id}"):
+                        st.session_state[f"show_settings_{project_id}"] = True
+                with col3:
+                    if st.button("Initialize", key=f"initialize_{project_id}"):
+                        initialize_project(project_id)
+                with col4:
+                    if st.button("Close Tab", key=f"close_{project_id}"):
+                        close_tab(project_id)
+                
+                # Project settings
+                if st.session_state.get(f"show_settings_{project_id}", False):
+                    with st.expander("Project Settings", expanded=True):
+                        st.text_input("GitHub URL", value=project.github_url, key=f"github_url_{project_id}")
+                        st.text_input("Slack Channel ID", value=project.slack_channel, key=f"slack_channel_{project_id}")
+                        if st.button("Save Settings", key=f"save_settings_{project_id}"):
+                            update_project_settings(project_id)
+                            st.session_state[f"show_settings_{project_id}"] = False
+                            st.rerun()
+                
+                # Document upload
+                with st.expander("Project Documents"):
+                    st.file_uploader(
+                        "Upload Document",
+                        key=f"document_upload_{project_id}",
+                        on_change=upload_document,
+                        args=(project_id,)
+                    )
                     
-                    for item in module.get("children", []):
-                        status_icon = "✅" if item.get("status") == "completed" else "🔄" if item.get("status") == "in_progress" else "⏳"
-                        st.write(f"│   ├── {item['name']} {status_icon}")
-            else:
-                st.info("Initialize the project to generate tree structure.")
-        else:
-            st.info("Select a project to view its tree structure.")
-    
-    # Chat interface at the bottom
+                    # Display uploaded documents
+                    if project.documents:
+                        st.subheader("Uploaded Documents")
+                        for doc in project.documents:
+                            st.write(f"📄 {doc['name']}")
+                            with st.expander(f"View {doc['name']}"):
+                                st.text(doc['content'][:1000] + "..." if len(doc['content']) > 1000 else doc['content'])
+                
+                # Project content
+                if project.initialized:
+                    st.subheader("Project Content")
+                    st.write("Project has been initialized with LLM processing.")
+                else:
+                    st.info("Click 'Initialize' to process project documents with LLM.")
+
+def render_chat_interface():
     st.subheader("Chat Interface")
     if st.session_state.active_project and st.session_state.active_project in st.session_state.projects:
         project_id = st.session_state.active_project
@@ -413,9 +436,62 @@ def main():
                     st.write(f"🤖 **Assistant**: {message['content']}")
         
         # Chat input
-        st.text_input("Type your message...", key=f"chat_input_{project_id}", on_change=send_message, args=(project_id,))
+        st.text_input(
+            "Type your message...",
+            key=f"chat_input_{project_id}",
+            on_change=send_message,
+            args=(project_id,)
+        )
     else:
         st.info("Select a project to start chatting.")
+
+def main():
+    # Initialize session state
+    init_session_state()
+    
+    # Load projects from database
+    load_projects()
+    
+    # Page title
+    st.title("Projector - Project Management System")
+    
+    # Top navigation bar
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        st.button("Settings", key="settings_button")
+    with col2:
+        st.button("Dashboard", key="dashboard_button")
+    with col3:
+        st.button("+ Add Project", key="add_project_button", on_click=show_create_project_form)
+    
+    # Create project form
+    render_create_project_form()
+    
+    # Main content with three columns
+    left_col, middle_col, right_col = st.columns([1, 2, 1])
+    
+    # Left column - Step by Step Structure
+    with left_col:
+        if st.session_state.active_project and st.session_state.active_project in st.session_state.projects:
+            project = st.session_state.projects[st.session_state.active_project]
+            render_step_by_step_view(project)
+        else:
+            st.info("Select a project to view its step-by-step structure.")
+    
+    # Middle column - Tabbed Project Interface
+    with middle_col:
+        render_tabbed_interface(st.session_state.projects)
+    
+    # Right column - Tree Structure View
+    with right_col:
+        if st.session_state.active_project and st.session_state.active_project in st.session_state.projects:
+            project = st.session_state.projects[st.session_state.active_project]
+            render_tree_structure_view(project)
+        else:
+            st.info("Select a project to view its tree structure.")
+    
+    # Chat interface at the bottom
+    render_chat_interface()
 
 if __name__ == "__main__":
     main()
