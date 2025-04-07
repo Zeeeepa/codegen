@@ -6,10 +6,13 @@ import os
 import json
 import hmac
 import hashlib
+import logging
 from typing import Any, Callable, TypeVar, Dict, List, Optional, Union
 
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
+from github import Github
+from pydantic import BaseModel
 
 from codegen.extensions.events.interface import EventHandlerManagerProtocol
 from codegen.extensions.github.types.base import GitHubInstallation, GitHubWebhookPayload
@@ -18,12 +21,13 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 # Type variable for event types
 T = TypeVar("T", bound=BaseModel)
 
 
 class GitHub(EventHandlerManagerProtocol):
+    _client: Github | None = None
+    
     def __init__(self, app):
         self.app = app
         self.registered_handlers = {}
