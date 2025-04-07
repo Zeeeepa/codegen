@@ -1,0 +1,62 @@
+---
+title: "Python Agents"
+sidebarTitle: "Python SDK"
+icon: "code"
+iconType: "solid"
+---
+
+The Codegen Python SDK provides a simple way to programmatically interact with Codegen agents from your own scripts and applications.
+
+## Prerequisites
+
+1.  **Installation:** Make sure you have the `codegen` package installed in your Python environment. Follow the steps in the [Installation guide](/introduction/installation).
+2.  **Authentication:** Ensure you have authenticated the CLI by running `codegen login`. The SDK will use these credentials.
+
+## Basic Usage
+
+Running an agent involves importing the library, instantiating an `Agent`, and calling its `run` method with your prompt and target codebase.
+
+```python
+import codegen
+
+# Ensure you are authenticated (run `codegen login` first)
+
+# Instantiate the agent
+agent = codegen.Agent()
+
+# Define the prompt and target codebase
+prompt = "Refactor the main function in main.py to be more modular and add docstrings."
+# Can be a GitHub repo (owner/repo) or a local path
+codebase_target = "your_github_username/your_repository_name" 
+# codebase_target = "/path/to/your/local/project"
+
+# Run the agent (add error handling in production)
+result = agent.run(
+    prompt=prompt,
+    codebase=codebase_target
+)
+
+# Process the result
+print("Agent run completed.")
+
+# Example: Check if the agent created a Pull Request
+if hasattr(result, 'pr_url') and result.pr_url:
+    print(f"Pull Request created: {result.pr_url}")
+else:
+    # You might check other attributes or logs depending on the agent's task
+    print("Check agent output or logs for more details.")
+
+```
+
+### Explanation
+
+1.  **`import codegen`**: Imports the necessary library.
+2.  **`agent = codegen.Agent()`**: Creates an instance of the Codegen agent.
+3.  **`agent.run(prompt=..., codebase=...)`**: Executes the agent. 
+    *   The `prompt` tells the agent what task to perform.
+    *   The `codebase` specifies the target code, which can be a GitHub repository reference (`owner/repo`) or a path to a local directory.
+4.  **`result`**: The object returned by `run` contains information about the execution outcome. This might include URLs (like `pr_url` if a pull request was generated), summaries of changes, or status indicators. The exact attributes depend on the task performed by the agent.
+
+## Next Steps
+
+With the SDK, you can integrate Codegen agents into your CI/CD pipelines, custom developer tools, or other automated workflows. Explore the different ways you can prompt the agent and leverage integrations like [Slack](/introduction/getting-started) and [Linear](/introduction/getting-started).
