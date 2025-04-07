@@ -1,5 +1,5 @@
 """
-Reflection extension for agentgen.
+Reflection extension for codegen.
 
 This module provides reflection capabilities for agents, allowing them to
 evaluate their own outputs and improve them based on feedback.
