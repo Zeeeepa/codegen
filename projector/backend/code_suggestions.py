@@ -133,7 +133,8 @@ async function handleData() {
     const result = await processData(data);
     await saveData(result);
   } catch (error) {
-    console.error(error);
+    console.error('Fetch error:', error);
+    // Handle error appropriately
   }
 }
 """
