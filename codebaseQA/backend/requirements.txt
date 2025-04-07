@@ -1,0 +1,7 @@
+codegen==0.22.1
+fastapi==0.110.0
+uvicorn==0.29.0
+langchain==0.1.12
+langchain-core==0.1.32
+pydantic==2.6.4
+modal==0.57.0
