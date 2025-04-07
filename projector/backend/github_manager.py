@@ -1,447 +1,434 @@
+"""
+GitHub integration for the Projector system.
+"""
 import os
 import logging
-from codegen.git.repo_operator.repo_operator import RepoOperator
-from codegen.git.schemas.repo_config import RepoConfig
-from codegen.git.utils.pr_review import CodegenPR
-from codegen.git.utils.language import determine_project_language
-from codegen.git.utils.clone import clone_or_pull_repo
-from projector.backend.code_analyzer import CodeAnalyzer
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+import github
+from github import Github
 
 class GitHubManager:
-    """Manager for GitHub integration with code generation capabilities."""
+    """
+    GitHub integration for the Projector system.
+    """
     
-    def __init__(self, github_token, github_username, default_repo):
+    def __init__(
+        self,
+        github_token: str,
+        github_username: str,
+        default_repo: str = None
+    ):
         """Initialize the GitHub manager."""
         self.github_token = github_token
-        self.username = github_username
-        self.default_repo_name = default_repo
-        self.default_branch = "main"
+        self.github_username = github_username
+        self.default_repo = default_repo
         self.logger = logging.getLogger(__name__)
         
-        try:
-            # Create repo config
-            self.repo_config = RepoConfig(
-                name=default_repo,
-                full_name=f"{github_username}/{default_repo}",
-                base_dir="/tmp/projector_repos"
-            )
-            
-            # Initialize RepoOperator
-            self.repo_operator = RepoOperator(
-                repo_config=self.repo_config,
-                access_token=github_token,
-                bot_commit=True
-            )
-            
-            # Ensure repo is cloned
-            self.setup_repo()
-        except Exception as e:
-            self.logger.error(f"Error initializing GitHub manager: {e}")
-            self.repo_operator = None
+        # Initialize GitHub client
+        self.github = Github(github_token)
+        
+        # Cache for repository objects
+        self.repo_cache = {}
     
-    def setup_repo(self):
-        """Set up the repository by cloning or pulling."""
-        if not os.path.exists(self.repo_config.repo_path):
-            self.logger.info(f"Cloning repository {self.repo_config.full_name}...")
-            self.repo_operator.setup_repo_dir()
-        else:
-            self.logger.info(f"Repository {self.repo_config.full_name} already exists, pulling latest changes...")
-            self.repo_operator.pull()
-    
-    def list_repositories(self):
-        """List repositories owned by the user."""
-        try:
-            if self.repo_operator and self.repo_operator.remote_git_repo:
-                return [repo.name for repo in self.repo_operator.remote_git_repo.get_user_repos()]
-            return []
-        except Exception as e:
-            self.logger.error(f"Error listing repositories: {e}")
-            return []
-    
-    def list_branches(self, repo_name=None):
-        """List branches in a repository."""
-        try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                return temp_operator.list_branches()
+    def get_repository(self, owner: str, repo: str) -> Optional[github.Repository.Repository]:
+        """
+        Get a GitHub repository.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
             
-            return self.repo_operator.list_branches()
-        except Exception as e:
-            self.logger.error(f"Error listing branches: {e}")
-            return []
-    
-    def create_branch(self, branch_name, base_branch=None, repo_name=None):
-        """Create a new branch in a repository."""
+        Returns:
+            The repository object, or None if not found.
+        """
+        cache_key = f"{owner}/{repo}"
+        
+        if cache_key in self.repo_cache:
+            return self.repo_cache[cache_key]
+        
         try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                return temp_operator.create_branch(branch_name, base_branch or self.default_branch)
-            
-            return self.repo_operator.create_branch(branch_name, base_branch or self.default_branch)
+            repository = self.github.get_repo(f"{owner}/{repo}")
+            self.repo_cache[cache_key] = repository
+            return repository
         except Exception as e:
-            self.logger.error(f"Error creating branch: {e}")
-            return False
-    
-    def list_repository_files(self, branch=None, repo_name=None):
-        """List files in a repository."""
-        try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                return temp_operator.list_files(branch=branch or self.default_branch)
-            
-            return self.repo_operator.list_files(branch=branch or self.default_branch)
-        except Exception as e:
-            self.logger.error(f"Error listing repository files: {e}")
-            return []
-    
-    def get_file_content(self, file_path, branch=None, repo_name=None):
-        """Get the content of a file from a repository."""
-        try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                return temp_operator.get_file_content(file_path, branch=branch or self.default_branch)
-            
-            return self.repo_operator.get_file_content(file_path, branch=branch or self.default_branch)
-        except Exception as e:
-            self.logger.error(f"Error getting file content: {e}")
+            self.logger.error(f"Error getting repository {owner}/{repo}: {e}")
             return None
     
-    def commit_file(self, file_path, commit_message, branch, content, repo_name=None):
-        """Commit a file to a repository."""
-        try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                temp_operator.checkout_branch(branch)
-                return temp_operator.commit_file(file_path, content, commit_message)
+    def get_repository_contents(self, owner: str, repo: str, path: str = "") -> Dict[str, Any]:
+        """
+        Get the contents of a repository.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            path: The path to get contents for.
             
-            self.repo_operator.checkout_branch(branch)
-            return self.repo_operator.commit_file(file_path, content, commit_message)
-        except Exception as e:
-            self.logger.error(f"Error committing file: {e}")
-            return False
-    
-    def create_pull_request(self, title, body, head_branch, base_branch=None, repo_name=None):
-        """Create a pull request in a repository."""
+        Returns:
+            A dictionary containing the repository contents.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return {}
+        
         try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                pr = temp_operator.create_pull_request(
-                    title=title,
-                    body=body,
-                    head_branch=head_branch,
-                    base_branch=base_branch or self.default_branch
-                )
-                if pr:
-                    return {
-                        "number": pr.number,
-                        "url": pr.html_url
+            contents = repository.get_contents(path)
+            
+            result = {}
+            
+            # Process contents
+            for content in contents:
+                if content.type == "dir":
+                    # Recursively get directory contents
+                    result[content.name] = self.get_repository_contents(owner, repo, content.path)
+                else:
+                    # Get file content
+                    result[content.name] = {
+                        "type": "file",
+                        "path": content.path,
+                        "content": content.decoded_content.decode("utf-8"),
+                        "sha": content.sha
                     }
-                return None
             
-            pr = self.repo_operator.create_pull_request(
+            return result
+        except Exception as e:
+            self.logger.error(f"Error getting repository contents for {owner}/{repo}/{path}: {e}")
+            return {}
+    
+    def create_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        title: str,
+        body: str,
+        head: str,
+        base: str = "main"
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create a pull request.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            title: The title of the pull request.
+            body: The body of the pull request.
+            head: The name of the branch where your changes are implemented.
+            base: The name of the branch you want the changes pulled into.
+            
+        Returns:
+            The pull request data, or None if creation failed.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return None
+        
+        try:
+            pr = repository.create_pull(
                 title=title,
                 body=body,
-                head_branch=head_branch,
-                base_branch=base_branch or self.default_branch
+                head=head,
+                base=base
             )
-            if pr:
-                return {
-                    "number": pr.number,
-                    "url": pr.html_url
-                }
-            return None
-        except Exception as e:
-            self.logger.error(f"Error creating pull request: {e}")
-            return None
-    
-    def list_pull_requests(self, state="open", repo_name=None):
-        """List pull requests in a repository."""
-        try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                return temp_operator.remote_git_repo.list_pull_requests(state=state)
             
-            return self.repo_operator.remote_git_repo.list_pull_requests(state=state)
+            return {
+                "number": pr.number,
+                "title": pr.title,
+                "body": pr.body,
+                "html_url": pr.html_url,
+                "state": pr.state,
+                "created_at": pr.created_at.isoformat(),
+                "updated_at": pr.updated_at.isoformat(),
+                "merged": pr.merged,
+                "merged_at": pr.merged_at.isoformat() if pr.merged_at else None,
+                "user": {
+                    "login": pr.user.login,
+                    "avatar_url": pr.user.avatar_url
+                }
+            }
         except Exception as e:
-            self.logger.error(f"Error listing pull requests: {e}")
-            return []
+            self.logger.error(f"Error creating pull request for {owner}/{repo}: {e}")
+            return None
     
-    def merge_pull_request(self, pr_number, repo_name=None):
-        """Merge a pull request in a repository."""
+    def get_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get a pull request.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            pr_number: The pull request number.
+            
+        Returns:
+            The pull request data, or None if not found.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return None
+        
         try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                pr = temp_operator.get_pull_request(pr_number)
-                if pr:
-                    pr.merge()
-                    # Return merge information
-                    return {
-                        "success": True,
-                        "pr_number": pr_number,
+            pr = repository.get_pull(pr_number)
+            
+            return {
+                "number": pr.number,
+                "title": pr.title,
+                "body": pr.body,
+                "html_url": pr.html_url,
+                "state": pr.state,
+                "created_at": pr.created_at.isoformat(),
+                "updated_at": pr.updated_at.isoformat(),
+                "merged": pr.merged,
+                "merged_at": pr.merged_at.isoformat() if pr.merged_at else None,
+                "user": {
+                    "login": pr.user.login,
+                    "avatar_url": pr.user.avatar_url
+                }
+            }
+        except Exception as e:
+            self.logger.error(f"Error getting pull request {pr_number} for {owner}/{repo}: {e}")
+            return None
+    
+    def get_recent_merges(
+        self,
+        owner: str,
+        repo: str,
+        days: int = 7
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recent merged pull requests.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            days: Number of days to look back.
+            
+        Returns:
+            A list of merged pull requests.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return []
+        
+        try:
+            # Calculate the date to look back to
+            since_date = datetime.now() - timedelta(days=days)
+            
+            # Get all pull requests
+            pulls = repository.get_pulls(state='closed')
+            
+            # Filter for merged PRs within the time period
+            recent_merges = []
+            for pr in pulls:
+                if pr.merged and pr.merged_at and pr.merged_at > since_date:
+                    recent_merges.append({
+                        "number": pr.number,
                         "title": pr.title,
-                        "head_branch": pr.head.ref,
-                        "base_branch": pr.base.ref,
-                        "merged_at": datetime.now().isoformat(),
-                        "type": "pull_request"
-                    }
-                return {"success": False, "error": "PR not found"}
+                        "body": pr.body,
+                        "html_url": pr.html_url,
+                        "state": pr.state,
+                        "created_at": pr.created_at.isoformat(),
+                        "updated_at": pr.updated_at.isoformat(),
+                        "merged": pr.merged,
+                        "merged_at": pr.merged_at.isoformat(),
+                        "user": {
+                            "login": pr.user.login,
+                            "avatar_url": pr.user.avatar_url
+                        }
+                    })
             
-            pr = self.repo_operator.get_pull_request(pr_number)
-            if pr:
-                pr.merge()
-                # Return merge information
-                return {
-                    "success": True,
-                    "pr_number": pr_number,
-                    "title": pr.title,
-                    "head_branch": pr.head.ref,
-                    "base_branch": pr.base.ref,
-                    "merged_at": datetime.now().isoformat(),
-                    "type": "pull_request"
-                }
-            return {"success": False, "error": "PR not found"}
+            return recent_merges
         except Exception as e:
-            self.logger.error(f"Error merging pull request: {e}")
-            return {"success": False, "error": str(e)}
-    
-    def analyze_repository(self, branch=None, repo_name=None):
-        """Analyze the repository structure and code."""
-        try:
-            # Use the CodeAnalyzer to analyze the repository
-            code_analyzer = CodeAnalyzer()
-            
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                files = temp_operator.list_files(branch=branch or self.default_branch)
-                files_content = {}
-                
-                for file_path in files:
-                    if self._is_code_file(file_path):
-                        content = temp_operator.get_file_content(file_path, branch=branch or self.default_branch)
-                        if content:
-                            files_content[file_path] = content
-            else:
-                files = self.repo_operator.list_files(branch=branch or self.default_branch)
-                files_content = {}
-                
-                for file_path in files:
-                    if self._is_code_file(file_path):
-                        content = self.repo_operator.get_file_content(file_path, branch=branch or self.default_branch)
-                        if content:
-                            files_content[file_path] = content
-            
-            # Analyze code structure
-            code_structure = code_analyzer.analyze_code_structure(files_content)
-            
-            # Generate suggestions
-            suggestions = code_analyzer.suggest_improvements(code_structure)
-            
-            # Generate class diagram
-            class_diagram = code_analyzer.generate_class_diagram(code_structure)
-            
-            # Generate repository statistics
-            stats = code_analyzer.analyze_repository_statistics(files_content)
-            
-            return {
-                "structure": code_structure,
-                "suggestions": suggestions,
-                "class_diagram": class_diagram,
-                "stats": stats
-            }
-        except Exception as e:
-            self.logger.error(f"Error analyzing repository: {e}")
-            return None
-    
-    def generate_code_for_feature(self, feature_name, feature_plan, ai_assistant):
-        """Generate code for a feature based on the plan."""
-        try:
-            # Create a branch for this feature if it doesn't exist
-            branch_name = f"feature/{feature_name.lower().replace(' ', '-')}"
-            existing_branches = self.list_branches()
-            
-            if branch_name not in existing_branches:
-                self.create_branch(branch_name)
-            
-            # Generate code using AI assistant
-            generated_code = ai_assistant.generate_code_for_feature(feature_name, feature_plan)
-            
-            # Commit generated files
-            for file_info in generated_code["files"]:
-                self.commit_file(
-                    file_info["path"],
-                    f"Add {file_info['description']} for {feature_name}",
-                    branch_name,
-                    file_info["content"]
-                )
-            
-            return {
-                "branch": branch_name,
-                "files": [f["path"] for f in generated_code["files"]]
-            }
-        except Exception as e:
-            self.logger.error(f"Error generating code for feature: {e}")
-            return None
-    
-    def create_pull_request_for_feature(self, feature_name, branch_name, description=None):
-        """Create a pull request for a feature branch."""
-        try:
-            if not description:
-                description = f"""
-# Feature: {feature_name}
-
-This PR implements the {feature_name} feature.
-
-## Changes
-- Add core functionality for {feature_name}
-- Add tests for {feature_name}
-- Update documentation
-
-## Testing
-This feature has been tested locally and all tests pass.
-
-## Reviewers
-Please review this code for completeness and correctness.
-"""
-            
-            # Create the pull request
-            pr = self.create_pull_request(
-                title=f"Feature: {feature_name}",
-                body=description,
-                head_branch=branch_name
-            )
-            
-            return pr
-        except Exception as e:
-            self.logger.error(f"Error creating pull request for feature: {e}")
-            return None
-    
-    def get_commit_history(self, branch=None, repo_name=None):
-        """Get the commit history for a branch."""
-        try:
-            if repo_name and repo_name != self.default_repo_name:
-                # Create a temporary RepoOperator for the specified repo
-                temp_repo_config = RepoConfig(
-                    name=repo_name,
-                    full_name=f"{self.username}/{repo_name}",
-                    base_dir="/tmp/projector_repos"
-                )
-                temp_operator = RepoOperator(
-                    repo_config=temp_repo_config,
-                    access_token=self.github_token
-                )
-                commits = temp_operator.get_commit_history(branch=branch or self.default_branch)
-                return [
-                    {
-                        "sha": commit.hexsha,
-                        "message": commit.message,
-                        "author": commit.author.name,
-                        "date": commit.committed_datetime.isoformat()
-                    } for commit in commits
-                ]
-            
-            commits = self.repo_operator.get_commit_history(branch=branch or self.default_branch)
-            return [
-                {
-                    "sha": commit.hexsha,
-                    "message": commit.message,
-                    "author": commit.author.name,
-                    "date": commit.committed_datetime.isoformat()
-                } for commit in commits
-            ]
-        except Exception as e:
-            self.logger.error(f"Error getting commit history: {e}")
+            self.logger.error(f"Error getting recent merges for {owner}/{repo}: {e}")
             return []
     
-    def _is_code_file(self, file_path):
-        """Check if a file is a code file that should be analyzed."""
-        code_extensions = [
-            '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.c', '.cpp', '.cs', '.php',
-            '.rb', '.go', '.swift', '.kt', '.rs', '.scala', '.sh', '.ps1'
-        ]
+    def create_comment(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+        body: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create a comment on a pull request.
         
-        # Get file extension
-        _, ext = os.path.splitext(file_path)
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            pr_number: The pull request number.
+            body: The comment body.
+            
+        Returns:
+            The comment data, or None if creation failed.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return None
         
-        return ext in code_extensions
+        try:
+            pr = repository.get_pull(pr_number)
+            comment = pr.create_issue_comment(body)
+            
+            return {
+                "id": comment.id,
+                "body": comment.body,
+                "created_at": comment.created_at.isoformat(),
+                "updated_at": comment.updated_at.isoformat(),
+                "user": {
+                    "login": comment.user.login,
+                    "avatar_url": comment.user.avatar_url
+                }
+            }
+        except Exception as e:
+            self.logger.error(f"Error creating comment on PR {pr_number} for {owner}/{repo}: {e}")
+            return None
+    
+    def get_comments(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get comments on a pull request.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            pr_number: The pull request number.
+            
+        Returns:
+            A list of comments.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return []
+        
+        try:
+            pr = repository.get_pull(pr_number)
+            comments = pr.get_issue_comments()
+            
+            result = []
+            for comment in comments:
+                result.append({
+                    "id": comment.id,
+                    "body": comment.body,
+                    "created_at": comment.created_at.isoformat(),
+                    "updated_at": comment.updated_at.isoformat(),
+                    "user": {
+                        "login": comment.user.login,
+                        "avatar_url": comment.user.avatar_url
+                    }
+                })
+            
+            return result
+        except Exception as e:
+            self.logger.error(f"Error getting comments for PR {pr_number} for {owner}/{repo}: {e}")
+            return []
+    
+    def get_branches(
+        self,
+        owner: str,
+        repo: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get branches in a repository.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            
+        Returns:
+            A list of branches.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return []
+        
+        try:
+            branches = repository.get_branches()
+            
+            result = []
+            for branch in branches:
+                result.append({
+                    "name": branch.name,
+                    "commit": {
+                        "sha": branch.commit.sha,
+                        "url": branch.commit.html_url
+                    }
+                })
+            
+            return result
+        except Exception as e:
+            self.logger.error(f"Error getting branches for {owner}/{repo}: {e}")
+            return []
+    
+    def get_commits(
+        self,
+        owner: str,
+        repo: str,
+        branch: str = None,
+        path: str = None,
+        since: datetime = None,
+        until: datetime = None,
+        max_count: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Get commits in a repository.
+        
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            branch: The branch to get commits from.
+            path: The path to get commits for.
+            since: The date to get commits since.
+            until: The date to get commits until.
+            max_count: The maximum number of commits to get.
+            
+        Returns:
+            A list of commits.
+        """
+        repository = self.get_repository(owner, repo)
+        if not repository:
+            return []
+        
+        try:
+            # Build the query parameters
+            kwargs = {}
+            if branch:
+                kwargs["sha"] = branch
+            if path:
+                kwargs["path"] = path
+            if since:
+                kwargs["since"] = since
+            if until:
+                kwargs["until"] = until
+            
+            commits = repository.get_commits(**kwargs)
+            
+            result = []
+            for commit in commits[:max_count]:
+                result.append({
+                    "sha": commit.sha,
+                    "message": commit.commit.message,
+                    "author": {
+                        "name": commit.commit.author.name,
+                        "email": commit.commit.author.email,
+                        "date": commit.commit.author.date.isoformat()
+                    },
+                    "committer": {
+                        "name": commit.commit.committer.name,
+                        "email": commit.commit.committer.email,
+                        "date": commit.commit.committer.date.isoformat()
+                    },
+                    "html_url": commit.html_url
+                })
+            
+            return result
+        except Exception as e:
+            self.logger.error(f"Error getting commits for {owner}/{repo}: {e}")
+            return []

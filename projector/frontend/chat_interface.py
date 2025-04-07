@@ -30,29 +30,24 @@ def render_chat_interface(project_id=None):
     """
     st.subheader("Project Assistant")
     
-    # Initialize chat history in session state if not exists
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = {}
     
-    # Get project-specific chat history
     if project_id:
         if project_id not in st.session_state.chat_history:
             st.session_state.chat_history[project_id] = []
         chat_history = st.session_state.chat_history[project_id]
         
-        # Get project details
         project_database = ProjectDatabase()
         project = project_database.get_project(project_id)
         if project:
             st.write(f"Chatting about project: **{project.name}**")
     else:
-        # Global chat history
         if "global" not in st.session_state.chat_history:
             st.session_state.chat_history["global"] = []
         chat_history = st.session_state.chat_history["global"]
         st.write("General chat (no project selected)")
     
-    # Display chat history
     chat_container = st.container()
     with chat_container:
         for message in chat_history:
@@ -63,7 +58,6 @@ def render_chat_interface(project_id=None):
             elif message["role"] == "system":
                 st.info(message["content"])
     
-    # Chat input
     with st.form(key="chat_form", clear_on_submit=True):
         user_input = st.text_area("Type your message:", key="chat_input", height=100)
         cols = st.columns([1, 1, 6])
@@ -75,10 +69,8 @@ def render_chat_interface(project_id=None):
             submit_button = st.form_submit_button("Send")
     
     if submit_button and user_input:
-        # Add user message to chat history
         chat_history.append({"role": "user", "content": user_input})
         
-        # Process file upload
         if upload_file:
             file_content = upload_file.getvalue()
             file_name = upload_file.name
@@ -87,18 +79,14 @@ def render_chat_interface(project_id=None):
                 "content": f"File uploaded: {file_name}"
             })
         
-        # Process code snippet
         if code_snippet:
             user_input = f"```\n{user_input}\n```"
         
-        # Get AI response
         if project_id:
-            # Get project context
             project_database = ProjectDatabase()
             project = project_database.get_project(project_id)
             
             if project:
-                # Initialize AI User Agent
                 github_manager = GitHubManager(
                     github_token=GITHUB_TOKEN,
                     github_username=GITHUB_USERNAME,
@@ -127,7 +115,6 @@ def render_chat_interface(project_id=None):
                     docs_path="docs"
                 )
                 
-                # Get AI response with project context
                 with st.spinner("Thinking..."):
                     try:
                         response = ai_user_agent.get_chat_response(
@@ -140,26 +127,8 @@ def render_chat_interface(project_id=None):
             else:
                 response = "Error: Project not found."
         else:
-            # Generic response without project context
             response = "I'm here to help with your projects. Please select a project to get context-aware assistance."
         
-        # Add AI response to chat history
         chat_history.append({"role": "assistant", "content": response})
         
-        # Force a rerun to update the chat display
         st.experimental_rerun()
-
-def get_chat_response(project_id, message, chat_history):
-    """Get a response from the AI assistant.
-    
-    Args:
-        project_id: The ID of the project.
-        message: The user message.
-        chat_history: The chat history.
-        
-    Returns:
-        The AI response.
-    """
-    # This is a placeholder for the actual AI response logic
-    # In a real implementation, this would call an LLM API
-    return f"I received your message about project {project_id}: {message}"
