@@ -83,6 +83,91 @@ class AIUserAgent:
             self.logger.info("AI User Agent initialized successfully.")
         except Exception as e:
             self.logger.error(f"Error initializing AI User Agent: {e}")
+
+    def get_chat_response(self, project_id: str, message: str, chat_history: List[Dict[str, Any]] = None) -> str:
+        """
+        Get a response from the AI assistant for a chat message.
+        
+        Args:
+            project_id: The ID of the project.
+            message: The user message.
+            chat_history: Optional chat history.
+            
+        Returns:
+            The AI response.
+        """
+        project = self.project_database.get_project(project_id)
+        if not project:
+            self.logger.error(f"Project not found: {project_id}")
+            return "Error: Project not found."
+        
+        try:
+            # Initialize chat agent if needed
+            if not self.chat_agent:
+                self._initialize_agents()
+            
+            # Get project context
+            context = self._get_project_context(project)
+            
+            # Format the prompt
+            prompt = f"""
+            Project: {project.name}
+            Repository: {project.git_url}
+            
+            {context}
+            
+            User message: {message}
+            """
+            
+            # Get response from chat agent
+            response = self.chat_agent.run(prompt)
+            
+            return response
+        except Exception as e:
+            self.logger.error(f"Error getting chat response: {e}")
+            return f"Error: {str(e)}"
+    
+    def _get_project_context(self, project: Project) -> str:
+        """
+        Get the context for a project.
+        
+        Args:
+            project: The project.
+            
+        Returns:
+            The project context as a string.
+        """
+        context = ""
+        
+        # Add requirements
+        if hasattr(project, 'requirements') and project.requirements:
+            context += "Requirements:\n"
+            for req_key, req_value in project.requirements.items():
+                context += f"- {req_key}: {req_value}\n"
+        
+        # Add implementation plan
+        if project.implementation_plan:
+            context += "\nImplementation Plan:\n"
+            
+            # Add plan description
+            if 'description' in project.implementation_plan:
+                context += f"{project.implementation_plan['description']}\n\n"
+            
+            # Add tasks
+            tasks = project.implementation_plan.get('tasks', [])
+            if tasks:
+                context += "Tasks:\n"
+                for task in tasks:
+                    status = task.get('status', 'pending')
+                    context += f"- {task.get('title')} ({status})\n"
+        
+        # Add documents
+        if project.documents:
+            context += "\nDocuments:\n"
+            for doc in project.documents:
+                context += f"- {os.path.basename(doc)}\n"
+        
+        return context
     
     def analyze_project_requirements(self, project_id: str) -> Dict[str, Any]:
         """
