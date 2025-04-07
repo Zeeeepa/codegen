@@ -12,6 +12,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 from github.Repository import Repository
 from github.Branch import Branch
 from datetime import datetime, timedelta, timezone
+from github.GithubException import GithubException
 
 from ..core.github_client import GitHubClient
 from ..core.pr_reviewer import PRReviewer
@@ -39,6 +40,7 @@ class BranchMonitor:
         self.recent_merges: List[Dict[str, Any]] = []  # List of recent merges
         self.project_implementations: Dict[str, int] = {}  # Map of project name to implementation count
         self.max_workers = 10  # Number of threads to use for parallel processing
+        self.skip_empty_branches = False  # Whether to skip branches with no commits
     
     def initialize_known_branches(self):
         """
@@ -200,6 +202,26 @@ class BranchMonitor:
                     "pr_number": existing_prs[0].number,
                     "pr_url": existing_prs[0].html_url
                 }
+            
+            # Check if there are any commits between the branch and the main branch
+            try:
+                comparison = repo.compare(repo.default_branch, branch_name)
+                if comparison.total_commits == 0:
+                    logger.warning(f"No commits between {repo.default_branch} and {branch_name} in {repo_name}")
+                    return {
+                        "status": "skipped",
+                        "message": f"No commits between {repo.default_branch} and {branch_name}",
+                        "error_type": "no_commits"
+                    }
+            except GithubException as e:
+                logger.error(f"Error comparing branches: {e}")
+                if e.status == 422 and "no commits between" in str(e).lower():
+                    return {
+                        "status": "skipped",
+                        "message": f"No commits between {repo.default_branch} and {branch_name}",
+                        "error_type": "no_commits"
+                    }
+                raise
             
             # Create a PR for the branch
             pr_title = f"Auto PR: {branch_name}"
