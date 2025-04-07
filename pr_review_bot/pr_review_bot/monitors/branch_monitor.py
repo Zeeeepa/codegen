@@ -11,7 +11,7 @@ import concurrent.futures
 from typing import Dict, List, Any, Optional, Set, Tuple
 from github.Repository import Repository
 from github.Branch import Branch
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ..core.github_client import GitHubClient
 from ..core.pr_reviewer import PRReviewer
@@ -248,7 +248,8 @@ class BranchMonitor:
         
         try:
             repos = self.github_client.get_all_repositories()
-            since_date = datetime.now() - timedelta(days=days)
+            # Make sure since_date is timezone-aware
+            since_date = datetime.now(timezone.utc) - timedelta(days=days)
             
             # Use ThreadPoolExecutor to parallelize merge checking
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -273,7 +274,7 @@ class BranchMonitor:
             logger.error(traceback.format_exc())
         
         # Sort merges by date (newest first)
-        merges.sort(key=lambda x: x.get("merged_at", datetime.now()), reverse=True)
+        merges.sort(key=lambda x: x.get("merged_at", datetime.now(timezone.utc)), reverse=True)
         self.recent_merges = merges
         
         return merges
@@ -296,8 +297,17 @@ class BranchMonitor:
             pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
             
             for pr in pulls:
-                # Skip if not merged or merged before since_date
-                if not pr.merged or pr.merged_at < since_date:
+                # Skip if not merged
+                if not pr.merged:
+                    continue
+                
+                # Ensure merged_at is timezone-aware
+                merged_at = pr.merged_at
+                if merged_at and merged_at.tzinfo is None:
+                    merged_at = merged_at.replace(tzinfo=timezone.utc)
+                
+                # Skip if merged before since_date
+                if not merged_at or merged_at < since_date:
                     continue
                 
                 # Extract project name from branch or PR title
@@ -313,7 +323,7 @@ class BranchMonitor:
                     "pr_number": pr.number,
                     "pr_title": pr.title,
                     "pr_url": pr.html_url,
-                    "merged_at": pr.merged_at,
+                    "merged_at": merged_at,
                     "project_name": project_name
                 })
         except Exception as e:
