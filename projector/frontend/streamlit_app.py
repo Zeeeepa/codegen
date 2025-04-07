@@ -5,29 +5,29 @@ import logging
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Load environment variables
 load_dotenv()
 
 # Import backend components
-from agentgen.application.projector.backend.config import (
+from projector.backend.config import (
     SLACK_USER_TOKEN, GITHUB_TOKEN, GITHUB_USERNAME,
     SLACK_DEFAULT_CHANNEL, GITHUB_DEFAULT_REPO
 )
-from agentgen.application.projector.backend.slack_manager import SlackManager
-from agentgen.application.projector.backend.github_manager import GitHubManager
-from agentgen.application.projector.backend.project_database import ProjectDatabase
-from agentgen.application.projector.backend.project_manager import ProjectManager
-from agentgen.application.projector.backend.thread_pool import ThreadPool
-from agentgen.application.projector.frontend.ui_components import (
+from projector.backend.slack_manager import SlackManager
+from projector.backend.github_manager import GitHubManager
+from projector.backend.project_database import ProjectDatabase
+from projector.backend.project_manager import ProjectManager
+from projector.backend.thread_pool import ThreadPool
+from projector.frontend.ui_components import (
     render_header, render_sidebar, render_project_list,
     render_project_details, render_create_project_form
 )
-from agentgen.application.projector.frontend.session_state import initialize_session_state
+from projector.frontend.session_state import initialize_session_state
 
 # Import from API connectors
-from agentgen.application.projector.api.api_connectors import BackendConnector
+from projector.api.api_connectors import BackendConnector
 
 # Runtime configuration
 runtime_config = {

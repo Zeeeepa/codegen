@@ -7,7 +7,8 @@ import multiprocessing
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+# Adjust the path to ensure the projector module is in the Python path
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 def parse_arguments():
     """Parse command line arguments."""
@@ -79,7 +80,7 @@ def setup_logging(debug=False):
 def launch_streamlit():
     """Launch the Streamlit UI."""
     try:
-        subprocess.run(["streamlit", "run", "frontend/streamlit_app.py"])
+        subprocess.run(["streamlit", "run", "projector/frontend/streamlit_app.py"])
     except Exception as e:
         logging.error(f"Error launching Streamlit: {e}")
         sys.exit(1)

@@ -5,7 +5,7 @@ from codegen.git.schemas.repo_config import RepoConfig
 from codegen.git.utils.pr_review import CodegenPR
 from codegen.git.utils.language import determine_project_language
 from codegen.git.utils.clone import clone_or_pull_repo
-from agentgen.application.projector.backend.code_analyzer import CodeAnalyzer
+from projector.backend.code_analyzer import CodeAnalyzer
 
 class GitHubManager:
     """Manager for GitHub integration with code generation capabilities."""
