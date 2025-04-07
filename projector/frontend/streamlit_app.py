@@ -35,6 +35,7 @@ from projector.frontend.session_state import initialize_session_state, update_se
 from projector.frontend.accessibility import render_accessibility_settings, apply_accessibility_styles
 from projector.frontend.tree_view import render_implementation_tree
 from projector.frontend.chat_interface import render_chat_interface
+from projector.frontend.project_tabs import render_tabbed_interface, render_step_by_step_view
 
 # Import from API connectors
 from projector.api.api_connectors import BackendConnector
@@ -49,291 +50,98 @@ logging.basicConfig(
     ]
 )
 
-logger = logging.getLogger(__name__)
+# Initialize session state
+initialize_session_state()
 
-def render_recent_activity():
-    """Render the recent activity dashboard."""
-    st.subheader("Recent Activity")
-    
-    # Get recent merges from GitHub
-    github_manager = GitHubManager(
-        github_token=GITHUB_TOKEN,
-        github_username=GITHUB_USERNAME,
-        default_repo=GITHUB_DEFAULT_REPO
-    )
-    
-    # Get recent merges for all projects
-    project_database = ProjectDatabase()
-    projects = project_database.list_projects()
-    
-    all_merges = []
-    for project in projects:
-        try:
-            repo_name = project.git_url.split('/')[-1].replace('.git', '')
-            repo_owner = project.git_url.split('/')[-2]
-            
-            # Get recent merges
-            merges = github_manager.get_recent_merges(
-                owner=repo_owner,
-                repo=repo_name,
-                days=7
-            )
-            
-            # Add project info to merges
-            for merge in merges:
-                merge['project_name'] = project.name
-                merge['project_id'] = project.id
-                all_merges.append(merge)
-        except Exception as e:
-            logger.error(f"Error getting merges for {project.name}: {e}")
-    
-    # Sort merges by date
-    all_merges.sort(key=lambda x: x.get('merged_at', ''), reverse=True)
-    
-    # Display recent merges
-    if all_merges:
-        for i, merge in enumerate(all_merges[:5]):  # Show only the 5 most recent merges
-            pr_number = merge.get('number')
-            title = merge.get('title')
-            project_name = merge.get('project_name')
-            merged_at = merge.get('merged_at')
-            
-            st.write(f"**{project_name}:** PR #{pr_number} - {title} (merged {merged_at})")
-            
-            # Add a separator except for the last item
-            if i < len(all_merges[:5]) - 1:
-                st.markdown("---")
-    else:
-        st.info("No recent activity found.")
+# Set page config
+st.set_page_config(
+    page_title="Projector - Project Management",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-def render_multi_project_tabs():
-    """Render tabs for all active projects."""
-    project_database = ProjectDatabase()
-    projects = project_database.list_projects()
-    
-    if not projects:
-        st.info("No projects found. Create a new project to get started.")
-        return
-    
-    # Create tabs for each project
-    project_names = [p.name for p in projects]
-    tabs = st.tabs(project_names)
-    
-    # Store the selected tab index in session state if not already set
-    if "selected_tab_index" not in st.session_state:
-        st.session_state.selected_tab_index = 0
-    
-    # Render content for each tab
-    for i, tab in enumerate(tabs):
-        with tab:
-            # Update the selected tab index when a tab is clicked
-            if i != st.session_state.selected_tab_index:
-                st.session_state.selected_tab_index = i
-                st.session_state.selected_project = projects[i].id
-            
-            # Render the project content
-            render_project_content(projects[i])
+# Apply accessibility styles
+apply_accessibility_styles()
 
-def render_project_content(project):
-    """Render the content for a specific project tab."""
-    # Three-column layout as per the mockup
-    left_col, main_col, right_col = st.columns([1, 2, 1])
-    
-    with left_col:
-        # Step by step structure view
-        st.subheader("Step by Step Structure")
-        
-        # Display the implementation plan steps
-        if project.implementation_plan:
-            tasks = project.implementation_plan.get('tasks', [])
-            for i, task in enumerate(tasks):
-                status = "✓" if task.get('status') == 'completed' else " "
-                st.write(f"{i+1}. [{status}] {task.get('title')}")
-        else:
-            st.info("No implementation plan found. Generate a plan to get started.")
-    
-    with main_col:
-        # Project context document view with tabbed interface
-        st.subheader("Project Context")
-        
-        # Create tabs for different document categories
-        doc_categories = ["Requirements", "Architecture", "Implementation", "Testing"]
-        doc_tabs = st.tabs(doc_categories)
-        
-        # Render content for each document category
-        for i, tab in enumerate(doc_tabs):
-            with tab:
-                category = doc_categories[i].lower()
-                
-                # Filter documents by category
-                category_docs = [doc for doc in project.documents if f"/{category}/" in doc.lower()]
-                
-                if category_docs:
-                    for doc in category_docs:
-                        doc_name = os.path.basename(doc)
-                        st.write(f"**{doc_name}**")
-                        
-                        # Display document content
-                        try:
-                            with open(doc, 'r') as f:
-                                content = f.read()
-                                st.text_area("", content, height=300, key=f"doc_{doc}")
-                        except Exception as e:
-                            st.error(f"Error reading document: {e}")
-                else:
-                    st.info(f"No {doc_categories[i]} documents found.")
-        
-        # Concurrency setting
-        st.subheader("Concurrency Setting")
-        new_concurrency = st.slider(
-            "Maximum Concurrent Tasks",
-            min_value=1,
-            max_value=10,
-            value=project.max_parallel_tasks,
-            help="Set the maximum number of tasks that can be processed concurrently."
-        )
-        
-        if new_concurrency != project.max_parallel_tasks:
-            if st.button("Update Concurrency"):
-                project_database = ProjectDatabase()
-                project.max_parallel_tasks = new_concurrency
-                if project_database.save_project(project):
-                    st.success(f"Concurrency updated to {new_concurrency} tasks.")
-                    st.experimental_rerun()
-                else:
-                    st.error("Failed to update concurrency settings.")
-        
-        # Project settings button
-        if st.button("Project Settings"):
-            st.session_state.show_settings = True
-    
-    with right_col:
-        # Tree structure view
-        st.subheader("Implementation Tree")
-        
-        # Display the implementation tree with completion checkmarks
-        if project.implementation_plan:
-            render_implementation_tree(project.id, compact=True)
-        else:
-            st.info("No implementation plan found. Generate a plan to get started.")
-    
-    # Settings dialog
-    if st.session_state.get("show_settings", False):
-        with st.expander("Project Settings", expanded=True):
-            st.write("### Project Settings")
-            
-            # Slack channel settings
-            st.write("#### Slack Integration")
-            new_slack_channel = st.text_input(
-                "Slack Channel",
-                value=project.slack_channel or "",
-                help="Set the Slack channel for project notifications."
-            )
-            
-            # GitHub repository settings
-            st.write("#### GitHub Integration")
-            new_git_url = st.text_input(
-                "GitHub Repository URL",
-                value=project.git_url,
-                help="Set the GitHub repository URL for the project."
-            )
-            
-            # Save settings button
-            if st.button("Save Settings"):
-                project_database = ProjectDatabase()
-                
-                # Update project settings
-                project.slack_channel = new_slack_channel
-                project.git_url = new_git_url
-                
-                if project_database.save_project(project):
-                    st.success("Project settings updated successfully!")
-                    st.session_state.show_settings = False
-                    st.experimental_rerun()
-                else:
-                    st.error("Failed to update project settings.")
-            
-            # Cancel button
-            if st.button("Cancel"):
-                st.session_state.show_settings = False
-                st.experimental_rerun()
+# Initialize backend components
+project_database = ProjectDatabase()
+github_manager = GitHubManager(GITHUB_TOKEN, GITHUB_USERNAME)
+slack_manager = SlackManager(SLACK_USER_TOKEN, SLACK_DEFAULT_CHANNEL)
+thread_pool = ThreadPool(max_workers=10)
+project_manager = ProjectManager(github_manager, slack_manager, thread_pool)
 
-# Runtime configuration
+# Main layout
 def main():
-    """Main Streamlit application."""
-    # Initialize session state
-    initialize_session_state()
-    
-    # Apply accessibility styles
-    apply_accessibility_styles()
-    
-    # Main layout
-    st.title("Projector")
-    
-    # Dashboard header with Add Project button
+    # Top navigation bar
     col1, col2 = st.columns([3, 1])
+    
     with col1:
-        st.header("Dashboard")
+        st.title("Projector")
+    
     with col2:
+        st.button("Settings", key="settings_button")
+        st.button("Dashboard", key="dashboard_button")
+    
+    # Add Project button (top right)
+    add_project_col1, add_project_col2 = st.columns([5, 1])
+    with add_project_col2:
         if st.button("➕ Add Project", key="add_project_button"):
-            st.session_state.show_new_project_form = True
+            st.session_state.show_create_project = True
     
-    # Show new project form if button was clicked
-    if st.session_state.get("show_new_project_form", False):
+    # Show create project form if button was clicked
+    if st.session_state.get("show_create_project", False):
         with st.expander("Create New Project", expanded=True):
-            # Project name
-            project_name = st.text_input("Project Name")
-            
-            # GitHub URL
-            github_url = st.text_input("GitHub Repository URL")
-            
-            # Slack channel
-            slack_channel = st.text_input("Slack Channel (optional)")
-            
-            # Concurrency
-            concurrency = st.slider("Maximum Concurrent Tasks", min_value=1, max_value=10, value=2)
-            
-            # Create project button
-            if st.button("Create Project"):
-                if project_name and github_url:
-                    # Create the project
-                    project_database = ProjectDatabase()
-                    project_id = project_database.create_project(project_name, github_url, slack_channel)
-                    
-                    if project_id:
-                        # Update the project's concurrency
-                        project = project_database.get_project(project_id)
-                        project.max_parallel_tasks = concurrency
-                        project_database.save_project(project)
-                        
-                        st.success(f"Project '{project_name}' created successfully!")
-                        st.session_state.show_new_project_form = False
-                        st.experimental_rerun()
-                    else:
-                        st.error("Failed to create project.")
-                else:
-                    st.error("Project name and GitHub URL are required.")
-            
-            # Cancel button
-            if st.button("Cancel"):
-                st.session_state.show_new_project_form = False
-                st.experimental_rerun()
+            render_create_project_form()
+            if st.button("Cancel", key="cancel_create_project"):
+                st.session_state.show_create_project = False
     
-    # Recent activity dashboard
-    st.subheader("Recent Activity")
-    render_recent_activity()
+    # Main content area with 3-column layout
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    # Render multi-project tabs
-    render_multi_project_tabs()
+    # Left column - Step by step structure view
+    with col1:
+        st.subheader("Step by Step Structure")
+        st.write("View generated from user's documents")
+        
+        # Get the currently selected project
+        selected_project_id = st.session_state.get("selected_project")
+        if selected_project_id:
+            project = project_database.get_project(selected_project_id)
+            if project:
+                render_step_by_step_view(project)
+            else:
+                st.info("Select a project to view its step-by-step structure")
+        else:
+            st.info("Select a project to view its step-by-step structure")
     
-    # Render chat interface at the bottom
-    st.write("---")
-    render_chat_interface(
-        project_id=st.session_state.get("selected_project")
-    )
+    # Middle column - Tabbed project interface
+    with col2:
+        # Get all projects
+        projects = project_database.get_all_projects()
+        
+        # Render tabbed interface
+        render_tabbed_interface(projects)
     
-    # Update session data
-    update_session_data()
+    # Right column - Tree structure view
+    with col3:
+        st.subheader("Tree Structure View")
+        st.write("Component Integration Completion Check Map")
+        
+        # Get the currently selected project
+        selected_project_id = st.session_state.get("selected_project")
+        if selected_project_id:
+            project = project_database.get_project(selected_project_id)
+            if project:
+                render_implementation_tree(selected_project_id)
+            else:
+                st.info("Select a project to view its implementation tree")
+        else:
+            st.info("Select a project to view its implementation tree")
+    
+    # Chat interface at the bottom
+    st.markdown("---")
+    render_chat_interface(st.session_state.get("selected_project"))
 
 if __name__ == "__main__":
     main()
