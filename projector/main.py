@@ -84,6 +84,7 @@ def run_backend_service():
     from projector.backend.slack_manager import SlackManager
     from projector.backend.github_manager import GitHubManager
     from projector.backend.assistant_agent import AssistantAgent
+    from projector.backend.ai_user_agent import AIUserAgent
     from projector.backend.project_database import ProjectDatabase
     from projector.backend.project_manager import ProjectManager
     from projector.backend.thread_pool import ThreadPool
@@ -113,6 +114,9 @@ def run_backend_service():
         # Initialize thread pool
         thread_pool = ThreadPool(max_threads=10)
         
+        # Initialize project database
+        project_database = ProjectDatabase()
+        
         # Initialize project manager
         project_manager = ProjectManager(
             github_manager=github_manager,
@@ -126,10 +130,22 @@ def run_backend_service():
             project_manager=project_manager
         )
         
+        # Initialize AI User Agent
+        ai_user_agent = AIUserAgent(
+            slack_manager=slack_manager,
+            github_manager=github_manager,
+            project_database=project_database,
+            project_manager=project_manager,
+            thread_pool=thread_pool,
+            docs_path="docs"
+        )
+        
         # Initialize assistant agent
         assistant_agent = AssistantAgent(
             github_manager=github_manager,
             slack_manager=slack_manager,
+            docs_path="docs",
+            project_database=project_database,
             project_manager=project_manager
         )
         
