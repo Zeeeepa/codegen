@@ -18,6 +18,7 @@ This project implements an AI-powered bot that automatically reviews GitHub Pull
 - PR auto-review with merging to main if OK
 - New branch auto-review with merging to main if OK
 - Validation against REQUIREMENTS.md in project's root
+- Slack notifications for merged PRs
 
 ## Prerequisites
 
@@ -27,6 +28,7 @@ Before running this application, you'll need the following:
 - Anthropic API Token (recommended) or OpenAI API Token
 - Ngrok account and auth token (for local development)
 - Python 3.10 or higher
+- Slack API Token or Webhook URL (for notifications)
 
 ## Setup
 
@@ -87,6 +89,20 @@ python run.py --port 9000 --use-ngrok --monitor-prs --monitor-branches
 python run.py --use-ngrok --monitor-prs --monitor-branches --monitor-interval 600
 ```
 
+### Enabling Slack Notifications
+
+To enable Slack notifications for merged PRs:
+
+```bash
+python run.py --use-ngrok --monitor-prs --monitor-branches --slack-channel C08LUHUCXD4
+```
+
+You can also set the `SLACK_NOTIFICATION_CHANNEL` environment variable in your `.env` file:
+
+```
+SLACK_NOTIFICATION_CHANNEL=C08LUHUCXD4
+```
+
 ## How It Works
 
 1. The bot sets up webhooks on your GitHub repositories
@@ -96,6 +112,7 @@ python run.py --use-ngrok --monitor-prs --monitor-branches --monitor-interval 60
 5. It uses AI capabilities to review the code
 6. The review is posted as comments on the PR
 7. If the PR is valid and meets requirements, it can be automatically merged
+8. When a PR is merged, a notification is sent to the configured Slack channel
 
 ## Webhook Events
 
@@ -118,6 +135,9 @@ The bot can be configured through environment variables in the `.env` file:
 - `NGROK_AUTH_TOKEN` - Ngrok authentication token
 - `ANTHROPIC_API_KEY` - Anthropic API key for Claude models
 - `OPENAI_API_KEY` - OpenAI API key (fallback if Anthropic is not available)
+- `SLACK_TOKEN` - Slack API token for sending notifications
+- `SLACK_WEBHOOK_URL` - Slack webhook URL (alternative to token)
+- `SLACK_NOTIFICATION_CHANNEL` - Slack channel ID to send notifications to
 
 ## Project Structure
 
@@ -141,6 +161,7 @@ pr_review_bot/
 │   └── utils/
 │       ├── __init__.py
 │       ├── ngrok_manager.py
+│       ├── slack_notifier.py
 │       └── webhook_manager.py
 ├── run.py
 ├── requirements.txt
