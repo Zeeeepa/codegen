@@ -1,50 +1,43 @@
 #!/usr/bin/env python3
 """
-Command-line interface for the Projector application.
+Command-line interface for the Projector system.
+This is a simplified version that just runs the Streamlit app.
 """
-
 import os
 import sys
 import argparse
 import subprocess
-import streamlit.web.bootstrap
-
-def setup_python_path():
-    """
-    Set up the Python path to include the src directory for codegen modules.
-    """
-    # Add the src directory to the Python path for codegen modules
-    src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
-
-def run_streamlit():
-    """
-    Run the Streamlit application.
-    """
-    setup_python_path()
-    streamlit_script = os.path.join(os.path.dirname(__file__), 'frontend/streamlit_app.py')
-    args = []
-    streamlit.web.bootstrap.run(streamlit_script, '', args, flag_options={})
 
 def main():
-    """
-    Main entry point for the CLI.
-    """
-    parser = argparse.ArgumentParser(description='Projector - MultiThread Slack GitHub Tool')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    
+    """Main entry point for the CLI."""
+    parser = argparse.ArgumentParser(description="Projector - Project Management System")
+    parser.add_argument("--port", type=int, default=8501, help="Port for the Streamlit app")
     args = parser.parse_args()
     
-    if args.debug:
-        print("Debug mode enabled")
-        os.environ['PROJECTOR_DEBUG'] = '1'
+    # Get the path to the streamlit_app.py file
+    streamlit_app_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "frontend",
+        "streamlit_app.py"
+    )
     
-    # Set up the Python path
-    setup_python_path()
+    # Check if the file exists
+    if not os.path.exists(streamlit_app_path):
+        print(f"Error: Streamlit app file not found: {streamlit_app_path}")
+        sys.exit(1)
     
-    # Run the Streamlit application
-    run_streamlit()
+    # Run the Streamlit app
+    try:
+        subprocess.run(
+            ["streamlit", "run", streamlit_app_path, "--server.port", str(args.port)],
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error running Streamlit app: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("Shutting down...")
+        sys.exit(0)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
