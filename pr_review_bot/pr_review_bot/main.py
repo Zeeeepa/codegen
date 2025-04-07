@@ -18,6 +18,7 @@ from .core.github_client import GitHubClient
 from .core.pr_reviewer import PRReviewer
 from .utils.webhook_manager import WebhookManager
 from .utils.ngrok_manager import NgrokManager
+from .utils.slack_notifier import SlackNotifier
 from .monitors.pr_monitor import PRMonitor
 from .monitors.branch_monitor import BranchMonitor
 from .api.app import app
@@ -50,6 +51,7 @@ def parse_args():
     parser.add_argument("--threads", type=int, default=10, help="Number of threads to use for parallel processing")
     parser.add_argument("--show-merges", action="store_true", help="Show recent merges on startup")
     parser.add_argument("--show-projects", action="store_true", help="Show project implementation stats on startup")
+    parser.add_argument("--slack-channel", type=str, help="Slack channel to send notifications to")
     return parser.parse_args()
 
 def load_env():
@@ -170,11 +172,20 @@ def main():
     # Get GitHub token
     github_token = os.environ.get("GITHUB_TOKEN")
     
+    # Get Slack channel
+    slack_channel = args.slack_channel or os.environ.get("SLACK_NOTIFICATION_CHANNEL")
+    if slack_channel:
+        logger.info(f"Slack notifications will be sent to channel: {slack_channel}")
+        print(f"\n📣 Slack notifications will be sent to channel: {slack_channel}")
+    else:
+        logger.info("No Slack channel specified, notifications will be disabled")
+        print("\n⚠️ No Slack channel specified, notifications will be disabled")
+    
     # Create GitHub client
     github_client = GitHubClient(github_token)
     
     # Create PR reviewer
-    pr_reviewer = PRReviewer(github_token)
+    pr_reviewer = PRReviewer(github_token, slack_channel=slack_channel)
     
     # Set up webhook URL
     webhook_url = args.webhook_url
