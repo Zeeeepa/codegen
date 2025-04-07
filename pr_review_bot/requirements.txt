@@ -1,4 +1,4 @@
-codegen>=0.31.1
+# Core dependencies
 fastapi>=0.115.8
 uvicorn>=0.27.1
 pydantic>=2.10.6
@@ -7,8 +7,16 @@ PyGithub>=2.1.1
 requests>=2.31.0
 markdown>=3.5.2
 beautifulsoup4>=4.12.3
+schedule>=1.2.0
+gitpython>=3.1.40
+pyngrok>=7.0.0
+
+# AI dependencies (optional)
 langchain-core>=0.1.27
 langchain-anthropic>=0.1.6
 langchain-openai>=0.0.5
-gitpython>=3.1.40
-schedule>=1.2.0
+
+# For backward compatibility
+# Note: These are commented out as they're not required for the standalone version
+# codegen>=0.31.1
+# agentgen>=0.1.0
