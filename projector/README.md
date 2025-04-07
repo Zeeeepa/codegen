@@ -66,9 +66,9 @@ Projector follows a modular architecture with clear separation of concerns:
 
 ## Technical Details
 
-### Integration with agentgen
+### Integration with codegen
 
-Projector leverages several components from the agentgen framework:
+Projector leverages several components from the codegen framework:
 
 - **Chat Agent**: For natural language conversations
 - **Planning Agent**: For creating implementation plans
@@ -78,9 +78,7 @@ Projector leverages several components from the agentgen framework:
 - **Web Searcher**: For researching topics online
 - **Context Understanding**: For analyzing document context
 
-### Integration with codegen
-
-Projector uses codegen's Git utilities:
+Projector also uses codegen's Git utilities:
 
 - **RepoOperator**: For Git operations
 - **RepoConfig**: For repository configuration
@@ -156,11 +154,11 @@ GITHUB_DEFAULT_REPO=organization/repository
 
 To run the Streamlit UI:
 
-1. Set up the symbolic link for the agentgen module structure:
+1. Set up the symbolic link for the codegen module structure:
    ```
    python projector/setup_symlink.py
    ```
-   This creates a symbolic link structure that allows the projector module to be imported as `agentgen.application.projector`.
+   This creates a symbolic link structure that allows the projector module to be imported as `codegen.application.projector`.
 
 2. Run the Streamlit app:
    ```
