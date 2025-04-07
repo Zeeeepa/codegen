@@ -201,30 +201,59 @@ class BranchMonitor:
                     "pr_url": existing_prs[0].html_url
                 }
             
+            # Check if there are any commits between the branches
+            try:
+                comparison = repo.compare(repo.default_branch, branch_name)
+                if not comparison.commits:
+                    logger.warning(f"No commits between {repo.default_branch} and {branch_name} in {repo_name}")
+                    return {
+                        "status": "skipped",
+                        "message": f"No commits between {repo.default_branch} and {branch_name}"
+                    }
+            except Exception as e:
+                logger.warning(f"Error comparing branches {repo.default_branch} and {branch_name} in {repo_name}: {e}")
+                # Continue anyway, let GitHub API handle the validation
+            
             # Create a PR for the branch
             pr_title = f"Auto PR: {branch_name}"
             pr_body = f"Automatically created PR for branch {branch_name}"
             
-            pr = self.github_client.create_pull_request(
-                repo=repo,
-                title=pr_title,
-                body=pr_body,
-                head=branch_name,
-                base=repo.default_branch
-            )
-            
-            logger.info(f"Created PR #{pr.number} for branch {branch_name} in {repo_name}")
-            
-            # Review the PR
-            review_result = self.pr_reviewer.review_pr(repo_name, pr.number)
-            
-            return {
-                "status": "success",
-                "message": f"Created and reviewed PR for branch {branch_name}",
-                "pr_number": pr.number,
-                "pr_url": pr.html_url,
-                "review_result": review_result
-            }
+            try:
+                pr = self.github_client.create_pull_request(
+                    repo=repo,
+                    title=pr_title,
+                    body=pr_body,
+                    head=branch_name,
+                    base=repo.default_branch
+                )
+                
+                logger.info(f"Created PR #{pr.number} for branch {branch_name} in {repo_name}")
+                
+                # Review the PR
+                review_result = self.pr_reviewer.review_pr(repo_name, pr.number)
+                
+                return {
+                    "status": "success",
+                    "message": f"Created and reviewed PR for branch {branch_name}",
+                    "pr_number": pr.number,
+                    "pr_url": pr.html_url,
+                    "review_result": review_result
+                }
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Error creating PR for branch {branch_name} in {repo_name}: {error_msg}")
+                
+                # Provide more user-friendly error message
+                if "Validation Failed" in error_msg and "No commits between" in error_msg:
+                    return {
+                        "status": "error",
+                        "message": f"Cannot create PR: No commits between {repo.default_branch} and {branch_name}"
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "message": f"Error creating PR: {error_msg}"
+                    }
         except Exception as e:
             logger.error(f"Error processing branch {branch_name} in {repo_name}: {e}")
             logger.error(traceback.format_exc())
@@ -248,7 +277,8 @@ class BranchMonitor:
         
         try:
             repos = self.github_client.get_all_repositories()
-            since_date = datetime.now() - timedelta(days=days)
+            # Ensure we use timezone-aware datetime
+            since_date = datetime.now().replace(tzinfo=None) - timedelta(days=days)
             
             # Use ThreadPoolExecutor to parallelize merge checking
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -296,26 +326,39 @@ class BranchMonitor:
             pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
             
             for pr in pulls:
-                # Skip if not merged or merged before since_date
-                if not pr.merged or pr.merged_at < since_date:
+                try:
+                    # Skip if not merged
+                    if not pr.merged:
+                        continue
+                    
+                    # Convert merged_at to naive datetime for comparison if it has timezone info
+                    pr_merged_at = pr.merged_at
+                    if pr_merged_at and pr_merged_at.tzinfo:
+                        pr_merged_at = pr_merged_at.replace(tzinfo=None)
+                    
+                    # Skip if merged before since_date
+                    if not pr_merged_at or pr_merged_at < since_date:
+                        continue
+                    
+                    # Extract project name from branch or PR title
+                    project_name = repo.name
+                    if pr.head.ref.startswith("feature/") or pr.head.ref.startswith("project/"):
+                        parts = pr.head.ref.split("/")
+                        if len(parts) > 1:
+                            project_name = parts[1]
+                    
+                    # Add to merges list
+                    repo_merges.append({
+                        "repo_name": repo.full_name,
+                        "pr_number": pr.number,
+                        "pr_title": pr.title,
+                        "pr_url": pr.html_url,
+                        "merged_at": pr_merged_at,
+                        "project_name": project_name
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing PR #{pr.number} in {repo.full_name}: {e}")
                     continue
-                
-                # Extract project name from branch or PR title
-                project_name = repo.name
-                if pr.head.ref.startswith("feature/") or pr.head.ref.startswith("project/"):
-                    parts = pr.head.ref.split("/")
-                    if len(parts) > 1:
-                        project_name = parts[1]
-                
-                # Add to merges list
-                repo_merges.append({
-                    "repo_name": repo.full_name,
-                    "pr_number": pr.number,
-                    "pr_title": pr.title,
-                    "pr_url": pr.html_url,
-                    "merged_at": pr.merged_at,
-                    "project_name": project_name
-                })
         except Exception as e:
             logger.error(f"Error getting merges for {repo.full_name}: {e}")
             logger.error(traceback.format_exc())
