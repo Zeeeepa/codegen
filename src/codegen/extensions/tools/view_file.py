@@ -6,6 +6,9 @@ from langchain_core.messages import ToolMessage
 from pydantic import Field
 
 from codegen.sdk.core.codebase import Codebase
+from codegen.sdk.core.file import File
+
+from agentgen.extensions.utils import get_file_metadata
 
 from .observation import Observation
 
@@ -45,6 +48,10 @@ class ViewFileObservation(Observation):
         default=None,
         description="Maximum number of lines that can be viewed at once",
     )
+    metadata: Optional[dict] = Field(
+        default=None,
+        description="File metadata including language, size, and other properties",
+    )
 
     str_template: ClassVar[str] = "File {filepath} (showing lines {start_line}-{end_line} of {line_count})"
 
@@ -71,6 +78,7 @@ class ViewFileObservation(Observation):
             "total_lines": self.line_count,
             "has_more": self.has_more,
             "max_lines_per_page": self.max_lines_per_page,
+            "metadata": self.metadata,
         }
 
         header = f"[VIEW FILE]: {self.filepath}"
@@ -81,6 +89,11 @@ class ViewFileObservation(Observation):
             header += f"\nShowing lines {self.start_line}-{self.end_line}"
             if self.has_more:
                 header += f" (more lines available, max {self.max_lines_per_page} lines per page)"
+        
+        if self.metadata:
+            header += f"\nLanguage: {self.metadata.get('language', 'unknown')}"
+            if 'size' in self.metadata:
+                header += f", Size: {self.metadata.get('size')} bytes"
 
         return ToolMessage(
             content=f"{header}\n\n{self.content}" if self.content else f"{header}\n<Empty Content>",
@@ -112,6 +125,7 @@ def view_file(
     start_line: Optional[int] = None,
     end_line: Optional[int] = None,
     max_lines: int = 500,
+    include_metadata: bool = True,
 ) -> ViewFileObservation:
     """View the contents and metadata of a file.
 
@@ -122,9 +136,15 @@ def view_file(
         start_line: Starting line number to view (1-indexed, inclusive)
         end_line: Ending line number to view (1-indexed, inclusive)
         max_lines: Maximum number of lines to view at once, defaults to 500
+        include_metadata: If True, include file metadata in the response
     """
     try:
         file = codebase.get_file(filepath)
+        
+        # Get file metadata if requested
+        metadata = None
+        if include_metadata:
+            metadata = get_file_metadata(file)
 
     except ValueError:
         return ViewFileObservation(
@@ -139,6 +159,7 @@ Ensure that this is indeed the correct filepath, else keep searching to find the
             end_line=end_line,
             has_more=False,
             max_lines_per_page=max_lines,
+            metadata=None,
         )
 
     # Split content into lines and get total line count
@@ -179,6 +200,7 @@ Ensure that this is indeed the correct filepath, else keep searching to find the
         content=content,
         raw_content=file.content,
         line_count=total_lines,
+        metadata=metadata,
     )
 
     # Only include pagination fields if file exceeds max_lines

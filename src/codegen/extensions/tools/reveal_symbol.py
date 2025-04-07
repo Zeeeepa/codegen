@@ -1,316 +1,321 @@
-"""Tool for revealing symbol dependencies and usages."""
+"""Tool for revealing symbol definitions and usages."""
 
-from typing import Any, ClassVar, Optional
+from typing import ClassVar, List, Optional, Dict, Any, Union
 
-import tiktoken
+from langchain_core.messages import ToolMessage
 from pydantic import Field
 
-from codegen.sdk.ai.utils import count_tokens
 from codegen.sdk.core.codebase import Codebase
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.import_resolution import Import
 from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.extensions.resolution import resolve_symbol
 
 from .observation import Observation
 
 
-class SymbolInfo(Observation):
-    """Information about a symbol."""
+class SymbolLocation:
+    """Information about a symbol's location in code."""
 
-    name: str = Field(description="Name of the symbol")
-    filepath: Optional[str] = Field(description="Path to the file containing the symbol")
-    source: str = Field(description="Source code of the symbol")
+    filepath: str
+    start_line: int
+    end_line: int
+    start_column: Optional[int] = None
+    end_column: Optional[int] = None
 
-    str_template: ClassVar[str] = "{name} in {filepath}"
+    def __init__(
+        self,
+        filepath: str,
+        start_line: int,
+        end_line: int,
+        start_column: Optional[int] = None,
+        end_column: Optional[int] = None,
+    ):
+        self.filepath = filepath
+        self.start_line = start_line
+        self.end_line = end_line
+        self.start_column = start_column
+        self.end_column = end_column
 
-
-class RevealSymbolObservation(Observation):
-    """Response from revealing symbol dependencies and usages."""
-
-    dependencies: Optional[list[SymbolInfo]] = Field(
-        default=None,
-        description="List of symbols this symbol depends on",
-    )
-    usages: Optional[list[SymbolInfo]] = Field(
-        default=None,
-        description="List of symbols that use this symbol",
-    )
-    truncated: bool = Field(
-        default=False,
-        description="Whether results were truncated due to token limit",
-    )
-    valid_filepaths: Optional[list[str]] = Field(
-        default=None,
-        description="List of valid filepaths when symbol is ambiguous",
-    )
-
-    str_template: ClassVar[str] = "Symbol info: {dependencies_count} dependencies, {usages_count} usages"
-
-    def _get_details(self) -> dict[str, Any]:
-        """Get details for string representation."""
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary representation."""
         return {
-            "dependencies_count": len(self.dependencies or []),
-            "usages_count": len(self.usages or []),
+            "filepath": self.filepath,
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "start_column": self.start_column,
+            "end_column": self.end_column,
         }
 
 
-def truncate_source(source: str, max_tokens: int) -> str:
-    """Truncate source code to fit within max_tokens while preserving meaning.
+class SymbolReference:
+    """Information about a reference to a symbol."""
 
-    Attempts to keep the most important parts of the code by:
-    1. Keeping function/class signatures
-    2. Preserving imports
-    3. Keeping the first and last parts of the implementation
-    """
-    if not max_tokens or max_tokens <= 0:
-        return source
+    filepath: str
+    line: int
+    column: Optional[int] = None
+    context: Optional[str] = None
 
-    enc = tiktoken.get_encoding("cl100k_base")
-    tokens = enc.encode(source)
+    def __init__(
+        self,
+        filepath: str,
+        line: int,
+        column: Optional[int] = None,
+        context: Optional[str] = None,
+    ):
+        self.filepath = filepath
+        self.line = line
+        self.column = column
+        self.context = context
 
-    if len(tokens) <= max_tokens:
-        return source
-
-    # Split into lines while preserving line endings
-    lines = source.splitlines(keepends=True)
-
-    # Always keep first 2 lines (usually imports/signature) and last line (usually closing brace)
-    if len(lines) <= 3:
-        return source
-
-    result = []
-    current_tokens = 0
-
-    # Keep first 2 lines
-    for i in range(2):
-        line = lines[i]
-        line_tokens = len(enc.encode(line))
-        if current_tokens + line_tokens > max_tokens:
-            break
-        result.append(line)
-        current_tokens += line_tokens
-
-    # Add truncation indicator
-    truncation_msg = "    # ... truncated ...\n"
-    truncation_tokens = len(enc.encode(truncation_msg))
-
-    # Keep last line if we have room
-    last_line = lines[-1]
-    last_line_tokens = len(enc.encode(last_line))
-
-    remaining_tokens = max_tokens - current_tokens - truncation_tokens - last_line_tokens
-
-    if remaining_tokens > 0:
-        # Try to keep some middle content
-        for line in lines[2:-1]:
-            line_tokens = len(enc.encode(line))
-            if current_tokens + line_tokens > remaining_tokens:
-                break
-            result.append(line)
-            current_tokens += line_tokens
-
-    result.append(truncation_msg)
-    result.append(last_line)
-
-    return "".join(result)
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary representation."""
+        return {
+            "filepath": self.filepath,
+            "line": self.line,
+            "column": self.column,
+            "context": self.context,
+        }
 
 
-def get_symbol_info(symbol: Symbol, max_tokens: Optional[int] = None) -> SymbolInfo:
-    """Get relevant information about a symbol.
+class RevealSymbolObservation(Observation):
+    """Response from revealing a symbol."""
 
-    Args:
-        symbol: The symbol to get info for
-        max_tokens: Optional maximum number of tokens for the source code
-
-    Returns:
-        Dict containing symbol metadata and source
-    """
-    source = symbol.source
-    if max_tokens:
-        source = truncate_source(source, max_tokens)
-
-    return SymbolInfo(
-        status="success",
-        name=symbol.name,
-        filepath=symbol.file.filepath if symbol.file else None,
-        source=source,
+    symbol_name: str = Field(
+        description="Name of the symbol",
+    )
+    symbol_type: str = Field(
+        description="Type of the symbol (function, class, variable, etc.)",
+    )
+    definition: Optional[SymbolLocation] = Field(
+        default=None,
+        description="Location of the symbol definition",
+    )
+    references: List[SymbolReference] = Field(
+        default_factory=list,
+        description="List of references to the symbol",
+    )
+    source_code: Optional[str] = Field(
+        default=None,
+        description="Source code of the symbol definition",
+    )
+    docstring: Optional[str] = Field(
+        default=None,
+        description="Docstring of the symbol, if available",
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Additional metadata about the symbol",
     )
 
+    str_template: ClassVar[str] = "Symbol {symbol_name} ({symbol_type})"
 
-def hop_through_imports(symbol: Symbol, seen_imports: Optional[set[str]] = None) -> Symbol:
-    """Follow import chain to find the root symbol, stopping at ExternalModule."""
-    if seen_imports is None:
-        seen_imports = set()
+    def render(self, tool_call_id: str) -> ToolMessage:
+        """Render the symbol information."""
+        if self.status == "error":
+            return ToolMessage(
+                content=f"[ERROR REVEALING SYMBOL]: {self.symbol_name}: {self.error}",
+                status=self.status,
+                tool_call_id=tool_call_id,
+                name="reveal_symbol",
+                additional_kwargs={
+                    "error": self.error,
+                },
+            )
 
-    # Base case: not an import or already seen
-    if not isinstance(symbol, Import) or symbol in seen_imports:
-        return symbol
+        # Build content with symbol information
+        lines = [f"[SYMBOL]: {self.symbol_name} ({self.symbol_type})"]
 
-    seen_imports.add(symbol.source)
+        # Add definition location
+        if self.definition:
+            lines.append(
+                f"\nDefined in {self.definition.filepath} (lines {self.definition.start_line}-{self.definition.end_line})"
+            )
 
-    # Try to resolve the import
-    if isinstance(symbol.imported_symbol, ExternalModule):
-        return symbol.imported_symbol
-    elif isinstance(symbol.imported_symbol, Import):
-        return hop_through_imports(symbol.imported_symbol, seen_imports)
-    elif isinstance(symbol.imported_symbol, Symbol):
-        return symbol.imported_symbol
-    else:
-        return symbol.imported_symbol
+        # Add docstring if available
+        if self.docstring:
+            lines.append(f"\nDocumentation:\n{self.docstring}")
+
+        # Add source code if available
+        if self.source_code:
+            lines.append(f"\nSource code:\n```\n{self.source_code}\n```")
+
+        # Add references
+        if self.references:
+            lines.append(f"\nReferences ({len(self.references)}):")
+            for i, ref in enumerate(self.references[:10], 1):  # Limit to 10 references
+                context = f": {ref.context}" if ref.context else ""
+                lines.append(f"{i}. {ref.filepath}:{ref.line}{context}")
+
+            if len(self.references) > 10:
+                lines.append(f"... and {len(self.references) - 10} more references")
+
+        # Add metadata if available
+        if self.metadata:
+            lines.append("\nMetadata:")
+            for key, value in self.metadata.items():
+                if isinstance(value, (dict, list)):
+                    continue  # Skip complex metadata
+                lines.append(f"- {key}: {value}")
+
+        return ToolMessage(
+            content="\n".join(lines),
+            status=self.status,
+            tool_call_id=tool_call_id,
+            name="reveal_symbol",
+        )
 
 
-def get_extended_context(
-    symbol: Symbol,
-    degree: int,
-    max_tokens: Optional[int] = None,
-    seen_symbols: Optional[set[Symbol]] = None,
-    current_degree: int = 0,
-    total_tokens: int = 0,
-    collect_dependencies: bool = True,
-    collect_usages: bool = True,
-) -> tuple[list[SymbolInfo], list[SymbolInfo], int]:
-    """Recursively collect dependencies and usages up to specified degree.
+def _get_symbol_metadata(symbol: Symbol) -> Dict[str, Any]:
+    """Extract metadata from a symbol based on its type."""
+    metadata = {}
 
-    Args:
-        symbol: The symbol to analyze
-        degree: How many degrees of separation to traverse
-        max_tokens: Optional maximum number of tokens for all source code combined
-        seen_symbols: Set of symbols already processed
-        current_degree: Current recursion depth
-        total_tokens: Running count of tokens collected
-        collect_dependencies: Whether to collect dependencies
-        collect_usages: Whether to collect usages
+    if isinstance(symbol, Function):
+        metadata["return_type"] = getattr(symbol, "return_type", None)
+        metadata["parameters"] = getattr(symbol, "parameters", [])
+        metadata["is_async"] = getattr(symbol, "is_async", False)
+        metadata["is_generator"] = getattr(symbol, "is_generator", False)
+        metadata["is_method"] = getattr(symbol, "is_method", False)
+        metadata["is_static"] = getattr(symbol, "is_static", False)
+        metadata["is_class_method"] = getattr(symbol, "is_class_method", False)
+        metadata["is_property"] = getattr(symbol, "is_property", False)
 
-    Returns:
-        Tuple of (dependencies, usages, total_tokens)
-    """
-    if seen_symbols is None:
-        seen_symbols = set()
+    elif isinstance(symbol, Class):
+        metadata["base_classes"] = getattr(symbol, "base_classes", [])
+        metadata["methods"] = [m.name for m in getattr(symbol, "methods", [])]
+        metadata["properties"] = [p.name for p in getattr(symbol, "properties", [])]
+        metadata["is_abstract"] = getattr(symbol, "is_abstract", False)
 
-    if current_degree >= degree or symbol in seen_symbols:
-        return [], [], total_tokens
+    # Check for Variable type by name instead of direct import
+    elif type(symbol).__name__ == "Variable":
+        metadata["type"] = getattr(symbol, "type", None)
+        metadata["is_constant"] = getattr(symbol, "is_constant", False)
 
-    seen_symbols.add(symbol)
+    return metadata
 
-    # Get direct dependencies and usages
-    dependencies = []
-    usages = []
 
-    # Helper to check if we're under token limit
-    def under_token_limit() -> bool:
-        return not max_tokens or total_tokens < max_tokens
+def _get_symbol_references(symbol: Symbol, max_refs: int = 50) -> List[SymbolReference]:
+    """Get references to a symbol."""
+    references = []
 
-    # Process dependencies
-    if collect_dependencies:
-        for dep in symbol.dependencies:
-            if not under_token_limit():
-                break
+    try:
+        # Try to get references using the symbol's references method
+        refs = symbol.references()
+        for ref in refs[:max_refs]:
+            filepath = ref.filepath
+            line = ref.line
+            column = getattr(ref, "column", None)
+            
+            # Try to get context (the line of code where the reference appears)
+            context = None
+            try:
+                file = symbol.codebase.get_file(filepath)
+                lines = file.content.splitlines()
+                if 0 <= line - 1 < len(lines):
+                    context = lines[line - 1].strip()
+            except:
+                pass
+                
+            references.append(SymbolReference(filepath, line, column, context))
+    except:
+        # If references method fails, return empty list
+        pass
 
-            dep = hop_through_imports(dep)
-            if dep not in seen_symbols:
-                # Calculate tokens for this symbol
-                info = get_symbol_info(dep, max_tokens=max_tokens)
-                symbol_tokens = count_tokens(info.source) if info.source else 0
-
-                if max_tokens and total_tokens + symbol_tokens > max_tokens:
-                    continue
-
-                dependencies.append(info)
-                total_tokens += symbol_tokens
-
-                if current_degree + 1 < degree:
-                    next_deps, next_uses, new_total = get_extended_context(dep, degree, max_tokens, seen_symbols, current_degree + 1, total_tokens, collect_dependencies, collect_usages)
-                    dependencies.extend(next_deps)
-                    usages.extend(next_uses)
-                    total_tokens = new_total
-
-    # Process usages
-    if collect_usages:
-        for usage in symbol.usages:
-            if not under_token_limit():
-                break
-
-            usage = usage.usage_symbol
-            usage = hop_through_imports(usage)
-            if usage not in seen_symbols:
-                # Calculate tokens for this symbol
-                info = get_symbol_info(usage, max_tokens=max_tokens)
-                symbol_tokens = count_tokens(info.source) if info.source else 0
-
-                if max_tokens and total_tokens + symbol_tokens > max_tokens:
-                    continue
-
-                usages.append(info)
-                total_tokens += symbol_tokens
-
-                if current_degree + 1 < degree:
-                    next_deps, next_uses, new_total = get_extended_context(usage, degree, max_tokens, seen_symbols, current_degree + 1, total_tokens, collect_dependencies, collect_usages)
-                    dependencies.extend(next_deps)
-                    usages.extend(next_uses)
-                    total_tokens = new_total
-
-    return dependencies, usages, total_tokens
+    return references
 
 
 def reveal_symbol(
     codebase: Codebase,
     symbol_name: str,
     filepath: Optional[str] = None,
-    max_depth: Optional[int] = 1,
-    max_tokens: Optional[int] = None,
-    collect_dependencies: Optional[bool] = True,
-    collect_usages: Optional[bool] = True,
+    include_source: bool = True,
+    include_references: bool = True,
+    max_references: int = 50,
 ) -> RevealSymbolObservation:
-    """Reveal the dependencies and usages of a symbol up to N degrees.
+    """Reveal information about a symbol in the codebase.
+
+    This tool provides detailed information about a symbol, including its definition,
+    source code, docstring, and references throughout the codebase.
 
     Args:
-        codebase: The codebase to analyze
-        symbol_name: The name of the symbol to analyze
-        filepath: Optional filepath to the symbol to analyze
-        max_depth: How many degrees of separation to traverse (default: 1)
-        max_tokens: Optional maximum number of tokens for all source code combined
-        collect_dependencies: Whether to collect dependencies (default: True)
-        collect_usages: Whether to collect usages (default: True)
+        codebase: The codebase to operate on
+        symbol_name: Name of the symbol to reveal
+        filepath: Optional filepath to help resolve the symbol
+        include_source: Whether to include the source code of the symbol
+        include_references: Whether to include references to the symbol
+        max_references: Maximum number of references to include
 
     Returns:
-        Dict containing:
-            - dependencies: List of symbols this symbol depends on (if collect_dependencies=True)
-            - usages: List of symbols that use this symbol (if collect_usages=True)
-            - truncated: Whether the results were truncated due to max_tokens
-            - error: Optional error message if the symbol was not found
+        RevealSymbolObservation containing information about the symbol
     """
-    symbols = codebase.get_symbols(symbol_name=symbol_name)
-    if len(symbols) == 0:
-        return RevealSymbolObservation(
-            status="error",
-            error=f"{symbol_name} not found",
-        )
-    if len(symbols) > 1:
-        return RevealSymbolObservation(
-            status="error",
-            error=f"{symbol_name} is ambiguous",
-            valid_filepaths=[s.file.filepath for s in symbols],
-        )
-    symbol = symbols[0]
-    if filepath:
-        if symbol.file.filepath != filepath:
+    try:
+        # Try to resolve the symbol
+        symbol = resolve_symbol(codebase, symbol_name, filepath)
+
+        if not symbol:
             return RevealSymbolObservation(
                 status="error",
-                error=f"{symbol_name} not found at {filepath}",
-                valid_filepaths=[s.file.filepath for s in symbols],
+                error=f"Symbol '{symbol_name}' not found in the codebase",
+                symbol_name=symbol_name,
+                symbol_type="unknown",
             )
 
-    # Get dependencies and usages up to specified degree
-    dependencies, usages, total_tokens = get_extended_context(symbol, max_depth, max_tokens, collect_dependencies=collect_dependencies, collect_usages=collect_usages)
+        # Get symbol type
+        symbol_type = type(symbol).__name__
 
-    was_truncated = max_tokens is not None and total_tokens >= max_tokens
+        # Get definition location
+        definition = None
+        try:
+            definition = SymbolLocation(
+                filepath=symbol.filepath,
+                start_line=symbol.start_line,
+                end_line=symbol.end_line,
+                start_column=getattr(symbol, "start_column", None),
+                end_column=getattr(symbol, "end_column", None),
+            )
+        except:
+            pass
 
-    result = RevealSymbolObservation(
-        status="success",
-        truncated=was_truncated,
-    )
-    if collect_dependencies:
-        result.dependencies = dependencies
-    if collect_usages:
-        result.usages = usages
-    return result
+        # Get source code if requested
+        source_code = None
+        if include_source:
+            try:
+                source_code = symbol.source
+            except:
+                try:
+                    # Fallback to getting source from file
+                    file = codebase.get_file(symbol.filepath)
+                    lines = file.content.splitlines()
+                    source_code = "\n".join(lines[symbol.start_line - 1 : symbol.end_line])
+                except:
+                    pass
+
+        # Get docstring
+        docstring = getattr(symbol, "docstring", None)
+
+        # Get metadata
+        metadata = _get_symbol_metadata(symbol)
+
+        # Get references if requested
+        references = []
+        if include_references:
+            references = _get_symbol_references(symbol, max_references)
+
+        return RevealSymbolObservation(
+            status="success",
+            symbol_name=symbol_name,
+            symbol_type=symbol_type,
+            definition=definition,
+            references=references,
+            source_code=source_code,
+            docstring=docstring,
+            metadata=metadata,
+        )
+
+    except Exception as e:
+        return RevealSymbolObservation(
+            status="error",
+            error=f"Error revealing symbol '{symbol_name}': {str(e)}",
+            symbol_name=symbol_name,
+            symbol_type="unknown",
+        )

@@ -1,11 +1,16 @@
 """Semantic search over codebase files."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, List, Tuple
 
 from pydantic import Field
 
-from codegen.extensions.index.file_index import FileIndex
+from agentgen.extensions.index.code_index import CodeIndex
+from agentgen.extensions.index.file_index import FileIndex
 from codegen.sdk.core.codebase import Codebase
+from codegen.sdk.core.file import File
+
+# Import from our local utils module instead of codegen.sdk.extensions.utils
+from agentgen.extensions.utils import get_file_metadata
 
 from .observation import Observation
 
@@ -22,6 +27,14 @@ class SearchResult(Observation):
     preview: str = Field(
         description="Preview of the file content",
     )
+    language: Optional[str] = Field(
+        default=None,
+        description="Programming language of the file",
+    )
+    size: Optional[int] = Field(
+        default=None,
+        description="Size of the file in bytes",
+    )
 
     str_template: ClassVar[str] = "{filepath} (score: {score})"
 
@@ -34,6 +47,10 @@ class SemanticSearchObservation(Observation):
     )
     results: list[SearchResult] = Field(
         description="List of search results",
+    )
+    index_type: str = Field(
+        default="file",
+        description="Type of index used for search (file or code)",
     )
 
     str_template: ClassVar[str] = "Found {result_count} results for '{query}'"
@@ -52,16 +69,15 @@ def semantic_search(
     k: int = 5,
     preview_length: int = 200,
     index_path: Optional[str] = None,
+    index_type: str = "file",
+    include_metadata: bool = True,
 ) -> SemanticSearchObservation:
     """Search the codebase using semantic similarity.
 
-    This function provides semantic search over a codebase by using OpenAI's embeddings.
-    Currently, it loads/saves the index from disk each time, but could be optimized to
-    maintain embeddings in memory for frequently accessed codebases.
-
-    TODO(CG-XXXX): Add support for maintaining embeddings in memory across searches,
-    potentially with an LRU cache or similar mechanism to avoid recomputing embeddings
-    for frequently searched codebases.
+    This function provides semantic search over a codebase by using embeddings.
+    It supports two types of indices:
+    - "file": Searches for similar files (default)
+    - "code": Searches for similar code snippets across files
 
     Args:
         codebase: The codebase to search
@@ -69,13 +85,18 @@ def semantic_search(
         k: Number of results to return (default: 5)
         preview_length: Length of content preview in characters (default: 200)
         index_path: Optional path to a saved vector index
+        index_type: Type of index to use ("file" or "code")
+        include_metadata: Whether to include file metadata in results
 
     Returns:
         SemanticSearchObservation containing search results or error information.
     """
     try:
-        # Initialize vector index
-        index = FileIndex(codebase)
+        # Initialize the appropriate vector index
+        if index_type == "code":
+            index = CodeIndex(codebase)
+        else:
+            index = FileIndex(codebase)
 
         # Try to load existing index
         try:
@@ -86,24 +107,52 @@ def semantic_search(
         except FileNotFoundError:
             # Create new index if none exists
             index.create()
-            index.save(index_path)
+            if index_path:
+                index.save(index_path)
+            else:
+                index.save()
 
         # Perform search
         results = index.similarity_search(query, k=k)
 
         # Format results with previews
         formatted_results = []
-        for file, score in results:
-            preview = file.content[:preview_length].replace("\n", " ").strip()
-            if len(file.content) > preview_length:
-                preview += "..."
+        for item, score in results:
+            # Handle different result types based on index type
+            if index_type == "code":
+                # For code index, item is a tuple of (file, start_line, end_line)
+                file, start_line, end_line = item
+                filepath = file.filepath
+                # Extract the relevant code snippet
+                lines = file.content.splitlines()
+                snippet = "\n".join(lines[start_line:end_line+1])
+                preview = snippet[:preview_length].replace("\n", " ").strip()
+                if len(snippet) > preview_length:
+                    preview += "..."
+            else:
+                # For file index, item is a File object
+                file = item
+                filepath = file.filepath
+                preview = file.content[:preview_length].replace("\n", " ").strip()
+                if len(file.content) > preview_length:
+                    preview += "..."
+
+            # Get file metadata if requested
+            language = None
+            size = None
+            if include_metadata:
+                metadata = get_file_metadata(file)
+                language = metadata.get("language")
+                size = metadata.get("size")
 
             formatted_results.append(
                 SearchResult(
                     status="success",
-                    filepath=file.filepath,
+                    filepath=filepath,
                     score=float(score),
                     preview=preview,
+                    language=language,
+                    size=size,
                 )
             )
 
@@ -111,6 +160,7 @@ def semantic_search(
             status="success",
             query=query,
             results=formatted_results,
+            index_type=index_type,
         )
 
     except Exception as e:
@@ -119,4 +169,5 @@ def semantic_search(
             error=f"Failed to perform semantic search: {e!s}",
             query=query,
             results=[],
+            index_type=index_type,
         )

@@ -1,0 +1,7 @@
+requests>=2.25.0
+beautifulsoup4>=4.9.3
+lxml>=4.6.3
+tenacity>=8.0.1
+googlesearch-python>=1.0.1
+duckduckgo-search>=2.8.0
+baidusearch>=0.1.2

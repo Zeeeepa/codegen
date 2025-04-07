@@ -5,7 +5,7 @@ from typing import ClassVar, Optional
 
 from pydantic import Field
 
-from codegen.extensions.tools.observation import Observation
+from agentgen.extensions.tools.observation import Observation
 from codegen.sdk.core.codebase import Codebase
 from codegen.shared.logging.get_logger import get_logger
 

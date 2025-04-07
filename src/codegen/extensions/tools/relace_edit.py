@@ -2,7 +2,7 @@
 
 import difflib
 import os
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 import requests
 from langchain_core.messages import ToolMessage
@@ -14,7 +14,7 @@ from .observation import Observation
 from .view_file import add_line_numbers
 
 if TYPE_CHECKING:
-    from codegen.extensions.tools.tool_output_types import RelaceEditArtifacts
+    from agentgen.extensions.tools.tool_output_types import RelaceEditArtifacts
 
 
 class RelaceEditObservation(Observation):

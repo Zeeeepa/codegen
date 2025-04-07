@@ -9,12 +9,6 @@ from .github.create_pr_comment import create_pr_comment
 from .github.create_pr_review_comment import create_pr_review_comment
 from .github.view_pr import view_pr
 from .global_replacement_edit import replacement_edit_global
-from .linear import (
-    linear_comment_on_issue_tool,
-    linear_get_issue_comments_tool,
-    linear_get_issue_tool,
-    linear_register_webhook_tool,
-)
 from .list_directory import list_directory
 from .move_symbol import move_symbol
 from .reflection import perform_reflection
@@ -27,6 +21,7 @@ from .search_files_by_name import search_files_by_name
 from .semantic_edit import semantic_edit
 from .semantic_search import semantic_search
 from .view_file import view_file
+from .web_search_tool import WebSearchTool, DeepResearchTool
 
 __all__ = [
     # Git operations
@@ -38,11 +33,6 @@ __all__ = [
     "create_pr_review_comment",
     "delete_file",
     "edit_file",
-    # Linear operations
-    "linear_comment_on_issue_tool",
-    "linear_get_issue_comments_tool",
-    "linear_get_issue_tool",
-    "linear_register_webhook_tool",
     "list_directory",
     # Symbol operations
     "move_symbol",
@@ -61,4 +51,7 @@ __all__ = [
     "semantic_search",
     "view_file",
     "view_pr",
+    # Web search operations
+    "WebSearchTool",
+    "DeepResearchTool",
 ]

@@ -5,8 +5,8 @@ from typing import ClassVar
 from langchain_core.messages import ToolMessage
 from pydantic import Field
 
-from codegen.extensions.tools.observation import Observation
-from codegen.extensions.tools.tool_output_types import ListDirectoryArtifacts
+from agentgen.extensions.tools.observation import Observation
+from agentgen.extensions.tools.tool_output_types import ListDirectoryArtifacts
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.directory import Directory
 

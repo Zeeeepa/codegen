@@ -7,7 +7,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import Field
 
-from codegen.extensions.langchain.llm import LLM
+from agentgen.extensions.langchain.llm import LLM
 from codegen.sdk.core.codebase import Codebase
 
 from .observation import Observation
