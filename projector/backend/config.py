@@ -5,27 +5,18 @@ Store your API tokens and configuration in a secure way.
 import os
 import sys
 from dotenv import load_dotenv
-import streamlit as st
 
 # Load environment variables from .env file if present
 load_dotenv()
 
-# Attempt to load from Streamlit secrets if available
+# Get configuration from environment variables
 def get_config(key, default=None):
-    # Try to get from st.secrets first (for deployed apps)
-    try:
-        if hasattr(st, 'secrets') and key in st.secrets:
-            return st.secrets[key]
-    except Exception as e:
-        # Handle the case when Streamlit secrets are not properly initialized
-        print(f"Warning: Could not access Streamlit secrets: {e}")
-    
-    # Then from environment variables
+    # Get from environment variables
     value = os.getenv(key)
     if value is not None:
         return value
     
-    # Finally return default
+    # Return default if not found
     return default
 
 # Slack configuration
