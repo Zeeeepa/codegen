@@ -37,15 +37,18 @@ if [ -f "$ENV_FILE" ]; then
     # Check if PYTHONPATH already exists in .env
     if grep -q "PYTHONPATH=" "$ENV_FILE"; then
         # Update existing PYTHONPATH
-        sed -i "s|PYTHONPATH=.*|PYTHONPATH=$CODEGEN_SRC:\$PYTHONPATH|g" "$ENV_FILE"
+        sed -i "s|PYTHONPATH=.*|PYTHONPATH=$CODEGEN_SRC:$PYTHONPATH|g" "$ENV_FILE"
     else
         # Add PYTHONPATH to .env
-        echo "PYTHONPATH=$CODEGEN_SRC:\$PYTHONPATH" >> "$ENV_FILE"
+        echo "PYTHONPATH=$CODEGEN_SRC:$PYTHONPATH" >> "$ENV_FILE"
     fi
 else
     # Create new .env file with PYTHONPATH
-    echo "PYTHONPATH=$CODEGEN_SRC:\$PYTHONPATH" > "$ENV_FILE"
+    echo "PYTHONPATH=$CODEGEN_SRC:$PYTHONPATH" > "$ENV_FILE"
 fi
+
+# Set PYTHONPATH for the current session
+export PYTHONPATH="$CODEGEN_SRC:$PYTHONPATH"
 
 # Check if langgraph is installed in the virtual environment
 if pip show langgraph > /dev/null; then

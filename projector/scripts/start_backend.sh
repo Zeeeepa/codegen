@@ -19,14 +19,21 @@ source venv/bin/activate
 python_version=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 echo "Using Python $python_version"
 
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt
-
-# Ensure langgraph is installed (especially important for Python 3.13)
-if ! pip show langgraph > /dev/null; then
-    echo "Installing langgraph..."
-    pip install langgraph>=0.3.20
+# Install dependencies if needed
+if [ ! -f "$ROOT_DIR/.dependencies_installed" ]; then
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+    
+    # Ensure langgraph is installed (especially important for Python 3.13)
+    if ! pip show langgraph > /dev/null; then
+        echo "Installing langgraph..."
+        pip install langgraph>=0.3.20
+    fi
+    
+    # Mark dependencies as installed
+    touch "$ROOT_DIR/.dependencies_installed"
+else
+    echo "Dependencies already installed. Skipping installation."
 fi
 
 # Add the codegen src directory to PYTHONPATH
@@ -40,6 +47,9 @@ if [ -f "$ROOT_DIR/.env" ]; then
     source "$ROOT_DIR/.env"
     set +a
 fi
+
+# Set PYTHONPATH for the current session
+export PYTHONPATH="$CODEGEN_SRC:$ROOT_DIR:$PYTHONPATH"
 
 # Start the FastAPI backend
 echo "Starting FastAPI backend..."
