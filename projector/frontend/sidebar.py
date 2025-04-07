@@ -57,7 +57,7 @@ def render_sidebar():
     st.sidebar.header("Navigation")
     page = st.sidebar.radio(
         "Select Page",
-        ["Dashboard", "Projects", "Document Management", "Thread Management", "GitHub Integration", 
+        ["Dashboard", "Projects", "Project Management", "Document Management", "Thread Management", "GitHub Integration", 
          "Project Planning", "Resource Management", "AI Assistant", "Merge History", "Code Suggestions", 
          "Code Improvements", "Settings", "Help"]
     )

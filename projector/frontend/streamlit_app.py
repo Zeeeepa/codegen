@@ -38,6 +38,7 @@ from projector.frontend.accessibility import render_accessibility_settings, appl
 from projector.frontend.code_suggestions_ui import render_code_suggestions_ui, render_code_improvement_ui
 from projector.frontend.project_ui import render_project_ui
 from projector.frontend.resource_management_ui import render_resource_management_ui
+from projector.frontend.project_management_ui import render_project_management_ui
 
 # Import from API connectors
 from projector.api.api_connectors import BackendConnector
@@ -87,6 +88,9 @@ def main():
         
     elif page == "Projects":
         render_project_ui()
+        
+    elif page == "Project Management":
+        render_project_management_ui()
         
     elif page == "Document Management":
         render_header("Document Management")
