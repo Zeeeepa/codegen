@@ -3,6 +3,7 @@ Configuration settings for the MultiThread Slack GitHub Tool.
 Store your API tokens and configuration in a secure way.
 """
 import os
+import sys
 from dotenv import load_dotenv
 import streamlit as st
 
@@ -12,12 +13,18 @@ load_dotenv()
 # Attempt to load from Streamlit secrets if available
 def get_config(key, default=None):
     # Try to get from st.secrets first (for deployed apps)
-    if hasattr(st, 'secrets') and key in st.secrets:
-        return st.secrets[key]
+    try:
+        if hasattr(st, 'secrets') and key in st.secrets:
+            return st.secrets[key]
+    except Exception as e:
+        # Handle the case when Streamlit secrets are not properly initialized
+        print(f"Warning: Could not access Streamlit secrets: {e}")
+    
     # Then from environment variables
     value = os.getenv(key)
     if value is not None:
         return value
+    
     # Finally return default
     return default
 

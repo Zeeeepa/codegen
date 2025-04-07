@@ -4,7 +4,7 @@ Utility functions for the MultiThread Slack GitHub Tool.
 import os
 import re
 import logging
-from backend.config import (
+from projector.backend.config import (
     SLACK_USER_TOKEN, GITHUB_TOKEN, GITHUB_USERNAME,
     SLACK_DEFAULT_CHANNEL, GITHUB_DEFAULT_REPO,
     OPENAI_API_KEY, ENABLE_AI_FEATURES
