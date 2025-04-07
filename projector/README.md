@@ -37,7 +37,7 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.8+ (Python 3.13+ requires updated dependencies - see below)
 - Node.js 14+ and npm
 - Git
 
@@ -52,6 +52,11 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 2. Run the setup script:
    ```bash
    ./setup_symlink.py
+   ```
+
+3. If you're using Python 3.13+, update the dependencies:
+   ```bash
+   ./scripts/update_dependencies.sh
    ```
 
 ## Running the Application
@@ -72,20 +77,18 @@ This script will:
 #### Start the Backend
 
 ```bash
-./start_backend.sh
+./scripts/start_backend.sh
 ```
 
 This will:
 - Create a virtual environment if it doesn't exist
-
 - Install Python dependencies
-- Fix any compatibility issues
 - Start the FastAPI server on port 8000
 
 #### Start the Frontend
 
 ```bash
-./start_frontend.sh
+./scripts/start_frontend.sh
 ```
 
 This will:
@@ -119,19 +122,26 @@ Configure your projects in the Settings dialog:
 
 ## Troubleshooting
 
-### ForwardRef._evaluate Error
+### Python 3.13 Compatibility
 
-If you encounter a `ForwardRef._evaluate() missing 1 required keyword-only argument: 'recursive_guard'` error, the `start_backend.sh` script should automatically fix this issue. If not, you can manually fix it by editing the `pydantic/typing.py` file in your virtual environment:
+If you're using Python 3.13, make sure to run the update dependencies script:
 
-```python
-# Change this line:
-return cast(Any, type_)._evaluate(globalns, localns, set())
-
-# To:
-return cast(Any, type_)._evaluate(globalns, localns, set(), set())
+```bash
+./scripts/update_dependencies.sh
 ```
+
+This will install the correct versions of FastAPI, Uvicorn, and Pydantic that are compatible with Python 3.13.
+
+### Connection Refused Errors
+
+If you see "Failed to proxy http://localhost:8000/api/projects Error: connect ECONNREFUSED 127.0.0.1:8000" errors:
+
+1. Make sure the backend is running on port 8000
+2. Check if there are any Python compatibility issues (especially with Python 3.13)
+3. Run the update dependencies script and restart both the backend and frontend
 
 ### Dependency Conflicts
 
-
-If you encounter dependency conflicts, make sure you're using the exact versions specified in `requirements.txt`. The `pydantic` version is particularly important - do not upgrade to version 2.x as it breaks compatibility with FastAPI 0.95.1.
+If you encounter dependency conflicts, make sure you're using the correct versions for your Python version:
+- For Python 3.8-3.12: The default dependencies should work fine
+- For Python 3.13+: You need updated dependencies (pydantic>=2.4.0, fastapi>=0.103.1, uvicorn>=0.23.2)
