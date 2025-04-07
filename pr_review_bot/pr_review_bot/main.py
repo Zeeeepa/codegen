@@ -47,6 +47,9 @@ def parse_args():
     parser.add_argument("--monitor-interval", type=int, default=300, help="Interval in seconds for monitoring repositories")
     parser.add_argument("--monitor-prs", action="store_true", help="Enable PR monitoring")
     parser.add_argument("--monitor-branches", action="store_true", help="Enable branch monitoring")
+    parser.add_argument("--threads", type=int, default=10, help="Number of threads to use for parallel processing")
+    parser.add_argument("--show-merges", action="store_true", help="Show recent merges on startup")
+    parser.add_argument("--show-projects", action="store_true", help="Show project implementation stats on startup")
     return parser.parse_args()
 
 def load_env():
@@ -95,7 +98,7 @@ def monitor_ip_changes(webhook_manager, ngrok_manager, interval=300):
             logger.error(f"Error in IP monitor: {e}")
             print(f"\n❌ Error in IP monitor: {e}")
 
-def run_monitors(github_client, pr_reviewer, monitor_interval, monitor_prs=True, monitor_branches=True):
+def run_monitors(github_client, pr_reviewer, monitor_interval, threads=10, monitor_prs=True, monitor_branches=True, show_merges=False, show_projects=False):
     """
     Run PR and branch monitors.
     
@@ -103,14 +106,50 @@ def run_monitors(github_client, pr_reviewer, monitor_interval, monitor_prs=True,
         github_client: GitHub client
         pr_reviewer: PR reviewer
         monitor_interval: Interval in seconds between checks
+        threads: Number of threads to use for parallel processing
         monitor_prs: Whether to monitor PRs
         monitor_branches: Whether to monitor branches
+        show_merges: Whether to show recent merges on startup
+        show_projects: Whether to show project implementation stats on startup
     """
+    pr_monitor = None
+    branch_monitor = None
+    
+    if monitor_branches:
+        logger.info("Starting branch monitor")
+        print("\n🔄 Starting branch monitor...")
+        
+        branch_monitor = BranchMonitor(github_client, pr_reviewer)
+        branch_monitor.max_workers = threads
+        branch_monitor_thread = threading.Thread(
+            target=branch_monitor.run_monitor,
+            args=(monitor_interval,),
+            daemon=True
+        )
+        branch_monitor_thread.start()
+        
+        # Show recent merges if requested
+        if show_merges:
+            print("\n📊 Getting recent merges...")
+            merges = branch_monitor.get_recent_merges()
+            print(f"\nFound {len(merges)} recent merges")
+            for i, merge in enumerate(merges[:10], 1):
+                print(f"{i}. {merge['pr_title']} - {merge['repo_name']} - {merge['merged_at'].strftime('%Y-%m-%d')}")
+        
+        # Show project implementation stats if requested
+        if show_projects:
+            print("\n📊 Getting project implementation stats...")
+            stats = branch_monitor.get_project_implementation_stats()
+            print("\nProject implementation counts:")
+            for project, count in list(stats.items())[:10]:
+                print(f"- {project}: {count} implementations")
+    
     if monitor_prs:
         logger.info("Starting PR monitor")
         print("\n🔄 Starting PR monitor...")
         
         pr_monitor = PRMonitor(github_client, pr_reviewer)
+        pr_monitor.max_workers = threads
         pr_monitor_thread = threading.Thread(
             target=pr_monitor.run_monitor,
             args=(monitor_interval,),
@@ -118,17 +157,7 @@ def run_monitors(github_client, pr_reviewer, monitor_interval, monitor_prs=True,
         )
         pr_monitor_thread.start()
     
-    if monitor_branches:
-        logger.info("Starting branch monitor")
-        print("\n🔄 Starting branch monitor...")
-        
-        branch_monitor = BranchMonitor(github_client, pr_reviewer)
-        branch_monitor_thread = threading.Thread(
-            target=branch_monitor.run_monitor,
-            args=(monitor_interval,),
-            daemon=True
-        )
-        branch_monitor_thread.start()
+    return pr_monitor, branch_monitor
 
 def main():
     """
@@ -194,17 +223,42 @@ def main():
         monitor_thread.start()
     
     # Start PR and branch monitors
-    run_monitors(
+    pr_monitor, branch_monitor = run_monitors(
         github_client=github_client,
         pr_reviewer=pr_reviewer,
         monitor_interval=args.monitor_interval,
+        threads=args.threads,
         monitor_prs=args.monitor_prs,
-        monitor_branches=args.monitor_branches
+        monitor_branches=args.monitor_branches,
+        show_merges=args.show_merges,
+        show_projects=args.show_projects
     )
     
     # Start the server
     print(f"\n🚀 Starting server on port {args.port}...")
     try:
+        # Add routes for the new functionality
+        @app.get("/api/merges")
+        async def get_recent_merges():
+            if branch_monitor:
+                merges = branch_monitor.get_recent_merges()
+                return {"merges": merges}
+            return {"error": "Branch monitor not enabled"}
+        
+        @app.get("/api/projects")
+        async def get_project_stats():
+            if branch_monitor:
+                stats = branch_monitor.get_project_implementation_stats()
+                return {"projects": stats}
+            return {"error": "Branch monitor not enabled"}
+        
+        @app.get("/api/status")
+        async def get_status_report():
+            if branch_monitor:
+                report = branch_monitor.generate_status_report()
+                return {"report": report}
+            return {"error": "Branch monitor not enabled"}
+        
         uvicorn.run(app, host="0.0.0.0", port=args.port)
     except Exception as e:
         logger.error(f"Error starting server: {e}")
