@@ -1,99 +1,68 @@
 # Projector
 
-A tool for managing and automating software development projects using AI agents.
+A simple project management system with a focus on tracking implementation progress.
+
+## Overview
+
+Projector is a streamlined project management tool that helps teams track the implementation progress of their projects. It provides a visual representation of project tasks, their dependencies, and completion status.
 
 ## Features
 
-- Project management dashboard
-- GitHub integration
-- Slack integration
-- AI-powered code generation and review
-- Implementation planning and tracking
+- **Project Management**: Create and manage multiple projects
+- **Task Tracking**: Track tasks and subtasks with completion status
+- **Implementation Tree**: Visualize project structure and progress
+- **Chat Interface**: Communicate about project details
+- **GitHub Integration**: Link projects to GitHub repositories
+- **Slack Integration**: Connect projects to Slack channels
 
-## Installation
+## Simplified Implementation
+
+This is a simplified implementation of the Projector system, with all functionality contained in a single Streamlit application. The frontend/backend separation has been removed to make the codebase more maintainable and easier to understand.
+
+## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+ (Python 3.13 compatible)
-- Node.js 14+ and npm
-- Git
+- Python 3.8+
+- Streamlit
 
-### Setup
+### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/projector.git
-cd projector
-```
+1. Clone the repository
+2. Install the requirements:
+   ```
+   pip install -r requirements.txt
+   ```
 
-2. Update dependencies:
-```bash
-./scripts/update_dependencies.sh
-```
+### Running the Application
 
-3. Start the application:
-```bash
-# Start the backend
-./scripts/start_backend.sh
-
-# In a separate terminal, start the frontend
-./scripts/start_frontend.sh
-```
-
-4. Open your browser and navigate to http://localhost:3000
-
-## Python 3.13 Compatibility
-
-If you're using Python 3.13, the application has been updated to ensure compatibility. The key changes include:
-
-1. Updated Pydantic to version 2.4.0+ to fix ForwardRef._evaluate() errors
-2. Added explicit installation of langgraph and plotly packages
-3. Fixed PYTHONPATH settings to ensure proper module resolution
-
-If you encounter any issues with Python 3.13:
-
-```bash
-# Run the update dependencies script
-./scripts/update_dependencies.sh
-
-# Verify the installations
-pip show langgraph
-pip show plotly
-```
-
-## Troubleshooting
-
-### Connection Refused Errors
-
-If you see "Failed to proxy http://localhost:8000/api/projects" errors:
-
-1. Make sure the backend server is running on port 8000
-2. Check if there are any Python import errors in the backend logs
-3. Ensure PYTHONPATH is set correctly to include both the project root and the codegen src directory
-
-### Module Not Found Errors
-
-If you encounter "ModuleNotFoundError" for packages like langgraph or plotly:
-
-```bash
-# Activate your virtual environment
-source venv/bin/activate
-
-# Install the missing packages
-pip install langgraph>=0.3.20 plotly>=5.24.0
-```
-
-## Configuration
-
-Configuration is managed through environment variables. Create a `.env` file in the project root with the following variables:
+Run the application using the CLI:
 
 ```
-GITHUB_TOKEN=your_github_token
-GITHUB_USERNAME=your_github_username
-SLACK_USER_TOKEN=your_slack_token
-OPENAI_API_KEY=your_openai_api_key
+python -m projector.cli
 ```
+
+Or directly with Streamlit:
+
+```
+streamlit run projector/frontend/streamlit_app.py
+```
+
+## Usage
+
+1. Create a new project by clicking the "Add Project" button
+2. Fill in the project details (name, GitHub URL, Slack channel)
+3. Initialize the project to generate a sample implementation plan
+4. View the step-by-step structure and implementation tree
+5. Use the chat interface to discuss project details
+
+## Project Structure
+
+- `frontend/streamlit_app.py`: Main Streamlit application
+- `cli.py`: Command-line interface
+- `main.py`: Main entry point
+- `projects_db.json`: Project database file
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
