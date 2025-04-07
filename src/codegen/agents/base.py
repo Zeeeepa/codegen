@@ -1,5 +1,5 @@
 """
-Base agent implementation for agentgen.
+Base agent implementation for codegen.
 
 This module provides the base agent class that all other agents inherit from.
 """
@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
 class BaseAgent(ABC):
-    """Base class for all agents in agentgen."""
+    """Base class for all agents in codegen."""
 
     def __init__(
         self,

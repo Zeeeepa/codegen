@@ -17,10 +17,10 @@ from langchain.tools import BaseTool
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables.config import RunnableConfig
 
-from agentgen.agents.code_agent import CodeAgent
-from agentgen.agents.utils import AgentConfig
-from agentgen.extensions.planning.manager import PlanManager, ProjectPlan, Step, Requirement
-from agentgen.shared.logging.get_logger import get_logger
+from codegen.agents.code_agent import CodeAgent
+from codegen.agents.utils import AgentConfig
+from codegen.extensions.planning.manager import PlanManager, ProjectPlan, Step, Requirement
+from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 

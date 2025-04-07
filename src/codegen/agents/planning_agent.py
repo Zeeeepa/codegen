@@ -1,5 +1,5 @@
 """
-Planning agent implementation for agentgen.
+Planning agent implementation for codegen.
 
 This module provides an agent that can create and execute plans.
 """
@@ -7,10 +7,10 @@ This module provides an agent that can create and execute plans.
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from agentgen.agents.base import BaseAgent
-from agentgen.agents.planning.planning import PlanManager, PlanStepStatus
-from agentgen.agents.planning.tools import PlanningTool
-from agentgen.agents.planning.flow import PlanningFlow
+from codegen.agents.base import BaseAgent
+from codegen.agents.planning.planning import PlanManager, PlanStepStatus
+from codegen.agents.planning.tools import PlanningTool
+from codegen.agents.planning.flow import PlanningFlow
 
 class PlanningAgent(BaseAgent):
     """Agent for creating and executing plans."""
