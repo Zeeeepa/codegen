@@ -9,7 +9,7 @@ from codegen.extensions.tools.websearch.base import SearchItem, WebSearchEngine
 class DuckDuckGoSearchEngine(WebSearchEngine):
     """DuckDuckGo search engine implementation."""
 
-    name = "duckduckgo"
+    name: str = "duckduckgo"
 
     def search(self, query: str, num_results: int = 10) -> List[SearchItem]:
         """Search DuckDuckGo for the given query.
