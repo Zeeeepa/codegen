@@ -7,6 +7,7 @@ import os
 import logging
 import time
 import traceback
+import concurrent.futures
 from typing import Dict, List, Any, Optional, Set
 from github.Repository import Repository
 from github.PullRequest import PullRequest
@@ -34,6 +35,7 @@ class PRMonitor:
         self.github_client = github_client
         self.pr_reviewer = pr_reviewer
         self.known_prs: Dict[str, Set[int]] = {}  # Map of repo name to set of PR numbers
+        self.max_workers = 10  # Number of threads to use for parallel processing
     
     def initialize_known_prs(self):
         """
@@ -45,20 +47,37 @@ class PRMonitor:
         try:
             repos = self.github_client.get_all_repositories()
             
-            for repo in repos:
-                try:
-                    # Get open PRs
-                    prs = list(repo.get_pulls(state="open"))
-                    pr_numbers = {pr.number for pr in prs}
-                    self.known_prs[repo.full_name] = pr_numbers
-                    logger.info(f"Initialized {len(pr_numbers)} PRs for {repo.full_name}")
-                except Exception as e:
-                    logger.error(f"Error initializing PRs for {repo.full_name}: {e}")
-                    logger.error(traceback.format_exc())
-                    self.known_prs[repo.full_name] = set()
+            # Use ThreadPoolExecutor to parallelize initialization
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = {executor.submit(self._initialize_repo_prs, repo): repo.full_name for repo in repos}
+                
+                for future in concurrent.futures.as_completed(futures):
+                    repo_name = futures[future]
+                    try:
+                        pr_numbers = future.result()
+                        self.known_prs[repo_name] = pr_numbers
+                        logger.info(f"Initialized {len(pr_numbers)} PRs for {repo_name}")
+                    except Exception as e:
+                        logger.error(f"Error initializing PRs for {repo_name}: {e}")
+                        logger.error(traceback.format_exc())
+                        self.known_prs[repo_name] = set()
         except Exception as e:
             logger.error(f"Error initializing known PRs: {e}")
             logger.error(traceback.format_exc())
+    
+    def _initialize_repo_prs(self, repo: Repository) -> Set[int]:
+        """
+        Initialize PRs for a single repository.
+        
+        Args:
+            repo: Repository object
+            
+        Returns:
+            Set of PR numbers
+        """
+        # Get open PRs
+        prs = list(repo.get_pulls(state="open"))
+        return {pr.number for pr in prs}
     
     def check_for_new_prs(self) -> List[Dict[str, Any]]:
         """
@@ -73,47 +92,73 @@ class PRMonitor:
         try:
             repos = self.github_client.get_all_repositories()
             
-            for repo in repos:
-                try:
-                    # Skip if we haven't initialized this repo yet
-                    if repo.full_name not in self.known_prs:
-                        self.known_prs[repo.full_name] = set()
-                        prs = list(repo.get_pulls(state="open"))
-                        self.known_prs[repo.full_name] = {pr.number for pr in prs}
-                        logger.info(f"Initialized {len(self.known_prs[repo.full_name])} PRs for {repo.full_name}")
-                        continue
-                    
-                    # Get current PRs
-                    prs = list(repo.get_pulls(state="open"))
-                    current_pr_numbers = {pr.number for pr in prs}
-                    
-                    # Find new PRs
-                    known_pr_numbers = self.known_prs[repo.full_name]
-                    new_pr_numbers = current_pr_numbers - known_pr_numbers
-                    
-                    # Process new PRs
-                    for pr_number in new_pr_numbers:
-                        logger.info(f"Found new PR #{pr_number} in {repo.full_name}")
-                        pr = self.github_client.get_pull_request(repo, pr_number)
-                        
-                        # Add to new PRs list
-                        new_prs.append({
-                            "repo_name": repo.full_name,
-                            "pr_number": pr_number,
-                            "pr": pr
-                        })
-                        
-                    # Update known PRs
-                    self.known_prs[repo.full_name] = current_pr_numbers
-                    
-                except Exception as e:
-                    logger.error(f"Error checking PRs for {repo.full_name}: {e}")
-                    logger.error(traceback.format_exc())
+            # Use ThreadPoolExecutor to parallelize PR checking
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = {executor.submit(self._check_repo_prs, repo): repo for repo in repos}
+                
+                for future in concurrent.futures.as_completed(futures):
+                    repo = futures[future]
+                    try:
+                        repo_new_prs = future.result()
+                        new_prs.extend(repo_new_prs)
+                    except Exception as e:
+                        logger.error(f"Error checking PRs for {repo.full_name}: {e}")
+                        logger.error(traceback.format_exc())
         except Exception as e:
             logger.error(f"Error checking for new PRs: {e}")
             logger.error(traceback.format_exc())
         
         return new_prs
+    
+    def _check_repo_prs(self, repo: Repository) -> List[Dict[str, Any]]:
+        """
+        Check a single repository for new PRs.
+        
+        Args:
+            repo: Repository object
+            
+        Returns:
+            List of dictionaries with information about new PRs
+        """
+        repo_new_prs = []
+        
+        try:
+            # Skip if we haven't initialized this repo yet
+            if repo.full_name not in self.known_prs:
+                self.known_prs[repo.full_name] = set()
+                prs = list(repo.get_pulls(state="open"))
+                self.known_prs[repo.full_name] = {pr.number for pr in prs}
+                logger.info(f"Initialized {len(self.known_prs[repo.full_name])} PRs for {repo.full_name}")
+                return []
+            
+            # Get current PRs
+            prs = list(repo.get_pulls(state="open"))
+            current_pr_numbers = {pr.number for pr in prs}
+            
+            # Find new PRs
+            known_pr_numbers = self.known_prs[repo.full_name]
+            new_pr_numbers = current_pr_numbers - known_pr_numbers
+            
+            # Process new PRs
+            for pr_number in new_pr_numbers:
+                logger.info(f"Found new PR #{pr_number} in {repo.full_name}")
+                pr = self.github_client.get_pull_request(repo, pr_number)
+                
+                # Add to new PRs list
+                repo_new_prs.append({
+                    "repo_name": repo.full_name,
+                    "pr_number": pr_number,
+                    "pr": pr
+                })
+                
+            # Update known PRs
+            self.known_prs[repo.full_name] = current_pr_numbers
+            
+        except Exception as e:
+            logger.error(f"Error checking PRs for {repo.full_name}: {e}")
+            logger.error(traceback.format_exc())
+        
+        return repo_new_prs
     
     def process_new_pr(self, repo_name: str, pr_number: int) -> Dict[str, Any]:
         """
@@ -163,9 +208,22 @@ class PRMonitor:
                 # Check for new PRs
                 new_prs = self.check_for_new_prs()
                 
-                # Process new PRs
-                for pr_info in new_prs:
-                    self.process_new_pr(pr_info["repo_name"], pr_info["pr_number"])
+                # Process new PRs in parallel
+                if new_prs:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                        futures = {
+                            executor.submit(self.process_new_pr, pr_info["repo_name"], pr_info["pr_number"]): 
+                            pr_info for pr_info in new_prs
+                        }
+                        
+                        for future in concurrent.futures.as_completed(futures):
+                            pr_info = futures[future]
+                            try:
+                                result = future.result()
+                                logger.info(f"Processed PR #{pr_info['pr_number']} in {pr_info['repo_name']}: {result['status']}")
+                            except Exception as e:
+                                logger.error(f"Error processing PR #{pr_info['pr_number']} in {pr_info['repo_name']}: {e}")
+                                logger.error(traceback.format_exc())
                 
                 # Sleep for the specified interval
                 time.sleep(interval)
