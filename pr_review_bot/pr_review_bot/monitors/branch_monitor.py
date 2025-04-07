@@ -201,6 +201,22 @@ class BranchMonitor:
                     "pr_url": existing_prs[0].html_url
                 }
             
+            # Check if there are any commits between the default branch and this branch
+            try:
+                comparison = repo.compare(repo.default_branch, branch_name)
+                if not comparison.commits:
+                    logger.warning(f"No commits between {repo.default_branch} and {branch_name} in {repo_name}")
+                    return {
+                        "status": "skipped",
+                        "message": f"No commits between {repo.default_branch} and {branch_name}"
+                    }
+            except Exception as e:
+                logger.error(f"Error comparing branches: {e}")
+                return {
+                    "status": "error",
+                    "message": f"Error comparing branches: {str(e)}"
+                }
+            
             # Create a PR for the branch
             pr_title = f"Auto PR: {branch_name}"
             pr_body = f"Automatically created PR for branch {branch_name}"
@@ -307,7 +323,15 @@ class BranchMonitor:
                     merged_at = merged_at.replace(tzinfo=timezone.utc)
                 
                 # Skip if merged before since_date
-                if not merged_at or merged_at < since_date:
+                if not merged_at:
+                    continue
+                    
+                # Ensure both dates are timezone-aware for comparison
+                if since_date.tzinfo is None:
+                    since_date = since_date.replace(tzinfo=timezone.utc)
+                
+                # Now compare the dates safely
+                if merged_at < since_date:
                     continue
                 
                 # Extract project name from branch or PR title
