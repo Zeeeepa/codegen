@@ -23,9 +23,9 @@ pip install --upgrade pip
 echo "Installing updated dependencies..."
 pip install -r requirements.txt
 
-# Install langgraph explicitly to ensure it's available
-echo "Ensuring langgraph is installed..."
-pip install langgraph>=0.3.20
+# Install langgraph and plotly explicitly to ensure they're available
+echo "Ensuring langgraph and plotly are installed..."
+pip install langgraph>=0.3.20 plotly>=5.24.0
 
 # Add the codegen src directory to PYTHONPATH
 CODEGEN_SRC=$(realpath "$ROOT_DIR/../src")
@@ -48,14 +48,17 @@ else
 fi
 
 # Set PYTHONPATH for the current session
-export PYTHONPATH="$CODEGEN_SRC:$PYTHONPATH"
+export PYTHONPATH="$CODEGEN_SRC:$ROOT_DIR:$PYTHONPATH"
 
-# Check if langgraph is installed in the virtual environment
-if pip show langgraph > /dev/null; then
-    echo "langgraph is installed successfully."
-else
-    echo "Warning: langgraph installation may have failed. Please check your Python environment."
-fi
+# Check if required packages are installed in the virtual environment
+echo "Verifying installations..."
+for package in langgraph plotly; do
+    if pip show $package > /dev/null; then
+        echo "✅ $package is installed successfully."
+    else
+        echo "⚠️ Warning: $package installation may have failed. Please check your Python environment."
+    fi
+done
 
 echo "Dependencies updated successfully!"
 echo "You can now run the application using the start_frontend.sh and start_backend.sh scripts."
