@@ -33,8 +33,10 @@ import {
   Send as SendIcon,
   AttachFile as AttachFileIcon,
   Code as CodeIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
+import { useRouter } from 'next/router';
 
 interface Project {
   id: string;
@@ -74,6 +76,7 @@ interface HomeProps {
 }
 
 export default function Home({ toggleTheme, theme }: HomeProps) {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectIndex, setSelectedProjectIndex] = useState<number>(0);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -255,6 +258,14 @@ export default function Home({ toggleTheme, theme }: HomeProps) {
     );
   };
 
+  const navigateToCodeImprovement = () => {
+    const projectId = selectedProject?.id;
+    router.push({
+      pathname: '/code-improvement',
+      query: projectId ? { projectId } : {},
+    });
+  };
+
   return (
     <>
       <Head>
@@ -269,6 +280,14 @@ export default function Home({ toggleTheme, theme }: HomeProps) {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             MultiThread Slack GitHub
           </Typography>
+          <Button
+            color="inherit"
+            startIcon={<BuildIcon />}
+            onClick={navigateToCodeImprovement}
+            sx={{ mr: 2 }}
+          >
+            Code Improvement
+          </Button>
           <IconButton color="inherit" onClick={toggleTheme}>
             {theme.palette.mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
@@ -335,7 +354,7 @@ export default function Home({ toggleTheme, theme }: HomeProps) {
                         {selectedProject.implementation_plan.tasks.map((task, index) => (
                           <ListItem key={task.id}>
                             <ListItemText
-                              primary={`${index + 1}. ${task.status === 'completed' ? '✓' : ' '} ${task.title}`}
+                              primary={`${index + 1}. ${task.status === 'completed' ? '\u2713' : ' '} ${task.title}`}
                             />
                           </ListItem>
                         ))}

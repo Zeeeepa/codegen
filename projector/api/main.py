@@ -32,7 +32,7 @@ from projector.backend.thread_pool import ThreadPool
 from projector.backend.ai_user_agent import AIUserAgent
 
 # Import API routes
-from projector.api.routes import projects, github, slack, chat
+from projector.api.routes import projects, github, slack, chat, code_improvement
 
 # Configure logging
 logging.basicConfig(
@@ -117,6 +117,7 @@ app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
 app.include_router(github.router, prefix="/api/github", tags=["github"])
 app.include_router(slack.router, prefix="/api/slack", tags=["slack"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(code_improvement.router, prefix="/api/code-improvement", tags=["code-improvement"])
 
 @app.get("/api/health")
 async def health_check():
