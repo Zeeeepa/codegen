@@ -6,7 +6,6 @@ This script adds the current directory to the Python path and runs the bot.
 
 import os
 import sys
-import argparse
 
 # Add the current directory to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,8 +17,8 @@ def main():
     from pr_review_bot.main import main as bot_main
     
     # Run the bot with the command line arguments
-    # This will let main.py handle the argument parsing
-    sys.exit(bot_main())
+    # Pass all command-line arguments directly to main.py
+    bot_main()
 
 if __name__ == "__main__":
     main()
