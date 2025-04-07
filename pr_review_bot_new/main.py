@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 import uvicorn
 
-# Change relative imports to absolute imports
+# Use absolute imports
 from pr_review_bot_new.core.github_client import GitHubClient
 from pr_review_bot_new.core.pr_reviewer import PRReviewer
 from pr_review_bot_new.utils.webhook_manager import WebhookManager
