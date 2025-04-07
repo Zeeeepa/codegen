@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from github import Github
 from github.Repository import Repository
 from github.PullRequest import PullRequest
+from slack_sdk.web.client import WebClient
 
 from codegen.extensions.github.types.events import PullRequestEvent
 from codegen.agents.pr_review.agent import PRReviewAgent
