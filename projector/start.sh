@@ -1,15 +1,8 @@
 #!/bin/bash
-# Simple script to start the Projector application
 
-# Activate virtual environment if it exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
-fi
+# Start the Projector application
+echo "Starting Projector..."
+python projector/main.py
 
-# Run the application
-python main.py
-
-# Deactivate virtual environment if it was activated
-if [ -n "$VIRTUAL_ENV" ]; then
-    deactivate
-fi
+# Exit with the same status code as the Python script
+exit $?
