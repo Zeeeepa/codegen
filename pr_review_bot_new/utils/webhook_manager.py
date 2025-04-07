@@ -1,14 +1,18 @@
+"""
+Webhook manager module for the PR Review Bot.
+Manages GitHub webhooks for repositories.
+"""
+
 import logging
-import requests
 from typing import List, Dict, Optional, Tuple
-from logging import getLogger
 from github import Github
 from github.Repository import Repository
 from github.GithubException import GithubException
 
+from ..core.github_client import GitHubClient
+
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class WebhookManager:
     """
@@ -16,26 +20,16 @@ class WebhookManager:
     Ensures all repositories have webhooks configured and keeps them updated.
     """
     
-    def __init__(self, github_client: Github, webhook_url: str):
+    def __init__(self, github_client: GitHubClient, webhook_url: str):
         """
         Initialize the webhook manager.
         
         Args:
-            github_client: GitHub client instance
+            github_client: GitHub client
             webhook_url: URL for the webhook (e.g., https://example.com/webhook)
         """
         self.github_client = github_client
         self.webhook_url = webhook_url
-    
-    def get_all_repositories(self) -> List[Repository]:
-        """
-        Get all repositories accessible by the GitHub token.
-        
-        Returns:
-            List of Repository objects
-        """
-        logger.info("Fetching all accessible repositories")
-        return list(self.github_client.get_user().get_repos())
     
     def list_webhooks(self, repo: Repository) -> List[Dict]:
         """
@@ -94,7 +88,7 @@ class WebhookManager:
             hook = repo.create_hook(
                 name="web",
                 config=config,
-                events=["pull_request", "repository"],
+                events=["pull_request", "push", "repository"],
                 active=True
             )
             logger.info(f"Webhook created successfully for {repo.full_name}")
@@ -200,7 +194,7 @@ class WebhookManager:
         logger.info("Setting up webhooks for all repositories")
         results = {}
         
-        repos = self.get_all_repositories()
+        repos = self.github_client.get_all_repositories()
         logger.info(f"Found {len(repos)} repositories")
         
         for repo in repos:
@@ -209,24 +203,3 @@ class WebhookManager:
             print(f"Repository {repo.full_name}: {message}")
             
         return results
-    
-    def handle_repository_created(self, repo_name: str) -> Tuple[bool, str]:
-        """
-        Handle repository creation event.
-        Sets up webhook for the newly created repository.
-        
-        Args:
-            repo_name: Repository name in format "owner/repo"
-            
-        Returns:
-            Tuple of (success, message)
-        """
-        logger.info(f"Handling repository creation for {repo_name}")
-        try:
-            repo = self.github_client.get_repo(repo_name)
-            success, message = self.ensure_webhook_exists(repo)
-            print(f"New repository {repo_name}: {message}")
-            return success, message
-        except Exception as e:
-            logger.error(f"Error handling repository creation for {repo_name}: {e}")
-            return False, f"Error: {str(e)}"

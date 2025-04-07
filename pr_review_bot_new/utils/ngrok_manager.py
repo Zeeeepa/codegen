@@ -1,15 +1,18 @@
+"""
+Ngrok manager module for the PR Review Bot.
+Manages ngrok tunnels for exposing local services to the internet.
+"""
+
 import logging
 import os
 import subprocess
 import time
 import json
 import requests
-from logging import getLogger
 from typing import Optional, Dict, Any
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class NgrokManager:
     """
