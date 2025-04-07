@@ -10,8 +10,7 @@ langchain==0.0.267
 langchain-core==0.1.0
 unidiff==0.7.4
 
-# Agentgen and Codegen dependencies
-agentgen>=0.1.0
+# Codegen dependencies
 git+https://github.com/Zeeeepa/codegen.git
 codeowners==0.6.0
 gitpython==3.1.30
@@ -42,5 +41,4 @@ colorama>=0.4.6
 markdown>=3.4.3
 beautifulsoup4>=4.12.2
 lxml>=4.9.2
-agentgen>=0.1.0
 git+https://github.com/Zeeeepa/codegen.git
