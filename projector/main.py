@@ -52,6 +52,13 @@ def parse_arguments():
         help="Enable automatic Slack thread monitoring"
     )
     
+    parser.add_argument(
+        "--max_concurrent_projects",
+        type=int,
+        default=3,
+        help="Maximum number of concurrent projects to implement (1-5)"
+    )
+    
     return parser.parse_args()
 
 def setup_logging(debug=False):
@@ -83,17 +90,17 @@ def run_backend(args):
     load_dotenv()
     
     # Import backend components
-    from agentgen.application.projector.backend.config import (
+    from projector.backend.config import (
         SLACK_USER_TOKEN, GITHUB_TOKEN, GITHUB_USERNAME,
         SLACK_DEFAULT_CHANNEL, GITHUB_DEFAULT_REPO
     )
-    from agentgen.application.projector.backend.slack_manager import SlackManager
-    from agentgen.application.projector.backend.github_manager import GitHubManager
-    from agentgen.application.projector.backend.assistant_agent import AssistantAgent
-    from agentgen.application.projector.backend.project_database import ProjectDatabase
-    from agentgen.application.projector.backend.project_manager import ProjectManager
-    from agentgen.application.projector.backend.thread_pool import ThreadPool
-    from agentgen.application.projector.backend.utils import validate_config
+    from projector.backend.slack_manager import SlackManager
+    from projector.backend.github_manager import GitHubManager
+    from projector.backend.assistant_agent import AssistantAgent
+    from projector.backend.project_database import ProjectDatabase
+    from projector.backend.project_manager import ProjectManager
+    from projector.backend.thread_pool import ThreadPool
+    from projector.backend.utils import validate_config
     
     logger = setup_logging(debug=args.debug)
     
@@ -195,6 +202,9 @@ def main():
     
     # Ensure args.threads is within valid range
     args.threads = max(1, min(10, args.threads))
+    
+    # Ensure max_concurrent_projects is within valid range
+    args.max_concurrent_projects = max(1, min(5, args.max_concurrent_projects))
     
     # Create necessary directories
     os.makedirs(args.docs, exist_ok=True)
