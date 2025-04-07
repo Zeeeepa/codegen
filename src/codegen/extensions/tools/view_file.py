@@ -8,7 +8,7 @@ from pydantic import Field
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.file import File
 
-from agentgen.extensions.utils import get_file_metadata
+from codegen.extensions.utils import get_file_metadata
 
 from .observation import Observation
 
