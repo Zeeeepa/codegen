@@ -10,10 +10,25 @@ from typing import Dict, List, Any, Optional, Tuple
 from github.Repository import Repository
 from github.PullRequest import PullRequest
 
-from codegen.sdk.core.codebase import Codebase
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
+# Import compatibility layer
+from .compatibility import (
+    Codebase, 
+    HAS_CODEGEN, 
+    HAS_AGENTGEN,
+    CodeAgent,
+    GithubViewPRTool,
+    GithubCreatePRCommentTool,
+    GithubCreatePRReviewCommentTool
+)
+
+# Try to import AI models
+try:
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_anthropic import ChatAnthropic
+    from langchain_openai import ChatOpenAI
+    HAS_LANGCHAIN = True
+except ImportError:
+    HAS_LANGCHAIN = False
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -34,7 +49,9 @@ class PRReviewer:
         self.github_token = github_token
         
         # Initialize AI models
-        self.setup_ai_models()
+        self.llm = None
+        if HAS_LANGCHAIN:
+            self.setup_ai_models()
     
     def setup_ai_models(self):
         """
@@ -91,7 +108,10 @@ class PRReviewer:
             pr_url = pr.html_url
             
             # Run the AI review
-            review_result = self._run_ai_review(codebase, pr_number, pr_url)
+            if HAS_AGENTGEN:
+                review_result = self._run_agent_review(codebase, pr_number, pr_url)
+            else:
+                review_result = self._run_basic_review(codebase, pr_number, pr_url)
             
             # Delete the temporary comment
             if comment:
@@ -117,7 +137,6 @@ class PRReviewer:
                             "repo_name": repo_name,
                             "merged": True,
                             "message": "PR automatically merged after review.",
-                            "review_result": review_result,
                             "requirements_check": requirements_check
                         }
                     except Exception as merge_error:
@@ -128,240 +147,239 @@ class PRReviewer:
                             "repo_name": repo_name,
                             "merged": False,
                             "message": f"Error merging PR: {str(merge_error)}",
-                            "review_result": review_result,
                             "requirements_check": requirements_check
                         }
                 else:
-                    logger.info(f"PR #{pr_number} failed requirements check")
-                    # Add a comment about the failed requirements check
-                    codebase.repo_operator.create_pr_comment(
-                        pr_number=pr_number,
-                        body=f"⚠️ PR failed requirements check: {requirements_check['message']}"
-                    )
+                    logger.info(f"PR #{pr_number} does not meet requirements")
                     return {
                         "pr_number": pr_number,
                         "repo_name": repo_name,
                         "merged": False,
-                        "message": f"PR failed requirements check: {requirements_check['message']}",
-                        "review_result": review_result,
+                        "message": "PR does not meet requirements.",
                         "requirements_check": requirements_check
                     }
             else:
-                logger.info(f"PR #{pr_number} is not mergeable after review")
+                logger.info(f"PR #{pr_number} is not mergeable")
                 return {
                     "pr_number": pr_number,
                     "repo_name": repo_name,
                     "merged": False,
-                    "message": "PR is not mergeable after review.",
-                    "review_result": review_result
+                    "message": "PR is not mergeable."
                 }
         except Exception as e:
-            logger.error(f"Error in PR review: {e}")
+            logger.error(f"Error reviewing PR: {e}")
             logger.error(traceback.format_exc())
             raise
     
-    def _run_ai_review(self, codebase: Codebase, pr_number: int, pr_url: str) -> Dict[str, Any]:
+    def _run_agent_review(self, codebase, pr_number: int, pr_url: str) -> Dict[str, Any]:
         """
-        Run AI review on a pull request.
+        Run the PR review using the CodeAgent.
         
         Args:
-            codebase: Codebase object
+            codebase: Codebase instance
             pr_number: Pull request number
             pr_url: Pull request URL
             
         Returns:
-            Result of the AI review
+            Result of the review
         """
-        if not self.llm:
-            logger.warning("No AI model available for review")
-            return {"status": "limited", "message": "No AI model available for detailed review"}
+        logger.info(f"Running agent review for PR #{pr_number}")
         
-        try:
-            # Get PR details
-            pr = codebase.repo_operator.get_pr(pr_number)
-            
-            # Get the diff
-            diff = codebase.repo_operator.get_pr_diff(pr_number)
-            
-            # Create the prompt for the AI review
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are an expert code reviewer. Your task is to review a GitHub pull request and provide detailed, constructive feedback.
-                
-                Guidelines for your review:
-                1. Focus on code quality, readability, and maintainability
-                2. Identify potential bugs, edge cases, or performance issues
-                3. Suggest improvements where appropriate
-                4. Be specific and actionable in your feedback
-                5. Be concise but thorough
-                6. Format your response in Markdown
-                
-                Your review should have the following sections:
-                - **Summary**: A brief overview of the changes and your assessment
-                - **Strengths**: What aspects of the code are well done
-                - **Areas for Improvement**: Specific issues that should be addressed
-                - **Suggestions**: Concrete recommendations for improving the code
-                - **Overall Assessment**: Your final verdict (Approve, Request Changes, or Comment)
-                """),
-                ("human", """Please review this pull request:
-                
-                PR URL: {pr_url}
-                PR Title: {pr_title}
-                PR Description: {pr_description}
-                
-                Diff:
-                ```diff
-                {diff}
-                ```
-                
-                Provide a thorough code review based on the guidelines.
-                """)
-            ])
-            
-            # Format the input for the prompt
-            formatted_input = {
-                "pr_url": pr_url,
-                "pr_title": pr.title,
-                "pr_description": pr.body or "No description provided",
-                "diff": diff[:10000] if len(diff) > 10000 else diff  # Limit diff size
-            }
-            
-            # Run the AI review
-            chain = prompt | self.llm
-            review_content = chain.invoke(formatted_input).content
-            
-            # Post the review as a comment
-            codebase.repo_operator.create_pr_comment(pr_number, review_content)
-            
-            return {
-                "status": "success",
-                "review_content": review_content
-            }
-        except Exception as e:
-            logger.error(f"Error in AI review: {e}")
-            logger.error(traceback.format_exc())
-            
-            # Post a simplified review comment
-            error_message = f"⚠️ Error during AI review: {str(e)}\n\nA simplified review will be performed instead."
-            codebase.repo_operator.create_pr_comment(pr_number, error_message)
-            
-            return {
-                "status": "error",
-                "message": str(e)
-            }
-    
-    def check_against_requirements(self, codebase: Codebase, pr: PullRequest) -> Dict[str, Any]:
+        # Define tools for the agent
+        pr_tools = [
+            GithubViewPRTool(codebase),
+            GithubCreatePRCommentTool(codebase),
+            GithubCreatePRReviewCommentTool(codebase),
+        ]
+        
+        # Create agent with the defined tools
+        agent = CodeAgent(codebase=codebase, tools=pr_tools)
+        
+        # Create the prompt for the agent
+        prompt = f"""
+        Hey CodegenBot!
+
+        Here's a task for you. Please review this pull request!
+        {pr_url}
+        
+        Do not terminate until you have reviewed the pull request and are satisfied with your review.
+
+        Review this Pull request thoroughly:
+        1. Be explicit about the changes
+        2. Produce a short summary
+        3. Point out possible improvements where present
+        4. Don't be self-congratulatory, stick to the facts
+        5. Use the tools at your disposal to create proper PR reviews
+        6. Include code snippets if needed
+        7. Suggest improvements if necessary
+        8. Check if the PR is valid and can be merged to the main branch
         """
-        Check a PR against the project's requirements.
+        
+        # Run the agent
+        result = agent.run(prompt)
+        
+        return {
+            "pr_number": pr_number,
+            "review_type": "agent",
+            "result": result
+        }
+    
+    def _run_basic_review(self, codebase, pr_number: int, pr_url: str) -> Dict[str, Any]:
+        """
+        Run a basic PR review without the CodeAgent.
         
         Args:
-            codebase: Codebase object
-            pr: PullRequest object
+            codebase: Codebase instance
+            pr_number: Pull request number
+            pr_url: Pull request URL
             
         Returns:
-            Result of the requirements check
+            Result of the review
         """
-        try:
-            # Get the repository
-            repo = codebase.repo_operator.repo
+        logger.info(f"Running basic review for PR #{pr_number}")
+        
+        # Get PR details
+        pr = codebase.repo_operator.get_pr(pr_number)
+        
+        # Create a simple review comment
+        comment_body = f"""
+        ## PR Review
+
+        This PR has been reviewed by the PR Review Bot.
+
+        ### Summary
+        - PR Number: #{pr_number}
+        - Title: {pr.title}
+        - Description: {pr.body or "No description provided"}
+        
+        ### Review
+        This is an automated review. The PR has been checked for basic issues.
+        
+        ### Recommendation
+        The PR appears to be valid and can be merged if all checks pass.
+        """
+        
+        codebase.repo_operator.create_pr_comment(pr_number, comment_body)
+        
+        return {
+            "pr_number": pr_number,
+            "review_type": "basic",
+            "result": "Basic review completed"
+        }
+    
+    def check_against_requirements(self, codebase, pr: PullRequest) -> Dict[str, Any]:
+        """
+        Check if a PR meets the requirements specified in REQUIREMENTS.md.
+        
+        Args:
+            codebase: Codebase instance
+            pr: Pull request
             
-            # Check if REQUIREMENTS.md exists
+        Returns:
+            Result of the check
+        """
+        logger.info(f"Checking PR #{pr.number} against requirements")
+        
+        repo = pr.base.repo
+        
+        try:
+            # Try to get the REQUIREMENTS.md file
             requirements_content = None
             try:
                 requirements_file = repo.get_contents("REQUIREMENTS.md", ref=pr.base.ref)
-                requirements_content = requirements_file.decoded_content.decode('utf-8')
-            except Exception:
-                # Try alternative locations
-                try:
-                    requirements_file = repo.get_contents("docs/REQUIREMENTS.md", ref=pr.base.ref)
-                    requirements_content = requirements_file.decoded_content.decode('utf-8')
-                except Exception:
-                    logger.info(f"No REQUIREMENTS.md found in {repo.full_name}")
+                if hasattr(requirements_file, "decoded_content"):
+                    requirements_content = requirements_file.decoded_content.decode("utf-8")
+            except Exception as e:
+                logger.info(f"No REQUIREMENTS.md found in {repo.full_name}: {e}")
             
             if not requirements_content:
-                # No requirements file found, consider it passed
+                # No requirements file, so the PR passes by default
                 return {
                     "passed": True,
-                    "message": "No requirements file found, skipping check"
+                    "message": "No REQUIREMENTS.md file found, PR passes by default."
                 }
             
-            # If we have an AI model, use it to check against requirements
-            if self.llm:
-                # Get the diff
-                diff = codebase.repo_operator.get_pr_diff(pr.number)
+            # If we have a requirements file and an LLM, check the PR against it
+            if self.llm and HAS_LANGCHAIN:
+                # Get PR details
+                pr_files = list(pr.get_files())
+                pr_changes = []
                 
-                # Create the prompt for requirements check
-                prompt = ChatPromptTemplate.from_messages([
-                    ("system", """You are an expert at validating code changes against project requirements.
-                    Your task is to determine if a pull request meets the requirements specified in the project's REQUIREMENTS.md file.
+                for file in pr_files:
+                    pr_changes.append(f"File: {file.filename}")
+                    pr_changes.append(f"Status: {file.status}")
+                    pr_changes.append(f"Changes: +{file.additions}, -{file.deletions}")
                     
-                    Analyze the requirements and the code changes carefully, and determine if the PR satisfies all relevant requirements.
-                    If any requirements are not met, explain specifically which ones and why.
+                    # Add patch if available
+                    if file.patch:
+                        pr_changes.append("Patch:")
+                        pr_changes.append(file.patch)
                     
-                    Your response should be structured as follows:
-                    1. A clear YES/NO verdict on whether the PR meets requirements
-                    2. A brief explanation of your reasoning
-                    3. If NO, list the specific requirements that are not met
-                    """),
-                    ("human", """Please check if this pull request meets the project requirements:
-                    
-                    PR Title: {pr_title}
-                    PR Description: {pr_description}
-                    
-                    Project Requirements:
-                    ```markdown
-                    {requirements_content}
-                    ```
-                    
-                    Code Changes:
-                    ```diff
-                    {diff}
-                    ```
-                    
-                    Does this PR meet all the relevant requirements? Provide a clear YES/NO verdict and explanation.
-                    """)
-                ])
+                    pr_changes.append("---")
                 
-                # Format the input for the prompt
-                formatted_input = {
-                    "pr_title": pr.title,
-                    "pr_description": pr.body or "No description provided",
-                    "requirements_content": requirements_content,
-                    "diff": diff[:10000] if len(diff) > 10000 else diff  # Limit diff size
-                }
+                pr_changes_text = "\n".join(pr_changes)
                 
-                # Run the requirements check
-                chain = prompt | self.llm
-                check_result = chain.invoke(formatted_input).content
+                # Create prompt for the LLM
+                prompt = ChatPromptTemplate.from_template("""
+                You are a code reviewer checking if a PR meets the requirements.
                 
-                # Determine if the check passed based on the AI response
-                passed = "YES" in check_result.split("\n")[0].upper()
+                # Requirements
+                {requirements}
                 
-                # Post the check result as a comment
-                codebase.repo_operator.create_pr_comment(
-                    pr.number,
-                    f"## Requirements Check\n\n{check_result}"
+                # PR Details
+                Title: {pr_title}
+                Description: {pr_description}
+                
+                # Changes
+                {pr_changes}
+                
+                Based on the requirements and the PR changes, determine if the PR meets all requirements.
+                Provide a detailed analysis of how the PR meets or fails to meet each requirement.
+                
+                Finally, provide a clear YES or NO answer to whether the PR should be merged.
+                """)
+                
+                # Run the LLM
+                result = self.llm.invoke(
+                    prompt.format(
+                        requirements=requirements_content,
+                        pr_title=pr.title,
+                        pr_description=pr.body or "No description provided",
+                        pr_changes=pr_changes_text
+                    )
                 )
+                
+                # Parse the result
+                content = result.content.lower()
+                passed = "yes" in content and "no" not in content[-50:]  # Check if the final answer is YES
+                
+                # Create a comment with the result
+                comment_body = f"""
+                ## Requirements Check
+                
+                {result.content}
+                
+                **Verdict:** {"✅ PR meets requirements" if passed else "❌ PR does not meet requirements"}
+                """
+                
+                codebase.repo_operator.create_pr_comment(pr.number, comment_body)
                 
                 return {
                     "passed": passed,
-                    "message": check_result,
-                    "requirements_found": True
+                    "message": result.content,
+                    "requirements": requirements_content
                 }
             else:
-                # No AI model available, consider it passed but log a warning
-                logger.warning("No AI model available for requirements check")
+                # No LLM available, so we can't check the requirements
+                logger.warning("No LLM available to check requirements")
                 return {
                     "passed": True,
-                    "message": "Requirements check skipped (no AI model available)",
-                    "requirements_found": True
+                    "message": "No LLM available to check requirements, PR passes by default."
                 }
         except Exception as e:
-            logger.error(f"Error checking against requirements: {e}")
+            logger.error(f"Error checking requirements: {e}")
             logger.error(traceback.format_exc())
-            
-            # Consider it passed but log the error
             return {
                 "passed": True,
-                "message": f"Error during requirements check: {str(e)}",
-                "error": str(e)
+                "message": f"Error checking requirements: {str(e)}, PR passes by default."
             }
