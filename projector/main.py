@@ -8,7 +8,11 @@ import signal
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("projector/app.log"),
+        logging.StreamHandler()
+    ]
 )
 
 # Global flag to control the main loop
@@ -26,7 +30,7 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 def start_streamlit(port=8501):
     """Start the Streamlit app."""
-    streamlit_app_path = "projector/frontend/streamlit_app.py"
+    streamlit_app_path = "projector/streamlit_app.py"
     
     # Check if the Streamlit app file exists
     if not os.path.exists(streamlit_app_path):
