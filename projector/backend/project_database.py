@@ -48,130 +48,156 @@ class Project:
             slack_channel=data.get("slack_channel")
         )
         
+        # Set additional properties
         project.max_parallel_tasks = data.get("max_parallel_tasks", 2)
         project.documents = data.get("documents", [])
         project.features = data.get("features", {})
         project.implementation_plan = data.get("implementation_plan")
-        project.created_at = data.get("created_at")
-        project.updated_at = data.get("updated_at")
+        project.created_at = data.get("created_at", project.created_at)
+        project.updated_at = data.get("updated_at", project.updated_at)
         
         return project
-
 
 class ProjectDatabase:
     """Database for project persistence."""
     
     def __init__(self, db_file="projects_db.json"):
-        """Initialize the database."""
-        self.db_file = db_file
+        """Initialize the project database."""
         self.logger = logging.getLogger(__name__)
+        self.db_file = db_file
+        self.projects = {}
         
-        # Create database file if it doesn't exist
-        if not os.path.exists(db_file):
-            self._init_database()
+        # Initialize the database
+        self._init_database()
     
     def _init_database(self):
-        """Initialize an empty database."""
-        try:
-            with open(self.db_file, 'w') as f:
-                json.dump({"projects": {}}, f)
-        except Exception as e:
-            self.logger.error(f"Error initializing database: {e}")
+        """Initialize the database if it doesn't exist."""
+        if not os.path.exists(self.db_file):
+            self._write_database({})
+        else:
+            self._read_database()
     
     def _read_database(self):
-        """Read the database file."""
+        """Read the database from disk."""
         try:
             with open(self.db_file, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                self.projects = {
+                    project_id: Project.from_dict(project_data)
+                    for project_id, project_data in data.items()
+                }
         except Exception as e:
             self.logger.error(f"Error reading database: {e}")
-            return {"projects": {}}
+            self.projects = {}
     
     def _write_database(self, data):
-        """Write data to the database file."""
+        """Write the database to disk."""
         try:
             with open(self.db_file, 'w') as f:
                 json.dump(data, f, indent=2)
-            return True
         except Exception as e:
-            self.logger.error(f"Error writing to database: {e}")
-            return False
+            self.logger.error(f"Error writing database: {e}")
     
     def save_project(self, project):
         """Save a project to the database."""
-        db_data = self._read_database()
-        
-        # Update the project's updated_at timestamp
-        project.updated_at = datetime.now().isoformat()
-        
-        # Add or update project
-        db_data["projects"][project.id] = project.to_dict()
-        
-        return self._write_database(db_data)
+        try:
+            # Update the project's updated_at timestamp
+            project.updated_at = datetime.now().isoformat()
+            
+            # Read the current database
+            with open(self.db_file, 'r') as f:
+                data = json.load(f)
+            
+            # Update the project data
+            data[project.id] = project.to_dict()
+            
+            # Write the updated database
+            self._write_database(data)
+            
+            # Update the in-memory projects
+            self.projects[project.id] = project
+            
+            return True
+        except Exception as e:
+            self.logger.error(f"Error saving project: {e}")
+            return False
     
     def get_project(self, project_id):
         """Get a project by ID."""
-        db_data = self._read_database()
-        project_data = db_data["projects"].get(project_id)
-        
-        if project_data:
-            return Project.from_dict(project_data)
-        
-        return None
+        return self.projects.get(project_id)
     
     def list_projects(self):
         """List all projects."""
-        db_data = self._read_database()
+        return list(self.projects.values())
+    
+    def get_all_projects(self):
+        """Get all projects as a list.
         
-        projects = []
-        for project_data in db_data["projects"].values():
-            projects.append(Project.from_dict(project_data))
-        
-        return projects
+        This is an alias for list_projects() for better readability.
+        """
+        return self.list_projects()
     
     def delete_project(self, project_id):
-        """Delete a project."""
-        db_data = self._read_database()
-        
-        if project_id in db_data["projects"]:
-            del db_data["projects"][project_id]
-            return self._write_database(db_data)
-        
-        return False
+        """Delete a project by ID."""
+        try:
+            # Read the current database
+            with open(self.db_file, 'r') as f:
+                data = json.load(f)
+            
+            # Remove the project
+            if project_id in data:
+                del data[project_id]
+                
+                # Write the updated database
+                self._write_database(data)
+                
+                # Update the in-memory projects
+                if project_id in self.projects:
+                    del self.projects[project_id]
+                
+                return True
+            return False
+        except Exception as e:
+            self.logger.error(f"Error deleting project: {e}")
+            return False
     
     def update_project_plan(self, project_id, plan):
         """Update a project's implementation plan."""
         project = self.get_project(project_id)
-        
         if project:
             project.implementation_plan = plan
             return self.save_project(project)
-        
         return False
     
     def add_document_to_project(self, project_id, document_path):
         """Add a document to a project."""
         project = self.get_project(project_id)
-        
         if project:
             if document_path not in project.documents:
                 project.documents.append(document_path)
                 return self.save_project(project)
-            return True
-        
+            return True  # Document already exists
         return False
     
     def update_project_features(self, project_id, features):
         """Update a project's features."""
         project = self.get_project(project_id)
-        
         if project:
             project.features = features
             return self.save_project(project)
-        
         return False
     
     def create_project(self, name, git_url, slack_channel=None):
         """Create a new project."""
-        project = Project(None, name, git_url, slack_channel)
-        return self.save_project(project) and project.id
+        # Create a new project
+        project = Project(
+            project_id=None,  # Will be auto-generated
+            name=name,
+            git_url=git_url,
+            slack_channel=slack_channel
+        )
+        
+        # Save the project
+        if self.save_project(project):
+            return project.id
+        return None
