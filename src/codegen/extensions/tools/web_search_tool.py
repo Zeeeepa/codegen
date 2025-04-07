@@ -17,7 +17,7 @@ class WebSearchTool(BaseTool):
     """Tool for searching the web."""
 
     name: str = "web_search"
-    description = "Search the web for information on a topic."
+    description: str = "Search the web for information on a topic."
 
     def _run(self, query: str, max_results: int = 5) -> List[SearchResult]:
         """Run the web search tool.
@@ -38,7 +38,7 @@ class DeepResearchTool(BaseTool):
     """Tool for conducting deep research on a topic."""
 
     name: str = "deep_research"
-    description = "Conduct deep research on a topic, analyzing multiple sources."
+    description: str = "Conduct deep research on a topic, analyzing multiple sources."
 
     def _run(self, topic: str, max_sources: int = 5, depth: str = "medium") -> Dict[str, Any]:
         """Run the deep research tool.
