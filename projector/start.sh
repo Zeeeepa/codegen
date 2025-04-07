@@ -1,21 +1,21 @@
 #!/bin/bash
 # Simple script to start the Projector application
 
-# Ensure the script is run from the project root
-cd "$(dirname "$0")"
+# Ensure the script is executable
+# chmod +x start.sh
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
-    echo "Error: Python 3 is required but not found."
+    echo "Python 3 is not installed. Please install Python 3 and try again."
     exit 1
 fi
 
 # Check if Streamlit is installed
 if ! python3 -c "import streamlit" &> /dev/null; then
-    echo "Streamlit not found. Installing requirements..."
-    python3 -m pip install -r requirements.txt
+    echo "Streamlit is not installed. Installing required packages..."
+    pip install -r projector/requirements.txt
 fi
 
 # Run the application
 echo "Starting Projector..."
-python3 -m streamlit run frontend/streamlit_app.py "$@"
+python3 projector/main.py "$@"
