@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List, Dict, Any
 from uuid import uuid4
 
 from langchain.tools import BaseTool
@@ -8,18 +8,19 @@ from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph.graph import CompiledGraph
 from langsmith import Client
 
-from codegen.agents.loggers import ExternalLogger
-from codegen.agents.tracer import MessageStreamTracer
-from codegen.extensions.langchain.agent import create_codebase_agent
-from codegen.extensions.langchain.utils.get_langsmith_url import (
+from agentgen.agents.loggers import ExternalLogger
+from agentgen.agents.tracer import MessageStreamTracer
+from agentgen.extensions.langchain.agent import create_codebase_agent
+from agentgen.extensions.langchain.utils.get_langsmith_url import (
     find_and_print_langsmith_run_url,
 )
 
 if TYPE_CHECKING:
-    from codegen import Codebase
+    from codegen.sdk.core.codebase import Codebase
+    from codegen.sdk.core.file import File
+    from codegen.sdk.core.symbol import Symbol
 
-from codegen.agents.utils import AgentConfig
-
+from agentgen.agents.utils import AgentConfig
 
 class CodeAgent:
     """Agent for interacting with a codebase."""
@@ -33,6 +34,7 @@ class CodeAgent:
     instance_id: str | None = None
     difficulty: int | None = None
     logger: Optional[ExternalLogger] = None
+    codebase_stats: Optional[Dict[str, Any]] = None
 
     def __init__(
         self,
@@ -46,6 +48,7 @@ class CodeAgent:
         agent_config: Optional[AgentConfig] = None,
         thread_id: Optional[str] = None,
         logger: Optional[ExternalLogger] = None,
+        analyze_codebase: bool = True,
         **kwargs,
     ):
         """Initialize a CodeAgent.
@@ -58,6 +61,10 @@ class CodeAgent:
             tools: Additional tools to use
             tags: Tags to add to the agent trace. Must be of the same type.
             metadata: Metadata to use for the agent. Must be a dictionary.
+            agent_config: Configuration for the agent
+            thread_id: Thread ID for message history
+            logger: External logger for agent interactions
+            analyze_codebase: Whether to analyze the codebase on initialization
             **kwargs: Additional LLM configuration options. Supported options:
                 - temperature: Temperature parameter (0-1)
                 - top_p: Top-p sampling parameter (0-1)
@@ -105,6 +112,56 @@ class CodeAgent:
             "model": self.model_name,
             **metadata,
         }
+        
+        # Analyze codebase if requested
+        self.codebase_stats = None
+        if analyze_codebase:
+            self.codebase_stats = self._analyze_codebase()
+
+    def _analyze_codebase(self) -> Dict[str, Any]:
+        """Analyze the codebase to gather statistics and insights.
+        
+        Returns:
+            Dictionary with codebase statistics and insights
+        """
+        stats = {
+            "file_count": 0,
+            "language_distribution": {},
+            "total_lines": 0,
+            "file_types": {},
+            "largest_files": [],
+        }
+        
+        # Count files and analyze language distribution
+        for file in self.codebase.files():
+            stats["file_count"] += 1
+            
+            # Get file extension
+            _, ext = os.path.splitext(file.filepath)
+            ext = ext.lower()
+            if ext:
+                stats["file_types"][ext] = stats["file_types"].get(ext, 0) + 1
+            
+            # Get language
+            try:
+                language = file.language
+                if language:
+                    stats["language_distribution"][language] = stats["language_distribution"].get(language, 0) + 1
+            except:
+                pass
+                
+            # Count lines
+            try:
+                lines = len(file.content.splitlines())
+                stats["total_lines"] += lines
+                
+                # Track largest files
+                stats["largest_files"].append((file.filepath, lines))
+                stats["largest_files"] = sorted(stats["largest_files"], key=lambda x: x[1], reverse=True)[:10]
+            except:
+                pass
+        
+        return stats
 
     def run(self, prompt: str, image_urls: Optional[list[str]] = None) -> str:
         """Run the agent with a prompt and optional images.
@@ -198,12 +255,27 @@ class CodeAgent:
             return None
 
     def get_tools(self) -> list[BaseTool]:
+        """Get the list of tools available to the agent.
+        
+        Returns:
+            List of BaseTool instances
+        """
         return list(self.agent.get_graph().nodes["tools"].data.tools_by_name.values())
 
     def get_state(self) -> dict:
+        """Get the current state of the agent.
+        
+        Returns:
+            Dictionary with agent state
+        """
         return self.agent.get_state(self.config)
 
     def get_tags_metadata(self) -> tuple[list[str], dict]:
+        """Get tags and metadata for the agent.
+        
+        Returns:
+            Tuple of (tags, metadata)
+        """
         tags = [self.model_name]
         metadata = {"project": self.project_name, "model": self.model_name}
         # Add SWEBench run ID and instance ID to the metadata and tags for filtering
@@ -220,3 +292,15 @@ class CodeAgent:
             tags.append(f"difficulty_{self.difficulty}")
 
         return tags, metadata
+        
+    def get_codebase_stats(self) -> Dict[str, Any]:
+        """Get statistics about the codebase.
+        
+        If codebase hasn't been analyzed yet, performs analysis first.
+        
+        Returns:
+            Dictionary with codebase statistics
+        """
+        if self.codebase_stats is None:
+            self.codebase_stats = self._analyze_codebase()
+        return self.codebase_stats

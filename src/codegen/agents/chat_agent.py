@@ -1,10 +1,12 @@
-from typing import TYPE_CHECKING, Optional
+"""Chat agent implementation."""
+
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 from uuid import uuid4
 
-from langchain.tools import BaseTool
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.tools import BaseTool
 
-from codegen.extensions.langchain.agent import create_chat_agent
+from agentgen.extensions.langchain.agent import create_chat_agent
 
 if TYPE_CHECKING:
     from codegen import Codebase
