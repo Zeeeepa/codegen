@@ -9,11 +9,13 @@ import sys
 
 def main():
     """Main entry point for the run script."""
-    # Import the main module
-    from pr_review_bot.main import main as bot_main
+    # Add the parent directory to the Python path
+    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+    
+    # Import the main module from the package
+    from pr_review_bot_new.main import main as bot_main
     
     # Run the bot with the command line arguments
-    # Pass all command-line arguments directly to main.py
     bot_main()
 
 if __name__ == "__main__":

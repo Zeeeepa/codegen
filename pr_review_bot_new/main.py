@@ -14,14 +14,15 @@ from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 import uvicorn
 
-from .core.github_client import GitHubClient
-from .core.pr_reviewer import PRReviewer
-from .utils.webhook_manager import WebhookManager
-from .utils.ngrok_manager import NgrokManager
-from .utils.slack_notifier import SlackNotifier
-from .monitors.pr_monitor import PRMonitor
-from .monitors.branch_monitor import BranchMonitor
-from .api.app import app
+# Change relative imports to absolute imports
+from pr_review_bot_new.core.github_client import GitHubClient
+from pr_review_bot_new.core.pr_reviewer import PRReviewer
+from pr_review_bot_new.utils.webhook_manager import WebhookManager
+from pr_review_bot_new.utils.ngrok_manager import NgrokManager
+from pr_review_bot_new.utils.slack_notifier import SlackNotifier
+from pr_review_bot_new.monitors.pr_monitor import PRMonitor
+from pr_review_bot_new.monitors.branch_monitor import BranchMonitor
+from pr_review_bot_new.api.app import app
 
 # Configure logging
 logger = logging.getLogger(__name__)
