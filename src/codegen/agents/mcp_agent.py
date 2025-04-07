@@ -1,5 +1,5 @@
 """
-MCP agent implementation for agentgen.
+MCP agent implementation for codegen.
 
 This module provides an agent that can interact with MCP (Machine Code Processing) servers.
 """
@@ -7,7 +7,7 @@ This module provides an agent that can interact with MCP (Machine Code Processin
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from agentgen.agents.base import BaseAgent
+from codegen.agents.base import BaseAgent
 
 class MCPAgent(BaseAgent):
     """Agent for interacting with MCP servers."""

@@ -6,7 +6,7 @@ from uuid import uuid4
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import BaseTool
 
-from agentgen.extensions.langchain.agent import create_chat_agent
+from codegen.extensions.langchain.agent import create_chat_agent
 
 if TYPE_CHECKING:
     from codegen import Codebase

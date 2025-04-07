@@ -1,5 +1,5 @@
 """
-Tool-calling agent implementation for agentgen.
+Tool-calling agent implementation for codegen.
 
 This module provides an agent that can use tools to accomplish tasks.
 """
@@ -7,7 +7,7 @@ This module provides an agent that can use tools to accomplish tasks.
 from typing import Any, Dict, List, Optional, Union, Callable
 from uuid import uuid4
 
-from agentgen.agents.base import BaseAgent
+from codegen.agents.base import BaseAgent
 
 class Tool:
     """A tool that can be used by the agent."""

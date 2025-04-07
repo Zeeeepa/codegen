@@ -1,11 +1,11 @@
 """
-Planning framework for agentgen.
+Planning framework for codegen.
 
 This module provides planning capabilities for agents.
 """
 
-from agentgen.agents.planning.flow import Flow
-from agentgen.agents.planning.planning import Plan, PlanStep, PlanManager
+from codegen.agents.planning.flow import Flow
+from codegen.agents.planning.planning import Plan, PlanStep, PlanManager
 
 __all__ = [
     "Flow",

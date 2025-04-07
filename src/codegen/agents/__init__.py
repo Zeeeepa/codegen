@@ -1,13 +1,13 @@
 """
-Agent framework for agentgen.
+Agent framework for codegen.
 
 This module provides a collection of agent implementations for various tasks.
 """
 
-from agentgen.agents.base import BaseAgent
-from agentgen.agents.mcp_agent import MCPAgent
-from agentgen.agents.planning_agent import PlanningAgent
-from agentgen.agents.toolcall_agent import Tool, ToolCallAgent
+from codegen.agents.base import BaseAgent
+from codegen.agents.mcp_agent import MCPAgent
+from codegen.agents.planning_agent import PlanningAgent
+from codegen.agents.toolcall_agent import Tool, ToolCallAgent
 
 __all__ = [
     "BaseAgent",
