@@ -27,6 +27,26 @@ pip install -r requirements.txt
 echo "Ensuring langgraph is installed..."
 pip install langgraph>=0.3.20
 
+# Add the codegen src directory to PYTHONPATH
+CODEGEN_SRC=$(realpath "$ROOT_DIR/../src")
+echo "Adding $CODEGEN_SRC to PYTHONPATH..."
+
+# Create or update .env file with PYTHONPATH
+ENV_FILE="$ROOT_DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+    # Check if PYTHONPATH already exists in .env
+    if grep -q "PYTHONPATH=" "$ENV_FILE"; then
+        # Update existing PYTHONPATH
+        sed -i "s|PYTHONPATH=.*|PYTHONPATH=$CODEGEN_SRC:\$PYTHONPATH|g" "$ENV_FILE"
+    else
+        # Add PYTHONPATH to .env
+        echo "PYTHONPATH=$CODEGEN_SRC:\$PYTHONPATH" >> "$ENV_FILE"
+    fi
+else
+    # Create new .env file with PYTHONPATH
+    echo "PYTHONPATH=$CODEGEN_SRC:\$PYTHONPATH" > "$ENV_FILE"
+fi
+
 # Check if langgraph is installed in the virtual environment
 if pip show langgraph > /dev/null; then
     echo "langgraph is installed successfully."
