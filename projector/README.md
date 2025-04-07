@@ -18,6 +18,8 @@ Projector is a powerful application designed to bridge the gap between project p
 - **PR Validation**: Validate pull requests against project requirements
 - **Research Capabilities**: Research topics related to project requirements
 - **Reflection**: Self-improve responses over time
+- **Accessibility Features**: Support for various accessibility needs including screen readers, keyboard navigation, and display preferences
+- **Robust Error Handling**: Graceful error recovery and user-friendly error messages
 
 ## Architecture
 
@@ -48,6 +50,8 @@ Projector follows a modular architecture with clear separation of concerns:
 - **Thread Management**: Interface for monitoring and responding to Slack threads
 - **GitHub Panel**: Interface for managing GitHub operations
 - **Planning Page**: Interface for creating and visualizing project plans
+- **Accessibility Panel**: Interface for customizing accessibility settings
+- **Error Handling**: Robust error handling and user feedback
 
 ## Workflow
 
@@ -90,6 +94,30 @@ Projector uses a thread pool to handle concurrent operations:
 - **Thread Pool**: Manages worker threads for concurrent task execution
 - **Thread-safe Operations**: Ensures thread safety with locks
 - **Asynchronous Processing**: Processes Slack messages and GitHub operations asynchronously
+
+### Accessibility Features
+
+Projector includes comprehensive accessibility features:
+
+- **Screen Reader Support**: All UI elements are properly labeled for screen readers
+- **Keyboard Navigation**: Full keyboard navigation support with shortcuts
+- **Font Size Adjustment**: Adjustable font sizes for better readability
+- **High Contrast Mode**: High contrast display option for users with visual impairments
+- **Reduced Motion**: Option to reduce animations for users with motion sensitivity
+- **Error Messages**: Clear and descriptive error messages
+- **Responsive Design**: Adapts to different screen sizes and devices
+
+### Robustness Features
+
+Projector includes several robustness features:
+
+- **Error Boundary**: Catches and handles errors gracefully
+- **Connection Monitoring**: Monitors connections to external services
+- **Automatic Reconnection**: Attempts to reconnect to services when disconnected
+- **Data Validation**: Validates input data to prevent errors
+- **Logging**: Comprehensive logging for debugging and monitoring
+- **Session Management**: Robust session state management
+- **Graceful Degradation**: Continues to function with limited features when services are unavailable
 
 ## Configuration
 
@@ -155,6 +183,7 @@ To run the Streamlit UI:
 - **Developers**: Collaborate on features and track implementation
 - **Product Owners**: Convert requirements into actionable features
 - **Teams**: Streamline communication between planning and development
+- **Users with Accessibility Needs**: Fully accessible interface for all users
 
 ## Data Flow
 
@@ -170,3 +199,13 @@ To run the Streamlit UI:
 - API tokens are stored in environment variables
 - Authentication is required for UI access
 - Communication with external services uses secure protocols
+
+## Keyboard Shortcuts
+
+Projector supports the following keyboard shortcuts for improved accessibility:
+
+- **Alt + 1-9**: Navigate to different pages
+- **Alt + S**: Toggle sidebar
+- **Alt + A**: Open accessibility settings
+- **Alt + D**: Toggle dark/light mode
+- **Alt + H**: Show help
