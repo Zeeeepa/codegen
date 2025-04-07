@@ -24,6 +24,7 @@ class Project:
         self.updated_at = self.created_at
         self.active_threads = {}  # Dictionary of active Slack threads by feature
         self.pr_status = {}  # Dictionary of PR status by feature
+        self.merges = []  # List of merge events (branch merges and PR merges)
     
     def to_dict(self):
         """Convert Project object to dictionary for serialization."""
@@ -42,7 +43,8 @@ class Project:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "active_threads": self.active_threads,
-            "pr_status": self.pr_status
+            "pr_status": self.pr_status,
+            "merges": self.merges
         }
     
     @classmethod
@@ -66,5 +68,6 @@ class Project:
         project.updated_at = data.get("updated_at")
         project.active_threads = data.get("active_threads", {})
         project.pr_status = data.get("pr_status", {})
+        project.merges = data.get("merges", [])
         
         return project
