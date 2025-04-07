@@ -88,7 +88,6 @@ def run_backend_service():
     from projector.backend.project_database import ProjectDatabase
     from projector.backend.project_manager import ProjectManager
     from projector.backend.thread_pool import ThreadPool
-    from projector.backend.merge_manager import MergeManager
     from projector.backend.utils import validate_config
     
     # Validate configuration
@@ -122,12 +121,6 @@ def run_backend_service():
             github_manager=github_manager,
             slack_manager=slack_manager,
             thread_pool=thread_pool
-        )
-        
-        # Initialize merge manager
-        merge_manager = MergeManager(
-            github_manager=github_manager,
-            project_manager=project_manager
         )
         
         # Initialize AI User Agent
