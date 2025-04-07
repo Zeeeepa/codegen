@@ -124,6 +124,22 @@ GITHUB_DEFAULT_REPO=organization/repository
    python main.py
    ```
 
+### Running the Streamlit UI
+
+To run the Streamlit UI:
+
+1. Set up the symbolic link for the agentgen module structure:
+   ```
+   python projector/setup_symlink.py
+   ```
+   This creates a symbolic link structure that allows the projector module to be imported as `agentgen.application.projector`.
+
+2. Run the Streamlit app:
+   ```
+   cd projector/frontend
+   streamlit run streamlit_app.py
+   ```
+
 ### Command Line Options
 
 - `--ui`: Launch the Streamlit UI
