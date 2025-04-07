@@ -10,6 +10,7 @@ from typing import Dict, List, Any, Optional, Callable, Union
 
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
+from slack_sdk.web.client import WebClient
 
 from codegen.extensions.events.interface import EventHandlerManagerProtocol
 from codegen.extensions.slack.types import SlackWebhookPayload

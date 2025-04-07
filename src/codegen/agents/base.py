@@ -47,6 +47,21 @@ class BaseAgent(ABC):
             The agent's response
         """
         pass
+        
+    async def generate(self, prompt: str) -> str:
+        """Generate a response to a prompt without maintaining conversation history.
+        
+        This is a simplified version of run() that doesn't require thread management.
+        
+        Args:
+            prompt: The prompt to generate a response for
+            
+        Returns:
+            The generated response
+        """
+        # Default implementation calls run() with a new thread ID
+        thread_id = str(uuid4())
+        return self.run(prompt, thread_id=thread_id)
 
     def chat(self, prompt: str, thread_id: Optional[str] = None) -> tuple[str, str]:
         """Chat with the agent, maintaining conversation history.
