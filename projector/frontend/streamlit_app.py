@@ -37,6 +37,7 @@ from projector.frontend.session_state import initialize_session_state, update_se
 from projector.frontend.accessibility import render_accessibility_settings, apply_accessibility_styles
 from projector.frontend.code_suggestions_ui import render_code_suggestions_ui, render_code_improvement_ui
 from projector.frontend.project_ui import render_project_ui
+from projector.frontend.resource_management_ui import render_resource_management_ui
 
 # Import from API connectors
 from projector.api.api_connectors import BackendConnector
@@ -107,6 +108,9 @@ def main():
         
     elif page == "Merge History":
         render_merge_history()
+        
+    elif page == "Resource Management":
+        render_resource_management_ui()
         
     elif page == "Settings":
         render_header("Settings")

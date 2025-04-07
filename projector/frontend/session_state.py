@@ -71,6 +71,9 @@ def initialize_session_state():
         if "merges_count" not in st.session_state:
             st.session_state.merges_count = 0
         
+        if "team_members_count" not in st.session_state:
+            st.session_state.team_members_count = 0
+        
         # Backend connector
         if "backend_connector" not in st.session_state:
             st.session_state.backend_connector = None
@@ -155,6 +158,16 @@ def update_session_data():
             except Exception as e:
                 logger.warning(f"Error updating merges count: {e}")
                 st.session_state.merges_count = 0
+                
+            # Update team members count
+            try:
+                if 'team_members' in st.session_state:
+                    st.session_state.team_members_count = len(st.session_state.team_members)
+                else:
+                    st.session_state.team_members_count = 0
+            except Exception as e:
+                logger.warning(f"Error updating team members count: {e}")
+                st.session_state.team_members_count = 0
                 
             logger.info("Session data updated successfully")
     except Exception as e:
