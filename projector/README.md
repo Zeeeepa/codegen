@@ -124,13 +124,41 @@ Configure your projects in the Settings dialog:
 
 ### Python 3.13 Compatibility
 
-If you're using Python 3.13, make sure to run the update dependencies script:
-
-```bash
-./scripts/update_dependencies.sh
+If you're using Python 3.13, you may encounter the following error:
+```
+TypeError: ForwardRef._evaluate() missing 1 required keyword-only argument: 'recursive_guard'
 ```
 
-This will install the correct versions of FastAPI, Uvicorn, and Pydantic that are compatible with Python 3.13.
+Or:
+```
+ModuleNotFoundError: No module named 'langgraph'
+```
+
+To fix these issues:
+
+1. Run the update dependencies script:
+   ```bash
+   ./scripts/update_dependencies.sh
+   ```
+
+2. Make sure both the backend and frontend are stopped before running the update script
+
+3. After updating dependencies, start the backend first:
+   ```bash
+   ./scripts/start_backend.sh
+   ```
+
+4. Then start the frontend in a separate terminal:
+   ```bash
+   ./scripts/start_frontend.sh
+   ```
+
+The update script will install the correct versions of:
+- Pydantic (>=2.4.0)
+- FastAPI (>=0.103.1)
+- Uvicorn (>=0.23.2)
+- Langchain (>=0.1.0)
+- Langgraph (>=0.3.20)
 
 ### Connection Refused Errors
 
@@ -139,9 +167,29 @@ If you see "Failed to proxy http://localhost:8000/api/projects Error: connect EC
 1. Make sure the backend is running on port 8000
 2. Check if there are any Python compatibility issues (especially with Python 3.13)
 3. Run the update dependencies script and restart both the backend and frontend
+4. Verify the backend is running by visiting http://localhost:8000 directly
 
 ### Dependency Conflicts
 
 If you encounter dependency conflicts, make sure you're using the correct versions for your Python version:
 - For Python 3.8-3.12: The default dependencies should work fine
-- For Python 3.13+: You need updated dependencies (pydantic>=2.4.0, fastapi>=0.103.1, uvicorn>=0.23.2)
+- For Python 3.13+: You need updated dependencies (pydantic>=2.4.0, fastapi>=0.103.1, uvicorn>=0.23.2, langgraph>=0.3.20)
+
+### Virtual Environment Issues
+
+If you're having issues with the virtual environment:
+
+1. Delete the existing virtual environment:
+   ```bash
+   rm -rf venv
+   ```
+
+2. Create a new virtual environment:
+   ```bash
+   python3 -m venv venv
+   ```
+
+3. Run the update dependencies script:
+   ```bash
+   ./scripts/update_dependencies.sh
+   ```
