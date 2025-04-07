@@ -58,7 +58,7 @@ def render_sidebar():
     page = st.sidebar.radio(
         "Select Page",
         ["Dashboard", "Document Management", "Thread Management", "GitHub Integration", 
-         "Project Planning", "AI Assistant", "Merge Management", "Accessibility"]
+         "Project Planning", "AI Assistant", "Merge Management", "Code Suggestions", "Accessibility"]
     )
     
     # Project selector (if authenticated)

@@ -3,6 +3,7 @@ import os
 import logging
 import json
 from collections import defaultdict
+from .code_suggestions import CodeSuggestionEngine
 
 class CodeAnalyzer:
     """Analyzer for code repositories and files."""
@@ -10,6 +11,7 @@ class CodeAnalyzer:
     def __init__(self):
         """Initialize the code analyzer."""
         self.logger = logging.getLogger(__name__)
+        self.suggestion_engine = CodeSuggestionEngine(self)
     
     def analyze_code_structure(self, files_content):
         """Analyze the structure of code files."""
@@ -42,7 +44,7 @@ class CodeAnalyzer:
             
             # Analyze based on file type
             if file_ext == '.py':
-                self._analyze_python_file(content, structure)
+                self._analyze_python_file(content, structure, file_path)
                 # Update metrics
                 py_functions = [f for f in structure["functions"] if f.get("file_path") == file_path]
                 for func in py_functions:
@@ -270,6 +272,50 @@ class CodeAnalyzer:
             suggestions.append(f"Consider creating utility modules for commonly used dependencies: {', '.join(common_deps)}")
         
         return suggestions
+    
+    def generate_code_suggestions(self, files_content):
+        """Generate detailed code suggestions using the suggestion engine.
+        
+        Args:
+            files_content: Dictionary mapping file paths to their contents
+            
+        Returns:
+            Dictionary with detailed code suggestions and refactoring plan
+        """
+        # First analyze the code structure
+        code_structure = self.analyze_code_structure(files_content)
+        
+        # Generate detailed suggestions for each file
+        file_suggestions = {}
+        for file_path, content in files_content.items():
+            suggestions = self.suggestion_engine.analyze_code(file_path, content)
+            if suggestions:
+                file_suggestions[file_path] = suggestions
+        
+        # Generate architectural suggestions
+        architectural_suggestions = self.suggestion_engine.suggest_architectural_improvements(code_structure)
+        
+        # Generate a comprehensive refactoring plan
+        refactoring_plan = self.suggestion_engine.generate_refactoring_plan(code_structure, files_content)
+        
+        return {
+            "file_suggestions": file_suggestions,
+            "architectural_suggestions": architectural_suggestions,
+            "refactoring_plan": refactoring_plan,
+            "code_structure": code_structure
+        }
+    
+    def generate_improved_code(self, file_path, content):
+        """Generate improved code with suggestions applied.
+        
+        Args:
+            file_path: Path to the file being analyzed
+            content: String content of the file
+            
+        Returns:
+            Dictionary with original code, improved code, and explanation of changes
+        """
+        return self.suggestion_engine.generate_code_improvements(file_path, content)
     
     def generate_class_diagram(self, code_structure):
         """Generate a class diagram based on code structure."""

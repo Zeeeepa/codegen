@@ -30,6 +30,7 @@ from projector.frontend.merge_ui_components import (
 )
 from projector.frontend.session_state import initialize_session_state, update_session_data
 from projector.frontend.accessibility import render_accessibility_settings, apply_accessibility_styles
+from projector.frontend.code_suggestions_ui import render_code_suggestions_ui, render_code_improvement_ui
 
 # Import from API connectors
 from projector.api.api_connectors import BackendConnector
@@ -141,6 +142,19 @@ def render_merge_management():
             st.warning("No project selected. Please select a project from the sidebar.")
     else:
         st.warning("No project selected. Please select a project from the sidebar.")
+
+def render_code_suggestions_page():
+    """Render the code suggestions page."""
+    st.title("Code Suggestions")
+    
+    # Create tabs for different code suggestion features
+    suggestions_tab, improvement_tab = st.tabs(["Code Analysis", "Code Improvement"])
+    
+    with suggestions_tab:
+        render_code_suggestions_ui()
+    
+    with improvement_tab:
+        render_code_improvement_ui()
 
 def handle_keyboard_shortcuts():
     """Handle keyboard shortcuts for accessibility."""
@@ -267,6 +281,8 @@ def main():
             render_ai_assistant_panel(None)  # Placeholder for now
         elif page == "Merge Management":
             render_merge_management()
+        elif page == "Code Suggestions":
+            render_code_suggestions_page()
         elif page == "Accessibility":
             render_accessibility_settings()
             
