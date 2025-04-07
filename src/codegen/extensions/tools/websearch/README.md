@@ -1,6 +1,6 @@
-# Web Search Tools for AgentGen
+# Web Search Tools for Codegen
 
-This module provides web search capabilities for AgentGen agents, allowing them to search the internet for information and perform deep research on topics.
+This module provides web search capabilities for Codegen agents, allowing them to search the internet for information and perform deep research on topics.
 
 ## Features
 
@@ -22,7 +22,7 @@ This module provides web search capabilities for AgentGen agents, allowing them 
 ### Basic Web Search
 
 ```python
-from agentgen.extensions.tools.websearch import WebSearch
+from codegen.extensions.tools.websearch import WebSearch
 
 # Create a search instance
 search_tool = WebSearch()
@@ -48,7 +48,7 @@ for result in results.results:
 ### Deep Research
 
 ```python
-from agentgen.extensions.tools.websearch import DeepResearch
+from codegen.extensions.tools.websearch import DeepResearch
 
 # Create a deep research instance
 research_tool = DeepResearch()

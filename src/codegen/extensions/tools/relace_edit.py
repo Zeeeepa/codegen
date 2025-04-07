@@ -14,7 +14,7 @@ from .observation import Observation
 from .view_file import add_line_numbers
 
 if TYPE_CHECKING:
-    from agentgen.extensions.tools.tool_output_types import RelaceEditArtifacts
+    from codegen.extensions.tools.tool_output_types import RelaceEditArtifacts
 
 
 class RelaceEditObservation(Observation):

@@ -1,5 +1,5 @@
 """
-Research extension for agentgen.
+Research extension for codegen.
 
 This module provides tools for research, including context understanding,
 information retrieval, and analysis.
