@@ -11,8 +11,9 @@ PyGithub==1.58.1
 slack-sdk==3.21.3
 
 # AI and language processing
-langchain==0.0.267
-langchain-core==0.1.0
+langchain>=0.1.0  # Updated for Python 3.13 compatibility
+langchain-core>=0.1.0  # Updated for Python 3.13 compatibility
+langgraph>=0.3.20  # Added for Python 3.13 compatibility
 unidiff==0.7.4
 
 # Project management

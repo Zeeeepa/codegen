@@ -10,6 +10,16 @@ command_exists() {
     command -v "$1" &> /dev/null
 }
 
+# Check Python version
+python_version=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+echo "Using Python $python_version"
+
+# Check if we need to update dependencies for Python 3.13+
+if [[ "$python_version" == "3.13" || "$python_version" > "3.13" ]]; then
+    echo "Python 3.13+ detected. Updating dependencies..."
+    ./scripts/update_dependencies.sh
+fi
+
 # Check if tmux is installed
 if ! command_exists tmux; then
     echo "tmux is not installed. Would you like to install it? (y/n)"
