@@ -14,12 +14,7 @@ from github.PullRequest import PullRequest
 from .compatibility import (
     Codebase, 
     HAS_CODEGEN, 
-    HAS_AGENTGEN,
     HAS_LANGCHAIN,
-    CodeAgent,
-    GithubViewPRTool,
-    GithubCreatePRCommentTool,
-    GithubCreatePRReviewCommentTool,
     ChatPromptTemplate,
     ChatAnthropic,
     ChatOpenAI
@@ -110,11 +105,8 @@ class PRReviewer:
             pr = codebase.repo_operator.get_pr(pr_number)
             pr_url = pr.html_url
             
-            # Run the AI review
-            if HAS_AGENTGEN and CodeAgent:
-                review_result = self._run_agent_review(codebase, pr_number, pr_url)
-            else:
-                review_result = self._run_basic_review(codebase, pr_number, pr_url)
+            # Run the basic review
+            review_result = self._run_basic_review(codebase, pr_number, pr_url)
             
             # Delete the temporary comment
             if comment:
@@ -217,62 +209,9 @@ class PRReviewer:
             logger.error(traceback.format_exc())
             return False
     
-    def _run_agent_review(self, codebase, pr_number: int, pr_url: str) -> Dict[str, Any]:
-        """
-        Run the PR review using the CodeAgent.
-        
-        Args:
-            codebase: Codebase instance
-            pr_number: Pull request number
-            pr_url: Pull request URL
-            
-        Returns:
-            Result of the review
-        """
-        logger.info(f"Running agent review for PR #{pr_number}")
-        
-        # Define tools for the agent
-        pr_tools = [
-            GithubViewPRTool(codebase),
-            GithubCreatePRCommentTool(codebase),
-            GithubCreatePRReviewCommentTool(codebase),
-        ]
-        
-        # Create agent with the defined tools
-        agent = CodeAgent(codebase=codebase, tools=pr_tools)
-        
-        # Create the prompt for the agent
-        prompt = f"""
-        Hey CodegenBot!
-
-        Here's a task for you. Please review this pull request!
-        {pr_url}
-        
-        Do not terminate until you have reviewed the pull request and are satisfied with your review.
-
-        Review this Pull request thoroughly:
-        1. Be explicit about the changes
-        2. Produce a short summary
-        3. Point out possible improvements where present
-        4. Don't be self-congratulatory, stick to the facts
-        5. Use the tools at your disposal to create proper PR reviews
-        6. Include code snippets if needed
-        7. Suggest improvements if necessary
-        8. Check if the PR is valid and can be merged to the main branch
-        """
-        
-        # Run the agent
-        result = agent.run(prompt)
-        
-        return {
-            "pr_number": pr_number,
-            "review_type": "agent",
-            "result": result
-        }
-    
     def _run_basic_review(self, codebase, pr_number: int, pr_url: str) -> Dict[str, Any]:
         """
-        Run a basic PR review without the CodeAgent.
+        Run a basic PR review.
         
         Args:
             codebase: Codebase instance

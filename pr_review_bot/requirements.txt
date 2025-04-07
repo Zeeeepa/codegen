@@ -20,4 +20,3 @@ langchain-openai>=0.0.5
 # For backward compatibility
 # Note: These are commented out as they're not required for the standalone version
 # codegen>=0.31.1
-# agentgen>=0.1.0
