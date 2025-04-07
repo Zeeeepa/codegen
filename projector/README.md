@@ -23,7 +23,7 @@ cd codegen/projector
 2. Create a virtual environment (optional but recommended):
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\\Scripts\\activate
 ```
 
 3. Install the requirements:
@@ -35,6 +35,12 @@ pip install -r requirements.txt
 
 1. Start the application:
 ```bash
+chmod +x start.sh
+./start.sh
+```
+
+Or directly:
+```bash
 python main.py
 ```
 
@@ -43,9 +49,9 @@ python main.py
 http://localhost:8501
 ```
 
-3. Create a new project by clicking the "Add Project +" button.
+3. Create a new project by entering a name and clicking the "Add Project" button.
 
-4. Upload documents or paste content directly.
+4. Upload documents to the project.
 
 5. Initialize the project to generate the tree structure and step-by-step plan.
 
@@ -54,9 +60,8 @@ http://localhost:8501
 ## Project Structure
 
 - `main.py`: Entry point for the application
-- `streamlit_app.py`: Main Streamlit application
-- `project_database.py`: Simple JSON-based project database
-- `cli.py`: Command-line interface
+- `streamlit_app.py`: Main Streamlit application with all UI components
+- `requirements.txt`: Required Python packages
 - `start.sh`: Shell script to start the application
 
 ## License

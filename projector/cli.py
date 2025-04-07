@@ -2,7 +2,6 @@
 import argparse
 import os
 import sys
-import subprocess
 
 def main():
     """CLI entry point for Projector."""
