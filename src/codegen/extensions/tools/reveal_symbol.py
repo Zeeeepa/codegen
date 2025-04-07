@@ -9,7 +9,8 @@ from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.class_definition import Class
-from codegen.sdk.extensions.resolution import resolve_symbol
+
+from codegen.sdk.extensions.resolution_py import resolve_symbol
 
 from .observation import Observation
 
