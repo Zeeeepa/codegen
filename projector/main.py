@@ -7,8 +7,9 @@ import multiprocessing
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
-# Adjust the path to ensure the projector module is in the Python path
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+# This ensures that the 'projector' module can be imported
+project_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, project_root)
 
 def parse_arguments():
     """Parse command line arguments."""
