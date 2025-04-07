@@ -30,80 +30,80 @@ class CodeSuggestionEngine:
             "error_handling": {
                 "pattern": r"(?<!try:)(?:\n\s+)([^\n]+\.[^\n]+\(.*\))",
                 "suggestion": "Consider adding try-except blocks around external calls to handle potential exceptions.",
-                "example": """
-try:
-    result = external_service.fetch_data()
-except ExternalServiceError as e:
-    logger.error(f"Failed to fetch data: {e}")
-    # Handle the error appropriately
-"""
+                "example": (
+                    "try:\n"
+                    "    result = external_service.fetch_data()\n"
+                    "except ExternalServiceError as e:\n"
+                    "    logger.error(f\"Failed to fetch data: {e}\")\n"
+                    "    # Handle the error appropriately\n"
+                )
             },
             "long_function": {
                 "pattern": r"def\s+\w+\([^)]*\):[^}]*?(?:\n\s+[^\n]+){20,}",
                 "suggestion": "Consider breaking down this long function into smaller, more focused functions.",
-                "example": """
-def process_data(data):
-    """Process the main data."""
-    validated_data = _validate_data(data)
-    transformed_data = _transform_data(validated_data)
-    return _format_results(transformed_data)
-
-def _validate_data(data):
-    """Validate the input data."""
-    # Validation logic here
-    return validated_data
-"""
+                "example": (
+                    "def process_data(data):\n"
+                    "    \"\"\"Process the main data.\"\"\"\n"
+                    "    validated_data = _validate_data(data)\n"
+                    "    transformed_data = _transform_data(validated_data)\n"
+                    "    return _format_results(transformed_data)\n"
+                    "\n"
+                    "def _validate_data(data):\n"
+                    "    \"\"\"Validate the input data.\"\"\"\n"
+                    "    # Validation logic here\n"
+                    "    return validated_data\n"
+                )
             },
             "missing_docstring": {
                 "pattern": r"def\s+(\w+)\([^)]*\):\s*(?!\s*(?:\"\"\"|'''))",
                 "suggestion": "Add docstrings to improve code documentation and maintainability.",
-                "example": """
-def calculate_total(items):
-    """
-    Calculate the total price of all items.
-    
-    Args:
-        items: List of items with 'price' attribute
-        
-    Returns:
-        float: The total price
-    """
-    return sum(item.price for item in items)
-"""
+                "example": (
+                    "def calculate_total(items):\n"
+                    "    \"\"\"\n"
+                    "    Calculate the total price of all items.\n"
+                    "    \n"
+                    "    Args:\n"
+                    "        items: List of items with 'price' attribute\n"
+                    "        \n"
+                    "    Returns:\n"
+                    "        float: The total price\n"
+                    "    \"\"\"\n"
+                    "    return sum(item.price for item in items)\n"
+                )
             },
             "complex_conditional": {
                 "pattern": r"if\s+(?:[^:]+and[^:]+and[^:]+|[^:]+or[^:]+or[^:]+):",
                 "suggestion": "Consider simplifying complex conditionals by extracting conditions to named variables or functions.",
-                "example": """
-# Instead of:
-if user.is_active and user.has_permission('edit') and not user.is_temporary():
-    # Do something
-
-# Consider:
-def can_edit_content(user):
-    return user.is_active and user.has_permission('edit') and not user.is_temporary()
-    
-if can_edit_content(user):
-    # Do something
-"""
+                "example": (
+                    "# Instead of:\n"
+                    "if user.is_active and user.has_permission('edit') and not user.is_temporary():\n"
+                    "    # Do something\n"
+                    "\n"
+                    "# Consider:\n"
+                    "def can_edit_content(user):\n"
+                    "    return user.is_active and user.has_permission('edit') and not user.is_temporary()\n"
+                    "    \n"
+                    "if can_edit_content(user):\n"
+                    "    # Do something\n"
+                )
             },
             "magic_number": {
                 "pattern": r"(?<!\w)(\d+)(?!\w)(?!\s*[=:])",
                 "suggestion": "Replace magic numbers with named constants to improve code readability and maintainability.",
-                "example": """
-# Instead of:
-if status_code >= 500:
-    retry_count = min(attempts, 5)
-    wait_time = retry_count * 2
-
-# Consider:
-MAX_RETRY_ATTEMPTS = 5
-RETRY_BACKOFF_FACTOR = 2
-
-if status_code >= HTTP_SERVER_ERROR_CODE:
-    retry_count = min(attempts, MAX_RETRY_ATTEMPTS)
-    wait_time = retry_count * RETRY_BACKOFF_FACTOR
-"""
+                "example": (
+                    "# Instead of:\n"
+                    "if status_code >= 500:\n"
+                    "    retry_count = min(attempts, 5)\n"
+                    "    wait_time = retry_count * 2\n"
+                    "\n"
+                    "# Consider:\n"
+                    "MAX_RETRY_ATTEMPTS = 5\n"
+                    "RETRY_BACKOFF_FACTOR = 2\n"
+                    "\n"
+                    "if status_code >= HTTP_SERVER_ERROR_CODE:\n"
+                    "    retry_count = min(attempts, MAX_RETRY_ATTEMPTS)\n"
+                    "    wait_time = retry_count * RETRY_BACKOFF_FACTOR\n"
+                )
             }
         }
     
@@ -113,7 +113,7 @@ if status_code >= HTTP_SERVER_ERROR_CODE:
             "callback_hell": {
                 "pattern": r"(?:\w+\((?:[^()]*|\([^()]*\))*,\s*function\s*\([^)]*\)\s*{[^}]*}\))\s*\.\s*then",
                 "suggestion": "Consider using async/await instead of nested callbacks or promise chains.",
-                "example": """
+                "example": """\
 // Instead of:
 fetchData()
   .then(data => {
@@ -142,7 +142,7 @@ async function handleData() {
             "no_error_handling": {
                 "pattern": r"fetch\([^)]+\)(?!\.catch)",
                 "suggestion": "Add error handling to fetch calls to handle network failures and API errors.",
-                "example": """
+                "example": """\
 // Instead of:
 fetch('/api/data')
   .then(response => response.json())
@@ -175,7 +175,7 @@ fetch('/api/data')
             "any_type": {
                 "pattern": r":\s*any",
                 "suggestion": "Avoid using 'any' type in TypeScript as it defeats the purpose of type checking.",
-                "example": """
+                "example": """\
 // Instead of:
 function processData(data: any): any {
   // ...
@@ -275,7 +275,7 @@ function processData(data: DataItem[]): ProcessedResult {
                                     "type": "repeated_code",
                                     "line": line_number,
                                     "description": f"This function is very similar to '{existing_func}'. Consider refactoring to eliminate code duplication.",
-                                    "example": """
+                                    "example": """\
 # Instead of similar functions:
 def process_users(users):
     # Similar processing logic
@@ -318,7 +318,7 @@ def process_entities(entities, entity_type):
                     "type": "large_component",
                     "line": line_number,
                     "description": f"Component '{component_name}' is quite large. Consider breaking it down into smaller sub-components.",
-                    "example": """
+                    "example": """\
 // Instead of one large component:
 function LargeUserDashboard() {
   // Many states and complex logic
@@ -421,7 +421,7 @@ function UserDashboard() {
                     suggestions.append({
                         "type": "factory_pattern",
                         "description": f"Consider using Factory Pattern for {base} and similar classes: {', '.join(similar)}",
-                        "example": """
+                        "example": """\
 # Instead of direct instantiation:
 if type == "pdf":
     document = PDFDocument()
@@ -460,7 +460,7 @@ document = DocumentFactory.create_document(type)
             suggestions.append({
                 "type": "dependency_injection",
                 "description": "Consider using Dependency Injection for better testability and flexibility",
-                "example": """
+                "example": """\
 # Instead of:
 def process_order():
     database = Database()
@@ -483,7 +483,7 @@ process_order(db, email)
             suggestions.append({
                 "type": "microservices",
                 "description": "The codebase is growing large. Consider evaluating if a microservices architecture would be beneficial.",
-                "example": """
+                "example": """\
 Instead of a monolithic application, consider splitting functionality into separate services:
 
 1. User Service - Authentication and user management
