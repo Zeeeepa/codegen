@@ -1,10 +1,12 @@
+"""Base classes for web search engines."""
+
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 
 class SearchItem(BaseModel):
-    """Represents a single search result item"""
+    """Represents a single search result item."""
 
     title: str = Field(description="The title of the search result")
     url: str = Field(description="The URL of the search result")
@@ -20,21 +22,17 @@ class SearchItem(BaseModel):
 class WebSearchEngine(BaseModel):
     """Base class for web search engines."""
 
+    name: str = "base"
     model_config = {"arbitrary_types_allowed": True}
 
-    def perform_search(
-        self, query: str, num_results: int = 10, *args, **kwargs
-    ) -> List[SearchItem]:
-        """
-        Perform a web search and return a list of search items.
+    def search(self, query: str, num_results: int = 10) -> List[SearchItem]:
+        """Perform a web search and return a list of search items.
 
         Args:
-            query (str): The search query to submit to the search engine.
-            num_results (int, optional): The number of search results to return. Default is 10.
-            args: Additional arguments.
-            kwargs: Additional keyword arguments.
+            query: The search query to submit to the search engine
+            num_results: The number of search results to return (default: 10)
 
         Returns:
-            List[SearchItem]: A list of SearchItem objects matching the search query.
+            List of SearchItem objects matching the search query
         """
-        raise NotImplementedError
+        raise NotImplementedError("Subclasses must implement search method")

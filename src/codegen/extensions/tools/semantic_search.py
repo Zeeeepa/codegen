@@ -4,13 +4,13 @@ from typing import ClassVar, Optional, List, Tuple
 
 from pydantic import Field
 
-from agentgen.extensions.index.code_index import CodeIndex
-from agentgen.extensions.index.file_index import FileIndex
+from codegen.extensions.index.code_index import CodeIndex
+from codegen.extensions.index.file_index import FileIndex
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.file import File
 
-# Import from our local utils module instead of codegen.sdk.extensions.utils
-from agentgen.extensions.utils import get_file_metadata
+# Import from our local utils module
+from codegen.extensions.utils import get_file_metadata
 
 from .observation import Observation
 
