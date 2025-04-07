@@ -28,10 +28,23 @@ from projector.frontend.sidebar import render_sidebar
 from projector.frontend.merge_ui_components import (
     render_merge_history, render_project_tabs_with_merges
 )
-from projector.frontend.session_state import initialize_session_state
+from projector.frontend.session_state import initialize_session_state, update_session_data
+from projector.frontend.accessibility import render_accessibility_settings, apply_accessibility_styles
 
 # Import from API connectors
 from projector.api.api_connectors import BackendConnector
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("projector/app.log"),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 # Runtime configuration
 runtime_config = {
@@ -42,97 +55,6 @@ runtime_config = {
     "active_repo": GITHUB_DEFAULT_REPO,
     "max_threads": 10
 }
-
-# Initialize session state
-def initialize_session_state():
-    """Initialize the session state with default values."""
-    # Authentication state
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    
-    # Connection states
-    if "slack_connected" not in st.session_state:
-        st.session_state.slack_connected = False
-    
-    if "github_connected" not in st.session_state:
-        st.session_state.github_connected = False
-    
-    # Credentials
-    if "slack_token" not in st.session_state:
-        st.session_state.slack_token = ""
-    
-    if "slack_channel" not in st.session_state:
-        st.session_state.slack_channel = "general"
-    
-    if "github_token" not in st.session_state:
-        st.session_state.github_token = ""
-    
-    if "github_username" not in st.session_state:
-        st.session_state.github_username = ""
-    
-    if "github_repo" not in st.session_state:
-        st.session_state.github_repo = ""
-    
-    # AI settings
-    if "openai_api_key" not in st.session_state:
-        st.session_state.openai_api_key = ""
-    
-    if "ai_enabled" not in st.session_state:
-        st.session_state.ai_enabled = runtime_config.get("ai_enabled", False)
-    
-    # Data counters
-    if "thread_count" not in st.session_state:
-        st.session_state.thread_count = 0
-    
-    if "features_count" not in st.session_state:
-        st.session_state.features_count = 0
-    
-    if "documents_count" not in st.session_state:
-        st.session_state.documents_count = 0
-    
-    if "open_prs_count" not in st.session_state:
-        st.session_state.open_prs_count = 0
-    
-    if "merges_count" not in st.session_state:
-        st.session_state.merges_count = 0
-    
-    # Backend connector
-    if "backend_connector" not in st.session_state:
-        st.session_state.backend_connector = None
-    
-    # Current project
-    if "current_project_id" not in st.session_state:
-        st.session_state.current_project_id = None
-
-def update_session_data():
-    """Update session data from backend."""
-    if hasattr(st.session_state, "backend_connector") and st.session_state.backend_connector:
-        connector = st.session_state.backend_connector
-        
-        # Update thread count
-        threads = connector.get_threads()
-        st.session_state.thread_count = len(threads) if threads else 0
-        
-        # Update features count
-        features = connector.get_features()
-        st.session_state.features_count = len(features) if features else 0
-        
-        # Update documents count
-        documents = connector.list_documents()
-        st.session_state.documents_count = len(documents) if documents else 0
-        
-        # Update PRs count
-        pull_requests = connector.list_pull_requests()
-        open_prs = [pr for pr in pull_requests if pr.get("state") == "open"]
-        st.session_state.open_prs_count = len(open_prs) if open_prs else 0
-        
-        # Update merges count
-        if st.session_state.current_project_id:
-            project = connector.get_project(st.session_state.current_project_id)
-            if project and hasattr(project, 'merges'):
-                st.session_state.merges_count = len(project.merges)
-            else:
-                st.session_state.merges_count = 0
 
 def render_auth_page():
     """Render the authentication page."""
@@ -220,43 +142,138 @@ def render_merge_management():
     else:
         st.warning("No project selected. Please select a project from the sidebar.")
 
+def handle_keyboard_shortcuts():
+    """Handle keyboard shortcuts for accessibility."""
+    # Add JavaScript for keyboard shortcuts
+    js_code = """
+    <script>
+    document.addEventListener('keydown', function(e) {
+        // Alt + key combinations
+        if (e.altKey) {
+            // Alt + 1-9: Navigate to different pages
+            if (e.key >= '1' && e.key <= '9') {
+                const navItems = document.querySelectorAll('div[data-testid="stRadio"] label');
+                const index = parseInt(e.key) - 1;
+                if (index < navItems.length) {
+                    navItems[index].click();
+                }
+            }
+            
+            // Alt + S: Toggle sidebar
+            else if (e.key === 's' || e.key === 'S') {
+                const sidebarButton = document.querySelector('button[kind="headerNoPadding"]');
+                if (sidebarButton) {
+                    sidebarButton.click();
+                }
+            }
+            
+            // Alt + A: Open accessibility settings
+            else if (e.key === 'a' || e.key === 'A') {
+                const navItems = document.querySelectorAll('div[data-testid="stRadio"] label');
+                for (let i = 0; i < navItems.length; i++) {
+                    if (navItems[i].textContent.includes('Accessibility')) {
+                        navItems[i].click();
+                        break;
+                    }
+                }
+            }
+            
+            // Alt + D: Toggle dark/light mode
+            else if (e.key === 'd' || e.key === 'D') {
+                const themeButton = document.querySelector('button[key="toggle_theme"]');
+                if (themeButton) {
+                    themeButton.click();
+                }
+            }
+            
+            // Alt + H: Show help
+            else if (e.key === 'h' || e.key === 'H') {
+                const helpExpander = document.querySelector('div[aria-controls*="Help & Support"]');
+                if (helpExpander) {
+                    helpExpander.click();
+                }
+            }
+        }
+    });
+    </script>
+    """
+    st.markdown(js_code, unsafe_allow_html=True)
+
+def add_robustness_features():
+    """Add robustness features to the application."""
+    # Error boundary
+    try:
+        # Check for critical components
+        if not hasattr(st.session_state, "backend_connector") and st.session_state.authenticated:
+            logger.error("Backend connector not initialized but user is authenticated")
+            st.session_state.error_message = "Connection error: Backend services unavailable. Please try again."
+            
+        # Check for connectivity
+        if st.session_state.authenticated:
+            if not st.session_state.slack_connected:
+                logger.warning("Slack connection lost")
+                st.session_state.error_message = "Warning: Slack connection lost. Some features may be unavailable."
+                
+            if not st.session_state.github_connected:
+                logger.warning("GitHub connection lost")
+                st.session_state.error_message = "Warning: GitHub connection lost. Some features may be unavailable."
+    except Exception as e:
+        logger.error(f"Error in robustness check: {e}")
+
 def main():
     """Main Streamlit application."""
-    st.set_page_config(
-        page_title="MultiThread Slack GitHub Tool",
-        page_icon="🔄",
-        layout="wide"
-    )
-    
-    # Initialize session state
-    initialize_session_state()
-    
-    # Render authentication page if not authenticated
-    if not st.session_state.authenticated:
-        render_auth_page()
-        return
-    
-    # Update session data from backend
-    update_session_data()
-    
-    # Render sidebar and get selected page
-    page = render_sidebar()
-    
-    # Render selected page
-    if page == "Dashboard":
-        render_dashboard()
-    elif page == "Document Management":
-        render_document_management()
-    elif page == "Thread Management":
-        render_thread_management()
-    elif page == "GitHub Integration":
-        render_github_panel()
-    elif page == "Project Planning":
-        render_planning_page(None, None)  # Placeholder for now
-    elif page == "AI Assistant":
-        render_ai_assistant_panel(None)  # Placeholder for now
-    elif page == "Merge Management":
-        render_merge_management()
+    try:
+        st.set_page_config(
+            page_title="MultiThread Slack GitHub Tool",
+            page_icon="🔄",
+            layout="wide"
+        )
+        
+        # Initialize session state
+        initialize_session_state()
+        
+        # Apply accessibility styles
+        apply_accessibility_styles()
+        
+        # Add keyboard shortcuts
+        handle_keyboard_shortcuts()
+        
+        # Add robustness features
+        add_robustness_features()
+        
+        # Render authentication page if not authenticated
+        if not st.session_state.authenticated:
+            render_auth_page()
+            return
+        
+        # Update session data from backend
+        update_session_data()
+        
+        # Render sidebar and get selected page
+        page = render_sidebar()
+        
+        # Render selected page
+        if page == "Dashboard":
+            render_dashboard()
+        elif page == "Document Management":
+            render_document_management()
+        elif page == "Thread Management":
+            render_thread_management()
+        elif page == "GitHub Integration":
+            render_github_panel()
+        elif page == "Project Planning":
+            render_planning_page(None, None)  # Placeholder for now
+        elif page == "AI Assistant":
+            render_ai_assistant_panel(None)  # Placeholder for now
+        elif page == "Merge Management":
+            render_merge_management()
+        elif page == "Accessibility":
+            render_accessibility_settings()
+            
+    except Exception as e:
+        logger.error(f"Unhandled exception in main application: {e}", exc_info=True)
+        st.error(f"An unexpected error occurred: {str(e)}")
+        st.write("Please try refreshing the page. If the problem persists, contact support.")
 
 if __name__ == "__main__":
     main()
