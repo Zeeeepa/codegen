@@ -20,6 +20,9 @@ unidiff==0.7.4
 codeowners==0.6.0
 gitpython==3.1.30
 
+# Visualization and UI
+plotly>=5.24.0,<7.0.0  # Added for Python 3.13 compatibility
+
 # Utilities
 markdown>=3.4.0
 beautifulsoup4>=4.11.0

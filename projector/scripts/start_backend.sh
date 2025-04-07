@@ -24,11 +24,9 @@ if [ ! -f "$ROOT_DIR/.dependencies_installed" ]; then
     echo "Installing dependencies..."
     pip install -r requirements.txt
     
-    # Ensure langgraph is installed (especially important for Python 3.13)
-    if ! pip show langgraph > /dev/null; then
-        echo "Installing langgraph..."
-        pip install langgraph>=0.3.20
-    fi
+    # Ensure langgraph and plotly are installed (especially important for Python 3.13)
+    echo "Installing required packages for Python $python_version..."
+    pip install langgraph>=0.3.20 plotly>=5.24.0
     
     # Mark dependencies as installed
     touch "$ROOT_DIR/.dependencies_installed"
