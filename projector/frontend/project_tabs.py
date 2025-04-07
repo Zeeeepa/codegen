@@ -4,7 +4,6 @@ Tabbed interface component for the Projector system.
 import streamlit as st
 import os
 import sys
-import json
 from datetime import datetime
 
 # Add parent directory to path for imports
@@ -27,13 +26,9 @@ def render_tabbed_interface(projects):
     selected_project_id = st.session_state.get("selected_project")
     
     # Create a list of project names for tabs
-    project_names = []
-    for project in projects:
-        # Add an "X" to the tab name for closable tabs
-        project_names.append(f"{project.name}|[X]")
+    project_names = [f"{project.name}|[X]" for project in projects]
     
     # Create tabs
-    tab_indices = range(len(projects))
     tabs = st.tabs(project_names)
     
     # Render content for each tab

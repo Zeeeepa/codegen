@@ -124,19 +124,11 @@ class ProjectDatabase:
     
     def get_project(self, project_id):
         """Get a project by ID."""
-        try:
-            return self.projects.get(project_id)
-        except Exception as e:
-            self.logger.error(f"Error getting project: {e}")
-            return None
+        return self.projects.get(project_id)
     
     def list_projects(self):
         """List all projects."""
-        try:
-            return list(self.projects.values())
-        except Exception as e:
-            self.logger.error(f"Error listing projects: {e}")
-            return []
+        return list(self.projects.values())
     
     def get_all_projects(self):
         """Get all projects as a list.
@@ -171,57 +163,41 @@ class ProjectDatabase:
     
     def update_project_plan(self, project_id, plan):
         """Update a project's implementation plan."""
-        try:
-            project = self.get_project(project_id)
-            if project:
-                project.implementation_plan = plan
-                return self.save_project(project)
-            return False
-        except Exception as e:
-            self.logger.error(f"Error updating project plan: {e}")
-            return False
+        project = self.get_project(project_id)
+        if project:
+            project.implementation_plan = plan
+            return self.save_project(project)
+        return False
     
     def add_document_to_project(self, project_id, document_path):
         """Add a document to a project."""
-        try:
-            project = self.get_project(project_id)
-            if project:
-                if document_path not in project.documents:
-                    project.documents.append(document_path)
-                    return self.save_project(project)
-                return True  # Document already exists
-            return False
-        except Exception as e:
-            self.logger.error(f"Error adding document to project: {e}")
-            return False
+        project = self.get_project(project_id)
+        if project:
+            if document_path not in project.documents:
+                project.documents.append(document_path)
+                return self.save_project(project)
+            return True  # Document already exists
+        return False
     
     def update_project_features(self, project_id, features):
         """Update a project's features."""
-        try:
-            project = self.get_project(project_id)
-            if project:
-                project.features = features
-                return self.save_project(project)
-            return False
-        except Exception as e:
-            self.logger.error(f"Error updating project features: {e}")
-            return False
+        project = self.get_project(project_id)
+        if project:
+            project.features = features
+            return self.save_project(project)
+        return False
     
     def create_project(self, name, git_url, slack_channel=None):
         """Create a new project."""
-        try:
-            # Create a new project
-            project = Project(
-                project_id=None,  # Will be auto-generated
-                name=name,
-                git_url=git_url,
-                slack_channel=slack_channel
-            )
-            
-            # Save the project
-            if self.save_project(project):
-                return project.id
-            return None
-        except Exception as e:
-            self.logger.error(f"Error creating project: {e}")
-            return None
+        # Create a new project
+        project = Project(
+            project_id=None,  # Will be auto-generated
+            name=name,
+            git_url=git_url,
+            slack_channel=slack_channel
+        )
+        
+        # Save the project
+        if self.save_project(project):
+            return project.id
+        return None
