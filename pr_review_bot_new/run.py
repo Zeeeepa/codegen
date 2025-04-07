@@ -10,7 +10,9 @@ import sys
 def main():
     """Main entry point for the run script."""
     # Add the parent directory to the Python path
-    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    sys.path.insert(0, parent_dir)
     
     # Import the main module from the package
     from pr_review_bot_new.main import main as bot_main
