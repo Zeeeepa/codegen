@@ -6,21 +6,19 @@ import time
 import threading
 from typing import Dict, List, Optional, Any
 
-from agentgen.agents.chat_agent import ChatAgent
-from agentgen.agents.planning_agent import PlanningAgent
-from agentgen.agents.pr_review_agent import PRReviewAgent
-from agentgen.agents.code_agent import CodeAgent
-from agentgen.utils.reflection import Reflector
-from agentgen.utils.web_search import WebSearcher
-from agentgen.utils.context_understanding import ContextUnderstanding
+from codegen.agents.chat_agent import ChatAgent
+from codegen.agents.planning_agent import PlanningAgent
+from codegen.agents.pr_review_agent import PRReviewAgent
+from codegen.agents.code_agent import CodeAgent
+from codegen.agents.planning.planning import PlanStepStatus
 
-from agentgen.application.projector.backend.slack_manager import SlackManager
-from agentgen.application.projector.backend.github_manager import GitHubManager
-from agentgen.application.projector.backend.project_database import ProjectDatabase
-from agentgen.application.projector.backend.project import Project
-from agentgen.application.projector.backend.planning_manager import PlanningManager
-from agentgen.application.projector.backend.thread_pool import ThreadPool
-from agentgen.application.projector.backend.project_manager import ProjectManager
+from projector.backend.slack_manager import SlackManager
+from projector.backend.github_manager import GitHubManager
+from projector.backend.project_database import ProjectDatabase
+from projector.backend.project import Project
+from projector.backend.planning_manager import PlanningManager
+from projector.backend.thread_pool import ThreadPool
+from projector.backend.project_manager import ProjectManager
 
 class AssistantAgent:
     """Agent that processes markdown documents and responds to Slack messages."""
@@ -48,25 +46,26 @@ class AssistantAgent:
         # Initialize planning manager
         self.planning_manager = PlanningManager(github_manager)
         
-        # Initialize agentgen agents
+        # Initialize codegen agents
         self.chat_agent = None
         self.planning_agent = None
         self.pr_review_agent = None
         self.code_agent = None
-        self.reflector = None
-        self.web_searcher = None
-        self.context_understanding = None
         
-        # Initialize agentgen agents if possible
+        # Initialize codegen agents if possible
         try:
             # We'll initialize these on demand to save resources
             self.logger.info("Agent initialization ready")
         except Exception as e:
-            self.logger.error(f"Error initializing agentgen agents: {e}")
+            self.logger.error(f"Error initializing codegen agents: {e}")
         
         # Track processed threads to avoid duplicate responses
         self.processed_threads = set()
         self.thread_lock = threading.Lock()
+        
+        # Track active projects and their implementation status
+        self.active_projects = {}
+        self.project_lock = threading.Lock()
     
     def _initialize_chat_agent(self):
         """Initialize the chat agent on demand."""
@@ -102,14 +101,13 @@ class AssistantAgent:
         """Initialize the PR review agent on demand."""
         if self.pr_review_agent is None:
             try:
-                # For now, we'll use a mock codebase since we're not directly using code analysis
-                # In a real implementation, you'd create a proper codebase object
+                # For now, we'll use a mock codebase
                 mock_codebase = type('MockCodebase', (), {})()
                 self.pr_review_agent = PRReviewAgent(
                     codebase=mock_codebase,
                     github_token=self.github_manager.github_token,
                     model_provider="anthropic",
-                    model_name="claude-3-7-sonnet-latest"
+                    model_name="claude-3-5-sonnet-latest"
                 )
                 self.logger.info("PR review agent initialized successfully")
             except Exception as e:
@@ -120,7 +118,7 @@ class AssistantAgent:
         """Initialize the code agent on demand."""
         if self.code_agent is None:
             try:
-                # For now, we'll use a mock codebase since we're not directly using code analysis
+                # For now, we'll use a mock codebase
                 mock_codebase = type('MockCodebase', (), {})()
                 self.code_agent = CodeAgent(
                     codebase=mock_codebase,
@@ -132,736 +130,628 @@ class AssistantAgent:
                 self.logger.error(f"Error initializing code agent: {e}")
                 raise
     
-    def _initialize_reflector(self):
-        """Initialize the reflector on demand."""
-        if self.reflector is None:
-            try:
-                self.reflector = Reflector(
-                    model_provider="anthropic",
-                    model_name="claude-3-5-sonnet-latest"
-                )
-                self.logger.info("Reflector initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Error initializing reflector: {e}")
-                raise
-    
-    def _initialize_web_searcher(self):
-        """Initialize the web searcher on demand."""
-        if self.web_searcher is None:
-            try:
-                self.web_searcher = WebSearcher()
-                self.logger.info("Web searcher initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Error initializing web searcher: {e}")
-                raise
-    
-    def _initialize_context_understanding(self):
-        """Initialize the context understanding on demand."""
-        if self.context_understanding is None:
-            try:
-                self.context_understanding = ContextUnderstanding(
-                    model_provider="anthropic",
-                    model_name="claude-3-5-sonnet-latest"
-                )
-                self.logger.info("Context understanding initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Error initializing context understanding: {e}")
-                raise
-
     def process_all_documents(self):
         """Process all markdown documents in the docs directory."""
         if not os.path.exists(self.docs_path):
-            self.logger.warning(f"Docs path {self.docs_path} does not exist")
+            self.logger.warning(f"Docs path does not exist: {self.docs_path}")
             return
         
-        for filename in os.listdir(self.docs_path):
-            if filename.endswith(".md"):
-                file_path = os.path.join(self.docs_path, filename)
-                self.process_document(file_path)
+        # Get all markdown files
+        md_files = []
+        for root, _, files in os.walk(self.docs_path):
+            for file in files:
+                if file.endswith(".md"):
+                    md_files.append(os.path.join(root, file))
+        
+        self.logger.info(f"Found {len(md_files)} markdown files")
+        
+        # Process each file
+        for md_file in md_files:
+            self.thread_pool.submit(self.process_document, md_file)
     
-    def process_document(self, file_path: str):
-        """Process a markdown document and create a project plan."""
+    def process_document(self, file_path):
+        """Process a markdown document and extract project information."""
         try:
             self.logger.info(f"Processing document: {file_path}")
             
-            # Read the document
-            with open(file_path, "r", encoding="utf-8") as f:
+            # Read the file
+            with open(file_path, "r") as f:
                 content = f.read()
             
-            # Extract project name from filename
-            project_name = os.path.basename(file_path).replace(".md", "")
+            # Extract project information
+            project_info = self._extract_project_info(content, file_path)
             
-            # Initialize planning agent if needed
-            self._initialize_planning_agent()
-            
-            # Initialize context understanding if needed
-            self._initialize_context_understanding()
-            
-            # Use context understanding to extract key information
-            context_info = self.context_understanding.analyze_document(content)
-            
-            # Generate a plan using the planning agent
-            thread_id = f"doc_{project_name}"
-            plan_prompt = f"""
-            Create a detailed implementation plan for the following project requirements:
-            
-            {content}
-            
-            Context information:
-            {json.dumps(context_info, indent=2)}
-            
-            The plan should include:
-            1. A breakdown of the main features
-            2. Step-by-step implementation tasks
-            3. Technical requirements
-            4. GitHub branch structure
-            5. Timeline estimates
-            """
-            
-            plan_response = self.planning_agent.run(plan_prompt, thread_id=thread_id)
-            
-            # Extract GitHub repository URL from content if available
-            git_url = None
-            git_url_match = re.search(r"(github\.com/[\w-]+/[\w-]+)", content)
-            if git_url_match:
-                git_url = f"https://{git_url_match.group(1)}"
+            if project_info:
+                # Check if project already exists
+                existing_project = None
+                for project in self.project_database.list_projects():
+                    if project.name.lower() == project_info["name"].lower():
+                        existing_project = project
+                        break
+                
+                if existing_project:
+                    # Update existing project
+                    self.logger.info(f"Updating existing project: {project_info['name']}")
+                    
+                    # Update project with new information
+                    self.project_manager.update_project(
+                        existing_project.id,
+                        requirements=project_info.get("requirements", ""),
+                        git_url=project_info.get("git_url", existing_project.git_url)
+                    )
+                    
+                    # Add document to project
+                    if file_path not in existing_project.documents:
+                        existing_project.documents.append(file_path)
+                        self.project_database.save_project(existing_project)
+                else:
+                    # Create new project
+                    self.logger.info(f"Creating new project: {project_info['name']}")
+                    
+                    # Create project
+                    project = self.project_manager.add_project(
+                        name=project_info["name"],
+                        git_url=project_info.get("git_url", ""),
+                        slack_channel=project_info.get("slack_channel"),
+                        requirements=project_info.get("requirements", "")
+                    )
+                    
+                    # Add document to project
+                    project.documents.append(file_path)
+                    self.project_database.save_project(project)
             else:
-                git_url = f"https://github.com/{self.github_manager.username}/{project_name.lower()}"
-            
-            # Extract Slack channel from content if available
-            slack_channel = None
-            slack_channel_match = re.search(r"slack channel[:\s]+#?([\w-]+)", content, re.IGNORECASE)
-            if slack_channel_match:
-                slack_channel = slack_channel_match.group(1)
-            else:
-                slack_channel = self.slack_manager.default_channel
-            
-            # Create a new project using the project manager
-            project_id = self.project_manager.add_project(
-                name=project_name,
-                git_url=git_url,
-                slack_channel=slack_channel,
-                requirements=content,
-                plan=plan_response
-            )
-            
-            self.logger.info(f"Created project plan for {project_name} with ID {project_id}")
-            return project_id
+                self.logger.warning(f"No project information found in document: {file_path}")
         
         except Exception as e:
             self.logger.error(f"Error processing document {file_path}: {e}")
+    
+    def _extract_project_info(self, content, file_path):
+        """Extract project information from markdown content."""
+        # Initialize project info
+        project_info = {}
+        
+        # Extract project name from filename or content
+        filename = os.path.basename(file_path)
+        project_name = os.path.splitext(filename)[0]
+        
+        # Look for project name in content
+        name_match = re.search(r"# Project[:\s]+(.+)", content)
+        if name_match:
+            project_name = name_match.group(1).strip()
+        
+        project_info["name"] = project_name
+        
+        # Extract GitHub URL
+        git_url_match = re.search(r"GitHub URL[:\s]+(.+)", content) or re.search(r"Repository[:\s]+(.+)", content)
+        if git_url_match:
+            project_info["git_url"] = git_url_match.group(1).strip()
+        
+        # Extract Slack channel
+        slack_channel_match = re.search(r"Slack Channel[:\s]+(.+)", content)
+        if slack_channel_match:
+            project_info["slack_channel"] = slack_channel_match.group(1).strip()
+        
+        # Use the entire content as requirements
+        project_info["requirements"] = content
+        
+        return project_info
+    
+    def create_implementation_plan(self, project_id):
+        """Create an implementation plan for a project."""
+        project = self.project_database.get_project(project_id)
+        if not project:
+            self.logger.error(f"Project not found: {project_id}")
+            return None
+        
+        # Initialize planning agent
+        self._initialize_planning_agent()
+        
+        try:
+            # Create plan
+            self.logger.info(f"Creating implementation plan for project: {project.name}")
+            
+            # Generate plan using planning manager
+            plan_result = self.project_manager.create_implementation_plan(project_id)
+            
+            if "error" in plan_result:
+                self.logger.error(f"Error creating plan: {plan_result['error']}")
+                return None
+            
+            # Notify in Slack if channel is specified
+            if project.slack_channel:
+                self.slack_manager.send_message(
+                    channel=project.slack_channel,
+                    text=f"Implementation plan created for project: *{project.name}*\n\n"
+                         f"The plan includes {len(plan_result['features'])} features to implement."
+                )
+            
+            return plan_result
+        except Exception as e:
+            self.logger.error(f"Error creating implementation plan: {e}")
             return None
     
-    def handle_slack_message(self, channel_id: str, thread_ts: Optional[str], user_id: str, text: str):
-        """Handle a Slack message and generate a response."""
-        try:
-            # Check if we've already processed this thread
-            thread_key = f"{channel_id}:{thread_ts or 'new'}"
-            with self.thread_lock:
-                if thread_key in self.processed_threads:
-                    self.logger.info(f"Skipping already processed thread: {thread_key}")
-                    return
-                self.processed_threads.add(thread_key)
-            
-            # Submit the task to the thread pool
-            self.thread_pool.submit(
-                self._process_slack_message,
-                channel_id,
-                thread_ts,
-                user_id,
-                text
-            )
+    def start_project_implementation(self, project_id, max_concurrent_features=None):
+        """Start implementing a project."""
+        project = self.project_database.get_project(project_id)
+        if not project:
+            self.logger.error(f"Project not found: {project_id}")
+            return None
         
-        except Exception as e:
-            self.logger.error(f"Error handling Slack message: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                "I encountered an error processing your request. Please try again later.",
-                thread_ts=thread_ts
-            )
-    
-    def _process_slack_message(self, channel_id: str, thread_ts: Optional[str], user_id: str, text: str):
-        """Process a Slack message in a separate thread."""
+        # Check if project has a plan
+        if not project.plan:
+            self.logger.error(f"Project has no implementation plan: {project_id}")
+            return None
+        
         try:
-            # Initialize chat agent if needed
-            self._initialize_chat_agent()
+            # Start implementation
+            self.logger.info(f"Starting implementation for project: {project.name}")
             
-            # Get user info
-            user_info = self.slack_manager.get_user_info(user_id)
-            user_name = user_info.get("real_name", "User")
+            # Use project manager to start implementation
+            result = self.project_manager.start_implementation(
+                project_id, 
+                max_concurrent_features=max_concurrent_features
+            )
             
-            # Generate a thread ID for the chat agent
-            thread_id = thread_ts or f"slack_{channel_id}_{int(time.time())}"
+            if "error" in result:
+                self.logger.error(f"Error starting implementation: {result['error']}")
+                return None
             
-            # Check for specific command patterns
+            # Track active project
+            with self.project_lock:
+                self.active_projects[project_id] = {
+                    "status": "implementing",
+                    "started_at": time.time(),
+                    "active_features": result["active_features"],
+                    "pending_features": result["pending_features"]
+                }
             
-            # Project creation command
-            project_match = re.search(r"create\s+project\s+(?:called\s+)?[\"\']?([^\"\']+)[\"\']?", text, re.IGNORECASE)
-            if project_match:
-                project_name = project_match.group(1).strip()
-                self._handle_project_creation(channel_id, thread_ts, user_name, project_name, text)
-                return
-            
-            # PR tracking command
-            pr_track_match = re.search(r"track\s+PR\s+#?(\d+)", text, re.IGNORECASE)
-            if pr_track_match:
-                pr_number = int(pr_track_match.group(1))
-                self._handle_pr_tracking(channel_id, thread_ts, pr_number, text)
-                return
-            
-            # PR validation command
-            pr_validate_match = re.search(r"validate\s+PR\s+#?(\d+)", text, re.IGNORECASE)
-            if pr_validate_match:
-                pr_number = int(pr_validate_match.group(1))
-                self._handle_pr_validation(channel_id, thread_ts, pr_number)
-                return
-            
-            # PR review command
-            pr_review_match = re.search(r"review\s+PR\s+#?(\d+)", text, re.IGNORECASE)
-            if pr_review_match:
-                pr_number = int(pr_review_match.group(1))
-                self._handle_pr_review(channel_id, thread_ts, pr_number)
-                return
-            
-            # Progress report command
-            progress_match = re.search(r"progress\s+report\s+(?:for\s+)?[\"\']?([^\"\']+)[\"\']?", text, re.IGNORECASE)
-            if progress_match:
-                project_name = progress_match.group(1).strip()
-                self._handle_progress_report(channel_id, thread_ts, project_name)
-                return
-            
-            # Next requirement command
-            next_req_match = re.search(r"next\s+requirement\s+(?:for\s+)?[\"\']?([^\"\']+)[\"\']?", text, re.IGNORECASE)
-            if next_req_match:
-                project_name = next_req_match.group(1).strip()
-                self._handle_next_requirement(channel_id, thread_ts, project_name)
-                return
-            
-            # Research command
-            research_match = re.search(r"research\s+(?:about\s+)?[\"\']?([^\"\']+)[\"\']?", text, re.IGNORECASE)
-            if research_match:
-                topic = research_match.group(1).strip()
-                self._handle_research_request(channel_id, thread_ts, topic)
-                return
-            
-            # Project planning command
-            if "plan" in text.lower() and "project" in text.lower():
-                self._handle_project_planning(channel_id, thread_ts, user_name, text)
-                return
-            
-            # If no specific command is detected, use the chat agent to generate a response
-            self._initialize_reflector()
-            
-            # First, reflect on the message to understand the intent
-            reflection = self.reflector.reflect(text)
-            
-            # Generate a response using the chat agent
-            response = self.chat_agent.run(
-                f"""
-                User message: {text}
+            # Notify in Slack if channel is specified
+            if project.slack_channel:
+                started_features = result.get("started_features", [])
+                features_text = "\n".join([f"• *{feature}*" for feature in started_features])
                 
-                Reflection on intent: {reflection}
-                
-                Please provide a helpful response to the user's message.
-                """,
-                thread_id=thread_id
-            )
-            
-            # Send the response
-            self.slack_manager.send_message(
-                channel_id,
-                response,
-                thread_ts=thread_ts
-            )
-        
-        except Exception as e:
-            self.logger.error(f"Error processing Slack message: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error processing your message: {str(e)}",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_project_creation(self, channel_id: str, thread_ts: Optional[str], user_name: str, project_name: str, text: str):
-        """Handle a project creation request."""
-        try:
-            # Extract requirements from the message
-            requirements = text
-            
-            # Initialize planning agent if needed
-            self._initialize_planning_agent()
-            
-            # Generate a plan
-            thread_id = f"project_{project_name}_{int(time.time())}"
-            plan_prompt = f"""
-            Create a detailed implementation plan for the following project:
-            
-            Project Name: {project_name}
-            Requirements: {requirements}
-            
-            The plan should include:
-            1. A breakdown of the main features
-            2. Step-by-step implementation tasks
-            3. Technical requirements
-            4. GitHub branch structure
-            5. Timeline estimates
-            """
-            
-            # Send acknowledgment
-            self.slack_manager.send_message(
-                channel_id,
-                f"Creating project plan for '{project_name}'. This may take a moment...",
-                thread_ts=thread_ts
-            )
-            
-            plan_response = self.planning_agent.run(plan_prompt, thread_id=thread_id)
-            
-            # Create a default GitHub URL
-            git_url = f"https://github.com/{self.github_manager.username}/{project_name.lower().replace(' ', '-')}"
-            
-            # Create the project
-            project_id = self.project_manager.add_project(
-                name=project_name,
-                git_url=git_url,
-                slack_channel=channel_id,
-                requirements=requirements,
-                plan=plan_response
-            )
-            
-            # Send the response
-            self.slack_manager.send_message(
-                channel_id,
-                f"✅ Project '{project_name}' created successfully!\n\nProject ID: {project_id}\nGitHub URL: {git_url}\n\n**Project Plan:**\n\n{plan_response}",
-                thread_ts=thread_ts
-            )
-        
-        except Exception as e:
-            self.logger.error(f"Error creating project: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error creating the project: {str(e)}",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_pr_tracking(self, channel_id: str, thread_ts: Optional[str], pr_number: int, text: str):
-        """Handle a PR tracking request."""
-        try:
-            # Find the project by name
-            project_id = None
-            for p_id, project in self.project_manager.projects.items():
-                if project.name.lower() == project_name.lower():
-                    project_id = p_id
-                    break
-            
-            if not project_id:
                 self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Project '{project_name}' not found. Please check the project name and try again.",
-                    thread_ts=thread_ts
+                    channel=project.slack_channel,
+                    text=f"Started implementation for project: *{project.name}*\n\n"
+                         f"Features being implemented:\n{features_text}"
                 )
-                return
             
-            # Get repository name from git_url
-            project = self.project_manager.get_project(project_id)
-            repo_parts = project.git_url.split("/")
-            repo_name = repo_parts[-1].replace(".git", "") if repo_parts[-1].endswith(".git") else repo_parts[-1]
-            
-            # Get PR details from GitHub
-            pr_details = self.github_manager.get_pull_request(pr_number, repo_name)
-            
-            if not pr_details:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ PR #{pr_number} not found in repository {repo_name}.",
-                    thread_ts=thread_ts
+            # Send tasks for each started feature
+            for feature_name in result.get("started_features", []):
+                self.thread_pool.submit(
+                    self.project_manager.send_feature_tasks,
+                    project_id,
+                    feature_name
                 )
-                return
             
-            # Extract feature name from PR title
-            feature_name = pr_details.get("title", f"Feature from PR #{pr_number}")
+            return result
+        except Exception as e:
+            self.logger.error(f"Error starting project implementation: {e}")
+            return None
+    
+    def handle_pr_notification(self, project_id, feature_name, pr_url):
+        """Handle a PR notification for a feature."""
+        project = self.project_database.get_project(project_id)
+        if not project:
+            self.logger.error(f"Project not found: {project_id}")
+            return None
+        
+        try:
+            # Handle PR
+            self.logger.info(f"Handling PR for project {project.name}, feature {feature_name}")
             
-            # Track the PR
-            result = self.project_manager.track_pr(
+            # Use project manager to handle PR
+            result = self.project_manager.handle_pr_received(
                 project_id,
-                pr_number,
-                pr_details.get("url", f"https://github.com/{self.github_manager.username}/{repo_name}/pull/{pr_number}"),
                 feature_name,
-                pr_details.get("state", "open")
+                pr_url
             )
             
-            if result:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"✅ PR #{pr_number} is now being tracked for project '{project_name}'.\n\nFeature: {feature_name}\nStatus: {pr_details.get('state', 'open').upper()}",
-                    thread_ts=thread_ts
-                )
-            else:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Failed to track PR #{pr_number} for project '{project_name}'.",
-                    thread_ts=thread_ts
-                )
-        
+            if "error" in result:
+                self.logger.error(f"Error handling PR: {result['error']}")
+                return None
+            
+            return result
         except Exception as e:
-            self.logger.error(f"Error tracking PR: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error tracking the PR: {str(e)}",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_pr_validation(self, channel_id: str, thread_ts: Optional[str], pr_number: int):
-        """Handle a PR validation request."""
-        try:
-            # Find the project by name
-            project_id = None
-            for p_id, project in self.project_manager.projects.items():
-                if project.name.lower() == project_name.lower():
-                    project_id = p_id
-                    break
-            
-            if not project_id:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Project '{project_name}' not found. Please check the project name and try again.",
-                    thread_ts=thread_ts
-                )
-                return
-            
-            # Send acknowledgment
-            self.slack_manager.send_message(
-                channel_id,
-                f"🔍 Validating PR #{pr_number} for project '{project_name}'. This may take a moment...",
-                thread_ts=thread_ts
-            )
-            
-            # Start validation
-            result = self.project_manager.validate_pr_against_requirements(project_id, pr_number)
-            
-            if result.get("error"):
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Error validating PR: {result['error']}",
-                    thread_ts=thread_ts
-                )
-            else:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"✅ Validation started for PR #{pr_number}. You will be notified when the validation is complete.",
-                    thread_ts=thread_ts
-                )
-        
-        except Exception as e:
-            self.logger.error(f"Error validating PR: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error validating the PR: {str(e)}",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_progress_report(self, channel_id: str, thread_ts: Optional[str], project_name: str):
-        """Handle a progress report request."""
-        try:
-            # Find the project by name
-            project_id = None
-            for p_id, project in self.project_manager.projects.items():
-                if project.name.lower() == project_name.lower():
-                    project_id = p_id
-                    break
-            
-            if not project_id:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Project '{project_name}' not found. Please check the project name and try again.",
-                    thread_ts=thread_ts
-                )
-                return
-            
-            # Generate progress report
-            result = self.project_manager.generate_progress_report(project_id)
-            
-            if result.get("error"):
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Error generating progress report: {result['error']}",
-                    thread_ts=thread_ts
-                )
-            else:
-                self.slack_manager.send_message(
-                    channel_id,
-                    result["report"],
-                    thread_ts=thread_ts
-                )
-        
-        except Exception as e:
-            self.logger.error(f"Error generating progress report: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error generating the progress report: {str(e)}",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_next_requirement(self, channel_id: str, thread_ts: Optional[str], project_name: str):
-        """Handle a next requirement request."""
-        try:
-            # Find the project by name
-            project_id = None
-            for p_id, project in self.project_manager.projects.items():
-                if project.name.lower() == project_name.lower():
-                    project_id = p_id
-                    break
-            
-            if not project_id:
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Project '{project_name}' not found. Please check the project name and try again.",
-                    thread_ts=thread_ts
-                )
-                return
-            
-            # Send next requirement
-            result = self.project_manager.send_next_requirement(project_id)
-            
-            if result.get("error"):
-                self.slack_manager.send_message(
-                    channel_id,
-                    f"❌ Error sending next requirement: {result['error']}",
-                    thread_ts=thread_ts
-                )
-            else:
-                # The requirement is sent directly by the project manager
-                pass
-        
-        except Exception as e:
-            self.logger.error(f"Error sending next requirement: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error sending the next requirement: {str(e)}",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_pr_review(self, channel_id: str, thread_ts: Optional[str], pr_number: int):
-        """Handle a PR review request."""
-        try:
-            # Initialize PR review agent if needed
-            self._initialize_pr_review_agent()
-            
-            # Get the repository name from the GitHub manager
-            repo_name = f"{self.github_manager.username}/{self.github_manager.default_repo_name}"
-            
-            # Send an acknowledgment message
-            self.slack_manager.send_message(
-                channel_id,
-                f"I'm reviewing PR #{pr_number} now. This may take a few moments...",
-                thread_ts=thread_ts
-            )
-            
-            # Review the PR
-            review_result = self.pr_review_agent.review_pr(repo_name, pr_number)
-            
-            # Format the review result
-            if review_result.get("compliant", False):
-                status = "✅ This PR complies with project requirements."
-            else:
-                status = "❌ This PR does not fully comply with project requirements."
-            
-            issues = review_result.get("issues", [])
-            issues_text = "\n".join([f"- {issue}" for issue in issues]) if issues else "No issues found."
-            
-            suggestions = review_result.get("suggestions", [])
-            suggestions_text = ""
-            if suggestions:
-                for suggestion in suggestions:
-                    if isinstance(suggestion, dict):
-                        desc = suggestion.get("description", "")
-                        file_path = suggestion.get("file_path")
-                        line_number = suggestion.get("line_number")
-                        
-                        if file_path and line_number:
-                            suggestions_text += f"- {desc} (in `{file_path}` at line {line_number})\n"
-                        elif file_path:
-                            suggestions_text += f"- {desc} (in `{file_path}`)\n"
-                        else:
-                            suggestions_text += f"- {desc}\n"
-                    else:
-                        suggestions_text += f"- {suggestion}\n"
-            else:
-                suggestions_text = "No suggestions."
-            
-            # Send the review result
-            review_message = f"""
-            # PR Review for #{pr_number}
-            
-            {status}
-            
-            ## Issues
-            {issues_text}
-            
-            ## Suggestions
-            {suggestions_text}
-            
-            ## Recommendation
-            {review_result.get('approval_recommendation', 'No recommendation provided.')}
-            """
-            
-            self.slack_manager.send_message(
-                channel_id,
-                review_message,
-                thread_ts=thread_ts
-            )
-        
-        except Exception as e:
-            self.logger.error(f"Error handling PR review: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error reviewing PR #{pr_number}. Please try again later.",
-                thread_ts=thread_ts
-            )
-    
-    def _handle_project_planning(self, channel_id: str, thread_ts: Optional[str], user_name: str, text: str):
-        """Handle a project planning request."""
-        try:
-            # Initialize planning agent if needed
-            self._initialize_planning_agent()
-            
-            # Generate a thread ID
-            thread_id = f"plan_{int(time.time())}"
-            
-            # Generate a plan
-            plan_prompt = f"""
-            Create a detailed implementation plan for the following project requirements:
-            
-            {text}
-            
-            The plan should include:
-            1. A breakdown of the main features
-            2. Step-by-step implementation tasks
-            3. Technical requirements
-            4. GitHub branch structure
-            5. Timeline estimates
-            """
-            
-            # Send acknowledgment
-            self.slack_manager.send_message(
-                channel_id,
-                "Generating a project plan. This may take a moment...",
-                thread_ts=thread_ts
-            )
-            
-            plan_response = self.planning_agent.run(plan_prompt, thread_id=thread_id)
-            
-            # Extract project name from text
-            project_name_match = re.search(r"project\s+(?:called|named)\s+[\"']?([^\"']+)[\"']?", text, re.IGNORECASE)
-            project_name = project_name_match.group(1).strip() if project_name_match else f"Project_{int(time.time())}"
-            
-            # Create a default GitHub URL
-            git_url = f"https://github.com/{self.github_manager.username}/{project_name.lower().replace(' ', '-')}"
-            
-            # Create the project
-            project_id = self.project_manager.add_project(
-                name=project_name,
-                git_url=git_url,
-                slack_channel=channel_id,
-                requirements=text,
-                plan=plan_response
-            )
-            
-            # Send the plan to Slack
-            self.slack_manager.send_message(
-                channel_id,
-                f"I've created a project plan for you:\n\n{plan_response}\n\nThe project has been saved with ID: {project_id}",
-                thread_ts=thread_ts
-            )
-        
-        except Exception as e:
-            self.logger.error(f"Error handling project planning: {e}")
-            self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error generating the project plan: {str(e)}",
-                thread_ts=thread_ts
-            )
+            self.logger.error(f"Error handling PR notification: {e}")
+            return None
     
     def monitor_slack_threads(self):
         """Monitor Slack threads for new messages."""
-        try:
-            # Get recent messages from the default channel
-            recent_messages = self.slack_manager.get_recent_messages()
+        # Get active projects
+        with self.project_lock:
+            active_project_ids = list(self.active_projects.keys())
+        
+        for project_id in active_project_ids:
+            project = self.project_database.get_project(project_id)
+            if not project or not project.slack_channel:
+                continue
             
-            for message in recent_messages:
-                # Skip messages from bots or the assistant itself
-                if message.get("bot_id") or message.get("user") == self.slack_manager.bot_user_id:
-                    continue
-                
-                channel_id = message.get("channel")
-                thread_ts = message.get("thread_ts", message.get("ts"))
-                user_id = message.get("user")
-                text = message.get("text", "")
-                
-                # Handle the message
-                self.handle_slack_message(channel_id, thread_ts, user_id, text)
+            # Get active threads for this project
+            active_threads = project.active_threads
+            
+            for feature_name, thread_ts in active_threads.items():
+                try:
+                    # Get messages in thread
+                    messages = self.slack_manager.get_thread_messages(
+                        channel=project.slack_channel,
+                        thread_ts=thread_ts
+                    )
+                    
+                    # Process new messages
+                    for message in messages:
+                        # Skip messages we've already processed
+                        message_ts = message.get("ts")
+                        if message_ts in self.processed_threads:
+                            continue
+                        
+                        # Mark as processed
+                        with self.thread_lock:
+                            self.processed_threads.add(message_ts)
+                        
+                        # Check for PR links
+                        text = message.get("text", "")
+                        pr_urls = re.findall(r"https://github\.com/[^/]+/[^/]+/pull/\d+", text)
+                        
+                        if pr_urls:
+                            # Handle PR notification
+                            for pr_url in pr_urls:
+                                self.thread_pool.submit(
+                                    self.handle_pr_notification,
+                                    project_id,
+                                    feature_name,
+                                    pr_url
+                                )
+                except Exception as e:
+                    self.logger.error(f"Error monitoring thread for project {project_id}, feature {feature_name}: {e}")
+    
+    def process_slack_message(self, message):
+        """Process a Slack message and respond if needed."""
+        try:
+            # Extract message details
+            channel = message.get("channel")
+            text = message.get("text", "")
+            user = message.get("user")
+            ts = message.get("ts")
+            thread_ts = message.get("thread_ts", ts)
+            
+            # Skip messages we've already processed
+            if ts in self.processed_threads:
+                return
+            
+            # Mark as processed
+            with self.thread_lock:
+                self.processed_threads.add(ts)
+            
+            # Check for commands
+            if text.startswith("!project"):
+                self._handle_project_command(text, channel, thread_ts)
+            elif text.startswith("!plan"):
+                self._handle_plan_command(text, channel, thread_ts)
+            elif text.startswith("!start"):
+                self._handle_start_command(text, channel, thread_ts)
+            elif text.startswith("!status"):
+                self._handle_status_command(text, channel, thread_ts)
+            elif text.startswith("!help"):
+                self._handle_help_command(channel, thread_ts)
         
         except Exception as e:
-            self.logger.error(f"Error monitoring Slack threads: {e}")
+            self.logger.error(f"Error processing Slack message: {e}")
     
-    def _handle_research_request(self, channel_id: str, thread_ts: Optional[str], topic: str):
-        """Handle a research request."""
-        try:
-            # Initialize web searcher if needed
-            self._initialize_web_searcher()
-            
-            # Send acknowledgment
+    def _handle_project_command(self, text, channel, thread_ts):
+        """Handle !project command."""
+        parts = text.split(maxsplit=2)
+        if len(parts) < 2:
             self.slack_manager.send_message(
-                channel_id,
-                f"Researching information about '{topic}'. This may take a moment...",
+                channel=channel,
+                text="Usage: !project list | !project info <project_id>",
                 thread_ts=thread_ts
             )
+            return
+        
+        subcommand = parts[1].lower()
+        
+        if subcommand == "list":
+            # List all projects
+            projects = self.project_database.list_projects()
             
-            # Perform web search
-            search_results = self.web_searcher.search(topic, max_results=5)
-            
-            # Format results
-            if not search_results or len(search_results) == 0:
+            if not projects:
                 self.slack_manager.send_message(
-                    channel_id,
-                    f"I couldn't find any information about '{topic}'. Please try a different search term.",
+                    channel=channel,
+                    text="No projects found.",
                     thread_ts=thread_ts
                 )
                 return
             
-            # Format the search results
-            message = f"# Research Results: {topic}\n\n"
+            # Format project list
+            project_list = "\n".join([
+                f"• *{project.name}* (ID: {project.id})"
+                for project in projects
+            ])
             
-            for i, result in enumerate(search_results):
-                message += f"## {i+1}. {result.get('title', 'Untitled')}\n"
-                message += f"Source: {result.get('url', 'No URL')}\n\n"
-                message += f"{result.get('snippet', 'No snippet available')}\n\n"
-            
-            # Add a summary if we have a chat agent
-            self._initialize_chat_agent()
-            summary = self.chat_agent.run(
-                f"""
-                Summarize the following research results about '{topic}':
-                
-                {message}
-                
-                Provide a concise summary of the key points.
-                """,
-                thread_id=f"research_{topic}"
-            )
-            
-            message += f"## Summary\n{summary}\n"
-            
-            # Send the results
             self.slack_manager.send_message(
-                channel_id,
-                message,
+                channel=channel,
+                text=f"Projects:\n{project_list}",
+                thread_ts=thread_ts
+            )
+        
+        elif subcommand == "info" and len(parts) >= 3:
+            # Get project info
+            project_id = parts[2]
+            project = self.project_database.get_project(project_id)
+            
+            if not project:
+                self.slack_manager.send_message(
+                    channel=channel,
+                    text=f"Project not found: {project_id}",
+                    thread_ts=thread_ts
+                )
+                return
+            
+            # Format project info
+            info = f"*Project:* {project.name}\n"
+            info += f"*ID:* {project.id}\n"
+            info += f"*Git URL:* {project.git_url}\n"
+            info += f"*Slack Channel:* {project.slack_channel or 'Not set'}\n"
+            info += f"*Features:* {len(project.features)}\n"
+            
+            # Add plan status
+            if project.plan:
+                info += f"*Plan:* Available\n"
+            else:
+                info += f"*Plan:* Not created\n"
+            
+            self.slack_manager.send_message(
+                channel=channel,
+                text=info,
+                thread_ts=thread_ts
+            )
+        
+        else:
+            self.slack_manager.send_message(
+                channel=channel,
+                text="Usage: !project list | !project info <project_id>",
+                thread_ts=thread_ts
+            )
+    
+    def _handle_plan_command(self, text, channel, thread_ts):
+        """Handle !plan command."""
+        parts = text.split(maxsplit=1)
+        if len(parts) < 2:
+            self.slack_manager.send_message(
+                channel=channel,
+                text="Usage: !plan <project_id>",
+                thread_ts=thread_ts
+            )
+            return
+        
+        project_id = parts[1]
+        project = self.project_database.get_project(project_id)
+        
+        if not project:
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Project not found: {project_id}",
+                thread_ts=thread_ts
+            )
+            return
+        
+        # Send acknowledgement
+        self.slack_manager.send_message(
+            channel=channel,
+            text=f"Creating implementation plan for project: *{project.name}*...",
+            thread_ts=thread_ts
+        )
+        
+        # Create plan in a separate thread
+        self.thread_pool.submit(
+            self._create_plan_and_notify,
+            project_id,
+            channel,
+            thread_ts
+        )
+    
+    def _create_plan_and_notify(self, project_id, channel, thread_ts):
+        """Create a plan and notify in Slack."""
+        try:
+            # Create plan
+            plan_result = self.create_implementation_plan(project_id)
+            
+            if not plan_result:
+                self.slack_manager.send_message(
+                    channel=channel,
+                    text=f"Failed to create implementation plan for project: {project_id}",
+                    thread_ts=thread_ts
+                )
+                return
+            
+            # Get project
+            project = self.project_database.get_project(project_id)
+            
+            # Notify success
+            features = plan_result.get("features", {})
+            feature_list = "\n".join([
+                f"• *{name}*: {feature.get('description', 'No description')}"
+                for name, feature in features.items()
+            ])
+            
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Implementation plan created for project: *{project.name}*\n\n"
+                     f"Features to implement:\n{feature_list}\n\n"
+                     f"Use `!start {project_id}` to begin implementation.",
                 thread_ts=thread_ts
             )
         
         except Exception as e:
-            self.logger.error(f"Error handling research request: {e}")
+            self.logger.error(f"Error creating plan and notifying: {e}")
+            
             self.slack_manager.send_message(
-                channel_id,
-                f"I encountered an error researching '{topic}': {str(e)}",
+                channel=channel,
+                text=f"Error creating implementation plan: {str(e)}",
                 thread_ts=thread_ts
             )
+    
+    def _handle_start_command(self, text, channel, thread_ts):
+        """Handle !start command."""
+        parts = text.split(maxsplit=2)
+        if len(parts) < 2:
+            self.slack_manager.send_message(
+                channel=channel,
+                text="Usage: !start <project_id> [max_concurrent_features]",
+                thread_ts=thread_ts
+            )
+            return
+        
+        project_id = parts[1]
+        max_concurrent = int(parts[2]) if len(parts) >= 3 else None
+        
+        project = self.project_database.get_project(project_id)
+        
+        if not project:
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Project not found: {project_id}",
+                thread_ts=thread_ts
+            )
+            return
+        
+        # Send acknowledgement
+        self.slack_manager.send_message(
+            channel=channel,
+            text=f"Starting implementation for project: *{project.name}*...",
+            thread_ts=thread_ts
+        )
+        
+        # Start implementation in a separate thread
+        self.thread_pool.submit(
+            self._start_implementation_and_notify,
+            project_id,
+            max_concurrent,
+            channel,
+            thread_ts
+        )
+    
+    def _start_implementation_and_notify(self, project_id, max_concurrent, channel, thread_ts):
+        """Start implementation and notify in Slack."""
+        try:
+            # Start implementation
+            result = self.start_project_implementation(
+                project_id,
+                max_concurrent_features=max_concurrent
+            )
+            
+            if not result:
+                self.slack_manager.send_message(
+                    channel=channel,
+                    text=f"Failed to start implementation for project: {project_id}",
+                    thread_ts=thread_ts
+                )
+                return
+            
+            # Get project
+            project = self.project_database.get_project(project_id)
+            
+            # Notify success
+            started_features = result.get("started_features", [])
+            features_text = "\n".join([f"• *{feature}*" for feature in started_features])
+            
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Started implementation for project: *{project.name}*\n\n"
+                     f"Features being implemented:\n{features_text}\n\n"
+                     f"Tasks will be sent to feature-specific threads.",
+                thread_ts=thread_ts
+            )
+        
+        except Exception as e:
+            self.logger.error(f"Error starting implementation and notifying: {e}")
+            
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Error starting implementation: {str(e)}",
+                thread_ts=thread_ts
+            )
+    
+    def _handle_status_command(self, text, channel, thread_ts):
+        """Handle !status command."""
+        parts = text.split(maxsplit=1)
+        if len(parts) < 2:
+            self.slack_manager.send_message(
+                channel=channel,
+                text="Usage: !status <project_id>",
+                thread_ts=thread_ts
+            )
+            return
+        
+        project_id = parts[1]
+        project = self.project_database.get_project(project_id)
+        
+        if not project:
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Project not found: {project_id}",
+                thread_ts=thread_ts
+            )
+            return
+        
+        # Get project status
+        status = self.project_manager.get_project_status(project_id)
+        
+        if "error" in status:
+            self.slack_manager.send_message(
+                channel=channel,
+                text=f"Error getting project status: {status['error']}",
+                thread_ts=thread_ts
+            )
+            return
+        
+        # Format status message
+        progress = status.get("progress", {})
+        implementation = status.get("implementation", {})
+        
+        total_features = progress.get("total_features", 0)
+        completed_features = progress.get("completed_features", 0)
+        in_progress_features = progress.get("in_progress_features", 0)
+        pending_features = progress.get("pending_features", 0)
+        
+        progress_percentage = status.get("progress_percentage", 0)
+        
+        active_features = implementation.get("active_features", [])
+        
+        # Create status message
+        status_message = f"*Status for project:* {project.name}\n\n"
+        status_message += f"*Progress:* {progress_percentage:.1f}%\n"
+        status_message += f"*Features:* {completed_features}/{total_features} completed\n"
+        status_message += f"*In Progress:* {in_progress_features} features\n"
+        status_message += f"*Pending:* {pending_features} features\n\n"
+        
+        if active_features:
+            status_message += "*Currently implementing:*\n"
+            for feature in active_features:
+                status_message += f"• *{feature}*\n"
+        
+        self.slack_manager.send_message(
+            channel=channel,
+            text=status_message,
+            thread_ts=thread_ts
+        )
+    
+    def _handle_help_command(self, channel, thread_ts):
+        """Handle !help command."""
+        help_text = """
+*Available Commands:*
+
+• `!project list` - List all projects
+• `!project info <project_id>` - Show project details
+• `!plan <project_id>` - Create implementation plan for a project
+• `!start <project_id> [max_concurrent_features]` - Start project implementation
+• `!status <project_id>` - Show project implementation status
+• `!help` - Show this help message
+"""
+        
+        self.slack_manager.send_message(
+            channel=channel,
+            text=help_text,
+            thread_ts=thread_ts
+        )

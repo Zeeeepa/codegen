@@ -6,12 +6,15 @@ import logging
 import json
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from agentgen.application.projector.backend.project import Project
-from agentgen.application.projector.backend.project_database import ProjectDatabase
-from agentgen.application.projector.backend.github_manager import GitHubManager
-from agentgen.application.projector.backend.slack_manager import SlackManager
-from agentgen.application.projector.backend.thread_pool import ThreadPool
-from agentgen.agents.pr_review_agent import PRReviewAgent
+
+from codegen.agents.planning_agent import PlanningAgent
+from codegen.agents.pr_review_agent import PRReviewAgent
+from codegen.agents.planning.planning import PlanStepStatus
+from projector.backend.project import Project
+from projector.backend.project_database import ProjectDatabase
+from projector.backend.github_manager import GitHubManager
+from projector.backend.slack_manager import SlackManager
+from projector.backend.thread_pool import ThreadPool
 
 class ProjectManager:
     """Manages multiple projects and their configurations with a focus on tracking progress."""
@@ -38,6 +41,12 @@ class ProjectManager:
         
         # PR review agent for validating PRs
         self.pr_review_agent = None
+        
+        # Planning agent for creating implementation plans
+        self.planning_agent = None
+        
+        # Active project implementations
+        self.active_implementations = {}
         
         # Load projects from database
         self._load_projects()
@@ -67,11 +76,24 @@ class ProjectManager:
                     codebase=mock_codebase,
                     github_token=self.github_manager.github_token,
                     model_provider="anthropic",
-                    model_name="claude-3-7-sonnet-latest"
+                    model_name="claude-3-5-sonnet-latest"
                 )
                 self.logger.info("PR review agent initialized successfully")
             except Exception as e:
                 self.logger.error(f"Error initializing PR review agent: {e}")
+                raise
+    
+    def _initialize_planning_agent(self):
+        """Initialize the planning agent on demand."""
+        if self.planning_agent is None:
+            try:
+                self.planning_agent = PlanningAgent(
+                    model_provider="anthropic",
+                    model_name="claude-3-5-sonnet-latest"
+                )
+                self.logger.info("Planning agent initialized successfully")
+            except Exception as e:
+                self.logger.error(f"Error initializing planning agent: {e}")
                 raise
     
     def _generate_project_id(self, name):
@@ -114,395 +136,448 @@ class ProjectManager:
         # Save to database
         self.db.save_project(project)
         
-        # Create a Slack thread for this project if a channel is specified
-        if slack_channel:
-            thread_ts = self.slack_manager.create_thread(
-                f"Project: {name}",
-                f"New project created: {name}\nGit URL: {git_url}\nProject ID: {project_id}",
-                channel=slack_channel
-            )
-            if thread_ts:
-                project.slack_thread_ts = thread_ts
-                self.db.save_project(project)
-        
-        self.logger.info(f"Added project: {name} (ID: {project_id})")
-        
         return project_id
     
     def get_project(self, project_id):
         """Get a project by ID."""
         return self.projects.get(project_id)
     
-    def get_project_by_name(self, name):
-        """Get a project by name."""
-        for project_id, project in self.projects.items():
-            if project.name.lower() == name.lower():
-                return project
-        return None
+    def update_project(self, project_id, **kwargs):
+        """Update a project with new values."""
+        project = self.get_project(project_id)
+        if not project:
+            return None
+        
+        # Update project attributes
+        for key, value in kwargs.items():
+            if hasattr(project, key):
+                setattr(project, key, value)
+        
+        # Update timestamp
+        project.updated_at = datetime.now().isoformat()
+        
+        # Save to database
+        self.db.save_project(project)
+        
+        return project
+    
+    def delete_project(self, project_id):
+        """Delete a project."""
+        if project_id in self.projects:
+            # Remove from memory
+            del self.projects[project_id]
+            
+            # Remove progress tracking
+            if project_id in self.project_progress:
+                del self.project_progress[project_id]
+            
+            # Remove PR tracking
+            if project_id in self.project_prs:
+                del self.project_prs[project_id]
+            
+            # Remove from database
+            self.db.delete_project(project_id)
+            
+            return True
+        
+        return False
     
     def list_projects(self):
         """List all projects."""
         return list(self.projects.values())
     
-    def update_project(self, project_id, **kwargs):
-        """Update project properties."""
+    def create_implementation_plan(self, project_id, requirements=None):
+        """Create an implementation plan for a project."""
         project = self.get_project(project_id)
-        
         if not project:
-            return False
+            return {"error": f"Project with ID {project_id} not found"}
         
-        # Update properties
-        for key, value in kwargs.items():
-            if hasattr(project, key):
-                setattr(project, key, value)
+        # Use requirements from project if not provided
+        requirements_text = requirements or project.requirements
+        if not requirements_text:
+            return {"error": "No requirements provided"}
         
-        # Save changes
-        self.db.save_project(project)
-        
-        return True
-    
-    def delete_project(self, project_id):
-        """Delete a project."""
-        if project_id in self.projects:
-            del self.projects[project_id]
-            if project_id in self.project_progress:
-                del self.project_progress[project_id]
-            if project_id in self.project_prs:
-                del self.project_prs[project_id]
-            return self.db.delete_project(project_id)
-        
-        return False
-    
-    def track_pr(self, project_id, pr_number, pr_url, feature_name, status="open"):
-        """Track a pull request for a project."""
-        if project_id not in self.projects:
-            return False
-        
-        # Add PR to tracking
-        pr_info = {
-            "pr_number": pr_number,
-            "pr_url": pr_url,
-            "feature_name": feature_name,
-            "status": status,
-            "created_at": datetime.now().isoformat(),
-            "last_updated": datetime.now().isoformat()
-        }
-        
-        # Check if PR already exists
-        for i, pr in enumerate(self.project_prs[project_id]):
-            if pr["pr_number"] == pr_number:
-                # Update existing PR
-                self.project_prs[project_id][i] = pr_info
-                return True
-        
-        # Add new PR
-        self.project_prs[project_id].append(pr_info)
-        
-        # Update project progress
-        self._update_project_progress(project_id)
-        
-        # Notify in Slack if thread exists
-        project = self.get_project(project_id)
-        if project and project.slack_channel and project.slack_thread_ts:
-            self.slack_manager.reply_to_thread(
-                project.slack_thread_ts,
-                f"New PR #{pr_number} created for feature: {feature_name}\nURL: {pr_url}"
-            )
-        
-        return True
-    
-    def update_pr_status(self, project_id, pr_number, status):
-        """Update the status of a pull request."""
-        if project_id not in self.projects:
-            return False
-        
-        # Find and update PR
-        for i, pr in enumerate(self.project_prs[project_id]):
-            if pr["pr_number"] == pr_number:
-                self.project_prs[project_id][i]["status"] = status
-                self.project_prs[project_id][i]["last_updated"] = datetime.now().isoformat()
-                
-                # Update project progress
-                self._update_project_progress(project_id)
-                
-                # Notify in Slack if thread exists
-                project = self.get_project(project_id)
-                if project and project.slack_channel and project.slack_thread_ts:
-                    emoji = "✅" if status == "merged" else "🔄" if status == "open" else "❌"
-                    self.slack_manager.reply_to_thread(
-                        project.slack_thread_ts,
-                        f"{emoji} PR #{pr_number} status updated to: {status}"
-                    )
-                
-                return True
-        
-        return False
-    
-    def _update_project_progress(self, project_id):
-        """Update project progress based on PR status."""
-        if project_id not in self.projects or project_id not in self.project_prs:
-            return
-        
-        # Count features by status
-        total_features = len(set(pr["feature_name"] for pr in self.project_prs[project_id]))
-        completed_features = len(set(pr["feature_name"] for pr in self.project_prs[project_id] if pr["status"] == "merged"))
-        in_progress_features = len(set(pr["feature_name"] for pr in self.project_prs[project_id] if pr["status"] == "open"))
-        pending_features = total_features - completed_features - in_progress_features
-        
-        # Update progress
-        self.project_progress[project_id] = {
-            "total_features": total_features,
-            "completed_features": completed_features,
-            "in_progress_features": in_progress_features,
-            "pending_features": pending_features,
-            "last_updated": datetime.now().isoformat()
-        }
-    
-    def get_project_progress(self, project_id):
-        """Get the progress of a project."""
-        if project_id in self.project_progress:
-            return self.project_progress[project_id]
-        return None
-    
-    def get_project_prs(self, project_id):
-        """Get all pull requests for a project."""
-        if project_id in self.project_prs:
-            return self.project_prs[project_id]
-        return []
-    
-    def validate_pr_against_requirements(self, project_id, pr_number):
-        """Validate a PR against project requirements using PR review agent."""
-        project = self.get_project(project_id)
-        
-        if not project:
-            return {"error": "Project not found"}
-        
-        # Submit validation task to thread pool
-        task_id = f"validate_pr_{project_id}_{pr_number}"
-        
-        self.thread_pool.submit(
-            self._validate_pr_task,
-            project_id=project_id,
-            pr_number=pr_number
-        )
-        
-        return {"status": "validation_started", "task_id": task_id}
-    
-    def _validate_pr_task(self, project_id, pr_number):
-        """Task to validate a PR against requirements."""
-        project = self.get_project(project_id)
-        
-        if not project:
-            return {"error": "Project not found"}
+        # Initialize planning agent if needed
+        self._initialize_planning_agent()
         
         try:
-            # Initialize PR review agent if needed
-            self._initialize_pr_review_agent()
+            # Generate a plan using the planning agent
+            plan_prompt = f"""
+            Create a detailed implementation plan for the following project:
             
-            # Get PR details
-            pr_info = None
-            for pr in self.project_prs[project_id]:
-                if pr["pr_number"] == pr_number:
-                    pr_info = pr
-                    break
+            Project: {project.name}
             
-            if not pr_info:
-                return {"error": "PR not found"}
+            Requirements:
+            {requirements_text}
             
-            # Get repository name from git_url
-            repo_parts = project.git_url.split("/")
-            repo_name = repo_parts[-1].replace(".git", "") if repo_parts[-1].endswith(".git") else repo_parts[-1]
-            full_repo_name = f"{self.github_manager.username}/{repo_name}"
+            Please create a plan with the following:
+            1. High-level overview of the implementation approach
+            2. List of features to implement
+            3. For each feature, provide:
+               - Description
+               - Implementation steps
+               - Dependencies
+               - Estimated complexity
+            4. Suggested order of implementation
+            5. Potential challenges and mitigations
             
-            # Use PR review agent to validate PR
-            validation_result = self.pr_review_agent.review_pr(
-                full_repo_name, 
-                pr_number,
-                project_requirements=project.requirements
-            )
+            Format the plan as a structured markdown document.
+            """
             
-            # Update PR status based on validation
-            pr_info["validation_result"] = validation_result
-            pr_info["last_updated"] = datetime.now().isoformat()
+            # Generate the plan
+            plan_text = self.planning_agent.run(plan_prompt)
             
-            # Notify in Slack if thread exists
-            if project.slack_channel and project.slack_thread_ts:
-                status_emoji = "✅" if validation_result.get("compliant", False) else "❌"
-                message = f"{status_emoji} PR #{pr_number} validation result: {'Compliant' if validation_result.get('compliant', False) else 'Non-compliant'}"
-                
-                issues = validation_result.get("issues", [])
-                if issues:
-                    message += "\n\nIssues:"
-                    for issue in issues:
-                        message += f"\n- {issue}"
-                
-                suggestions = validation_result.get("suggestions", [])
-                if suggestions:
-                    message += "\n\nSuggestions:"
-                    for suggestion in suggestions:
-                        if isinstance(suggestion, dict):
-                            desc = suggestion.get("description", "")
-                            file_path = suggestion.get("file_path")
-                            line_number = suggestion.get("line_number")
-                            
-                            if file_path and line_number:
-                                message += f"\n- {desc} (in `{file_path}` at line {line_number})"
-                            elif file_path:
-                                message += f"\n- {desc} (in `{file_path}`)"
-                            else:
-                                message += f"\n- {desc}"
-                        else:
-                            message += f"\n- {suggestion}"
-                
-                self.slack_manager.reply_to_thread(
-                    project.slack_thread_ts,
-                    message
-                )
+            # Update the project with the plan
+            project.plan = plan_text
+            project.updated_at = datetime.now().isoformat()
             
-            return {"status": "validation_completed", "result": validation_result}
-        
+            # Extract features from the plan
+            features = self._extract_features_from_plan(plan_text)
+            project.features = features
+            
+            # Update progress tracking
+            self.project_progress[project_id] = {
+                "total_features": len(features),
+                "completed_features": 0,
+                "in_progress_features": 0,
+                "pending_features": len(features),
+                "last_updated": datetime.now().isoformat()
+            }
+            
+            # Save to database
+            self.db.save_project(project)
+            
+            return {
+                "success": True,
+                "plan": plan_text,
+                "features": features
+            }
         except Exception as e:
-            self.logger.error(f"Error validating PR: {e}")
+            self.logger.error(f"Error creating implementation plan: {e}")
             return {"error": str(e)}
     
-    def send_next_requirement(self, project_id):
-        """Send the next requirement for a project via Slack."""
-        project = self.get_project(project_id)
+    def _extract_features_from_plan(self, plan_text):
+        """Extract features from the plan text."""
+        features = {}
         
-        if not project or not project.slack_channel or not project.slack_thread_ts:
-            return {"error": "Project not found or Slack channel not configured"}
+        # Simple parsing logic - in a real implementation, this would be more robust
+        # and potentially use the AI to extract structured data
+        lines = plan_text.split("\n")
+        current_feature = None
+        feature_name = None
         
-        # Get project progress
-        progress = self.get_project_progress(project_id)
-        
-        if not progress:
-            return {"error": "Project progress not found"}
-        
-        # Parse project plan to extract next requirement
-        next_requirement = self._extract_next_requirement(project)
-        
-        if not next_requirement:
-            return {"error": "No more requirements to implement"}
-        
-        # Send requirement to Slack
-        message = f"📋 *Next Requirement*\n\n{next_requirement}"
-        
-        result = self.slack_manager.reply_to_thread(
-            project.slack_thread_ts,
-            message
-        )
-        
-        return {"status": "requirement_sent", "requirement": next_requirement}
-    
-    def _extract_next_requirement(self, project):
-        """Extract the next requirement from the project plan."""
-        try:
-            # Parse the project plan to find requirements
-            plan_lines = project.plan.split("\n")
+        for line in lines:
+            line = line.strip()
             
-            # Look for features or requirements sections
-            features_section = False
-            requirements = []
-            
-            for line in plan_lines:
-                line = line.strip()
+            # Look for feature headings
+            if line.startswith("## Feature:") or line.startswith("### Feature:"):
+                if current_feature and feature_name:
+                    features[feature_name] = current_feature
                 
-                # Check for section headers
-                if "feature" in line.lower() and (":" in line or "-" in line):
-                    features_section = True
-                    continue
-                
-                # If we're in the features section, collect requirements
-                if features_section and line and (line.startswith("-") or line.startswith("*") or line.startswith("#")):
-                    # Clean up the line
-                    requirement = line.lstrip("-*# ").strip()
-                    if requirement:
-                        requirements.append(requirement)
+                feature_name = line.split(":", 1)[1].strip() if ":" in line else line.lstrip("#").strip()
+                current_feature = {
+                    "name": feature_name,
+                    "description": "",
+                    "steps": [],
+                    "dependencies": [],
+                    "complexity": "medium",
+                    "status": "not_started"
+                }
             
-            # Get completed features
-            completed_features = set()
-            for pr in self.project_prs.get(project.id, []):
-                if pr["status"] == "merged":
-                    completed_features.add(pr["feature_name"].lower())
+            # Look for description
+            elif current_feature and line.startswith("Description:"):
+                current_feature["description"] = line.replace("Description:", "").strip()
             
-            # Find the first requirement that hasn't been completed
-            for req in requirements:
-                if req.lower() not in completed_features:
-                    return req
+            # Look for steps
+            elif current_feature and (line.startswith("- [ ]") or line.startswith("* [ ]")):
+                step_text = line.replace("- [ ]", "").replace("* [ ]", "").strip()
+                current_feature["steps"].append({
+                    "description": step_text,
+                    "status": "not_started"
+                })
             
-            # If no specific requirement found, return a generic one
-            return "Implement the next feature according to the project plan."
+            # Look for dependencies
+            elif current_feature and line.startswith("Dependencies:"):
+                deps_text = line.replace("Dependencies:", "").strip()
+                if deps_text:
+                    current_feature["dependencies"] = [d.strip() for d in deps_text.split(",")]
             
-        except Exception as e:
-            self.logger.error(f"Error extracting next requirement: {e}")
-            return "Implement the next feature according to the project plan."
-    
-    def generate_progress_report(self, project_id):
-        """Generate a progress report for a project."""
-        project = self.get_project(project_id)
+            # Look for complexity
+            elif current_feature and line.startswith("Complexity:"):
+                current_feature["complexity"] = line.replace("Complexity:", "").strip().lower()
         
+        # Add the last feature if it exists
+        if current_feature and feature_name:
+            features[feature_name] = current_feature
+        
+        return features
+    
+    def start_implementation(self, project_id, max_concurrent_features=None):
+        """Start implementing a project."""
+        project = self.get_project(project_id)
         if not project:
-            return {"error": "Project not found"}
+            return {"error": f"Project with ID {project_id} not found"}
         
-        progress = self.get_project_progress(project_id)
-        prs = self.get_project_prs(project_id)
+        if not project.features:
+            return {"error": "No features defined for this project"}
         
-        if not progress:
-            return {"error": "Project progress not found"}
+        # Set maximum concurrent features
+        max_concurrent = max_concurrent_features or project.max_parallel_tasks
         
-        # Calculate percentages
-        total = progress["total_features"]
-        completed_percent = (progress["completed_features"] / total * 100) if total > 0 else 0
-        in_progress_percent = (progress["in_progress_features"] / total * 100) if total > 0 else 0
-        pending_percent = (progress["pending_features"] / total * 100) if total > 0 else 0
+        # Initialize active implementation tracking
+        if project_id not in self.active_implementations:
+            self.active_implementations[project_id] = {
+                "active_features": [],
+                "completed_features": [],
+                "pending_features": list(project.features.keys()),
+                "max_concurrent": max_concurrent
+            }
         
-        # Generate report
-        report = f"""# Progress Report: {project.name}
-
-## Overview
-- **Total Features**: {total}
-- **Completed**: {progress["completed_features"]} ({completed_percent:.1f}%)
-- **In Progress**: {progress["in_progress_features"]} ({in_progress_percent:.1f}%)
-- **Pending**: {progress["pending_features"]} ({pending_percent:.1f}%)
-- **Last Updated**: {progress["last_updated"]}
-
-## Pull Requests
-"""
+        # Start implementation
+        implementation = self.active_implementations[project_id]
         
-        # Add PR details
-        for pr in prs:
-            status_emoji = "✅" if pr["status"] == "merged" else "🔄" if pr["status"] == "open" else "❌"
-            report += f"- {status_emoji} **PR #{pr['pr_number']}**: {pr['feature_name']} - {pr['status'].upper()}\n"
-            report += f"  URL: {pr['pr_url']}\n"
+        # Calculate how many new features we can start
+        available_slots = max_concurrent - len(implementation["active_features"])
+        features_to_start = min(available_slots, len(implementation["pending_features"]))
+        
+        started_features = []
+        
+        for _ in range(features_to_start):
+            if not implementation["pending_features"]:
+                break
             
-            # Add validation results if available
-            if "validation_result" in pr:
-                validation = pr["validation_result"]
-                if validation.get("compliant", False):
-                    report += f"  Validation: ✅ Compliant\n"
-                else:
-                    report += f"  Validation: ❌ Non-compliant\n"
-                    
-                    # Add issues if any
-                    issues = validation.get("issues", [])
-                    if issues:
-                        report += "  Issues:\n"
-                        for issue in issues[:3]:  # Limit to 3 issues to keep report concise
-                            report += f"    - {issue}\n"
-                        if len(issues) > 3:
-                            report += f"    - ... and {len(issues) - 3} more issues\n"
+            # Get the next feature
+            feature_name = implementation["pending_features"].pop(0)
+            feature = project.features[feature_name]
+            
+            # Create a branch for the feature
+            branch_name = f"{project.name.lower().replace(' ', '-')}-{feature_name.lower().replace(' ', '-')}"
+            try:
+                branch_result = self.github_manager.create_branch(
+                    repo_url=project.git_url,
+                    branch_name=branch_name,
+                    base_branch="main"  # Assuming main is the default branch
+                )
+                
+                # Store branch information
+                project.branches[feature_name] = {
+                    "name": branch_name,
+                    "created_at": datetime.now().isoformat(),
+                    "status": "active"
+                }
+                
+                # Update feature status
+                feature["status"] = "in_progress"
+                feature["branch"] = branch_name
+                feature["started_at"] = datetime.now().isoformat()
+                
+                # Create a Slack thread for the feature
+                thread_result = self.slack_manager.create_thread(
+                    channel=project.slack_channel,
+                    text=f"Starting implementation of feature: *{feature_name}*\n\n{feature['description']}\n\nBranch: `{branch_name}`"
+                )
+                
+                if thread_result.get("ok"):
+                    thread_ts = thread_result.get("ts")
+                    feature["thread_ts"] = thread_ts
+                    project.active_threads[feature_name] = thread_ts
+                
+                # Add to active features
+                implementation["active_features"].append(feature_name)
+                
+                # Update progress tracking
+                self.project_progress[project_id]["in_progress_features"] += 1
+                self.project_progress[project_id]["pending_features"] -= 1
+                
+                started_features.append(feature_name)
+                
+            except Exception as e:
+                self.logger.error(f"Error starting feature {feature_name}: {e}")
+                # Put the feature back in pending
+                implementation["pending_features"].insert(0, feature_name)
         
-        # Add next steps
-        next_requirement = self._extract_next_requirement(project)
-        if next_requirement:
-            report += f"\n## Next Steps\n- {next_requirement}\n"
+        # Save project changes
+        self.db.save_project(project)
         
-        return {"status": "report_generated", "report": report}
+        return {
+            "success": True,
+            "started_features": started_features,
+            "active_features": implementation["active_features"],
+            "pending_features": implementation["pending_features"]
+        }
     
-    def find_project_for_pr(self, pr_number):
-        """Find which project a PR belongs to."""
-        for project_id, prs in self.project_prs.items():
-            for pr in prs:
-                if pr["pr_number"] == pr_number:
-                    return self.get_project(project_id)
-        return None
+    def send_feature_tasks(self, project_id, feature_name):
+        """Send tasks for a feature to Slack."""
+        project = self.get_project(project_id)
+        if not project:
+            return {"error": f"Project with ID {project_id} not found"}
+        
+        if feature_name not in project.features:
+            return {"error": f"Feature {feature_name} not found in project"}
+        
+        feature = project.features[feature_name]
+        
+        if feature["status"] != "in_progress":
+            return {"error": f"Feature {feature_name} is not in progress"}
+        
+        if "thread_ts" not in feature:
+            return {"error": f"No Slack thread found for feature {feature_name}"}
+        
+        thread_ts = feature["thread_ts"]
+        
+        # Send tasks to the thread
+        sent_tasks = []
+        
+        for i, step in enumerate(feature["steps"]):
+            if step["status"] == "not_started":
+                # Send the task to Slack
+                task_message = f"Task {i+1}: {step['description']}"
+                
+                result = self.slack_manager.send_message(
+                    channel=project.slack_channel,
+                    text=task_message,
+                    thread_ts=thread_ts
+                )
+                
+                if result.get("ok"):
+                    step["status"] = "in_progress"
+                    step["task_ts"] = result.get("ts")
+                    sent_tasks.append(step["description"])
+        
+        # Save project changes
+        self.db.save_project(project)
+        
+        return {
+            "success": True,
+            "feature": feature_name,
+            "sent_tasks": sent_tasks
+        }
+    
+    def handle_pr_received(self, project_id, feature_name, pr_url):
+        """Handle a received PR for a feature."""
+        project = self.get_project(project_id)
+        if not project:
+            return {"error": f"Project with ID {project_id} not found"}
+        
+        if feature_name not in project.features:
+            return {"error": f"Feature {feature_name} not found in project"}
+        
+        feature = project.features[feature_name]
+        
+        # Initialize PR review agent if needed
+        self._initialize_pr_review_agent()
+        
+        # Update PR status
+        project.pr_status[feature_name] = {
+            "url": pr_url,
+            "status": "reviewing",
+            "received_at": datetime.now().isoformat()
+        }
+        
+        # Notify in the feature thread
+        if "thread_ts" in feature:
+            self.slack_manager.send_message(
+                channel=project.slack_channel,
+                text=f"PR received for feature *{feature_name}*: {pr_url}\n\nReviewing...",
+                thread_ts=feature["thread_ts"]
+            )
+        
+        # Review the PR
+        try:
+            review_result = self.pr_review_agent.review_pr(pr_url)
+            
+            # Update PR status with review result
+            project.pr_status[feature_name]["status"] = "reviewed"
+            project.pr_status[feature_name]["review_result"] = review_result
+            
+            # Notify planning agent
+            self._notify_planning_agent_about_pr(project_id, feature_name, pr_url, review_result)
+            
+            # Notify in the feature thread
+            if "thread_ts" in feature:
+                self.slack_manager.send_message(
+                    channel=project.slack_channel,
+                    text=f"PR review completed for feature *{feature_name}*\n\nSummary: {review_result.get('summary', 'No summary available')}",
+                    thread_ts=feature["thread_ts"]
+                )
+            
+            # Save project changes
+            self.db.save_project(project)
+            
+            return {
+                "success": True,
+                "feature": feature_name,
+                "pr_url": pr_url,
+                "review_result": review_result
+            }
+        except Exception as e:
+            self.logger.error(f"Error reviewing PR for feature {feature_name}: {e}")
+            
+            # Update PR status with error
+            project.pr_status[feature_name]["status"] = "review_failed"
+            project.pr_status[feature_name]["error"] = str(e)
+            
+            # Save project changes
+            self.db.save_project(project)
+            
+            return {"error": str(e)}
+    
+    def _notify_planning_agent_about_pr(self, project_id, feature_name, pr_url, review_result):
+        """Notify the planning agent about a PR review."""
+        # Initialize planning agent if needed
+        self._initialize_planning_agent()
+        
+        project = self.get_project(project_id)
+        if not project:
+            return
+        
+        # Create notification for planning agent
+        notification = f"""
+        PR Review Notification
+        
+        Project: {project.name}
+        Feature: {feature_name}
+        PR URL: {pr_url}
+        
+        Review Summary: {review_result.get('summary', 'No summary available')}
+        
+        Status: {review_result.get('status', 'Unknown')}
+        
+        Please update the project plan accordingly.
+        """
+        
+        # Send notification to planning agent
+        try:
+            response = self.planning_agent.run(notification)
+            self.logger.info(f"Planning agent response: {response}")
+        except Exception as e:
+            self.logger.error(f"Error notifying planning agent: {e}")
+    
+    def get_project_status(self, project_id):
+        """Get the status of a project."""
+        project = self.get_project(project_id)
+        if not project:
+            return {"error": f"Project with ID {project_id} not found"}
+        
+        # Get progress
+        progress = self.project_progress.get(project_id, {})
+        
+        # Get active implementation
+        implementation = self.active_implementations.get(project_id, {
+            "active_features": [],
+            "completed_features": [],
+            "pending_features": list(project.features.keys()) if project.features else []
+        })
+        
+        # Calculate overall progress percentage
+        total_features = progress.get("total_features", 0)
+        completed_features = progress.get("completed_features", 0)
+        progress_percentage = (completed_features / total_features * 100) if total_features > 0 else 0
+        
+        return {
+            "project": project.to_dict(),
+            "progress": progress,
+            "progress_percentage": progress_percentage,
+            "implementation": implementation,
+            "pr_status": project.pr_status
+        }
