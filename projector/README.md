@@ -72,11 +72,12 @@ This script will:
 #### Start the Backend
 
 ```bash
-./scripts/start_backend.sh
+./start_backend.sh
 ```
 
 This will:
 - Create a virtual environment if it doesn't exist
+
 - Install Python dependencies
 - Fix any compatibility issues
 - Start the FastAPI server on port 8000
@@ -84,7 +85,7 @@ This will:
 #### Start the Frontend
 
 ```bash
-./scripts/start_frontend.sh
+./start_frontend.sh
 ```
 
 This will:
@@ -131,5 +132,6 @@ return cast(Any, type_)._evaluate(globalns, localns, set(), set())
 ```
 
 ### Dependency Conflicts
+
 
 If you encounter dependency conflicts, make sure you're using the exact versions specified in `requirements.txt`. The `pydantic` version is particularly important - do not upgrade to version 2.x as it breaks compatibility with FastAPI 0.95.1.
