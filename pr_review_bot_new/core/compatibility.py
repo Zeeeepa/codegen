@@ -64,11 +64,6 @@ HAS_CODEGEN = is_package_installed("codegen.sdk")
 if not HAS_CODEGEN:
     logger.warning("Could not import codegen.sdk, using mock implementation")
 
-# Check for agentgen
-HAS_AGENTGEN = is_package_installed("agentgen.agents")
-if not HAS_AGENTGEN:
-    logger.warning("Could not import agentgen.agents, AI review will be limited")
-
 # Check for LangChain
 HAS_LANGCHAIN = is_package_installed("langchain_core")
 if not HAS_LANGCHAIN:
@@ -165,27 +160,6 @@ Codebase = import_optional(
     "codegen.sdk.core.codebase.Codebase", 
     MockCodebase,
     "Could not import codegen.sdk.core.codebase.Codebase, using mock implementation"
-)
-
-CodeAgent = import_optional(
-    "agentgen.agents.code_agent.CodeAgent",
-    None,
-    "Could not import agentgen.agents.code_agent.CodeAgent, AI review will be limited"
-)
-
-GithubViewPRTool = import_optional(
-    "agentgen.extensions.langchain.tools.GithubViewPRTool",
-    None
-)
-
-GithubCreatePRCommentTool = import_optional(
-    "agentgen.extensions.langchain.tools.GithubCreatePRCommentTool",
-    None
-)
-
-GithubCreatePRReviewCommentTool = import_optional(
-    "agentgen.extensions.langchain.tools.GithubCreatePRReviewCommentTool",
-    None
 )
 
 # LangChain imports
