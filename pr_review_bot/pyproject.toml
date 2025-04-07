@@ -1,6 +1,6 @@
 [project]
 name = "pr-review-bot"
-version = "0.1.0"
+version = "0.2.0"
 description = "A PR review bot that automatically reviews and merges pull requests"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,6 +17,8 @@ dependencies = [
   "langchain-core>=0.1.27",
   "langchain-anthropic>=0.1.6",
   "langchain-openai>=0.0.5",
+  "gitpython>=3.1.40",
+  "schedule>=1.2.0",
 ]
 
 [build-system]

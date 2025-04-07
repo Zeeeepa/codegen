@@ -10,3 +10,5 @@ beautifulsoup4>=4.12.3
 langchain-core>=0.1.27
 langchain-anthropic>=0.1.6
 langchain-openai>=0.0.5
+gitpython>=3.1.40
+schedule>=1.2.0
