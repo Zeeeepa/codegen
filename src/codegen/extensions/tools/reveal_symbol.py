@@ -25,8 +25,7 @@ class SymbolLocation(BaseModel):
     start_column: Optional[int] = None
     end_column: Optional[int] = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}
 
 
 class SymbolReference(BaseModel):
@@ -37,8 +36,7 @@ class SymbolReference(BaseModel):
     column: Optional[int] = None
     context: Optional[str] = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}
 
 
 class RevealSymbolObservation(Observation):
@@ -73,8 +71,7 @@ class RevealSymbolObservation(Observation):
 
     str_template: ClassVar[str] = "Symbol {symbol_name} ({symbol_type})"
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}
 
     def render(self, tool_call_id: str) -> ToolMessage:
         """Render the symbol information."""
@@ -182,7 +179,7 @@ def _get_symbol_references(symbol: Symbol, max_refs: int = 50) -> List[SymbolRef
             except:
                 pass
                 
-            references.append(SymbolReference(filepath, line, column, context))
+            references.append(SymbolReference(filepath=filepath, line=line, column=column, context=context))
     except:
         # If references method fails, return empty list
         pass
