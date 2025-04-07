@@ -1,0 +1,32 @@
+2025-04-06 03:24:20,113 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:27:23,496 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:32:20,554 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:32:47,705 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:34:40,074 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:36:35,479 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:38:14,664 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:38:20,136 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:38:23,831 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:38:38,471 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:39:53,992 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:40:37,175 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:40:51,784 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:41:12,505 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:41:39,513 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:44:27,340 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:56:39,134 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 03:56:40,299 - backend.utils - ERROR - GITHUB_DEFAULT_REPO is missing.
+2025-04-06 03:56:40,300 - __mp_main__ - ERROR - Invalid configuration. Please check your .env file.
+2025-04-06 08:44:51,874 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 08:44:53,305 - backend.utils - ERROR - GITHUB_DEFAULT_REPO is missing.
+2025-04-06 08:44:53,305 - __mp_main__ - ERROR - Invalid configuration. Please check your .env file.
+2025-04-06 08:52:17,791 - __main__ - INFO - Launching both backend service and Streamlit UI
+2025-04-06 08:52:18,960 - __mp_main__ - INFO - Initializing Project Database
+2025-04-06 08:52:18,960 - __mp_main__ - INFO - Initializing Slack Manager
+2025-04-06 08:52:18,961 - __mp_main__ - INFO - Initializing GitHub Manager
+2025-04-06 08:52:19,992 - backend.github_manager - ERROR - Error initializing GitHub client: 404 {"message": "Not Found", "documentation_url": "https://docs.github.com/rest", "status": "404"}
+2025-04-06 08:52:19,993 - __mp_main__ - INFO - Initializing Assistant Agent
+2025-04-06 08:52:19,993 - __mp_main__ - INFO - Processing markdown documents
+2025-04-06 08:52:19,993 - backend.assistant_agent - INFO - Processed 0 markdown documents.
+2025-04-06 08:52:19,993 - __mp_main__ - INFO - Backend service running. Press Ctrl+C to exit.
+2025-04-06 10:11:36,334 - __mp_main__ - INFO - Shutting down...
