@@ -1,5 +1,5 @@
 """
-Context Understanding module for agentgen.
+Context Understanding module for codegen.
 
 This module provides tools for understanding and analyzing context in research
 and code analysis tasks.

@@ -1,5 +1,5 @@
 """
-Reflector module for agentgen.
+Reflector module for codegen.
 
 This module provides a Reflector class that can evaluate agent outputs
 and provide feedback for improvement.
