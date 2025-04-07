@@ -8,7 +8,7 @@ pydantic>=2.4.0  # Updated to be compatible with Python 3.13
 
 # GitHub and Slack integration
 PyGithub==1.58.1
-slack-sdk==3.21.3
+slack-sdk==3.35.0
 
 # AI and language processing
 langchain>=0.1.0  # Updated for Python 3.13 compatibility
