@@ -3,7 +3,7 @@
 from typing import ClassVar, List, Optional, Dict, Any, Union
 
 from langchain_core.messages import ToolMessage
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.symbol import Symbol
@@ -16,7 +16,7 @@ from codegen.sdk.extensions.resolution_py import resolve_symbol
 from .observation import Observation
 
 
-class SymbolLocation:
+class SymbolLocation(BaseModel):
     """Information about a symbol's location in code."""
 
     filepath: str
@@ -25,32 +25,11 @@ class SymbolLocation:
     start_column: Optional[int] = None
     end_column: Optional[int] = None
 
-    def __init__(
-        self,
-        filepath: str,
-        start_line: int,
-        end_line: int,
-        start_column: Optional[int] = None,
-        end_column: Optional[int] = None,
-    ):
-        self.filepath = filepath
-        self.start_line = start_line
-        self.end_line = end_line
-        self.start_column = start_column
-        self.end_column = end_column
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary representation."""
-        return {
-            "filepath": self.filepath,
-            "start_line": self.start_line,
-            "end_line": self.end_line,
-            "start_column": self.start_column,
-            "end_column": self.end_column,
-        }
+    class Config:
+        arbitrary_types_allowed = True
 
 
-class SymbolReference:
+class SymbolReference(BaseModel):
     """Information about a reference to a symbol."""
 
     filepath: str
@@ -58,26 +37,8 @@ class SymbolReference:
     column: Optional[int] = None
     context: Optional[str] = None
 
-    def __init__(
-        self,
-        filepath: str,
-        line: int,
-        column: Optional[int] = None,
-        context: Optional[str] = None,
-    ):
-        self.filepath = filepath
-        self.line = line
-        self.column = column
-        self.context = context
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary representation."""
-        return {
-            "filepath": self.filepath,
-            "line": self.line,
-            "column": self.column,
-            "context": self.context,
-        }
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class RevealSymbolObservation(Observation):
@@ -111,6 +72,9 @@ class RevealSymbolObservation(Observation):
     )
 
     str_template: ClassVar[str] = "Symbol {symbol_name} ({symbol_type})"
+
+    class Config:
+        arbitrary_types_allowed = True
 
     def render(self, tool_call_id: str) -> ToolMessage:
         """Render the symbol information."""
