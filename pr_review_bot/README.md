@@ -1,6 +1,6 @@
 # AI-Powered Pull Request Review Bot
 
-This project implements an AI-powered bot that automatically reviews GitHub Pull Requests. The bot analyzes code changes and their dependencies to provide comprehensive code reviews using AI, considering both direct modifications and their impact on the codebase. It can also automatically merge valid PRs to the main branch.
+This project implements an AI-powered bot that automatically reviews GitHub Pull Requests and monitors repositories for new branches. The bot analyzes code changes and their dependencies to provide comprehensive code reviews using AI, considering both direct modifications and their impact on the codebase. It can also automatically merge valid PRs to the main branch.
 
 ## Features
 
@@ -12,6 +12,12 @@ This project implements an AI-powered bot that automatically reviews GitHub Pull
 - Automatic merging of valid PRs
 - Webhook support for all repositories
 - Ngrok integration for local development
+- Monitoring of all repositories in an account
+- New PR monitoring
+- New branch monitoring
+- PR auto-review with merging to main if OK
+- New branch auto-review with merging to main if OK
+- Validation against REQUIREMENTS.md in project's root
 
 ## Prerequisites
 
@@ -27,7 +33,7 @@ Before running this application, you'll need the following:
 1. Clone the repository
 2. Navigate to the PR review bot directory:
    ```
-   cd agentgen/applications/pr_review_bot
+   cd pr_review_bot
    ```
 3. Create a virtual environment:
    ```
@@ -36,7 +42,7 @@ Before running this application, you'll need the following:
    ```
 4. Install dependencies:
    ```
-   pip install -e .
+   pip install -r requirements.txt
    ```
 5. Create a `.env` file based on the `.env.example` template:
    ```
@@ -51,37 +57,45 @@ Before running this application, you'll need the following:
 To run the bot locally with Ngrok for webhook forwarding:
 
 ```bash
-python run.py --use-ngrok
+python run.py --use-ngrok --monitor-prs --monitor-branches
 ```
 
 This will:
 1. Start a local server
 2. Create an Ngrok tunnel to expose it to the internet
 3. Set up webhooks for all your GitHub repositories
-4. Start listening for PR events
+4. Start monitoring for new PRs and branches
+5. Start listening for webhook events
 
 ### Running with a Custom Webhook URL
 
 If you already have a publicly accessible URL:
 
 ```bash
-python run.py --webhook-url https://your-domain.com/webhook
+python run.py --webhook-url https://your-domain.com/webhook --monitor-prs --monitor-branches
 ```
 
 ### Running on a Custom Port
 
 ```bash
-python run.py --port 9000 --use-ngrok
+python run.py --port 9000 --use-ngrok --monitor-prs --monitor-branches
+```
+
+### Running with Custom Monitor Interval
+
+```bash
+python run.py --use-ngrok --monitor-prs --monitor-branches --monitor-interval 600
 ```
 
 ## How It Works
 
 1. The bot sets up webhooks on your GitHub repositories
-2. When a PR is created or updated, GitHub sends a webhook event
-3. The bot processes the event and analyzes the PR
-4. It uses Codegen's AI capabilities to review the code
-5. The review is posted as comments on the PR
-6. If the PR is valid, it can be automatically merged
+2. It monitors all repositories for new PRs and branches
+3. When a PR is created or updated, GitHub sends a webhook event
+4. The bot processes the event and analyzes the PR
+5. It uses AI capabilities to review the code
+6. The review is posted as comments on the PR
+7. If the PR is valid and meets requirements, it can be automatically merged
 
 ## Webhook Events
 
@@ -92,6 +106,8 @@ The bot responds to the following GitHub webhook events:
 - `pull_request:reopened` - When a closed PR is reopened
 - `pull_request:labeled` - When a PR is labeled (specifically for the "Codegen" label)
 - `pull_request:unlabeled` - When a label is removed from a PR
+- `push` - When code is pushed to a branch
+- `repository:created` - When a new repository is created
 
 ## Configuration
 
@@ -102,6 +118,35 @@ The bot can be configured through environment variables in the `.env` file:
 - `NGROK_AUTH_TOKEN` - Ngrok authentication token
 - `ANTHROPIC_API_KEY` - Anthropic API key for Claude models
 - `OPENAI_API_KEY` - OpenAI API key (fallback if Anthropic is not available)
+
+## Project Structure
+
+```
+pr_review_bot/
+├── pr_review_bot/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── app.py
+│   │   └── webhook_handler.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── github_client.py
+│   │   └── pr_reviewer.py
+│   ├── monitors/
+│   │   ├── __init__.py
+│   │   ├── branch_monitor.py
+│   │   └── pr_monitor.py
+│   └── utils/
+│       ├── __init__.py
+│       ├── ngrok_manager.py
+│       └── webhook_manager.py
+├── run.py
+├── requirements.txt
+├── pyproject.toml
+└── README.md
+```
 
 ## Contributing
 
