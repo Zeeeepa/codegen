@@ -136,15 +136,6 @@ def render_multi_project_tabs():
 
 def render_project_content(project):
     """Render the content for a specific project tab."""
-    # Project metadata
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.write(f"**Repository:** {project.git_url}")
-    with col2:
-        st.write(f"**Slack Channel:** {project.slack_channel or 'Default'}")
-    with col3:
-        st.write(f"**Concurrency:** {project.max_parallel_tasks}")
-    
     # Three-column layout as per the mockup
     left_col, main_col, right_col = st.columns([1, 2, 1])
     
@@ -220,7 +211,7 @@ def render_project_content(project):
         # Tree structure view
         st.subheader("Implementation Tree")
         
-        # Display the implementation tree
+        # Display the implementation tree with completion checkmarks
         if project.implementation_plan:
             render_implementation_tree(project.id, compact=True)
         else:
