@@ -1,6 +1,6 @@
 """Web search tool for the codegen extensions."""
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, ClassVar
 
 from langchain_core.tools import BaseTool
 
@@ -16,8 +16,8 @@ from codegen.extensions.tools.websearch import (
 class WebSearchTool(BaseTool):
     """Tool for searching the web."""
 
-    name: str = "web_search"
-    description: str = "Search the web for information on a topic."
+    name: ClassVar[str] = "web_search"
+    description: ClassVar[str] = "Search the web for information on a topic."
 
     def _run(self, query: str, max_results: int = 5) -> List[SearchResult]:
         """Run the web search tool.
@@ -37,8 +37,8 @@ class WebSearchTool(BaseTool):
 class DeepResearchTool(BaseTool):
     """Tool for conducting deep research on a topic."""
 
-    name: str = "deep_research"
-    description: str = "Conduct deep research on a topic, analyzing multiple sources."
+    name: ClassVar[str] = "deep_research"
+    description: ClassVar[str] = "Conduct deep research on a topic, analyzing multiple sources."
 
     def _run(self, topic: str, max_sources: int = 5, depth: str = "medium") -> Dict[str, Any]:
         """Run the deep research tool.
