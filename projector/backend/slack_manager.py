@@ -5,7 +5,7 @@ import json
 import re
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from backend.thread_pool import ThreadPool
+from projector.backend.thread_pool import ThreadPool
 
 class SlackManager:
     """Manager for Slack integration with multithreading capabilities."""
