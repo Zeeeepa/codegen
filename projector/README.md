@@ -4,11 +4,12 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 
 ## Features
 
-- **Project Management**: Track and manage multiple projects simultaneously
-- **Code Improvement**: AI-powered code analysis and improvement suggestions
-- **GitHub Integration**: Connect with GitHub repositories
-- **Slack Integration**: Send notifications and updates to Slack channels
-- **Tree View**: Visualize project structure and implementation progress
+- Multi-project tab creation (supporting 1-50 projects simultaneously)
+- Dynamic concurrency settings (1-10 tasks per project)
+- Project-specific chat interface
+- Implementation tree view with sequential task completion tracking
+- Recent activity dashboard with last merges
+- Code improvement with AI-powered suggestions
 
 ## UI Layout
 
@@ -22,7 +23,7 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 |  Step by step |   document View         |   Component  |
 |  Structure    |   (Tabbed Interface)    |Integration   |
 | View generated|                         | Completion   |
-|  from user's  |                         |   Check map  |
+|  from user's  |                         |   Chek map   |
 |   documents   |Concurrency      project | [✓] -done    |
 |               |[2]           [Settings] | [ ] - to do  |
 +---------------+-------------------------+---------- ---+
@@ -37,14 +38,38 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 ### Prerequisites
 
 - Python 3.8+
-- Node.js 14+
-- npm 6+
+- Node.js 14+ and npm
+- Git
 
-### Backend Setup
+### Setup
 
-1. Clone the repository
-2. Navigate to the project directory
-3. Run the backend setup script:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Zeeeepa/codegen.git
+   cd codegen/projector
+   ```
+
+2. Run the setup script:
+   ```bash
+   ./setup_symlink.py
+   ```
+
+## Running the Application
+
+### Option 1: Run Everything at Once (Recommended)
+
+```bash
+./scripts/start_all.sh
+```
+
+This script will:
+- Start the FastAPI backend on port 8000
+- Start the Next.js frontend on port 3000
+- Open both in a tmux session (or separate terminals if tmux is not available)
+
+### Option 2: Run Backend and Frontend Separately
+
+#### Start the Backend
 
 ```bash
 ./scripts/start_backend.sh
@@ -52,36 +77,59 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 
 This will:
 - Create a virtual environment if it doesn't exist
-- Install the required Python dependencies
-- Start the FastAPI backend on http://localhost:8000
+- Install Python dependencies
+- Fix any compatibility issues
+- Start the FastAPI server on port 8000
 
-### Frontend Setup
-
-1. Run the frontend setup script:
+#### Start the Frontend
 
 ```bash
 ./scripts/start_frontend.sh
 ```
 
 This will:
-- Install the required Node.js dependencies
-- Start the Next.js development server on http://localhost:3000
+- Install Node.js dependencies
+- Start the Next.js development server on port 3000
 
-## Usage
+## Accessing the Application
 
-1. Open your browser and navigate to http://localhost:3000
-2. Use the dashboard to create and manage projects
-3. Configure project settings (GitHub URL, Slack channel, etc.)
-4. Use the Code Improvement feature to analyze and improve your code
-5. Track implementation progress using the Tree Structure View
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
 
-## API Documentation
+## Project Configuration
 
-The API documentation is available at http://localhost:8000/docs when the backend is running.
+Configure your projects in the Settings dialog:
 
-## Project Structure
+```
++------------------------------------------------------------------+
+|   Project SETTINGS                                               |
++------------------------------------------------------------------+
+| Slack Channel:            [#pr-reviews]                          |
+| Project Github URL:      [https://github.com/Zeeeepa/codegen]    |
+| Notify on:                                                       |
+| [✓] New branch detected                                          |
+| [✓] PR created                                                   |
+| [✓] PR reviewed                                                  |
+| [✓] PR merged                                                    |
+| [✓] Errors                                                       |
++------------------------------------------------------------------+
+```
 
-- `api/`: FastAPI backend routes and models
-- `backend/`: Core backend functionality
-- `frontend/`: Next.js frontend application
-- `scripts/`: Utility scripts for setup and running the application
+## Troubleshooting
+
+### ForwardRef._evaluate Error
+
+If you encounter a `ForwardRef._evaluate() missing 1 required keyword-only argument: 'recursive_guard'` error, the `start_backend.sh` script should automatically fix this issue. If not, you can manually fix it by editing the `pydantic/typing.py` file in your virtual environment:
+
+```python
+# Change this line:
+return cast(Any, type_)._evaluate(globalns, localns, set())
+
+# To:
+return cast(Any, type_)._evaluate(globalns, localns, set(), set())
+```
+
+### Dependency Conflicts
+
+If you encounter dependency conflicts, make sure you're using the exact versions specified in `requirements.txt`. The `pydantic` version is particularly important - do not upgrade to version 2.x as it breaks compatibility with FastAPI 0.95.1.
