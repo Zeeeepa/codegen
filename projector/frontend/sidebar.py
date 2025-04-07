@@ -57,8 +57,9 @@ def render_sidebar():
     st.sidebar.header("Navigation")
     page = st.sidebar.radio(
         "Select Page",
-        ["Dashboard", "Document Management", "Thread Management", "GitHub Integration", 
-         "Project Planning", "AI Assistant", "Merge Management", "Code Suggestions", "Accessibility"]
+        ["Dashboard", "Projects", "Document Management", "Thread Management", "GitHub Integration", 
+         "Project Planning", "Resource Management", "AI Assistant", "Merge History", "Code Suggestions", 
+         "Code Improvements", "Settings", "Help"]
     )
     
     # Project selector (if authenticated)
@@ -97,6 +98,7 @@ def render_sidebar():
             st.metric("Documents", st.session_state.get("documents_count", 0))
             st.metric("Open PRs", st.session_state.get("open_prs_count", 0))
             st.metric("Merges", st.session_state.get("merges_count", 0))
+            st.metric("Team Members", st.session_state.get("team_members_count", 0))
     
     # Quick accessibility options
     with st.sidebar.expander("🌐 Quick Accessibility", expanded=False):
@@ -150,5 +152,8 @@ def render_sidebar():
         "</div>", 
         unsafe_allow_html=True
     )
+    
+    # Update the page in session state
+    st.session_state.page = page
     
     return page
