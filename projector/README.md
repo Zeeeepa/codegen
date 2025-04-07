@@ -40,14 +40,17 @@ A project management and code improvement tool with FastAPI backend and Next.js 
 - Node.js 14+
 - npm 6+
 
-### Backend Setup
+### Setup and Running
 
 1. Clone the repository
 2. Navigate to the project directory
-3. Run the backend setup script:
+
+#### Backend Setup
+
+Run the backend setup script:
 
 ```bash
-./scripts/start_backend.sh
+./start_backend.sh
 ```
 
 This will:
@@ -55,12 +58,12 @@ This will:
 - Install the required Python dependencies
 - Start the FastAPI backend on http://localhost:8000
 
-### Frontend Setup
+#### Frontend Setup
 
-1. Run the frontend setup script:
+Run the frontend setup script:
 
 ```bash
-./scripts/start_frontend.sh
+./start_frontend.sh
 ```
 
 This will:
@@ -84,4 +87,11 @@ The API documentation is available at http://localhost:8000/docs when the backen
 - `api/`: FastAPI backend routes and models
 - `backend/`: Core backend functionality
 - `frontend/`: Next.js frontend application
-- `scripts/`: Utility scripts for setup and running the application
+  - `nextjs/`: Next.js application
+    - `src/`: Source code
+      - `components/`: React components
+      - `pages/`: Next.js pages
+        - `code-improvement/`: Code Improvement UI
+      - `styles/`: CSS styles
+- `start_backend.sh`: Script to start the FastAPI backend
+- `start_frontend.sh`: Script to start the Next.js frontend
