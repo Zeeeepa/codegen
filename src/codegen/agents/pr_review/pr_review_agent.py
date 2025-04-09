@@ -22,6 +22,9 @@ from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 
+# Import BaseTool for type annotation
+from codegen.tools.base import BaseTool
+
 class PRReviewAgent(CodeAgent):
     """Agent for reviewing pull requests against requirements and codebase patterns."""
     
