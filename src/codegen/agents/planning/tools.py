@@ -7,7 +7,7 @@ This module provides tools for creating and managing plans.
 from typing import Dict, List, Optional, Any, Union
 
 from codegen.agents.planning.planning import Plan, PlanStep, PlanStepStatus, PlanManager
-from codegen.agents.toolcall_agent import Tool
+from codegen.agents.toolcall.toolcall_agent import Tool
 
 class PlanningTool(Tool):
     """Tool for creating and managing plans."""
