@@ -1,16 +1,13 @@
 from typing import Protocol
 
-from .data import AgentRunMessage
+
+from codegen.agents.data import AgentRunMessage
 
 
 # Define the interface for ExternalLogger
 class ExternalLogger(Protocol):
-    """Protocol defining the interface for external loggers."""
+    """Protocol for external loggers that can be used to log agent runs."""
 
-    def log(self, data: AgentRunMessage) -> None:
-        """Log structured data to an external system.
-
-        Args:
-            data: The structured data to log, either as a dictionary or a BaseMessage
-        """
-        pass
+    def log_message(self, message: AgentRunMessage) -> None:
+        """Log a message from an agent run."""
+        ...
