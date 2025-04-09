@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from codegen.agents.base import BaseAgent
 from codegen.tools.research.researcher import Researcher
-from codegen.tools.research.context_understanding import ContextUnderstanding
+from codegen.tools.research.context_understanding import ContextManager, ContextAnalyzer
 
 class ResearchAgent(BaseAgent):
     """Agent for researching code and providing analysis."""
@@ -39,7 +39,8 @@ class ResearchAgent(BaseAgent):
             **kwargs,
         )
         self.researcher = Researcher()
-        self.context_understanding = ContextUnderstanding()
+        self.context_manager = ContextManager()
+        self.context_analyzer = None
 
     def research(
         self,
@@ -79,8 +80,19 @@ class ResearchAgent(BaseAgent):
         Returns:
             A dictionary containing the analysis results.
         """
-        return self.context_understanding.analyze(
-            content=content,
-            questions=questions,
-            context=context or {},
-        )
+        # Create a context collection and analyzer
+        collection = self.context_manager.create_from_text(content, "input")
+        self.context_analyzer = ContextAnalyzer(collection)
+        
+        # Get a summary of the context
+        summary = self.context_analyzer.get_summary()
+        
+        # Extract key concepts
+        concepts = self.context_analyzer.extract_key_concepts()
+        
+        return {
+            "summary": summary,
+            "concepts": concepts,
+            "questions": questions or [],
+            "context": context or {},
+        }
