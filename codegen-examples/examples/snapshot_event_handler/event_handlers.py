@@ -1,4 +1,4 @@
-from codegen.agents.code_agent import CodeAgent
+from codegen.agents.code.code_agent import CodeAgent
 from codegen.extensions.events.codegen_app import CodegenApp
 from codegen.extensions.linear.types import LinearEvent
 from codegen.extensions.slack.types import SlackEvent
