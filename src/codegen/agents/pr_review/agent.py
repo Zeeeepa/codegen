@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 logger = getLogger("pr_review_agent")
 
-from codegen.agents.code_agent import CodeAgent
+from codegen.agents.code.code_agent import CodeAgent
 from codegen.agents.utils import AgentConfig
 from codegen.tools.planning.manager import PlanManager, ProjectPlan, Step, Requirement
 from codegen.tools.research.researcher import Researcher, CodeInsight, ResearchResult
