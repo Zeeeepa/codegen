@@ -185,6 +185,8 @@
       "pages": [
         "gen/introduction",
         "gen/capabilities",
+        "gen/how-it-works",
+        "gen/use-cases",
         "gen/integrations",
         "gen/faq"
       ]
