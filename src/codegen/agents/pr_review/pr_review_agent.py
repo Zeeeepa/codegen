@@ -6,6 +6,8 @@ import os
 import sys
 import logging
 import traceback
+import re
+import json
 from typing import Dict, List, Any, Optional, Tuple
 from github import Github
 from github.Repository import Repository
@@ -13,7 +15,7 @@ from github.PullRequest import PullRequest
 from github.ContentFile import ContentFile
 
 from codegen.agents.base import BaseAgent
-from codegen.agents.code_agent import CodeAgent
+from codegen.agents.code.code_agent import CodeAgent
 from codegen.agents.utils import AgentConfig
 from codegen.tools.planning.manager import PlanManager, ProjectPlan, Step, Requirement
 from codegen.shared.logging.get_logger import get_logger
