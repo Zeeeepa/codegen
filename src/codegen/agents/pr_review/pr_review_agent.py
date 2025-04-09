@@ -1,29 +1,24 @@
 """
-PR Review Agent for analyzing pull requests against requirements and codebase patterns.
+PR Review Agent implementation.
 """
 
 import os
-import re
-import json
+import sys
 import logging
 import traceback
-from typing import Dict, List, Optional, Any, Tuple, Union
-from uuid import uuid4
-
+from typing import Dict, List, Any, Optional, Tuple
 from github import Github
-from github.PullRequest import PullRequest
 from github.Repository import Repository
-from langchain.tools import BaseTool
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.runnables.config import RunnableConfig
+from github.PullRequest import PullRequest
+from github.ContentFile import ContentFile
 
+from codegen.agents.base import BaseAgent
 from codegen.agents.code_agent import CodeAgent
 from codegen.agents.utils import AgentConfig
-from codegen.extensions.planning.manager import PlanManager, ProjectPlan, Step, Requirement
+from codegen.tools.planning.manager import PlanManager, ProjectPlan, Step, Requirement
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
-
 
 class PRReviewAgent(CodeAgent):
     """Agent for reviewing pull requests against requirements and codebase patterns."""

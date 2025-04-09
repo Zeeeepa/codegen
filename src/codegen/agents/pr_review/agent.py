@@ -22,9 +22,9 @@ logger = getLogger("pr_review_agent")
 
 from codegen.agents.code_agent import CodeAgent
 from codegen.agents.utils import AgentConfig
-from codegen.extensions.planning.manager import PlanManager, ProjectPlan, Step, Requirement
-from codegen.extensions.research.researcher import Researcher, CodeInsight, ResearchResult
-from codegen.extensions.reflection.reflector import Reflector, ReflectionResult
+from codegen.tools.planning.manager import PlanManager, ProjectPlan, Step, Requirement
+from codegen.tools.research.researcher import Researcher, CodeInsight, ResearchResult
+from codegen.tools.reflection.reflector import Reflector, ReflectionResult
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
