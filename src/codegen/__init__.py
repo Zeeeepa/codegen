@@ -1,4 +1,4 @@
-from codegen.agents.code_agent import CodeAgent
+from codegen.agents.code.code_agent import CodeAgent
 from codegen.cli.sdk.decorator import function
 from codegen.cli.sdk.functions import Function
 from codegen.extensions.events.codegen_app import CodegenApp

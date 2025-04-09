@@ -1,17 +1,15 @@
-#!/usr/bin/env python3
 """
 Unified test runner for all agent tests.
 
-This script runs all agent tests and collects errors, displaying them in a table format.
-It will continue running tests even if some fail, to provide a comprehensive report.
+This module provides a way to run all agent tests and collect results in a table format.
 """
 
 import os
 import sys
-import unittest
 import importlib
+import unittest
 import traceback
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any, Optional
 from tabulate import tabulate
 from colorama import Fore, Style, init
 
@@ -19,137 +17,186 @@ from colorama import Fore, Style, init
 init()
 
 # Define agent test modules
-AGENT_TEST_MODULES = [
-    "tests.unit.codegen.agents.test_base_agent",
-    "tests.unit.codegen.agents.chat.test_chat_agent",
-    "tests.unit.codegen.agents.code.test_code_agent",
-    "tests.unit.codegen.agents.mcp.test_mcp_agent",
-    "tests.unit.codegen.agents.planning.test_planning_agent",
-    "tests.unit.codegen.agents.pr_review.test_pr_review_agent",
-    "tests.unit.codegen.agents.reflection.test_reflection_agent",
-    "tests.unit.codegen.agents.research.test_research_agent",
-    "tests.unit.codegen.agents.toolcall.test_toolcall_agent",
-]
+AGENT_TEST_MODULES = {
+    "base_agent": "tests.unit.codegen.agents.test_base_agent",
+    "chat_agent": "tests.unit.codegen.agents.chat.test_chat_agent",
+    "code_agent": "tests.unit.codegen.agents.code.test_code_agent",
+    "mcp_agent": "tests.unit.codegen.agents.mcp.test_mcp_agent",
+    "planning_agent": "tests.unit.codegen.agents.planning.test_planning_agent",
+    "pr_review_agent": "tests.unit.codegen.agents.pr_review.test_pr_review_agent",
+    "reflection_agent": "tests.unit.codegen.agents.reflection.test_reflection_agent",
+    "research_agent": "tests.unit.codegen.agents.research.test_research_agent",
+    "toolcall_agent": "tests.unit.codegen.agents.toolcall.test_toolcall_agent",
+}
 
-def run_test_module(module_name: str) -> Tuple[bool, Dict, str]:
-    """
-    Run tests from a specific module.
+class TestResult:
+    """Class to store test results."""
+    
+    def __init__(self, agent_name: str):
+        """Initialize a TestResult.
+        
+        Args:
+            agent_name: Name of the agent being tested
+        """
+        self.agent_name = agent_name
+        self.total = 0
+        self.passed = 0
+        self.failed = 0
+        self.errors = 0
+        self.skipped = 0
+        self.status = "PASS"
+        self.error_messages = []
+        
+    def add_error(self, error_message: str):
+        """Add an error message.
+        
+        Args:
+            error_message: Error message to add
+        """
+        self.error_messages.append(error_message)
+        self.status = "FAIL"
+        
+    def __str__(self):
+        """Return a string representation of the test result."""
+        return f"{self.agent_name}: {self.status} ({self.passed}/{self.total} passed)"
+
+
+def run_test_module(module_name: str) -> Tuple[TestResult, List[str]]:
+    """Run tests from a module.
     
     Args:
         module_name: Name of the module to run tests from
         
     Returns:
-        Tuple of (success, test_results, error_message)
+        TestResult object and list of error messages
     """
+    result = TestResult(module_name.split('.')[-1])
+    
     try:
         # Import the module
         module = importlib.import_module(module_name)
         
-        # Create a test suite from the module
+        # Create a test suite
         loader = unittest.TestLoader()
         suite = loader.loadTestsFromModule(module)
         
         # Run the tests
-        runner = unittest.TextTestRunner(verbosity=0)
-        result = runner.run(suite)
+        test_result = unittest.TextTestRunner(verbosity=0).run(suite)
         
-        # Check if all tests passed
-        success = result.wasSuccessful()
+        # Update the result
+        result.total = test_result.testsRun
+        result.passed = result.total - len(test_result.errors) - len(test_result.failures) - len(test_result.skipped)
+        result.failed = len(test_result.failures)
+        result.errors = len(test_result.errors)
+        result.skipped = len(test_result.skipped)
         
-        # Collect test results
-        test_results = {
-            "total": result.testsRun,
-            "failures": len(result.failures),
-            "errors": len(result.errors),
-            "skipped": len(result.skipped),
-        }
-        
-        # Collect error messages
-        error_messages = []
-        for failure in result.failures:
-            error_messages.append(f"FAILURE: {failure[0]}\n{failure[1]}")
-        
-        for error in result.errors:
-            error_messages.append(f"ERROR: {error[0]}\n{error[1]}")
+        if test_result.errors or test_result.failures:
+            result.status = "FAIL"
             
-        error_message = "\n\n".join(error_messages)
-        
-        return success, test_results, error_message
-    
+            # Add error messages
+            for test, error in test_result.errors:
+                result.add_error(f"ERROR: {test}\n{error}")
+                
+            for test, failure in test_result.failures:
+                result.add_error(f"FAILURE: {test}\n{failure}")
+                
     except Exception as e:
-        # Handle import or other errors
-        error_message = f"Failed to run tests from {module_name}: {str(e)}\n{traceback.format_exc()}"
-        test_results = {
-            "total": 0,
-            "failures": 0,
-            "errors": 1,
-            "skipped": 0,
-        }
-        return False, test_results, error_message
+        result.status = "FAIL"
+        result.add_error(f"Failed to run tests from {module_name}: {str(e)}\n{traceback.format_exc()}")
+        
+    return result
 
-def run_all_tests() -> None:
-    """Run all agent tests and display results."""
-    print(f"{Fore.CYAN}=== Running Agent Tests ==={Style.RESET_ALL}\n")
+
+def run_all_tests() -> Dict[str, TestResult]:
+    """Run all agent tests.
     
-    # Collect results
-    results = []
-    all_errors = []
+    Returns:
+        Dictionary mapping agent names to TestResult objects
+    """
+    results = {}
+    
+    for agent_name, module_name in AGENT_TEST_MODULES.items():
+        print(f"Running tests for {agent_name}...")
+        result = run_test_module(module_name)
+        results[agent_name] = result
+        
+    return results
+
+
+def print_results_table(results: Dict[str, TestResult]):
+    """Print a table of test results.
+    
+    Args:
+        results: Dictionary mapping agent names to TestResult objects
+    """
+    # Prepare table data
+    table_data = []
     total_tests = 0
     total_passed = 0
     total_failed = 0
     total_errors = 0
     total_skipped = 0
     
-    for module_name in AGENT_TEST_MODULES:
-        # Extract agent name from module name
-        agent_name = module_name.split(".")[-1].replace("test_", "")
+    for agent_name, result in results.items():
+        status_color = Fore.GREEN if result.status == "PASS" else Fore.RED
+        status = f"{status_color}{result.status}{Style.RESET_ALL}"
         
-        print(f"{Fore.YELLOW}Running tests for {agent_name}...{Style.RESET_ALL}")
-        success, test_results, error_message = run_test_module(module_name)
-        
-        # Update totals
-        total_tests += test_results["total"]
-        total_passed += test_results["total"] - test_results["failures"] - test_results["errors"] - test_results["skipped"]
-        total_failed += test_results["failures"]
-        total_errors += test_results["errors"]
-        total_skipped += test_results["skipped"]
-        
-        # Add to results table
-        status = f"{Fore.GREEN}PASS{Style.RESET_ALL}" if success else f"{Fore.RED}FAIL{Style.RESET_ALL}"
-        results.append([
+        table_data.append([
             agent_name,
             status,
-            test_results["total"],
-            test_results["total"] - test_results["failures"] - test_results["errors"] - test_results["skipped"],
-            test_results["failures"],
-            test_results["errors"],
-            test_results["skipped"]
+            result.total,
+            result.passed,
+            result.failed,
+            result.errors,
+            result.skipped,
         ])
         
-        # Collect errors
-        if error_message:
-            all_errors.append((agent_name, error_message))
+        total_tests += result.total
+        total_passed += result.passed
+        total_failed += result.failed
+        total_errors += result.errors
+        total_skipped += result.skipped
+        
+    # Print the table
+    print("\n=== Test Results ===\n")
+    print(tabulate(
+        table_data,
+        headers=["Agent", "Status", "Total", "Passed", "Failed", "Errors", "Skipped"],
+        tablefmt="grid",
+    ))
     
-    # Display results table
-    print(f"\n{Fore.CYAN}=== Test Results ==={Style.RESET_ALL}\n")
-    headers = ["Agent", "Status", "Total", "Passed", "Failed", "Errors", "Skipped"]
-    print(tabulate(results, headers=headers, tablefmt="grid"))
-    
-    # Display summary
-    print(f"\n{Fore.CYAN}=== Summary ==={Style.RESET_ALL}")
+    # Print summary
+    print("\n=== Summary ===")
     print(f"Total tests: {total_tests}")
-    print(f"Passed: {Fore.GREEN}{total_passed}{Style.RESET_ALL}")
-    print(f"Failed: {Fore.RED if total_failed > 0 else Fore.GREEN}{total_failed}{Style.RESET_ALL}")
-    print(f"Errors: {Fore.RED if total_errors > 0 else Fore.GREEN}{total_errors}{Style.RESET_ALL}")
-    print(f"Skipped: {Fore.YELLOW if total_skipped > 0 else Fore.GREEN}{total_skipped}{Style.RESET_ALL}")
+    print(f"Passed: {total_passed}")
+    print(f"Failed: {total_failed}")
+    print(f"Errors: {total_errors}")
+    print(f"Skipped: {total_skipped}")
     
-    # Display errors
-    if all_errors:
-        print(f"\n{Fore.RED}=== Errors ==={Style.RESET_ALL}\n")
-        for agent_name, error_message in all_errors:
-            print(f"{Fore.YELLOW}=== {agent_name} ==={Style.RESET_ALL}")
-            print(error_message)
-            print()
+    # Print error messages
+    print("\n=== Errors ===")
+    for agent_name, result in results.items():
+        if result.error_messages:
+            print(f"\n=== {agent_name} ===")
+            for error in result.error_messages:
+                print(error)
+                print()
+
 
 if __name__ == "__main__":
-    run_all_tests()
+    # Add the project root to the Python path
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+    sys.path.insert(0, project_root)
+    
+    # Run all tests
+    results = run_all_tests()
+    
+    # Print results
+    print_results_table(results)
+    
+    # Exit with non-zero status if any tests failed
+    for result in results.values():
+        if result.status == "FAIL":
+            sys.exit(1)
+            
+    sys.exit(0)
