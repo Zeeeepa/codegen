@@ -5,9 +5,12 @@ This module provides tools for researching code and providing analysis.
 """
 
 from codegen.tools.research.researcher import Researcher
-from codegen.tools.research.context_understanding import ContextUnderstanding
+from codegen.tools.research.context_understanding import ContextItem, ContextCollection, ContextAnalyzer, ContextManager
 
 __all__ = [
     "Researcher",
-    "ContextUnderstanding",
+    "ContextItem",
+    "ContextCollection", 
+    "ContextAnalyzer",
+    "ContextManager",
 ]
