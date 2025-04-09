@@ -1,11 +1,10 @@
 """
-Reflection tools for codegen.
+Reflection extension for codegen.
 
-This module provides tools for evaluating outputs and providing feedback.
+This module provides reflection capabilities for agents, allowing them to
+evaluate their own outputs and improve them based on feedback.
 """
 
-from codegen.tools.reflection.reflector import Reflector
+from .reflector import Reflector, ReflectionResult
 
-__all__ = [
-    "Reflector",
-]
+__all__ = ["Reflector", "ReflectionResult"]
