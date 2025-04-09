@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from .data import AgentRunMessage
+from codegen.agents.data import AgentRunMessage
 
 
 # Define the interface for ExternalLogger
