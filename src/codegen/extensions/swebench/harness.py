@@ -11,7 +11,7 @@ from pathlib import Path
 import lox
 
 from codegen import Codebase
-from codegen.agents.code_agent import CodeAgent
+from codegen.agents.code.code_agent import CodeAgent
 from codegen.configs.models.codebase import CodebaseConfig
 from codegen.extensions.swebench.utils import (
     SweBenchExample,
