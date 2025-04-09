@@ -1,13 +1,13 @@
 """
-Research tools for codegen.
+Research tools for codegen agents.
 
-This module provides tools for researching code and providing analysis.
+This module provides tools for researching code and gathering insights.
 """
 
-from codegen.tools.research.researcher import Researcher
-from codegen.tools.research.context_understanding import ContextUnderstanding
+from codegen.tools.research.researcher import Researcher, CodeInsight, ResearchResult
 
 __all__ = [
     "Researcher",
-    "ContextUnderstanding",
+    "CodeInsight",
+    "ResearchResult",
 ]

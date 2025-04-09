@@ -1,354 +1,319 @@
 """
-Project planning and management module for PR Code Review agent.
+Planning manager for codegen agents.
+
+This module provides tools for creating and managing plans.
 """
 
-import json
-import logging
-import os
-import re
-from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Union
 
-import markdown
-from bs4 import BeautifulSoup
-from pydantic import BaseModel, Field
-
-from codegen.shared.logging.get_logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class Step(BaseModel):
+class Step:
     """A step in a project plan."""
     
-    id: str
-    description: str
-    order: int
-    status: str = "pending"  # pending, in_progress, completed, failed
-    assigned_pr: Optional[int] = None
-    implementation_details: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.now().isoformat())
-
-
-class Requirement(BaseModel):
-    """A requirement for a project."""
-    
-    id: str
-    description: str
-    section: str
-    source: str
-    status: str = "pending"  # pending, in_progress, completed, failed
-    assigned_pr: Optional[int] = None
-    implementation_details: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.now().isoformat())
-
-
-class ProjectPlan(BaseModel):
-    """A project plan with steps and requirements."""
-    
-    title: str
-    description: str
-    steps: List[Step] = Field(default_factory=list)
-    requirements: List[Requirement] = Field(default_factory=list)
-    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
-    updated_at: str = Field(default_factory=lambda: datetime.now().isoformat())
-
-
-class PlanManager:
-    """Manager for project plans and requirements."""
-    
-    def __init__(
-        self,
-        output_dir: str,
-        anthropic_api_key: Optional[str] = None,
-        openai_api_key: Optional[str] = None,
-    ):
-        """Initialize the plan manager."""
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, id: str, description: str, status: str = "not_started"):
+        """Initialize a Step.
         
-        self.anthropic_api_key = anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-        self.openai_api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+        Args:
+            id: ID of the step
+            description: Description of the step
+            status: Status of the step
+        """
+        self.id = id
+        self.description = description
+        self.status = status
+        self.details = ""
+        self.pr_number = None
         
-        # Initialize state files
-        self.plans_file = self.output_dir / "plans.json"
-        self.current_plan_file = self.output_dir / "current_plan.json"
-        self.progress_file = self.output_dir / "progress.md"
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary.
+        
+        Returns:
+            Dictionary representation
+        """
+        return {
+            "id": self.id,
+            "description": self.description,
+            "status": self.status,
+            "details": self.details,
+            "pr_number": self.pr_number,
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Step":
+        """Create from dictionary.
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            Step object
+        """
+        step = cls(
+            id=data["id"],
+            description=data["description"],
+            status=data["status"],
+        )
+        step.details = data.get("details", "")
+        step.pr_number = data.get("pr_number")
+        return step
+
+class Requirement:
+    """A requirement in a project plan."""
     
-    def create_plan_from_markdown(self, markdown_content: str, title: str, description: str) -> ProjectPlan:
-        """Create a project plan from markdown content."""
-        # Parse markdown to extract steps and requirements
-        steps = self._extract_steps_from_markdown(markdown_content)
-        requirements = self._extract_requirements_from_markdown(markdown_content)
+    def __init__(self, id: str, description: str, status: str = "not_started"):
+        """Initialize a Requirement.
         
-        # Create the project plan
-        plan = ProjectPlan(
-            title=title,
-            description=description,
-            steps=steps,
-            requirements=requirements,
+        Args:
+            id: ID of the requirement
+            description: Description of the requirement
+            status: Status of the requirement
+        """
+        self.id = id
+        self.description = description
+        self.status = status
+        self.details = ""
+        self.pr_number = None
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary.
+        
+        Returns:
+            Dictionary representation
+        """
+        return {
+            "id": self.id,
+            "description": self.description,
+            "status": self.status,
+            "details": self.details,
+            "pr_number": self.pr_number,
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Requirement":
+        """Create from dictionary.
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            Requirement object
+        """
+        req = cls(
+            id=data["id"],
+            description=data["description"],
+            status=data["status"],
+        )
+        req.details = data.get("details", "")
+        req.pr_number = data.get("pr_number")
+        return req
+
+class ProjectPlan:
+    """A project plan with requirements and steps."""
+    
+    def __init__(self, title: str, description: str = ""):
+        """Initialize a ProjectPlan.
+        
+        Args:
+            title: Title of the plan
+            description: Description of the plan
+        """
+        self.title = title
+        self.description = description
+        self.requirements = []
+        self.steps = []
+        
+    def add_requirement(self, requirement: Requirement) -> None:
+        """Add a requirement to the plan.
+        
+        Args:
+            requirement: Requirement to add
+        """
+        self.requirements.append(requirement)
+        
+    def add_step(self, step: Step) -> None:
+        """Add a step to the plan.
+        
+        Args:
+            step: Step to add
+        """
+        self.steps.append(step)
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary.
+        
+        Returns:
+            Dictionary representation
+        """
+        return {
+            "title": self.title,
+            "description": self.description,
+            "requirements": [req.to_dict() for req in self.requirements],
+            "steps": [step.to_dict() for step in self.steps],
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ProjectPlan":
+        """Create from dictionary.
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            ProjectPlan object
+        """
+        plan = cls(
+            title=data["title"],
+            description=data["description"],
         )
         
-        # Save the plan
-        self._save_plan(plan)
-        
-        return plan
-    
-    def _extract_steps_from_markdown(self, markdown_content: str) -> List[Step]:
-        """Extract steps from markdown content."""
-        # Convert markdown to HTML
-        html = markdown.markdown(markdown_content)
-        
-        # Use BeautifulSoup to parse HTML
-        soup = BeautifulSoup(html, "html.parser")
-        
-        steps = []
-        step_id = 1
-        
-        # Look for ordered lists (ol) and list items (li)
-        for ol in soup.find_all("ol"):
-            for li in ol.find_all("li"):
-                step_text = li.get_text().strip()
-                if step_text:
-                    steps.append(
-                        Step(
-                            id=f"step-{step_id}",
-                            description=step_text,
-                            order=step_id,
-                        )
-                    )
-                    step_id += 1
-        
-        # Also look for headers followed by paragraphs
-        for h in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
-            header_text = h.get_text().strip()
-            if "step" in header_text.lower():
-                # Get the next paragraph
-                next_p = h.find_next("p")
-                if next_p:
-                    step_text = next_p.get_text().strip()
-                    steps.append(
-                        Step(
-                            id=f"step-{step_id}",
-                            description=step_text,
-                            order=step_id,
-                        )
-                    )
-                    step_id += 1
-        
-        return steps
-    
-    def _extract_requirements_from_markdown(self, markdown_content: str) -> List[Requirement]:
-        """Extract requirements from markdown content."""
-        # Convert markdown to HTML
-        html = markdown.markdown(markdown_content)
-        
-        # Use BeautifulSoup to parse HTML
-        soup = BeautifulSoup(html, "html.parser")
-        
-        requirements = []
-        req_id = 1
-        
-        # Look for sections with "requirement" in the header
-        for h in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
-            header_text = h.get_text().strip()
-            section = header_text
+        for req_data in data.get("requirements", []):
+            plan.add_requirement(Requirement.from_dict(req_data))
             
-            # If this is a requirements section, process it
-            if "requirement" in header_text.lower():
-                # Get all paragraphs and list items until the next header
-                next_elem = h.next_sibling
-                while next_elem and not next_elem.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
-                    if next_elem.name == "p":
-                        req_text = next_elem.get_text().strip()
-                        if req_text:
-                            requirements.append(
-                                Requirement(
-                                    id=f"req-{req_id}",
-                                    description=req_text,
-                                    section=section,
-                                    source="markdown",
-                                )
-                            )
-                            req_id += 1
-                    elif next_elem.name == "ul" or next_elem.name == "ol":
-                        for li in next_elem.find_all("li"):
-                            req_text = li.get_text().strip()
-                            if req_text:
-                                requirements.append(
-                                    Requirement(
-                                        id=f"req-{req_id}",
-                                        description=req_text,
-                                        section=section,
-                                        source="markdown",
-                                    )
-                                )
-                                req_id += 1
-                    next_elem = next_elem.next_sibling
-        
-        # Also look for bullet points with requirement-like text
-        for ul in soup.find_all("ul"):
-            for li in ul.find_all("li"):
-                li_text = li.get_text().strip()
-                # Check if this looks like a requirement (contains "must", "should", etc.)
-                if any(keyword in li_text.lower() for keyword in ["must", "should", "shall", "will", "required"]):
-                    requirements.append(
-                        Requirement(
-                            id=f"req-{req_id}",
-                            description=li_text,
-                            section="Requirements",
-                            source="markdown",
-                        )
-                    )
-                    req_id += 1
-        
-        return requirements
+        for step_data in data.get("steps", []):
+            plan.add_step(Step.from_dict(step_data))
+            
+        return plan
+
+class PlanManager:
+    """Manager for project plans."""
     
-    def _save_plan(self, plan: ProjectPlan) -> None:
-        """Save a project plan to disk."""
-        # Save as current plan
-        with open(self.current_plan_file, "w", encoding="utf-8") as f:
-            f.write(plan.model_dump_json(indent=2))
+    def __init__(self):
+        """Initialize a PlanManager."""
+        self.current_plan = None
         
-        # Add to plans list if it exists
-        if self.plans_file.exists():
-            with open(self.plans_file, "r", encoding="utf-8") as f:
-                plans = json.load(f)
-        else:
-            plans = []
+    def create_plan(self, title: str, description: str = "") -> ProjectPlan:
+        """Create a new project plan.
         
-        # Add the new plan
-        plans.append(json.loads(plan.model_dump_json()))
+        Args:
+            title: Title of the plan
+            description: Description of the plan
+            
+        Returns:
+            The created plan
+        """
+        self.current_plan = ProjectPlan(title, description)
+        return self.current_plan
         
-        # Save the plans list
-        with open(self.plans_file, "w", encoding="utf-8") as f:
-            json.dump(plans, f, indent=2)
-    
     def load_current_plan(self) -> Optional[ProjectPlan]:
-        """Load the current project plan."""
-        if not self.current_plan_file.exists():
-            return None
+        """Load the current plan.
         
-        with open(self.current_plan_file, "r", encoding="utf-8") as f:
-            plan_data = json.load(f)
+        Returns:
+            The current plan, or None if no plan exists
+        """
+        return self.current_plan
         
-        return ProjectPlan.model_validate(plan_data)
-    
     def get_next_step(self) -> Optional[Step]:
-        """Get the next pending step in the current plan."""
-        plan = self.load_current_plan()
-        if not plan:
+        """Get the next pending step in the current plan.
+        
+        Returns:
+            The next step, or None if no steps are pending
+        """
+        if not self.current_plan:
             return None
-        
-        # Find the first pending step
-        for step in plan.steps:
-            if step.status == "pending":
+            
+        for step in self.current_plan.steps:
+            if step.status == "not_started":
                 return step
-        
+                
         return None
-    
-    def update_step_status(self, step_id: str, status: str, pr_number: Optional[int] = None, details: Optional[str] = None) -> None:
-        """Update the status of a step in the current plan."""
-        plan = self.load_current_plan()
-        if not plan:
-            return
         
-        # Find and update the step
-        for step in plan.steps:
+    def update_step_status(self, step_id: str, status: str, pr_number: Optional[int] = None, details: Optional[str] = None) -> None:
+        """Update the status of a step in the current plan.
+        
+        Args:
+            step_id: ID of the step to update
+            status: New status for the step
+            pr_number: Optional PR number associated with the step
+            details: Optional details about the status update
+        """
+        if not self.current_plan:
+            return
+            
+        for step in self.current_plan.steps:
             if step.id == step_id:
                 step.status = status
-                step.updated_at = datetime.now().isoformat()
                 if pr_number:
-                    step.assigned_pr = pr_number
+                    step.pr_number = pr_number
                 if details:
-                    step.implementation_details = details
+                    step.details = details
                 break
-        
-        # Save the updated plan
-        self._save_plan(plan)
-    
+                
     def update_requirement_status(self, req_id: str, status: str, pr_number: Optional[int] = None, details: Optional[str] = None) -> None:
-        """Update the status of a requirement in the current plan."""
-        plan = self.load_current_plan()
-        if not plan:
-            return
+        """Update the status of a requirement in the current plan.
         
-        # Find and update the requirement
-        for req in plan.requirements:
+        Args:
+            req_id: ID of the requirement to update
+            status: New status for the requirement
+            pr_number: Optional PR number associated with the requirement
+            details: Optional details about the status update
+        """
+        if not self.current_plan:
+            return
+            
+        for req in self.current_plan.requirements:
             if req.id == req_id:
                 req.status = status
-                req.updated_at = datetime.now().isoformat()
                 if pr_number:
-                    req.assigned_pr = pr_number
+                    req.pr_number = pr_number
                 if details:
-                    req.implementation_details = details
+                    req.details = details
                 break
-        
-        # Save the updated plan
-        self._save_plan(plan)
-    
+                
     def generate_progress_report(self) -> str:
-        """Generate a progress report for the current plan."""
-        plan = self.load_current_plan()
-        if not plan:
-            return "No active plan found."
+        """Generate a progress report for the current plan.
         
-        # Calculate progress statistics
+        Returns:
+            Progress report as a string
+        """
+        if not self.current_plan:
+            return "No active plan."
+            
+        plan = self.current_plan
+        
+        # Count requirements by status
+        req_counts = {"not_started": 0, "in_progress": 0, "completed": 0}
+        for req in plan.requirements:
+            req_counts[req.status] = req_counts.get(req.status, 0) + 1
+            
+        # Count steps by status
+        step_counts = {"not_started": 0, "in_progress": 0, "completed": 0}
+        for step in plan.steps:
+            step_counts[step.status] = step_counts.get(step.status, 0) + 1
+            
+        # Calculate progress percentages
+        total_reqs = len(plan.requirements)
+        req_progress = (req_counts["completed"] / total_reqs * 100) if total_reqs > 0 else 0
+        
         total_steps = len(plan.steps)
-        completed_steps = sum(1 for step in plan.steps if step.status == "completed")
-        in_progress_steps = sum(1 for step in plan.steps if step.status == "in_progress")
-        pending_steps = sum(1 for step in plan.steps if step.status == "pending")
-        failed_steps = sum(1 for step in plan.steps if step.status == "failed")
-        
-        completion_percentage = (completed_steps / total_steps) * 100 if total_steps > 0 else 0
+        step_progress = (step_counts["completed"] / total_steps * 100) if total_steps > 0 else 0
         
         # Generate the report
-        report = f"# {plan.title} - Progress Report\n\n"
-        report += f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        report = f"# Progress Report: {plan.title}\n\n"
+        report += f"## Requirements Progress: {req_progress:.1f}%\n"
+        report += f"- Completed: {req_counts['completed']}/{total_reqs}\n"
+        report += f"- In Progress: {req_counts['in_progress']}/{total_reqs}\n"
+        report += f"- Not Started: {req_counts['not_started']}/{total_reqs}\n\n"
         
-        # Add progress summary
-        report += "## Progress Summary\n\n"
-        report += f"- **Completion:** {completion_percentage:.1f}%\n"
-        report += f"- **Total Steps:** {total_steps}\n"
-        report += f"- **Completed:** {completed_steps}\n"
-        report += f"- **In Progress:** {in_progress_steps}\n"
-        report += f"- **Pending:** {pending_steps}\n"
-        report += f"- **Failed:** {failed_steps}\n\n"
+        report += f"## Steps Progress: {step_progress:.1f}%\n"
+        report += f"- Completed: {step_counts['completed']}/{total_steps}\n"
+        report += f"- In Progress: {step_counts['in_progress']}/{total_steps}\n"
+        report += f"- Not Started: {step_counts['not_started']}/{total_steps}\n\n"
         
-        # Add progress bar
-        progress_bar_length = 30
-        completed_chars = int((completion_percentage / 100) * progress_bar_length)
-        report += "```\n["
-        report += "=" * completed_chars
-        report += " " * (progress_bar_length - completed_chars)
-        report += f"] {completion_percentage:.1f}%\n```\n\n"
-        
-        # Add steps status
-        report += "## Steps Status\n\n"
-        report += "| Step | Status | PR |\n"
-        report += "|------|--------|----|"
-        
-        for step in sorted(plan.steps, key=lambda s: s.order):
-            status = step.status.replace("_", " ").title()
-            pr_link = f"[#{step.assigned_pr}](https://github.com/PR/{step.assigned_pr})" if step.assigned_pr else "N/A"
-            report += f"\n| {step.description} | {status} | {pr_link} |"
-        
-        # Add requirements status
-        if plan.requirements:
-            report += "\n\n## Requirements Status\n\n"
-            report += "| Requirement | Status | PR |\n"
-            report += "|------------|--------|----|"
-            
-            for req in plan.requirements:
-                status = req.status.replace("_", " ").title()
-                pr_link = f"[#{req.assigned_pr}](https://github.com/PR/{req.assigned_pr})" if req.assigned_pr else "N/A"
-                report += f"\n| {req.description} | {status} | {pr_link} |"
-        
-        # Save the report
-        with open(self.progress_file, "w", encoding="utf-8") as f:
-            f.write(report)
-        
+        report += "## Requirements\n\n"
+        for req in plan.requirements:
+            status_emoji = "✅" if req.status == "completed" else "🔄" if req.status == "in_progress" else "⏳"
+            report += f"{status_emoji} **{req.id}**: {req.description}\n"
+            if req.details:
+                report += f"   - {req.details}\n"
+            if req.pr_number:
+                report += f"   - PR: #{req.pr_number}\n"
+                
+        report += "\n## Steps\n\n"
+        for step in plan.steps:
+            status_emoji = "✅" if step.status == "completed" else "🔄" if step.status == "in_progress" else "⏳"
+            report += f"{status_emoji} **{step.id}**: {step.description}\n"
+            if step.details:
+                report += f"   - {step.details}\n"
+            if step.pr_number:
+                report += f"   - PR: #{step.pr_number}\n"
+                
         return report

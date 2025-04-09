@@ -1,268 +1,111 @@
 """
-Reflector module for codegen.
+Reflection tools for codegen agents.
 
-This module provides a Reflector class that can evaluate agent outputs
-and provide feedback for improvement.
+This module provides tools for reflecting on code and decisions.
 """
 
-import os
-import json
-import logging
-import traceback
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass
+from typing import Dict, List, Any, Optional
 
-from langchain.chat_models import ChatAnthropic, ChatOpenAI
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-
-from codegen.shared.logging.get_logger import get_logger
-
-logger = get_logger(__name__)
-
-
-@dataclass
 class ReflectionResult:
-    """Result of a reflection evaluation."""
+    """Result of a reflection operation."""
     
-    is_valid: bool
-    """Whether the output is valid."""
-    
-    score: float
-    """Score between 0 and 1 indicating the quality of the output."""
-    
-    feedback: str
-    """Feedback on the output."""
-    
-    improved_output: Optional[str] = None
-    """Improved version of the output, if available."""
-
+    def __init__(self, summary: str, insights: List[str] = None):
+        """Initialize a ReflectionResult.
+        
+        Args:
+            summary: Summary of the reflection
+            insights: List of insights
+        """
+        self.summary = summary
+        self.insights = insights or []
+        
+    def add_insight(self, insight: str) -> None:
+        """Add an insight to the result.
+        
+        Args:
+            insight: Insight to add
+        """
+        self.insights.append(insight)
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary.
+        
+        Returns:
+            Dictionary representation
+        """
+        return {
+            "summary": self.summary,
+            "insights": self.insights,
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ReflectionResult":
+        """Create from dictionary.
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            ReflectionResult object
+        """
+        result = cls(summary=data["summary"])
+        for insight in data.get("insights", []):
+            result.add_insight(insight)
+        return result
 
 class Reflector:
-    """Class for reflecting on agent outputs and providing feedback."""
+    """Tool for reflecting on code and decisions."""
     
-    def __init__(
-        self,
-        output_dir: Optional[str] = None,
-        anthropic_api_key: Optional[str] = None,
-        openai_api_key: Optional[str] = None,
-        model_provider: str = "anthropic",
-        model_name: str = "claude-3-7-sonnet-latest",
-        judge_model_provider: str = "openai",
-        judge_model_name: str = "gpt-4o",
-    ):
-        """Initialize the reflector.
+    def __init__(self):
+        """Initialize a Reflector."""
+        pass
+        
+    def reflect_on_changes(self, title: str, description: str, files_changed: List[str], code_changes: Dict[str, str]) -> Dict[str, Any]:
+        """Reflect on code changes.
         
         Args:
-            output_dir: Directory to store outputs.
-            anthropic_api_key: Anthropic API key.
-            openai_api_key: OpenAI API key.
-            model_provider: Model provider to use for generation.
-            model_name: Model name to use for generation.
-            judge_model_provider: Model provider to use for evaluation.
-            judge_model_name: Model name to use for evaluation.
-        """
-        self.output_dir = output_dir or os.environ.get("OUTPUT_DIR", "output")
-        
-        self.anthropic_api_key = anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-        self.openai_api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
-        
-        self.model_provider = model_provider
-        self.model_name = model_name
-        
-        self.judge_model_provider = judge_model_provider
-        self.judge_model_name = judge_model_name
-        
-        # Initialize models
-        if self.model_provider == "anthropic":
-            self.model = ChatAnthropic(
-                model=self.model_name,
-                anthropic_api_key=self.anthropic_api_key,
-                temperature=0.2,
-            )
-        else:
-            self.model = ChatOpenAI(
-                model=self.model_name,
-                openai_api_key=self.openai_api_key,
-                temperature=0.2,
-            )
-        
-        if self.judge_model_provider == "anthropic":
-            self.judge_model = ChatAnthropic(
-                model=self.judge_model_name,
-                anthropic_api_key=self.anthropic_api_key,
-                temperature=0.0,
-            )
-        else:
-            self.judge_model = ChatOpenAI(
-                model=self.judge_model_name,
-                openai_api_key=self.openai_api_key,
-                temperature=0.0,
-            )
-    
-    def evaluate_pr_review(
-        self,
-        pr_review: Dict[str, Any],
-        requirements: List[Dict[str, Any]],
-        codebase_patterns: List[Dict[str, Any]],
-    ) -> ReflectionResult:
-        """Evaluate a PR review against requirements and codebase patterns.
-        
-        Args:
-            pr_review: PR review to evaluate.
-            requirements: List of requirements to check against.
-            codebase_patterns: List of codebase patterns to check against.
+            title: Title of the changes
+            description: Description of the changes
+            files_changed: List of files changed
+            code_changes: Dictionary mapping file paths to code changes
             
         Returns:
-            ReflectionResult: Result of the evaluation.
+            Reflection results
         """
-        # Create evaluation prompt
-        evaluation_prompt = ChatPromptTemplate.from_messages([
-            SystemMessage(content="""You are an expert code reviewer tasked with evaluating a PR review.
-Your job is to determine if the PR review correctly assessed whether the PR meets all requirements and follows codebase patterns.
-
-Evaluate the PR review based on these criteria:
-1. Completeness - Does it address all requirements?
-2. Accuracy - Does it correctly identify issues?
-3. Actionability - Does it provide clear suggestions for improvement?
-4. Consistency - Does it align with codebase patterns?
-
-Provide a score between 0 and 1, where:
-- 0.0-0.3: Poor review that misses critical issues
-- 0.4-0.6: Adequate review but with significant gaps
-- 0.7-0.8: Good review with minor issues
-- 0.9-1.0: Excellent review that thoroughly addresses all aspects
-
-Format your response as a JSON object with these fields:
-{
-  "is_valid": true/false,
-  "score": 0.0-1.0,
-  "feedback": "Detailed feedback on the PR review",
-  "improved_output": "Improved version of the PR review (if needed)"
-}"""),
-            HumanMessage(content=f"""
-# PR Review to Evaluate
-```json
-{json.dumps(pr_review, indent=2)}
-```
-
-# Requirements
-```json
-{json.dumps(requirements, indent=2)}
-```
-
-# Codebase Patterns
-```json
-{json.dumps(codebase_patterns, indent=2)}
-```
-
-Evaluate this PR review and provide your assessment.
-"""),
-        ])
+        # Placeholder implementation
+        result = ReflectionResult(
+            summary=f"Reflected on changes to {len(files_changed)} files with title '{title}'."
+        )
         
-        # Run evaluation
-        try:
-            evaluation_result = self.judge_model.invoke(evaluation_prompt.format_messages())
+        # Add some placeholder insights
+        result.add_insight(f"The changes appear to be related to {title.lower()}.")
+        if description:
+            result.add_insight(f"The description provides context: '{description[:50]}...'")
+        if files_changed:
+            result.add_insight(f"The changes to {files_changed[0]} are significant.")
             
-            # Parse result
-            result_text = evaluation_result.content
-            result_json = json.loads(result_text)
-            
-            return ReflectionResult(
-                is_valid=result_json.get("is_valid", False),
-                score=result_json.get("score", 0.0),
-                feedback=result_json.get("feedback", ""),
-                improved_output=result_json.get("improved_output"),
-            )
-        except Exception as e:
-            logger.error(f"Error evaluating PR review: {e}")
-            return ReflectionResult(
-                is_valid=False,
-                score=0.0,
-                feedback=f"Error evaluating PR review: {e}",
-                improved_output=None,
-            )
-    
-    def improve_pr_review(
-        self,
-        pr_review: Dict[str, Any],
-        reflection_result: ReflectionResult,
-        requirements: List[Dict[str, Any]],
-        codebase_patterns: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        """Improve a PR review based on reflection feedback.
+        return result.to_dict()
+        
+    def reflect_on_decision(self, decision: str, context: str, alternatives: List[str]) -> Dict[str, Any]:
+        """Reflect on a decision.
         
         Args:
-            pr_review: PR review to improve.
-            reflection_result: Result of the reflection evaluation.
-            requirements: List of requirements to check against.
-            codebase_patterns: List of codebase patterns to check against.
+            decision: The decision made
+            context: Context of the decision
+            alternatives: Alternative options
             
         Returns:
-            Dict[str, Any]: Improved PR review.
+            Reflection results
         """
-        if reflection_result.is_valid and reflection_result.score >= 0.8:
-            # No need to improve
-            return pr_review
+        # Placeholder implementation
+        result = ReflectionResult(
+            summary=f"Reflected on decision: '{decision}'."
+        )
         
-        # Create improvement prompt
-        improvement_prompt = ChatPromptTemplate.from_messages([
-            SystemMessage(content="""You are an expert code reviewer tasked with improving a PR review.
-Your job is to enhance the PR review based on feedback to ensure it correctly assesses whether the PR meets all requirements and follows codebase patterns.
-
-Create an improved PR review that:
-1. Addresses all requirements thoroughly
-2. Correctly identifies issues
-3. Provides clear and actionable suggestions
-4. Aligns with codebase patterns
-
-Format your response as a JSON object with the same structure as the original PR review."""),
-            HumanMessage(content=f"""
-# Original PR Review
-```json
-{json.dumps(pr_review, indent=2)}
-```
-
-# Feedback on the PR Review
-{reflection_result.feedback}
-
-# Requirements
-```json
-{json.dumps(requirements, indent=2)}
-```
-
-# Codebase Patterns
-```json
-{json.dumps(codebase_patterns, indent=2)}
-```
-
-Provide an improved version of the PR review that addresses the feedback.
-"""),
-        ])
-        
-        # Run improvement
-        try:
-            improvement_result = self.model.invoke(improvement_prompt.format_messages())
+        # Add some placeholder insights
+        result.add_insight(f"The decision was made in the context of: '{context[:50]}...'")
+        if alternatives:
+            result.add_insight(f"There were {len(alternatives)} alternatives considered.")
+            result.add_insight(f"The chosen approach has advantages over alternatives like '{alternatives[0]}'.")
             
-            # Parse result
-            result_text = improvement_result.content
-            
-            # Extract JSON from the response
-            import re
-            json_match = re.search(r'```json\s*(.*?)\s*```', result_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(1)
-            else:
-                json_match = re.search(r'({.*})', result_text, re.DOTALL)
-                if json_match:
-                    json_str = json_match.group(1)
-                else:
-                    logger.error("Could not extract JSON from improvement result")
-                    return pr_review
-            
-            improved_review = json.loads(json_str)
-            return improved_review
-        except Exception as e:
-            logger.error(f"Error improving PR review: {e}")
-            return pr_review
+        return result.to_dict()
