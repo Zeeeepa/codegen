@@ -16,11 +16,15 @@ from slack_bolt import App
 from slack_bolt.adapter.fastapi import SlackRequestHandler
 from openai import OpenAI
 
-from codegen import CodeAgent, Codebase, CodegenApp
+# Updated imports to use proper module paths
+from codegen.agents.code.code_agent import CodeAgent
+from codegen.sdk.core.codebase import Codebase
+from codegen.extensions.events.codegen_app import CodegenApp
 from codegen.extensions.events.modal.base import CodebaseEventsApp
 from codegen.extensions.slack.types import SlackEvent
 from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
 from codegen.extensions.linear.types import LinearEvent
+from langchain_core.tools import BaseTool
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -76,6 +80,7 @@ base_image = (
         "fastapi[standard]",
         "slack_bolt>=1.18.0",
         "slack_sdk",
+        "langchain-core>=0.1.0",  # Added langchain-core dependency
     )
 )
 
