@@ -8,7 +8,8 @@ components including event handling, codebase operations, and agent interactions
 
 import os
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List, TYPE_CHECKING
+import json
 
 import modal
 from fastapi import FastAPI, Request
@@ -16,11 +17,14 @@ from slack_bolt import App
 from slack_bolt.adapter.fastapi import SlackRequestHandler
 from openai import OpenAI
 
-from codegen import CodeAgent, Codebase, CodegenApp
+from codegen.sdk.core.codebase import Codebase
+from codegen.agents.code.code_agent import CodeAgent
+from codegen import CodegenApp
 from codegen.extensions.events.modal.base import CodebaseEventsApp
 from codegen.extensions.slack.types import SlackEvent
 from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
 from codegen.extensions.linear.types import LinearEvent
+from langchain_core.tools import BaseTool
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -29,277 +33,254 @@ logger = logging.getLogger(__name__)
 # Constants
 SNAPSHOT_DICT_ID = "codegen-slack-codebase-snapshots"
 
-########################################################################################################################
-# Core Slack Bot Logic
-########################################################################################################################
+# Initialize Modal app
+app = modal.App("slack-codegen")
+fastapi_app = FastAPI()
 
-def format_response(answer: str, context: Optional[list[tuple[str, int]]] = None) -> str:
-    """Format the response for Slack with file links if context is provided."""
-    if not context:
-        return answer
-    
-    response = f"*Answer:*\n{answer}\n\n*Relevant Files:*\n"
-    for filename, score in context:
-        if "#chunk" in filename:
-            filename = filename.split("#chunk")[0]
-        github_link = f"https://github.com/codegen-sh/codegen/blob/main/{filename}"
-        response += f"• <{github_link}|{filename}>\n"
-    return response
-
-
-def process_codebase_query(codebase: Codebase, query: str) -> tuple[str, list[tuple[str, int]]]:
-    """Process a query about the codebase using the CodeAgent."""
-    # Initialize code agent
-    agent = CodeAgent(codebase=codebase)
-    
-    # Run the agent with the query
-    response = agent.run(query)
-    
-    # For now, we don't have context scores, so we'll return an empty list
-    # In a real implementation, you might want to use VectorIndex to get relevant files
-    return response, []
-
-
-########################################################################################################################
-# Modal App Setup
-########################################################################################################################
-
-# Create the base image with dependencies
-base_image = (
-    modal.Image.debian_slim(python_version="3.13")
-    .apt_install("git")
-    .pip_install(
-        # =====[ Codegen ]=====
-        "codegen>=0.42.1",
-        # =====[ Rest ]=====
-        "openai>=1.1.0",
-        "fastapi[standard]",
-        "slack_bolt>=1.18.0",
-        "slack_sdk",
-    )
+# Initialize Slack app
+slack_app = App(
+    token=os.environ.get("SLACK_BOT_TOKEN"),
+    signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
 )
+slack_handler = SlackRequestHandler(slack_app)
 
-# Create Modal app
-slack_codegen_app = modal.App("slack-codegen")
+# Initialize Codegen components
+codegen_app = CodegenApp()
+events_app = CodebaseEventsApp()
 
+# Create a volume to store codebase snapshots
+volume = modal.Volume.from_name(SNAPSHOT_DICT_ID, create_if_missing=True)
 
-@slack_codegen_app.cls(
-    image=base_image, 
-    secrets=[modal.Secret.from_dotenv()], 
-    enable_memory_snapshot=True,
-    container_idle_timeout=300
+@app.function(
+    image=modal.Image.debian_slim().pip_install(
+        ["slack_bolt", "slack_sdk", "openai", "codegen"]
+    ),
+    volumes={"/snapshots": volume},
+    secrets=[
+        modal.Secret.from_name("slack-secrets"),
+        modal.Secret.from_name("github-secrets"),
+        modal.Secret.from_name("openai-secrets"),
+    ],
 )
-class SlackCodegenAPI(CodebaseEventsApp):
-    """Slack Codegen API that handles Slack events and integrates with Codegen."""
+def handle_slack_event(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Handle incoming Slack events.
     
-    # Parameters for the codebase
-    commit: str = modal.parameter(default="main")
-    repo_org: str = modal.parameter(default="codegen-sh")
-    repo_name: str = modal.parameter(default="codegen")
-    snapshot_index_id: str = SNAPSHOT_DICT_ID
+    Args:
+        payload: The Slack event payload
+        
+    Returns:
+        Response dictionary
+    """
+    try:
+        # Process the Slack event
+        event = SlackEvent.from_dict(payload)
+        
+        # Handle different event types
+        if event.type == "app_mention":
+            return handle_app_mention(event)
+        elif event.type == "message":
+            return handle_message(event)
+        else:
+            logger.info(f"Unhandled event type: {event.type}")
+            return {"status": "ignored", "reason": f"Unhandled event type: {event.type}"}
     
-    def setup_handlers(self, cg: CodegenApp):
-        """Set up event handlers for the Codegen app."""
+    except Exception as e:
+        logger.error(f"Error handling Slack event: {str(e)}")
+        return {"status": "error", "error": str(e)}
+
+def handle_app_mention(event: SlackEvent) -> Dict[str, Any]:
+    """
+    Handle app mention events.
+    
+    Args:
+        event: The Slack event
         
-        @cg.slack.event("app_mention")
-        async def handle_mention(event: SlackEvent):
-            """Handle mentions of the bot in Slack channels."""
-            logger.info("[APP_MENTION] Received app_mention event")
-            
-            # Get the codebase
-            logger.info("[CODEBASE] Initializing codebase")
-            codebase = cg.get_codebase()
-            
-            # Extract the query from the message (remove the bot mention)
-            query = event.text.split(">", 1)[1].strip() if ">" in event.text else event.text
-            
-            if not query:
-                cg.slack.client.chat_postMessage(
-                    channel=event.channel,
-                    text="Please ask a question about the codebase!",
-                    thread_ts=event.ts
-                )
-                return {"message": "Empty query", "received_text": event.text}
-            
-            try:
-                # Add typing indicator
-                cg.slack.client.reactions_add(
-                    channel=event.channel,
-                    timestamp=event.ts,
-                    name="writing_hand"
-                )
-                
-                # Process the query
-                response, context = process_codebase_query(codebase, query)
-                
-                # Format and send the response
-                formatted_response = format_response(response, context)
-                cg.slack.client.chat_postMessage(
-                    channel=event.channel,
-                    text=formatted_response,
-                    thread_ts=event.ts
-                )
-                
-                return {
-                    "message": "Mentioned",
-                    "received_text": event.text,
-                    "response": response
-                }
-                
-            except Exception as e:
-                logger.exception(f"Error processing query: {e}")
-                cg.slack.client.chat_postMessage(
-                    channel=event.channel,
-                    text=f"Error processing your request: {str(e)}",
-                    thread_ts=event.ts
-                )
-                return {"error": str(e)}
+    Returns:
+        Response dictionary
+    """
+    try:
+        # Extract the message text
+        text = event.text.replace(f"<@{event.bot_id}>", "").strip()
         
-        @cg.github.event("pull_request:labeled")
-        def handle_pr(event: PullRequestLabeledEvent):
-            """Handle PR labeled events."""
-            logger.info("PR labeled")
-            logger.info(f"PR head sha: {event.pull_request.head.sha}")
+        # Get or create a codebase instance
+        codebase = get_or_create_codebase(event.channel)
+        
+        # Create a code agent
+        agent = CodeAgent(
+            codebase=codebase,
+            model_provider=os.environ.get("CODEGEN_MODEL_PROVIDER", "anthropic"),
+            model_name=os.environ.get("CODEGEN_MODEL_NAME", "claude-3-sonnet-20240229"),
+        )
+        
+        # Process the message with the agent
+        response = agent.chat(text)
+        
+        # Send the response back to Slack
+        slack_app.client.chat_postMessage(
+            channel=event.channel,
+            thread_ts=event.thread_ts or event.ts,
+            text=response,
+        )
+        
+        return {"status": "success", "response": response}
+    
+    except Exception as e:
+        logger.error(f"Error handling app mention: {str(e)}")
+        slack_app.client.chat_postMessage(
+            channel=event.channel,
+            thread_ts=event.thread_ts or event.ts,
+            text=f"Error processing your request: {str(e)}",
+        )
+        return {"status": "error", "error": str(e)}
+
+def handle_message(event: SlackEvent) -> Dict[str, Any]:
+    """
+    Handle regular message events.
+    
+    Args:
+        event: The Slack event
+        
+    Returns:
+        Response dictionary
+    """
+    # Only process messages in threads where the bot was previously mentioned
+    if event.thread_ts and is_bot_in_thread(event.channel, event.thread_ts):
+        try:
+            # Get or create a codebase instance
+            codebase = get_or_create_codebase(event.channel)
             
-            codebase = cg.get_codebase()
-            logger.info(f"Codebase: {codebase.name} codebase.repo: {codebase.repo_path}")
-            
-            # Check out the commit
-            logger.info("> Checking out commit")
-            codebase.checkout(commit=event.pull_request.head.sha)
-            
-            # Get the README file
-            logger.info("> Getting README file")
-            file = codebase.get_file("README.md")
-            
-            # Create a PR comment with the README content
-            codebase._op.create_pr_comment(
-                event.pull_request.number,
-                f"Codegen Slack Bot has analyzed this PR.\n\nREADME content:\n```markdown\n{file.content[:500]}...\n```"
+            # Create a code agent
+            agent = CodeAgent(
+                codebase=codebase,
+                model_provider=os.environ.get("CODEGEN_MODEL_PROVIDER", "anthropic"),
+                model_name=os.environ.get("CODEGEN_MODEL_NAME", "claude-3-sonnet-20240229"),
             )
             
-            return {
-                "message": "PR event handled",
-                "num_files": len(codebase.files),
-                "num_functions": len(codebase.functions)
-            }
+            # Process the message with the agent
+            response = agent.chat(event.text)
+            
+            # Send the response back to Slack
+            slack_app.client.chat_postMessage(
+                channel=event.channel,
+                thread_ts=event.thread_ts,
+                text=response,
+            )
+            
+            return {"status": "success", "response": response}
         
-        @cg.linear.event("Issue")
-        def handle_issue(event: LinearEvent):
-            """Handle Linear issue events."""
-            logger.info(f"Issue created: {event}")
-            codebase = cg.get_codebase()
-            return {
-                "message": "Linear Issue event",
-                "num_files": len(codebase.files),
-                "num_functions": len(codebase.functions)
-            }
+        except Exception as e:
+            logger.error(f"Error handling message: {str(e)}")
+            slack_app.client.chat_postMessage(
+                channel=event.channel,
+                thread_ts=event.thread_ts,
+                text=f"Error processing your request: {str(e)}",
+            )
+            return {"status": "error", "error": str(e)}
+    
+    return {"status": "ignored", "reason": "Not in a thread with the bot"}
 
+def is_bot_in_thread(channel: str, thread_ts: str) -> bool:
+    """
+    Check if the bot is part of a thread.
+    
+    Args:
+        channel: The Slack channel ID
+        thread_ts: The thread timestamp
+        
+    Returns:
+        True if the bot is in the thread, False otherwise
+    """
+    try:
+        # Get the replies in the thread
+        response = slack_app.client.conversations_replies(
+            channel=channel,
+            ts=thread_ts,
+        )
+        
+        # Check if any message in the thread is from the bot
+        bot_id = slack_app.client.auth_test()["bot_id"]
+        for message in response["messages"]:
+            if message.get("bot_id") == bot_id:
+                return True
+        
+        return False
+    
+    except Exception as e:
+        logger.error(f"Error checking if bot is in thread: {str(e)}")
+        return False
 
-########################################################################################################################
-# FastAPI Integration
-########################################################################################################################
+def get_or_create_codebase(channel_id: str) -> Codebase:
+    """
+    Get or create a codebase instance for a channel.
+    
+    Args:
+        channel_id: The Slack channel ID
+        
+    Returns:
+        A Codebase instance
+    """
+    # Create a unique ID for the codebase based on the channel
+    codebase_id = f"slack-{channel_id}"
+    
+    # Check if a snapshot exists for this channel
+    snapshot_path = f"/snapshots/{codebase_id}.json"
+    if os.path.exists(snapshot_path):
+        # Load the codebase from the snapshot
+        with open(snapshot_path, "r") as f:
+            snapshot_data = json.load(f)
+        
+        # Create a codebase from the snapshot
+        return Codebase.from_snapshot(snapshot_data)
+    
+    # Create a new codebase
+    repo_url = os.environ.get("CODEGEN_DEFAULT_REPO", "")
+    if not repo_url:
+        raise ValueError("CODEGEN_DEFAULT_REPO environment variable is not set")
+    
+    # Create a new codebase
+    codebase = Codebase.from_github_url(repo_url)
+    
+    # Save the codebase snapshot
+    snapshot = codebase.to_snapshot()
+    with open(snapshot_path, "w") as f:
+        json.dump(snapshot, f)
+    
+    return codebase
 
-@slack_codegen_app.function(
-    image=base_image,
-    secrets=[modal.Secret.from_dotenv()],
-    timeout=3600,
+@app.function(
+    image=modal.Image.debian_slim().pip_install(
+        ["fastapi", "slack_bolt", "slack_sdk", "uvicorn"]
+    ),
+    secrets=[modal.Secret.from_name("slack-secrets")],
 )
 @modal.asgi_app()
-def fastapi_app():
-    """Create a FastAPI app with Slack handlers."""
-    # Initialize Slack app with secrets from environment
-    slack_app = App(
-        token=os.environ["SLACK_BOT_TOKEN"],
-        signing_secret=os.environ["SLACK_SIGNING_SECRET"],
-    )
+def fastapi_endpoint() -> FastAPI:
+    """
+    Create a FastAPI endpoint for handling Slack events.
     
-    # Create FastAPI app
-    web_app = FastAPI(title="Slack Codegen Integration")
-    handler = SlackRequestHandler(slack_app)
+    Returns:
+        FastAPI app
+    """
+    @fastapi_app.post("/slack/events")
+    async def slack_events(request: Request) -> Dict[str, Any]:
+        """Handle Slack events."""
+        return await slack_handler.handle(request)
     
-    # Store responded messages to avoid duplicates
-    responded = {}
+    @fastapi_app.get("/health")
+    async def health_check() -> Dict[str, str]:
+        """Health check endpoint."""
+        return {"status": "healthy"}
     
-    @slack_app.event("app_mention")
-    def handle_mention(event: Dict[str, Any], say: Any) -> None:
-        """Handle mentions of the bot in channels."""
-        logger.info("Received Slack mention event")
-        
-        # Skip if we've already answered this question
-        if event["ts"] in responded:
-            return
-        responded[event["ts"]] = True
-        
-        # Get message text without the bot mention
-        query = event["text"].split(">", 1)[1].strip() if ">" in event["text"] else event["text"]
-        if not query:
-            say("Please ask a question about the codebase!")
-            return
-        
-        try:
-            # Add typing indicator emoji
-            slack_app.client.reactions_add(
-                channel=event["channel"],
-                timestamp=event["ts"],
-                name="writing_hand",
-            )
-            
-            # Initialize the Codegen app and codebase
-            cg = CodegenApp(name="slack-codegen", repo="codegen-sh/codegen")
-            codebase = cg.get_codebase()
-            
-            # Initialize code agent
-            agent = CodeAgent(codebase=codebase)
-            
-            # Run the agent with the query
-            response = agent.run(query)
-            
-            # Send the response in the thread
-            say(text=response, thread_ts=event["ts"])
-            
-        except Exception as e:
-            # Send error message in thread
-            say(text=f"Error: {str(e)}", thread_ts=event["ts"])
-    
-    @web_app.post("/slack/events")
-    async def endpoint(request: Request):
-        """Handle Slack events and verify requests."""
-        return await handler.handle(request)
-    
-    @web_app.post("/slack/verify")
-    async def verify(request: Request):
-        """Handle Slack URL verification challenge."""
-        data = await request.json()
-        if data["type"] == "url_verification":
-            return {"challenge": data["challenge"]}
-        return await handler.handle(request)
-    
-    return web_app
+    return fastapi_app
 
-
-########################################################################################################################
-# Cron Job for Repository Snapshots
-########################################################################################################################
-
-@slack_codegen_app.function(
-    schedule=modal.Cron("*/30 * * * *"),  # Run every 30 minutes
-    image=base_image,
-    secrets=[modal.Secret.from_dotenv()]
-)
-def refresh_repository_snapshots():
-    """Refresh the repository snapshots periodically."""
-    logger.info("Refreshing repository snapshots")
-    api = SlackCodegenAPI()
-    api.refresh_repository_snapshots(snapshot_index_id=SNAPSHOT_DICT_ID)
-
-
-# For local development and testing
 if __name__ == "__main__":
+    # For local development
     import uvicorn
     
-    # Create a Codegen app
-    cg = CodegenApp(name="slack-codegen", repo="codegen-sh/codegen")
+    # Load environment variables
+    from dotenv import load_dotenv
+    load_dotenv()
     
     # Run the FastAPI app
-    uvicorn.run(cg.app, host="0.0.0.0", port=8000)
+    uvicorn.run(fastapi_endpoint, host="0.0.0.0", port=8000)
