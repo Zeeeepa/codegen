@@ -375,6 +375,104 @@ agent = ResearchAgent(
 research = agent.run("Compare different approaches to implementing microservices")
 ```
 
+### IssueSolverAgent
+
+The IssueSolverAgent is designed to analyze and fix coding issues in repositories. It can process individual issues or batches of issues, and can run in parallel for faster processing.
+
+```python
+from codegen import IssueSolverAgent, Codebase
+from codegen.agents.issue_solver import Issue
+
+# Create an issue solver agent
+agent = IssueSolverAgent()
+
+# Create an issue to solve
+issue = Issue(
+    id="example-issue",
+    repo="owner/repo",
+    base_commit="main",
+    problem_statement="Fix the bug in the authentication system where users can't reset their passwords."
+)
+
+# Solve the issue
+result = agent.run(issue)
+print(f"Edited files: {result['edited_files']}")
+```
+
+The IssueSolverAgent can:
+• Process individual issues or batches of issues
+• Run in parallel for faster processing
+• Save results to disk for later analysis
+• Create pull requests with solutions
+• Solve GitHub issues directly
+
+#### Basic Usage
+
+```python
+from codegen import IssueSolverAgent, Codebase
+from codegen.agents.issue_solver import Issue
+from pathlib import Path
+
+# Create an issue solver agent with custom configuration
+agent = IssueSolverAgent(
+    codebase=Codebase.from_repo("owner/repo"),
+    model_provider="anthropic",
+    model_name="claude-3-5-sonnet-latest",
+    output_dir=Path("./results")
+)
+
+# Solve a GitHub issue
+result = agent.solve_github_issue(
+    repo="owner/repo",
+    issue_number=123,
+    base_branch="main"
+)
+
+# Create a pull request with the solution
+pr = agent.create_pull_request(result)
+print(f"Pull request created: {pr['html_url']}")
+```
+
+#### Batch Processing
+
+```python
+from codegen import IssueSolverAgent
+from codegen.agents.issue_solver import Issue
+from pathlib import Path
+
+# Create a batch of issues
+issues = {
+    "issue-1": Issue(
+        id="issue-1",
+        repo="owner/repo",
+        base_commit="main",
+        problem_statement="Fix bug in login form"
+    ),
+    "issue-2": Issue(
+        id="issue-2",
+        repo="owner/repo",
+        base_commit="main",
+        problem_statement="Add validation to registration form"
+    )
+}
+
+# Create an issue solver agent
+agent = IssueSolverAgent(
+    output_dir=Path("./results")
+)
+
+# Process the batch of issues in parallel
+results = agent.run(
+    issues,
+    threads=2,
+    run_id="batch-run-1"
+)
+
+# Print summary
+print(f"Processed {len(results)} issues")
+print(f"Successful patches: {sum(1 for r in results if r.get('model_patch'))}/{len(results)}")
+```
+
 ## Extensions
 
 ### GitHub Integration
