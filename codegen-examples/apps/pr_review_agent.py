@@ -14,7 +14,8 @@ import modal
 from fastapi import Request
 from github import Github
 
-from codegen import Codebase, CodeAgent
+from codegen import Codebase
+from codegen.agents import PRReviewAgent
 from codegen.extensions.events.app import CodegenApp
 from codegen.extensions.github.types.events.pull_request import (
     PullRequestLabeledEvent,
@@ -116,30 +117,21 @@ def pr_review_agent(event: PullRequestLabeledEvent) -> None:
             GithubCreatePRReviewCommentTool(codebase),
         ]
 
-        # Create and run the review agent
-        logger.info("Creating and running the review agent")
-        agent = CodeAgent(codebase=codebase, tools=pr_tools)
+        # Create and run the review agent using the PRReviewAgent class
+        logger.info("Creating and running the PRReviewAgent")
+        agent = PRReviewAgent(
+            codebase=codebase, 
+            tools=pr_tools,
+            github_token=os.environ["GITHUB_TOKEN"],
+            slack_token=os.environ.get("SLACK_BOT_TOKEN"),
+            slack_channel_id=SLACK_NOTIFICATION_CHANNEL
+        )
         
-        prompt = f"""
-Review this pull request like a senior engineer:
-{event.pull_request.url}
-
-Be explicit about the changes, produce a short summary, and point out possible improvements.
-Focus on facts and technical details, using code snippets where helpful.
-Consider:
-1. Code quality and best practices
-2. Potential bugs or edge cases
-3. Performance implications
-4. Security considerations
-5. Test coverage
-
-Use the tools at your disposal to create proper PR reviews. Include code snippets if needed,
-and suggest specific improvements where appropriate.
-"""
-        
-        # Run the agent
-        logger.info("Running the agent with the review prompt")
-        agent.run(prompt)
+        # Review the PR
+        review_result = agent.review_pr(
+            repo_name=repo_str,
+            pr_number=event.number
+        )
         
         # Clean up the temporary comment
         logger.info("Cleaning up temporary comment")
