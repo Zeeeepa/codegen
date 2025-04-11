@@ -1,0 +1,43 @@
+github:
+  token: ""  # GitHub API token
+  webhook_secret: ""  # Webhook secret for verification
+  auto_merge: false  # Auto-merge PRs that pass validation
+  auto_review: true  # Auto-review PRs when created/updated
+  review_label: "needs-review"  # Label to trigger review
+validation:
+  documentation:
+    enabled: true  # Enable documentation validation
+    files:  # Documentation files to validate against
+      - README.md
+      - STRUCTURE.md
+      - PLAN.md
+    required: false  # Require documentation validation to pass
+  code_quality:
+    enabled: true  # Enable code quality validation
+    linters:  # Linters to use
+      - flake8
+      - eslint
+    threshold: 0.8  # Quality threshold (0-1)
+  tests:
+    enabled: true  # Enable test validation
+    required: false  # Require tests to pass
+    coverage_threshold: 0.7  # Coverage threshold (0-1)
+notification:
+  slack:
+    enabled: false  # Enable Slack notifications
+    token: ""  # Slack API token
+    channel: ""  # Slack channel
+storage:
+  type: "local"  # Storage type (local, s3, etc.)
+  path: "data"  # Storage path
+ai:
+  provider: "anthropic"  # AI provider (anthropic, openai)
+  model: "claude-3-opus-20240229"  # Model to use
+  api_key: ""  # API key
+  temperature: 0.2  # Temperature for generation
+  max_tokens: 4000  # Max tokens for generation
+server:
+  host: "0.0.0.0"  # Server host
+  port: 8000  # Server port
+  workers: 4  # Number of workers
+  cors_origins: ["*"]  # CORS origins
