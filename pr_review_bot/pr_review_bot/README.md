@@ -1,157 +1,52 @@
-# PR Review Bot
+The Documentation Validator can be integrated with the PR Review Controller to validate PRs against documentation requirements. Here's how it would be used:
 
-A GitHub PR review bot that automatically reviews and merges pull requests.
+# In the PR Review Controller
+from validators.documentation_service import DocumentationValidationService
+# Initialize the documentation validation service
+doc_validation_service = DocumentationValidationService(config, repo_path)
+# Validate PR against documentation requirements
+validation_results = doc_validation_service.validate_pr(repo_name, pr_number)
+# Generate validation report
+validation_report = doc_validation_service.generate_validation_report(validation_results)
+# Save validation results
+if not validation_results.get("passed", False):
+    filepath = doc_validation_service.save_validation_results(
+        validation_results=validation_results,
+        output_dir="data/insights"
+    )
+    logger.info(f"Validation results saved to {filepath}")
+# Add validation report to PR comment
+comment_body += "\n\n" + validation_report
+# Post comment on PR
+github_client.create_pr_comment(repo_name, pr_number, comment_body)
+5. Example Usage
+Here's an example of how to use the Documentation Validator:
 
-## Features
-
-- Automatically reviews pull requests
-- Checks PRs against requirements
-- Monitors branches for changes
-- Provides webhook integration
-- Sends notifications to Slack
-- Supports AI-powered code review (optional)
-
-## Installation
-
-### Basic Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/pr-review-bot.git
-cd pr-review-bot
-
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install the basic package
-pip install -e .
-```
-
-### Installation with AI Features
-
-```bash
-# Install with AI features
-pip install -e ".[ai]"
-```
-
-### Installation with Codegen Integration
-
-```bash
-# Install with Codegen integration
-pip install -e ".[codegen]"
-```
-
-### Full Installation
-
-```bash
-# Install all features
-pip install -e ".[all]"
-```
-
-## Configuration
-
-Create a `.env` file with the following variables:
-
-```
-# Required
-GITHUB_TOKEN=your_github_token
-
-# Optional - for Slack notifications
-SLACK_WEBHOOK_URL=your_slack_webhook_url
-# OR
-SLACK_TOKEN=your_slack_token
-SLACK_NOTIFICATION_CHANNEL=your_channel_name
-
-# Optional - for AI-powered reviews
-ANTHROPIC_API_KEY=your_anthropic_key
-# OR
-OPENAI_API_KEY=your_openai_key
-
-# Optional - for ngrok integration
-NGROK_AUTH_TOKEN=your_ngrok_token
-```
-
-## Usage
-
-### Basic Usage
-
-```bash
-# Run the bot with default settings
-pr-review-bot
-```
-
-### Advanced Usage
-
-```bash
-# Run with PR monitoring
-pr-review-bot --monitor-prs
-
-# Run with branch monitoring
-pr-review-bot --monitor-branches
-
-# Run with ngrok for webhook integration
-pr-review-bot --use-ngrok
-
-# Run with custom webhook URL
-pr-review-bot --webhook-url https://your-webhook-url.com/webhook
-
-# Run with custom monitoring interval (in seconds)
-pr-review-bot --monitor-interval 600
-
-# Run with custom number of threads
-pr-review-bot --threads 20
-
-# Run with Slack notifications
-pr-review-bot --slack-channel your-channel-name
-
-# Show recent merges on startup
-pr-review-bot --show-merges
-
-# Show project implementation stats on startup
-pr-review-bot --show-projects
-
-# Skip branches with no commits
-pr-review-bot --skip-empty-branches
-
-# Custom log file and level
-pr-review-bot --log-file custom.log --log-level DEBUG
-```
-
-## Project Structure
-
-```
-pr_review_bot/
-├── api/              # API endpoints and webhook handlers
-├── core/             # Core functionality
-├── monitors/         # PR and branch monitors
-├── utils/            # Utility functions
-├── main.py           # Main entry point
-└── run.py            # Run script
-```
-
-## Dependencies
-
-- Required:
-  - fastapi
-  - uvicorn
-  - pydantic
-  - python-dotenv
-  - PyGithub
-  - requests
-  - markdown
-  - beautifulsoup4
-  - gitpython
-  - schedule
-
-- Optional (AI features):
-  - langchain-core
-  - langchain-anthropic
-  - langchain-openai
-
-- Optional (Codegen integration):
-  - codegen
-
-## License
-
-MIT
+# Initialize configuration
+config = {
+    "github": {
+        "token": "your_github_token"
+    },
+    "validation": {
+        "documentation": {
+            "enabled": True,
+            "files": ["README.md", "STRUCTURE.md", "PLAN.md"],
+            "required": False
+        }
+    }
+}
+# Initialize documentation validation service
+doc_validation_service = DocumentationValidationService(config, "/path/to/repo")
+# Validate PR against documentation requirements
+validation_results = doc_validation_service.validate_pr("owner/repo", 123)
+# Generate validation report
+validation_report = doc_validation_service.generate_validation_report(validation_results)
+print(validation_report)
+# Save validation results if validation failed
+if not validation_results.get("passed", False):
+    filepath = doc_validation_service.save_validation_results(
+        validation_results=validation_results,
+        output_dir="data/insights"
+    )
+    print(f"Validation results saved to {filepath}")
+This implementation provides a comprehensive solution for validating PRs against documentation requirements. It parses documentation files, extracts requirements, and checks if the PR changes address these requirements. The validation results can be used to determine if a PR should be merged or if additional changes are needed.
