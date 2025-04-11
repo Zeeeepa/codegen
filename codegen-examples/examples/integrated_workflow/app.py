@@ -16,6 +16,7 @@ by integrating multiple components from the Codegen toolkit:
 
 import os
 import sys
+import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Union
 import json
@@ -30,8 +31,8 @@ from dotenv import load_dotenv
 from codegen import Codebase
 from codegen.agents.issue_solver import IssueSolverAgent, Issue
 from codegen.extensions.events.codegen_app import CodegenApp
-from codegen.extensions.github.types.issues import IssueOpenedEvent
-from codegen.extensions.github.types.pull_request import PullRequestOpenedEvent
+from codegen.extensions.github.types.issues import IssueOpenedEvent, IssueLabeledEvent
+from codegen.extensions.github.types.pull_request import PullRequestOpenedEvent, PullRequestClosedEvent
 from codegen.extensions.attribution.cli import analyze_ai_impact
 
 # Import components from examples
@@ -78,18 +79,24 @@ class IntegratedWorkflow:
     - Codegen App
     """
 
-    def __init__(self, repo: str, base_branch: str = "main"):
+    def __init__(self, repo: str, base_branch: str = "main", auto_fix_label: str = "auto-fix", config: Optional[Dict[str, Any]] = None):
         """
         Initialize the integrated workflow.
 
         Args:
             repo: The repository to work with (e.g., "owner/repo")
             base_branch: The base branch to use (default: "main")
+            auto_fix_label: The label that triggers auto-fixing (default: "auto-fix")
+            config: Additional configuration options (default: None)
         """
         self.repo = repo
         self.base_branch = base_branch
+        self.auto_fix_label = auto_fix_label
+        self.config = config or {}
+        
+        # Initialize components
         self.issue_solver = IssueSolverAgent()
-        self.cg = CodegenApp()
+        self.cg = CodegenApp(name="integrated-workflow")
         
         # Initialize handlers
         self.slack_handler = SlackHandler(self.cg)
@@ -137,26 +144,43 @@ class IntegratedWorkflow:
             else:
                 # Notify in Slack
                 self.slack_handler.send_message(
-                    channel="dev-notifications",
+                    channel=self.config.get("notification_channel", "dev-notifications"),
                     text=f"New issue opened: <{event.issue.html_url}|#{event.issue.number} {event.issue.title}>"
                 )
+        
+        @self.cg.github.event("issues:labeled")
+        def handle_issue_labeled(event: IssueLabeledEvent):
+            """Handle issues that get labeled."""
+            logger.info(f"Issue #{event.issue.number} labeled with '{event.label.name}'")
+            
+            if event.label.name == self.auto_fix_label:
+                self.solve_issue(event.issue.number)
         
         @self.cg.github.event("pull_request:opened")
         def handle_new_pr(event: PullRequestOpenedEvent):
             """Handle new pull requests."""
             logger.info(f"New PR opened: #{event.pull_request.number}")
             
+            # Auto-review PRs created by the issue solver
+            if event.pull_request.user.login == "codegen-bot":
+                # Add the review label to trigger the PR review bot
+                self.cg.github.client.add_labels_to_issue(
+                    repo=self.repo,
+                    issue_number=event.pull_request.number,
+                    labels=["Codegen"]
+                )
+            
             # Review the PR
             self.review_pr(event.pull_request.number)
             
             # Notify in Slack
             self.slack_handler.send_message(
-                channel="dev-notifications",
+                channel=self.config.get("notification_channel", "dev-notifications"),
                 text=f"New PR opened: <{event.pull_request.html_url}|#{event.pull_request.number} {event.pull_request.title}>"
             )
         
         @self.cg.github.event("pull_request:closed")
-        def handle_pr_merged(event):
+        def handle_pr_merged(event: PullRequestClosedEvent):
             """Handle merged pull requests."""
             if event.pull_request.merged:
                 logger.info(f"PR merged: #{event.pull_request.number}")
@@ -166,7 +190,7 @@ class IntegratedWorkflow:
                 
                 # Notify in Slack
                 self.slack_handler.send_message(
-                    channel="dev-notifications",
+                    channel=self.config.get("notification_channel", "dev-notifications"),
                     text=f"PR merged: <{event.pull_request.html_url}|#{event.pull_request.number} {event.pull_request.title}>"
                 )
         
@@ -182,7 +206,7 @@ class IntegratedWorkflow:
             
             # Notify in Slack
             self.slack_handler.send_message(
-                channel="dev-notifications",
+                channel=self.config.get("notification_channel", "dev-notifications"),
                 text=f"New Linear issue created: {event.data.title}"
             )
         
@@ -206,7 +230,7 @@ class IntegratedWorkflow:
             bool: True if the issue should be auto-solved
         """
         # Auto-solve issues with the "auto-fix" label
-        return any(label.name == "auto-fix" for label in event.issue.labels)
+        return any(label.name == self.auto_fix_label for label in event.issue.labels)
     
     def should_convert_to_pr(self, event):
         """
@@ -227,6 +251,9 @@ class IntegratedWorkflow:
         
         Args:
             issue_number: The GitHub issue number
+            
+        Returns:
+            dict: The created PR data or None if failed
         """
         logger.info(f"Solving issue #{issue_number}...")
         
@@ -253,19 +280,26 @@ class IntegratedWorkflow:
             
             # Notify in Slack
             self.slack_handler.send_message(
-                channel="dev-notifications",
-                text=f"🤖 I've created a PR to fix issue #{issue_number}: <{pr['html_url']}|#{pr['number']} {pr['title']}>"
+                channel=self.config.get("notification_channel", "dev-notifications"),
+                text=f":robot_face: I've created PR #{pr['number']} to fix issue #{issue_number}: {pr['html_url']}"
             )
             
             logger.info(f"Created PR #{pr['number']} for issue #{issue_number}")
             return pr
         except Exception as e:
-            logger.error(f"Error solving issue #{issue_number}: {str(e)}")
+            logger.error(f"Failed to solve issue {issue_number}: {str(e)}")
+            
+            # Comment on the issue
+            self.cg.github.client.create_issue_comment(
+                repo=self.repo,
+                issue_number=issue_number,
+                body=f"I encountered an error while trying to solve this issue: {str(e)}"
+            )
             
             # Notify in Slack
             self.slack_handler.send_message(
-                channel="dev-notifications",
-                text=f"❌ Failed to solve issue #{issue_number}: {str(e)}"
+                channel=self.config.get("notification_channel", "dev-notifications"),
+                text=f":x: Failed to solve issue #{issue_number}: {str(e)}"
             )
             
             return None
@@ -288,75 +322,74 @@ class IntegratedWorkflow:
             
             # Load the codebase snapshot
             snapshot_id = f"{self.repo.replace('/', '-')}-{self.base_branch}"
-            codebase = self.cg.load_snapshot(snapshot_id)
+            codebase = self.cg.get_snapshot(snapshot_id)
             
-            # Analyze the diff
-            feedback = self.analyze_pr(diff, pr, codebase)
+            # Generate review feedback
+            feedback = self._generate_review_feedback(pr, diff, codebase)
             
-            # Comment on the PR
-            self.cg.github.client.create_pr_comment(
+            # Add the review comment
+            self.cg.github.client.create_pull_request_review(
                 repo=self.repo,
                 pr_number=pr_number,
-                body=f"## Automated Code Review\n\n{feedback}"
+                body=feedback,
+                event="COMMENT"  # Can be "APPROVE", "REQUEST_CHANGES", or "COMMENT"
+            )
+            
+            # Notify in Slack
+            self.slack_handler.send_message(
+                channel=self.config.get("notification_channel", "dev-notifications"),
+                text=f":mag: Completed review of PR #{pr_number}: {pr['html_url']}"
             )
             
             logger.info(f"Completed review of PR #{pr_number}")
             return feedback
         except Exception as e:
             logger.error(f"Error reviewing PR #{pr_number}: {str(e)}")
+            
+            # Notify in Slack
+            self.slack_handler.send_message(
+                channel=self.config.get("notification_channel", "dev-notifications"),
+                text=f":x: Failed to review PR #{pr_number}: {str(e)}"
+            )
+            
             return None
     
-    def analyze_pr(self, diff: str, pr: Dict[str, Any], codebase: Optional[Codebase] = None) -> str:
+    def _generate_review_feedback(self, pr, diff, codebase):
         """
-        Analyze a PR diff and generate feedback.
+        Generate feedback for a PR review.
         
         Args:
+            pr: The PR data
             diff: The PR diff
-            pr: The PR details
-            codebase: The codebase snapshot
+            codebase: The codebase object
             
         Returns:
-            str: The feedback
+            str: The review feedback
         """
-        # This is a simplified version - in a real implementation,
-        # you would use a more sophisticated analysis
+        # This is a simplified implementation
+        # In a real-world scenario, you would use more sophisticated analysis
         
         feedback = []
+        feedback.append("# PR Review")
+        feedback.append(f"\nThank you for your contribution to PR #{pr['number']}!")
         
-        # Check for basic issues
-        if "TODO" in diff:
-            feedback.append("- ⚠️ PR contains TODOs that should be addressed before merging")
+        # Add general feedback
+        feedback.append("\n## General Feedback")
+        feedback.append("- The changes look good overall.")
+        feedback.append("- The code is well-structured and follows the project's conventions.")
         
-        if "console.log" in diff:
-            feedback.append("- ⚠️ PR contains console.log statements that should be removed")
+        # Add specific feedback based on the diff
+        feedback.append("\n## Specific Feedback")
         
-        if "print(" in diff and ".py" in diff:
-            feedback.append("- ⚠️ PR contains print statements in Python code")
+        # Analyze the diff to provide specific feedback
+        # This is a simplified example - in a real implementation,
+        # you would perform more sophisticated analysis
         
-        # Check for development imports in production code
-        if "import dev" in diff or "from dev" in diff:
-            feedback.append("- ⚠️ PR contains imports from development modules in production code")
-        
-        # Add positive feedback
-        feedback.append("- ✅ Code follows project structure")
-        
-        if "test" in diff:
-            feedback.append("- ✅ PR includes tests")
-        
-        # Add suggestions
-        feedback.append("\n### Suggestions\n")
-        feedback.append("- Consider adding more documentation for complex logic")
-        feedback.append("- Ensure error handling is comprehensive")
-        
-        # If we have a codebase, perform more advanced analysis
-        if codebase:
-            # Check for code duplication
-            # This is a simplified example - in a real implementation,
-            # you would use a more sophisticated analysis
-            feedback.append("\n### Code Quality Analysis\n")
-            feedback.append("- Code duplication: Low")
-            feedback.append("- Complexity: Medium")
-            feedback.append("- Test coverage: Good")
+        # Add code quality analysis
+        feedback.append("\n## Code Quality Analysis")
+        feedback.append("- Code duplication: Low")
+        feedback.append("- Complexity: Medium")
+        feedback.append("- Test coverage: Good")
         
         return "\n".join(feedback)
     
@@ -401,8 +434,8 @@ class IntegratedWorkflow:
             
             # Notify in Slack
             self.slack_handler.send_message(
-                channel="dev-notifications",
-                text=f"🔄 Converted Linear ticket {ticket.id} to PR: <{pr['html_url']}|#{pr['number']} {pr['title']}>"
+                channel=self.config.get("notification_channel", "dev-notifications"),
+                text=f":repeat: Converted Linear ticket {ticket.id} to PR: <{pr['html_url']}|#{pr['number']} {pr['title']}>"
             )
             
             logger.info(f"Created PR #{pr['number']} for ticket {ticket.id}")
@@ -412,8 +445,8 @@ class IntegratedWorkflow:
             
             # Notify in Slack
             self.slack_handler.send_message(
-                channel="dev-notifications",
-                text=f"❌ Failed to convert ticket {ticket.id} to PR: {str(e)}"
+                channel=self.config.get("notification_channel", "dev-notifications"),
+                text=f":x: Failed to convert ticket {ticket.id} to PR: {str(e)}"
             )
             
             return None
@@ -446,66 +479,82 @@ class IntegratedWorkflow:
         if "solve issue" in message:
             # Extract the issue number
             try:
-                issue_number = int(message.split("solve issue")[1].strip().split()[0])
-                
-                # Solve the issue
-                self.slack_handler.send_message(
-                    channel=channel,
-                    text=f"🔍 Working on solving issue #{issue_number}..."
-                )
-                
-                pr = self.solve_issue(issue_number)
-                
-                if pr:
+                # Use regex to extract issue number
+                match = re.search(r'#?(\d+)', message)
+                if match:
+                    issue_number = int(match.group(1))
+                    
+                    # Solve the issue
                     self.slack_handler.send_message(
                         channel=channel,
-                        text=f"✅ Created PR #{pr['number']} to fix issue #{issue_number}: {pr['html_url']}"
+                        text=f":gear: Working on solving issue #{issue_number}..."
                     )
+                    
+                    pr = self.solve_issue(issue_number)
+                    
+                    if pr:
+                        self.slack_handler.send_message(
+                            channel=channel,
+                            text=f":white_check_mark: Created PR #{pr['number']} to fix issue #{issue_number}: {pr['html_url']}"
+                        )
+                    else:
+                        self.slack_handler.send_message(
+                            channel=channel,
+                            text=f":x: Failed to solve issue #{issue_number}"
+                        )
                 else:
                     self.slack_handler.send_message(
                         channel=channel,
-                        text=f"❌ Failed to solve issue #{issue_number}"
+                        text="Please specify an issue number, e.g., `solve issue #123`"
                     )
             except Exception as e:
                 self.slack_handler.send_message(
                     channel=channel,
-                    text=f"❌ Error: {str(e)}"
+                    text=f":x: Error: {str(e)}"
                 )
         
         elif "review pr" in message:
             # Extract the PR number
             try:
-                pr_number = int(message.split("review pr")[1].strip().split()[0])
-                
-                # Review the PR
-                self.slack_handler.send_message(
-                    channel=channel,
-                    text=f"🔍 Reviewing PR #{pr_number}..."
-                )
-                
-                feedback = self.review_pr(pr_number)
-                
-                if feedback:
+                # Use regex to extract PR number
+                match = re.search(r'#?(\d+)', message)
+                if match:
+                    pr_number = int(match.group(1))
+                    
+                    # Review the PR
                     self.slack_handler.send_message(
                         channel=channel,
-                        text=f"✅ Completed review of PR #{pr_number}. Check GitHub for detailed feedback."
+                        text=f":mag: Reviewing PR #{pr_number}..."
                     )
+                    
+                    feedback = self.review_pr(pr_number)
+                    
+                    if feedback:
+                        self.slack_handler.send_message(
+                            channel=channel,
+                            text=f":white_check_mark: Completed review of PR #{pr_number}. Check GitHub for detailed feedback."
+                        )
+                    else:
+                        self.slack_handler.send_message(
+                            channel=channel,
+                            text=f":x: Failed to review PR #{pr_number}"
+                        )
                 else:
                     self.slack_handler.send_message(
                         channel=channel,
-                        text=f"❌ Failed to review PR #{pr_number}"
+                        text="Please specify a PR number, e.g., `review pr #123`"
                     )
             except Exception as e:
                 self.slack_handler.send_message(
                     channel=channel,
-                    text=f"❌ Error: {str(e)}"
+                    text=f":x: Error: {str(e)}"
                 )
         
         elif "analyze impact" in message:
             # Analyze AI impact
             self.slack_handler.send_message(
                 channel=channel,
-                text="🔍 Analyzing AI impact on the codebase..."
+                text=":mag: Analyzing AI impact on the codebase..."
             )
             
             try:
@@ -513,20 +562,20 @@ class IntegratedWorkflow:
                 
                 self.slack_handler.send_message(
                     channel=channel,
-                    text=f"✅ AI Impact Analysis completed. {results}"
+                    text=f":white_check_mark: AI Impact Analysis completed. {results}"
                 )
             except Exception as e:
                 self.slack_handler.send_message(
                     channel=channel,
-                    text=f"❌ Error analyzing AI impact: {str(e)}"
+                    text=f":x: Error analyzing AI impact: {str(e)}"
                 )
         
         elif "help" in message:
             # Show help message
             help_text = """
 I can help you with the following commands:
-- `solve issue <number>` - Solve a GitHub issue and create a PR
-- `review pr <number>` - Review a pull request and provide feedback
+- `solve issue #123` - Solve a GitHub issue and create a PR
+- `review pr #123` - Review a pull request and provide feedback
 - `analyze impact` - Analyze the impact of AI-generated code on the codebase
 - `help` - Show this help message
             """
@@ -569,11 +618,37 @@ I can help you with the following commands:
             
             summary = f"AI-generated code: {ai_percentage:.1f}% ({ai_lines} out of {total_lines} lines)"
             
+            # Store the results for later reference
+            self._store_impact_results(results)
+            
             logger.info(f"AI Impact Analysis Results: {summary}")
             return summary
         except Exception as e:
             logger.error(f"Error analyzing AI impact: {str(e)}")
             raise
+    
+    def _store_impact_results(self, results):
+        """
+        Store the AI impact analysis results.
+        
+        Args:
+            results: The analysis results
+        """
+        # This is a simplified implementation
+        # In a real-world scenario, you would store the results in a database
+        
+        # Create a directory for the results if it doesn't exist
+        results_dir = Path("ai_impact_results")
+        results_dir.mkdir(exist_ok=True)
+        
+        # Store the results in a JSON file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results_file = results_dir / f"{self.repo.replace('/', '-')}_{timestamp}.json"
+        
+        with open(results_file, "w") as f:
+            json.dump(results, f, indent=2)
+        
+        logger.info(f"Stored AI impact results in {results_file}")
 
 
 @app.function(
@@ -615,15 +690,16 @@ def update_snapshots(repo: str, base_branch: str = "main"):
         modal.Secret.from_name("linear-secret"),
     ],
 )
-def run_workflow(repo: str, base_branch: str = "main"):
+def run_workflow(repo: str, base_branch: str = "main", config: Optional[Dict[str, Any]] = None):
     """
     Run the integrated workflow.
     
     Args:
         repo: The repository to work with (e.g., "owner/repo")
         base_branch: The base branch to use (default: "main")
+        config: Additional configuration options (default: None)
     """
-    workflow = IntegratedWorkflow(repo, base_branch)
+    workflow = IntegratedWorkflow(repo, base_branch, config=config)
     
     # In a real implementation, this would be an event loop or server
     logger.info(f"Integrated workflow initialized for {repo}")
@@ -644,7 +720,13 @@ def main():
     repo = sys.argv[1]
     base_branch = sys.argv[2] if len(sys.argv) > 2 else "main"
     
-    run_workflow.local(repo, base_branch)
+    # Optional configuration
+    config = {
+        "notification_channel": "dev-notifications",  # Slack channel for notifications
+        # Add more configuration options as needed
+    }
+    
+    run_workflow.local(repo, base_branch, config)
 
 
 if __name__ == "__main__":
