@@ -7,12 +7,13 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Set
 
 import lox
 
 from codegen import Codebase
 from codegen.configs.models.codebase import CodebaseConfig
+from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 
 def diff_versus_commit(git_dname, commit):
@@ -50,7 +51,9 @@ def process_issue(
     issue: Issue, 
     model: str = "claude-3-5-sonnet-latest", 
     codebase: Optional[Codebase] = None,
-    run_id: Optional[str] = None
+    run_id: Optional[str] = None,
+    language: Union[str, ProgrammingLanguage] = "python",
+    disable_file_parse: bool = True
 ) -> Dict[str, Any]:
     """Process one issue using the CodeAgent.
     
@@ -59,6 +62,8 @@ def process_issue(
         model: The model to use for the agent
         codebase: Optional pre-initialized codebase
         run_id: Optional run identifier for tracking
+        language: Programming language of the codebase
+        disable_file_parse: Whether to disable file parsing
         
     Returns:
         A dictionary with the results of the processing
@@ -82,12 +87,12 @@ def process_issue(
     # Initialize codebase if not provided
     if codebase is None:
         config = CodebaseConfig(
-            disable_file_parse=True,  # Disable the graph AND disable file parsing (file.edit only)
+            disable_file_parse=disable_file_parse,
         )
         codebase = Codebase.from_repo(
             repo_full_name=issue.repo, 
             commit=base_commit, 
-            language="python", 
+            language=language, 
             config=config
         )
 
@@ -108,14 +113,28 @@ def process_issue(
         pprint.pprint(modified_files)
 
     # Construct the prompt for the agent
-    message = """I need you to solve a coding issue in this repository.
-The issue is described below.
+    message = """Below is a real coding issue from a repository.
+The repository has been checked out at the specified commit.
+If you are already familiar with this repo, be cautious!
+You are working with a specific version of the repo!
+Filenames, directory names, file contents, etc. may be different than what you're used to.
 
-Before making any modifications, analyze the codebase to understand the context.
-After understanding the issue, propose and implement changes to fix the problem.
+Propose changes to update the repo to fix the problem below.
+*** IMPORTANT: *** DO NOT MODIFY ANY TESTS unless explicitly asked to do so!
+*** IMPORTANT: *** DO NOT ADD ANY TESTS unless explicitly asked to do so!
 
-After every file edit, check your work to ensure you didn't break anything and that your edits are correct.
-Use the Reflection tool if you get stuck or need to reassess your approach.
+Before committing to any modifications:
+1. Analyze the codebase to understand the context
+2. Identify the root cause of the issue
+3. Consider different approaches to fix the problem
+4. Choose the most appropriate solution
+5. Implement the changes carefully
+6. Double-check your work with the Reflection tool
+
+After every file edit:
+- Use the Reflection tool to check your work and sanity check yourself
+- Use the ViewFiles tool to make sure you didn't break anything
+- Verify that your edits are correct and address the issue
 
 Here's the issue to solve:
 
@@ -143,6 +162,10 @@ Here's the issue to solve:
     # Add reference to modified files if we have them
     if modified_files:
         result["reference_files"] = modified_files
+        
+    # Add reference patch if we have it
+    if issue.patch:
+        result["reference_patch"] = issue.patch
 
     # Check if we got a successful patch
     if not model_patch:
@@ -158,7 +181,9 @@ def process_issues_batch(
     threads: int = 1,
     output_dir: Optional[Path] = None,
     model: str = "claude-3-5-sonnet-latest",
-    run_id: Optional[str] = None
+    run_id: Optional[str] = None,
+    language: Union[str, ProgrammingLanguage] = "python",
+    disable_file_parse: bool = True
 ) -> List[Dict[str, Any]]:
     """Process a batch of issues, optionally in parallel.
     
@@ -168,6 +193,8 @@ def process_issues_batch(
         output_dir: Optional directory to save results to
         model: The model to use for the agent
         run_id: Optional run identifier for tracking
+        language: Programming language of the codebase
+        disable_file_parse: Whether to disable file parsing
         
     Returns:
         List of results from processing each issue
@@ -219,7 +246,9 @@ def process_issues_batch(
         result = process_one_issue_func(
             issues[issue_id],
             model=model,
-            run_id=run_id
+            run_id=run_id,
+            language=language,
+            disable_file_parse=disable_file_parse
         )
         
         # If we're not using parallel processing, save the result immediately
@@ -247,3 +276,174 @@ def process_issues_batch(
                         json.dump(result, f, indent=2)
     
     return results
+
+
+def load_predictions(prediction_dirs: List[Path]) -> Dict[str, Dict[str, Any]]:
+    """Load predictions from JSON files in the specified directories.
+    
+    Args:
+        prediction_dirs: List of directories containing prediction files
+        
+    Returns:
+        Dictionary of predictions, keyed by issue ID
+    """
+    predictions = {}
+    
+    for pred_dir in prediction_dirs:
+        if not pred_dir.exists() or not pred_dir.is_dir():
+            print(f"Warning: Prediction directory {pred_dir} does not exist or is not a directory")
+            continue
+            
+        # Find all JSON files in the directory
+        json_files = list(pred_dir.glob("*.json"))
+        
+        for json_file in json_files:
+            try:
+                with open(json_file, "r") as f:
+                    prediction = json.load(f)
+                    
+                # Check if this is a valid prediction
+                if isinstance(prediction, dict) and "issue_id" in prediction:
+                    # Store the file path for reference
+                    prediction["json_fname"] = json_file
+                    predictions[prediction["issue_id"]] = prediction
+                    
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"Error loading prediction from {json_file}: {e}")
+                
+    return predictions
+
+
+def calculate_success_rates(predictions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Calculate success rates from predictions.
+    
+    Args:
+        predictions: Dictionary of predictions, keyed by issue ID
+        
+    Returns:
+        Dictionary with success rate statistics
+    """
+    # Track various categories
+    categories = {
+        "total": set(predictions.keys()),
+        "with_patch": set(),
+        "without_patch": set(),
+        "evaluated": set(),
+        "successful": set(),
+        "failed": set(),
+    }
+    
+    # Categorize predictions
+    for issue_id, prediction in predictions.items():
+        # Check if the prediction has a patch
+        if prediction.get("model_patch"):
+            categories["with_patch"].add(issue_id)
+        else:
+            categories["without_patch"].add(issue_id)
+            
+        # Check if the prediction has been evaluated
+        if "evaluation" in prediction:
+            categories["evaluated"].add(issue_id)
+            
+            # Check if the evaluation was successful
+            if prediction["evaluation"].get("success") is True:
+                categories["successful"].add(issue_id)
+            elif prediction["evaluation"].get("success") is False:
+                categories["failed"].add(issue_id)
+    
+    # Calculate success rates
+    total = len(categories["total"])
+    with_patch = len(categories["with_patch"])
+    evaluated = len(categories["evaluated"])
+    successful = len(categories["successful"])
+    
+    success_rates = {
+        "total": total,
+        "with_patch": with_patch,
+        "with_patch_rate": with_patch / total if total > 0 else 0,
+        "evaluated": evaluated,
+        "evaluated_rate": evaluated / total if total > 0 else 0,
+        "successful": successful,
+        "successful_rate": successful / evaluated if evaluated > 0 else 0,
+        "overall_success_rate": successful / total if total > 0 else 0,
+    }
+    
+    return success_rates
+
+
+def generate_report(
+    predictions: Dict[str, Dict[str, Any]],
+    success_rates: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Generate a report from predictions and success rates.
+    
+    Args:
+        predictions: Dictionary of predictions, keyed by issue ID
+        success_rates: Dictionary with success rate statistics
+        
+    Returns:
+        Dictionary with report statistics
+    """
+    # Group predictions by various criteria
+    by_difficulty = {}
+    by_repo = {}
+    
+    for issue_id, prediction in predictions.items():
+        # Group by difficulty
+        difficulty = prediction.get("metadata", {}).get("difficulty")
+        if difficulty:
+            if difficulty not in by_difficulty:
+                by_difficulty[difficulty] = []
+            by_difficulty[difficulty].append(issue_id)
+            
+        # Group by repository
+        repo = prediction.get("repo") or issue_id.split("#")[0] if "#" in issue_id else None
+        if repo:
+            if repo not in by_repo:
+                by_repo[repo] = []
+            by_repo[repo].append(issue_id)
+    
+    # Calculate success rates by difficulty
+    difficulty_stats = {}
+    for difficulty, issue_ids in by_difficulty.items():
+        successful = sum(1 for issue_id in issue_ids if 
+                         "evaluation" in predictions[issue_id] and 
+                         predictions[issue_id]["evaluation"].get("success") is True)
+        
+        difficulty_stats[difficulty] = {
+            "total": len(issue_ids),
+            "successful": successful,
+            "success_rate": successful / len(issue_ids) if len(issue_ids) > 0 else 0
+        }
+    
+    # Calculate success rates by repository
+    repo_stats = {}
+    for repo, issue_ids in by_repo.items():
+        successful = sum(1 for issue_id in issue_ids if 
+                         "evaluation" in predictions[issue_id] and 
+                         predictions[issue_id]["evaluation"].get("success") is True)
+        
+        repo_stats[repo] = {
+            "total": len(issue_ids),
+            "successful": successful,
+            "success_rate": successful / len(issue_ids) if len(issue_ids) > 0 else 0
+        }
+    
+    # Compile the report
+    report = {
+        "timestamp": str(Path.ctime(Path.cwd())),
+        "overall": success_rates,
+        "by_difficulty": difficulty_stats,
+        "by_repo": repo_stats,
+        "predictions": {
+            issue_id: {
+                "has_patch": bool(prediction.get("model_patch")),
+                "success": prediction.get("evaluation", {}).get("success"),
+                "edited_files": prediction.get("edited_files", []),
+                "reference_files": prediction.get("reference_files", []),
+            }
+            for issue_id, prediction in predictions.items()
+        }
+    }
+    
+    return report

@@ -2,13 +2,22 @@
 
 import json
 import uuid
+import os
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Tuple
 
 from codegen import Codebase
 from codegen.agents.base import Agent
 from codegen.agents.code.code_agent import CodeAgent
-from codegen.agents.issue_solver.utils import Issue, process_issue, process_issues_batch
+from codegen.agents.issue_solver.utils import (
+    Issue, 
+    process_issue, 
+    process_issues_batch, 
+    calculate_success_rates,
+    generate_report,
+    load_predictions
+)
+from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 
 class IssueSolverAgent(Agent):
@@ -25,6 +34,8 @@ class IssueSolverAgent(Agent):
         model_provider: str = "anthropic",
         model_name: str = "claude-3-5-sonnet-latest",
         output_dir: Optional[Path] = None,
+        language: Union[str, ProgrammingLanguage] = "python",
+        disable_file_parse: bool = True,
         **kwargs
     ):
         """Initialize the IssueSolverAgent.
@@ -34,11 +45,15 @@ class IssueSolverAgent(Agent):
             model_provider: The model provider to use (default: "anthropic")
             model_name: The model name to use (default: "claude-3-5-sonnet-latest")
             output_dir: Optional directory to save results to
+            language: Programming language of the codebase (default: "python")
+            disable_file_parse: Whether to disable file parsing (default: True)
             **kwargs: Additional arguments to pass to the parent class
         """
         super().__init__(model_provider=model_provider, model_name=model_name, **kwargs)
         self.codebase = codebase
         self.output_dir = output_dir
+        self.language = language if isinstance(language, ProgrammingLanguage) else ProgrammingLanguage(language)
+        self.disable_file_parse = disable_file_parse
         
         if self.output_dir:
             self.output_dir.mkdir(exist_ok=True, parents=True)
@@ -104,6 +119,8 @@ class IssueSolverAgent(Agent):
             model=self.model_name,
             codebase=self.codebase,
             run_id=run_id,
+            language=self.language,
+            disable_file_parse=self.disable_file_parse,
             **kwargs
         )
         
@@ -138,6 +155,8 @@ class IssueSolverAgent(Agent):
             output_dir=self.output_dir,
             model=self.model_name,
             run_id=run_id,
+            language=self.language,
+            disable_file_parse=self.disable_file_parse,
             **kwargs
         )
         
@@ -233,3 +252,164 @@ class IssueSolverAgent(Agent):
         )
         
         return pr
+    
+    def load_swe_bench_examples(
+        self,
+        dataset_name: str = "lite",
+        subset: Optional[str] = None,
+        max_examples: Optional[int] = None
+    ) -> Dict[str, Issue]:
+        """Load examples from the SWE Bench dataset.
+        
+        Args:
+            dataset_name: Name of the dataset to load (default: "lite")
+            subset: Optional subset of the dataset to load
+            max_examples: Maximum number of examples to load
+            
+        Returns:
+            Dictionary of Issue objects, keyed by instance ID
+        """
+        try:
+            # Import here to avoid requiring datasets package for all users
+            from datasets import load_dataset
+            
+            # Map dataset names to HuggingFace dataset paths
+            dataset_paths = {
+                "lite": "princeton-nlp/SWE-bench_Lite",
+                "full": "princeton-nlp/SWE-bench",
+                "verified": "princeton-nlp/SWE-bench-verified"
+            }
+            
+            if dataset_name not in dataset_paths:
+                raise ValueError(f"Unknown dataset: {dataset_name}. Available datasets: {', '.join(dataset_paths.keys())}")
+            
+            # Load the dataset
+            dataset_path = dataset_paths[dataset_name]
+            dataset = load_dataset(dataset_path)
+            
+            # Filter by subset if specified
+            if subset:
+                if "subset" in dataset["train"].features:
+                    dataset = dataset.filter(lambda x: x["subset"] == subset, input_columns=["subset"])
+                else:
+                    print(f"Warning: Dataset {dataset_name} does not have a 'subset' feature. Ignoring subset filter.")
+            
+            # Convert to Issue objects
+            issues = {}
+            for i, example in enumerate(dataset["train"]):
+                if max_examples and i >= max_examples:
+                    break
+                    
+                issue = Issue(
+                    id=example["instance_id"],
+                    repo=example["repo"],
+                    base_commit=example["base_commit"],
+                    problem_statement=example["problem_statement"],
+                    patch=example.get("patch"),
+                    difficulty=example.get("difficulty"),
+                    metadata={
+                        "source": "swe-bench",
+                        "dataset": dataset_name,
+                        "subset": subset
+                    }
+                )
+                issues[issue.id] = issue
+                
+            return issues
+            
+        except ImportError:
+            print("Error: The 'datasets' package is required to load SWE Bench examples.")
+            print("Please install it with: pip install datasets")
+            return {}
+    
+    def generate_report(self, results_dir: Optional[Path] = None) -> Dict[str, Any]:
+        """Generate a report from the results of processing issues.
+        
+        Args:
+            results_dir: Directory containing result files (default: self.output_dir)
+            
+        Returns:
+            Dictionary with report statistics
+        """
+        if results_dir is None:
+            results_dir = self.output_dir
+            
+        if not results_dir or not results_dir.exists():
+            raise ValueError(f"Results directory does not exist: {results_dir}")
+            
+        # Load predictions
+        predictions = load_predictions([results_dir])
+        
+        # Calculate success rates
+        success_rates = calculate_success_rates(predictions)
+        
+        # Generate report
+        report = generate_report(predictions, success_rates)
+        
+        # Save report to file
+        report_path = results_dir / "report.json"
+        with open(report_path, "w") as f:
+            json.dump(report, f, indent=2)
+            
+        print(f"Report saved to {report_path}")
+        
+        return report
+    
+    def evaluate_solution(
+        self,
+        result: Dict[str, Any],
+        reference_patch: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Evaluate a solution against a reference patch or by running tests.
+        
+        Args:
+            result: The result dictionary from processing an issue
+            reference_patch: Optional reference patch to compare against
+            **kwargs: Additional arguments to pass to the evaluation function
+            
+        Returns:
+            Dictionary with evaluation results
+        """
+        # If no reference patch is provided, check if the result has one
+        if not reference_patch and "reference_patch" in result:
+            reference_patch = result["reference_patch"]
+            
+        # If we have a reference patch, compare the patches
+        if reference_patch:
+            from difflib import SequenceMatcher
+            
+            model_patch = result.get("model_patch", "")
+            
+            # Calculate similarity ratio
+            similarity = SequenceMatcher(None, reference_patch, model_patch).ratio()
+            
+            # Compare modified files
+            reference_files = set(result.get("reference_files", []))
+            edited_files = set(result.get("edited_files", []))
+            
+            file_overlap = len(reference_files.intersection(edited_files))
+            file_precision = file_overlap / len(edited_files) if edited_files else 0
+            file_recall = file_overlap / len(reference_files) if reference_files else 0
+            file_f1 = 2 * (file_precision * file_recall) / (file_precision + file_recall) if (file_precision + file_recall) > 0 else 0
+            
+            evaluation = {
+                "patch_similarity": similarity,
+                "file_precision": file_precision,
+                "file_recall": file_recall,
+                "file_f1": file_f1,
+                "success": similarity > 0.7 or file_f1 > 0.7  # Simple heuristic for success
+            }
+            
+            # Update the result with evaluation
+            result["evaluation"] = evaluation
+            
+            # Save updated result to file if output directory is specified
+            if self.output_dir:
+                with open(self.output_dir / f"{result['issue_id']}.json", "w") as f:
+                    json.dump(result, f, indent=2)
+                    
+            return evaluation
+            
+        # If no reference patch is available, we can't evaluate
+        return {"success": None, "reason": "No reference patch available for evaluation"}
