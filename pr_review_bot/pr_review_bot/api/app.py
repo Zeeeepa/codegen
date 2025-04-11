@@ -31,7 +31,7 @@ class PRReviewBotApp:
     This class provides API endpoints for webhook events and manual PR reviews.
     """
     
-    def __init__(self, github_token: str, webhook_secret: Optional[str] = None, slack_channel: Optional[str] = None):
+    def __init__(self, github_token: Optional[str] = None, webhook_secret: Optional[str] = None, slack_channel: Optional[str] = None):
         """
         Initialize the PR Review Bot API.
         
@@ -40,6 +40,14 @@ class PRReviewBotApp:
             webhook_secret: Secret for webhook verification
             slack_channel: Slack channel to send notifications to
         """
+        # Get tokens from environment variables if not provided
+        self.github_token = github_token or os.environ.get("GITHUB_TOKEN")
+        self.webhook_secret = webhook_secret or os.environ.get("GITHUB_WEBHOOK_SECRET")
+        self.slack_channel = slack_channel or os.environ.get("SLACK_CHANNEL")
+        
+        if not self.github_token:
+            logger.warning("No GitHub token provided, some functionality may be limited")
+        
         self.app = FastAPI(
             title="PR Review Bot API",
             description="API for the PR Review Bot",
@@ -56,17 +64,17 @@ class PRReviewBotApp:
         )
         
         # Initialize GitHub client
-        self.github_client = GitHubClient(github_token)
+        self.github_client = GitHubClient(self.github_token) if self.github_token else None
         
         # Initialize PR reviewer
-        self.pr_reviewer = PRReviewer(github_token, slack_channel=slack_channel)
+        self.pr_reviewer = PRReviewer(self.github_token, slack_channel=self.slack_channel) if self.github_token else None
         
         # Initialize webhook handler
         self.webhook_handler = WebhookHandler(
             github_client=self.github_client,
             pr_reviewer=self.pr_reviewer,
-            webhook_secret=webhook_secret
-        )
+            webhook_secret=self.webhook_secret
+        ) if self.github_client and self.pr_reviewer else None
         
         # Register routes
         self.register_routes()
@@ -78,16 +86,29 @@ class PRReviewBotApp:
         # Health check endpoint
         @self.app.get("/health")
         async def health_check():
-            return {"status": "healthy"}
+            return {
+                "status": "healthy",
+                "github_client": self.github_client is not None,
+                "pr_reviewer": self.pr_reviewer is not None,
+                "webhook_handler": self.webhook_handler is not None
+            }
         
         # Webhook endpoint
         @self.app.post("/webhook")
         async def webhook(request: Request):
+            if not self.webhook_handler:
+                logger.error("Webhook handler not initialized")
+                raise HTTPException(status_code=500, detail="Webhook handler not initialized")
+            
             return await self.webhook_handler.handle_webhook(request)
         
         # Manual PR review endpoint
         @self.app.post("/api/reviews/manual")
         async def manual_review(request: PRReviewRequest):
+            if not self.pr_reviewer:
+                logger.error("PR reviewer not initialized")
+                raise HTTPException(status_code=500, detail="PR reviewer not initialized")
+            
             try:
                 # Use the PR Review Controller to review the PR
                 result = self.pr_reviewer.pr_review_controller.review_pr(
@@ -107,6 +128,10 @@ class PRReviewBotApp:
         # Get PR review status endpoint
         @self.app.get("/api/reviews/{repo_name}/{pr_number}")
         async def get_review_status(repo_name: str, pr_number: int):
+            if not self.pr_reviewer:
+                logger.error("PR reviewer not initialized")
+                raise HTTPException(status_code=500, detail="PR reviewer not initialized")
+            
             try:
                 # Get the review status from the storage manager
                 storage_manager = self.pr_reviewer.pr_review_controller.storage_manager
@@ -129,6 +154,10 @@ class PRReviewBotApp:
         # Get documentation validation status endpoint
         @self.app.get("/api/docs/validate/{repo_name}/{pr_number}")
         async def validate_documentation(repo_name: str, pr_number: int):
+            if not self.pr_reviewer:
+                logger.error("PR reviewer not initialized")
+                raise HTTPException(status_code=500, detail="PR reviewer not initialized")
+            
             try:
                 # Validate the PR against documentation requirements
                 doc_validation_service = self.pr_reviewer.pr_review_controller.doc_validation_service
@@ -151,6 +180,30 @@ class PRReviewBotApp:
         """
         return self.app
 
-# Create the application
-app_instance = PRReviewBotApp()
-app = app_instance.get_app()
+# Create the application instance with environment variables
+github_token = os.environ.get("GITHUB_TOKEN")
+webhook_secret = os.environ.get("GITHUB_WEBHOOK_SECRET")
+slack_channel = os.environ.get("SLACK_CHANNEL")
+
+# Only create the app instance if we have a GitHub token
+if github_token:
+    app_instance = PRReviewBotApp(
+        github_token=github_token,
+        webhook_secret=webhook_secret,
+        slack_channel=slack_channel
+    )
+    app = app_instance.get_app()
+else:
+    # Create a minimal app for testing
+    app = FastAPI(
+        title="PR Review Bot API (Limited)",
+        description="Limited API for the PR Review Bot (No GitHub token provided)",
+        version="1.0.0"
+    )
+    
+    @app.get("/health")
+    async def health_check():
+        return {
+            "status": "limited",
+            "message": "No GitHub token provided, functionality is limited"
+        }
