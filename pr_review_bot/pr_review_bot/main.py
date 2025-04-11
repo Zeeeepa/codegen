@@ -1,47 +1,35 @@
 """
-Main module for the PR Review Bot.
-Provides the entry point for running the bot.
+Main entry point for the PR Review Bot.
 """
 
 import os
 import sys
-import time
 import logging
 import argparse
 import threading
-import schedule
-from typing import Dict, List, Any, Optional
-from dotenv import load_dotenv
-import uvicorn
+import time
+import signal
+import traceback
+from typing import Dict, Any, Optional, List, Tuple
 
+# Import core components
 from .core.github_client import GitHubClient
 from .core.pr_reviewer import PRReviewer
-from .utils.webhook_manager import WebhookManager
-from .utils.ngrok_manager import NgrokManager
-from .utils.slack_notifier import SlackNotifier
+from .core.pr_review_controller import PRReviewController
+
+# Import monitors
 from .monitors.pr_monitor import PRMonitor
 from .monitors.branch_monitor import BranchMonitor
-from .api.app import app
 
-# Configure logging
+# Import utilities
+from .utils.logger import setup_logging
+from .utils.ngrok_manager import NgrokManager
+from .utils.webhook_manager import WebhookManager
+
+# Import API
+from .api.app import PRReviewBotApp
+
 logger = logging.getLogger(__name__)
-
-def setup_logging(log_file="pr_review_bot.log", log_level=logging.INFO):
-    """
-    Set up logging configuration.
-    
-    Args:
-        log_file: Path to the log file
-        log_level: Logging level
-    """
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
 
 def parse_args():
     """
@@ -51,68 +39,72 @@ def parse_args():
         Parsed arguments
     """
     parser = argparse.ArgumentParser(description="PR Review Bot")
-    parser.add_argument("--port", type=int, default=8000, help="Port to run the server on")
-    parser.add_argument("--use-ngrok", action="store_true", help="Use ngrok to expose the server")
-    parser.add_argument("--webhook-url", type=str, help="Webhook URL to use (overrides ngrok)")
-    parser.add_argument("--monitor-interval", type=int, default=300, help="Interval in seconds for monitoring repositories")
-    parser.add_argument("--monitor-prs", action="store_true", help="Enable PR monitoring")
-    parser.add_argument("--monitor-branches", action="store_true", help="Enable branch monitoring")
+    
+    # Server settings
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind to")
+    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
+    parser.add_argument("--workers", type=int, default=1, help="Number of workers")
+    
+    # GitHub settings
+    parser.add_argument("--github-token", type=str, help="GitHub API token")
+    parser.add_argument("--webhook-secret", type=str, help="GitHub webhook secret")
+    
+    # Slack settings
+    parser.add_argument("--slack-channel", type=str, help="Slack channel to send notifications to")
+    
+    # Monitor settings
+    parser.add_argument("--monitor-interval", type=int, default=300, help="Interval in seconds between checks")
     parser.add_argument("--threads", type=int, default=10, help="Number of threads to use for parallel processing")
+    parser.add_argument("--monitor-prs", action="store_true", help="Monitor PRs")
+    parser.add_argument("--monitor-branches", action="store_true", help="Monitor branches")
     parser.add_argument("--show-merges", action="store_true", help="Show recent merges on startup")
     parser.add_argument("--show-projects", action="store_true", help="Show project implementation stats on startup")
-    parser.add_argument("--slack-channel", type=str, help="Slack channel to send notifications to")
     parser.add_argument("--skip-empty-branches", action="store_true", help="Skip branches with no commits")
-    parser.add_argument("--log-file", type=str, default="pr_review_bot.log", help="Path to the log file")
-    parser.add_argument("--log-level", type=str, default="INFO", 
-                        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-                        help="Logging level")
-    return parser.parse_args()
-
-def load_env():
-    """
-    Load environment variables from .env file.
     
-    Returns:
-        True if successful, False otherwise
-    """
-    load_dotenv()
-    if not os.environ.get("GITHUB_TOKEN"):
-        logger.error("GITHUB_TOKEN environment variable is required")
-        print("\n❌ GITHUB_TOKEN environment variable is required")
-        print("Please create a .env file with your GitHub token")
-        print("Example: GITHUB_TOKEN=ghp_your_token_here")
-        return False
-    return True
+    # Ngrok settings
+    parser.add_argument("--ngrok", action="store_true", help="Use ngrok to expose the server")
+    parser.add_argument("--ngrok-auth-token", type=str, help="Ngrok auth token")
+    
+    # Webhook settings
+    parser.add_argument("--setup-webhooks", action="store_true", help="Set up webhooks for repositories")
+    parser.add_argument("--webhook-url", type=str, help="Webhook URL")
+    
+    # Logging settings
+    parser.add_argument("--log-file", type=str, help="Log file")
+    parser.add_argument("--log-level", type=str, default="INFO", help="Log level")
+    
+    return parser.parse_args()
 
 def monitor_ip_changes(webhook_manager, ngrok_manager, interval=300):
     """
-    Monitor ngrok IP changes and update webhooks accordingly.
+    Monitor IP changes and update webhooks if needed.
     
     Args:
         webhook_manager: Webhook manager
         ngrok_manager: Ngrok manager
         interval: Interval in seconds between checks
     """
-    logger.info("Starting IP change monitor")
-    print("\n🔄 Starting IP change monitor...")
+    logger.info(f"Starting IP change monitor with interval {interval} seconds")
     
+    # Get initial URL
     last_url = ngrok_manager.get_public_url()
     
     while True:
-        try:
-            time.sleep(interval)
-            current_url = ngrok_manager.get_public_url()
+        time.sleep(interval)
+        
+        # Get current URL
+        current_url = ngrok_manager.get_public_url()
+        
+        # Check if URL has changed
+        if current_url != last_url:
+            logger.info(f"Public URL changed from {last_url} to {current_url}")
             
-            if current_url != last_url:
-                logger.info(f"IP changed from {last_url} to {current_url}")
-                print(f"\n🔄 IP changed from {last_url} to {current_url}")
-                
-                webhook_manager.webhook_url = current_url
-                webhook_manager.setup_webhooks_for_all_repos()
-                last_url = current_url
-        except Exception as e:
-            logger.error(f"Error in IP monitor: {e}")
-            print(f"\n❌ Error in IP monitor: {e}")
+            # Update webhook URL
+            webhook_manager.webhook_url = current_url
+            webhook_manager.setup_webhooks_for_all_repos()
+            
+            # Update last URL
+            last_url = current_url
 
 def run_monitors(github_client, pr_reviewer, monitor_interval, threads=10, monitor_prs=True, monitor_branches=True, show_merges=False, show_projects=False, skip_empty_branches=False):
     """
@@ -196,21 +188,19 @@ def main():
     log_level = getattr(logging, args.log_level.upper(), logging.INFO)
     setup_logging(args.log_file, log_level)
     
-    # Load environment variables
-    if not load_env():
+    # Get GitHub token
+    github_token = args.github_token or os.environ.get("GITHUB_TOKEN")
+    if not github_token:
+        logger.error("GitHub token is required")
+        print("Error: GitHub token is required")
+        print("Set it with --github-token or GITHUB_TOKEN environment variable")
         sys.exit(1)
     
-    # Get GitHub token
-    github_token = os.environ.get("GITHUB_TOKEN")
+    # Get webhook secret
+    webhook_secret = args.webhook_secret or os.environ.get("GITHUB_WEBHOOK_SECRET")
     
     # Get Slack channel
-    slack_channel = args.slack_channel or os.environ.get("SLACK_NOTIFICATION_CHANNEL")
-    if slack_channel:
-        logger.info(f"Slack notifications will be sent to channel: {slack_channel}")
-        print(f"\n📣 Slack notifications will be sent to channel: {slack_channel}")
-    else:
-        logger.info("No Slack channel specified, notifications will be disabled")
-        print("\n⚠️ No Slack channel specified, notifications will be disabled")
+    slack_channel = args.slack_channel or os.environ.get("SLACK_CHANNEL")
     
     # Create GitHub client
     github_client = GitHubClient(github_token)
@@ -218,51 +208,61 @@ def main():
     # Create PR reviewer
     pr_reviewer = PRReviewer(github_token, slack_channel=slack_channel)
     
-    # Set up webhook URL
-    webhook_url = args.webhook_url
-    ngrok_manager = None
+    # Get PR Review Controller from PR Reviewer
+    pr_review_controller = pr_reviewer.pr_review_controller
     
-    if args.use_ngrok and not webhook_url:
-        print("\n🔄 Starting ngrok tunnel...")
-        try:
-            ngrok_auth_token = os.environ.get("NGROK_AUTH_TOKEN")
-            ngrok_manager = NgrokManager(args.port, auth_token=ngrok_auth_token)
-            webhook_url = ngrok_manager.start_tunnel()
-            
-            if not webhook_url:
-                logger.error("Failed to start ngrok tunnel")
-                print("\n❌ Failed to start ngrok tunnel")
-                sys.exit(1)
-                
-            print(f"\n✅ Ngrok tunnel started at {webhook_url}")
-        except Exception as e:
-            logger.error(f"Error starting ngrok: {e}")
-            print(f"\n❌ Error starting ngrok: {e}")
+    # Set up ngrok if requested
+    ngrok_manager = None
+    webhook_url = args.webhook_url
+    
+    if args.ngrok:
+        logger.info("Setting up ngrok")
+        print("\n🌐 Setting up ngrok...")
+        
+        ngrok_auth_token = args.ngrok_auth_token or os.environ.get("NGROK_AUTH_TOKEN")
+        ngrok_manager = NgrokManager(args.port, auth_token=ngrok_auth_token)
+        webhook_url = ngrok_manager.start_tunnel()
+        
+        if webhook_url:
+            logger.info(f"Ngrok tunnel established at {webhook_url}")
+            print(f"\n✅ Ngrok tunnel established at {webhook_url}")
+        else:
+            logger.error("Failed to establish ngrok tunnel")
+            print("\n❌ Failed to establish ngrok tunnel")
             sys.exit(1)
     
-    # Create webhook manager
-    webhook_manager = WebhookManager(
-        github_client=github_client,
-        webhook_url=webhook_url or f"http://localhost:{args.port}/webhook"
-    )
+    # Set up webhooks if requested
+    webhook_manager = None
     
-    # Set up webhooks for all repositories
-    print("\n🔄 Setting up webhooks for all repositories...")
-    try:
+    if args.setup_webhooks:
+        if not webhook_url:
+            logger.error("Webhook URL is required for setting up webhooks")
+            print("\n❌ Webhook URL is required for setting up webhooks")
+            print("Set it with --webhook-url or use --ngrok")
+            sys.exit(1)
+        
+        logger.info(f"Setting up webhooks with URL {webhook_url}")
+        print(f"\n🔗 Setting up webhooks with URL {webhook_url}")
+        
+        webhook_manager = WebhookManager(
+            github_client=github_client,
+            webhook_url=webhook_url,
+            webhook_secret=webhook_secret
+        )
+        
         webhook_manager.setup_webhooks_for_all_repos()
-        print("\n✅ Webhooks set up successfully")
-    except Exception as e:
-        logger.error(f"Error setting up webhooks: {e}")
-        print(f"\n❌ Error setting up webhooks: {e}")
     
-    # Start IP change monitor if using ngrok
-    if ngrok_manager:
-        monitor_thread = threading.Thread(
+    # Start IP change monitor if using ngrok and webhooks
+    if ngrok_manager and webhook_manager:
+        logger.info("Starting IP change monitor")
+        print("\n🔄 Starting IP change monitor...")
+        
+        ip_monitor_thread = threading.Thread(
             target=monitor_ip_changes,
             args=(webhook_manager, ngrok_manager),
             daemon=True
         )
-        monitor_thread.start()
+        ip_monitor_thread.start()
     
     # Start PR and branch monitors
     pr_monitor, branch_monitor = run_monitors(
@@ -277,36 +277,37 @@ def main():
         skip_empty_branches=args.skip_empty_branches
     )
     
+    # Create FastAPI app
+    app = PRReviewBotApp(
+        github_token=github_token,
+        webhook_secret=webhook_secret,
+        slack_channel=slack_channel
+    ).get_app()
+    
     # Start the server
-    print(f"\n🚀 Starting server on port {args.port}...")
-    try:
-        # Add routes for the new functionality
-        @app.get("/api/merges")
-        async def get_recent_merges():
-            if branch_monitor:
-                merges = branch_monitor.get_recent_merges()
-                return {"merges": merges}
-            return {"error": "Branch monitor not enabled"}
+    logger.info(f"Starting server on {args.host}:{args.port}")
+    print(f"\n🚀 Starting server on {args.host}:{args.port}")
+    
+    # Import uvicorn here to avoid circular imports
+    import uvicorn
+    
+    # Handle graceful shutdown
+    def signal_handler(sig, frame):
+        logger.info("Shutting down...")
+        print("\n👋 Shutting down...")
         
-        @app.get("/api/projects")
-        async def get_project_stats():
-            if branch_monitor:
-                stats = branch_monitor.get_project_implementation_stats()
-                return {"projects": stats}
-            return {"error": "Branch monitor not enabled"}
+        # Stop ngrok tunnel if running
+        if ngrok_manager:
+            ngrok_manager.stop_tunnel()
         
-        @app.get("/api/status")
-        async def get_status_report():
-            if branch_monitor:
-                report = branch_monitor.generate_status_report()
-                return {"report": report}
-            return {"error": "Branch monitor not enabled"}
-        
-        uvicorn.run(app, host="0.0.0.0", port=args.port)
-    except Exception as e:
-        logger.error(f"Error starting server: {e}")
-        print(f"\n❌ Error starting server: {e}")
-        sys.exit(1)
+        sys.exit(0)
+    
+    # Register signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    # Start the server
+    uvicorn.run(app, host=args.host, port=args.port, workers=args.workers)
 
 if __name__ == "__main__":
     main()
