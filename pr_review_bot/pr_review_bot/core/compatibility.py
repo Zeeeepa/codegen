@@ -60,13 +60,17 @@ def import_optional(
         return fallback
 
 # Check for codegen SDK
-HAS_CODEGEN = is_package_installed("codegen.sdk")
-if not HAS_CODEGEN:
-    logger.warning("Could not import codegen.sdk, using mock implementation")
+HAS_CODEGEN = is_package_installed("codegen")
+if HAS_CODEGEN:
+    logger.info("Found codegen package, using codegen components")
+else:
+    logger.warning("Could not import codegen package, using mock implementation")
 
 # Check for LangChain
 HAS_LANGCHAIN = is_package_installed("langchain_core")
-if not HAS_LANGCHAIN:
+if HAS_LANGCHAIN:
+    logger.info("Found langchain_core package, using LangChain components")
+else:
     logger.warning("Could not import langchain_core, AI review will be limited")
 
 # Import or create mock implementations
@@ -156,24 +160,67 @@ class MockRepoOperator:
         )
 
 # Import or use mock implementations
-Codebase = import_optional(
-    "codegen.sdk.core.codebase.Codebase", 
-    MockCodebase,
-    "Could not import codegen.sdk.core.codebase.Codebase, using mock implementation"
-)
+if HAS_CODEGEN:
+    try:
+        from codegen.sdk.core.codebase import Codebase
+        logger.info("Successfully imported Codebase from codegen.sdk.core.codebase")
+    except ImportError:
+        logger.warning("Could not import Codebase from codegen.sdk.core.codebase, using mock implementation")
+        Codebase = MockCodebase
+else:
+    Codebase = MockCodebase
 
 # LangChain imports
-ChatPromptTemplate = import_optional(
-    "langchain_core.prompts.ChatPromptTemplate",
-    None
-)
+if HAS_LANGCHAIN:
+    try:
+        from langchain_core.prompts import ChatPromptTemplate
+        logger.info("Successfully imported ChatPromptTemplate from langchain_core.prompts")
+    except ImportError:
+        logger.warning("Could not import ChatPromptTemplate from langchain_core.prompts")
+        ChatPromptTemplate = None
+    
+    try:
+        from langchain_anthropic import ChatAnthropic
+        logger.info("Successfully imported ChatAnthropic from langchain_anthropic")
+    except ImportError:
+        logger.warning("Could not import ChatAnthropic from langchain_anthropic")
+        ChatAnthropic = None
+    
+    try:
+        from langchain_openai import ChatOpenAI
+        logger.info("Successfully imported ChatOpenAI from langchain_openai")
+    except ImportError:
+        logger.warning("Could not import ChatOpenAI from langchain_openai")
+        ChatOpenAI = None
+else:
+    ChatPromptTemplate = None
+    ChatAnthropic = None
+    ChatOpenAI = None
 
-ChatAnthropic = import_optional(
-    "langchain_anthropic.ChatAnthropic",
-    None
-)
+# Import PR review agent from codegen if available
+if HAS_CODEGEN:
+    try:
+        from codegen.agents.pr_review import PRReviewAgent
+        logger.info("Successfully imported PRReviewAgent from codegen.agents.pr_review")
+        HAS_PR_REVIEW_AGENT = True
+    except ImportError:
+        logger.warning("Could not import PRReviewAgent from codegen.agents.pr_review")
+        PRReviewAgent = None
+        HAS_PR_REVIEW_AGENT = False
+else:
+    PRReviewAgent = None
+    HAS_PR_REVIEW_AGENT = False
 
-ChatOpenAI = import_optional(
-    "langchain_openai.ChatOpenAI",
-    None
-)
+# Import reflection agent from codegen if available
+if HAS_CODEGEN:
+    try:
+        from codegen.agents.reflection import ReflectionAgent
+        logger.info("Successfully imported ReflectionAgent from codegen.agents.reflection")
+        HAS_REFLECTION_AGENT = True
+    except ImportError:
+        logger.warning("Could not import ReflectionAgent from codegen.agents.reflection")
+        ReflectionAgent = None
+        HAS_REFLECTION_AGENT = False
+else:
+    ReflectionAgent = None
+    HAS_REFLECTION_AGENT = False
