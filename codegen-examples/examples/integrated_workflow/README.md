@@ -4,8 +4,11 @@ This example demonstrates how to create a complete AI-powered development workfl
 
 1. **Issue Solver Agent** - Automatically solves coding issues
 2. **PR Review Bot** - Reviews pull requests and provides feedback
-3. **Event Handlers** - Responds to events from GitHub, Slack, and Linear
-4. **Knowledge Transfer Visualization** - Visualizes how AI-generated patterns spread through the codebase
+3. **Slack Chatbot** - Provides a chat interface for interacting with the system
+4. **Snapshot Event Handler** - Maintains codebase snapshots for fast analysis
+5. **Ticket-to-PR** - Converts tickets to pull requests
+6. **Linear Webhooks** - Handles Linear events
+7. **Codegen App** - Provides a unified interface for all components
 
 ## Architecture
 
@@ -17,6 +20,7 @@ The integrated workflow creates a complete feedback loop:
 4. Pull requests are created with the solutions
 5. The PR Review Bot reviews the PRs and provides feedback
 6. Knowledge Transfer Visualization tracks how AI-generated patterns are adopted by developers
+7. Slack Chatbot provides a user interface for interacting with the system
 
 ![Integrated Workflow Architecture](./architecture.png)
 
@@ -40,14 +44,50 @@ The PR Review Bot reviews pull requests and provides feedback. It:
 - Suggests improvements and alternatives
 - Checks for test coverage and documentation
 
-### Event Handlers
+### Slack Chatbot
 
-The Event Handlers respond to events from GitHub, Slack, and Linear. They:
+The Slack Chatbot provides a chat interface for interacting with the system. It:
 
-- Listen for new issues, PRs, and comments
-- Trigger the appropriate agents based on the event type
-- Maintain codebase snapshots for fast analysis
-- Post results back to the originating platform
+- Responds to user commands and questions
+- Triggers actions like solving issues or reviewing PRs
+- Provides notifications about system events
+- Offers a help system for users
+
+### Snapshot Event Handler
+
+The Snapshot Event Handler maintains codebase snapshots for fast analysis. It:
+
+- Creates and updates snapshots of the codebase
+- Provides fast access to code structure and dependencies
+- Enables quick analysis of code changes
+- Improves performance of code analysis tools
+
+### Ticket-to-PR
+
+The Ticket-to-PR component converts tickets to pull requests. It:
+
+- Monitors Linear for new tickets
+- Converts tickets with specific labels to GitHub issues
+- Triggers the Issue Solver Agent to create solutions
+- Updates the ticket with the PR link
+
+### Linear Webhooks
+
+The Linear Webhooks component handles Linear events. It:
+
+- Listens for events from Linear (issue created, updated, etc.)
+- Triggers appropriate actions based on the event type
+- Synchronizes Linear tickets with GitHub issues
+- Provides notifications about Linear events
+
+### Codegen App
+
+The Codegen App provides a unified interface for all components. It:
+
+- Manages connections to external services (GitHub, Slack, Linear)
+- Provides a consistent API for all components
+- Handles authentication and authorization
+- Manages codebase snapshots and analysis
 
 ### Knowledge Transfer Visualization
 
@@ -92,7 +132,7 @@ MODAL_TOKEN_SECRET=your_modal_token_secret
 Run the integrated workflow locally:
 
 ```bash
-python codegen-examples/examples/integrated_workflow/app.py
+python codegen-examples/examples/integrated_workflow/app.py your-org/your-repo
 ```
 
 ### Deployment
@@ -103,14 +143,41 @@ Deploy the integrated workflow to Modal:
 modal deploy codegen-examples/examples/integrated_workflow/app.py
 ```
 
-## Example Workflow
+## Example Workflows
+
+### GitHub Issue to PR
 
 1. A user creates an issue in GitHub: "Fix the authentication bug in login.py"
-2. The event handler detects the new issue and triggers the Issue Solver Agent
-3. The Issue Solver Agent analyzes the issue and identifies the bug in login.py
+2. The issue is labeled with "auto-fix"
+3. The event handler detects the new issue and triggers the Issue Solver Agent
+4. The agent analyzes the issue and identifies the bug in login.py
+5. The agent creates a PR with the fix
+6. The PR Review Bot reviews the PR and provides feedback
+7. The agent updates the PR based on the feedback
+8. The PR is merged
+9. The Knowledge Transfer Visualization tracks how the pattern used in the fix is adopted by developers
+
+### Linear Ticket to PR
+
+1. A user creates a ticket in Linear: "Implement user profile page"
+2. The ticket is labeled with "needs-pr"
+3. The Linear webhook detects the new ticket and triggers the Ticket-to-PR component
+4. The Ticket-to-PR component creates a GitHub issue
+5. The Issue Solver Agent analyzes the issue and implements the user profile page
+6. The agent creates a PR with the implementation
+7. The PR Review Bot reviews the PR and provides feedback
+8. The Linear ticket is updated with the PR link
+9. The PR is merged
+10. The Knowledge Transfer Visualization tracks how the pattern used in the implementation is adopted by developers
+
+### Slack Command
+
+1. A user sends a message in Slack: "@codegen solve issue 123"
+2. The Slack Chatbot detects the command and triggers the Issue Solver Agent
+3. The agent analyzes the issue and identifies the bug
 4. The agent creates a PR with the fix
 5. The PR Review Bot reviews the PR and provides feedback
-6. The agent updates the PR based on the feedback
+6. The Slack Chatbot notifies the user that the PR has been created
 7. The PR is merged
 8. The Knowledge Transfer Visualization tracks how the pattern used in the fix is adopted by developers
 
@@ -122,6 +189,8 @@ You can customize the workflow by:
 - Creating specialized agents for different types of issues
 - Configuring the PR Review Bot to enforce specific code standards
 - Extending the Knowledge Transfer Visualization with additional metrics
+- Adding new commands to the Slack Chatbot
+- Creating new integrations with other services
 
 ## Contributing
 
