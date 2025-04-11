@@ -1,21 +1,22 @@
 """
 Documentation Parser for PR Review Agent.
-This module provides functionality for parsing documentation files and extracting
-requirements and specifications.
+This module provides functionality for parsing documentation files and extracting requirements.
 """
 import os
 import re
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 import markdown
 from bs4 import BeautifulSoup
+from typing import Dict, List, Any, Optional, Tuple
+
 logger = logging.getLogger(__name__)
+
 class DocumentationParser:
     """
-    Parser for documentation files.
+    Parser for extracting requirements from documentation files.
     
-    Extracts requirements, specifications, and other relevant information from
-    documentation files like README.md, STRUCTURE.md, and PLAN.md.
+    Extracts structured information like requirements, specifications, and other
+    relevant details from documentation files.
     """
     
     def __init__(self, repo_path: str):
@@ -27,218 +28,296 @@ class DocumentationParser:
         """
         self.repo_path = repo_path
         
+        # Regular expressions for identifying requirements
+        self.requirement_keywords = [
+            "must", "should", "shall", "will", "required", "needs to",
+            "has to", "need to", "requirement", "mandatory"
+        ]
+        
+        # Regular expression for identifying requirement statements
+        self.requirement_pattern = re.compile(
+            r"(?:^|\n)(?:\s*[-*•]\s*|\s*\d+\.\s*|\s*)(?P<text>.*?(?:" + 
+            "|".join(self.requirement_keywords) + 
+            r").*?)(?:\n|$)",
+            re.IGNORECASE
+        )
+        
+        # Regular expression for identifying requirement sections
+        self.section_pattern = re.compile(
+            r"(?:^|\n)#+\s*(?P<title>.*?requirements.*?)(?:\n|$)",
+            re.IGNORECASE
+        )
+    
     def parse_file(self, file_path: str) -> Dict[str, Any]:
         """
-        Parse a documentation file and extract structured information.
+        Parse a documentation file and extract requirements.
         
         Args:
             file_path: Path to the documentation file
             
         Returns:
-            Dictionary with extracted information
+            Parsed documentation data
         """
-        full_path = os.path.join(self.repo_path, file_path)
-        
-        if not os.path.exists(full_path):
-            logger.warning(f"Documentation file not found: {full_path}")
-            return {"error": f"File not found: {file_path}"}
-        
         try:
+            # Check if file exists
+            full_path = os.path.join(self.repo_path, file_path)
+            if not os.path.exists(full_path):
+                logger.warning(f"File not found: {full_path}")
+                return {
+                    "file_path": file_path,
+                    "exists": False,
+                    "error": "File not found",
+                    "requirements": []
+                }
+            
+            # Read file content
             with open(full_path, "r", encoding="utf-8") as f:
                 content = f.read()
             
-            # Determine file type based on extension
-            if file_path.endswith(".md"):
-                return self._parse_markdown(content, file_path)
-            elif file_path.endswith(".txt"):
-                return self._parse_text(content, file_path)
+            # Parse file based on extension
+            _, ext = os.path.splitext(file_path)
+            
+            if ext.lower() in [".md", ".markdown"]:
+                return self._parse_markdown(file_path, content)
             else:
-                logger.warning(f"Unsupported file type: {file_path}")
-                return {"error": f"Unsupported file type: {file_path}"}
+                return self._parse_text(file_path, content)
         
         except Exception as e:
-            logger.error(f"Error parsing documentation file {file_path}: {e}")
-            return {"error": f"Error parsing file: {str(e)}"}
+            logger.error(f"Error parsing file {file_path}: {e}")
+            return {
+                "file_path": file_path,
+                "exists": True,
+                "error": f"Error parsing file: {str(e)}",
+                "requirements": []
+            }
     
-    def _parse_markdown(self, content: str, file_path: str) -> Dict[str, Any]:
+    def _parse_markdown(self, file_path: str, content: str) -> Dict[str, Any]:
         """
-        Parse a Markdown file and extract structured information.
+        Parse a Markdown file and extract requirements.
         
         Args:
+            file_path: Path to the Markdown file
             content: Content of the Markdown file
-            file_path: Path to the file (for reference)
             
         Returns:
-            Dictionary with extracted information
+            Parsed documentation data
         """
-        result = {
-            "file_path": file_path,
-            "type": "markdown",
-            "title": "",
-            "sections": [],
-            "requirements": [],
-            "code_blocks": [],
-            "links": [],
-            "todos": []
-        }
-        
-        # Extract title (first h1)
-        title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
-        if title_match:
-            result["title"] = title_match.group(1).strip()
-        
-        # Convert markdown to HTML for easier parsing
-        html = markdown.markdown(content)
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # Extract sections
-        for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
-            level = int(heading.name[1])
-            section_text = heading.get_text().strip()
+        try:
+            # Convert Markdown to HTML
+            html = markdown.markdown(content)
             
-            # Get content until next heading of same or higher level
-            content = []
-            sibling = heading.next_sibling
-            while sibling and not (sibling.name and sibling.name[0] == 'h' and int(sibling.name[1]) <= level):
-                if sibling.string and sibling.string.strip():
-                    content.append(sibling.string.strip())
-                sibling = sibling.next_sibling
+            # Parse HTML
+            soup = BeautifulSoup(html, "html.parser")
             
-            section_content = " ".join(content).strip()
+            # Extract text
+            text = soup.get_text()
             
-            result["sections"].append({
-                "level": level,
-                "title": section_text,
-                "content": section_content
-            })
-        
-        # Extract requirements
-        # Look for bullet points or numbered lists that might contain requirements
-        for list_item in soup.find_all('li'):
-            text = list_item.get_text().strip()
+            # Extract requirements
+            requirements = self._extract_requirements(text, file_path)
             
-            # Check if it looks like a requirement
-            if re.search(r'(must|should|shall|will|require|need)', text, re.IGNORECASE):
-                result["requirements"].append({
-                    "text": text,
-                    "type": "functional" if re.search(r'(function|behavior|action)', text, re.IGNORECASE) else "non-functional"
-                })
+            # Extract sections
+            sections = self._extract_sections(soup)
+            
+            return {
+                "file_path": file_path,
+                "exists": True,
+                "format": "markdown",
+                "requirements": requirements,
+                "sections": sections
+            }
         
-        # Extract code blocks
-        code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', content, re.DOTALL)
-        for block in code_blocks:
-            result["code_blocks"].append(block.strip())
-        
-        # Extract links
-        links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
-        for text, url in links:
-            result["links"].append({
-                "text": text,
-                "url": url
-            })
-        
-        # Extract TODOs
-        todos = re.findall(r'(?:TODO|FIXME)(?:\([^)]+\))?\s*:?\s*([^\n]+)', content, re.IGNORECASE)
-        for todo in todos:
-            result["todos"].append(todo.strip())
-        
-        return result
+        except Exception as e:
+            logger.error(f"Error parsing Markdown file {file_path}: {e}")
+            return {
+                "file_path": file_path,
+                "exists": True,
+                "format": "markdown",
+                "error": f"Error parsing Markdown file: {str(e)}",
+                "requirements": []
+            }
     
-    def _parse_text(self, content: str, file_path: str) -> Dict[str, Any]:
+    def _parse_text(self, file_path: str, content: str) -> Dict[str, Any]:
         """
-        Parse a plain text file and extract structured information.
+        Parse a text file and extract requirements.
         
         Args:
+            file_path: Path to the text file
             content: Content of the text file
-            file_path: Path to the file (for reference)
             
         Returns:
-            Dictionary with extracted information
+            Parsed documentation data
         """
-        result = {
-            "file_path": file_path,
-            "type": "text",
-            "title": "",
-            "sections": [],
-            "requirements": [],
-            "todos": []
-        }
-        
-        # Extract title (first non-empty line)
-        lines = content.split("\n")
-        for line in lines:
-            if line.strip():
-                result["title"] = line.strip()
-                break
-        
-        # Extract sections (lines that are all caps or have trailing colons)
-        current_section = None
-        section_content = []
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+        try:
+            # Extract requirements
+            requirements = self._extract_requirements(content, file_path)
             
-            if line.isupper() or line.endswith(":"):
-                # Save previous section if exists
-                if current_section:
-                    result["sections"].append({
-                        "title": current_section,
-                        "content": "\n".join(section_content).strip()
-                    })
-                
-                # Start new section
-                current_section = line.rstrip(":")
-                section_content = []
-            else:
-                section_content.append(line)
+            return {
+                "file_path": file_path,
+                "exists": True,
+                "format": "text",
+                "requirements": requirements
+            }
         
-        # Save last section
-        if current_section:
-            result["sections"].append({
-                "title": current_section,
-                "content": "\n".join(section_content).strip()
-            })
-        
-        # Extract requirements
-        for line in lines:
-            line = line.strip()
-            if re.search(r'(must|should|shall|will|require|need)', line, re.IGNORECASE):
-                result["requirements"].append({
-                    "text": line,
-                    "type": "functional" if re.search(r'(function|behavior|action)', line, re.IGNORECASE) else "non-functional"
-                })
-        
-        # Extract TODOs
-        todos = re.findall(r'(?:TODO|FIXME)(?:\([^)]+\))?\s*:?\s*([^\n]+)', content, re.IGNORECASE)
-        for todo in todos:
-            result["todos"].append(todo.strip())
-        
-        return result
+        except Exception as e:
+            logger.error(f"Error parsing text file {file_path}: {e}")
+            return {
+                "file_path": file_path,
+                "exists": True,
+                "format": "text",
+                "error": f"Error parsing text file: {str(e)}",
+                "requirements": []
+            }
     
-    def extract_requirements(self, file_paths: List[str]) -> List[Dict[str, Any]]:
+    def _extract_requirements(self, text: str, source_file: str) -> List[Dict[str, Any]]:
         """
-        Extract requirements from multiple documentation files.
+        Extract requirements from text.
         
         Args:
-            file_paths: List of file paths to parse
+            text: Text to extract requirements from
+            source_file: Source file path
             
         Returns:
-            List of requirements extracted from the files
+            List of requirements
         """
         requirements = []
         
-        for file_path in file_paths:
-            parsed = self.parse_file(file_path)
+        # Find all requirement statements
+        matches = self.requirement_pattern.finditer(text)
+        
+        for match in matches:
+            requirement_text = match.group("text").strip()
             
-            if "error" in parsed:
-                logger.warning(f"Error parsing {file_path}: {parsed['error']}")
+            # Skip empty requirements
+            if not requirement_text:
                 continue
             
-            if "requirements" in parsed:
-                for req in parsed["requirements"]:
-                    req["source_file"] = file_path
-                    requirements.append(req)
+            # Determine requirement type
+            req_type = self._determine_requirement_type(requirement_text)
+            
+            # Add requirement
+            requirements.append({
+                "text": requirement_text,
+                "source": source_file,
+                "type": req_type,
+                "keywords": self._extract_keywords(requirement_text)
+            })
+        
+        # Also look for bullet points and numbered lists
+        bullet_pattern = re.compile(r"(?:^|\n)(?:\s*[-*•]\s*)(?P<text>.*?)(?:\n|$)")
+        numbered_pattern = re.compile(r"(?:^|\n)(?:\s*\d+\.\s*)(?P<text>.*?)(?:\n|$)")
+        
+        for pattern in [bullet_pattern, numbered_pattern]:
+            matches = pattern.finditer(text)
+            
+            for match in matches:
+                requirement_text = match.group("text").strip()
+                
+                # Skip empty requirements or already found requirements
+                if not requirement_text or any(req["text"] == requirement_text for req in requirements):
+                    continue
+                
+                # Check if it contains any requirement keywords
+                if any(keyword in requirement_text.lower() for keyword in self.requirement_keywords):
+                    # Determine requirement type
+                    req_type = self._determine_requirement_type(requirement_text)
+                    
+                    # Add requirement
+                    requirements.append({
+                        "text": requirement_text,
+                        "source": source_file,
+                        "type": req_type,
+                        "keywords": self._extract_keywords(requirement_text)
+                    })
         
         return requirements
+    
+    def _extract_sections(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+        """
+        Extract sections from HTML.
+        
+        Args:
+            soup: BeautifulSoup object
+            
+        Returns:
+            List of sections
+        """
+        sections = []
+        
+        # Find all headings
+        headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+        
+        for heading in headings:
+            # Get heading text
+            heading_text = heading.get_text().strip()
+            
+            # Get heading level
+            level = int(heading.name[1])
+            
+            # Get section content
+            content = ""
+            next_node = heading.next_sibling
+            
+            while next_node and not (next_node.name and next_node.name.startswith("h") and int(next_node.name[1]) <= level):
+                if hasattr(next_node, "get_text"):
+                    content += next_node.get_text()
+                elif hasattr(next_node, "string") and next_node.string:
+                    content += next_node.string
+                
+                next_node = next_node.next_sibling
+            
+            # Add section
+            sections.append({
+                "title": heading_text,
+                "level": level,
+                "content": content.strip()
+            })
+        
+        return sections
+    
+    def _determine_requirement_type(self, text: str) -> str:
+        """
+        Determine the type of requirement.
+        
+        Args:
+            text: Requirement text
+            
+        Returns:
+            Requirement type (functional, non-functional, etc.)
+        """
+        text_lower = text.lower()
+        
+        # Check for functional requirements
+        functional_keywords = ["shall", "must", "will", "function", "feature", "capability"]
+        if any(keyword in text_lower for keyword in functional_keywords):
+            return "functional"
+        
+        # Check for non-functional requirements
+        nonfunctional_keywords = ["performance", "security", "usability", "reliability", 
+                                 "maintainability", "scalability", "availability"]
+        if any(keyword in text_lower for keyword in nonfunctional_keywords):
+            return "non-functional"
+        
+        # Default to functional
+        return "functional"
+    
+    def _extract_keywords(self, text: str) -> List[str]:
+        """
+        Extract keywords from text.
+        
+        Args:
+            text: Text to extract keywords from
+            
+        Returns:
+            List of keywords
+        """
+        # Convert to lowercase
+        text_lower = text.lower()
+        
+        # Extract keywords
+        keywords = []
+        
+        for keyword in self.requirement_keywords:
+            if keyword in text_lower:
+                keywords.append(keyword)
+        
+        return keywords
