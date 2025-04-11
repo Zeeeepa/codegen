@@ -1,14 +1,12 @@
 """
-Webhook manager for the PR Review Bot.
-This module provides functionality for managing GitHub webhooks.
+Webhook manager module for the PR Review Bot.
+Provides functionality for managing GitHub webhooks.
 """
 
 import os
 import logging
-import hmac
-import hashlib
-import secrets
-from typing import Dict, Any, Optional, List
+import json
+from typing import Dict, List, Any, Optional
 
 from ..core.github_client import GitHubClient
 
@@ -18,7 +16,8 @@ class WebhookManager:
     """
     Manager for GitHub webhooks.
     
-    This class provides functionality for setting up and managing GitHub webhooks.
+    Provides functionality for setting up, updating, and deleting webhooks
+    for GitHub repositories.
     """
     
     def __init__(self, github_client: GitHubClient, webhook_url: str, webhook_secret: Optional[str] = None):
@@ -32,23 +31,14 @@ class WebhookManager:
         """
         self.github_client = github_client
         self.webhook_url = webhook_url
-        self.webhook_secret = webhook_secret or self._generate_webhook_secret()
+        self.webhook_secret = webhook_secret
     
-    def _generate_webhook_secret(self) -> str:
-        """
-        Generate a random webhook secret.
-        
-        Returns:
-            Random webhook secret
-        """
-        return secrets.token_hex(20)
-    
-    def setup_webhook(self, repo_name: str) -> Dict[str, Any]:
+    def setup_webhook_for_repo(self, repo_name: str) -> Dict[str, Any]:
         """
         Set up a webhook for a repository.
         
         Args:
-            repo_name: Name of the repository
+            repo_name: Repository name (owner/repo)
             
         Returns:
             Webhook data
@@ -56,12 +46,14 @@ class WebhookManager:
         logger.info(f"Setting up webhook for repository {repo_name}")
         
         # Check if webhook already exists
-        existing_webhook = self._get_existing_webhook(repo_name)
-        if existing_webhook:
-            logger.info(f"Webhook already exists for repository {repo_name}")
-            return existing_webhook
+        existing_webhooks = self.github_client.get_webhooks(repo_name)
         
-        # Create webhook
+        for webhook in existing_webhooks:
+            if webhook["config"].get("url") == self.webhook_url:
+                logger.info(f"Webhook already exists for repository {repo_name}")
+                return webhook
+        
+        # Create webhook data
         webhook_data = {
             "name": "web",
             "active": True,
@@ -69,150 +61,142 @@ class WebhookManager:
             "config": {
                 "url": self.webhook_url,
                 "content_type": "json",
-                "secret": self.webhook_secret,
                 "insecure_ssl": "0"
             }
         }
         
+        # Add secret if provided
+        if self.webhook_secret:
+            webhook_data["config"]["secret"] = self.webhook_secret
+        
+        # Create webhook
         try:
-            # Create webhook
             webhook = self.github_client.create_webhook(repo_name, webhook_data)
-            
-            logger.info(f"Webhook created for repository {repo_name}")
+            logger.info(f"Created webhook for repository {repo_name}")
             return webhook
         except Exception as e:
             logger.error(f"Error creating webhook for repository {repo_name}: {e}")
-            return {"error": str(e)}
+            raise
     
-    def _get_existing_webhook(self, repo_name: str) -> Optional[Dict[str, Any]]:
-        """
-        Get an existing webhook for a repository.
-        
-        Args:
-            repo_name: Name of the repository
-            
-        Returns:
-            Webhook data if it exists, None otherwise
-        """
-        try:
-            # Get webhooks
-            webhooks = self.github_client.get_webhooks(repo_name)
-            
-            # Check if webhook already exists
-            for webhook in webhooks:
-                if webhook.get("config", {}).get("url") == self.webhook_url:
-                    return webhook
-            
-            return None
-        except Exception as e:
-            logger.error(f"Error getting webhooks for repository {repo_name}: {e}")
-            return None
-    
-    def update_webhook(self, repo_name: str, webhook_id: int) -> Dict[str, Any]:
+    def update_webhook_for_repo(self, repo_name: str, webhook_id: int) -> Dict[str, Any]:
         """
         Update a webhook for a repository.
         
         Args:
-            repo_name: Name of the repository
-            webhook_id: ID of the webhook
+            repo_name: Repository name (owner/repo)
+            webhook_id: Webhook ID
             
         Returns:
-            Webhook data
+            Updated webhook data
         """
         logger.info(f"Updating webhook {webhook_id} for repository {repo_name}")
         
-        # Update webhook
+        # Create webhook data
         webhook_data = {
             "active": True,
             "events": ["pull_request", "push", "repository"],
             "config": {
                 "url": self.webhook_url,
                 "content_type": "json",
-                "secret": self.webhook_secret,
                 "insecure_ssl": "0"
             }
         }
         
+        # Add secret if provided
+        if self.webhook_secret:
+            webhook_data["config"]["secret"] = self.webhook_secret
+        
+        # Update webhook
         try:
-            # Update webhook
             webhook = self.github_client.update_webhook(repo_name, webhook_id, webhook_data)
-            
-            logger.info(f"Webhook {webhook_id} updated for repository {repo_name}")
+            logger.info(f"Updated webhook {webhook_id} for repository {repo_name}")
             return webhook
         except Exception as e:
             logger.error(f"Error updating webhook {webhook_id} for repository {repo_name}: {e}")
-            return {"error": str(e)}
+            raise
     
-    def delete_webhook(self, repo_name: str, webhook_id: int) -> bool:
+    def delete_webhook_for_repo(self, repo_name: str, webhook_id: int) -> None:
         """
         Delete a webhook for a repository.
         
         Args:
-            repo_name: Name of the repository
-            webhook_id: ID of the webhook
-            
-        Returns:
-            True if successful, False otherwise
+            repo_name: Repository name (owner/repo)
+            webhook_id: Webhook ID
         """
         logger.info(f"Deleting webhook {webhook_id} for repository {repo_name}")
         
         try:
-            # Delete webhook
             self.github_client.delete_webhook(repo_name, webhook_id)
-            
-            logger.info(f"Webhook {webhook_id} deleted for repository {repo_name}")
-            return True
+            logger.info(f"Deleted webhook {webhook_id} for repository {repo_name}")
         except Exception as e:
             logger.error(f"Error deleting webhook {webhook_id} for repository {repo_name}: {e}")
-            return False
+            raise
     
-    def setup_webhooks_for_all_repos(self) -> Dict[str, Any]:
+    def setup_webhooks_for_all_repos(self) -> List[Dict[str, Any]]:
         """
         Set up webhooks for all repositories.
         
         Returns:
-            Dictionary with results for each repository
+            List of webhook data
         """
         logger.info("Setting up webhooks for all repositories")
         
-        # Get repositories
+        # Get all repositories
         repos = self.github_client.get_repositories()
         
-        # Set up webhooks
-        results = {}
+        # Set up webhooks for all repositories
+        webhooks = []
         for repo in repos:
-            repo_name = repo.get("full_name")
-            if repo_name:
-                results[repo_name] = self.setup_webhook(repo_name)
+            try:
+                webhook = self.setup_webhook_for_repo(repo["full_name"])
+                webhooks.append({
+                    "repo_name": repo["full_name"],
+                    "webhook": webhook
+                })
+            except Exception as e:
+                logger.error(f"Error setting up webhook for repository {repo['full_name']}: {e}")
         
-        return results
+        logger.info(f"Set up webhooks for {len(webhooks)} repositories")
+        return webhooks
     
-    def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
+    def update_webhooks_for_all_repos(self) -> List[Dict[str, Any]]:
         """
-        Verify a webhook signature.
+        Update webhooks for all repositories.
         
-        Args:
-            payload: Webhook payload
-            signature: Webhook signature
-            
         Returns:
-            True if the signature is valid, False otherwise
+            List of webhook data
         """
-        if not self.webhook_secret:
-            logger.warning("No webhook secret set, skipping signature verification")
-            return True
+        logger.info("Updating webhooks for all repositories")
         
-        try:
-            # Calculate the expected signature
-            hmac_obj = hmac.new(
-                key=self.webhook_secret.encode(),
-                msg=payload,
-                digestmod=hashlib.sha256
-            )
-            expected_signature = f"sha256={hmac_obj.hexdigest()}"
-            
-            # Compare signatures
-            return hmac.compare_digest(expected_signature, signature)
-        except Exception as e:
-            logger.error(f"Error verifying webhook signature: {e}")
-            return False
+        # Get all repositories
+        repos = self.github_client.get_repositories()
+        
+        # Update webhooks for all repositories
+        webhooks = []
+        for repo in repos:
+            try:
+                # Get existing webhooks
+                existing_webhooks = self.github_client.get_webhooks(repo["full_name"])
+                
+                # Find webhook with matching URL
+                for webhook in existing_webhooks:
+                    if webhook["config"].get("url") == self.webhook_url:
+                        # Update webhook
+                        updated_webhook = self.update_webhook_for_repo(repo["full_name"], webhook["id"])
+                        webhooks.append({
+                            "repo_name": repo["full_name"],
+                            "webhook": updated_webhook
+                        })
+                        break
+                else:
+                    # Webhook not found, create it
+                    webhook = self.setup_webhook_for_repo(repo["full_name"])
+                    webhooks.append({
+                        "repo_name": repo["full_name"],
+                        "webhook": webhook
+                    })
+            except Exception as e:
+                logger.error(f"Error updating webhook for repository {repo['full_name']}: {e}")
+        
+        logger.info(f"Updated webhooks for {len(webhooks)} repositories")
+        return webhooks

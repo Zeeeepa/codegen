@@ -1,19 +1,20 @@
 """
-Logger utility for the PR Review Bot.
+Logger module for the PR Review Bot.
+Provides consistent logging functionality across the application.
 """
 
 import os
-import sys
 import logging
+import sys
 from typing import Optional
 
-def setup_logging(log_file: Optional[str] = None, log_level: int = logging.INFO):
+def setup_logging(log_file: Optional[str] = None, log_level: int = logging.INFO) -> None:
     """
-    Set up logging for the PR Review Bot.
+    Set up logging for the application.
     
     Args:
-        log_file: Path to the log file
-        log_level: Logging level
+        log_file: Path to log file (optional)
+        log_level: Logging level (default: INFO)
     """
     # Create logger
     logger = logging.getLogger()
@@ -21,12 +22,12 @@ def setup_logging(log_file: Optional[str] = None, log_level: int = logging.INFO)
     
     # Create formatter
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
     
     # Create console handler
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(log_level)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
@@ -39,28 +40,22 @@ def setup_logging(log_file: Optional[str] = None, log_level: int = logging.INFO)
         
         # Create file handler
         file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     
-    # Set log level for specific loggers
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("github").setLevel(logging.WARNING)
-    logging.getLogger("pyngrok").setLevel(logging.WARNING)
-    
-    return logger
+    # Log setup
+    logger.info(f"Logging initialized with level {logging.getLevelName(log_level)}")
+    if log_file:
+        logger.info(f"Logging to file: {log_file}")
 
-def get_logger(name: str, log_level: int = logging.INFO):
+def get_logger(name: str) -> logging.Logger:
     """
     Get a logger with the specified name.
     
     Args:
         name: Logger name
-        log_level: Logging level
         
     Returns:
         Logger instance
     """
-    logger = logging.getLogger(name)
-    logger.setLevel(log_level)
-    return logger
+    return logging.getLogger(name)
