@@ -13,6 +13,33 @@ A locally hostable backend for reviewing PRs and new branches, validating them a
 - **Local Hosting**: Host the agent locally or in your own infrastructure
 - **Insights Storage**: Save insights from failed validations for future reference
 
+## Quick Start (One-Liner Setup)
+
+### Using Docker (Recommended)
+
+```bash
+# Clone the repository and start the PR Review Bot
+git clone https://github.com/Zeeeepa/codegen.git && \
+cd codegen/pr_review_bot && \
+cp pr_review_bot/.env.example pr_review_bot/.env && \
+nano pr_review_bot/.env && \
+docker-compose up -d
+```
+
+### Using Python
+
+```bash
+# Clone the repository and start the PR Review Bot
+git clone https://github.com/Zeeeepa/codegen.git && \
+cd codegen/pr_review_bot && \
+python -m venv venv && \
+source venv/bin/activate && \
+pip install -r requirements.txt && \
+cp pr_review_bot/.env.example pr_review_bot/.env && \
+nano pr_review_bot/.env && \
+python -m pr_review_bot.main
+```
+
 ## Architecture
 
 The PR Review Bot consists of the following components:
@@ -37,14 +64,14 @@ The PR Review Bot consists of the following components:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Zeeeepa/pr_review_bot.git
-   cd pr_review_bot
+   git clone https://github.com/Zeeeepa/codegen.git
+   cd codegen/pr_review_bot
    ```
 
 2. Create a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
    ```
 
 3. Install dependencies:
@@ -54,26 +81,26 @@ The PR Review Bot consists of the following components:
 
 4. Create a `.env` file with your configuration:
    ```bash
-   cp .env.example .env
+   cp pr_review_bot/.env.example pr_review_bot/.env
    # Edit .env with your tokens and keys
    ```
 
 5. Start the agent:
    ```bash
-   python -m pr_review_bot.app
+   python -m pr_review_bot.main
    ```
 
 ### Option 2: Docker Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Zeeeepa/pr_review_bot.git
-   cd pr_review_bot
+   git clone https://github.com/Zeeeepa/codegen.git
+   cd codegen/pr_review_bot
    ```
 
 2. Create a `.env` file with your configuration:
    ```bash
-   cp .env.example .env
+   cp pr_review_bot/.env.example pr_review_bot/.env
    # Edit .env with your tokens and keys
    ```
 
@@ -84,7 +111,7 @@ The PR Review Bot consists of the following components:
 
 ## Configuration
 
-The PR Review Bot is configured using a YAML file and environment variables. The default configuration file is located at `config/default.yaml`.
+The PR Review Bot is configured using a YAML file and environment variables. The default configuration file is located at `pr_review_bot/config.yaml`.
 
 ### Configuration Options
 
@@ -215,36 +242,43 @@ When a PR fails validation, the agent stores the validation results and insights
 
 The insights are stored in the directory specified in the `storage.path` configuration option.
 
-## Development
-
-### Project Structure
+## File Structure
 
 ```
 pr_review_bot/
-├── api/                  # API endpoints
-│   ├── app.py            # FastAPI application
-│   └── routes/           # API routes
-├── core/                 # Core components
-│   ├── config_manager.py # Configuration manager
-│   └── pr_review_controller.py # PR review controller
-├── validator/           # Validation components
+├── __init__.py                # Package initialization
+├── main.py                    # Main entry point
+├── config.yaml                # Default configuration
+├── Dockerfile                 # Dockerfile for containerization
+├── docker-compose.yml         # Docker Compose configuration
+├── api/                       # API endpoints
+│   ├── __init__.py
+│   ├── app.py                 # FastAPI application
+│   └── webhook_handler.py     # Webhook handler
+├── core/                      # Core components
+│   ├── __init__.py
+│   ├── compatibility.py       # Compatibility layer
+│   ├── config_manager.py      # Configuration manager
+│   ├── github_client.py       # GitHub client
+│   ├── pr_review_controller.py # PR review controller
+│   └── pr_reviewer.py         # PR reviewer
+├── validator/                 # Validation components
+│   ├── __init__.py
 │   ├── documentation_parser.py    # Documentation parser
 │   ├── documentation_validator.py # Documentation validator
 │   └── documentation_service.py   # Documentation validation service
-├── utils/                # Utility functions
-│   ├── github_client.py  # GitHub client
-│   ├── slack_notifier.py # Slack notifier
-│   ├── storage_manager.py # Storage manager
-│   └── ai_service.py     # AI service
-├── config/               # Configuration files
-│   └── default.yaml      # Default configuration
-├── data/                 # Data storage
-│   ├── reviews/          # Review results
-│   └── insights/         # Validation insights
-├── app.py                # Main application entry point
-├── Dockerfile            # Dockerfile for containerization
-├── docker-compose.yml    # Docker Compose configuration
-└── requirements.txt      # Python dependencies
+├── utils/                     # Utility functions
+│   ├── __init__.py
+│   ├── ai_service.py          # AI service
+│   ├── logger.py              # Logger
+│   ├── slack_notifier.py      # Slack notifier
+│   └── storage_manager.py     # Storage manager
+├── monitors/                  # Monitoring components
+│   ├── __init__.py
+│   ├── branch_monitor.py      # Branch monitor
+│   └── pr_monitor.py          # PR monitor
+└── docs/                      # Documentation
+    └── pr_review_management_workflow.md # PR review workflow
 ```
 
 ## License
