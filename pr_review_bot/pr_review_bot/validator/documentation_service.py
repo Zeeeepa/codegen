@@ -1,20 +1,23 @@
 """
 Documentation Validation Service for PR Review Agent.
-This module provides a service for validating PRs against documentation requirements.
+This module provides a high-level service for validating PR changes against documentation requirements.
 """
 import os
+import json
 import logging
-from typing import Dict, List, Any, Optional
-from github import Github
+from typing import Dict, List, Any, Optional, Tuple
+
+from .documentation_parser import DocumentationParser
 from .documentation_validator import DocumentationValidator
-from ..core.config_manager import ConfigManager
+
 logger = logging.getLogger(__name__)
+
 class DocumentationValidationService:
     """
-    Service for validating PRs against documentation requirements.
+    Service for validating PR changes against documentation requirements.
     
-    Provides high-level functionality for validating PRs against documentation
-    requirements and generating validation reports.
+    Coordinates the validation process and provides an easy-to-use interface
+    for the PR Review Controller.
     """
     
     def __init__(self, config: Dict[str, Any], repo_path: str):
@@ -28,15 +31,15 @@ class DocumentationValidationService:
         self.config = config
         self.repo_path = repo_path
         
-        # Get GitHub token from config
-        github_token = config["github"]["token"]
+        # Get GitHub token
+        self.github_token = config["github"]["token"]
         
-        # Initialize validator
-        self.validator = DocumentationValidator(github_token, repo_path)
-        
-        # Get documentation files from config
+        # Get documentation files to validate against
         self.doc_files = config["validation"]["documentation"]["files"]
-        self.required = config["validation"]["documentation"]["required"]
+        
+        # Initialize parser and validator
+        self.parser = DocumentationParser(repo_path)
+        self.validator = DocumentationValidator(self.github_token, repo_path)
     
     def validate_pr(self, repo_name: str, pr_number: int) -> Dict[str, Any]:
         """
@@ -49,70 +52,35 @@ class DocumentationValidationService:
         Returns:
             Validation results
         """
-        # Check if documentation validation is enabled
-        if not self.config["validation"]["documentation"]["enabled"]:
-            logger.info("Documentation validation is disabled")
-            return {
-                "pr_number": pr_number,
-                "repo_name": repo_name,
-                "validation_enabled": False,
-                "passed": True,
-                "message": "Documentation validation is disabled"
-            }
-        
-        # Validate PR against documentation requirements
-        validation_results = self.validator.validate_pr(
-            repo_name=repo_name,
-            pr_number=pr_number,
-            doc_files=self.doc_files
-        )
-        
-        # Check if validation failed
-        if "error" in validation_results:
-            logger.error(f"Error validating PR against documentation: {validation_results['error']}")
+        try:
+            logger.info(f"Validating PR #{pr_number} in {repo_name} against documentation requirements")
             
-            # If validation is required, fail the PR
-            if self.required:
-                return {
-                    "pr_number": pr_number,
-                    "repo_name": repo_name,
-                    "validation_enabled": True,
-                    "passed": False,
-                    "message": f"Error validating PR against documentation: {validation_results['error']}"
-                }
+            # Validate PR against documentation requirements
+            validation_results = self.validator.validate_pr(repo_name, pr_number, self.doc_files)
+            
+            # Check if validation passed
+            passed = validation_results.get("matched_requirements", []) and not validation_results.get("unmatched_requirements", [])
+            validation_results["passed"] = passed
+            
+            # Log validation results
+            if passed:
+                logger.info(f"PR #{pr_number} passed documentation validation")
             else:
-                # If validation is not required, pass the PR with a warning
-                return {
-                    "pr_number": pr_number,
-                    "repo_name": repo_name,
-                    "validation_enabled": True,
-                    "passed": True,
-                    "message": f"Warning: Error validating PR against documentation: {validation_results['error']}"
-                }
+                logger.warning(f"PR #{pr_number} failed documentation validation")
+                logger.warning(f"Unmatched requirements: {len(validation_results.get('unmatched_requirements', []))}")
+            
+            return validation_results
         
-        # Check if validation passed
-        validation_passed = validation_results.get("validation_results", {}).get("passed", False)
-        
-        # If validation is required and failed, fail the PR
-        if self.required and not validation_passed:
+        except Exception as e:
+            logger.error(f"Error validating PR against documentation requirements: {e}")
+            
             return {
-                "pr_number": pr_number,
-                "repo_name": repo_name,
-                "validation_enabled": True,
                 "passed": False,
-                "message": "PR does not meet documentation requirements",
-                "details": validation_results
+                "error": str(e),
+                "matched_requirements": [],
+                "unmatched_requirements": [],
+                "issues": [{"message": f"Error validating PR against documentation requirements: {str(e)}"}]
             }
-        
-        # If validation is not required or passed, pass the PR
-        return {
-            "pr_number": pr_number,
-            "repo_name": repo_name,
-            "validation_enabled": True,
-            "passed": True,
-            "message": "PR meets documentation requirements" if validation_passed else "PR does not meet documentation requirements, but validation is not required",
-            "details": validation_results
-        }
     
     def generate_validation_report(self, validation_results: Dict[str, Any]) -> str:
         """
@@ -124,96 +92,86 @@ class DocumentationValidationService:
         Returns:
             Validation report as a string
         """
-        if not validation_results.get("validation_enabled", False):
-            return "Documentation validation is disabled."
-        
-        if "error" in validation_results:
-            return f"Error validating PR against documentation: {validation_results['error']}"
-        
-        details = validation_results.get("details", {})
-        validation_results_details = details.get("validation_results", {})
-        
-        matched_requirements = validation_results_details.get("matched_requirements", [])
-        unmatched_requirements = validation_results_details.get("unmatched_requirements", [])
-        issues = validation_results_details.get("issues", [])
+        passed = validation_results.get("passed", False)
         
         report = []
-        report.append("# Documentation Validation Report\n")
         
-        if validation_results.get("passed", False):
-            report.append("## ✅ Validation Passed\n")
-            report.append(validation_results.get("message", "PR meets documentation requirements."))
+        if passed:
+            report.append("# ✅ Documentation Validation Passed")
+            report.append("PR meets all documentation requirements.")
         else:
-            report.append("## ❌ Validation Failed\n")
-            report.append(validation_results.get("message", "PR does not meet documentation requirements."))
+            report.append("# ❌ Validation Failed")
+            report.append("PR does not meet documentation requirements.")
         
-        report.append("\n## Matched Requirements\n")
+        # Add matched requirements
+        matched_requirements = validation_results.get("matched_requirements", [])
         if matched_requirements:
+            report.append("\n## Matched Requirements")
             for i, req in enumerate(matched_requirements, 1):
-                requirement = req["requirement"]
-                report.append(f"{i}. {requirement['text']}")
-                report.append(f"   - Source: {requirement.get('source_file', 'unknown')}")
-                report.append(f"   - Type: {requirement.get('type', 'unknown')}")
-                report.append(f"   - Mentioned in PR: {'Yes' if req.get('mentioned_in_pr', False) else 'No'}")
-                report.append(f"   - Addressed in code: {'Yes' if req.get('addressed_in_code', False) else 'No'}")
+                report.append(f"{i}. {req['text']}")
+                report.append(f"   - Source: {req['source']}")
+                report.append(f"   - Type: {req['type']}")
+                report.append(f"   - Mentioned in PR: {req.get('mentioned_in_pr', 'No')}")
+                report.append(f"   - Addressed in code: {req.get('addressed_in_code', 'No')}")
                 report.append("")
-        else:
-            report.append("No requirements matched.")
         
-        report.append("\n## Unmatched Requirements\n")
+        # Add unmatched requirements
+        unmatched_requirements = validation_results.get("unmatched_requirements", [])
         if unmatched_requirements:
+            report.append("\n## Unmatched Requirements")
             for i, req in enumerate(unmatched_requirements, 1):
-                requirement = req["requirement"]
-                report.append(f"{i}. {requirement['text']}")
-                report.append(f"   - Source: {requirement.get('source_file', 'unknown')}")
-                report.append(f"   - Type: {requirement.get('type', 'unknown')}")
+                report.append(f"{i}. {req['text']}")
+                report.append(f"   - Source: {req['source']}")
+                report.append(f"   - Type: {req['type']}")
                 report.append("")
-        else:
-            report.append("No unmatched requirements.")
         
-        report.append("\n## Issues\n")
+        # Add issues
+        issues = validation_results.get("issues", [])
         if issues:
+            report.append("\n## Issues")
             for i, issue in enumerate(issues, 1):
-                report.append(f"{i}. [{issue.get('type', 'issue').upper()}] {issue.get('message', '')}")
+                report.append(f"{i}. [ERROR] {issue['message']}")
                 if "details" in issue:
                     report.append("   Details:")
                     for detail in issue["details"]:
                         report.append(f"   - {detail}")
                 report.append("")
-        else:
-            report.append("No issues found.")
         
         return "\n".join(report)
     
     def save_validation_results(self, validation_results: Dict[str, Any], output_dir: str) -> str:
         """
-        Save validation results to a file.
+        Save validation results for failed validations.
         
         Args:
             validation_results: Validation results
-            output_dir: Directory to save the results
+            output_dir: Directory to save results to
             
         Returns:
-            Path to the saved file
+            Path to saved results
         """
-        import json
-        import datetime
+        try:
+            # Create output directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Create filename
+            repo_name = validation_results.get("repo_name", "unknown")
+            pr_number = validation_results.get("pr_number", "unknown")
+            
+            repo_slug = repo_name.replace("/", "-")
+            filename = f"{repo_slug}-pr-{pr_number}-documentation-validation.json"
+            
+            # Create file path
+            file_path = os.path.join(output_dir, filename)
+            
+            # Save validation results
+            with open(file_path, "w") as f:
+                json.dump(validation_results, f, indent=2)
+            
+            logger.info(f"Saved documentation validation results to {file_path}")
+            
+            return file_path
         
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # Generate filename
-        pr_number = validation_results.get("pr_number", "unknown")
-        repo_name = validation_results.get("repo_name", "unknown").replace("/", "-")
-        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        
-        filename = f"{repo_name}-pr-{pr_number}-doc-validation-{timestamp}.json"
-        filepath = os.path.join(output_dir, filename)
-        
-        # Save results to file
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(validation_results, f, indent=2)
-        
-        logger.info(f"Validation results saved to {filepath}")
-        
-        return filepath
+        except Exception as e:
+            logger.error(f"Error saving validation results: {e}")
+            return ""

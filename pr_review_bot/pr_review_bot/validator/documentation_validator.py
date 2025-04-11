@@ -9,7 +9,9 @@ import logging
 from typing import Dict, List, Any, Optional, Tuple
 from github import Github, PullRequest, Repository
 from .documentation_parser import DocumentationParser
+
 logger = logging.getLogger(__name__)
+
 class DocumentationValidator:
     """
     Validator for checking PR changes against documentation requirements.
@@ -48,145 +50,205 @@ class DocumentationValidator:
             pr = repo.get_pull(pr_number)
             
             # Extract requirements from documentation files
-            requirements = self.parser.extract_requirements(doc_files)
+            requirements = self._extract_requirements(doc_files)
             
             # Get PR details
-            pr_files = list(pr.get_files())
-            pr_diff = pr.get_patch()
             pr_title = pr.title
             pr_body = pr.body or ""
+            pr_files = [f.filename for f in pr.get_files()]
+            
+            # Get PR diff
+            pr_diff = self._get_pr_diff(repo, pr)
             
             # Validate PR against requirements
             validation_results = self._validate_against_requirements(
                 requirements=requirements,
-                pr_files=pr_files,
-                pr_diff=pr_diff,
                 pr_title=pr_title,
-                pr_body=pr_body
+                pr_body=pr_body,
+                pr_files=pr_files,
+                pr_diff=pr_diff
             )
             
-            return {
-                "pr_number": pr_number,
-                "repo_name": repo_name,
-                "documentation_files": doc_files,
-                "requirements_count": len(requirements),
-                "validation_results": validation_results
-            }
+            # Add PR details to results
+            validation_results["repo_name"] = repo_name
+            validation_results["pr_number"] = pr_number
+            validation_results["pr_title"] = pr_title
+            validation_results["pr_files"] = pr_files
+            
+            return validation_results
         
         except Exception as e:
-            logger.error(f"Error validating PR against documentation: {e}")
+            logger.error(f"Error validating PR against documentation requirements: {e}")
+            
             return {
-                "pr_number": pr_number,
                 "repo_name": repo_name,
-                "documentation_files": doc_files,
-                "error": str(e)
+                "pr_number": pr_number,
+                "error": str(e),
+                "matched_requirements": [],
+                "unmatched_requirements": [],
+                "issues": [{"message": f"Error validating PR against documentation requirements: {str(e)}"}]
             }
+    
+    def _extract_requirements(self, doc_files: List[str]) -> List[Dict[str, Any]]:
+        """
+        Extract requirements from documentation files.
+        
+        Args:
+            doc_files: List of documentation files to extract requirements from
+            
+        Returns:
+            List of requirements
+        """
+        requirements = []
+        
+        for file_path in doc_files:
+            try:
+                # Parse documentation file
+                parsed = self.parser.parse_file(file_path)
+                
+                # Check if parsing was successful
+                if "error" in parsed:
+                    logger.warning(f"Error parsing documentation file {file_path}: {parsed['error']}")
+                    continue
+                
+                # Add requirements to list
+                if "requirements" in parsed:
+                    requirements.extend(parsed["requirements"])
+            
+            except Exception as e:
+                logger.error(f"Error extracting requirements from {file_path}: {e}")
+        
+        return requirements
+    
+    def _get_pr_diff(self, repo: Repository, pr: PullRequest) -> str:
+        """
+        Get the diff of a PR.
+        
+        Args:
+            repo: GitHub repository
+            pr: GitHub pull request
+            
+        Returns:
+            PR diff as a string
+        """
+        # Get PR diff
+        diff = pr.get_files()
+        
+        # Combine diffs
+        combined_diff = ""
+        for file in diff:
+            combined_diff += f"diff --git a/{file.filename} b/{file.filename}\n"
+            combined_diff += f"--- a/{file.filename}\n"
+            combined_diff += f"+++ b/{file.filename}\n"
+            combined_diff += file.patch + "\n\n"
+        
+        return combined_diff
     
     def _validate_against_requirements(
         self,
         requirements: List[Dict[str, Any]],
-        pr_files: List[Any],
-        pr_diff: str,
         pr_title: str,
-        pr_body: str
+        pr_body: str,
+        pr_files: List[str],
+        pr_diff: str
     ) -> Dict[str, Any]:
         """
-        Validate PR changes against extracted requirements.
+        Validate PR against requirements.
         
         Args:
-            requirements: List of requirements extracted from documentation
-            pr_files: List of files changed in the PR
-            pr_diff: PR diff content
+            requirements: List of requirements
             pr_title: PR title
             pr_body: PR body
+            pr_files: List of PR files
+            pr_diff: PR diff
             
         Returns:
             Validation results
         """
-        results = {
-            "passed": True,
-            "matched_requirements": [],
-            "unmatched_requirements": [],
-            "issues": []
-        }
+        matched_requirements = []
+        unmatched_requirements = []
+        issues = []
         
-        # If no requirements found, consider it passed
-        if not requirements:
-            results["issues"].append({
-                "type": "warning",
-                "message": "No requirements found in documentation files"
-            })
-            return results
+        # Combine PR title and body for text search
+        pr_text = f"{pr_title}\n{pr_body}".lower()
         
         # Check each requirement
         for req in requirements:
+            # Get requirement text and keywords
             req_text = req["text"].lower()
-            req_type = req["type"]
-            source_file = req.get("source_file", "unknown")
+            req_keywords = req.get("keywords", [])
             
             # Check if requirement is mentioned in PR title or body
-            mentioned_in_pr = (
-                req_text in pr_title.lower() or
-                req_text in pr_body.lower()
-            )
+            mentioned_in_pr = any(keyword.lower() in pr_text for keyword in req_keywords)
             
             # Check if requirement is addressed in code changes
-            addressed_in_code = False
+            addressed_in_code = self._is_requirement_addressed_in_code(req, pr_diff)
             
-            # Look for keywords in the diff
-            keywords = self._extract_keywords(req_text)
-            for keyword in keywords:
-                if keyword in pr_diff.lower():
-                    addressed_in_code = True
-                    break
-            
-            # Determine if requirement is matched
+            # If requirement is mentioned in PR or addressed in code, consider it matched
             if mentioned_in_pr or addressed_in_code:
-                results["matched_requirements"].append({
-                    "requirement": req,
-                    "mentioned_in_pr": mentioned_in_pr,
-                    "addressed_in_code": addressed_in_code
-                })
+                req_copy = req.copy()
+                req_copy["mentioned_in_pr"] = "Yes" if mentioned_in_pr else "No"
+                req_copy["addressed_in_code"] = "Yes" if addressed_in_code else "No"
+                matched_requirements.append(req_copy)
             else:
-                results["unmatched_requirements"].append({
-                    "requirement": req
-                })
+                unmatched_requirements.append(req)
         
-        # Determine overall result
-        if results["unmatched_requirements"]:
-            results["passed"] = False
-            results["issues"].append({
-                "type": "error",
-                "message": f"{len(results['unmatched_requirements'])} requirements not addressed in the PR",
-                "details": [req["requirement"]["text"] for req in results["unmatched_requirements"]]
+        # Check if any requirements are unmatched
+        if unmatched_requirements:
+            issues.append({
+                "message": f"{len(unmatched_requirements)} requirements not addressed in the PR",
+                "details": [f"- {req['text']}" for req in unmatched_requirements]
             })
         
-        return results
+        return {
+            "matched_requirements": matched_requirements,
+            "unmatched_requirements": unmatched_requirements,
+            "issues": issues
+        }
     
-    def _extract_keywords(self, text: str) -> List[str]:
+    def _is_requirement_addressed_in_code(self, requirement: Dict[str, Any], pr_diff: str) -> bool:
         """
-        Extract keywords from a requirement text.
+        Check if a requirement is addressed in code changes.
         
         Args:
-            text: Requirement text
+            requirement: Requirement to check
+            pr_diff: PR diff
             
         Returns:
-            List of keywords
+            True if requirement is addressed in code changes, False otherwise
         """
-        # Remove common words and keep only significant terms
-        common_words = {
-            "the", "a", "an", "and", "or", "but", "if", "then", "else", "when",
-            "at", "from", "to", "in", "on", "by", "for", "with", "about", "against",
-            "between", "into", "through", "during", "before", "after", "above", "below",
-            "up", "down", "out", "off", "over", "under", "again", "further", "then",
-            "once", "here", "there", "all", "any", "both", "each", "few", "more",
-            "most", "other", "some", "such", "no", "nor", "not", "only", "own",
-            "same", "so", "than", "too", "very", "can", "will", "just", "should",
-            "now", "must", "shall", "need", "may", "might", "could", "would"
-        }
+        # Get requirement text and keywords
+        req_text = requirement["text"].lower()
+        req_keywords = requirement.get("keywords", [])
         
-        # Split text into words and filter out common words
-        words = re.findall(r'\b\w+\b', text.lower())
-        keywords = [word for word in words if word not in common_words and len(word) > 2]
+        # Check if any keywords are in the diff
+        for keyword in req_keywords:
+            if keyword.lower() in pr_diff.lower():
+                return True
         
-        return keywords
+        # Check for related code patterns
+        if "api" in req_text and ("api" in pr_diff.lower() or "endpoint" in pr_diff.lower()):
+            return True
+        
+        if "database" in req_text and ("database" in pr_diff.lower() or "db" in pr_diff.lower() or "sql" in pr_diff.lower()):
+            return True
+        
+        if "user interface" in req_text and ("ui" in pr_diff.lower() or "interface" in pr_diff.lower() or "component" in pr_diff.lower()):
+            return True
+        
+        if "performance" in req_text and ("performance" in pr_diff.lower() or "optimize" in pr_diff.lower() or "speed" in pr_diff.lower()):
+            return True
+        
+        if "security" in req_text and ("security" in pr_diff.lower() or "auth" in pr_diff.lower() or "permission" in pr_diff.lower()):
+            return True
+        
+        # Check for code changes related to the requirement
+        # This is a simple heuristic and can be improved
+        words = re.findall(r'\b\w+\b', req_text)
+        significant_words = [word for word in words if len(word) > 3 and word.lower() not in ["must", "should", "shall", "will", "the", "and", "that", "this", "with", "for", "have", "not"]]
+        
+        for word in significant_words:
+            if word.lower() in pr_diff.lower():
+                return True
+        
+        return False
