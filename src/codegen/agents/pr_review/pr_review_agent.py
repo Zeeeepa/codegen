@@ -8,7 +8,7 @@ import logging
 import traceback
 import re
 import json
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 from github import Github
 from github.Repository import Repository
 from github.PullRequest import PullRequest
@@ -19,6 +19,11 @@ from codegen.agents.code.code_agent import CodeAgent
 from codegen.agents.utils import AgentConfig
 from codegen.tools.planning.manager import PlanManager, ProjectPlan, Step, Requirement
 from codegen.shared.logging.get_logger import get_logger
+from codegen.extensions.langchain.tools import (
+    GithubViewPRTool,
+    GithubCreatePRCommentTool,
+    GithubCreatePRReviewCommentTool,
+)
 
 logger = get_logger(__name__)
 
@@ -65,6 +70,19 @@ class PRReviewAgent(CodeAgent):
             logger: Logger instance
             **kwargs: Additional LLM configuration options
         """
+        # Initialize base tools for PR review
+        pr_review_tools = [
+            GithubViewPRTool(codebase),
+            GithubCreatePRCommentTool(codebase),
+            GithubCreatePRReviewCommentTool(codebase),
+        ]
+        
+        # Combine with any additional tools provided
+        if tools:
+            tools = pr_review_tools + tools
+        else:
+            tools = pr_review_tools
+            
         super().__init__(
             codebase=codebase,
             model_provider=model_provider,
@@ -112,42 +130,54 @@ class PRReviewAgent(CodeAgent):
         """Generate a progress report for the current plan."""
         return self.plan_manager.generate_progress_report()
     
-    def review_pr(self, repo_name: str, pr_number: int) -> Dict[str, Any]:
+    def review_pr(self, repo_name: str, pr_number: int, review_mode: str = "comprehensive") -> Dict[str, Any]:
         """Review a pull request against requirements and codebase patterns.
         
         Args:
             repo_name: Name of the repository (e.g., "owner/repo")
             pr_number: Number of the pull request
+            review_mode: Mode of review - "comprehensive" (default), "quick", or "security"
             
         Returns:
             Dictionary with review results
         """
-        logger.info(f"Reviewing PR #{pr_number} in {repo_name}")
+        logger.info(f"Reviewing PR #{pr_number} in {repo_name} using {review_mode} mode")
         
         try:
             repo = self.github_client.get_repo(repo_name)
             pr = repo.get_pull(pr_number)
             
-            pr_title = pr.title
-            pr_body = pr.body or ""
-            pr_files = list(pr.get_files())
+            # Create a temporary comment to show the bot is working
+            review_message = "CodegenBot is starting to review the PR. Please wait..."
+            temp_comment = pr.create_issue_comment(review_message)
             
-            plan = self.plan_manager.load_current_plan()
+            # Prepare the prompt based on review mode
+            prompt = self._prepare_review_prompt(repo_name, pr, review_mode)
             
-            prompt = self._prepare_pr_analysis_prompt(repo_name, pr, pr_files, plan)
-            
+            # Run the agent with the prompt
             analysis_result = self.run(prompt)
             
+            # Parse the analysis result
             review_result = self._parse_analysis_result(analysis_result)
             
-            self._post_review_comment(repo, pr, review_result)
+            # Post review comments
+            self._post_review_comments(repo, pr, review_result)
             
+            # Submit formal review
             self._submit_review(repo, pr, review_result)
             
+            # Update plan if applicable
             self._update_plan_from_pr(pr, review_result)
             
+            # Send Slack notification if configured
             if self.slack_token and self.slack_channel_id:
                 self._send_slack_notification(repo_name, pr_number, review_result)
+            
+            # Clean up temporary comment
+            try:
+                temp_comment.delete()
+            except Exception as e:
+                logger.warning(f"Failed to delete temporary comment: {e}")
             
             return {
                 "pr_number": pr_number,
@@ -162,6 +192,13 @@ class PRReviewAgent(CodeAgent):
             logger.error(f"Error reviewing PR: {e}")
             logger.error(traceback.format_exc())
             
+            # Try to update the temporary comment with error info
+            try:
+                if 'temp_comment' in locals():
+                    temp_comment.edit(f"Error reviewing PR: {str(e)}")
+            except Exception:
+                logger.error("Failed to update error message on temporary comment")
+            
             return {
                 "pr_number": pr_number,
                 "repo_name": repo_name,
@@ -172,8 +209,101 @@ class PRReviewAgent(CodeAgent):
                 "error": str(e),
             }
     
+    def _prepare_review_prompt(self, repo_name: str, pr: PullRequest, review_mode: str) -> str:
+        """Prepare the prompt for PR review based on the review mode."""
+        pr_url = pr.html_url
+        pr_title = pr.title
+        pr_body = pr.body or "No description provided"
+        
+        base_prompt = f"""
+        Review this pull request like a senior engineer:
+        {pr_url}
+        
+        PR #{pr.number}: {pr_title}
+        
+        PR Description:
+        {pr_body}
+        
+        Be explicit about the changes, produce a short summary, and point out possible improvements.
+        Focus on facts and technical details, using code snippets where helpful.
+        """
+        
+        if review_mode == "comprehensive":
+            base_prompt += """
+            Consider all aspects of the code:
+            1. Code quality and best practices
+            2. Potential bugs or edge cases
+            3. Performance implications
+            4. Security considerations
+            5. Test coverage
+            6. Documentation
+            7. Maintainability
+            8. Consistency with the rest of the codebase
+            """
+        elif review_mode == "quick":
+            base_prompt += """
+            Focus on a quick review of:
+            1. Major bugs or issues
+            2. Critical performance problems
+            3. Obvious security issues
+            """
+        elif review_mode == "security":
+            base_prompt += """
+            Focus exclusively on security aspects:
+            1. Input validation
+            2. Authentication/authorization issues
+            3. Data exposure
+            4. Injection vulnerabilities
+            5. Cryptographic issues
+            6. Secure configuration
+            """
+        
+        # Add plan context if available
+        plan = self.plan_manager.load_current_plan()
+        if plan:
+            base_prompt += f"""
+            This PR should comply with the project plan:
+            
+            Project: {plan.title}
+            Description: {plan.description}
+            
+            Requirements:
+            """
+            
+            for req in plan.requirements:
+                base_prompt += f"- {req.description} (Status: {req.status})\n"
+            
+            base_prompt += "\nSteps:\n"
+            
+            for step in plan.steps:
+                base_prompt += f"- {step.description} (Status: {step.status})\n"
+        
+        base_prompt += """
+        Use the tools at your disposal to create proper PR reviews. Include code snippets if needed,
+        and suggest specific improvements where appropriate.
+        
+        Format your final response as a JSON object with the following structure:
+        {
+            "compliant": true/false,
+            "issues": ["issue1", "issue2", ...],
+            "suggestions": [
+                {
+                    "description": "suggestion1",
+                    "file_path": "path/to/file.py",
+                    "line_number": 42
+                },
+                ...
+            ],
+            "approval_recommendation": "approve" or "request_changes",
+            "review_comment": "Your detailed review comment here"
+        }
+        """
+        
+        return base_prompt
+    
     def _prepare_pr_analysis_prompt(self, repo_name: str, pr: PullRequest, pr_files: List[Any], plan: Optional[ProjectPlan] = None) -> str:
         """Prepare the prompt for PR analysis."""
+        # This method is kept for backward compatibility
         pr_diff = pr.get_patch()
         
         pr_title = pr.title
@@ -277,8 +407,16 @@ class PRReviewAgent(CodeAgent):
                 "review_comment": "Failed to analyze PR properly. Please review manually.",
             }
     
+    def _post_review_comments(self, repo: Repository, pr: PullRequest, review_result: Dict[str, Any]) -> None:
+        """Post review comments on the pull request."""
+        # Post general comment
+        self._post_review_comment(repo, pr, review_result)
+        
+        # Post inline comments for specific suggestions
+        self._post_inline_comments(repo, pr, review_result)
+    
     def _post_review_comment(self, repo: Repository, pr: PullRequest, review_result: Dict[str, Any]) -> None:
-        """Post a review comment on the pull request."""
+        """Post a general review comment on the pull request."""
         comment = f"# PR Review Bot Analysis\n\n"
 
         if review_result.get("compliant", False):
@@ -319,6 +457,44 @@ class PRReviewAgent(CodeAgent):
             pr.create_issue_comment(comment)
         except Exception as e:
             logger.error(f"Error posting review comment: {e}")
+    
+    def _post_inline_comments(self, repo: Repository, pr: PullRequest, review_result: Dict[str, Any]) -> None:
+        """Post inline comments for specific suggestions."""
+        suggestions = review_result.get("suggestions", [])
+        if not suggestions:
+            return
+            
+        try:
+            # Get the latest commit SHA
+            latest_commit = list(pr.get_commits())[-1]
+            commit_sha = latest_commit.sha
+            
+            # Create a review with inline comments
+            comments = []
+            
+            for suggestion in suggestions:
+                if isinstance(suggestion, dict):
+                    file_path = suggestion.get("file_path")
+                    line_number = suggestion.get("line_number")
+                    desc = suggestion.get("description", "")
+                    
+                    if file_path and line_number:
+                        comments.append({
+                            "path": file_path,
+                            "position": int(line_number),
+                            "body": desc
+                        })
+            
+            if comments:
+                pr.create_review(
+                    commit=commit_sha,
+                    comments=comments,
+                    body="Inline code suggestions",
+                    event="COMMENT"
+                )
+        except Exception as e:
+            logger.error(f"Error posting inline comments: {e}")
+            logger.error(traceback.format_exc())
     
     def _submit_review(self, repo: Repository, pr: PullRequest, review_result: Dict[str, Any]) -> None:
         """Submit a formal review on the pull request."""
@@ -441,4 +617,48 @@ class PRReviewAgent(CodeAgent):
         
         except Exception as e:
             logger.error(f"Error sending Slack notification: {e}")
+            logger.error(traceback.format_exc())
+    
+    def remove_bot_comments(self, repo_name: str, pr_number: int, bot_username: Optional[str] = None) -> None:
+        """Remove all comments made by the bot on a PR.
+        
+        Args:
+            repo_name: Name of the repository (e.g., "owner/repo")
+            pr_number: Number of the pull request
+            bot_username: GitHub username of the bot (defaults to authenticated user)
+        """
+        try:
+            repo = self.github_client.get_repo(repo_name)
+            pr = repo.get_pull(pr_number)
+            
+            # If bot_username is not provided, use the authenticated user
+            if not bot_username:
+                bot_username = self.github_client.get_user().login
+            
+            # Get all types of comments
+            pr_comments = pr.get_comments()
+            reviews = pr.get_reviews()
+            issue_comments = pr.get_issue_comments()
+            
+            # Remove PR comments
+            for comment in pr_comments:
+                if comment.user.login == bot_username:
+                    logger.info(f"Removing PR comment from {comment.user.login}")
+                    comment.delete()
+            
+            # Remove reviews
+            for review in reviews:
+                if review.user.login == bot_username:
+                    logger.info(f"Removing review from {review.user.login}")
+                    review.delete()
+            
+            # Remove issue comments
+            for comment in issue_comments:
+                if comment.user.login == bot_username:
+                    logger.info(f"Removing issue comment from {comment.user.login}")
+                    comment.delete()
+                    
+            logger.info(f"Successfully cleaned up all bot comments on PR #{pr_number}")
+        except Exception as e:
+            logger.error(f"Error removing bot comments: {str(e)}")
             logger.error(traceback.format_exc())
