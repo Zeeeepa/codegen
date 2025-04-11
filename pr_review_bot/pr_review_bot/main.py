@@ -11,6 +11,8 @@ import time
 import signal
 import traceback
 from typing import Dict, Any, Optional, List, Tuple
+from dotenv import load_dotenv
+import yaml
 
 # Import core components
 from .core.github_client import GitHubClient
@@ -29,6 +31,9 @@ from .utils.webhook_manager import WebhookManager
 # Import API
 from .api.app import PRReviewBotApp
 
+# Load environment variables
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
 def parse_args():
@@ -44,6 +49,8 @@ def parse_args():
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
     parser.add_argument("--workers", type=int, default=1, help="Number of workers")
+    parser.add_argument("--config", type=str, default="config.yaml", help="Path to config file")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     
     # GitHub settings
     parser.add_argument("--github-token", type=str, help="GitHub API token")
@@ -74,6 +81,37 @@ def parse_args():
     parser.add_argument("--log-level", type=str, default="INFO", help="Log level")
     
     return parser.parse_args()
+
+def load_config(config_path: str) -> Dict[str, Any]:
+    """
+    Load configuration from a YAML file.
+    
+    Args:
+        config_path: Path to the configuration file
+        
+    Returns:
+        Configuration dictionary
+    """
+    try:
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+        
+        # Override config with environment variables
+        if "github" in config:
+            config["github"]["token"] = os.environ.get("GITHUB_TOKEN", config["github"].get("token", ""))
+            config["github"]["webhook_secret"] = os.environ.get("GITHUB_WEBHOOK_SECRET", config["github"].get("webhook_secret", ""))
+        
+        if "ai" in config:
+            config["ai"]["api_key"] = os.environ.get(f"{config['ai']['provider'].upper()}_API_KEY", config["ai"].get("api_key", ""))
+        
+        if "notification" in config and "slack" in config["notification"]:
+            config["notification"]["slack"]["token"] = os.environ.get("SLACK_BOT_TOKEN", config["notification"]["slack"].get("token", ""))
+            config["notification"]["slack"]["channel"] = os.environ.get("SLACK_CHANNEL", config["notification"]["slack"].get("channel", ""))
+        
+        return config
+    except Exception as e:
+        logger.error(f"Error loading config: {e}")
+        raise
 
 def monitor_ip_changes(webhook_manager, ngrok_manager, interval=300):
     """
@@ -187,6 +225,20 @@ def main():
     # Set up logging
     log_level = getattr(logging, args.log_level.upper(), logging.INFO)
     setup_logging(args.log_file, log_level)
+    
+    # Set log level for debug mode
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    # Load configuration if specified
+    config = None
+    if args.config:
+        try:
+            config = load_config(args.config)
+            logger.info(f"Loaded configuration from {args.config}")
+        except Exception as e:
+            logger.error(f"Error loading config: {e}")
+            sys.exit(1)
     
     # Get GitHub token
     github_token = args.github_token or os.environ.get("GITHUB_TOKEN")

@@ -1,65 +1,66 @@
 """
-Logger for PR Review Agent.
-This module provides logging functionality for the PR Review Agent.
+Logger utility for the PR Review Bot.
 """
+
 import os
+import sys
 import logging
 from typing import Optional
 
-def setup_logging(log_file: Optional[str] = None, log_level: str = "INFO") -> None:
+def setup_logging(log_file: Optional[str] = None, log_level: int = logging.INFO):
     """
-    Set up logging configuration.
+    Set up logging for the PR Review Bot.
     
     Args:
-        log_file: Path to log file (optional)
-        log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_file: Path to the log file
+        log_level: Logging level
     """
-    # Convert log level string to logging level
-    level = getattr(logging, log_level.upper(), logging.INFO)
+    # Create logger
+    logger = logging.getLogger()
+    logger.setLevel(log_level)
     
-    # Configure logging
-    handlers = [logging.StreamHandler()]
-    
-    if log_file:
-        # Create log directory if it doesn't exist
-        log_dir = os.path.dirname(log_file)
-        if log_dir and not os.path.exists(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
-        
-        # Add file handler
-        handlers.append(logging.FileHandler(log_file))
-    
-    # Configure logging
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=handlers
+    # Create formatter
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     
-    # Set up logger
-    logger = logging.getLogger("pr_review_bot")
-    logger.setLevel(level)
+    # Create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
     
-    # Log configuration
-    logger.info(f"Logging configured with level {log_level}")
+    # Create file handler if log file is specified
     if log_file:
-        logger.info(f"Logging to file {log_file}")
+        # Create directory if it doesn't exist
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        
+        # Create file handler
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
     
-    # Suppress noisy loggers
+    # Set log level for specific loggers
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("github").setLevel(logging.WARNING)
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.getLogger("markdown").setLevel(logging.WARNING)
-    logging.getLogger("bs4").setLevel(logging.WARNING)
+    logging.getLogger("pyngrok").setLevel(logging.WARNING)
+    
+    return logger
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str, log_level: int = logging.INFO):
     """
-    Get a logger with the given name.
+    Get a logger with the specified name.
     
     Args:
         name: Logger name
+        log_level: Logging level
         
     Returns:
         Logger instance
     """
-    return logging.getLogger(f"pr_review_bot.{name}")
+    logger = logging.getLogger(name)
+    logger.setLevel(log_level)
+    return logger

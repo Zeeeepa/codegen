@@ -23,6 +23,6 @@ RUN mkdir -p data/reviews data/insights config
 # Expose the port
 EXPOSE 8000
 # Set the entrypoint
-ENTRYPOINT ["python", "-m", "pr_review_bot.app"]
+ENTRYPOINT ["python", "-m", "pr_review_bot.main"]
 # Set default command
 CMD ["--host", "0.0.0.0", "--port", "8000"]
