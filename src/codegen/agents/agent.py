@@ -63,7 +63,7 @@ class Agent:
         self.current_job = None
 
     @property
-    def job_url(self) -> Optional[str]:
+    def web_url(self) -> Optional[str]:
         """Get the URL for the current job.
 
         Returns:
