@@ -155,9 +155,9 @@ class TestAgent:
         # Setup mock job
         mock_job = MagicMock(spec=AgentTask)
         mock_job.web_url = "https://example.com/run/456"
-        
+
         agent.current_job = mock_job
-        
+
         # Check job_url
         assert agent.job_url == "https://example.com/run/456"
 
