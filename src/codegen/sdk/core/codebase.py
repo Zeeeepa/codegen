@@ -1005,11 +1005,11 @@ class Codebase(
             title=title,
             body=body,
         )
-        
+
         if pr is None:
             msg = f"Failed to create PR for branch {self._op.git_cli.active_branch.name}"
             raise ValueError(msg)
-            
+
         return pr
 
     ####################################################################################################################

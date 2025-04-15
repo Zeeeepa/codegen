@@ -45,20 +45,20 @@ def test_codebase_create_pr_existing_pr(codebase: Codebase):
     file = codebase.files[0]
     file.remove()
     codebase.commit()
-    
+
     # Create the first PR
     pr1 = codebase.create_pr(title="first PR title", body="first PR body")
     assert pr1.title == "first PR title"
     assert pr1.state == "open"
-    
+
     # Make another change and try to create another PR on the same branch
     file = codebase.files[1] if len(codebase.files) > 1 else codebase.create_file("new_test_file.txt", "test content")
     file.remove()
     codebase.commit()
-    
+
     # This should return the existing PR instead of creating a new one
     pr2 = codebase.create_pr(title="second PR title", body="second PR body")
-    
+
     # Verify it's the same PR
     assert pr2.number == pr1.number
     # The title should still be the original one since we're getting the existing PR
