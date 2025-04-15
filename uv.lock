@@ -511,6 +511,7 @@ source = { editable = "." }
 dependencies = [
     { name = "astor" },
     { name = "click" },
+    { name = "codegen-api-client" },
     { name = "codegen-sdk-pink" },
     { name = "codeowners" },
     { name = "colorlog" },
@@ -598,6 +599,7 @@ dev = [
     { name = "black" },
     { name = "braintrust" },
     { name = "cibuildwheel", extra = ["uv"] },
+    { name = "codegen-api-client" },
     { name = "coverage" },
     { name = "cython" },
     { name = "deptry" },
@@ -633,6 +635,7 @@ requires-dist = [
     { name = "astor", specifier = ">=0.8.1,<1.0.0" },
     { name = "attrs", marker = "extra == 'lsp'", specifier = ">=25.1.0" },
     { name = "click", specifier = ">=8.1.7" },
+    { name = "codegen-api-client", git = "https://github.com/codegen-sh/codegen-api-client.git" },
     { name = "codegen-sdk-pink", specifier = ">=0.1.0" },
     { name = "codeowners", specifier = ">=0.6.0,<1.0.0" },
     { name = "colorlog", specifier = ">=6.9.0" },
@@ -714,6 +717,7 @@ dev = [
     { name = "black", specifier = ">=24.8.0" },
     { name = "braintrust", specifier = ">=0.0.160" },
     { name = "cibuildwheel", extras = ["uv"], specifier = ">=2.22.0" },
+    { name = "codegen-api-client", git = "https://github.com/codegen-sh/codegen-api-client.git" },
     { name = "coverage", specifier = ">=7.6.1,<8.0.0" },
     { name = "cython", specifier = ">=3.0.11" },
     { name = "deptry", specifier = ">=0.22.0" },
@@ -742,6 +746,17 @@ dev = [
     { name = "sybil", extras = ["pytest"], specifier = ">=9.0.0" },
     { name = "typer", specifier = ">=0.12.5" },
     { name = "uv", specifier = ">=0.4.25" },
+]
+
+[[package]]
+name = "codegen-api-client"
+version = "1.0.0"
+source = { git = "https://github.com/codegen-sh/codegen-api-client.git#5b3991473eb24194327a49a2d49656a68cbf3439" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
 ]
 
 [[package]]
