@@ -21,79 +21,126 @@ logger = logging.getLogger(__name__)
 
 
 class SearchMatch(Observation):
-    """Information about a single line match."""
+    """A single search match."""
 
     line_number: int = Field(
-        description="1-based line number of the match",
+        description="Line number of the match",
     )
     line: str = Field(
-        description="The full line containing the match",
+        description="Full line content",
     )
     match: str = Field(
-        description="The specific text that matched",
+        description="The matched text",
     )
     str_template: ClassVar[str] = "Line {line_number}: {match}"
 
-    def render(self) -> str:
+    def render_as_string(self) -> str:
         """Render match in a VSCode-like format."""
         return f"{self.line_number:>4}:  {self.line}"
+
+    def to_dict(self) -> dict[str, str | int]:
+        """Convert to SearchMatch TypedDict format."""
+        return {
+            "line_number": self.line_number,
+            "line": self.line,
+            "match": self.match,
+        }
 
 
 class SearchFileResult(Observation):
     """Search results for a single file."""
 
     filepath: str = Field(
-        description="Path to the file containing matches",
+        description="Path to the file",
     )
     matches: list[SearchMatch] = Field(
-        description="List of matches found in this file",
+        description="List of matches in this file",
     )
 
     str_template: ClassVar[str] = "{filepath}: {match_count} matches"
 
-    def render(self) -> str:
+    def render_as_string(self) -> str:
         """Render file results in a VSCode-like format."""
         lines = [
             f"📄 {self.filepath}",
         ]
         for match in self.matches:
-            lines.append(match.render())
+            lines.append(match.render_as_string())
         return "\n".join(lines)
 
     def _get_details(self) -> dict[str, str | int]:
-        """Get details for string representation."""
-        return {"match_count": len(self.matches)}
+        """Get details for string template."""
+        return {
+            "filepath": self.filepath,
+            "match_count": len(self.matches),
+        }
 
 
 class SearchObservation(Observation):
-    """Response from searching the codebase."""
+    """Response from searching files."""
 
     query: str = Field(
-        description="The search query that was used",
+        description="The search query",
+    )
+    results: list[SearchFileResult] = Field(
+        description="List of files with matches",
     )
     page: int = Field(
-        description="Current page number (1-based)",
+        description="Current page number",
     )
     total_pages: int = Field(
-        description="Total number of pages available",
+        description="Total number of pages",
     )
     total_files: int = Field(
         description="Total number of files with matches",
     )
     files_per_page: int = Field(
-        description="Number of files shown per page",
-    )
-    results: list[SearchFileResult] = Field(
-        description="Search results for this page",
+        description="Number of files per page",
     )
 
     str_template: ClassVar[str] = "Found {total_files} files with matches for '{query}' (page {page}/{total_pages})"
 
-    def render(self) -> str:
-        """Render search results in a VSCode-like format."""
-        if self.status == "error":
-            return f"[SEARCH ERROR]: {self.error}"
+    def render(self, tool_call_id: str) -> ToolMessage:
+        """Render search results in a VSCode-like format.
 
+        Args:
+            tool_call_id: ID of the tool call that triggered this search
+
+        Returns:
+            ToolMessage containing search results or error
+        """
+        # Prepare artifacts dictionary with default values
+        artifacts: dict[str, str | int | list[dict[str, str | int]]] = {
+            "query": self.query,
+            "error": self.error if self.status == "error" else None,
+            "matches": [],  # List[SearchMatchDict] - match data as TypedDict
+            "file_paths": [],  # List[str] - file paths with matches
+            "page": self.page,
+            "total_pages": self.total_pages if self.status == "success" else 0,
+            "total_files": self.total_files if self.status == "success" else 0,
+            "files_per_page": self.files_per_page,
+        }
+
+        # Handle error case early
+        if self.status == "error":
+            return ToolMessage(
+                content=f"[SEARCH ERROR]: {self.error}",
+                status=self.status,
+                name="search",
+                tool_call_id=tool_call_id,
+                artifact=artifacts,
+            )
+
+        # Build matches and file paths for success case
+        for result in self.results:
+            artifacts["file_paths"].append(result.filepath)
+            for match in result.matches:
+                # Convert match to SearchMatchDict format
+                match_dict = match.to_dict()
+                match_dict["filepath"] = result.filepath
+                artifacts["matches"].append(match_dict)
+
+        # Build content lines
         lines = [
             f"[SEARCH RESULTS]: {self.query}",
             f"Found {self.total_files} files with matches (showing page {self.page} of {self.total_pages})",
@@ -102,16 +149,23 @@ class SearchObservation(Observation):
 
         if not self.results:
             lines.append("No matches found")
-            return "\n".join(lines)
+        else:
+            # Add results with blank lines between files
+            for result in self.results:
+                lines.append(result.render_as_string())
+                lines.append("")  # Add blank line between files
 
-        for result in self.results:
-            lines.append(result.render())
-            lines.append("")  # Add blank line between files
+            # Add pagination info if there are multiple pages
+            if self.total_pages > 1:
+                lines.append(f"Page {self.page}/{self.total_pages} (use page parameter to see more results)")
 
-        if self.total_pages > 1:
-            lines.append(f"Page {self.page}/{self.total_pages} (use page parameter to see more results)")
-
-        return "\n".join(lines)
+        return ToolMessage(
+            content="\n".join(lines),
+            status=self.status,
+            name="search",
+            tool_call_id=tool_call_id,
+            artifact=artifacts,
+        )
 
 
 def _search_with_ripgrep(
