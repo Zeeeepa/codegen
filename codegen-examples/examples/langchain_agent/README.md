@@ -57,15 +57,10 @@ The agent comes with several built-in tools for code operations:
 
 - `ViewFileTool`: View file contents and metadata
 - `ListDirectoryTool`: List directory contents
-- `SearchTool`: Search code using regex
+- `RipGrepTool`: Search code using ripgrep
 - `EditFileTool`: Edit file contents
 - `CreateFileTool`: Create new files
 - `DeleteFileTool`: Delete files
-- `RenameFileTool`: Rename files and update imports
-- `MoveSymbolTool`: Move functions/classes between files
-- `RevealSymbolTool`: Analyze symbol dependencies
-- `SemanticEditTool`: Make semantic code edits
-- `CommitTool`: Commit changes to disk
 
 ## Example Operations
 

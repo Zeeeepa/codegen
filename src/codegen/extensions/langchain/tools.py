@@ -120,12 +120,11 @@ class ListDirectoryTool(BaseTool):
 
 
 class SearchInput(BaseModel):
-    """Input for searching the codebase."""
+    """Input schema for search tool."""
 
     query: str = Field(
         ...,
-        description="""The search query to find in the codebase. When ripgrep is available, this will be passed as a ripgrep pattern. For regex searches, set use_regex=True.
-        Ripgrep is the preferred method.""",
+        description="""ripgrep query (or regex pattern) to run. For regex searches, set use_regex=True. Ripgrep is the preferred method.""",
     )
     file_extensions: list[str] | None = Field(default=None, description="Optional list of file extensions to search (e.g. ['.py', '.ts'])")
     page: int = Field(default=1, description="Page number to return (1-based, default: 1)")
@@ -134,20 +133,18 @@ class SearchInput(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-class SearchTool(BaseTool):
-    """Tool for searching the codebase."""
+class RipGrepTool(BaseTool):
+    """Tool for searching the codebase via RipGrep."""
 
     name: ClassVar[str] = "search"
-    description: ClassVar[str] = "Search the codebase using text search or regex pattern matching"
+    description: ClassVar[str] = "Search the codebase using `ripgrep` or regex pattern matching"
     args_schema: ClassVar[type[BaseModel]] = SearchInput
     codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(self, tool_call_id: str, query: str, file_extensions: Optional[list[str]] = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False) -> ToolMessage:
-        result = search(self.codebase, query, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex)
-        return result.render(tool_call_id)
+    def _run(self, query: str, file_extensions: list[str] | None = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False, tool_call_id: str = "") -> str:
+        """Run the search tool."""
+        results = self.codebase.search(query, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex)
+        return results
 
 
 class EditFileInput(BaseModel):

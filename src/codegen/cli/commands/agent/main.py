@@ -16,7 +16,7 @@ from codegen.extensions.langchain.tools import (
     MoveSymbolTool,
     RenameFileTool,
     RevealSymbolTool,
-    SearchTool,
+    RipGrepTool,
     ViewFileTool,
 )
 from codegen.sdk.core.codebase import Codebase
@@ -53,69 +53,63 @@ def agent_command(query: str):
 
     # Helper function for agent to print messages
     def say(message: str):
-        console.print()  # Add blank line before message
-        markdown = Markdown(message)
-        console.print(markdown)
-        console.print()  # Add blank line after message
+        tools = [
+            ViewFileTool(codebase),
+            ListDirectoryTool(codebase),
+            RipGrepTool(codebase),
+            CreateFileTool(codebase),
+            DeleteFileTool(codebase),
+            RenameFileTool(codebase),
+            MoveSymbolTool(codebase),
+            RevealSymbolTool(codebase),
+            EditFileTool(codebase),
+            # RunBashCommandTool(codebase),
+        ]
 
-    # Initialize tools
-    tools = [
-        ViewFileTool(codebase),
-        ListDirectoryTool(codebase),
-        SearchTool(codebase),
-        CreateFileTool(codebase),
-        DeleteFileTool(codebase),
-        RenameFileTool(codebase),
-        MoveSymbolTool(codebase),
-        RevealSymbolTool(codebase),
-        EditFileTool(codebase),
-        # RunBashCommandTool(codebase),
-    ]
-
-    # Initialize chat history with system message
-    system_message = SystemMessage(
-        content="""You are a helpful AI assistant with access to the local codebase.
+        # Initialize chat history with system message
+        system_message = SystemMessage(
+            content="""You are a helpful AI assistant with access to the local codebase.
 You can help with code exploration, editing, and general programming tasks.
 Always explain what you're planning to do before taking actions."""
-    )
+        )
 
-    # Get initial query if not provided via command line
-    if not query:
-        console.print("[bold]Welcome to the Codegen CLI Agent![/bold]")
-        console.print("I'm an AI assistant that can help you explore and modify code in this repository.")
-        console.print("I can help with tasks like viewing files, searching code, making edits, and more.")
-        console.print()
-        console.print("What would you like help with today?")
-        console.print()
-        query = Prompt.ask("[bold]>[/bold]")  # Simple arrow prompt
+        # Get initial query if not provided via command line
+        if not query:
+            console.print("[bold]Welcome to the Codegen CLI Agent![/bold]")
+            console.print("I'm an AI assistant that can help you explore and modify code in this repository.")
+            console.print("I can help with tasks like viewing files, searching code, making edits, and more.")
+            console.print()
+            console.print("What would you like help with today?")
+            console.print()
+            query = Prompt.ask("[bold]>[/bold]")  # Simple arrow prompt
 
-    # Create the agent
-    agent = create_agent_with_tools(codebase=codebase, tools=tools, system_message=system_message)
+        # Create the agent
+        agent = create_agent_with_tools(codebase=codebase, tools=tools, system_message=system_message)
 
-    # Main chat loop
-    while True:
-        if not query:  # Only prompt for subsequent messages
-            user_input = Prompt.ask("\n[bold]>[/bold]")  # Simple arrow prompt
-        else:
-            user_input = query
-            query = None  # Clear the initial query so we enter the prompt flow
+        # Main chat loop
+        while True:
+            if not query:  # Only prompt for subsequent messages
+                user_input = Prompt.ask("\n[bold]>[/bold]")  # Simple arrow prompt
+            else:
+                user_input = query
+                query = None  # Clear the initial query so we enter the prompt flow
 
-        if user_input.lower() in ["exit", "quit"]:
-            break
-
-        # Invoke the agent
-        with console.status("[bold green]Agent is thinking...") as status:
-            try:
-                thread_id = str(uuid.uuid4())
-                result = agent.invoke(
-                    {"input": user_input},
-                    config={"configurable": {"thread_id": thread_id}},
-                )
-
-                result = result["messages"][-1].content
-                # Update chat history with AI's response
-                if result:
-                    say(result)
-            except Exception as e:
-                console.print(f"[bold red]Error during agent execution:[/bold red] {e}")
+            if user_input.lower() in ["exit", "quit"]:
                 break
+
+            # Invoke the agent
+            with console.status("[bold green]Agent is thinking...") as status:
+                try:
+                    thread_id = str(uuid.uuid4())
+                    result = agent.invoke(
+                        {"input": user_input},
+                        config={"configurable": {"thread_id": thread_id}},
+                    )
+
+                    result = result["messages"][-1].content
+                    # Update chat history with AI's response
+                    if result:
+                        say(result)
+                except Exception as e:
+                    console.print(f"[bold red]Error during agent execution:[/bold red] {e}")
+                    break

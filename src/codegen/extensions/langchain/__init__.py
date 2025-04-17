@@ -2,53 +2,41 @@
 
 from langchain_core.tools.base import BaseTool
 
-from codegen.sdk.core.codebase import Codebase
-
-from .tools import (
-    CommitTool,
+from codegen.extensions.langchain.tools import (
     CreateFileTool,
     DeleteFileTool,
     EditFileTool,
     ListDirectoryTool,
     RevealSymbolTool,
-    SearchTool,
+    RipGrepTool,
     SemanticEditTool,
     ViewFileTool,
 )
 
 __all__ = [
-    # Tool classes
-    "CommitTool",
+    # Tools
     "CreateFileTool",
     "DeleteFileTool",
     "EditFileTool",
     "ListDirectoryTool",
     "RevealSymbolTool",
-    "SearchTool",
+    "RipGrepTool",
     "SemanticEditTool",
     "ViewFileTool",
     # Helper functions
-    "get_workspace_tools",
+    "create_codebase_agent",
+    "create_chat_agent",
+    "create_codebase_inspector_agent",
 ]
 
 
 def get_workspace_tools(codebase: Codebase) -> list[BaseTool]:
-    """Get all workspace tools initialized with a codebase.
-
-    Args:
-        codebase: The codebase to operate on
-
-    Returns:
-        List of initialized Langchain tools
-    """
+    """Get all tools for working with a codebase."""
     return [
         ViewFileTool(codebase),
         ListDirectoryTool(codebase),
-        SearchTool(codebase),
+        RipGrepTool(codebase),
         EditFileTool(codebase),
         CreateFileTool(codebase),
         DeleteFileTool(codebase),
-        CommitTool(codebase),
-        RevealSymbolTool(codebase),
-        SemanticEditTool(codebase),
     ]
