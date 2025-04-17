@@ -25,6 +25,9 @@ from codegen.extensions.langchain.tools import (
     SearchTool,
     # SemanticEditTool,
     ViewFileTool,
+    RipGrepSearchTool,
+    MoveFileTool,
+    CommitChangesTool,
 )
 
 from .graph import create_react_agent
@@ -34,100 +37,82 @@ if TYPE_CHECKING:
 
 
 def create_codebase_agent(
-    codebase: "Codebase",
-    model_provider: str = "anthropic",
-    model_name: str = "claude-3-7-sonnet-latest",
-    system_message: SystemMessage = SystemMessage(REASONER_SYSTEM_MESSAGE),
-    memory: bool = True,
-    debug: bool = False,
-    additional_tools: list[BaseTool] | None = None,
-    config: AgentConfig | None = None,
+    codebase,
+    model_provider=None,
+    model_name=None,
+    memory=False,
+    additional_tools=None,
     **kwargs,
-) -> CompiledGraph:
-    """Create an agent with all codebase tools.
+):
+    """
+    Create a codebase agent with the given codebase and model.
 
     Args:
-        codebase: The codebase to operate on
-        model_provider: The model provider to use ("anthropic" or "openai")
-        model_name: Name of the model to use
-        verbose: Whether to print agent's thought process (default: True)
-        chat_history: Optional list of messages to initialize chat history with
-        **kwargs: Additional LLM configuration options. Supported options:
-            - temperature: Temperature parameter (0-1)
-            - top_p: Top-p sampling parameter (0-1)
-            - top_k: Top-k sampling parameter (>= 1)
-            - max_tokens: Maximum number of tokens to generate
+        codebase (Codebase): The codebase to use
+        model_provider (str, optional): The model provider to use. Defaults to None.
+        model_name (str, optional): The model name to use. Defaults to None.
+        memory (bool, optional): Whether to use memory. Defaults to False.
+        additional_tools (list, optional): Additional tools to add. Defaults to None.
+        **kwargs: Additional arguments to pass to the model
 
     Returns:
-        Initialized agent with message history
+        Agent: The created agent
     """
     llm = LLM(model_provider=model_provider, model_name=model_name, **kwargs)
 
-    # Get all codebase tools
+    # Initialize default tools
     tools = [
         ViewFileTool(codebase),
         ListDirectoryTool(codebase),
-        SearchTool(codebase),
-        # EditFileTool(codebase),
+        RipGrepSearchTool(codebase),
+        EditFileTool(codebase),
         CreateFileTool(codebase),
         DeleteFileTool(codebase),
         RenameFileTool(codebase),
-        # MoveSymbolTool(codebase),
-        # RevealSymbolTool(codebase),
-        # SemanticEditTool(codebase),
-        ReplacementEditTool(codebase),
-        RelaceEditTool(codebase),
+        MoveFileTool(codebase),
+        CommitChangesTool(codebase),
         ReflectionTool(codebase),
         SearchFilesByNameTool(codebase),
         GlobalReplacementEditTool(codebase),
-        # SemanticSearchTool(codebase),
-        # =====[ Github Integration ]=====
-        # Enable Github integration
-        # GithubCreatePRTool(codebase),
-        # GithubViewPRTool(codebase),
-        # GithubCreatePRCommentTool(codebase),
-        # GithubCreatePRReviewCommentTool(codebase),
     ]
 
-    # Add additional tools if provided
     if additional_tools:
+        # Get names of additional tools
+        additional_names = {t.get_name() for t in additional_tools}
+        # Keep only tools that don't have matching names in additional_tools
+        tools = [t for t in tools if t.get_name() not in additional_names]
         tools.extend(additional_tools)
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(model=llm, tools=tools, system_message=SystemMessage(REASONER_SYSTEM_MESSAGE), checkpointer=memory, debug=False, config=None)
 
 
 def create_chat_agent(
-    codebase: "Codebase",
-    model_provider: str = "anthropic",
-    model_name: str = "claude-3-5-sonnet-latest",
-    system_message: SystemMessage = SystemMessage(REASONER_SYSTEM_MESSAGE),
-    memory: bool = True,
-    debug: bool = False,
-    additional_tools: list[BaseTool] | None = None,
-    config: dict[str, Any] | None = None,  # over here you can pass in the max length of the number of messages
+    codebase,
+    model_provider=None,
+    model_name=None,
+    memory=False,
+    additional_tools=None,
     **kwargs,
-) -> CompiledGraph:
-    """Create an agent with all codebase tools.
+):
+    """
+    Create a chat agent with the given codebase and model.
 
     Args:
-        codebase: The codebase to operate on
-        model_provider: The model provider to use ("anthropic" or "openai")
-        model_name: Name of the model to use
-        verbose: Whether to print agent's thought process (default: True)
-        chat_history: Optional list of messages to initialize chat history with
-        **kwargs: Additional LLM configuration options. Supported options:
-            - temperature: Temperature parameter (0-1)
-            - top_p: Top-p sampling parameter (0-1)
-            - top_k: Top-k sampling parameter (>= 1)
-            - max_tokens: Maximum number of tokens to generate
+        codebase (Codebase): The codebase to use
+        model_provider (str, optional): The model provider to use. Defaults to None.
+        model_name (str, optional): The model name to use. Defaults to None.
+        memory (bool, optional): Whether to use memory. Defaults to False.
+        additional_tools (list, optional): Additional tools to add. Defaults to None.
+        **kwargs: Additional arguments to pass to the model
 
     Returns:
-        Initialized agent with message history
+        Agent: The created agent
     """
     llm = LLM(model_provider=model_provider, model_name=model_name, **kwargs)
 
+    # Initialize default tools
     tools = [
         ViewFileTool(codebase),
         ListDirectoryTool(codebase),
@@ -141,39 +126,42 @@ def create_chat_agent(
     ]
 
     if additional_tools:
+        # Get names of additional tools
+        additional_names = {t.get_name() for t in additional_tools}
+        # Keep only tools that don't have matching names in additional_tools
+        tools = [t for t in tools if t.get_name() not in additional_names]
         tools.extend(additional_tools)
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(model=llm, tools=tools, system_message=SystemMessage(REASONER_SYSTEM_MESSAGE), checkpointer=memory, debug=False, config=None)
 
 
 def create_codebase_inspector_agent(
-    codebase: "Codebase",
-    model_provider: str = "openai",
-    model_name: str = "gpt-4o",
-    system_message: SystemMessage = SystemMessage(REASONER_SYSTEM_MESSAGE),
-    memory: bool = True,
-    debug: bool = True,
-    config: dict[str, Any] | None = None,
+    codebase,
+    model_provider=None,
+    model_name=None,
+    memory=False,
+    additional_tools=None,
     **kwargs,
-) -> CompiledGraph:
-    """Create an inspector agent with read-only codebase tools.
+):
+    """
+    Create an inspector agent with read-only codebase tools.
 
     Args:
-        codebase: The codebase to operate on
-        model_provider: The model provider to use ("anthropic" or "openai")
-        model_name: Name of the model to use
-        system_message: Custom system message to use (defaults to standard reasoner message)
-        memory: Whether to enable memory/checkpointing
-        **kwargs: Additional LLM configuration options
+        codebase (Codebase): The codebase to use
+        model_provider (str, optional): The model provider to use. Defaults to None.
+        model_name (str, optional): The model name to use. Defaults to None.
+        memory (bool, optional): Whether to use memory. Defaults to False.
+        additional_tools (list, optional): Additional tools to add. Defaults to None.
+        **kwargs: Additional arguments to pass to the model
 
     Returns:
-        Compiled langgraph agent
+        Agent: The created agent
     """
     llm = LLM(model_provider=model_provider, model_name=model_name, **kwargs)
 
-    # Get read-only codebase tools
+    # Initialize default tools
     tools = [
         ViewFileTool(codebase),
         ListDirectoryTool(codebase),
@@ -183,39 +171,34 @@ def create_codebase_inspector_agent(
     ]
 
     memory = MemorySaver() if memory else None
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+
+    return create_react_agent(model=llm, tools=tools, system_message=SystemMessage(REASONER_SYSTEM_MESSAGE), checkpointer=memory, debug=False, config=None)
 
 
 def create_agent_with_tools(
-    tools: list[BaseTool],
-    model_provider: str = "openai",
-    model_name: str = "gpt-4o",
-    system_message: SystemMessage = SystemMessage(REASONER_SYSTEM_MESSAGE),
-    memory: bool = True,
-    debug: bool = True,
-    config: dict[str, Any] | None = None,
+    tools,
+    model_provider=None,
+    model_name=None,
+    memory=False,
+    additional_tools=None,
     **kwargs,
-) -> CompiledGraph:
-    """Create an agent with a specific set of tools.
+):
+    """
+    Create an agent with a specific set of tools.
 
     Args:
-        codebase: The codebase to operate on
-        tools: List of tools to provide to the agent
-        model_provider: The model provider to use ("anthropic" or "openai")
-        model_name: Name of the model to use
-        system_message: Custom system message to use (defaults to standard reasoner message)
-        memory: Whether to enable memory/checkpointing
-        **kwargs: Additional LLM configuration options. Supported options:
-            - temperature: Temperature parameter (0-1)
-            - top_p: Top-p sampling parameter (0-1)
-            - top_k: Top-k sampling parameter (>= 1)
-            - max_tokens: Maximum number of tokens to generate
+        tools (list): List of tools to provide to the agent
+        model_provider (str, optional): The model provider to use. Defaults to None.
+        model_name (str, optional): The model name to use. Defaults to None.
+        memory (bool, optional): Whether to use memory. Defaults to False.
+        additional_tools (list, optional): Additional tools to add. Defaults to None.
+        **kwargs: Additional arguments to pass to the model
 
     Returns:
-        Compiled langgraph agent
+        Agent: The created agent
     """
     llm = LLM(model_provider=model_provider, model_name=model_name, **kwargs)
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(model=llm, tools=tools, system_message=SystemMessage(REASONER_SYSTEM_MESSAGE), checkpointer=memory, debug=False, config=None)
