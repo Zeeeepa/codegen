@@ -100,7 +100,7 @@ class AgentGraph:
             messages.append(HumanMessage(content=query))
 
         result = self.model.invoke([self.system_message, *messages])
-        if isinstance(result, AIMessage):
+        if isinstance(result, AIMessage) and not result.tool_calls:
             updated_messages = [*messages, result]
             return {"messages": updated_messages, "final_answer": result.content}
 
