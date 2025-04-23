@@ -2,7 +2,7 @@
 
 import difflib
 import os
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 import requests
 from langchain_core.messages import ToolMessage
@@ -23,15 +23,15 @@ class RelaceEditObservation(Observation):
     filepath: str = Field(
         description="Path to the edited file",
     )
-    diff: str | None = Field(
+    diff: Optional[str] = Field(
         default=None,
         description="Unified diff showing the changes made",
     )
-    new_content: str | None = Field(
+    new_content: Optional[str] = Field(
         default=None,
         description="New content with line numbers",
     )
-    line_count: int | None = Field(
+    line_count: Optional[int] = Field(
         default=None,
         description="Total number of lines in file",
     )
@@ -135,7 +135,7 @@ def apply_relace_edit(api_key: str, initial_code: str, edit_snippet: str, stream
         raise Exception(msg)
 
 
-def relace_edit(codebase: Codebase, filepath: str, edit_snippet: str, api_key: str | None = None) -> RelaceEditObservation:
+def relace_edit(codebase: Codebase, filepath: str, edit_snippet: str, api_key: Optional[str] = None) -> RelaceEditObservation:
     """Edit a file using the Relace Instant Apply API.
 
     Args:
@@ -176,8 +176,6 @@ def relace_edit(codebase: Codebase, filepath: str, edit_snippet: str, api_key: s
     # Apply the edit using Relace API
     try:
         merged_code = apply_relace_edit(api_key, original_content, edit_snippet)
-        if original_content.endswith("\n") and not merged_code.endswith("\n"):
-            merged_code += "\n"
     except Exception as e:
         return RelaceEditObservation(
             status="error",
