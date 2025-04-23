@@ -54,6 +54,7 @@ class ToolMessageData(BaseMessage):
     tool_id: Optional[str] = None
     status: Optional[str] = None
 
+
 @dataclass
 class FunctionMessageData(BaseMessage):
     """Represents a function message."""

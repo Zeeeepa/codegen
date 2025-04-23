@@ -78,7 +78,8 @@ class MessageStreamTracer:
                 tool_response=getattr(latest_message, "artifact", content),
                 tool_id=getattr(latest_message, "tool_call_id", None),
                 status=getattr(latest_message, "status", None),
-            )        elif message_type == "function":
+            )
+        elif message_type == "function":
             return FunctionMessageData(type=message_type, content=content)
         else:
             return UnknownMessage(type=message_type, content=content)
