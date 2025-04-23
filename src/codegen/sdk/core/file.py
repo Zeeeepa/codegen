@@ -1,6 +1,5 @@
 import os
 import re
-import resource
 import sys
 from abc import abstractmethod
 from collections.abc import Generator, Sequence
@@ -8,6 +7,9 @@ from functools import cached_property
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Generic, Literal, Self, TypeVar, override
+
+# Import resource compatibility module instead of direct resource import
+from codegen.sdk.utils.resource_compat import RLIMIT_STACK, RLIM_INFINITY, getrlimit, setrlimit
 
 from tree_sitter import Node as TSNode
 from typing_extensions import deprecated
@@ -438,7 +440,10 @@ class SourceFile(
         try:
             self.parse(ctx)
         except RecursionError as e:
-            logger.exception(f"RecursionError parsing file {filepath}: {e} at depth {sys.getrecursionlimit()} and {resource.getrlimit(resource.RLIMIT_STACK)}")
+            error_msg = f"RecursionError parsing file {filepath}: {e} at depth {sys.getrecursionlimit()}"
+            if sys.platform != "win32":
+                error_msg += f" and {getrlimit(RLIMIT_STACK)}"
+            logger.exception(error_msg)
             raise e
         except Exception as e:
             logger.exception(f"Failed to parse file {filepath}: {e}")
