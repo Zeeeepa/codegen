@@ -231,13 +231,13 @@ The Codegen SDK can be integrated with various static analysis tools to provide 
 
 1. **Automate Code Reviews**: Set up automated code reviews that analyze code quality metrics and flag potential issues.
 
-2. **Monitor Code Health**: Track code health metrics over time to identify trends and areas for improvement.
+1. **Monitor Code Health**: Track code health metrics over time to identify trends and areas for improvement.
 
-3. **Enforce Coding Standards**: Enforce coding standards and best practices across your codebase.
+1. **Enforce Coding Standards**: Enforce coding standards and best practices across your codebase.
 
-4. **Generate Documentation**: Automatically generate documentation based on code structure and dependencies.
+1. **Generate Documentation**: Automatically generate documentation based on code structure and dependencies.
 
-5. **Visualize Code Structure**: Create visualizations of your code structure to better understand complex codebases.
+1. **Visualize Code Structure**: Create visualizations of your code structure to better understand complex codebases.
 
 ## Retrieved Analysis View
 
@@ -292,4 +292,3 @@ Visualization Links:
 ```
 
 This comprehensive analysis provides a clear overview of the codebase's structure, quality, and potential areas for improvement.
-

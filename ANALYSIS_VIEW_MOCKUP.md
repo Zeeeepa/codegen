@@ -291,4 +291,3 @@ Recommendations:
 ```
 
 This mockup demonstrates how the Codegen SDK analysis results would be presented in different formats, including command line output, web interface, and API response. The analysis provides comprehensive insights into the codebase structure, quality metrics, and potential areas for improvement.
-
