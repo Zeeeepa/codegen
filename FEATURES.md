@@ -19,24 +19,28 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 ### 1. Codebase Structure Analysis
 
 #### File Statistics
+
 - Total file count
 - Files by language/extension
 - File size distribution
 - Directory structure analysis
 
 #### Symbol Tree Analysis
+
 - Total symbol count
 - Symbol type distribution (classes, functions, variables, interfaces)
 - Symbol hierarchy visualization
 - Top-level vs nested symbol analysis
 
 #### Import/Export Analysis
+
 - Import dependency mapping
 - External vs internal dependency analysis
 - Circular import detection
 - Unused import identification
 
 #### Module Organization
+
 - Module coupling metrics
 - Module cohesion analysis
 - Package structure visualization
@@ -45,6 +49,7 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 ### 2. Symbol-Level Analysis
 
 #### Function Analysis
+
 - Parameter analysis (count, types, defaults)
 - Return type analysis
 - Function complexity metrics
@@ -53,6 +58,7 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 - Function overload analysis
 
 #### Class Analysis
+
 - Inheritance hierarchy mapping
 - Method analysis
 - Attribute analysis
@@ -61,6 +67,7 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 - Access modifier usage (public/private)
 
 #### Variable Analysis
+
 - Type inference
 - Usage tracking
 - Scope analysis
@@ -68,6 +75,7 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 - Global variable detection
 
 #### Type Analysis
+
 - Type alias resolution
 - Generic type usage
 - Type consistency checking
@@ -76,23 +84,27 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 ### 3. Dependency and Flow Analysis
 
 #### Call Graph Generation
+
 - Function call relationships
 - Call hierarchy visualization
 - Entry point analysis
 - Dead code detection
 
 #### Data Flow Analysis
+
 - Variable usage tracking
 - Data transformation paths
 - Input/output parameter analysis
 
 #### Control Flow Analysis
+
 - Conditional branch analysis
 - Loop structure analysis
 - Exception handling paths
 - Return statement analysis
 
 #### Symbol Usage Analysis
+
 - Symbol reference tracking
 - Usage frequency metrics
 - Cross-file symbol usage
@@ -100,23 +112,27 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 ### 4. Code Quality Analysis
 
 #### Unused Code Detection
+
 - Unused functions
 - Unused classes
 - Unused variables
 - Unused imports
 
 #### Code Duplication Analysis
+
 - Similar function detection
 - Repeated code patterns
 - Refactoring opportunities
 
 #### Complexity Metrics
+
 - Cyclomatic complexity
 - Cognitive complexity
 - Nesting depth analysis
 - Function size metrics
 
 #### Style and Convention Analysis
+
 - Naming convention consistency
 - Comment coverage
 - Documentation completeness
@@ -125,21 +141,25 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 ### 5. Visualization Capabilities
 
 #### Dependency Graphs
+
 - Module dependency visualization
 - Symbol dependency visualization
 - Import relationship graphs
 
 #### Call Graphs
+
 - Function call visualization
 - Call hierarchy trees
 - Entry point flow diagrams
 
 #### Symbol Trees
+
 - Class hierarchy visualization
 - Symbol relationship diagrams
 - Package structure visualization
 
 #### Heat Maps
+
 - Code complexity heat maps
 - Usage frequency visualization
 - Change frequency analysis
@@ -147,12 +167,14 @@ The Codegen SDK provides a rich set of analysis functions to evaluate code quali
 ### 6. Language-Specific Analysis
 
 #### Python-Specific Analysis
+
 - Decorator usage analysis
 - Dynamic attribute access detection
 - Type hint coverage
 - Magic method usage
 
 #### TypeScript-Specific Analysis
+
 - Interface implementation verification
 - Type definition completeness
 - JSX/TSX component analysis
