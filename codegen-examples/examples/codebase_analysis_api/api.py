@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from enum import Enum
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query
 from fastapi.responses import JSONResponse
@@ -9,10 +9,8 @@ import tempfile
 import shutil
 import zipfile
 import networkx as nx
-import plotly.graph_objects as go
 from pathlib import Path
 import time
-import json
 import re
 import math
 from collections import Counter, defaultdict
@@ -26,7 +24,6 @@ from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.expressions.binary_expression import BinaryExpression
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-from codegen.sdk.codebase.codebase_analysis import get_codebase_summary, get_file_summary, get_class_summary, get_function_summary
 
 # Configuration
 PORT = int(os.getenv("PORT", "8000"))
@@ -58,7 +55,7 @@ class AnalysisRequest(BaseModel):
     language: LanguageType = LanguageType.AUTO
     include_visualizations: bool = False
     max_depth: int = Field(default=3, ge=1, le=10)
-    
+
 class AnalysisResponse(BaseModel):
     overall_statistics: Dict[str, Any]
     important_files: List[Dict[str, Any]]
@@ -73,6 +70,7 @@ analysis_cache = {}
 # Helper functions
 def calculate_cyclomatic_complexity(function):
     """Calculate cyclomatic complexity for a function"""
+
     def analyze_statement(statement):
         complexity = 0
 
@@ -193,7 +191,7 @@ def count_lines(source: str):
         code_part = line
         if not in_multiline and "#" in line:
             comment_start = line.find("#")
-            if not re.search(r'["\'].*#.*["\']', line[:comment_start]):
+            if not re.search(r'[\"\\'].*#.*[\"\\']', line[:comment_start]):
                 code_part = line[:comment_start].strip()
                 if line[comment_start:].strip():
                     comments += 1
@@ -380,384 +378,391 @@ def build_project_tree(codebase: Codebase, max_depth: int = 3) -> Dict[str, Any]
         
         # Add files in this directory
         for file in directories.get(path, []):
-            file_stats = {
+            file_node = {
                 "name": file.name,
                 "type": "file",
-                "language": file.language.name.lower() if hasattr(file, "language") else "unknown",
+                "language": file.language,
                 "symbols": len(file.symbols),
                 "classes": len(file.classes),
                 "functions": len(file.functions),
-                "lines": len(file.source.splitlines()) if hasattr(file, "source") else 0
+                "lines": len(file.source.splitlines()) if file.source else 0
             }
             
-            # Add detailed class and function info for important files
-            if file_stats["classes"] > 0 or file_stats["functions"] > 0:
-                file_stats["details"] = []
+            # Add detailed information about symbols if not too deep
+            if current_depth < max_depth - 1:
+                file_node["details"] = []
                 
+                # Add classes
                 for cls in file.classes:
-                    cls_info = {
+                    cls_node = {
                         "name": cls.name,
                         "type": "class",
                         "methods": len(cls.methods),
-                        "attributes": len(cls.attributes),
+                        "attributes": len(cls.properties),
                         "line": cls.start_point[0] + 1
                     }
                     
-                    # Add method details
-                    if cls.methods and current_depth < max_depth - 1:
-                        cls_info["methods_details"] = []
+                    # Add methods if not too deep
+                    if current_depth < max_depth - 2:
+                        cls_node["methods_details"] = []
                         for method in cls.methods:
-                            method_info = {
+                            method_node = {
                                 "name": method.name,
                                 "line": method.start_point[0] + 1,
-                                "parameters": len(method.parameters)
+                                "parameters": len(method.parameters) if hasattr(method, "parameters") else 0
                             }
-                            cls_info["methods_details"].append(method_info)
+                            cls_node["methods_details"].append(method_node)
                     
-                    file_stats["details"].append(cls_info)
+                    file_node["details"].append(cls_node)
                 
+                # Add functions
                 for func in file.functions:
-                    if not func.is_method:  # Skip methods as they're already covered in classes
-                        func_info = {
+                    if not any(cls.methods for cls in file.classes if func in cls.methods):
+                        func_node = {
                             "name": func.name,
                             "type": "function",
                             "line": func.start_point[0] + 1,
-                            "parameters": len(func.parameters)
+                            "parameters": len(func.parameters) if hasattr(func, "parameters") else 0
                         }
-                        file_stats["details"].append(func_info)
+                        file_node["details"].append(func_node)
             
-            dir_node["children"].append(file_stats)
+            dir_node["children"].append(file_node)
         
-        # Recursively add subdirectories
-        subdirs = [d for d in directories.keys() if Path(d).parent == Path(path) and d != path]
-        for subdir in subdirs:
+        # Add subdirectories
+        subdirs = set()
+        for d in directories.keys():
+            if d.startswith(path + "/") and d != path:
+                subdir = d.split("/")[len(path.split("/"))]
+                subdirs.add(path + "/" + subdir if path else subdir)
+        
+        for subdir in sorted(subdirs):
             add_directory(subdir, dir_node, current_depth + 1)
     
-    # Start with root directories
-    root_dirs = [d for d in directories.keys() if d == "." or "/" not in d and "\\" not in d]
-    for root_dir in root_dirs:
-        add_directory(root_dir, root)
-    
+    # Start with the root directory
+    add_directory("", root)
     return root
 
-def analyze_codebase(repo_url: str, language: LanguageType = LanguageType.AUTO) -> Dict[str, Any]:
-    """Perform comprehensive analysis of a codebase"""
+def build_dependency_graph(codebase: Codebase) -> Dict[str, Any]:
+    """Build a dependency graph of the codebase"""
+    graph = nx.DiGraph()
+    
+    # Add nodes for each file
+    for file in codebase.files:
+        graph.add_node(file.filepath, type="file", name=file.name)
+    
+    # Add edges for imports
+    for file in codebase.files:
+        for import_stmt in file.import_statements:
+            for imp in import_stmt.imports:
+                if imp.symbol_definition and imp.symbol_definition.filepath:
+                    graph.add_edge(file.filepath, imp.symbol_definition.filepath)
+    
+    # Convert to a serializable format
+    nodes = []
+    for node in graph.nodes:
+        nodes.append({
+            "id": node,
+            "name": graph.nodes[node].get("name", Path(node).name),
+            "type": graph.nodes[node].get("type", "file")
+        })
+    
+    edges = []
+    for source, target in graph.edges:
+        edges.append({
+            "source": source,
+            "target": target
+        })
+    
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "stats": {
+            "node_count": len(nodes),
+            "edge_count": len(edges),
+            "density": nx.density(graph) if len(nodes) > 1 else 0,
+            "connected_components": nx.number_connected_components(graph.to_undirected()) if len(nodes) > 0 else 0
+        }
+    }
+
+def build_call_graph(codebase: Codebase) -> Dict[str, Any]:
+    """Build a call graph of the codebase"""
+    graph = nx.DiGraph()
+    
+    # Add nodes for each function
+    for func in codebase.functions:
+        graph.add_node(f"{func.filepath}:{func.name}", type="function", name=func.name, filepath=func.filepath)
+    
+    # Add edges for function calls
+    for func in codebase.functions:
+        if hasattr(func, "code_block") and func.code_block:
+            for stmt in func.code_block.statements:
+                for call in stmt.function_calls:
+                    if call.symbol_definition:
+                        target_func = call.symbol_definition
+                        graph.add_edge(
+                            f"{func.filepath}:{func.name}",
+                            f"{target_func.filepath}:{target_func.name}"
+                        )
+    
+    # Convert to a serializable format
+    nodes = []
+    for node in graph.nodes:
+        nodes.append({
+            "id": node,
+            "name": graph.nodes[node].get("name", node.split(":")[-1]),
+            "filepath": graph.nodes[node].get("filepath", node.split(":")[0]),
+            "type": graph.nodes[node].get("type", "function")
+        })
+    
+    edges = []
+    for source, target in graph.edges:
+        edges.append({
+            "source": source,
+            "target": target
+        })
+    
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "stats": {
+            "node_count": len(nodes),
+            "edge_count": len(edges),
+            "density": nx.density(graph) if len(nodes) > 1 else 0,
+            "connected_components": nx.number_connected_components(graph.to_undirected()) if len(nodes) > 0 else 0
+        }
+    }
+
+def analyze_codebase(codebase_path: str, language: LanguageType = LanguageType.AUTO, max_depth: int = 3) -> Dict[str, Any]:
+    """Analyze a codebase and return comprehensive metrics"""
     start_time = time.time()
     
-    # Determine language if AUTO
-    lang = None
-    if language != LanguageType.AUTO:
-        lang = language
+    # Initialize codebase
+    codebase = Codebase(codebase_path)
     
-    # Load the codebase
-    codebase = Codebase.from_repo(repo_url, language=lang)
-    
-    # Calculate overall statistics
+    # Collect overall statistics
     file_count = len(codebase.files)
-    file_by_language = Counter([f.language.name.lower() if hasattr(f, "language") else "unknown" for f in codebase.files])
-    total_lines = sum(len(f.source.splitlines()) if hasattr(f, "source") else 0 for f in codebase.files)
+    files_by_language = Counter(file.language for file in codebase.files if file.language)
+    total_lines = sum(len(file.source.splitlines()) if file.source else 0 for file in codebase.files)
+    class_count = len(codebase.classes)
+    function_count = len(codebase.functions)
+    symbol_count = sum(len(file.symbols) for file in codebase.files)
     
-    # Find entry points
+    # Calculate average complexity
+    complexities = [calculate_cyclomatic_complexity(func) for func in codebase.functions if hasattr(func, "code_block")]
+    avg_complexity = sum(complexities) / len(complexities) if complexities else 0
+    
+    # Find important files and entry points
     entry_points = find_entry_points(codebase)
     
-    # Build project tree
-    project_tree = build_project_tree(codebase)
+    # Build project structure tree
+    project_structure = build_project_tree(codebase, max_depth)
     
     # Find code quality issues
     unused_imports = find_unused_imports(codebase)
     unused_functions = find_unused_functions(codebase)
     unused_classes = find_unused_classes(codebase)
-    complex_functions = find_high_complexity_functions(codebase)
+    high_complexity_functions = find_high_complexity_functions(codebase)
     
-    # Calculate complexity metrics
-    callables = codebase.functions + [m for c in codebase.classes for m in c.methods]
-    total_complexity = sum(calculate_cyclomatic_complexity(func) for func in callables if hasattr(func, "code_block"))
-    avg_complexity = total_complexity / len(callables) if callables else 0
+    # Build dependency graphs
+    dependency_graph = build_dependency_graph(codebase)
+    call_graph = build_call_graph(codebase)
     
-    # Prepare visualization options
-    visualization_options = [v.value for v in VisualizationType]
+    # Detect circular dependencies
+    circular_deps = []
+    try:
+        cycles = list(nx.simple_cycles(nx.DiGraph(dependency_graph["edges"])))
+        for cycle in cycles:
+            if len(cycle) > 1:
+                circular_deps.append({
+                    "files": cycle,
+                    "length": len(cycle)
+                })
+    except nx.NetworkXNoCycle:
+        pass
     
     # Compile results
-    results = {
+    analysis_time = time.time() - start_time
+    
+    return {
         "overall_statistics": {
             "total_files": file_count,
-            "files_by_language": dict(file_by_language),
+            "files_by_language": dict(files_by_language),
             "total_lines_of_code": total_lines,
-            "total_classes": len(codebase.classes),
-            "total_functions": len(codebase.functions),
-            "total_symbols": len(codebase.symbols),
+            "total_classes": class_count,
+            "total_functions": function_count,
+            "total_symbols": symbol_count,
             "average_cyclomatic_complexity": round(avg_complexity, 2)
         },
         "important_files": entry_points,
-        "project_structure": project_tree,
+        "project_structure": project_structure,
         "code_quality_issues": {
             "unused_imports": {
                 "count": len(unused_imports),
-                "items": unused_imports[:100]  # Limit to 100 items
+                "items": unused_imports[:10]  # Limit to avoid huge responses
             },
             "unused_functions": {
                 "count": len(unused_functions),
-                "items": unused_functions[:100]
+                "items": unused_functions[:10]
             },
             "unused_classes": {
                 "count": len(unused_classes),
-                "items": unused_classes[:100]
+                "items": unused_classes[:10]
             },
             "high_complexity_functions": {
-                "count": len(complex_functions),
-                "items": complex_functions[:100]
+                "count": len(high_complexity_functions),
+                "items": high_complexity_functions[:10]
+            },
+            "circular_dependencies": {
+                "count": len(circular_deps),
+                "items": circular_deps[:10]
             }
         },
-        "visualization_options": visualization_options,
-        "analysis_time": time.time() - start_time
+        "dependency_graph": dependency_graph,
+        "call_graph": call_graph,
+        "visualization_options": [v.value for v in VisualizationType],
+        "analysis_time": round(analysis_time, 2)
     }
-    
-    return results
 
-def generate_visualization(codebase: Codebase, viz_type: VisualizationType, target: Optional[str] = None) -> Dict[str, Any]:
-    """Generate visualization data for the codebase"""
-    if viz_type == VisualizationType.CALL_GRAPH:
-        # Create call graph
-        G = nx.DiGraph()
-        
-        # If target is specified, use it as the root node
-        if target:
-            parts = target.split(".")
-            if len(parts) == 1:
-                # Just a function name
-                func = codebase.get_function(target)
-            else:
-                # Class.method
-                cls = codebase.get_class(parts[0])
-                func = cls.get_method(parts[1]) if cls else None
-        else:
-            # Use the first function with call sites as root
-            funcs_with_calls = [f for f in codebase.functions if f.function_calls]
-            func = funcs_with_calls[0] if funcs_with_calls else None
-        
-        if not func:
-            return {"error": "No suitable function found for call graph"}
-        
-        # Build call graph
-        def add_calls(function, depth=0, max_depth=3):
-            if depth >= max_depth:
-                return
-            
-            for call in function.function_calls:
-                called_func = call.function_definition
-                if called_func and isinstance(called_func, codegen.sdk.core.function.Function):
-                    G.add_node(called_func.name, type="function")
-                    G.add_edge(function.name, called_func.name)
-                    add_calls(called_func, depth + 1, max_depth)
-        
-        G.add_node(func.name, type="function", root=True)
-        add_calls(func)
-        
-        # Convert to JSON-serializable format
-        return {
-            "nodes": [{"id": n, "type": G.nodes[n].get("type", "function"), "root": G.nodes[n].get("root", False)} for n in G.nodes],
-            "edges": [{"source": u, "target": v} for u, v in G.edges]
-        }
-    
-    elif viz_type == VisualizationType.DEPENDENCY_GRAPH:
-        # Create module dependency graph
-        G = nx.DiGraph()
-        
-        # Group files by directory
-        modules = defaultdict(list)
-        for file in codebase.files:
-            module_path = str(Path(file.filepath).parent)
-            modules[module_path].append(file)
-        
-        # Add nodes for each module
-        for module, files in modules.items():
-            G.add_node(module, type="module", files=len(files))
-        
-        # Add edges based on imports
-        for file in codebase.files:
-            source_module = str(Path(file.filepath).parent)
-            for import_stmt in file.import_statements:
-                for imp in import_stmt.imports:
-                    if hasattr(imp, "imported_symbol") and hasattr(imp.imported_symbol, "filepath"):
-                        target_module = str(Path(imp.imported_symbol.filepath).parent)
-                        if source_module != target_module and G.has_node(target_module):
-                            G.add_edge(source_module, target_module)
-        
-        # Convert to JSON-serializable format
-        return {
-            "nodes": [{"id": n, "type": "module", "files": G.nodes[n].get("files", 0)} for n in G.nodes],
-            "edges": [{"source": u, "target": v} for u, v in G.edges]
-        }
-    
-    elif viz_type == VisualizationType.SYMBOL_TREE:
-        # Create symbol hierarchy tree
-        root = {"name": Path(codebase.repo_path).name, "type": "root", "children": []}
-        
-        # Add classes
-        classes_node = {"name": "Classes", "type": "category", "children": []}
-        for cls in codebase.classes:
-            class_node = {
-                "name": cls.name,
-                "type": "class",
-                "filepath": cls.filepath,
-                "children": []
-            }
-            
-            # Add methods
-            for method in cls.methods:
-                method_node = {
-                    "name": method.name,
-                    "type": "method",
-                    "parameters": len(method.parameters)
-                }
-                class_node["children"].append(method_node)
-            
-            classes_node["children"].append(class_node)
-        
-        # Add functions
-        functions_node = {"name": "Functions", "type": "category", "children": []}
-        for func in codebase.functions:
-            if not func.is_method:  # Skip methods as they're already covered in classes
-                func_node = {
-                    "name": func.name,
-                    "type": "function",
-                    "filepath": func.filepath,
-                    "parameters": len(func.parameters)
-                }
-                functions_node["children"].append(func_node)
-        
-        root["children"].append(classes_node)
-        root["children"].append(functions_node)
-        
-        return root
-    
-    elif viz_type == VisualizationType.INHERITANCE_HIERARCHY:
-        # Create class inheritance hierarchy
-        root = {"name": "Class Hierarchy", "type": "root", "children": []}
-        
-        # Find base classes (those without superclasses)
-        base_classes = [cls for cls in codebase.classes if not cls.superclasses]
-        
-        # Build inheritance tree
-        def add_subclasses(parent_node, parent_class):
-            # Find all classes that inherit from this class
-            subclasses = [cls for cls in codebase.classes if parent_class.name in cls.parent_class_names]
-            
-            for subcls in subclasses:
-                subcls_node = {
-                    "name": subcls.name,
-                    "type": "class",
-                    "filepath": subcls.filepath,
-                    "methods": len(subcls.methods),
-                    "children": []
-                }
-                parent_node["children"].append(subcls_node)
-                add_subclasses(subcls_node, subcls)
-        
-        # Add each base class and its descendants
-        for base_cls in base_classes:
-            base_node = {
-                "name": base_cls.name,
-                "type": "class",
-                "filepath": base_cls.filepath,
-                "methods": len(base_cls.methods),
-                "children": []
-            }
-            root["children"].append(base_node)
-            add_subclasses(base_node, base_cls)
-        
-        return root
-    
-    else:
-        return {"error": f"Visualization type {viz_type} not implemented"}
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Codebase Analysis API", "version": "1.0.0"}
 
-# API endpoints
 @app.get("/analyze/{repo_url:path}")
 async def analyze_repo(
     repo_url: str,
     language: LanguageType = LanguageType.AUTO,
+    include_visualizations: bool = False,
+    max_depth: int = Query(default=3, ge=1, le=10),
     background_tasks: BackgroundTasks = None
 ):
     """Analyze a GitHub repository"""
     # Check cache
-    cache_key = f"{repo_url}_{language}"
+    cache_key = f"{repo_url}:{language}:{max_depth}"
     if cache_key in analysis_cache:
-        return JSONResponse(content=analysis_cache[cache_key])
+        return analysis_cache[cache_key]
     
-    try:
-        # Run analysis with timeout
-        results = analyze_codebase(repo_url, language)
-        
-        # Cache results
-        analysis_cache[cache_key] = results
-        
-        return JSONResponse(content=results)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+    # Clone repository to temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        try:
+            # Clone repository
+            repo_name = repo_url.split("/")[-1]
+            clone_dir = os.path.join(temp_dir, repo_name)
+            
+            # Use subprocess to clone
+            import subprocess
+            result = subprocess.run(
+                ["git", "clone", f"https://github.com/{repo_url}", clone_dir, "--depth", "1"],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            
+            if result.returncode != 0:
+                raise HTTPException(status_code=400, detail=f"Failed to clone repository: {result.stderr}")
+            
+            # Analyze codebase
+            analysis_result = analyze_codebase(clone_dir, language, max_depth)
+            
+            # Remove large data if not requested
+            if not include_visualizations:
+                if "dependency_graph" in analysis_result:
+                    del analysis_result["dependency_graph"]
+                if "call_graph" in analysis_result:
+                    del analysis_result["call_graph"]
+            
+            # Cache result
+            analysis_cache[cache_key] = analysis_result
+            
+            return analysis_result
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error analyzing repository: {str(e)}")
 
 @app.post("/analyze/local")
 async def analyze_local_repo(
-    language: LanguageType = LanguageType.AUTO,
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = None
+    language: LanguageType = LanguageType.AUTO,
+    include_visualizations: bool = False,
+    max_depth: int = Query(default=3, ge=1, le=10)
 ):
-    """Analyze a local repository (uploaded as zip)"""
-    # Create temp directory
-    temp_dir = tempfile.mkdtemp()
-    try:
-        # Check file size
-        file.file.seek(0, 2)  # Go to end of file
-        file_size = file.file.tell()
-        if file_size > MAX_REPO_SIZE:
-            raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_REPO_SIZE/1024/1024}MB")
-        file.file.seek(0)  # Go back to start
-        
-        # Save zip file
-        zip_path = os.path.join(temp_dir, "repo.zip")
-        with open(zip_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-        
-        # Extract zip
-        repo_dir = os.path.join(temp_dir, "repo")
-        os.makedirs(repo_dir)
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(repo_dir)
-        
-        # Run analysis
-        codebase = Codebase(repo_dir, language=language)
-        results = analyze_codebase(codebase)
-        
-        return JSONResponse(content=results)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-    finally:
-        # Clean up temp directory in background
-        if background_tasks:
-            background_tasks.add_task(shutil.rmtree, temp_dir, ignore_errors=True)
+    """Analyze a local codebase (uploaded as a zip file)"""
+    # Create temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        try:
+            # Check file size
+            file_size = 0
+            chunk_size = 1024 * 1024  # 1MB
+            zip_path = os.path.join(temp_dir, "repo.zip")
+            
+            with open(zip_path, "wb") as f:
+                while chunk := await file.read(chunk_size):
+                    file_size += len(chunk)
+                    if file_size > MAX_REPO_SIZE:
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"File too large. Maximum size is {MAX_REPO_SIZE / (1024 * 1024)}MB"
+                        )
+                    f.write(chunk)
+            
+            # Extract zip file
+            extract_dir = os.path.join(temp_dir, "extracted")
+            os.makedirs(extract_dir, exist_ok=True)
+            
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(extract_dir)
+            
+            # Analyze codebase
+            analysis_result = analyze_codebase(extract_dir, language, max_depth)
+            
+            # Remove large data if not requested
+            if not include_visualizations:
+                if "dependency_graph" in analysis_result:
+                    del analysis_result["dependency_graph"]
+                if "call_graph" in analysis_result:
+                    del analysis_result["call_graph"]
+            
+            return analysis_result
+            
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="Invalid zip file")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error analyzing codebase: {str(e)}")
 
 @app.get("/visualize/{repo_url:path}/{visualization_type}")
 async def visualize_repo(
     repo_url: str,
     visualization_type: VisualizationType,
-    target: Optional[str] = Query(None, description="Target symbol for visualization (e.g., function name or Class.method)"),
-    language: LanguageType = LanguageType.AUTO
+    language: LanguageType = LanguageType.AUTO,
+    format: str = Query(default="json", regex="^(json|html|svg)$")
 ):
-    """Generate visualization for a repository"""
-    try:
-        # Load codebase
-        codebase = Codebase.from_repo(repo_url, language=language)
-        
-        # Generate visualization
-        viz_data = generate_visualization(codebase, visualization_type, target)
-        
-        return JSONResponse(content=viz_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Visualization failed: {str(e)}")
+    """Generate a visualization of the codebase"""
+    # Check cache
+    cache_key = f"{repo_url}:{language}:3"  # Use default depth
+    
+    if cache_key not in analysis_cache:
+        # Analyze repository first
+        await analyze_repo(repo_url, language, True, 3)
+    
+    analysis_result = analysis_cache[cache_key]
+    
+    if visualization_type == VisualizationType.DEPENDENCY_GRAPH:
+        graph_data = analysis_result.get("dependency_graph", {})
+    elif visualization_type == VisualizationType.CALL_GRAPH:
+        graph_data = analysis_result.get("call_graph", {})
+    else:
+        # For other visualization types, we need to generate them
+        raise HTTPException(status_code=501, detail=f"Visualization type {visualization_type} not implemented yet")
+    
+    if format == "json":
+        return graph_data
+    else:
+        # For other formats, we would generate the appropriate visualization
+        raise HTTPException(status_code=501, detail=f"Format {format} not implemented yet")
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "healthy", "version": "1.0.0"}
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host=HOST, port=PORT, reload=True)
