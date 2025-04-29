@@ -19,7 +19,6 @@ from enum import Enum
 from typing import Optional, Union
 from urllib.parse import quote
 
-from dateutil.parser import parse
 from pydantic import SecretStr
 
 import codegen.agents.client.openapi_client as openapi_client
@@ -42,8 +41,8 @@ class ApiClient:
 
     :param configuration: .Configuration object for this client
     :param header_name: a header to pass when making calls to the API.
-    :param header_value: a header value to pass when making calls to
-        the API.
+    :param header_value: a header value to pass when making calls
+        to the API.
     :param cookie: a cookie to include in the header when making calls
         to the API
     """
@@ -618,9 +617,7 @@ class ApiClient:
         :return: date.
         """
         try:
-            return parse(string).date()
-        except ImportError:
-            return string
+            return datetime.datetime.strptime(string, "%Y-%m-%d").date()
         except ValueError:
             raise rest.ApiException(status=0, reason=f"Failed to parse `{string}` as date object")
 
@@ -633,9 +630,7 @@ class ApiClient:
         :return: datetime.
         """
         try:
-            return parse(string)
-        except ImportError:
-            return string
+            return datetime.datetime.fromisoformat(string.replace('Z', '+00:00'))
         except ValueError:
             raise rest.ApiException(status=0, reason=(f"Failed to parse `{string}` as datetime object"))
 
