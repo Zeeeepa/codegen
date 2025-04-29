@@ -221,9 +221,10 @@ The Codegen SDK can be integrated with other static analysis tools to provide a 
 of your codebase. This allows you to:
 
 1. Perform full analysis when prompted
-2. Track changes in code quality over time
-3. Identify potential issues before they become problems
-4. Visualize complex relationships within your codebase
+1. Track changes in code quality over time
+1. Identify potential issues before they become problems
+1. Visualize complex relationships within your codebase
 
 By leveraging these analysis capabilities, you can gain valuable insights into your codebase and
 make informed decisions about refactoring, optimization, and architecture.
+
