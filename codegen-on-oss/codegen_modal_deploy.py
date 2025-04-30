@@ -9,7 +9,7 @@ from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.sql_output import ParseMetricsSQLOutput
 from codegen_on_oss.parser import CodegenParser
 
-app = modal.App("codegen-oss-parse")
+app = modal.App("codegen-oss-parse", include_source=True)
 
 
 codegen_repo_volume = modal.Volume.from_name(
@@ -25,7 +25,7 @@ aws_secrets = modal.Secret.from_name(
 
 @app.function(
     name="parse_repo",
-    concurrency_limit=10,
+    max_containers=10,
     cpu=4,
     memory=16384,
     timeout=3600 * 8,
@@ -60,8 +60,13 @@ def parse_repo(
     """
     logger.add(sys.stdout, format="{time: HH:mm:ss} {level} {message}", level="DEBUG")
 
+    # Get the function call ID and ensure it's a string
+    function_call_id = modal.current_function_call_id()
+    if function_call_id is None:
+        function_call_id = "unknown"  # Provide a default value if None
+
     output = ParseMetricsSQLOutput(
-        modal_function_call_id=modal.current_function_call_id()
+        modal_function_call_id=function_call_id
     )
     metrics_profiler = MetricsProfiler(output)
     parser = CodegenParser(Path(cachedir) / "repositories", metrics_profiler)

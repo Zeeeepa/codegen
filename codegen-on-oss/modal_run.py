@@ -11,7 +11,7 @@ from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource
 
-parse_app = modal.App("codegen-oss-parse")
+parse_app = modal.App("codegen-oss-parse", include_source=True)
 
 
 codegen_repo_volume = modal.Volume.from_name(

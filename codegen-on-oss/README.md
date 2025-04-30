@@ -112,8 +112,12 @@ Codegen runs this parser on modal using the CSV source file `input.csv` tracked 
 
 - **Compute Resources**: Allocates 4 CPUs and 16GB of memory.
 - **Secrets & Volumes**: Uses secrets (for bucket credentials) and mounts a volume for caching repositories.
-- **Image Setup**: Builds on a Debian slim image with Python 3.12, installs required packages (`uv` and `git` )
+- **Image Setup**: Builds on a Debian slim image with Python 3.13, installs required packages (`uv` and `git` )
 - **Environment Configuration**: Environment variables (e.g., GitHub settings) are injected at runtime.
+- **Modal Version**: Uses Modal 0.73.107+ with the latest API changes:
+  - Added `include_source=True` to all App declarations
+  - Renamed `concurrency_limit` to `max_containers` in function definitions
+  - Added proper handling for `modal.current_function_call_id()` which can return `None`
 
 The function `parse_repo_on_modal` performs the following steps:
 
