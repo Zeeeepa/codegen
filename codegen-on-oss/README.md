@@ -112,8 +112,9 @@ Codegen runs this parser on modal using the CSV source file `input.csv` tracked 
 
 - **Compute Resources**: Allocates 4 CPUs and 16GB of memory.
 - **Secrets & Volumes**: Uses secrets (for bucket credentials) and mounts a volume for caching repositories.
-- **Image Setup**: Builds on a Debian slim image with Python 3.12, installs required packages (`uv` and `git` )
+- **Image Setup**: Builds on a Debian slim image with Python 3.13, installs required packages (`uv` and `git`)
 - **Environment Configuration**: Environment variables (e.g., GitHub settings) are injected at runtime.
+- **Source Inclusion**: Uses `include_source=True` to automatically include the Python files of the source package.
 
 The function `parse_repo_on_modal` performs the following steps:
 
@@ -123,6 +124,14 @@ The function `parse_repo_on_modal` performs the following steps:
 1. **Repository Parsing**: Iterates over repository URLs and parses each using the `CodegenParser`.
 1. **Error Handling**: Logs any exceptions encountered during parsing.
 1. **Result Upload**: Uses the `BucketStore` class to upload the configuration, logs, and metrics to an S3 bucket.
+
+### Modal Version
+
+This project uses Modal version 0.73.107 or higher, which includes several important API changes:
+- `concurrency_limit` has been renamed to `max_containers`
+- `keep_warm` has been renamed to `min_containers`
+- `container_idle_timeout` has been renamed to `scaledown_window`
+- Added `include_source` parameter to control which Python files are included in the container
 
 ### Bucket Storage
 

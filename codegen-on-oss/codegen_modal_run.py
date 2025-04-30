@@ -2,7 +2,7 @@ import modal
 
 from codegen_on_oss.sources import GithubSettings, GithubSource
 
-app = modal.App("codegen-oss-parse")
+app = modal.App("codegen-oss-parse", include_source=True)
 
 
 @app.local_entrypoint()

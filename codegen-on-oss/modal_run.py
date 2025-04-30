@@ -60,6 +60,7 @@ except modal.exception.NotFoundError:
     .env({"PATH": "/app/.venv/bin:$PATH"})
     .add_local_python_source("codegen_on_oss")
     .add_local_dir("codegen_on_oss", remote_path="/app/codegen_on_oss"),
+    include_source=True,
 )
 def parse_repo_on_modal(
     source: str,

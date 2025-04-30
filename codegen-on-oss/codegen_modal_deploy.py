@@ -9,7 +9,7 @@ from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.sql_output import ParseMetricsSQLOutput
 from codegen_on_oss.parser import CodegenParser
 
-app = modal.App("codegen-oss-parse")
+app = modal.App("codegen-oss-parse", include_source=True)
 
 
 codegen_repo_volume = modal.Volume.from_name(
@@ -25,7 +25,7 @@ aws_secrets = modal.Secret.from_name(
 
 @app.function(
     name="parse_repo",
-    concurrency_limit=10,
+    max_containers=10,  # Renamed from concurrency_limit
     cpu=4,
     memory=16384,
     timeout=3600 * 8,
@@ -43,8 +43,7 @@ aws_secrets = modal.Secret.from_name(
     .add_local_file("pyproject.toml", remote_path="/app/pyproject.toml", copy=True)
     .run_commands("uv sync --frozen --no-install-project --extra sql")
     .add_local_python_source("codegen_on_oss", copy=True),
-    # .add_local_python_source("codegen_on_oss"),
-    # .add_local_dir("codegen_on_oss", remote_path="/app/codegen_on_oss"),
+    include_source=True,
 )
 def parse_repo(
     repo_url: str,
