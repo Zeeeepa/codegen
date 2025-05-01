@@ -16,14 +16,31 @@ from codegen_on_oss.bucket_store import BucketStore
 
 class NoBucketStoreError(ValueError):
     """Error raised when no bucket store is configured for remote storage."""
+
     pass
+
 
 class SnapshotNotFoundError(FileNotFoundError):
     """Error raised when a snapshot cannot be found locally."""
+
     pass
+
 
 class SnapshotLoadError(ValueError):
     """Error raised when a snapshot could not be loaded."""
+
+    pass
+
+
+class NoHarnessError(ValueError):
+    """Error raised when no harness is provided for snapshot creation."""
+
+    pass
+
+
+class NoSnapshotIdError(ValueError):
+    """Error raised when no snapshot ID is provided."""
+
     pass
 
 
@@ -66,7 +83,7 @@ class CodebaseContextSnapshot:
             The snapshot ID
         """
         if not self.harness:
-            raise ValueError("No harness provided for snapshot creation")
+            raise NoHarnessError()
 
         # Ensure we have analysis results
         if not self.harness.analysis_results:
@@ -107,25 +124,27 @@ class CodebaseContextSnapshot:
         """
         snapshot_id = snapshot_id or self.snapshot_id
         if not snapshot_id:
-            raise ValueError("No snapshot ID provided")
+            raise NoSnapshotIdError()
 
         # Try to load from bucket store first
         if self.bucket_store:
             try:
                 self.snapshot_data = self._load_remote(snapshot_id)
-                logger.info(f"Loaded snapshot {snapshot_id} from remote storage")
-                return self.snapshot_data
             except Exception as e:
                 logger.warning(f"Failed to load snapshot from remote: {e}")
+            else:
+                logger.info(f"Loaded snapshot {snapshot_id} from remote storage")
+                return self.snapshot_data
 
         # Fall back to local storage
         try:
             self.snapshot_data = self._load_local(snapshot_id)
-            logger.info(f"Loaded snapshot {snapshot_id} from local storage")
-            return self.snapshot_data
         except Exception as e:
             logger.error(f"Failed to load snapshot {snapshot_id}: {e}")
-            raise SnapshotLoadError(f"Could not load snapshot {snapshot_id}") from e
+            raise SnapshotLoadError() from e
+        else:
+            logger.info(f"Loaded snapshot {snapshot_id} from local storage")
+            return self.snapshot_data
 
     def save_to_remote(self) -> str:
         """
@@ -205,22 +224,39 @@ class CodebaseContextSnapshot:
         key = f"snapshots/snapshot_{snapshot_id}.json"
         return self.bucket_store.get_json(key)
 
+    def _save_remote(self) -> str:
+        """
+        Save the snapshot to remote storage.
+
+        Returns:
+            The key where the snapshot was saved.
+
+        Raises:
+            NoBucketStoreError: If no bucket store is configured.
+        """
+        return self.save_to_remote()
+
     @classmethod
-    def load_from_remote(cls, snapshot_id: str) -> "CodebaseContextSnapshot":
+    def load_from_remote(
+        cls, snapshot_id: str, bucket_store: BucketStore
+    ) -> "CodebaseContextSnapshot":
         """
         Load a snapshot from remote storage.
 
         Args:
             snapshot_id: The ID of the snapshot to load.
+            bucket_store: The bucket store to use for loading.
 
         Returns:
             A CodebaseContextSnapshot instance.
 
         Raises:
-            NoBucketStoreError: If no bucket store is configured.
-            ValueError: If the snapshot could not be loaded.
+            NoBucketStoreError: If no bucket store is provided.
+            SnapshotLoadError: If the snapshot could not be loaded.
         """
-        if not cls.bucket_store:
+        if not bucket_store:
             raise NoBucketStoreError()
 
-        return cls._load_remote(snapshot_id)
+        snapshot = cls(snapshot_id=snapshot_id, bucket_store=bucket_store)
+        snapshot.load_snapshot()
+        return snapshot

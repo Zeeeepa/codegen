@@ -99,14 +99,14 @@ async def analyze_repository(repo_info: RepositoryInfo):
 
         # Perform analysis
         results = harness.analyze_codebase()
-
+    except Exception as e:
+        logger.error(f"Repository analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
         return {
             "harness_key": harness_key,
             "results": results,
         }
-    except Exception as e:
-        logger.error(f"Repository analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/analyze/file_stats", response_model=dict[str, Any])
@@ -146,14 +146,14 @@ async def create_snapshot(
     try:
         snapshot = CodebaseContextSnapshot(harness=harness, bucket_store=bucket_store)
         snapshot_id = snapshot.create_snapshot(local_path=local_path)
-
+    except Exception as e:
+        logger.error(f"Snapshot creation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
         return {
             "snapshot_id": snapshot_id,
             "message": "Snapshot created successfully",
         }
-    except Exception as e:
-        logger.error(f"Snapshot creation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/snapshot/list", response_model=list[SnapshotInfo])
@@ -214,10 +214,13 @@ async def load_snapshot(snapshot_id: str):
             snapshot_id=snapshot_id, bucket_store=bucket_store
         )
         data = snapshot.load_snapshot()
-        return data
     except Exception as e:
         logger.error(f"Failed to load snapshot {snapshot_id}: {e}")
-        raise HTTPException(status_code=404, detail=f"Snapshot {snapshot_id} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Snapshot {snapshot_id} not found"
+        ) from e
+    else:
+        return data
 
 
 @app.post("/agent/run", response_model=dict[str, Any])
@@ -240,14 +243,14 @@ async def run_agent(
 
         # Run the agent
         result = harness.run_agent(prompt=request.prompt, model=request.model)
-
+    except Exception as e:
+        logger.error(f"Agent run failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
         return {
             "harness_key": harness_key,
             "result": result,
         }
-    except Exception as e:
-        logger.error(f"Agent run failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 def create_app() -> FastAPI:
