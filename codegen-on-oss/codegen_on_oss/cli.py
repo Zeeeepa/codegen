@@ -10,6 +10,9 @@ from codegen_on_oss.outputs.csv_output import CSVOutput
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource, all_sources
 
+# Add import for the context server
+from codegen_on_oss.context_server.server import start_server
+
 logger.remove(0)
 
 
@@ -122,6 +125,38 @@ def run(
     parser = CodegenParser(Path(cache_dir) / "repositories", metrics_profiler)
     for repo_url, commit_hash in repo_source:
         parser.parse(repo_url, commit_hash)
+
+
+# Add new command for starting the server
+@cli.command(name="serve")
+@click.option(
+    "--host",
+    type=str,
+    default="0.0.0.0",
+    help="Host to bind to",
+)
+@click.option(
+    "--port",
+    type=int,
+    default=8000,
+    help="Port to bind to",
+)
+@click.option(
+    "--debug",
+    is_flag=True,
+    help="Debug mode",
+)
+def serve(
+    host: str = "0.0.0.0",
+    port: int = 8000,
+    debug: bool = False,
+):
+    """
+    Start the CodeContextRetrievalServer.
+    """
+    logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
+    logger.info(f"Starting CodeContextRetrievalServer on {host}:{port}")
+    start_server(host=host, port=port)
 
 
 if __name__ == "__main__":
