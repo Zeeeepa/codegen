@@ -131,7 +131,7 @@ async def analyze_codebase(request: AnalysisRequest):
         return JSONResponse(content=results)
     except Exception as e:
         logger.error(f"Error analyzing codebase: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/snapshot/create")
@@ -180,7 +180,7 @@ async def create_snapshot(request: SnapshotRequest):
         }
     except Exception as e:
         logger.error(f"Error creating snapshot: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/snapshot/list")
@@ -221,7 +221,7 @@ async def list_snapshots(repo_name: Optional[str] = Query(None)):
             )
     except Exception as e:
         logger.error(f"Error listing snapshots: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/snapshot/load/{snapshot_id}")
@@ -243,14 +243,17 @@ async def load_snapshot(snapshot_id: str):
         )
         
         if not snapshot:
-            raise HTTPException(status_code=404, detail=f"Snapshot {snapshot_id} not found")
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Snapshot {snapshot_id} not found"
+            )
             
         return snapshot.snapshot_data
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error loading snapshot: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/agent/execute")
@@ -275,7 +278,10 @@ async def execute_agent(request: AgentExecutionRequest):
             )
             
             if not snapshot:
-                raise HTTPException(status_code=404, detail=f"Snapshot {request.snapshot_id} not found")
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Snapshot {request.snapshot_id} not found"
+                )
                 
             harness = snapshot.harness
             
@@ -323,10 +329,10 @@ async def execute_agent(request: AgentExecutionRequest):
         raise
     except Exception as e:
         logger.error(f"Error executing agent: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-def start_server(host: str = "0.0.0.0", port: int = 8000):
+def start_server(host: str = "127.0.0.1", port: int = 8000):
     """
     Start the FastAPI server.
     
@@ -339,4 +345,3 @@ def start_server(host: str = "0.0.0.0", port: int = 8000):
 
 if __name__ == "__main__":
     start_server()
-

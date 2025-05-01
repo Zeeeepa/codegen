@@ -20,7 +20,7 @@ def main():
     parser.add_argument(
         "--host",
         type=str,
-        default="0.0.0.0",
+        default="127.0.0.1",  # Changed from "0.0.0.0" to "127.0.0.1" to fix S104 warning
         help="Host to bind the server to",
     )
     parser.add_argument(
@@ -55,4 +55,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

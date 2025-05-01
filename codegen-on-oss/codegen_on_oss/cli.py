@@ -128,7 +128,7 @@ def run(
 @click.option(
     "--host",
     type=str,
-    default="0.0.0.0",
+    default="127.0.0.1",  // Changed from "0.0.0.0" to "127.0.0.1" to fix S104 warning
     help="Host to bind the server to",
 )
 @click.option(
@@ -143,13 +143,13 @@ def run(
     help="Debug mode",
 )
 def serve(
-    host: str = "0.0.0.0",
+    host: str = "127.0.0.1",  // Changed from "0.0.0.0" to "127.0.0.1" to fix S104 warning
     port: int = 8000,
     debug: bool = False,
 ):
     """
     Start the Code Context Retrieval Server.
-    
+
     This server provides endpoints for codebase analysis, context management,
     and agent execution.
     """
@@ -158,9 +158,9 @@ def serve(
         format="{time: HH:mm:ss} {level} {message}",
         level="DEBUG" if debug else "INFO",
     )
-    
+
     from codegen_on_oss.context_server import start_server
-    
+
     logger.info(f"Starting Code Context Retrieval Server on {host}:{port}")
     start_server(host=host, port=port)
 
