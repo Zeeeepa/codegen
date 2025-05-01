@@ -18,10 +18,13 @@ dependencies = [
   "boto3>=1.36.21",
   "click>=8.1.8",
   "codegen>=0.6.2",
+  "fastapi>=0.110.0",
   "loguru>=0.7.3",
   "modal>=0.73.51",
+  "pydantic>=2.7.1",
   "pydantic-settings>=2.7.1",
   "pygithub>=2.5.0",
+  "uvicorn>=0.29.0",
 ]
 
 [project.urls]

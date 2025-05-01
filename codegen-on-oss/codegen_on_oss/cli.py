@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 import click
+import uvicorn
 from loguru import logger
 
 from codegen_on_oss.cache import cachedir
@@ -122,6 +123,58 @@ def run(
     parser = CodegenParser(Path(cache_dir) / "repositories", metrics_profiler)
     for repo_url, commit_hash in repo_source:
         parser.parse(repo_url, commit_hash)
+
+
+@cli.command()
+@click.option(
+    "--host",
+    type=str,
+    default="127.0.0.1",
+    help="Host to bind the server to",
+)
+@click.option(
+    "--port",
+    type=int,
+    default=8000,
+    help="Port to bind the server to",
+)
+@click.option(
+    "--reload",
+    is_flag=True,
+    help="Enable auto-reload for development",
+)
+@click.option(
+    "--log-level",
+    type=click.Choice(["debug", "info", "warning", "error", "critical"]),
+    default="info",
+    help="Log level",
+)
+def serve(
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    reload: bool = False,
+    log_level: str = "info",
+):
+    """
+    Start the CodeContextRetrievalServer.
+    
+    This server provides a REST API for codebase analysis, context management,
+    and agent execution.
+    """
+    logger.add(sys.stdout, level=log_level.upper())
+    logger.info(f"Starting CodeContextRetrievalServer on {host}:{port}")
+    
+    # Import here to avoid circular imports
+    from codegen_on_oss.context_server import create_app
+    
+    # Start the server
+    uvicorn.run(
+        "codegen_on_oss.context_server:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=log_level,
+    )
 
 
 if __name__ == "__main__":

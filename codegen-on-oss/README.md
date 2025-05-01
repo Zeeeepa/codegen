@@ -1,15 +1,136 @@
-# Overview
+# Codegen on OSS
 
-The **Codegen on OSS** package provides a modular pipeline that:
+The **Codegen on OSS** package provides a comprehensive toolkit for codebase analysis, context management, and agent execution. It integrates the functionality from the original harness.py with enhanced capabilities for codebase analysis and context saving.
 
-- **Collects repository URLs** from different sources (e.g., CSV files or GitHub searches).
-- **Parses repositories** using the codegen tool.
-- **Profiles performance** and logs metrics for each parsing run.
-- **Logs errors** to help pinpoint parsing failures or performance bottlenecks.
+## New Features
+
+### 1. Comprehensive Codebase Analysis
+
+The package now includes powerful tools for analyzing codebases:
+
+- **CodebaseAnalysisHarness**: Integrates core functionality from harness.py to provide detailed codebase analysis
+- **Diff Generation**: Track file changes and generate diffs between commits
+- **File Statistics**: Get comprehensive metrics about files, classes, functions, and their relationships
+
+### 2. Context Saving and Retrieval
+
+Save and restore codebase state for later use:
+
+- **CodebaseContextSnapshot**: Save and restore codebase state and analysis results
+- **S3 Integration**: Store snapshots in S3-compatible storage via BucketStore
+- **Local Storage**: Save snapshots locally for easy access
+
+### 3. CodeContextRetrievalServer
+
+A FastAPI server that provides a REST API for accessing all functionality:
+
+- **Repository Analysis**: Analyze repositories and get detailed metrics
+- **Snapshot Management**: Create, list, and load snapshots
+- **Agent Execution**: Run AI agents with saved context for code analysis and modification
+
+## Getting Started
+
+### Installation
+
+```bash
+pip install codegen-on-oss
+```
+
+### Basic Usage
+
+#### Analyzing a Repository
+
+```python
+from codegen_on_oss.analysis import CodebaseAnalysisHarness
+from codegen_on_oss.snapshot import CodebaseContextSnapshot
+
+# Create a harness and analyze a codebase
+harness = CodebaseAnalysisHarness.from_repo("owner/repo")
+results = harness.analyze_codebase()
+
+# Save the state for later
+snapshot = CodebaseContextSnapshot(harness)
+snapshot_id = snapshot.create_snapshot()
+```
+
+#### Starting the Server
+
+```bash
+cgparse serve --host 0.0.0.0 --port 8000
+```
+
+## Package Structure
+
+The package is composed of several modules:
+
+- **analysis**: Codebase analysis tools
+  - `harness_integration.py`: Integration of harness.py functionality
+  - Other analysis modules for parsing and metrics
+
+- **snapshot**: Context saving and retrieval
+  - `context_snapshot.py`: Save and restore codebase state
+  - Other snapshot-related modules
+
+- **context_server**: FastAPI server for accessing functionality
+  - `server.py`: REST API for codebase analysis and context management
+
+- **sources**: Repository source definitions
+  - Defines the Repository source classes and settings
+
+- **cli**: Command-line interface
+  - Built with Click, provides commands for parsing, analysis, and serving
+
+## CLI Commands
+
+The CLI provides several commands:
+
+- `run-one`: Parse a single repository specified by URL
+- `run`: Iterate over repositories from a source and parse each one
+- `serve`: Start the CodeContextRetrievalServer
+
+### Example: Starting the Server
+
+```bash
+cgparse serve --host 0.0.0.0 --port 8000
+```
+
+### Example: Analyzing a Repository
+
+```bash
+cgparse run-one https://github.com/owner/repo
+```
+
+## API Endpoints
+
+When running the server, the following endpoints are available:
+
+- `/analyze/repository`: Analyze a repository and return results
+- `/analyze/file_stats`: Get file statistics for an analyzed repository
+- `/snapshot/create`: Create a snapshot of the current state
+- `/snapshot/list`: List all available snapshots
+- `/snapshot/load/{snapshot_id}`: Load a snapshot by ID
+- `/agent/run`: Run an agent on the codebase
+
+## Example Scripts
+
+Check the `scripts` directory for example usage:
+
+- `example_usage.py`: Demonstrates how to use the CodebaseAnalysisHarness and CodebaseContextSnapshot
+
+## Original Functionality
+
+The package still includes all the original functionality:
+
+- **Repository Sources**: Collect repository URLs from different sources
+- **Repository Parsing**: Parse repositories using the codegen tool
+- **Performance Profiling**: Log metrics for each parsing run
+- **Error Logging**: Log errors to help pinpoint parsing failures
+
+For more details on the original functionality, see the "Package Structure" and "Getting Started" sections below.
 
 ______________________________________________________________________
 
-## Package Structure
+## Original Package Structure
 
 The package is composed of several modules:
 
@@ -187,151 +308,3 @@ There is a Dockerfile that can be used to create an image capable of running the
 
 Explore a better CLI for providing options to the Modal run.
 
-______________________________________________________________________
-
-## Example Log Output
-
-```shell
-[codegen-on-oss*] codegen/codegen-on-oss/$ uv run cgparse run --source csv
- 21:32:36 INFO Cloning repository https://github.com/JohnSnowLabs/spark-nlp.git
- 21:36:57 INFO {
-    "profile_name": "https://github.com/JohnSnowLabs/spark-nlp.git",
-    "step": "codebase_init",
-    "delta_time": 7.186550649999845,
-    "cumulative_time": 7.186550649999845,
-    "cpu_time": 180.3553702,
-    "memory_usage": 567525376,
-    "memory_delta": 317095936,
-    "error": null
-}
- 21:36:58 INFO {
-    "profile_name": "https://github.com/JohnSnowLabs/spark-nlp.git",
-    "step": "post_init_validation",
-    "delta_time": 0.5465090990001045,
-    "cumulative_time": 7.733059748999949,
-    "cpu_time": 180.9174761,
-    "memory_usage": 569249792,
-    "memory_delta": 1724416,
-    "error": null
-}
- 21:36:58 ERROR Repository: https://github.com/JohnSnowLabs/spark-nlp.git
-Traceback (most recent call last):
-
-  File "/home/codegen/codegen/codegen-on-oss/.venv/bin/cgparse", line 10, in <module>
-    sys.exit(cli())
-    │   │    └ <Group cli>
-    │   └ <built-in function exit>
-    └ <module 'sys' (built-in)>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1161, in __call__
-    return self.main(*args, **kwargs)
-           │    │     │       └ {}
-           │    │     └ ()
-           │    └ <function BaseCommand.main at 0x7f4665c15120>
-           └ <Group cli>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1082, in main
-    rv = self.invoke(ctx)
-         │    │      └ <click.core.Context object at 0x7f4665f3c9e0>
-         │    └ <function MultiCommand.invoke at 0x7f4665c16340>
-         └ <Group cli>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1697, in invoke
-    return _process_result(sub_ctx.command.invoke(sub_ctx))
-           │               │       │       │      └ <click.core.Context object at 0x7f4665989b80>
-           │               │       │       └ <function Command.invoke at 0x7f4665c15d00>
-           │               │       └ <Command run>
-           │               └ <click.core.Context object at 0x7f4665989b80>
-           └ <function MultiCommand.invoke.<locals>._process_result at 0x7f466597fb00>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1443, in invoke
-    return ctx.invoke(self.callback, **ctx.params)
-           │   │      │    │           │   └ {'source': 'csv', 'output_path': 'metrics.csv', 'error_output_path': 'errors.log', 'cache_dir': PosixPath('/home/.cache...
-           │   │      │    │           └ <click.core.Context object at 0x7f4665989b80>
-           │   │      │    └ <function run at 0x7f466145eac0>
-           │   │      └ <Command run>
-           │   └ <function Context.invoke at 0x7f4665c14680>
-           └ <click.core.Context object at 0x7f4665989b80>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 788, in invoke
-    return __callback(*args, **kwargs)
-                       │       └ {'source': 'csv', 'output_path': 'metrics.csv', 'error_output_path': 'errors.log', 'cache_dir': PosixPath('/home/.cache...
-                       └ ()
-
-  File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/cli.py", line 121, in run
-    parser.parse(repo_url)
-    │      │     └ 'https://github.com/JohnSnowLabs/spark-nlp.git'
-    │      └ <function CodegenParser.parse at 0x7f4664b014e0>
-    └ <codegen_on_oss.parser.CodegenParser object at 0x7f46612def30>
-
-  File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/parser.py", line 52, in parse
-    with self.metrics_profiler.start_profiler(
-         │    │                └ <function MetricsProfiler.start_profiler at 0x7f466577d760>
-         │    └ <codegen_on_oss.metrics.MetricsProfiler object at 0x7f465e6c2e70>
-         └ <codegen_on_oss.parser.CodegenParser object at 0x7f46612def30>
-
-  File "/home/.local/share/uv/python/cpython-3.12.6-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 158, in __exit__
-    self.gen.throw(value)
-    │    │   │     └ ParseRunError(<PostInitValidationStatus.LOW_IMPORT_RESOLUTION_RATE: 'LOW_IMPORT_RESOLUTION_RATE'>)
-    │    │   └ <method 'throw' of 'generator' objects>
-    │    └ <generator object MetricsProfiler.start_profiler at 0x7f4660478740>
-    └ <contextlib._GeneratorContextManager object at 0x7f46657849e0>
-
-> File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/metrics.py", line 41, in start_profiler
-    yield profile
-          └ <codegen_on_oss.metrics.MetricsProfile object at 0x7f4665784a10>
-
-  File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/parser.py", line 64, in parse
-    raise ParseRunError(validation_status)
-          │             └ <PostInitValidationStatus.LOW_IMPORT_RESOLUTION_RATE: 'LOW_IMPORT_RESOLUTION_RATE'>
-          └ <class 'codegen_on_oss.parser.ParseRunError'>
-
-codegen_on_oss.parser.ParseRunError: LOW_IMPORT_RESOLUTION_RATE
- 21:36:58 INFO {
-    "profile_name": "https://github.com/JohnSnowLabs/spark-nlp.git",
-    "step": "TOTAL",
-    "delta_time": 7.740976418000173,
-    "cumulative_time": 7.740976418000173,
-    "cpu_time": 180.9221699,
-    "memory_usage": 569249792,
-    "memory_delta": 0,
-    "error": "LOW_IMPORT_RESOLUTION_RATE"
-}
- 21:36:58 INFO Cloning repository https://github.com/Lightning-AI/lightning.git
- 21:37:53 INFO {
-    "profile_name": "https://github.com/Lightning-AI/lightning.git",
-    "step": "codebase_init",
-    "delta_time": 24.256577352999557,
-    "cumulative_time": 24.256577352999557,
-    "cpu_time": 211.3604081,
-    "memory_usage": 1535971328,
-    "memory_delta": 966184960,
-    "error": null
-}
- 21:37:53 INFO {
-    "profile_name": "https://github.com/Lightning-AI/lightning.git",
-    "step": "post_init_validation",
-    "delta_time": 0.137609629000508,
-    "cumulative_time": 24.394186982000065,
-    "cpu_time": 211.5082702,
-    "memory_usage": 1536241664,
-    "memory_delta": 270336,
-    "error": null
-}
- 21:37:53 INFO {
-    "profile_name": "https://github.com/Lightning-AI/lightning.git",
-    "step": "TOTAL",
-    "delta_time": 24.394700584999555,
-    "cumulative_time": 24.394700584999555,
-    "cpu_time": 211.5088282,
-    "memory_usage": 1536241664,
-    "memory_delta": 0,
-    "error": null
-}
-```
-
-## Example Metrics Output
-
-| profile_name           | step                 | delta_time         | cumulative_time    | cpu_time    | memory_usage | memory_delta | error                      |
-| ---------------------- | -------------------- | ------------------ | ------------------ | ----------- | ------------ | ------------ | -------------------------- |
-| JohnSnowLabs/spark-nlp | codebase_init        | 7.186550649999845  | 7.186550649999845  | 180.3553702 | 567525376    | 317095936    |                            |
-| JohnSnowLabs/spark-nlp | post_init_validation | 0.5465090990001045 | 7.733059748999949  | 180.9174761 | 569249792    | 1724416      |                            |
-| JohnSnowLabs/spark-nlp | TOTAL                | 7.740976418000173  | 7.740976418000173  | 180.9221699 | 569249792    | 0            | LOW_IMPORT_RESOLUTION_RATE |
-| Lightning-AI/lightning | codebase_init        | 24.256577352999557 | 24.256577352999557 | 211.3604081 | 1535971328   | 966184960    |                            |
-| Lightning-AI/lightning | post_init_validation | 0.137609629000508  | 24.394186982000065 | 211.5082702 | 1536241664   | 270336       |                            |
-| Lightning-AI/lightning | TOTAL                | 24.394700584999555 | 24.394700584999555 | 211.5088282 | 1536241664   | 0            |                            |
