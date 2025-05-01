@@ -124,5 +124,46 @@ def run(
         parser.parse(repo_url, commit_hash)
 
 
+@cli.command()
+@click.option(
+    "--host",
+    type=str,
+    default="0.0.0.0",
+    help="Host to bind the server to",
+)
+@click.option(
+    "--port",
+    type=int,
+    default=8000,
+    help="Port to bind the server to",
+)
+@click.option(
+    "--debug",
+    is_flag=True,
+    help="Debug mode",
+)
+def serve(
+    host: str = "0.0.0.0",
+    port: int = 8000,
+    debug: bool = False,
+):
+    """
+    Start the Code Context Retrieval Server.
+    
+    This server provides endpoints for codebase analysis, context management,
+    and agent execution.
+    """
+    logger.add(
+        sys.stdout,
+        format="{time: HH:mm:ss} {level} {message}",
+        level="DEBUG" if debug else "INFO",
+    )
+    
+    from codegen_on_oss.context_server import start_server
+    
+    logger.info(f"Starting Code Context Retrieval Server on {host}:{port}")
+    start_server(host=host, port=port)
+
+
 if __name__ == "__main__":
     cli()

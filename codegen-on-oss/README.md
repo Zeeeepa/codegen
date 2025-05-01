@@ -6,6 +6,9 @@ The **Codegen on OSS** package provides a modular pipeline that:
 - **Parses repositories** using the codegen tool.
 - **Profiles performance** and logs metrics for each parsing run.
 - **Logs errors** to help pinpoint parsing failures or performance bottlenecks.
+- **Analyzes codebases** with comprehensive metrics and context tracking.
+- **Saves and restores codebase state** for later use.
+- **Provides a REST API** for accessing all functionality.
 
 ______________________________________________________________________
 
@@ -335,3 +338,121 @@ codegen_on_oss.parser.ParseRunError: LOW_IMPORT_RESOLUTION_RATE
 | Lightning-AI/lightning | codebase_init        | 24.256577352999557 | 24.256577352999557 | 211.3604081 | 1535971328   | 966184960    |                            |
 | Lightning-AI/lightning | post_init_validation | 0.137609629000508  | 24.394186982000065 | 211.5082702 | 1536241664   | 270336       |                            |
 | Lightning-AI/lightning | TOTAL                | 24.394700584999555 | 24.394700584999555 | 211.5088282 | 1536241664   | 0            |                            |
+
+## New Features
+
+### Codebase Analysis and Context Management
+
+The package now includes powerful features for comprehensive codebase analysis and context management:
+
+#### CodebaseAnalysisHarness
+
+The `CodebaseAnalysisHarness` class in the `analysis` module provides:
+
+- Comprehensive codebase analysis
+- File structure tracking
+- Diff generation and file tracking
+- Integration with the core functionality from `harness.py`
+
+```python
+from codegen_on_oss.analysis.harness_integration import CodebaseAnalysisHarness
+
+# Create a harness from a repository
+harness = CodebaseAnalysisHarness.from_repo("owner/repo")
+
+# Analyze the codebase
+results = harness.analyze_codebase()
+
+# Get a diff against a specific commit
+diff = harness.diff_versus_commit("abc123")
+
+# Extract modified files from a patch
+files = harness.files_in_patch(diff)
+```
+
+#### CodebaseContextSnapshot
+
+The `CodebaseContextSnapshot` class in the `snapshot` module allows:
+
+- Saving and restoring codebase state
+- Integration with S3-compatible storage via BucketStore
+- Preserving analysis results and context
+
+```python
+from codegen_on_oss.snapshot.context_snapshot import CodebaseContextSnapshot
+from codegen_on_oss.bucket_store import BucketStore
+
+# Create a bucket store for S3 integration
+bucket_store = BucketStore(
+    bucket_name="my-bucket",
+    endpoint_url="https://s3.amazonaws.com",
+)
+
+# Create a snapshot from a harness
+snapshot = CodebaseContextSnapshot(harness, bucket_store)
+snapshot_id = snapshot.create_snapshot()
+
+# Load a snapshot later
+loaded_snapshot = CodebaseContextSnapshot.load_snapshot(
+    snapshot_id,
+    bucket_store=bucket_store,
+)
+```
+
+### Code Context Retrieval Server
+
+The package now includes a FastAPI server that provides endpoints for analysis, context management, and agent execution:
+
+```bash
+# Start the server
+cgparse serve --host 0.0.0.0 --port 8000
+```
+
+The server provides the following endpoints:
+
+- `/analyze` - Analyze a codebase and return the results
+- `/snapshot/create` - Create a snapshot of a codebase
+- `/snapshot/list` - List available snapshots
+- `/snapshot/load/{snapshot_id}` - Load a snapshot by ID
+- `/agent/execute` - Execute an agent with the given context
+
+Example API usage:
+
+```python
+import requests
+
+# Analyze a codebase
+response = requests.post(
+    "http://localhost:8000/analyze",
+    json={
+        "repository": {
+            "repo_full_name": "owner/repo",
+            "language": "python",
+        },
+    },
+)
+results = response.json()
+
+# Create a snapshot
+response = requests.post(
+    "http://localhost:8000/snapshot/create",
+    json={
+        "repository": {
+            "repo_full_name": "owner/repo",
+            "language": "python",
+        },
+        "tags": ["production", "v1.0"],
+    },
+)
+snapshot_id = response.json()["snapshot_id"]
+
+# Execute an agent with context
+response = requests.post(
+    "http://localhost:8000/agent/execute",
+    json={
+        "snapshot_id": snapshot_id,
+        "prompt": "Fix the bug in the login component",
+    },
+)
+agent_results = response.json()
+```
