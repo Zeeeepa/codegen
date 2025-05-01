@@ -1,28 +1,27 @@
-from github import Github
-from codegen.extensions.github.types.events.pull_request import PullRequestUnlabeledEvent
+import logging
+import os
 from logging import getLogger
 
-import os
-
-from codegen import Codebase
-
-from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
+from codegen import CodeAgent, Codebase
 from codegen.configs.models.secrets import SecretsConfig
-from codegen import CodeAgent
-
+from codegen.extensions.github.types.events.pull_request import (
+    PullRequestLabeledEvent,
+    PullRequestUnlabeledEvent,
+)
 from codegen.extensions.langchain.tools import (
-    # Github
-    GithubViewPRTool,
     GithubCreatePRCommentTool,
     GithubCreatePRReviewCommentTool,
+    # Github
+    GithubViewPRTool,
 )
-
 from dotenv import load_dotenv
-import logging
+from github import Github
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = getLogger(__name__)
 
 
@@ -60,7 +59,11 @@ def remove_bot_comments(event: PullRequestUnlabeledEvent):
 def pr_review_agent(event: PullRequestLabeledEvent) -> None:
     # Pull a subset of SWE bench
     repo_str = f"{event.organization.login}/{event.repository.name}"
-    codebase = Codebase.from_repo(repo_str, language="python", secrets=SecretsConfig(github_token=os.environ["GITHUB_TOKEN"]))
+    codebase = Codebase.from_repo(
+        repo_str,
+        language="python",
+        secrets=SecretsConfig(github_token=os.environ["GITHUB_TOKEN"]),
+    )
     review_atention_message = "CodegenBot is starting to review the PR please wait..."
     comment = codebase._op.create_pr_comment(event.number, review_atention_message)
     # Define tools first

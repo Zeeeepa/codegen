@@ -1,6 +1,6 @@
 # Event Handler with codebase snapshotting
 
-This project is designed to using Modal snapshotting to provide parsed codebase instances with minimal latency, make it more manageable to write event based handlers. 
+This project is designed to using Modal snapshotting to provide parsed codebase instances with minimal latency, make it more manageable to write event based handlers.
 
 Follow the instructions below to set up and deploy the application.
 
@@ -9,7 +9,7 @@ Follow the instructions below to set up and deploy the application.
 Before you begin, ensure you have the following installed and configured:
 
 1. **uv**: A tool for managing virtual environments and syncing dependencies.
-2. **Modal**: Ensure you have Modal configured on your system.
+1. **Modal**: Ensure you have Modal configured on your system.
 
 ## Setup Instructions
 
@@ -23,7 +23,7 @@ Before you begin, ensure you have the following installed and configured:
    source ./venv/bin/activate
    ```
 
-2. **Sync Dependencies**
+1. **Sync Dependencies**
 
    Sync the project dependencies using `uv`:
 
@@ -31,7 +31,7 @@ Before you begin, ensure you have the following installed and configured:
    uv sync
    ```
 
-3. **Deploy to Modal**
+1. **Deploy to Modal**
 
    Deploy the application to Modal by running:
 
@@ -47,7 +47,6 @@ Before you begin, ensure you have the following installed and configured:
 - `pr_tasks.py`: Additional tasks related to pull requests.
 - `.env.template` and `.env`: Environment variable templates and configurations.
 - `pyproject.toml`: Project configuration and dependencies.
-
 
 ## Integration
 

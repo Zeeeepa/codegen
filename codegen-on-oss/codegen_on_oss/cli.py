@@ -157,16 +157,15 @@ def serve(
 ):
     """
     Start the CodeContextRetrievalServer.
-    
+
     This server provides a REST API for codebase analysis, context management,
     and agent execution.
     """
     logger.add(sys.stdout, level=log_level.upper())
     logger.info(f"Starting CodeContextRetrievalServer on {host}:{port}")
-    
+
     # Import here to avoid circular imports
-    from codegen_on_oss.context_server import create_app
-    
+
     # Start the server
     uvicorn.run(
         "codegen_on_oss.context_server:app",

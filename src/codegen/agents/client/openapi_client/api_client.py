@@ -630,7 +630,7 @@ class ApiClient:
         :return: datetime.
         """
         try:
-            return datetime.datetime.fromisoformat(string.replace('Z', '+00:00'))
+            return datetime.datetime.fromisoformat(string.replace("Z", "+00:00"))
         except ValueError:
             raise rest.ApiException(status=0, reason=(f"Failed to parse `{string}` as datetime object"))
 

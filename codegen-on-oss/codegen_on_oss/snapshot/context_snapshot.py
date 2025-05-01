@@ -6,12 +6,25 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from loguru import logger
 
 from codegen_on_oss.analysis.harness_integration import CodebaseAnalysisHarness
 from codegen_on_oss.bucket_store import BucketStore
+
+
+class NoBucketStoreError(ValueError):
+    """Error raised when no bucket store is configured for remote storage."""
+    pass
+
+class SnapshotNotFoundError(FileNotFoundError):
+    """Error raised when a snapshot cannot be found locally."""
+    pass
+
+class SnapshotLoadError(ValueError):
+    """Error raised when a snapshot could not be loaded."""
+    pass
 
 
 class CodebaseContextSnapshot:
@@ -22,9 +35,9 @@ class CodebaseContextSnapshot:
 
     def __init__(
         self,
-        harness: Optional[CodebaseAnalysisHarness] = None,
-        snapshot_id: Optional[str] = None,
-        bucket_store: Optional[BucketStore] = None,
+        harness: CodebaseAnalysisHarness | None = None,
+        snapshot_id: str | None = None,
+        bucket_store: BucketStore | None = None,
     ):
         """
         Initialize a CodebaseContextSnapshot.
@@ -37,12 +50,12 @@ class CodebaseContextSnapshot:
         self.harness = harness
         self.snapshot_id = snapshot_id or str(uuid.uuid4())
         self.bucket_store = bucket_store
-        self.snapshot_data: Dict[str, Any] = {}
-        
+        self.snapshot_data: dict[str, Any] = {}
+
         if snapshot_id and bucket_store:
             self.load_snapshot()
 
-    def create_snapshot(self, local_path: Optional[Union[str, Path]] = None) -> str:
+    def create_snapshot(self, local_path: str | Path | None = None) -> str:
         """
         Create a snapshot of the current codebase state and analysis results.
 
@@ -54,12 +67,12 @@ class CodebaseContextSnapshot:
         """
         if not self.harness:
             raise ValueError("No harness provided for snapshot creation")
-        
+
         # Ensure we have analysis results
         if not self.harness.analysis_results:
             logger.info("No analysis results found, running analysis...")
             self.harness.analyze_codebase()
-        
+
         # Create snapshot data
         self.snapshot_data = {
             "snapshot_id": self.snapshot_id,
@@ -70,19 +83,19 @@ class CodebaseContextSnapshot:
             },
             "analysis_results": self.harness.analysis_results,
         }
-        
+
         # Save locally if path provided
         if local_path:
             self._save_local(Path(local_path))
-        
+
         # Save to bucket store if available
         if self.bucket_store:
             self._save_remote()
-        
+
         logger.info(f"Created snapshot with ID: {self.snapshot_id}")
         return self.snapshot_id
 
-    def load_snapshot(self, snapshot_id: Optional[str] = None) -> Dict[str, Any]:
+    def load_snapshot(self, snapshot_id: str | None = None) -> dict[str, Any]:
         """
         Load a snapshot by ID.
 
@@ -95,7 +108,7 @@ class CodebaseContextSnapshot:
         snapshot_id = snapshot_id or self.snapshot_id
         if not snapshot_id:
             raise ValueError("No snapshot ID provided")
-        
+
         # Try to load from bucket store first
         if self.bucket_store:
             try:
@@ -104,7 +117,7 @@ class CodebaseContextSnapshot:
                 return self.snapshot_data
             except Exception as e:
                 logger.warning(f"Failed to load snapshot from remote: {e}")
-        
+
         # Fall back to local storage
         try:
             self.snapshot_data = self._load_local(snapshot_id)
@@ -112,7 +125,25 @@ class CodebaseContextSnapshot:
             return self.snapshot_data
         except Exception as e:
             logger.error(f"Failed to load snapshot {snapshot_id}: {e}")
-            raise ValueError(f"Could not load snapshot {snapshot_id}")
+            raise SnapshotLoadError(f"Could not load snapshot {snapshot_id}") from e
+
+    def save_to_remote(self) -> str:
+        """
+        Save the snapshot to remote storage.
+
+        Returns:
+            The snapshot ID.
+
+        Raises:
+            NoBucketStoreError: If no bucket store is configured.
+        """
+        if not self.bucket_store:
+            raise NoBucketStoreError()
+
+        key = f"snapshots/snapshot_{self.snapshot_id}.json"
+        self.bucket_store.put_json(key, self.snapshot_data)
+        logger.debug(f"Saved snapshot to remote storage with key {key}")
+        return key
 
     def _save_local(self, directory: Path) -> Path:
         """
@@ -126,14 +157,14 @@ class CodebaseContextSnapshot:
         """
         directory.mkdir(parents=True, exist_ok=True)
         snapshot_path = directory / f"snapshot_{self.snapshot_id}.json"
-        
+
         with open(snapshot_path, "w") as f:
             json.dump(self.snapshot_data, f, indent=2)
-        
+
         logger.debug(f"Saved snapshot to {snapshot_path}")
         return snapshot_path
 
-    def _load_local(self, snapshot_id: str) -> Dict[str, Any]:
+    def _load_local(self, snapshot_id: str) -> dict[str, Any]:
         """
         Load a snapshot from a local file.
 
@@ -142,32 +173,20 @@ class CodebaseContextSnapshot:
 
         Returns:
             The loaded snapshot data
+
+        Raises:
+            SnapshotNotFoundError: If the snapshot cannot be found locally
         """
         # Try common snapshot directories
         for directory in [Path("./snapshots"), Path("./data/snapshots")]:
             snapshot_path = directory / f"snapshot_{snapshot_id}.json"
             if snapshot_path.exists():
-                with open(snapshot_path, "r") as f:
+                with open(snapshot_path) as f:
                     return json.load(f)
-        
-        raise FileNotFoundError(f"Snapshot {snapshot_id} not found locally")
 
-    def _save_remote(self) -> str:
-        """
-        Save the snapshot to remote storage.
+        raise SnapshotNotFoundError(snapshot_id)
 
-        Returns:
-            The key of the saved snapshot
-        """
-        if not self.bucket_store:
-            raise ValueError("No bucket store configured for remote storage")
-        
-        key = f"snapshots/snapshot_{self.snapshot_id}.json"
-        self.bucket_store.put_json(key, self.snapshot_data)
-        logger.debug(f"Saved snapshot to remote storage with key {key}")
-        return key
-
-    def _load_remote(self, snapshot_id: str) -> Dict[str, Any]:
+    def _load_remote(self, snapshot_id: str) -> dict[str, Any]:
         """
         Load a snapshot from remote storage.
 
@@ -176,10 +195,32 @@ class CodebaseContextSnapshot:
 
         Returns:
             The loaded snapshot data
+
+        Raises:
+            NoBucketStoreError: If no bucket store is configured
         """
         if not self.bucket_store:
-            raise ValueError("No bucket store configured for remote storage")
-        
+            raise NoBucketStoreError()
+
         key = f"snapshots/snapshot_{snapshot_id}.json"
         return self.bucket_store.get_json(key)
 
+    @classmethod
+    def load_from_remote(cls, snapshot_id: str) -> "CodebaseContextSnapshot":
+        """
+        Load a snapshot from remote storage.
+
+        Args:
+            snapshot_id: The ID of the snapshot to load.
+
+        Returns:
+            A CodebaseContextSnapshot instance.
+
+        Raises:
+            NoBucketStoreError: If no bucket store is configured.
+            ValueError: If the snapshot could not be loaded.
+        """
+        if not cls.bucket_store:
+            raise NoBucketStoreError()
+
+        return cls._load_remote(snapshot_id)

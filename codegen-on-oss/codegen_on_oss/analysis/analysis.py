@@ -1,23 +1,26 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import Dict, List, Tuple, Any
+import contextlib
+import math
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+from datetime import datetime, timedelta
+from typing import Any
+
+import modal
+import requests
 from codegen import Codebase
+from codegen.sdk.core.expressions.binary_expression import BinaryExpression
+from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
 from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
 from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-import math
-import re
-import requests
-from datetime import datetime, timedelta
-import subprocess
-import os
-import tempfile
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import modal
+from pydantic import BaseModel
 
 image = (
     modal.Image.debian_slim()
@@ -40,7 +43,12 @@ fastapi_app.add_middleware(
 )
 
 
-def get_monthly_commits(repo_path: str) -> Dict[str, int]:
+class GitExecutableNotFoundError(ValueError):
+    """Error raised when the git executable is not found in PATH."""
+    pass
+
+
+def get_monthly_commits(repo_path: str) -> dict[str, int]:
     """
     Get the number of commits per month for the last 12 months.
 
@@ -62,18 +70,34 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
         original_dir = os.getcwd()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            subprocess.run(["git", "clone", repo_path, temp_dir], check=True)
+            # Use full path to git executable
+            git_executable = shutil.which("git")
+            if not git_executable:
+                raise GitExecutableNotFoundError()
+
+            # Use subprocess with full path to git
+            subprocess.run(
+                [git_executable, "clone", repo_path, temp_dir],
+                check=True,
+                capture_output=True,
+                text=True
+            )
             os.chdir(temp_dir)
 
             cmd = [
-                "git",
+                git_executable,
                 "log",
                 f"--since={since_date}",
                 f"--until={until_date}",
                 "--format=%aI",
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
             commit_dates = result.stdout.strip().split("\n")
 
             monthly_counts = {}
@@ -102,10 +126,8 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
         print(f"Error processing git commits: {e}")
         return {}
     finally:
-        try:
+        with contextlib.suppress(Exception):
             os.chdir(original_dir)
-        except:
-            pass
 
 
 def calculate_cyclomatic_complexity(function):
@@ -117,7 +139,7 @@ def calculate_cyclomatic_complexity(function):
             if hasattr(statement, "elif_statements"):
                 complexity += len(statement.elif_statements)
 
-        elif isinstance(statement, (ForLoopStatement, WhileStatement)):
+        elif isinstance(statement, ForLoopStatement | WhileStatement):
             complexity += 1
 
         elif isinstance(statement, TryCatchStatement):
@@ -255,10 +277,7 @@ def count_lines(source: str):
                 comments += 1
                 if line.strip().startswith('"""') or line.strip().startswith("'''"):
                     code_part = ""
-        elif in_multiline:
-            comments += 1
-            code_part = ""
-        elif line.strip().startswith("#"):
+        elif in_multiline or line.strip().startswith("#"):
             comments += 1
             code_part = ""
 
@@ -334,7 +353,7 @@ class RepoRequest(BaseModel):
 
 
 @fastapi_app.post("/analyze_repo")
-async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
+async def analyze_repo(request: RepoRequest) -> dict[str, Any]:
     """Analyze a repository and return comprehensive metrics."""
     repo_url = request.repo_url
     codebase = Codebase.from_repo(repo_url)

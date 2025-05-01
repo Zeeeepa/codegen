@@ -64,20 +64,25 @@ cgparse serve --host 0.0.0.0 --port 8000
 The package is composed of several modules:
 
 - **analysis**: Codebase analysis tools
+
   - `harness_integration.py`: Integration of harness.py functionality
   - Other analysis modules for parsing and metrics
 
 - **snapshot**: Context saving and retrieval
+
   - `context_snapshot.py`: Save and restore codebase state
   - Other snapshot-related modules
 
 - **context_server**: FastAPI server for accessing functionality
+
   - `server.py`: REST API for codebase analysis and context management
 
 - **sources**: Repository source definitions
+
   - Defines the Repository source classes and settings
 
 - **cli**: Command-line interface
+
   - Built with Click, provides commands for parsing, analysis, and serving
 
 ## CLI Commands
@@ -307,4 +312,3 @@ There is a Dockerfile that can be used to create an image capable of running the
 **Input & Configuration**
 
 Explore a better CLI for providing options to the Modal run.
-
