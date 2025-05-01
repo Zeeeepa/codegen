@@ -12,6 +12,8 @@ concurrency:
 jobs:
   mypy:
     runs-on: ubuntu-latest
+    # Skip this job entirely if the actor is codegen-sh[bot]
+    if: github.actor != 'codegen-sh[bot]'
     timeout-minutes: 20
 
     steps:

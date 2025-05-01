@@ -13,21 +13,18 @@ on:
 jobs:
   access-check:
     runs-on: ubuntu-latest
-    # Skip the permission check if the actor is the codegen-sh bot
-    if: github.triggering_actor != 'codegen-sh[bot]'
+    # Skip this job entirely if the actor is codegen-sh[bot]
+    if: github.actor != 'codegen-sh[bot]'
     steps:
       - uses: actions-cool/check-user-permission@v2
         with:
           require: write
           username: ${{ github.triggering_actor }}
           error-if-missing: true
-          # Allow codegen-sh[bot] to pass this check
-          allow-bot: true
-          bot-list: 'codegen-sh[bot]'
 
   unit-tests:
-    # Only need access-check if it's not the bot
-    needs: ${{ github.triggering_actor != 'codegen-sh[bot]' && 'access-check' || '' }}
+    # Run this job without depending on access-check if actor is codegen-sh[bot]
+    needs: ${{ github.actor != 'codegen-sh[bot]' && 'access-check' || '' }}
     runs-on: ubuntu-latest-8
     steps:
       - uses: actions/checkout@v4
@@ -54,8 +51,8 @@ jobs:
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
 
   codemod-tests:
-    # Only need access-check if it's not the bot
-    needs: ${{ github.triggering_actor != 'codegen-sh[bot]' && 'access-check' || '' }}
+    # Run this job without depending on access-check if actor is codegen-sh[bot]
+    needs: ${{ github.actor != 'codegen-sh[bot]' && 'access-check' || '' }}
     # TODO: re-enable when this check is a develop required check
     if: false
     runs-on: ubuntu-latest-32
@@ -97,8 +94,8 @@ jobs:
           GITHUB_WORKSPACE: $GITHUB_WORKSPACE
 
   parse-tests:
-    # Only need access-check if it's not the bot
-    needs: ${{ github.triggering_actor != 'codegen-sh[bot]' && 'access-check' || '' }}
+    # Run this job without depending on access-check if actor is codegen-sh[bot]
+    needs: ${{ github.actor != 'codegen-sh[bot]' && 'access-check' || '' }}
     if: contains(github.event.pull_request.labels.*.name, 'parse-tests') || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest-32
     steps:
@@ -169,8 +166,8 @@ jobs:
             }
 
   integration-tests:
-    # Only need access-check if it's not the bot
-    needs: ${{ github.triggering_actor != 'codegen-sh[bot]' && 'access-check' || '' }}
+    # Run this job without depending on access-check if actor is codegen-sh[bot]
+    needs: ${{ github.actor != 'codegen-sh[bot]' && 'access-check' || '' }}
     runs-on: ubuntu-latest-16
     steps:
       - uses: actions/checkout@v4
