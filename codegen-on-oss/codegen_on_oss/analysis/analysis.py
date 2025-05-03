@@ -51,43 +51,31 @@ from codegen_on_oss.analysis.codegen_sdk_codebase import (
     get_codegen_sdk_codebase
 )
 from codegen_on_oss.analysis.current_code_codebase import (
-    get_graphsitter_repo_path,
-    get_codegen_codebase_base_path,
     get_current_code_codebase,
-    import_all_codegen_sdk_modules,
-    DocumentedObjects,
-    get_documented_objects
+    get_current_code_file
 )
 from codegen_on_oss.analysis.document_functions import (
-    hop_through_imports,
-    get_extended_context,
-    run as document_functions_run
+    document_function,
+    document_class,
+    document_file
 )
-from codegen_on_oss.analysis.mdx_docs_generation import (
-    render_mdx_page_for_class,
-    render_mdx_page_title,
-    render_mdx_inheritence_section,
-    render_mdx_attributes_section,
-    render_mdx_methods_section,
-    render_mdx_for_attribute,
-    format_parameter_for_mdx,
-    format_parameters_for_mdx,
-    format_return_for_mdx,
-    render_mdx_for_method,
-    get_mdx_route_for_class,
-    format_type_string,
-    resolve_type_string,
-    format_builtin_type_string,
-    span_type_string_by_pipe,
-    parse_link
+from codegen_on_oss.analysis.module_dependencies import (
+    get_module_dependencies,
+    visualize_module_dependencies
 )
-from codegen_on_oss.analysis.module_dependencies import run as module_dependencies_run
-from codegen_on_oss.analysis.symbolattr import print_symbol_attribution
+from codegen_on_oss.analysis.symbolattr import (
+    get_symbol_attribution,
+    get_file_attribution
+)
 from codegen_on_oss.analysis.analysis_import import (
-    create_graph_from_codebase,
-    convert_all_calls_to_kwargs,
+    analyze_imports,
     find_import_cycles,
-    find_problematic_import_loops
+    visualize_import_graph
+)
+from codegen_on_oss.analysis.commit_analysis import (
+    CommitAnalyzer,
+    CommitAnalysisResult,
+    CommitIssue
 )
 
 # Create FastAPI app
@@ -303,7 +291,7 @@ class CodeAnalyzer:
         """
         Generate documentation for functions in the codebase.
         """
-        document_functions_run(self.codebase)
+        document_function(self.codebase)
     
     def analyze_imports(self) -> Dict[str, Any]:
         """
@@ -331,7 +319,7 @@ class CodeAnalyzer:
         """
         Visualize module dependencies in the codebase.
         """
-        module_dependencies_run(self.codebase)
+        visualize_module_dependencies(self.codebase)
     
     def generate_mdx_documentation(self, class_name: str) -> str:
         """
@@ -690,189 +678,165 @@ class CodeAnalyzer:
             
             # Group commits by month
             monthly_commits = {}
+            
             for commit in commits:
-                month_key = commit.committed_datetime.strftime("%Y-%m")
-                if month_key in monthly_commits:
-                    monthly_commits[month_key] += 1
-                else:
-                    monthly_commits[month_key] = 1
+                commit_date = commit.committed_datetime
+                month_key = commit_date.strftime("%Y-%m")
+                
+                if month_key not in monthly_commits:
+                    monthly_commits[month_key] = 0
                     
+                monthly_commits[month_key] += 1
+                
             return monthly_commits
         except Exception as e:
             return {"error": str(e)}
-    
-    def get_file_change_frequency(self, limit: int = 10) -> Dict[str, int]:
+            
+    def analyze_commit(self, commit_codebase: Codebase) -> CommitAnalysisResult:
         """
-        Get the most frequently changed files in the codebase.
+        Analyze a commit by comparing the current codebase with a commit codebase.
         
         Args:
-            limit: Maximum number of files to return
+            commit_codebase: The codebase after the commit
             
         Returns:
-            A dictionary mapping file paths to change counts
+            A CommitAnalysisResult object containing the analysis results
         """
-        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
-            return {}
+        # Create a CommitAnalyzer instance
+        analyzer = CommitAnalyzer(
+            original_codebase=self.codebase,
+            commit_codebase=commit_codebase
+        )
+        
+        # Analyze the commit
+        return analyzer.analyze_commit()
+    
+    @classmethod
+    def analyze_commit_from_paths(cls, original_path: str, commit_path: str) -> CommitAnalysisResult:
+        """
+        Analyze a commit by comparing two repository paths.
+        
+        Args:
+            original_path: Path to the original repository
+            commit_path: Path to the commit repository
             
-        try:
-            # Get commits from the last year
-            end_date = datetime.now(UTC)
-            start_date = end_date - timedelta(days=365)
+        Returns:
+            A CommitAnalysisResult object containing the analysis results
+        """
+        # Create a CommitAnalyzer instance from paths
+        analyzer = CommitAnalyzer.from_paths(original_path, commit_path)
+        
+        # Analyze the commit
+        return analyzer.analyze_commit()
+    
+    @classmethod
+    def analyze_commit_from_repo_and_commit(cls, repo_url: str, commit_hash: str) -> CommitAnalysisResult:
+        """
+        Analyze a commit by comparing a repository at two different commits.
+        
+        Args:
+            repo_url: URL of the repository
+            commit_hash: Hash of the commit to analyze
             
-            # Get all commits in the date range
-            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
+        Returns:
+            A CommitAnalysisResult object containing the analysis results
+        """
+        # Create a CommitAnalyzer instance from repo and commit
+        analyzer = CommitAnalyzer.from_repo_and_commit(repo_url, commit_hash)
+        
+        # Analyze the commit
+        return analyzer.analyze_commit()
+    
+    def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:
+        """
+        Get a diff of changes for a specific file between the current codebase and a commit codebase.
+        
+        Args:
+            commit_codebase: The codebase after the commit
+            file_path: Path to the file to get the diff for
             
-            # Count file changes
-            file_changes = {}
-            for commit in commits:
-                for file in commit.stats.files:
-                    if file in file_changes:
-                        file_changes[file] += 1
-                    else:
-                        file_changes[file] = 1
+        Returns:
+            A string containing the diff
+        """
+        # Create a CommitAnalyzer instance
+        analyzer = CommitAnalyzer(
+            original_codebase=self.codebase,
+            commit_codebase=commit_codebase
+        )
+        
+        # Get the diff summary
+        return analyzer.get_diff_summary(file_path)
+    
+    def get_commit_detailed_report(self, commit_codebase: Codebase) -> Dict[str, Any]:
+        """
+        Get a detailed report of the commit analysis.
+        
+        Args:
+            commit_codebase: The codebase after the commit
             
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
-        except Exception as e:
-            return {"error": str(e)}
-
-def get_monthly_commits(repo_path: str) -> Dict[str, int]:
-    """
-    Get the number of commits per month for the last 12 months.
-
-    Args:
-        repo_path: Path to the git repository
-
-    Returns:
-        Dictionary with month-year as key and number of commits as value
-    """
-    end_date = datetime.now(UTC)
-    start_date = end_date - timedelta(days=365)
-
-    date_format = "%Y-%m-%d"
-    since_date = start_date.strftime(date_format)
-    until_date = end_date.strftime(date_format)
-
-    # Validate repo_path format (should be owner/repo)
-    if not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo_path):
-        print(f"Invalid repository path format: {repo_path}")
-        return {}
-
-    repo_url = f"https://github.com/{repo_path}"
-
-    # Validate URL
-    try:
-        parsed_url = urlparse(repo_url)
-        if not all([parsed_url.scheme, parsed_url.netloc]):
-            print(f"Invalid URL: {repo_url}")
-            return {}
-    except Exception:
-        print(f"Invalid URL: {repo_url}")
-        return {}
-
-    try:
-        original_dir = os.getcwd()
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Using a safer approach with a list of arguments and shell=False
-            subprocess.run(
-                ["git", "clone", repo_url, temp_dir],
-                check=True,
-                capture_output=True,
-                shell=False,
-                text=True,
-            )
-            os.chdir(temp_dir)
-
-            # Using a safer approach with a list of arguments and shell=False
-            result = subprocess.run(
-                [
-                    "git",
-                    "log",
-                    f"--since={since_date}",
-                    f"--until={until_date}",
-                    "--format=%aI",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-                shell=False,
-            )
-            commit_dates = result.stdout.strip().split("\n")
-
-            monthly_counts = {}
-            current_date = start_date
-            while current_date <= end_date:
-                month_key = current_date.strftime("%Y-%m")
-                monthly_counts[month_key] = 0
-                current_date = (
-                    current_date.replace(day=1) + timedelta(days=32)
-                ).replace(day=1)
-
-            for date_str in commit_dates:
-                if date_str:  # Skip empty lines
-                    commit_date = datetime.fromisoformat(date_str.strip())
-                    month_key = commit_date.strftime("%Y-%m")
-                    if month_key in monthly_counts:
-                        monthly_counts[month_key] += 1
-
-            return dict(sorted(monthly_counts.items()))
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing git command: {e}")
-        return {}
-    except Exception as e:
-        print(f"Error processing git commits: {e}")
-        return {}
-    finally:
-        with contextlib.suppress(Exception):
-            os.chdir(original_dir)
+        Returns:
+            A dictionary containing detailed analysis information
+        """
+        # Create a CommitAnalyzer instance
+        analyzer = CommitAnalyzer(
+            original_codebase=self.codebase,
+            commit_codebase=commit_codebase
+        )
+        
+        # Get the detailed report
+        return analyzer.get_detailed_report()
 
 
-def calculate_cyclomatic_complexity(function):
+# Helper functions for complexity analysis
+
+def calculate_cyclomatic_complexity(func: Function) -> int:
     """
     Calculate the cyclomatic complexity of a function.
     
     Args:
-        function: The function to analyze
+        func: The function to analyze
         
     Returns:
-        The cyclomatic complexity score
+        The cyclomatic complexity value
     """
-    def analyze_statement(statement):
-        complexity = 0
-
-        if isinstance(statement, IfBlockStatement):
-            complexity += 1
-            if hasattr(statement, "elif_statements"):
-                complexity += len(statement.elif_statements)
-
-        elif isinstance(statement, ForLoopStatement | WhileStatement):
-            complexity += 1
-
-        elif isinstance(statement, TryCatchStatement):
-            complexity += len(getattr(statement, "except_blocks", []))
-
-        if hasattr(statement, "condition") and isinstance(statement.condition, str):
-            complexity += statement.condition.count(
-                " and "
-            ) + statement.condition.count(" or ")
-
-        if hasattr(statement, "nested_code_blocks"):
-            for block in statement.nested_code_blocks:
-                complexity += analyze_block(block)
-
-        return complexity
-
-    def analyze_block(block):
-        if not block or not hasattr(block, "statements"):
-            return 0
-        return sum(analyze_statement(stmt) for stmt in block.statements)
-
-    return (
-        1 + analyze_block(function.code_block) if hasattr(function, "code_block") else 1
-    )
+    # Start with 1 (base complexity)
+    complexity = 1
+    
+    # Count decision points
+    if hasattr(func, "code_block"):
+        # Count if statements
+        if_statements = func.code_block.find_all(IfBlockStatement)
+        complexity += len(if_statements)
+        
+        # Count for loops
+        for_loops = func.code_block.find_all(ForLoopStatement)
+        complexity += len(for_loops)
+        
+        # Count while loops
+        while_loops = func.code_block.find_all(WhileStatement)
+        complexity += len(while_loops)
+        
+        # Count try-catch blocks
+        try_catches = func.code_block.find_all(TryCatchStatement)
+        complexity += len(try_catches)
+        
+        # Count logical operators in conditions
+        binary_expressions = func.code_block.find_all(BinaryExpression)
+        for expr in binary_expressions:
+            if hasattr(expr, "operator") and expr.operator in ["&&", "||"]:
+                complexity += 1
+                
+        # Count comparison expressions
+        comparison_expressions = func.code_block.find_all(ComparisonExpression)
+        complexity += len(comparison_expressions)
+        
+        # Count unary expressions with logical not
+        unary_expressions = func.code_block.find_all(UnaryExpression)
+        for expr in unary_expressions:
+            if hasattr(expr, "operator") and expr.operator == "!":
+                complexity += 1
+    
+    return complexity
 
 
 def cc_rank(complexity):
@@ -1128,92 +1092,91 @@ def get_github_repo_description(repo_url):
         return ""
 
 
-class RepoRequest(BaseModel):
-    """Request model for repository analysis."""
+# Define API models
+class RepoAnalysisRequest(BaseModel):
     repo_url: str
 
 
+class CommitAnalysisRequest(BaseModel):
+    repo_url: str
+    commit_hash: str
+
+
+class LocalCommitAnalysisRequest(BaseModel):
+    original_path: str
+    commit_path: str
+
+
+# API endpoints
 @app.post("/analyze_repo")
-async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
+async def analyze_repo(request: RepoAnalysisRequest):
     """
-    Analyze a repository and return comprehensive metrics.
-    
-    Args:
-        request: The repository request containing the repo URL
-        
-    Returns:
-        A dictionary of analysis results
+    Analyze a repository.
     """
-    repo_url = request.repo_url
-    codebase = Codebase.from_repo(repo_url)
-    
-    # Create analyzer instance
-    analyzer = CodeAnalyzer(codebase)
-    
-    # Get complexity metrics
-    complexity_results = analyzer.analyze_complexity()
-    
-    # Get monthly commits
-    monthly_commits = get_monthly_commits(repo_url)
-    
-    # Get repository description
-    desc = get_github_repo_description(repo_url)
-    
-    # Analyze imports
-    import_analysis = analyzer.analyze_imports()
-    
-    # Combine all results
-    results = {
-        "repo_url": repo_url,
-        "line_metrics": complexity_results["line_metrics"],
-        "cyclomatic_complexity": complexity_results["cyclomatic_complexity"],
-        "description": desc,
-        "num_files": len(codebase.files),
-        "num_functions": len(codebase.functions),
-        "num_classes": len(codebase.classes),
-        "monthly_commits": monthly_commits,
-        "import_analysis": import_analysis
-    }
-    
-    # Add depth of inheritance
-    total_doi = sum(calculate_doi(cls) for cls in codebase.classes)
-    results["depth_of_inheritance"] = {
-        "average": (total_doi / len(codebase.classes) if codebase.classes else 0),
-    }
-    
-    # Add Halstead metrics
-    total_volume = 0
-    num_callables = 0
-    total_mi = 0
-    
-    for func in codebase.functions:
-        if not hasattr(func, "code_block"):
-            continue
-            
-        complexity = calculate_cyclomatic_complexity(func)
-        operators, operands = get_operators_and_operands(func)
-        volume, _, _, _, _ = calculate_halstead_volume(operators, operands)
-        loc = len(func.code_block.source.splitlines())
-        mi_score = calculate_maintainability_index(volume, complexity, loc)
+    try:
+        codebase = Codebase.from_repo(request.repo_url)
+        analyzer = CodeAnalyzer(codebase)
         
-        total_volume += volume
-        total_mi += mi_score
-        num_callables += 1
-    
-    results["halstead_metrics"] = {
-        "total_volume": int(total_volume),
-        "average_volume": (
-            int(total_volume / num_callables) if num_callables > 0 else 0
-        ),
-    }
-    
-    results["maintainability_index"] = {
-        "average": (
-            int(total_mi / num_callables) if num_callables > 0 else 0
-        ),
-    }
-    
-    return results
+        return {
+            "repo_url": request.repo_url,
+            "summary": analyzer.get_codebase_summary(),
+            "complexity": analyzer.analyze_complexity(),
+            "imports": analyzer.analyze_imports()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/analyze_commit")
+async def analyze_commit(request: CommitAnalysisRequest):
+    """
+    Analyze a commit in a repository.
+    """
+    try:
+        result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
+            repo_url=request.repo_url,
+            commit_hash=request.commit_hash
+        )
+        
+        return {
+            "repo_url": request.repo_url,
+            "commit_hash": request.commit_hash,
+            "is_properly_implemented": result.is_properly_implemented,
+            "summary": result.get_summary(),
+            "issues": [issue.to_dict() for issue in result.issues],
+            "metrics_diff": result.metrics_diff,
+            "files_added": result.files_added,
+            "files_modified": result.files_modified,
+            "files_removed": result.files_removed
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/analyze_local_commit")
+async def analyze_local_commit(request: LocalCommitAnalysisRequest):
+    """
+    Analyze a commit by comparing two local repository paths.
+    """
+    try:
+        result = CodeAnalyzer.analyze_commit_from_paths(
+            original_path=request.original_path,
+            commit_path=request.commit_path
+        )
+        
+        return {
+            "original_path": request.original_path,
+            "commit_path": request.commit_path,
+            "is_properly_implemented": result.is_properly_implemented,
+            "summary": result.get_summary(),
+            "issues": [issue.to_dict() for issue in result.issues],
+            "metrics_diff": result.metrics_diff,
+            "files_added": result.files_added,
+            "files_modified": result.files_modified,
+            "files_removed": result.files_removed
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":

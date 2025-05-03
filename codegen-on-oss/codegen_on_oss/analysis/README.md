@@ -12,12 +12,14 @@ The Analysis Module integrates various specialized analysis components into a co
 - Symbol attribution
 - Visualization of module dependencies
 - Comprehensive code quality metrics
+- Commit analysis and comparison
 
 ## Components
 
 The module consists of the following key components:
 
 - **CodeAnalyzer**: Central class that orchestrates all analysis functionality
+- **CommitAnalyzer**: Class for analyzing and comparing commits
 - **Metrics Integration**: Connection with the CodeMetrics class for comprehensive metrics
 - **Import Analysis**: Tools for analyzing import relationships and cycles
 - **Documentation Tools**: Functions for generating documentation for code
@@ -56,6 +58,42 @@ metrics = CodeMetrics(codebase)
 # Get code quality summary
 quality_summary = metrics.get_code_quality_summary()
 print(quality_summary)
+```
+
+### Commit Analysis
+
+The module provides functionality for analyzing and comparing commits:
+
+```python
+from codegen import Codebase
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
+
+# Method 1: Analyze a commit from a repository URL and commit hash
+result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
+    repo_url="https://github.com/owner/repo",
+    commit_hash="abc123"
+)
+print(result.get_summary())
+
+# Method 2: Analyze a commit by comparing two local repository paths
+analyzer = CommitAnalyzer.from_paths(
+    original_path="/path/to/original/repo",
+    commit_path="/path/to/commit/repo"
+)
+result = analyzer.analyze_commit()
+print(result.get_summary())
+
+# Method 3: Analyze a commit by comparing two codebases
+original_codebase = Codebase.from_directory("/path/to/original/repo")
+commit_codebase = Codebase.from_directory("/path/to/commit/repo")
+
+analyzer = CommitAnalyzer(
+    original_codebase=original_codebase,
+    commit_codebase=commit_codebase
+)
+result = analyzer.analyze_commit()
+print(result.get_summary())
 ```
 
 ### Web API
@@ -107,6 +145,14 @@ Then you can make POST requests to `/analyze_repo` with a JSON body:
 - Find central files
 - Identify dependency cycles
 
+### Commit Analysis
+
+- Compare two versions of a codebase
+- Identify added, modified, and removed files
+- Analyze code complexity changes
+- Detect potential issues in commits
+- Generate detailed reports on commit quality
+
 ## Integration with Metrics
 
 The Analysis Module is fully integrated with the CodeMetrics class, which provides:
@@ -116,7 +162,8 @@ The Analysis Module is fully integrated with the CodeMetrics class, which provid
 - Dependency analysis
 - Documentation generation
 
-## Example
+## Examples
 
 See `example.py` for a complete demonstration of the analysis module's capabilities.
 
+For commit analysis examples, see `commit_example.py`.
