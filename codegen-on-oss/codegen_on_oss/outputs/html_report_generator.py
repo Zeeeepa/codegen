@@ -7,7 +7,7 @@ This module provides functionality to generate HTML reports from code integrity 
 import json
 import os
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = "single") -> None:
@@ -40,7 +40,7 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
     
     Args:
         results: Analysis results
-        
+    
     Returns:
         HTML content as a string
     """
@@ -76,8 +76,8 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
     <body>
         <div class="container">
             <h1>Code Integrity Analysis Report</h1>
-            <p class="timestamp">Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            
+            <p class="timestamp">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+    
             <div class="summary-box">
                 <h2>Summary</h2>
                 <div class="summary-grid">
@@ -100,32 +100,32 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
                 </div>
                 <p class="execution-time">Analysis completed in {execution_time:.2f} seconds</p>
             </div>
-            
+    
             <div class="tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'errors-tab')">Errors</button>
                     <button class="tab-button" onclick="openTab(event, 'summary-tab')">Codebase Summary</button>
                 </div>
-                
+    
                 <div id="errors-tab" class="tab-content active">
                     <h2>Errors by Type</h2>
                     <div class="error-type-list">
                         {_generate_error_type_list(error_types)}
                     </div>
-                    
+    
                     <h2>All Errors</h2>
                     <div class="error-list">
                         {_generate_error_list(errors)}
                     </div>
                 </div>
-                
+    
                 <div id="summary-tab" class="tab-content">
                     <h2>Codebase Summary</h2>
                     <pre class="codebase-summary">{codebase_summary}</pre>
                 </div>
             </div>
         </div>
-        
+    
         <script>
             {_get_javascript()}
         </script>
@@ -142,7 +142,7 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
     
     Args:
         results: Comparison results
-        
+    
     Returns:
         HTML content as a string
     """
@@ -171,8 +171,8 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
     <body>
         <div class="container">
             <h1>Branch Comparison Report</h1>
-            <p class="timestamp">Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            
+            <p class="timestamp">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+    
             <div class="summary-box">
                 <h2>Comparison Summary</h2>
                 <div class="summary-grid">
@@ -191,7 +191,7 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
                 </div>
                 <p class="execution-time">Comparison completed in {execution_time:.2f} seconds</p>
             </div>
-            
+    
             <div class="tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'new-errors-tab')">New Errors ({len(new_errors)})</button>
@@ -199,33 +199,33 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
                     <button class="tab-button" onclick="openTab(event, 'main-summary-tab')">Main Branch Summary</button>
                     <button class="tab-button" onclick="openTab(event, 'feature-summary-tab')">Feature Branch Summary</button>
                 </div>
-                
+    
                 <div id="new-errors-tab" class="tab-content active">
                     <h2>New Errors in Feature Branch</h2>
                     <div class="error-list">
                         {_generate_error_list(new_errors)}
                     </div>
                 </div>
-                
+    
                 <div id="fixed-errors-tab" class="tab-content">
                     <h2>Errors Fixed in Feature Branch</h2>
                     <div class="error-list">
                         {_generate_error_list(fixed_errors)}
                     </div>
                 </div>
-                
+    
                 <div id="main-summary-tab" class="tab-content">
                     <h2>Main Branch Summary</h2>
                     <pre class="codebase-summary">{main_summary}</pre>
                 </div>
-                
+    
                 <div id="feature-summary-tab" class="tab-content">
                     <h2>Feature Branch Summary</h2>
                     <pre class="codebase-summary">{branch_summary}</pre>
                 </div>
             </div>
         </div>
-        
+    
         <script>
             {_get_javascript()}
         </script>
@@ -242,7 +242,7 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
     
     Args:
         results: PR analysis results
-        
+    
     Returns:
         HTML content as a string
     """
@@ -274,8 +274,8 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
     <body>
         <div class="container">
             <h1>Pull Request Analysis Report</h1>
-            <p class="timestamp">Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            
+            <p class="timestamp">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+    
             <div class="summary-box">
                 <h2>PR Summary</h2>
                 <div class="summary-grid">
@@ -302,7 +302,7 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
                 </div>
                 <p class="execution-time">Analysis completed in {execution_time:.2f} seconds</p>
             </div>
-            
+    
             <div class="tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'new-function-errors-tab')">New Function Errors ({len(new_function_errors)})</button>
@@ -311,63 +311,63 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
                     <button class="tab-button" onclick="openTab(event, 'modified-class-errors-tab')">Modified Class Errors ({len(modified_class_errors)})</button>
                     <button class="tab-button" onclick="openTab(event, 'comparison-tab')">Branch Comparison</button>
                 </div>
-                
+    
                 <div id="new-function-errors-tab" class="tab-content active">
                     <h2>Errors in New Functions</h2>
                     <div class="error-list">
                         {_generate_error_list(new_function_errors)}
                     </div>
                 </div>
-                
+    
                 <div id="new-class-errors-tab" class="tab-content">
                     <h2>Errors in New Classes</h2>
                     <div class="error-list">
                         {_generate_error_list(new_class_errors)}
                     </div>
                 </div>
-                
+    
                 <div id="modified-function-errors-tab" class="tab-content">
                     <h2>Errors in Modified Functions</h2>
                     <div class="error-list">
                         {_generate_error_list(modified_function_errors)}
                     </div>
                 </div>
-                
+    
                 <div id="modified-class-errors-tab" class="tab-content">
                     <h2>Errors in Modified Classes</h2>
                     <div class="error-list">
                         {_generate_error_list(modified_class_errors)}
                     </div>
                 </div>
-                
+    
                 <div id="comparison-tab" class="tab-content">
                     <h2>Branch Comparison</h2>
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <span class="summary-value">{comparison.get('main_error_count', 0)}</span>
+                            <span class="summary-value">{comparison.get("main_error_count", 0)}</span>
                             <span class="summary-label">Main Branch Errors</span>
                         </div>
-                        <div class="summary-item {_get_error_class(comparison.get('branch_error_count', 0))}">
-                            <span class="summary-value">{comparison.get('branch_error_count', 0)}</span>
+                        <div class="summary-item {_get_error_class(comparison.get("branch_error_count", 0))}">
+                            <span class="summary-value">{comparison.get("branch_error_count", 0)}</span>
                             <span class="summary-label">PR Branch Errors</span>
                         </div>
-                        <div class="summary-item {_get_diff_class(comparison.get('error_diff', 0))}">
-                            <span class="summary-value">{comparison.get('error_diff', 0):+d}</span>
+                        <div class="summary-item {_get_diff_class(comparison.get("error_diff", 0))}">
+                            <span class="summary-value">{comparison.get("error_diff", 0):+d}</span>
                             <span class="summary-label">Error Difference</span>
                         </div>
                     </div>
                     <h3>New Errors in PR Branch</h3>
                     <div class="error-list">
-                        {_generate_error_list(comparison.get('new_errors', []))}
+                        {_generate_error_list(comparison.get("new_errors", []))}
                     </div>
                     <h3>Errors Fixed in PR Branch</h3>
                     <div class="error-list">
-                        {_generate_error_list(comparison.get('fixed_errors', []))}
+                        {_generate_error_list(comparison.get("fixed_errors", []))}
                     </div>
                 </div>
             </div>
         </div>
-        
+    
         <script>
             {_get_javascript()}
         </script>
@@ -384,7 +384,7 @@ def _generate_error_list(errors: List[Dict[str, Any]]) -> str:
     
     Args:
         errors: List of error dictionaries
-        
+    
     Returns:
         HTML content as a string
     """
@@ -419,7 +419,7 @@ def _generate_error_type_list(error_types: Dict[str, List[Dict[str, Any]]]) -> s
     
     Args:
         error_types: Dictionary mapping error types to lists of errors
-        
+    
     Returns:
         HTML content as a string
     """
@@ -447,7 +447,7 @@ def _get_severity_class(errors: List[Dict[str, Any]]) -> str:
     
     Args:
         errors: List of error dictionaries
-        
+    
     Returns:
         CSS class name for the severity
     """
@@ -465,7 +465,7 @@ def _get_error_class(error_count: int) -> str:
     
     Args:
         error_count: Number of errors
-        
+    
     Returns:
         CSS class name
     """
@@ -483,7 +483,7 @@ def _get_diff_class(diff: int) -> str:
     
     Args:
         diff: Error difference
-        
+    
     Returns:
         CSS class name
     """
@@ -516,13 +516,13 @@ def _get_css_styles() -> str:
             --border-radius: 4px;
             --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.5;
@@ -530,7 +530,7 @@ def _get_css_styles() -> str:
             background-color: #f5f5f5;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -539,54 +539,54 @@ def _get_css_styles() -> str:
             box-shadow: var(--box-shadow);
             padding: 20px;
         }
-        
+
         h1, h2, h3 {
             margin-bottom: 15px;
             color: var(--primary-color);
         }
-        
+
         h1 {
             font-size: 24px;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
         }
-        
+
         h2 {
             font-size: 20px;
             margin-top: 20px;
         }
-        
+
         h3 {
             font-size: 18px;
             margin-top: 15px;
         }
-        
+
         .timestamp {
             color: var(--secondary-color);
             font-size: 14px;
             margin-bottom: 20px;
         }
-        
+
         .execution-time {
             color: var(--secondary-color);
             font-size: 14px;
             margin-top: 10px;
             text-align: right;
         }
-        
+
         .summary-box {
             background-color: var(--light-color);
             border-radius: var(--border-radius);
             padding: 15px;
             margin-bottom: 20px;
         }
-        
+
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
         }
-        
+
         .summary-item {
             background-color: white;
             border-radius: var(--border-radius);
@@ -594,31 +594,31 @@ def _get_css_styles() -> str:
             text-align: center;
             box-shadow: var(--box-shadow);
         }
-        
+
         .summary-value {
             display: block;
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .summary-label {
             display: block;
             font-size: 14px;
             color: var(--secondary-color);
         }
-        
+
         .tabs {
             margin-top: 20px;
         }
-        
+
         .tab-buttons {
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
             margin-bottom: 15px;
         }
-        
+
         .tab-button {
             background-color: var(--light-color);
             border: 1px solid var(--border-color);
@@ -628,74 +628,74 @@ def _get_css_styles() -> str:
             font-size: 14px;
             transition: background-color 0.2s;
         }
-        
+
         .tab-button:hover {
             background-color: #e9ecef;
         }
-        
+
         .tab-button.active {
             background-color: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
         }
-        
+
         .tab-content {
             display: none;
             padding: 15px;
             background-color: var(--light-color);
             border-radius: var(--border-radius);
         }
-        
+
         .tab-content.active {
             display: block;
         }
-        
+
         .error-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
             font-size: 14px;
         }
-        
+
         .error-table th, .error-table td {
             padding: 8px 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         .error-table th {
             background-color: #f8f9fa;
             font-weight: bold;
         }
-        
+
         .error-table tr:hover {
             background-color: #f8f9fa;
         }
-        
+
         .error-type-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
-        
+
         .error-type-item {
             background-color: white;
             border-radius: var(--border-radius);
             padding: 15px;
             box-shadow: var(--box-shadow);
         }
-        
+
         .error-type-item h3 {
             margin-top: 0;
             font-size: 16px;
         }
-        
+
         .error-count {
             font-size: 14px;
             color: var(--secondary-color);
         }
-        
+
         .codebase-summary {
             background-color: white;
             padding: 15px;
@@ -705,62 +705,62 @@ def _get_css_styles() -> str:
             font-size: 14px;
             white-space: pre-wrap;
         }
-        
+
         .no-errors {
             color: var(--success-color);
             font-style: italic;
         }
-        
+
         .error {
             color: var(--error-color);
         }
-        
+
         .warning {
             color: var(--warning-color);
         }
-        
+
         .info {
             color: var(--info-color);
         }
-        
+
         .success {
             color: var(--success-color);
         }
-        
+
         .error-row {
             background-color: rgba(220, 53, 69, 0.1);
         }
-        
+
         .warning-row {
             background-color: rgba(255, 193, 7, 0.1);
         }
-        
+
         .info-row {
             background-color: rgba(23, 162, 184, 0.1);
         }
-        
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
             }
-            
+
             .summary-grid {
                 grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             }
-            
+
             .error-type-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
-            
+
             .tab-button {
                 padding: 6px 10px;
                 font-size: 12px;
             }
-            
+
             .error-table {
                 font-size: 12px;
             }
-            
+
             .error-table th, .error-table td {
                 padding: 6px 8px;
             }
@@ -782,16 +782,15 @@ def _get_javascript() -> str:
             for (var i = 0; i < tabContents.length; i++) {
                 tabContents[i].classList.remove("active");
             }
-            
+    
             // Remove active class from all tab buttons
             var tabButtons = document.getElementsByClassName("tab-button");
             for (var i = 0; i < tabButtons.length; i++) {
                 tabButtons[i].classList.remove("active");
             }
-            
+    
             // Show the selected tab content and mark the button as active
             document.getElementById(tabId).classList.add("active");
             evt.currentTarget.classList.add("active");
         }
     """
-
