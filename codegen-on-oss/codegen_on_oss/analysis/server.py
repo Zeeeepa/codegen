@@ -27,13 +27,10 @@ from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field, validator, root_validator
 
 from codegen import Codebase
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer, CommitAnalysisResult, CommitIssue
-from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
+from codegen_on_oss.analysis.code_analyzer import CodeAnalyzer
 from codegen_on_oss.analysis.project_manager import ProjectManager
 from codegen_on_oss.analysis.webhook_handler import WebhookHandler
-from codegen_on_oss.analysis.feature_analyzer import FeatureAnalyzer, FunctionAnalysisResult, FeatureAnalysisResult
+from codegen_on_oss.analysis.feature_analyzer import FeatureAnalyzer
 
 # Configure logging
 logging.basicConfig(
