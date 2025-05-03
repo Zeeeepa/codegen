@@ -14,7 +14,7 @@ import time
 from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
 
-from codegen_on_oss.analysis.server import run_server
+from codegen_on_oss.analysis.server import run_server as start_server
 
 def print_json(data: Dict[str, Any]) -> None:
     """Print JSON data in a formatted way."""
@@ -396,7 +396,8 @@ def run_server(host: str = "0.0.0.0", port: int = 8000) -> None:
         port: The port to run the server on.
     """
     print(f"Starting analysis server on {host}:{port}")
-    run_server(host=host, port=port)
+    from codegen_on_oss.analysis.server import run_server as start_server
+    start_server(host=host, port=port)
 
 def main():
     """Main function to run the example."""
