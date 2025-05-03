@@ -134,7 +134,7 @@ class AnalysisService:
             }
         
         except Exception as e:
-            logger.exception(f"Error analyzing codebase: {str(e)}")
+            logger.exception(f"Error analyzing codebase: {e!s}")
             
             # Update job status
             job.status = "failed"
@@ -148,9 +148,8 @@ class AnalysisService:
                 "error": str(e)
             }
     
-    async def analyze_code_quality(self, snapshot_id: uuid.UUID) -> Dict[str, Any]:
-        """
-        Analyze code quality for a snapshot.
+    async def analyze_code_quality(self, snapshot_id: uuid.UUID) -> dict[str, Any]:
+        """Analyze code quality for a snapshot.
         
         Args:
             snapshot_id: ID of the snapshot to analyze
@@ -163,7 +162,8 @@ class AnalysisService:
         # Get snapshot
         snapshot = await self.db_session.get(CodebaseSnapshot, snapshot_id)
         if not snapshot:
-            raise ValueError(f"Snapshot not found: {snapshot_id}")
+            msg = f"Snapshot not found: {snapshot_id}"
+            raise ValueError(msg)
         
         # Get file manifests
         files = await self.snapshot_service.get_snapshot_files(snapshot_id, limit=100000)
@@ -225,7 +225,7 @@ class AnalysisService:
             blank_lines=blank_lines,
             complexity=complexity,
             maintainability_index=maintainability_index,
-            language_breakdown=language_breakdown
+            language_breakdown=language_breakdown,
         )
         
         self.db_session.add(metrics)
@@ -238,12 +238,11 @@ class AnalysisService:
             "blank_lines": blank_lines,
             "complexity": complexity,
             "maintainability_index": maintainability_index,
-            "language_breakdown": language_breakdown
+            "language_breakdown": language_breakdown,
         }
     
-    async def analyze_dependencies(self, snapshot_id: uuid.UUID) -> Dict[str, Any]:
-        """
-        Analyze dependencies for a snapshot.
+    async def analyze_dependencies(self, snapshot_id: uuid.UUID) -> dict[str, Any]:
+        """Analyze dependencies for a snapshot.
         
         Args:
             snapshot_id: ID of the snapshot to analyze
@@ -256,7 +255,8 @@ class AnalysisService:
         # Get snapshot
         snapshot = await self.db_session.get(CodebaseSnapshot, snapshot_id)
         if not snapshot:
-            raise ValueError(f"Snapshot not found: {snapshot_id}")
+            msg = f"Snapshot not found: {snapshot_id}"
+            raise ValueError(msg)
         
         # Look for dependency files
         dependency_files = {
@@ -306,37 +306,21 @@ class AnalysisService:
                         parts = line.split("==")
                         name = parts[0].strip()
                         version = parts[1].strip() if len(parts) > 1 else None
-                        direct_dependencies.append({
-                            "name": name,
-                            "version": version,
-                            "language": "python",
-                            "source": file_path
-                        })
+                        direct_dependencies.append({"name": name, "version": version, "language": "python", "source": file_path})
             
             elif file_path.endswith("package.json"):
                 import json
+                
                 try:
                     data = json.loads(content)
                     deps = data.get("dependencies", {})
                     dev_deps = data.get("devDependencies", {})
                     
                     for name, version in deps.items():
-                        direct_dependencies.append({
-                            "name": name,
-                            "version": version,
-                            "language": "javascript",
-                            "source": file_path,
-                            "dev": False
-                        })
+                        direct_dependencies.append({"name": name, "version": version, "language": "javascript", "source": file_path, "dev": False})
                     
                     for name, version in dev_deps.items():
-                        direct_dependencies.append({
-                            "name": name,
-                            "version": version,
-                            "language": "javascript",
-                            "source": file_path,
-                            "dev": True
-                        })
+                        direct_dependencies.append({"name": name, "version": version, "language": "javascript", "source": file_path, "dev": True})
                 except json.JSONDecodeError:
                     pass
         
@@ -347,21 +331,16 @@ class AnalysisService:
             direct_dependencies=direct_dependencies,
             transitive_dependencies=[],
             outdated_dependencies=[],
-            vulnerable_dependencies=[]
+            vulnerable_dependencies=[],
         )
         
         self.db_session.add(analysis)
         await self.db_session.commit()
         
-        return {
-            "dependencies_count": len(direct_dependencies),
-            "direct_dependencies": direct_dependencies,
-            "dependency_files": [file_path for _, file_path in found_dependency_files]
-        }
+        return {"dependencies_count": len(direct_dependencies), "direct_dependencies": direct_dependencies, "dependency_files": [file_path for _, file_path in found_dependency_files]}
     
-    async def analyze_security(self, snapshot_id: uuid.UUID) -> Dict[str, Any]:
-        """
-        Analyze security for a snapshot.
+    async def analyze_security(self, snapshot_id: uuid.UUID) -> dict[str, Any]:
+        """Analyze security for a snapshot.
         
         Args:
             snapshot_id: ID of the snapshot to analyze
@@ -374,7 +353,8 @@ class AnalysisService:
         # Get snapshot
         snapshot = await self.db_session.get(CodebaseSnapshot, snapshot_id)
         if not snapshot:
-            raise ValueError(f"Snapshot not found: {snapshot_id}")
+            msg = f"Snapshot not found: {snapshot_id}"
+            raise ValueError(msg)
         
         # Simple security checks
         security_issues = []
@@ -404,37 +384,17 @@ class AnalysisService:
             lines = content.splitlines()
             for i, line in enumerate(lines):
                 # Check for API keys, tokens, passwords
-                if any(pattern in line.lower() for pattern in [
-                    "api_key", "apikey", "api-key", "token", "password", "secret"
-                ]):
+                if any(pattern in line.lower() for pattern in ["api_key", "apikey", "api-key", "token", "password", "secret"]):
                     if any(pattern in line for pattern in ["=", ":", "'"]) and not line.strip().startswith("#"):
-                        security_issues.append({
-                            "file": file.file_path,
-                            "line": i + 1,
-                            "issue": "Potential hardcoded secret",
-                            "severity": "high",
-                            "code": line.strip()
-                        })
+                        security_issues.append({"file": file.file_path, "line": i + 1, "issue": "Potential hardcoded secret", "severity": "high", "code": line.strip()})
                 
                 # Check for SQL injection vulnerabilities in Python
                 if file.language == "python" and "execute" in line and "%" in line:
-                    security_issues.append({
-                        "file": file.file_path,
-                        "line": i + 1,
-                        "issue": "Potential SQL injection vulnerability",
-                        "severity": "high",
-                        "code": line.strip()
-                    })
+                    security_issues.append({"file": file.file_path, "line": i + 1, "issue": "Potential SQL injection vulnerability", "severity": "high", "code": line.strip()})
                 
                 # Check for XSS vulnerabilities in JavaScript
                 if file.language in ["javascript", "typescript"] and "innerHTML" in line:
-                    security_issues.append({
-                        "file": file.file_path,
-                        "line": i + 1,
-                        "issue": "Potential XSS vulnerability",
-                        "severity": "medium",
-                        "code": line.strip()
-                    })
+                    security_issues.append({"file": file.file_path, "line": i + 1, "issue": "Potential XSS vulnerability", "severity": "medium", "code": line.strip()})
         
         # Count issues by severity
         high_severity = sum(1 for issue in security_issues if issue["severity"] == "high")
@@ -448,9 +408,7 @@ class AnalysisService:
             high_severity_count=high_severity,
             medium_severity_count=medium_severity,
             low_severity_count=low_severity,
-            analysis_data={
-                "issues": security_issues
-            }
+            analysis_data={"issues": security_issues},
         )
         
         self.db_session.add(analysis)
@@ -461,12 +419,11 @@ class AnalysisService:
             "high_severity_count": high_severity,
             "medium_severity_count": medium_severity,
             "low_severity_count": low_severity,
-            "issues": security_issues
+            "issues": security_issues,
         }
     
-    async def analyze_files(self, snapshot_id: uuid.UUID) -> Dict[str, Any]:
-        """
-        Analyze individual files for a snapshot.
+    async def analyze_files(self, snapshot_id: uuid.UUID) -> dict[str, Any]:
+        """Analyze individual files for a snapshot.
         
         Args:
             snapshot_id: ID of the snapshot to analyze
@@ -479,7 +436,8 @@ class AnalysisService:
         # Get snapshot
         snapshot = await self.db_session.get(CodebaseSnapshot, snapshot_id)
         if not snapshot:
-            raise ValueError(f"Snapshot not found: {snapshot_id}")
+            msg = f"Snapshot not found: {snapshot_id}"
+            raise ValueError(msg)
         
         # Get file manifests
         files = await self.snapshot_service.get_snapshot_files(snapshot_id, limit=100000)
@@ -516,91 +474,16 @@ class AnalysisService:
                 language=file.language,
                 lines=len(lines),
                 complexity=complexity,
-                analysis_data={}
+                analysis_data={},
             )
             
             self.db_session.add(file_analysis)
-            await self.db_session.flush()
-            
-            # Analyze functions and classes if using Codegen SDK
-            try:
-                # Use Codegen SDK to analyze the file
-                codebase = Codebase(snapshot.repository)
-                source_file = SourceFile(file.file_path, content)
-                
-                # Extract functions
-                functions = source_file.functions
-                for func in functions:
-                    function_analysis = FunctionAnalysis(
-                        file_analysis_id=file_analysis.id,
-                        name=func.name,
-                        start_line=func.start_line,
-                        end_line=func.end_line,
-                        complexity=1.0,
-                        parameters=[p.name for p in func.parameters],
-                        return_type=func.return_type,
-                        docstring=func.docstring
-                    )
-                    self.db_session.add(function_analysis)
-                
-                # Extract classes
-                classes = source_file.classes
-                for cls in classes:
-                    class_analysis = ClassAnalysis(
-                        file_analysis_id=file_analysis.id,
-                        name=cls.name,
-                        start_line=cls.start_line,
-                        end_line=cls.end_line,
-                        methods_count=len(cls.methods),
-                        attributes_count=len(cls.attributes),
-                        inheritance=[base.name for base in cls.bases],
-                        docstring=cls.docstring
-                    )
-                    self.db_session.add(class_analysis)
-            
-            except Exception as e:
-                logger.warning(f"Error analyzing file with Codegen SDK: {file.file_path} - {str(e)}")
-            
-            file_analyses.append({
-                "file_path": file.file_path,
-                "language": file.language,
-                "lines": len(lines)
-            })
+            file_analyses.append(file_analysis)
         
         await self.db_session.commit()
         
         return {
-            "files_analyzed": len(file_analyses),
-            "files": file_analyses[:10]  # Return only the first 10 for brevity
-        }
-    
-    async def get_analysis_job(self, job_id: uuid.UUID) -> Optional[Dict[str, Any]]:
-        """
-        Get the status and results of an analysis job.
-        
-        Args:
-            job_id: ID of the job to retrieve
-            
-        Returns:
-            Optional[Dict[str, Any]]: Job status and results if found, None otherwise
-        """
-        job = await self.db_session.get(AnalysisJob, job_id)
-        if not job:
-            return None
-        
-        return {
-            "job_id": str(job.id),
-            "snapshot_id": str(job.snapshot_id) if job.snapshot_id else None,
-            "repository": job.repository,
-            "commit_sha": job.commit_sha,
-            "branch": job.branch,
-            "analysis_types": job.analysis_types,
-            "status": job.status,
-            "created_at": job.created_at.isoformat() if job.created_at else None,
-            "started_at": job.started_at.isoformat() if job.started_at else None,
-            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-            "error_message": job.error_message,
-            "progress": job.progress,
-            "results": job.result_data
+            "file_count": len(file_analyses),
+            "analyzed_files": [f.file_path for f in file_analyses],
         }
 

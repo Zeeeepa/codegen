@@ -27,3 +27,4 @@ EXPOSE 8000
 
 # Run the API server
 CMD ["codegen-oss", "server"]
+
