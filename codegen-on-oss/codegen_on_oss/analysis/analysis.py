@@ -12,7 +12,7 @@ import re
 import subprocess
 import tempfile
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from urllib.parse import urlparse
 
 import networkx as nx
@@ -25,6 +25,7 @@ from codegen.sdk.core.expressions.comparison_expression import ComparisonExpress
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.external_module import ExternalModule
 from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.directory import Directory
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.import_resolution import Import
 from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
@@ -33,9 +34,10 @@ from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, SymbolType
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from zoneinfo import ZoneInfo
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
@@ -307,14 +309,14 @@ class CodeAnalyzer:
     
     def analyze_imports(self) -> Dict[str, Any]:
         """
-        Analyze import relationships in the codebase.
+        Analyze imports in the codebase.
         
         Returns:
             A dictionary containing import analysis results
         """
         graph = create_graph_from_codebase(self.codebase)
         cycles = find_import_cycles(graph)
-        problematic_loops = find_problematic_import_loops(graph)
+        problematic_loops = find_problematic_import_loops(graph, cycles)
         
         return {
             "import_graph": graph,
@@ -505,13 +507,13 @@ class CodeAnalyzer:
         ctx = self.context
         
         # Count nodes by type
-        node_types = {}
+        node_types: Dict[str, int] = {}
         for node in ctx.nodes:
             node_type = type(node).__name__
             node_types[node_type] = node_types.get(node_type, 0) + 1
         
         # Count edges by type
-        edge_types = {}
+        edge_types: Dict[str, int] = {}
         for _, _, edge in ctx.edges:
             edge_type = edge.type.name
             edge_types[edge_type] = edge_types.get(edge_type, 0) + 1
@@ -545,7 +547,7 @@ class CodeAnalyzer:
             return {"error": [f"Symbol not found: {symbol_name}"]}
         
         # Initialize result dictionary
-        dependencies = {
+        dependencies: Dict[str, List[str]] = {
             "imports": [],
             "functions": [],
             "classes": [],
