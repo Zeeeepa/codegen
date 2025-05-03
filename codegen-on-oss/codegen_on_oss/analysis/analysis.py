@@ -36,6 +36,7 @@ from codegen.sdk.enums import EdgeType, SymbolType
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import difflib
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
@@ -761,20 +762,27 @@ class CodeAnalyzer:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
         """
-            # Count changes per file
-            file_changes = {}
-            for commit in commits:
-                for file in commit.files:
-                    if file.filename in file_changes:
-                        file_changes[file.filename] += 1
-                    else:
-                        file_changes[file.filename] = 1
+        # Implementation of diff logic
+        try:
+            # Get the file content from both codebases
+            current_content = self.get_file_content(file_path)
+            commit_content = commit_codebase.get_file_content(file_path)
             
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
+            # Generate diff
+            if current_content is None or commit_content is None:
+                return "File not found in one of the codebases"
+            
+            # Create a diff
+            diff = difflib.unified_diff(
+                current_content.splitlines(keepends=True),
+                commit_content.splitlines(keepends=True),
+                fromfile=f"a/{file_path}",
+                tofile=f"b/{file_path}"
+            )
+            
+            return "".join(diff)
         except Exception as e:
-            return {"error": str(e)}
+            return f"Error generating diff: {str(e)}"
     
     def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
@@ -966,7 +974,13 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                     if month_key in monthly_counts:
                         monthly_counts[month_key] += 1
 
+            os.chdir(original_dir)
             return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        if 'original_dir' in locals():
+            os.chdir(original_dir)
+        print(f"Error getting monthly commits: {str(e)}")
+        return {}
 
 
 # Helper functions for complexity analysis
