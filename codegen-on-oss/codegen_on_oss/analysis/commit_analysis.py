@@ -26,7 +26,7 @@ from codegen_on_oss.analysis.analysis import CodeAnalyzer
 
 @dataclass
 class CommitIssue:
-    """Represents an issue found in a commit.
+    """Represents an issue found in a commit."""
     issue_type: str
     severity: str  # "critical", "warning", "info"
     message: str
@@ -35,7 +35,7 @@ class CommitIssue:
     code_snippet: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the issue to a dictionary.
+        """Convert the issue to a dictionary."""
         return {
             "issue_type": self.issue_type,
             "severity": self.severity,
@@ -48,16 +48,16 @@ class CommitIssue:
 
 @dataclass
 class CommitAnalysisResult:
-    """Result of a commit analysis.
+    """Result of a commit analysis."""
     is_properly_implemented: bool
-    issues: List[CommitIssue] = field(default_factory=list)
+    issues: List["CommitIssue"] = field(default_factory=list)
     metrics_diff: Dict[str, Any] = field(default_factory=dict)
     files_added: List[str] = field(default_factory=list)
     files_modified: List[str] = field(default_factory=list)
     files_removed: List[str] = field(default_factory=list)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the result to a dictionary.
+        """Convert the result to a dictionary."""
         return {
             "is_properly_implemented": self.is_properly_implemented,
             "issues": [issue.to_dict() for issue in self.issues],
@@ -68,7 +68,7 @@ class CommitAnalysisResult:
         }
     
     def get_summary(self) -> str:
-        """Get a summary of the analysis result.
+        """Get a summary of the analysis result."""
         status = "✅ Properly implemented" if self.is_properly_implemented else "❌ Issues found"
         
         summary = f"Commit Analysis Summary: {status}\n\n"
@@ -121,49 +121,29 @@ class CommitAnalysisResult:
 
 
 class CommitAnalyzer:
-    
+    """
     Analyzer for comparing and evaluating commits.
     
     This class provides functionality to analyze two versions of a codebase (original and commit),
     compare them, and determine if the commit is properly implemented.
+    """
     
-    
-    def __init__(
-        self, 
-        original_codebase: Codebase, 
-        commit_codebase: Codebase,
-        original_path: Optional[str] = None,
-        commit_path: Optional[str] = None
-    ):
-        
-        Initialize the CommitAnalyzer.
+    def __init__(self, original_codebase: Codebase, commit_codebase: Codebase) -> None:
+        """
+        Initialize the CommitAnalyzer with two codebases.
         
         Args:
             original_codebase: The original codebase before the commit
             commit_codebase: The codebase after the commit
-            original_path: Path to the original repository (optional)
-            commit_path: Path to the commit repository (optional)
-        
+        """
         self.original_codebase = original_codebase
         self.commit_codebase = commit_codebase
-        self.original_path = original_path
-        self.commit_path = commit_path
-        
-        # Create analyzers for both codebases
-        self.original_analyzer = CodeAnalyzer(original_codebase)
-        self.commit_analyzer = CodeAnalyzer(commit_codebase)
-        
-        # Initialize results
-        self.issues = []
-        self.metrics_diff = {}
-        self.files_added = []
-        self.files_modified = []
-        self.files_removed = []
+        self.result = CommitAnalysisResult(is_properly_implemented=True)
         
     @classmethod
-    def from_paths(cls, original_path: str, commit_path: str) -> 'CommitAnalyzer':
-        
-        Create a CommitAnalyzer from repository paths.
+    def from_paths(cls, original_path: str, commit_path: str) -> "CommitAnalyzer":
+        """
+        Create a CommitAnalyzer from two repository paths.
         
         Args:
             original_path: Path to the original repository
@@ -171,20 +151,15 @@ class CommitAnalyzer:
             
         Returns:
             A CommitAnalyzer instance
-        
+        """
         original_codebase = Codebase.from_directory(original_path)
         commit_codebase = Codebase.from_directory(commit_path)
         
-        return cls(
-            original_codebase=original_codebase,
-            commit_codebase=commit_codebase,
-            original_path=original_path,
-            commit_path=commit_path
-        )
+        return cls(original_codebase, commit_codebase)
     
     @classmethod
-    def from_repo_and_commit(cls, repo_url: str, commit_hash: str) -> 'CommitAnalyzer':
-        
+    def from_repo_and_commit(cls, repo_url: str, commit_hash: str) -> "CommitAnalyzer":
+        """
         Create a CommitAnalyzer from a repository URL and commit hash.
         
         Args:
@@ -193,278 +168,84 @@ class CommitAnalyzer:
             
         Returns:
             A CommitAnalyzer instance
-        
-        # Create temporary directories for the repositories
-        original_dir = tempfile.mkdtemp()
-        commit_dir = tempfile.mkdtemp()
-        
-        try:
+        """
+        # Clone the repository
+        with tempfile.TemporaryDirectory() as temp_dir:
             # Clone the repository
             subprocess.run(
-                ["git", "clone", repo_url, original_dir],
+                ["git", "clone", repo_url, temp_dir],
                 check=True,
-                capture_output=True
+                capture_output=True,
+                text=True,
             )
             
-            # Clone the repository for the commit
-            subprocess.run(
-                ["git", "clone", repo_url, commit_dir],
-                check=True,
-                capture_output=True
-            )
+            # Create a codebase from the current state
+            original_codebase = Codebase.from_directory(temp_dir)
             
             # Checkout the commit
             subprocess.run(
-                ["git", "-C", commit_dir, "checkout", commit_hash],
+                ["git", "-C", temp_dir, "checkout", commit_hash],
                 check=True,
-                capture_output=True
+                capture_output=True,
+                text=True,
             )
             
-            # Create codebases
-            original_codebase = Codebase.from_directory(original_dir)
-            commit_codebase = Codebase.from_directory(commit_dir)
+            # Create a codebase from the commit
+            commit_codebase = Codebase.from_directory(temp_dir)
             
-            return cls(
-                original_codebase=original_codebase,
-                commit_codebase=commit_codebase,
-                original_path=original_dir,
-                commit_path=commit_dir
-            )
-        except Exception as e:
-            # Clean up temporary directories
-            if os.path.exists(original_dir):
-                subprocess.run(["rm", "-rf", original_dir])
-            if os.path.exists(commit_dir):
-                subprocess.run(["rm", "-rf", commit_dir])
-            raise e
+            return cls(original_codebase, commit_codebase)
     
     def analyze_commit(self) -> CommitAnalysisResult:
-        
-        Analyze the commit and determine if it's properly implemented.
+        """
+        Analyze the commit by comparing the original and commit codebases.
         
         Returns:
             A CommitAnalysisResult object containing the analysis results
+        """
+        # Compare files
+        self._compare_files()
         
-        # Identify file changes
-        self._identify_file_changes()
-        
-        # Analyze code complexity changes
-        self._analyze_complexity_changes()
-        
-        # Analyze import changes
-        self._analyze_import_changes()
-        
-        # Check for syntax errors and other issues
+        # Check for issues
         self._check_for_issues()
         
-        # Determine if the commit is properly implemented
-        is_properly_implemented = len([i for i in self.issues if i.severity == "critical"]) == 0
+        # Compare metrics
+        self._compare_metrics()
         
-        # Create and return the result
-        return CommitAnalysisResult(
-            is_properly_implemented=is_properly_implemented,
-            issues=self.issues,
-            metrics_diff=self.metrics_diff,
-            files_added=self.files_added,
-            files_modified=self.files_modified,
-            files_removed=self.files_removed
-        )
+        return self.result
     
-    def _identify_file_changes(self):
-        """Identify added, modified, and removed files between the two codebases.
+    def _compare_files(self) -> None:
+        """Compare files between the original and commit codebases."""
         original_files = {file.path: file for file in self.original_codebase.files}
         commit_files = {file.path: file for file in self.commit_codebase.files}
         
-        # Find added files
-        self.files_added = [path for path in commit_files if path not in original_files]
-        
-        # Find removed files
-        self.files_removed = [path for path in original_files if path not in commit_files]
+        # Find added, modified, and removed files
+        self.result.files_added = [path for path in commit_files if path not in original_files]
+        self.result.files_removed = [path for path in original_files if path not in commit_files]
         
         # Find modified files
-        common_files = set(original_files.keys()) & set(commit_files.keys())
-        self.files_modified = []
-        
-        for path in common_files:
-            original_content = original_files[path].content
-            commit_content = commit_files[path].content
-            
-            if original_content != commit_content:
-                self.files_modified.append(path)
+        for path, commit_file in commit_files.items():
+            if path in original_files:
+                original_file = original_files[path]
+                if original_file.content != commit_file.content:
+                    self.result.files_modified.append(path)
     
-    def _analyze_complexity_changes(self):
-        """Analyze changes in code complexity metrics.
-        # Get complexity metrics for both codebases
-        original_complexity = self.original_analyzer.analyze_complexity()
-        commit_complexity = self.commit_analyzer.analyze_complexity()
-        
-        # Compare cyclomatic complexity
-        self.metrics_diff["cyclomatic_complexity"] = {
-            "before": original_complexity["cyclomatic_complexity"]["average"],
-            "after": commit_complexity["cyclomatic_complexity"]["average"]
-        }
-        
-        # Compare maintainability index
-        if "maintainability_index" in original_complexity and "maintainability_index" in commit_complexity:
-            self.metrics_diff["maintainability_index"] = {
-                "before": original_complexity["maintainability_index"]["average"],
-                "after": commit_complexity["maintainability_index"]["average"]
-            }
-        
-        # Check for significant complexity increases in functions
-        original_funcs = {f["name"]: f for f in original_complexity["cyclomatic_complexity"]["functions"]}
-        commit_funcs = {f["name"]: f for f in commit_complexity["cyclomatic_complexity"]["functions"]}
-        
-        for name, func in commit_funcs.items():
-            if name in original_funcs:
-                original_complexity_val = original_funcs[name]["complexity"]
-                commit_complexity_val = func["complexity"]
-                
-                # If complexity increased significantly, add an issue
-                if commit_complexity_val > original_complexity_val * 1.5 and commit_complexity_val > 10:
-                    self.issues.append(CommitIssue(
-                        issue_type="complexity_increase",
+    def _check_for_issues(self) -> None:
+        """Check for issues in the commit."""
+        # Check for large file additions
+        for file_path in self.result.files_added:
+            file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
+            if file and len(file.content.splitlines()) > 500:
+                self.result.issues.append(
+                    CommitIssue(
+                        issue_type="Large File Addition",
                         severity="warning",
-                        message=f"Function complexity increased from {original_complexity_val} to {commit_complexity_val}",
-                        file_path=func.get("file_path"),
-                        line_number=func.get("line_number")
-                    ))
-    
-    def _analyze_import_changes(self):
-        """Analyze changes in imports and dependencies.
-        # Get import analysis for both codebases
-        original_imports = self.original_analyzer.analyze_imports()
-        commit_imports = self.commit_analyzer.analyze_imports()
-        
-        # Compare import cycles
-        self.metrics_diff["import_cycles"] = {
-            "before": len(original_imports["import_cycles"]),
-            "after": len(commit_imports["import_cycles"])
-        }
-        
-        # Check if new import cycles were introduced
-        if len(commit_imports["import_cycles"]) > len(original_imports["import_cycles"]):
-            self.issues.append(CommitIssue(
-                issue_type="new_import_cycles",
-                severity="warning",
-                message=f"New import cycles introduced ({len(commit_imports['import_cycles']) - len(original_imports['import_cycles'])})"
-            ))
-    
-    def _check_for_issues(self):
-        """Check for various issues in the commit.
-        # Check for syntax errors in added or modified files
-        for file_path in self.files_added + self.files_modified:
-            file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
-            if file and hasattr(file, "syntax_errors") and file.syntax_errors:
-                for error in file.syntax_errors:
-                    self.issues.append(CommitIssue(
-                        issue_type="syntax_error",
-                        severity="critical",
-                        message=error.get("message", "Syntax error"),
+                        message=f"Added file with {len(file.content.splitlines())} lines",
                         file_path=file_path,
-                        line_number=error.get("line_number")
-                    ))
+                    )
+                )
         
-        # Check for broken references
-        self._check_broken_references()
-        
-        # Check for test coverage (if tests exist)
-        self._check_test_coverage()
-        
-        # Check for documentation updates
-        self._check_documentation_updates()
-    
-    def _check_broken_references(self):
-        """Check for broken references in the code.
-        # This is a simplified implementation
-        # In a real implementation, you would check for references to removed symbols
-        
-        # Get all symbols in both codebases
-        original_symbols = {symbol.full_name: symbol for symbol in self.original_codebase.symbols}
-        commit_symbols = {symbol.full_name: symbol for symbol in self.commit_codebase.symbols}
-        
-        # Find removed symbols
-        removed_symbols = [name for name in original_symbols if name not in commit_symbols]
-        
-        # Check if any removed symbols are still referenced
-        for file in self.commit_codebase.files:
-            for symbol_usage in getattr(file, "symbol_usages", []):
-                if symbol_usage in removed_symbols:
-                    self.issues.append(CommitIssue(
-                        issue_type="broken_reference",
-                        severity="critical",
-                        message=f"Reference to removed symbol '{symbol_usage}'",
-                        file_path=file.path
-                    ))
-    
-    def _check_test_coverage(self):
-        """Check for test coverage changes.
-        # This is a placeholder for test coverage analysis
-        # In a real implementation, you would run tests and compare coverage
-        
-        # Check if tests were added or modified
-        test_files_added = [f for f in self.files_added if "test" in f.lower()]
-        test_files_modified = [f for f in self.files_modified if "test" in f.lower()]
-        
-        # Check if code was added/modified but no tests were added/modified
-        code_files_added = [f for f in self.files_added if "test" not in f.lower()]
-        code_files_modified = [f for f in self.files_modified if "test" not in f.lower()]
-        
-        if (code_files_added or code_files_modified) and not (test_files_added or test_files_modified):
-            self.issues.append(CommitIssue(
-                issue_type="missing_tests",
-                severity="warning",
-                message="Code changes without corresponding test changes"
-            ))
-    
-    def _check_documentation_updates(self):
-        """Check for documentation updates.
-        # Check if code was added/modified but no documentation was updated
-        doc_files_modified = [f for f in self.files_modified if f.endswith((".md", ".rst", ".txt"))]
-        code_files_added = [f for f in self.files_added if f.endswith((".py", ".js", ".ts", ".java", ".c", ".cpp"))]
-        
-        # Check for docstrings in added functions
-        missing_docstrings = []
-        
-        for file_path in self.files_added + self.files_modified:
-            file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
-            if file and file.path.endswith(".py"):
-                for func in getattr(file, "functions", []):
-                    if not getattr(func, "docstring", None):
-                        missing_docstrings.append(func.name)
-        
-        if missing_docstrings:
-            self.issues.append(CommitIssue(
-                issue_type="missing_docstrings",
-                severity="info",
-                message=f"Missing docstrings in {len(missing_docstrings)} functions"
-            ))
-        
-        # If significant code was added but no documentation was updated
-        if len(code_files_added) > 3 and not doc_files_modified:
-            self.issues.append(CommitIssue(
-                issue_type="missing_documentation",
-                severity="info",
-                message="Significant code additions without documentation updates"
-            ))
-    
-    def get_diff_summary(self, file_path: str) -> str:
-        
-        Get a summary of changes for a specific file.
-        
-        Args:
-            file_path: Path to the file
-            
-        Returns:
-            A string containing a summary of the changes
-        
-        if file_path in self.files_added:
-            return f"File added: {file_path}"
-        
-        if file_path in self.files_removed:
-            return f"File removed: {file_path}"
-        
-        if file_path in self.files_modified:
+        # Check for large file modifications
+        for file_path in self.result.files_modified:
             original_file = next((f for f in self.original_codebase.files if f.path == file_path), None)
             commit_file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
             
@@ -472,29 +253,149 @@ class CommitAnalyzer:
                 original_lines = original_file.content.splitlines()
                 commit_lines = commit_file.content.splitlines()
                 
-                diff = difflib.unified_diff(
-                    original_lines,
-                    commit_lines,
-                    lineterm="",
-                    n=3  # Context lines
-                )
+                # Check if more than 50% of the file was changed
+                diff = difflib.unified_diff(original_lines, commit_lines, n=0)
+                diff_lines = list(diff)
                 
-                return "\n".join(diff)
+                # Count changed lines (lines starting with + or -)
+                changed_lines = sum(1 for line in diff_lines if line.startswith("+") or line.startswith("-"))
+                
+                if changed_lines > len(original_lines) * 0.5:
+                    self.result.issues.append(
+                        CommitIssue(
+                            issue_type="Large File Modification",
+                            severity="info",
+                            message=f"Modified more than 50% of the file ({changed_lines} lines changed)",
+                            file_path=file_path,
+                        )
+                    )
         
-        return f"No changes found for {file_path}"
+        # Check for function complexity increases
+        for file_path in self.result.files_modified:
+            original_file = next((f for f in self.original_codebase.files if f.path == file_path), None)
+            commit_file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
+            
+            if original_file and commit_file:
+                original_functions = {f.name: f for f in self.original_codebase.functions if f.file_path == file_path}
+                commit_functions = {f.name: f for f in self.commit_codebase.functions if f.file_path == file_path}
+                
+                for name, commit_func in commit_functions.items():
+                    if name in original_functions:
+                        original_func = original_functions[name]
+                        
+                        # Calculate complexity
+                        original_complexity = self._calculate_complexity(original_func)
+                        commit_complexity = self._calculate_complexity(commit_func)
+                        
+                        # Check if complexity increased significantly
+                        if commit_complexity > original_complexity * 1.5 and commit_complexity > 10:
+                            self.result.issues.append(
+                                CommitIssue(
+                                    issue_type="Complexity Increase",
+                                    severity="warning",
+                                    message=f"Function complexity increased from {original_complexity} to {commit_complexity}",
+                                    file_path=file_path,
+                                    line_number=commit_func.start_line,
+                                    code_snippet=commit_func.name,
+                                )
+                            )
+        
+        # Set is_properly_implemented based on critical issues
+        critical_issues = [issue for issue in self.result.issues if issue.severity == "critical"]
+        if critical_issues:
+            self.result.is_properly_implemented = False
+    
+    def _calculate_complexity(self, func: Function) -> int:
+        """
+        Calculate the complexity of a function.
+        
+        Args:
+            func: The function to analyze
+            
+        Returns:
+            The complexity score
+        """
+        # Simple complexity calculation based on function length
+        if not hasattr(func, "code_block") or not func.code_block:
+            return 1
+        
+        # Start with base complexity of 1
+        complexity = 1
+        
+        # Add complexity for each line
+        complexity += len(func.code_block.source.splitlines()) // 10
+        
+        return complexity
+    
+    def _compare_metrics(self) -> None:
+        """Compare metrics between the original and commit codebases."""
+        # Create analyzers for both codebases
+        original_analyzer = CodeAnalyzer(self.original_codebase)
+        commit_analyzer = CodeAnalyzer(self.commit_codebase)
+        
+        # Get complexity metrics
+        original_complexity = original_analyzer.analyze_complexity()
+        commit_complexity = commit_analyzer.analyze_complexity()
+        
+        # Compare metrics
+        self.result.metrics_diff = {
+            "files_count": {
+                "before": len(self.original_codebase.files),
+                "after": len(self.commit_codebase.files),
+            },
+            "functions_count": {
+                "before": len(self.original_codebase.functions),
+                "after": len(self.commit_codebase.functions),
+            },
+            "classes_count": {
+                "before": len(self.original_codebase.classes),
+                "after": len(self.commit_codebase.classes),
+            },
+        }
+        
+        # Add complexity metrics if available
+        if "cyclomatic_complexity" in original_complexity and "cyclomatic_complexity" in commit_complexity:
+            self.result.metrics_diff["average_cyclomatic_complexity"] = {
+                "before": original_complexity["cyclomatic_complexity"].get("average", 0),
+                "after": commit_complexity["cyclomatic_complexity"].get("average", 0),
+            }
+    
+    def get_diff_summary(self, file_path: str) -> str:
+        """
+        Get a diff summary for a specific file.
+        
+        Args:
+            file_path: Path to the file to get the diff for
+            
+        Returns:
+            A string containing the diff summary
+        """
+        original_file = next((f for f in self.original_codebase.files if f.path == file_path), None)
+        commit_file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
+        
+        if not original_file or not commit_file:
+            return "File not found in one of the codebases"
+        
+        original_lines = original_file.content.splitlines()
+        commit_lines = commit_file.content.splitlines()
+        
+        diff = difflib.unified_diff(
+            original_lines,
+            commit_lines,
+            fromfile=f"a/{file_path}",
+            tofile=f"b/{file_path}",
+            lineterm="",
+        )
+        
+        return "\n".join(diff)
     
     def get_detailed_report(self) -> Dict[str, Any]:
-        
+        """
         Get a detailed report of the commit analysis.
         
         Returns:
             A dictionary containing detailed analysis information
-        
-        # Analyze the commit if not already done
-        if not hasattr(self, "result"):
-            self.result = self.analyze_commit()
-        
-        # Create a detailed report
+        """
         report = {
             "summary": self.result.get_summary(),
             "is_properly_implemented": self.result.is_properly_implemented,
@@ -513,5 +414,3 @@ class CommitAnalyzer:
             report["diffs"][file_path] = self.get_diff_summary(file_path)
         
         return report
-
-
