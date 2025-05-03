@@ -1,122 +1,170 @@
-# Codegen Analysis Module
+# Code Analysis Module with Error Context
 
-A comprehensive code analysis module for the Codegen-on-OSS project that provides a unified interface for analyzing codebases.
+This module provides robust and dynamic code analysis capabilities with a focus on error detection and contextual error information.
 
 ## Overview
 
-The Analysis Module integrates various specialized analysis components into a cohesive system, allowing for:
+The code analysis module consists of several components:
 
-- Code complexity analysis
-- Import dependency analysis
-- Documentation generation
-- Symbol attribution
-- Visualization of module dependencies
-- Comprehensive code quality metrics
+1. **CodeAnalyzer**: The main class that integrates all analysis components and provides a unified interface.
+2. **ErrorContextAnalyzer**: A specialized class for detecting and analyzing errors in code.
+3. **CodeError**: A class representing an error in code with detailed context information.
+4. **API Endpoints**: FastAPI endpoints for accessing the analysis functionality.
 
-## Components
+## Features
 
-The module consists of the following key components:
+### Code Structure Analysis
 
-- **CodeAnalyzer**: Central class that orchestrates all analysis functionality
-- **Metrics Integration**: Connection with the CodeMetrics class for comprehensive metrics
-- **Import Analysis**: Tools for analyzing import relationships and cycles
-- **Documentation Tools**: Functions for generating documentation for code
-- **Visualization**: Tools for visualizing dependencies and relationships
+- Analyze codebase structure and dependencies
+- Generate dependency graphs for files and symbols
+- Analyze import relationships and detect circular imports
+- Get detailed information about files, functions, classes, and symbols
+
+### Error Detection and Analysis
+
+- Detect syntax errors, type errors, parameter errors, and more
+- Analyze function parameters and return statements for errors
+- Detect undefined variables and unused imports
+- Find circular dependencies between symbols
+- Provide detailed context information for errors
+
+### API Endpoints
+
+- `/analyze_repo`: Analyze a repository and return various metrics
+- `/analyze_symbol`: Analyze a symbol and return detailed information
+- `/analyze_file`: Analyze a file and return detailed information
+- `/analyze_function`: Analyze a function and return detailed information
+- `/analyze_errors`: Analyze errors in a repository, file, or function
+
+## Error Types
+
+The module can detect the following types of errors:
+
+- **Syntax Errors**: Invalid syntax in code
+- **Type Errors**: Type mismatches in expressions
+- **Parameter Errors**: Incorrect function parameters
+- **Call Errors**: Incorrect function calls
+- **Undefined Variables**: Variables used without being defined
+- **Unused Imports**: Imports that are not used in the code
+- **Circular Imports**: Circular dependencies between files
+- **Circular Dependencies**: Circular dependencies between symbols
 
 ## Usage
 
-### Basic Usage
+### Using the CodeAnalyzer
 
 ```python
 from codegen import Codebase
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.metrics import CodeMetrics
 
-# Load a codebase
+# Create a codebase from a repository
 codebase = Codebase.from_repo("owner/repo")
 
-# Create analyzer instance
+# Create an analyzer
 analyzer = CodeAnalyzer(codebase)
 
-# Get codebase summary
-summary = analyzer.get_codebase_summary()
-print(summary)
+# Analyze errors in the codebase
+errors = analyzer.analyze_errors()
 
-# Analyze complexity
-complexity_results = analyzer.analyze_complexity()
-print(f"Average cyclomatic complexity: {complexity_results['cyclomatic_complexity']['average']}")
+# Get detailed error context for a function
+function_errors = analyzer.get_function_error_context("function_name")
 
-# Analyze imports
-import_analysis = analyzer.analyze_imports()
-print(f"Found {len(import_analysis['import_cycles'])} import cycles")
-
-# Create metrics instance
-metrics = CodeMetrics(codebase)
-
-# Get code quality summary
-quality_summary = metrics.get_code_quality_summary()
-print(quality_summary)
+# Get detailed error context for a file
+file_errors = analyzer.get_file_error_context("path/to/file.py")
 ```
 
-### Web API
-
-The module also provides a FastAPI web interface for analyzing repositories:
+### Using the API
 
 ```bash
-# Run the API server
-python -m codegen_on_oss.analysis.analysis
+# Analyze a repository
+curl -X POST "http://localhost:8000/analyze_repo" \
+     -H "Content-Type: application/json" \
+     -d '{"repo_url": "owner/repo"}'
+
+# Analyze errors in a function
+curl -X POST "http://localhost:8000/analyze_function" \
+     -H "Content-Type: application/json" \
+     -d '{"repo_url": "owner/repo", "function_name": "function_name"}'
+
+# Analyze errors in a file
+curl -X POST "http://localhost:8000/analyze_file" \
+     -H "Content-Type: application/json" \
+     -d '{"repo_url": "owner/repo", "file_path": "path/to/file.py"}'
 ```
 
-Then you can make POST requests to `/analyze_repo` with a JSON body:
+## Error Context Example
+
+Here's an example of the error context information provided for a function:
 
 ```json
 {
-  "repo_url": "owner/repo"
+  "function_name": "calculate_total",
+  "file_path": "app/utils.py",
+  "errors": [
+    {
+      "error_type": "parameter_error",
+      "message": "Function 'calculate_discount' called with 1 arguments but expects 2",
+      "line_number": 15,
+      "severity": "high",
+      "context_lines": {
+        "13": "def calculate_total(items):",
+        "14": "    total = sum(item.price for item in items)",
+        "15": "    discount = calculate_discount(total)",
+        "16": "    return total - discount",
+        "17": ""
+      },
+      "suggested_fix": "Update call to provide 2 arguments: calculate_discount(total, discount_percent)"
+    }
+  ],
+  "callers": [
+    {"name": "process_order"}
+  ],
+  "callees": [
+    {"name": "calculate_discount"}
+  ],
+  "parameters": [
+    {
+      "name": "items",
+      "type": "List[Item]",
+      "default": null
+    }
+  ],
+  "return_info": {
+    "type": "float",
+    "statements": ["total - discount"]
+  }
 }
 ```
 
-## Key Features
+## Implementation Details
 
-### Code Complexity Analysis
+### ErrorContextAnalyzer
 
-- Cyclomatic complexity calculation
-- Halstead complexity metrics
-- Maintainability index
-- Line metrics (LOC, LLOC, SLOC, comments)
+The `ErrorContextAnalyzer` class is responsible for detecting and analyzing errors in code. It uses various techniques to detect errors, including:
 
-### Import Analysis
+- **AST Analysis**: Parsing the code into an abstract syntax tree to detect syntax errors and undefined variables
+- **Graph Analysis**: Building dependency graphs to detect circular imports and dependencies
+- **Pattern Matching**: Using regular expressions to detect potential type errors and other issues
 
-- Detect import cycles
-- Identify problematic import loops
-- Visualize module dependencies
+### CodeError
 
-### Documentation Generation
+The `CodeError` class represents an error in code with detailed context information. It includes:
 
-- Generate documentation for functions
-- Create MDX documentation for classes
-- Extract context for symbols
+- **Error Type**: The type of error (syntax, type, parameter, etc.)
+- **Message**: A descriptive message explaining the error
+- **Location**: The file path and line number where the error occurs
+- **Severity**: The severity of the error (critical, high, medium, low, info)
+- **Context Lines**: The lines of code surrounding the error
+- **Suggested Fix**: A suggested fix for the error
 
-### Symbol Attribution
+## Running the API Server
 
-- Track symbol authorship
-- Analyze AI contribution
+To run the API server locally:
 
-### Dependency Analysis
+```bash
+cd codegen-on-oss
+python -m codegen_on_oss.analysis.analysis
+```
 
-- Create dependency graphs
-- Find central files
-- Identify dependency cycles
-
-## Integration with Metrics
-
-The Analysis Module is fully integrated with the CodeMetrics class, which provides:
-
-- Comprehensive code quality metrics
-- Functions to find problematic code areas
-- Dependency analysis
-- Documentation generation
-
-## Example
-
-See `example.py` for a complete demonstration of the analysis module's capabilities.
+The server will be available at `http://localhost:8000`.
 
