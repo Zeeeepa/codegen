@@ -121,7 +121,6 @@ class CodebaseContext:
     dependency_manager: DependencyManager | None
     language_engine: LanguageEngine | None
     _computing = False
-    _graph: PyDiGraph[Importable, Edge]
     filepath_idx: dict[str, NodeId]
     _ext_module_idx: dict[str, NodeId]
     flags: Flags
@@ -143,8 +142,6 @@ class CodebaseContext:
         from codegen.sdk.core.parser import Parser
 
         self.progress = progress or StubProgress()
-        self.__graph = PyDiGraph()
-        self.__graph_ready = False
         self.filepath_idx = {}
         self._ext_module_idx = {}
         self.generation = 0
