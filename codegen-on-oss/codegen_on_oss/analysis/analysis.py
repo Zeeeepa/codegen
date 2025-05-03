@@ -78,6 +78,12 @@ from codegen_on_oss.analysis.commit_analysis import (
     CommitIssue
 )
 
+# Import new analysis modules
+from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
+from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
+
 # Create FastAPI app
 app = FastAPI()
 
@@ -755,36 +761,212 @@ class CodeAnalyzer:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
             
-        Returns:
-            A string containing the diff
-        """
-        # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(
-            original_codebase=self.codebase,
-            commit_codebase=commit_codebase
-        )
-        
-        # Get the diff summary
-        return analyzer.get_diff_summary(file_path)
+            # Count changes per file
+            file_changes = {}
+            for commit in commits:
+                for file in commit.files:
+                    if file.filename in file_changes:
+                        file_changes[file.filename] += 1
+                    else:
+                        file_changes[file.filename] = 1
+            
+            # Sort by change count and limit results
+            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
+            return dict(sorted_files)
+        except Exception as e:
+            return {"error": str(e)}
     
-    def get_commit_detailed_report(self, commit_codebase: Codebase) -> Dict[str, Any]:
+    def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
-        Get a detailed report of the commit analysis.
+        Create a snapshot of the current codebase.
         
         Args:
-            commit_codebase: The codebase after the commit
+            commit_sha: Optional commit SHA to associate with the snapshot
             
         Returns:
-            A dictionary containing detailed analysis information
+            A CodebaseSnapshot object
         """
-        # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(
-            original_codebase=self.codebase,
-            commit_codebase=commit_codebase
-        )
+        return CodebaseSnapshot(self.codebase, commit_sha)
+    
+    def analyze_commit(
+        self, 
+        base_commit: str, 
+        head_commit: str,
+        github_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze a commit by comparing the codebase before and after the commit.
         
-        # Get the detailed report
-        return analyzer.get_detailed_report()
+        Args:
+            base_commit: The base commit SHA (before the changes)
+            head_commit: The head commit SHA (after the changes)
+            github_token: Optional GitHub token for accessing private repositories
+            
+        Returns:
+            A dictionary with analysis results
+        """
+        # Create a commit analyzer
+        snapshot_manager = SnapshotManager()
+        commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
+        
+        # Analyze the commit
+        return commit_analyzer.analyze_commit(
+            self.codebase.repo_path, base_commit, head_commit
+        )
+    
+    def analyze_pull_request(
+        self, 
+        pr_number: int,
+        github_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze a pull request by comparing the base and head commits.
+        
+        Args:
+            pr_number: The pull request number
+            github_token: Optional GitHub token for accessing private repositories
+            
+        Returns:
+            A dictionary with analysis results
+        """
+        # Create a commit analyzer
+        snapshot_manager = SnapshotManager()
+        commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
+        
+        # Analyze the pull request
+        return commit_analyzer.analyze_pull_request(
+            self.codebase.repo_path, pr_number, github_token
+        )
+    
+    def create_swe_harness_agent(
+        self, 
+        github_token: Optional[str] = None,
+        snapshot_dir: Optional[str] = None,
+        use_agent: bool = True
+    ) -> SWEHarnessAgent:
+        """
+        Create a SWE harness agent for analyzing commits and pull requests.
+        
+        Args:
+            github_token: Optional GitHub token for accessing private repositories
+            snapshot_dir: Optional directory to store snapshots
+            use_agent: Whether to use an LLM-based agent for enhanced analysis
+            
+        Returns:
+            A SWEHarnessAgent instance
+        """
+        return SWEHarnessAgent(github_token, snapshot_dir, use_agent)
+    
+    def compare_snapshots(
+        self, 
+        original_snapshot: CodebaseSnapshot, 
+        modified_snapshot: CodebaseSnapshot
+    ) -> Dict[str, Any]:
+        """
+        Compare two codebase snapshots and analyze the differences.
+        
+        Args:
+            original_snapshot: The original/base codebase snapshot
+            modified_snapshot: The modified/new codebase snapshot
+            
+        Returns:
+            A dictionary with comparison results
+        """
+        # Create a diff analyzer
+        diff_analyzer = DiffAnalyzer(original_snapshot, modified_snapshot)
+        
+        # Get the summary and high-risk changes
+        summary = diff_analyzer.get_summary()
+        high_risk_changes = diff_analyzer.get_high_risk_changes()
+        
+        return {
+            "summary": summary,
+            "high_risk_changes": high_risk_changes,
+            "formatted_summary": diff_analyzer.format_summary_text()
+        }
+
+
+def get_monthly_commits(repo_path: str) -> Dict[str, int]:
+    """
+    Get the number of commits per month for the last 12 months.
+
+    Args:
+        repo_path: Path to the git repository
+
+    Returns:
+        Dictionary with month-year as key and number of commits as value
+    """
+    end_date = datetime.now(UTC)
+    start_date = end_date - timedelta(days=365)
+
+    date_format = "%Y-%m-%d"
+    since_date = start_date.strftime(date_format)
+    until_date = end_date.strftime(date_format)
+
+    # Validate repo_path format (should be owner/repo)
+    if not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo_path):
+        print(f"Invalid repository path format: {repo_path}")
+        return {}
+
+    repo_url = f"https://github.com/{repo_path}"
+
+    # Validate URL
+    try:
+        parsed_url = urlparse(repo_url)
+        if not all([parsed_url.scheme, parsed_url.netloc]):
+            print(f"Invalid URL: {repo_url}")
+            return {}
+    except Exception:
+        print(f"Invalid URL: {repo_url}")
+        return {}
+
+    try:
+        original_dir = os.getcwd()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Using a safer approach with a list of arguments and shell=False
+            subprocess.run(
+                ["git", "clone", repo_url, temp_dir],
+                check=True,
+                capture_output=True,
+                shell=False,
+                text=True,
+            )
+            os.chdir(temp_dir)
+
+            # Using a safer approach with a list of arguments and shell=False
+            result = subprocess.run(
+                [
+                    "git",
+                    "log",
+                    f"--since={since_date}",
+                    f"--until={until_date}",
+                    "--format=%aI",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                shell=False,
+            )
+            commit_dates = result.stdout.strip().split("\n")
+
+            monthly_counts = {}
+            current_date = start_date
+            while current_date <= end_date:
+                month_key = current_date.strftime("%Y-%m")
+                monthly_counts[month_key] = 0
+                current_date = (
+                    current_date.replace(day=1) + timedelta(days=32)
+                ).replace(day=1)
+
+            for date_str in commit_dates:
+                if date_str:  # Skip empty lines
+                    commit_date = datetime.fromisoformat(date_str.strip())
+                    month_key = commit_date.strftime("%Y-%m")
+                    if month_key in monthly_counts:
+                        monthly_counts[month_key] += 1
+
+            return dict(sorted(monthly_counts.items()))
 
 
 # Helper functions for complexity analysis
