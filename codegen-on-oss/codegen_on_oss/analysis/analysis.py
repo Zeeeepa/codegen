@@ -761,20 +761,18 @@ class CodeAnalyzer:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
         """
-            # Count changes per file
-            file_changes = {}
-            for commit in commits:
-                for file in commit.files:
-                    if file.filename in file_changes:
-                        file_changes[file.filename] += 1
-                    else:
-                        file_changes[file.filename] = 1
-            
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
-        except Exception as e:
-            return {"error": str(e)}
+        # Count changes per file
+        file_changes = {}
+        for commit in commits:
+            for file in commit.files:
+                if file.filename in file_changes:
+                    file_changes[file.filename] += 1
+                else:
+                    file_changes[file.filename] = 1
+        
+        # Sort by change count and limit results
+        sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
+        return dict(sorted_files)
     
     def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
@@ -924,12 +922,10 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
         original_dir = os.getcwd()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Using a safer approach with a list of arguments and shell=False
+            # Clone the repository
             subprocess.run(
-                ["git", "clone", repo_url, temp_dir],
-                check=True,
+                ["git", "clone", "--depth=1", repo_url, temp_dir],
                 capture_output=True,
-                shell=False,
                 text=True,
             )
             os.chdir(temp_dir)
@@ -967,6 +963,9 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                         monthly_counts[month_key] += 1
 
             return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        print(f"Error analyzing commit history: {str(e)}")
+        return {}
 
 
 # Helper functions for complexity analysis

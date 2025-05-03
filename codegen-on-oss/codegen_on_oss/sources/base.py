@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -58,8 +58,47 @@ class RepoSource(Generic[SettingsType]):
     ) -> "RepoSource":
         return all_sources[source_type](settings)
 
-    def __iter__(self) -> Iterator[tuple[str, str | None]]:
+    def __iter__(self) -> Iterator[Tuple[str, Optional[str]]]:
         """
-        Yields URL and optional commit hash of repositories.
+        Iterate over repositories.
+
+        Returns:
+            Iterator[Tuple[str, Optional[str]]]: Iterator of (repo_url, commit_hash) tuples.
         """
         raise NotImplementedError
+
+
+class RepoSource:
+    """Base class for repository sources."""
+
+    def __iter__(self) -> Iterator[Tuple[str, Optional[str]]]:
+        """
+        Iterate over repositories.
+
+        Returns:
+            Iterator[Tuple[str, Optional[str]]]: Iterator of (repo_url, commit_hash) tuples.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def from_source_type(cls, source_type: str) -> "RepoSource":
+        """
+        Create a repository source from a source type.
+
+        Args:
+            source_type: The source type.
+
+        Returns:
+            RepoSource: The repository source.
+        """
+        if source_type == "csv":
+            from codegen_on_oss.sources.csv_source import CSVSource
+            return CSVSource()
+        elif source_type == "single":
+            from codegen_on_oss.sources.single_source import SingleSource
+            return SingleSource()
+        elif source_type == "github":
+            from codegen_on_oss.sources.github_source import GitHubSource
+            return GitHubSource()
+        else:
+            raise ValueError(f"Unknown source type: {source_type}")

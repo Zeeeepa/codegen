@@ -50,7 +50,7 @@ except modal.exception.NotFoundError:
         str(cachedir.absolute()): codegen_repo_volume,
         "/app/inputs": codegen_input_volume,
     },
-    image=modal.Image.debian_slim(python_version="3.13")
+    image=modal.Image.debian_slim(python_version="3.10")
     .pip_install("uv")
     .apt_install("git")  # required by codegen sdk
     .workdir("/app")
@@ -122,28 +122,27 @@ def main(
     Main entrypoint for the parse app.
     """
 
-    match source:
-        case "csv":
-            input_path = Path(csv_file).relative_to(".")
-            with codegen_input_volume.batch_upload(force=True) as b:
-                b.put_file(csv_file, input_path)
+    if source == "csv":
+        input_path = Path(csv_file).relative_to(".")
+        with codegen_input_volume.batch_upload(force=True) as b:
+            b.put_file(csv_file, input_path)
 
-            env = {
-                "CSV_FILE_PATH": f"/app/inputs/{input_path}",
-            }
-        case "single":
-            env = {"SINGLE_URL": single_url}
-            if single_commit:
-                env["SINGLE_COMMIT"] = single_commit
-        case "github":
-            env = {
-                "GITHUB_LANGUAGE": github_language,
-                "GITHUB_HEURISTIC": github_heuristic,
-                "GITHUB_NUM_REPOS": str(github_num_repos),
-            }
-        case _:
-            msg = f"Invalid source: {source}"
-            raise ValueError(msg)
+        env = {
+            "CSV_FILE_PATH": f"/app/inputs/{input_path}",
+        }
+    elif source == "single":
+        env = {"SINGLE_URL": single_url}
+        if single_commit:
+            env["SINGLE_COMMIT"] = single_commit
+    elif source == "github":
+        env = {
+            "GITHUB_LANGUAGE": github_language,
+            "GITHUB_HEURISTIC": github_heuristic,
+            "GITHUB_NUM_REPOS": str(github_num_repos),
+        }
+    else:
+        msg = f"Invalid source: {source}"
+        raise ValueError(msg)
 
     return parse_repo_on_modal.remote(
         source=source,
