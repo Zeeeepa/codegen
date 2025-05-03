@@ -49,12 +49,7 @@ class FunctionAnalysisResult:
     issues: List[Dict[str, Any]] = field(default_factory=list)
     
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert the function analysis result to a dictionary.
-        
-        Returns:
-            Dictionary representation of the function analysis result.
-        """
+        """Convert the result to a dictionary."""
         return {
             "function_name": self.function_name,
             "complexity": self.complexity,
@@ -68,40 +63,41 @@ class FunctionAnalysisResult:
             "issues": self.issues
         }
 
+
 @dataclass
 class FeatureAnalysisResult:
     """
-    Result of analyzing a feature.
+    Result of analyzing a feature (file or directory).
     """
     feature_path: str
-    functions: List[Dict[str, Any]] = field(default_factory=list)
-    classes: List[Dict[str, Any]] = field(default_factory=list)
-    complexity: Dict[str, Any] = field(default_factory=dict)
-    dependencies: List[str] = field(default_factory=list)
+    is_file: bool
+    line_count: int
+    function_count: int
+    class_count: int
+    complexity: float
+    functions: List[FunctionAnalysisResult] = field(default_factory=list)
     issues: List[Dict[str, Any]] = field(default_factory=list)
     
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert the feature analysis result to a dictionary.
-        
-        Returns:
-            Dictionary representation of the feature analysis result.
-        """
+        """Convert the result to a dictionary."""
         return {
             "feature_path": self.feature_path,
-            "functions": self.functions,
-            "classes": self.classes,
+            "is_file": self.is_file,
+            "line_count": self.line_count,
+            "function_count": self.function_count,
+            "class_count": self.class_count,
             "complexity": self.complexity,
-            "dependencies": self.dependencies,
+            "functions": [func.to_dict() for func in self.functions],
             "issues": self.issues
         }
 
+
 class FeatureAnalyzer:
     """
-    Analyzer for features in a codebase.
+    Analyzer for code features and functions.
     
-    This class provides functionality to analyze specific functions, classes,
-    and features (files or directories) in a codebase.
+    This class provides functionality for analyzing specific features (files or directories)
+    and functions in a codebase.
     """
     
     def __init__(self, codebase: Codebase):
@@ -112,123 +108,51 @@ class FeatureAnalyzer:
             codebase: The codebase to analyze
         """
         self.codebase = codebase
+        self.code_analyzer = CodeAnalyzer(codebase)
     
     def analyze_function(self, function_name: str) -> FunctionAnalysisResult:
         """
         Analyze a specific function in the codebase.
         
         Args:
-            function_name: The fully qualified name of the function to analyze
+            function_name: Name of the function to analyze
             
         Returns:
-            A FunctionAnalysisResult with the analysis results
-            
-        Raises:
-            ValueError: If the function is not found in the codebase
+            A FunctionAnalysisResult object containing the analysis results
         """
         # Find the function in the codebase
-        function = None
-        
-        for func in self.codebase.functions:
-            if func.qualified_name == function_name:
-                function = func
-                break
+        function = self._find_function(function_name)
         
         if not function:
-            raise ValueError(f"Function {function_name} not found in the codebase")
+            raise ValueError(f"Function '{function_name}' not found in the codebase")
         
-        # Calculate cyclomatic complexity
-        complexity = self._calculate_cyclomatic_complexity(function)
+        # Calculate complexity
+        complexity = self._calculate_complexity(function)
         
         # Get parameters
-        parameters = []
-        
-        if hasattr(function, "parameters"):
-            for param in function.parameters:
-                param_name = param.name if hasattr(param, "name") else str(param)
-                param_type = param.type if hasattr(param, "type") else "unknown"
-                parameters.append(f"{param_name}: {param_type}")
+        parameters = [param.name for param in function.parameters]
         
         # Get return type
-        return_type = "unknown"
-        
-        if hasattr(function, "return_type"):
-            return_type = function.return_type
+        return_type = str(function.return_type) if function.return_type else "None"
         
         # Get line count
-        line_count = 0
+        line_count = len(function.code_block.source.splitlines()) if function.code_block else 0
         
-        if hasattr(function, "code_block") and hasattr(function.code_block, "source"):
-            line_count = len(function.code_block.source.splitlines())
+        # Get dependencies
+        dependencies = self._get_function_dependencies(function)
         
-        # Get dependencies (functions and classes called by this function)
-        dependencies = []
-        
-        if hasattr(function, "calls"):
-            for call in function.calls:
-                if hasattr(call, "target") and hasattr(call.target, "qualified_name"):
-                    dependencies.append(call.target.qualified_name)
-        
-        # Get callers (functions that call this function)
-        callers = []
-        
-        for func in self.codebase.functions:
-            if hasattr(func, "calls"):
-                for call in func.calls:
-                    if hasattr(call, "target") and hasattr(call.target, "qualified_name"):
-                        if call.target.qualified_name == function_name:
-                            callers.append(func.qualified_name)
+        # Get callers
+        callers = self._get_function_callers(function)
         
         # Check if the function is tested
-        is_tested = False
-        test_coverage = None
+        is_tested, test_coverage = self._check_function_tests(function)
         
-        # Look for test files that might test this function
-        function_name_parts = function_name.split(".")
-        function_short_name = function_name_parts[-1]
+        # Check for issues
+        issues = self._check_function_issues(function)
         
-        for file in self.codebase.files:
-            if "test" in file.filepath.lower() and function_short_name.lower() in file.content.lower():
-                is_tested = True
-                break
-        
-        # Identify potential issues
-        issues = []
-        
-        # Check for high complexity
-        if complexity > 10:
-            issues.append({
-                "issue_type": "high_complexity",
-                "severity": "warning",
-                "message": f"Function has high cyclomatic complexity ({complexity})"
-            })
-        
-        # Check for long functions
-        if line_count > 50:
-            issues.append({
-                "issue_type": "long_function",
-                "severity": "warning",
-                "message": f"Function is very long ({line_count} lines)"
-            })
-        
-        # Check for many parameters
-        if len(parameters) > 5:
-            issues.append({
-                "issue_type": "many_parameters",
-                "severity": "warning",
-                "message": f"Function has many parameters ({len(parameters)})"
-            })
-        
-        # Check for lack of testing
-        if not is_tested:
-            issues.append({
-                "issue_type": "not_tested",
-                "severity": "info",
-                "message": "Function does not appear to be tested"
-            })
-        
-        return FunctionAnalysisResult(
-            function_name=function_name,
+        # Create the result
+        result = FunctionAnalysisResult(
+            function_name=function.name,
             complexity=complexity,
             parameters=parameters,
             return_type=return_type,
@@ -239,281 +163,157 @@ class FeatureAnalyzer:
             test_coverage=test_coverage,
             issues=issues
         )
-    
-    def analyze_class(self, class_name: str) -> Dict[str, Any]:
-        """
-        Analyze a specific class in the codebase.
         
-        Args:
-            class_name: The fully qualified name of the class to analyze
-            
-        Returns:
-            A dictionary with the analysis results
-            
-        Raises:
-            ValueError: If the class is not found in the codebase
-        """
-        # Find the class in the codebase
-        cls = None
-        
-        for c in self.codebase.classes:
-            if c.qualified_name == class_name:
-                cls = c
-                break
-        
-        if not cls:
-            raise ValueError(f"Class {class_name} not found in the codebase")
-        
-        # Get methods
-        methods = []
-        
-        if hasattr(cls, "methods"):
-            for method in cls.methods:
-                if hasattr(method, "qualified_name"):
-                    methods.append(method.qualified_name)
-        
-        # Get attributes
-        attributes = []
-        
-        if hasattr(cls, "attributes"):
-            for attr in cls.attributes:
-                if hasattr(attr, "name"):
-                    attr_name = attr.name
-                    attr_type = attr.type if hasattr(attr, "type") else "unknown"
-                    attributes.append(f"{attr_name}: {attr_type}")
-        
-        # Get parent classes
-        parent_classes = []
-        
-        if hasattr(cls, "parent_classes"):
-            for parent in cls.parent_classes:
-                if hasattr(parent, "qualified_name"):
-                    parent_classes.append(parent.qualified_name)
-        
-        # Get child classes
-        child_classes = []
-        
-        for c in self.codebase.classes:
-            if hasattr(c, "parent_classes"):
-                for parent in c.parent_classes:
-                    if hasattr(parent, "qualified_name") and parent.qualified_name == class_name:
-                        child_classes.append(c.qualified_name)
-        
-        # Calculate class complexity (average of method complexities)
-        method_complexities = []
-        
-        if hasattr(cls, "methods"):
-            for method in cls.methods:
-                if hasattr(method, "qualified_name"):
-                    try:
-                        complexity = self._calculate_cyclomatic_complexity(method)
-                        method_complexities.append(complexity)
-                    except Exception as e:
-                        logger.warning(f"Error calculating complexity for method {method.qualified_name}: {e}")
-        
-        avg_complexity = sum(method_complexities) / len(method_complexities) if method_complexities else 0
-        
-        # Check if the class is tested
-        is_tested = False
-        
-        # Look for test files that might test this class
-        class_name_parts = class_name.split(".")
-        class_short_name = class_name_parts[-1]
-        
-        for file in self.codebase.files:
-            if "test" in file.filepath.lower() and class_short_name.lower() in file.content.lower():
-                is_tested = True
-                break
-        
-        # Identify potential issues
-        issues = []
-        
-        # Check for high complexity
-        if avg_complexity > 10:
-            issues.append({
-                "issue_type": "high_complexity",
-                "severity": "warning",
-                "message": f"Class has high average method complexity ({avg_complexity:.2f})"
-            })
-        
-        # Check for many methods
-        if len(methods) > 20:
-            issues.append({
-                "issue_type": "many_methods",
-                "severity": "warning",
-                "message": f"Class has many methods ({len(methods)})"
-            })
-        
-        # Check for many attributes
-        if len(attributes) > 15:
-            issues.append({
-                "issue_type": "many_attributes",
-                "severity": "warning",
-                "message": f"Class has many attributes ({len(attributes)})"
-            })
-        
-        # Check for lack of testing
-        if not is_tested:
-            issues.append({
-                "issue_type": "not_tested",
-                "severity": "info",
-                "message": "Class does not appear to be tested"
-            })
-        
-        return {
-            "class_name": class_name,
-            "methods": methods,
-            "attributes": attributes,
-            "parent_classes": parent_classes,
-            "child_classes": child_classes,
-            "avg_complexity": avg_complexity,
-            "is_tested": is_tested,
-            "issues": issues
-        }
+        return result
     
     def analyze_feature(self, feature_path: str) -> FeatureAnalysisResult:
         """
         Analyze a specific feature (file or directory) in the codebase.
         
         Args:
-            feature_path: The path to the feature to analyze
+            feature_path: Path to the feature to analyze
             
         Returns:
-            A FeatureAnalysisResult with the analysis results
-            
-        Raises:
-            ValueError: If the feature is not found in the codebase
+            A FeatureAnalysisResult object containing the analysis results
         """
-        # Normalize the feature path
-        feature_path = os.path.normpath(feature_path)
+        # Check if the feature is a file or directory
+        is_file = self._is_file_path(feature_path)
         
-        # Find all files in the feature path
-        feature_files = []
+        # Get files in the feature
+        files = self._get_files_in_feature(feature_path)
         
-        for file in self.codebase.files:
-            file_path = os.path.normpath(file.filepath)
-            
-            if file_path == feature_path or file_path.startswith(feature_path + os.sep):
-                feature_files.append(file)
+        if not files:
+            raise ValueError(f"Feature '{feature_path}' not found in the codebase")
         
-        if not feature_files:
-            raise ValueError(f"Feature {feature_path} not found in the codebase")
+        # Get functions in the feature
+        functions = self._get_functions_in_feature(feature_path)
         
-        # Find all functions in the feature
-        feature_functions = []
+        # Get classes in the feature
+        classes = self._get_classes_in_feature(feature_path)
         
-        for func in self.codebase.functions:
-            if hasattr(func, "filepath"):
-                func_path = os.path.normpath(func.filepath)
-                
-                if func_path == feature_path or func_path.startswith(feature_path + os.sep):
-                    feature_functions.append(func)
+        # Calculate line count
+        line_count = sum(len(file.content.splitlines()) for file in files)
         
-        # Find all classes in the feature
-        feature_classes = []
+        # Calculate function count
+        function_count = len(functions)
         
-        for cls in self.codebase.classes:
-            if hasattr(cls, "filepath"):
-                cls_path = os.path.normpath(cls.filepath)
-                
-                if cls_path == feature_path or cls_path.startswith(feature_path + os.sep):
-                    feature_classes.append(cls)
+        # Calculate class count
+        class_count = len(classes)
+        
+        # Calculate average complexity
+        complexity = self._calculate_average_complexity(functions)
         
         # Analyze each function
-        function_analyses = []
+        function_results = []
+        for func in functions:
+            try:
+                result = self.analyze_function(func.name)
+                function_results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to analyze function '{func.name}': {e}")
         
-        for func in feature_functions:
-            if hasattr(func, "qualified_name"):
-                try:
-                    analysis = self.analyze_function(func.qualified_name)
-                    function_analyses.append(analysis.to_dict())
-                except Exception as e:
-                    logger.warning(f"Error analyzing function {func.qualified_name}: {e}")
+        # Check for issues
+        issues = self._check_feature_issues(feature_path, files, functions, classes)
         
-        # Analyze each class
-        class_analyses = []
-        
-        for cls in feature_classes:
-            if hasattr(cls, "qualified_name"):
-                try:
-                    analysis = self.analyze_class(cls.qualified_name)
-                    class_analyses.append(analysis)
-                except Exception as e:
-                    logger.warning(f"Error analyzing class {cls.qualified_name}: {e}")
-        
-        # Calculate overall complexity metrics
-        total_complexity = sum(analysis["complexity"] for analysis in function_analyses)
-        avg_complexity = total_complexity / len(function_analyses) if function_analyses else 0
-        
-        complexity_metrics = {
-            "total_complexity": total_complexity,
-            "avg_complexity": avg_complexity,
-            "num_functions": len(function_analyses),
-            "num_classes": len(class_analyses),
-            "num_files": len(feature_files)
-        }
-        
-        # Get dependencies (imports from outside the feature)
-        dependencies = set()
-        
-        for file in feature_files:
-            if hasattr(file, "imports"):
-                for imp in file.imports:
-                    if hasattr(imp, "module_name"):
-                        # Check if the import is from outside the feature
-                        is_external = True
-                        
-                        for feature_file in feature_files:
-                            if hasattr(feature_file, "module_name") and feature_file.module_name == imp.module_name:
-                                is_external = False
-                                break
-                        
-                        if is_external:
-                            dependencies.add(imp.module_name)
-        
-        # Identify potential issues
-        issues = []
-        
-        # Check for high complexity
-        if avg_complexity > 10:
-            issues.append({
-                "issue_type": "high_complexity",
-                "severity": "warning",
-                "message": f"Feature has high average function complexity ({avg_complexity:.2f})"
-            })
-        
-        # Check for many dependencies
-        if len(dependencies) > 20:
-            issues.append({
-                "issue_type": "many_dependencies",
-                "severity": "warning",
-                "message": f"Feature has many external dependencies ({len(dependencies)})"
-            })
-        
-        # Check for untested functions
-        untested_functions = [
-            analysis["function_name"] for analysis in function_analyses
-            if not analysis["is_tested"]
-        ]
-        
-        if untested_functions:
-            issues.append({
-                "issue_type": "untested_functions",
-                "severity": "info",
-                "message": f"{len(untested_functions)} functions appear to be untested",
-                "details": untested_functions[:5]  # Show up to 5 untested functions
-            })
-        
-        return FeatureAnalysisResult(
+        # Create the result
+        result = FeatureAnalysisResult(
             feature_path=feature_path,
-            functions=function_analyses,
-            classes=class_analyses,
-            complexity=complexity_metrics,
-            dependencies=list(dependencies),
+            is_file=is_file,
+            line_count=line_count,
+            function_count=function_count,
+            class_count=class_count,
+            complexity=complexity,
+            functions=function_results,
             issues=issues
         )
+        
+        return result
     
-    def _calculate_cyclomatic_complexity(self, function: CodegenFunction) -> int:
+    def _find_function(self, function_name: str) -> Optional[Function]:
+        """
+        Find a function in the codebase by name.
+        
+        Args:
+            function_name: Name of the function to find
+            
+        Returns:
+            The function object, or None if not found
+        """
+        for func in self.codebase.functions:
+            if func.name == function_name:
+                return func
+        return None
+    
+    def _is_file_path(self, path: str) -> bool:
+        """
+        Check if a path is a file or directory.
+        
+        Args:
+            path: Path to check
+            
+        Returns:
+            True if the path is a file, False if it's a directory
+        """
+        for file in self.codebase.files:
+            if file.path == path:
+                return True
+        return False
+    
+    def _get_files_in_feature(self, feature_path: str) -> List[SourceFile]:
+        """
+        Get all files in a feature.
+        
+        Args:
+            feature_path: Path to the feature
+            
+        Returns:
+            A list of SourceFile objects
+        """
+        if self._is_file_path(feature_path):
+            # Feature is a file
+            for file in self.codebase.files:
+                if file.path == feature_path:
+                    return [file]
+            return []
+        else:
+            # Feature is a directory
+            return [file for file in self.codebase.files if file.path.startswith(feature_path)]
+    
+    def _get_functions_in_feature(self, feature_path: str) -> List[Function]:
+        """
+        Get all functions in a feature.
+        
+        Args:
+            feature_path: Path to the feature
+            
+        Returns:
+            A list of Function objects
+        """
+        if self._is_file_path(feature_path):
+            # Feature is a file
+            return [func for func in self.codebase.functions if func.file_path == feature_path]
+        else:
+            # Feature is a directory
+            return [func for func in self.codebase.functions if func.file_path.startswith(feature_path)]
+    
+    def _get_classes_in_feature(self, feature_path: str) -> List[Class]:
+        """
+        Get all classes in a feature.
+        
+        Args:
+            feature_path: Path to the feature
+            
+        Returns:
+            A list of Class objects
+        """
+        if self._is_file_path(feature_path):
+            # Feature is a file
+            return [cls for cls in self.codebase.classes if cls.file_path == feature_path]
+        else:
+            # Feature is a directory
+            return [cls for cls in self.codebase.classes if cls.file_path.startswith(feature_path)]
+    
+    def _calculate_complexity(self, function: Function) -> int:
         """
         Calculate the cyclomatic complexity of a function.
         
@@ -527,37 +327,212 @@ class FeatureAnalyzer:
         complexity = 1
         
         # Count decision points
-        if hasattr(function, "code_block"):
-            # Count if statements
-            if_statements = function.code_block.find_all("if_statement")
-            complexity += len(if_statements)
-            
-            # Count for loops
-            for_loops = function.code_block.find_all("for_statement")
-            complexity += len(for_loops)
-            
-            # Count while loops
-            while_loops = function.code_block.find_all("while_statement")
-            complexity += len(while_loops)
-            
-            # Count try-catch blocks
-            try_catches = function.code_block.find_all("try_statement")
-            complexity += len(try_catches)
-            
-            # Count logical operators in conditions
-            binary_expressions = function.code_block.find_all("binary_expression")
-            for expr in binary_expressions:
-                if hasattr(expr, "operator") and expr.operator in ["&&", "||", "and", "or"]:
-                    complexity += 1
-            
-            # Count ternary expressions
-            ternary_expressions = function.code_block.find_all("ternary_expression")
-            complexity += len(ternary_expressions)
-            
-            # Count switch cases
-            switch_statements = function.code_block.find_all("switch_statement")
-            for switch in switch_statements:
-                if hasattr(switch, "cases"):
-                    complexity += len(switch.cases)
+        if hasattr(function, "code_block") and function.code_block:
+            code = function.code_block.source
+            complexity += code.count("if ")
+            complexity += code.count("elif ")
+            complexity += code.count("else:")
+            complexity += code.count("for ")
+            complexity += code.count("while ")
+            complexity += code.count("except ")
+            complexity += code.count(" and ")
+            complexity += code.count(" or ")
         
         return complexity
+    
+    def _calculate_average_complexity(self, functions: List[Function]) -> float:
+        """
+        Calculate the average cyclomatic complexity of a list of functions.
+        
+        Args:
+            functions: The functions to analyze
+            
+        Returns:
+            The average cyclomatic complexity value
+        """
+        if not functions:
+            return 0.0
+        
+        total_complexity = sum(self._calculate_complexity(func) for func in functions)
+        return total_complexity / len(functions)
+    
+    def _get_function_dependencies(self, function: Function) -> List[str]:
+        """
+        Get the dependencies of a function.
+        
+        Args:
+            function: The function to analyze
+            
+        Returns:
+            A list of function names that this function depends on
+        """
+        dependencies = []
+        
+        # Get function calls
+        if hasattr(function, "function_calls"):
+            for call in function.function_calls:
+                if call.name not in dependencies:
+                    dependencies.append(call.name)
+        
+        return dependencies
+    
+    def _get_function_callers(self, function: Function) -> List[str]:
+        """
+        Get the callers of a function.
+        
+        Args:
+            function: The function to analyze
+            
+        Returns:
+            A list of function names that call this function
+        """
+        callers = []
+        
+        # Find functions that call this function
+        for func in self.codebase.functions:
+            if hasattr(func, "function_calls"):
+                for call in func.function_calls:
+                    if call.name == function.name and func.name not in callers:
+                        callers.append(func.name)
+        
+        return callers
+    
+    def _check_function_tests(self, function: Function) -> Tuple[bool, Optional[float]]:
+        """
+        Check if a function is tested.
+        
+        Args:
+            function: The function to analyze
+            
+        Returns:
+            A tuple of (is_tested, test_coverage)
+        """
+        # This is a simplified implementation
+        # In a real implementation, you would check for test files and coverage data
+        
+        # Check if there's a test file for this function
+        function_name = function.name
+        file_path = function.file_path
+        
+        # Check if there's a test file with a test for this function
+        for file in self.codebase.files:
+            if "test_" in file.path and file_path.split("/")[-1] in file.path:
+                # Check if the function name is mentioned in the test file
+                if function_name in file.content:
+                    return True, None
+        
+        return False, None
+    
+    def _check_function_issues(self, function: Function) -> List[Dict[str, Any]]:
+        """
+        Check for issues in a function.
+        
+        Args:
+            function: The function to analyze
+            
+        Returns:
+            A list of issues found in the function
+        """
+        issues = []
+        
+        # Check for high complexity
+        complexity = self._calculate_complexity(function)
+        if complexity > 10:
+            issues.append({
+                "type": "high_complexity",
+                "severity": "warning",
+                "message": f"Function has high cyclomatic complexity ({complexity})"
+            })
+        
+        # Check for long function
+        if hasattr(function, "code_block") and function.code_block:
+            line_count = len(function.code_block.source.splitlines())
+            if line_count > 50:
+                issues.append({
+                    "type": "long_function",
+                    "severity": "warning",
+                    "message": f"Function is too long ({line_count} lines)"
+                })
+        
+        # Check for missing return type
+        if not function.return_type:
+            issues.append({
+                "type": "missing_return_type",
+                "severity": "info",
+                "message": "Function is missing a return type annotation"
+            })
+        
+        # Check for missing parameter types
+        for param in function.parameters:
+            if not param.type:
+                issues.append({
+                    "type": "missing_parameter_type",
+                    "severity": "info",
+                    "message": f"Parameter '{param.name}' is missing a type annotation"
+                })
+        
+        # Check for missing docstring
+        if not function.docstring:
+            issues.append({
+                "type": "missing_docstring",
+                "severity": "info",
+                "message": "Function is missing a docstring"
+            })
+        
+        return issues
+    
+    def _check_feature_issues(
+        self,
+        feature_path: str,
+        files: List[SourceFile],
+        functions: List[Function],
+        classes: List[Class]
+    ) -> List[Dict[str, Any]]:
+        """
+        Check for issues in a feature.
+        
+        Args:
+            feature_path: Path to the feature
+            files: Files in the feature
+            functions: Functions in the feature
+            classes: Classes in the feature
+            
+        Returns:
+            A list of issues found in the feature
+        """
+        issues = []
+        
+        # Check for large files
+        for file in files:
+            line_count = len(file.content.splitlines())
+            if line_count > 500:
+                issues.append({
+                    "type": "large_file",
+                    "severity": "warning",
+                    "message": f"File '{file.path}' is too large ({line_count} lines)"
+                })
+        
+        # Check for high complexity
+        complexity = self._calculate_average_complexity(functions)
+        if complexity > 7:
+            issues.append({
+                "type": "high_average_complexity",
+                "severity": "warning",
+                "message": f"Feature has high average cyclomatic complexity ({complexity:.2f})"
+            })
+        
+        # Check for missing tests
+        tested_functions = 0
+        for func in functions:
+            is_tested, _ = self._check_function_tests(func)
+            if is_tested:
+                tested_functions += 1
+        
+        if functions and tested_functions / len(functions) < 0.5:
+            issues.append({
+                "type": "low_test_coverage",
+                "severity": "warning",
+                "message": f"Feature has low test coverage ({tested_functions}/{len(functions)} functions tested)"
+            })
+        
+        return issues
