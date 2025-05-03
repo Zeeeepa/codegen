@@ -2,14 +2,14 @@ import sys
 from pathlib import Path
 
 import modal
+from loguru import logger
+
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.sql_output import ParseMetricsSQLOutput
 from codegen_on_oss.parser import CodegenParser
-from loguru import logger
 
 app = modal.App("codegen-oss-parse")
-
 
 codegen_repo_volume = modal.Volume.from_name(
     "codegen-oss-repo-volume",

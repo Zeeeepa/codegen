@@ -85,4 +85,3 @@ class CodeIntegrityIntegration:
             "pr_branch": pr_branch,
             "analysis": "PR analysis not implemented in this integration example"
         }
-

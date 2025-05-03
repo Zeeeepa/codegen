@@ -11,7 +11,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from codegen import Codebase
 from codegen_on_oss.analysis import CodeAnalyzer, CodeIntegrityAnalyzer
@@ -155,7 +155,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str):
                 <th>Line</th>
                 <th>Message</th>
             </tr>
-            {"".join([f"<tr><td>{e.get('name', '')}</td><td>{e.get('error_type', '')}</td><td>{e.get('filepath', '')}</td><td>{e.get('line', '')}</td><td>{e.get('message', '')}</td></tr>" for e in results.get('errors', []) if e.get('type') == 'function_error'])}
+            {generate_table_rows(results.get('errors', []), 'function_error')}
         </table>
     </div>
     
@@ -169,7 +169,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str):
                 <th>Line</th>
                 <th>Message</th>
             </tr>
-            {"".join([f"<tr><td>{e.get('name', '')}</td><td>{e.get('error_type', '')}</td><td>{e.get('filepath', '')}</td><td>{e.get('line', '')}</td><td>{e.get('message', '')}</td></tr>" for e in results.get('errors', []) if e.get('type') == 'class_error'])}
+            {generate_table_rows(results.get('errors', []), 'class_error')}
         </table>
     </div>
     
@@ -183,7 +183,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str):
                 <th>Line</th>
                 <th>Message</th>
             </tr>
-            {"".join([f"<tr><td>{e.get('name', '')}</td><td>{e.get('error_type', '')}</td><td>{e.get('filepath', '')}</td><td>{e.get('line', '')}</td><td>{e.get('message', '')}</td></tr>" for e in results.get('errors', []) if e.get('type') == 'parameter_error'])}
+            {generate_table_rows(results.get('errors', []), 'parameter_error')}
         </table>
     </div>
     
@@ -198,7 +198,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str):
                 <th>Line</th>
                 <th>Message</th>
             </tr>
-            {"".join([f"<tr><td>{e.get('name', '')}</td><td>{e.get('callback_name', '')}</td><td>{e.get('error_type', '')}</td><td>{e.get('filepath', '')}</td><td>{e.get('line', '')}</td><td>{e.get('message', '')}</td></tr>" for e in results.get('errors', []) if e.get('type') == 'callback_error'])}
+            {generate_callback_table_rows(results.get('errors', []))}
         </table>
     </div>
     
@@ -213,7 +213,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str):
                 <th>Line</th>
                 <th>Message</th>
             </tr>
-            {"".join([f"<tr><td>{e.get('type', '')}</td><td>{e.get('error_type', '')}</td><td>{e.get('name', '')}</td><td>{e.get('filepath', '')}</td><td>{e.get('line', '')}</td><td>{e.get('message', '')}</td></tr>" for e in results.get('errors', []) if e.get('type') not in ['function_error', 'class_error', 'parameter_error', 'callback_error']])}
+            {generate_other_table_rows(results.get('errors', []))}
         </table>
     </div>
     
@@ -229,6 +229,49 @@ def generate_html_report(results: Dict[str, Any], output_path: str):
         f.write(html)
     
     print(f"HTML report generated: {output_path}")
+
+def generate_table_rows(errors, error_type):
+    """Generate table rows for errors of a specific type."""
+    rows = []
+    for e in errors:
+        if e.get('type') == error_type:
+            row = f"<tr><td>{e.get('name', '')}</td>"
+            row += f"<td>{e.get('error_type', '')}</td>"
+            row += f"<td>{e.get('filepath', '')}</td>"
+            row += f"<td>{e.get('line', '')}</td>"
+            row += f"<td>{e.get('message', '')}</td></tr>"
+            rows.append(row)
+    return "".join(rows)
+
+
+def generate_callback_table_rows(errors):
+    """Generate table rows for callback errors."""
+    rows = []
+    for e in errors:
+        if e.get('type') == 'callback_error':
+            row = f"<tr><td>{e.get('name', '')}</td>"
+            row += f"<td>{e.get('callback_name', '')}</td>"
+            row += f"<td>{e.get('error_type', '')}</td>"
+            row += f"<td>{e.get('filepath', '')}</td>"
+            row += f"<td>{e.get('line', '')}</td>"
+            row += f"<td>{e.get('message', '')}</td></tr>"
+            rows.append(row)
+    return "".join(rows)
+
+
+def generate_other_table_rows(errors):
+    """Generate table rows for other types of errors."""
+    rows = []
+    for e in errors:
+        if e.get('type') not in ['function_error', 'class_error', 'parameter_error', 'callback_error']:
+            row = f"<tr><td>{e.get('type', '')}</td>"
+            row += f"<td>{e.get('error_type', '')}</td>"
+            row += f"<td>{e.get('name', '')}</td>"
+            row += f"<td>{e.get('filepath', '')}</td>"
+            row += f"<td>{e.get('line', '')}</td>"
+            row += f"<td>{e.get('message', '')}</td></tr>"
+            rows.append(row)
+    return "".join(rows)
 
 def main():
     """Main function."""
@@ -320,4 +363,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

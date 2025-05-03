@@ -49,4 +49,3 @@ def _add_code_integrity_analysis_to_code_analyzer():
 
 # Add the code integrity analysis method to the CodeAnalyzer class
 _add_code_integrity_analysis_to_code_analyzer()
-
