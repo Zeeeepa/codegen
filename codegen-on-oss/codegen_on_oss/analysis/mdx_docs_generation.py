@@ -110,10 +110,10 @@ def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
 
 def format_return_for_mdx(return_type: list[str], return_description: str) -> str:
     description = sanitize_html_for_mdx(return_description) if return_description else ""
-    return_type = resolve_type_string(return_type[0])
+    return_type_str = resolve_type_string(return_type[0])
 
     return f"""
-<Return return_type={{ {return_type} }} description="{description}"/>
+<Return return_type={{ {return_type_str} }} description="{description}"/>
 """
 
 
@@ -154,8 +154,8 @@ def get_mdx_route_for_class(cls_doc: ClassDoc) -> str:
 
 
 def format_type_string(type_string: str) -> str:
-    type_string = type_string.split("|")
-    return " | ".join([type_str.strip() for type_str in type_string])
+    type_strings = type_string.split("|")
+    return " | ".join([type_str.strip() for type_str in type_strings])
 
 
 def resolve_type_string(type_string: str) -> str:

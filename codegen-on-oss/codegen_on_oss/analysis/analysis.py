@@ -53,7 +53,7 @@ from codegen_on_oss.analysis.current_code_codebase import (
     get_graphsitter_repo_path,
     get_codegen_codebase_base_path,
     get_current_code_codebase,
-    import_all_codegen_sdk_module,
+    import_all_codegen_sdk_modules,
     DocumentedObjects,
     get_documented_objects
 )
@@ -130,7 +130,7 @@ class CodeAnalyzer:
         if self._context is None:
             # Initialize context if not already done
             self._context = self.codebase.ctx
-        return self._context
+        return self._context or CodebaseContext(self.codebase)
     
     def get_codebase_summary(self) -> str:
         """
@@ -826,4 +826,3 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
 if __name__ == "__main__":
     # Run the FastAPI app locally with uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
