@@ -14,6 +14,7 @@ import tempfile
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
+import difflib
 
 import networkx as nx
 import requests
@@ -44,38 +45,38 @@ from codegen_on_oss.analysis.codebase_analysis import (
     get_file_summary,
     get_class_summary,
     get_function_summary,
-    get_symbol_summary
+    get_symbol_summary,
 )
 from codegen_on_oss.analysis.codegen_sdk_codebase import (
     get_codegen_sdk_subdirectories,
-    get_codegen_sdk_codebase
+    get_codegen_sdk_codebase,
 )
 from codegen_on_oss.analysis.current_code_codebase import (
     get_current_code_codebase,
-    get_current_code_file
+    get_current_code_file,
 )
 from codegen_on_oss.analysis.document_functions import (
     document_function,
     document_class,
-    document_file
+    document_file,
 )
 from codegen_on_oss.analysis.module_dependencies import (
     get_module_dependencies,
-    visualize_module_dependencies
+    visualize_module_dependencies,
 )
 from codegen_on_oss.analysis.symbolattr import (
     get_symbol_attribution,
-    get_file_attribution
+    get_file_attribution,
 )
 from codegen_on_oss.analysis.analysis_import import (
     analyze_imports,
     find_import_cycles,
-    visualize_import_graph
+    visualize_import_graph,
 )
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalyzer,
     CommitAnalysisResult,
-    CommitIssue
+    CommitIssue,
 )
 
 # Import new analysis modules
@@ -755,27 +756,29 @@ class CodeAnalyzer:
     
     def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:
         """
-        Get a diff of changes for a specific file between the current codebase and a commit codebase.
+        Get the diff between the current codebase and a commit codebase for a file.
         
         Args:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
         """
-            # Count changes per file
-            file_changes = {}
-            for commit in commits:
-                for file in commit.files:
-                    if file.filename in file_changes:
-                        file_changes[file.filename] += 1
-                    else:
-                        file_changes[file.filename] = 1
+        try:
+            # Get the file content from both codebases
+            original_content = self.codebase.get_file_content(file_path)
+            commit_content = commit_codebase.get_file_content(file_path)
             
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
+            # Generate a diff
+            diff = difflib.unified_diff(
+                original_content.splitlines(keepends=True),
+                commit_content.splitlines(keepends=True),
+                fromfile=f"a/{file_path}",
+                tofile=f"b/{file_path}"
+            )
+            
+            return "".join(diff)
         except Exception as e:
-            return {"error": str(e)}
-    
+            return f"Error generating diff: {str(e)}"
+
     def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
         Create a snapshot of the current codebase.
@@ -888,86 +891,49 @@ class CodeAnalyzer:
 
 def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     """
-    Get the number of commits per month for the last 12 months.
-
+    Get monthly commit activity for a repository.
+    
     Args:
-        repo_path: Path to the git repository
-
+        repo_path: Path to the repository
+    
     Returns:
-        Dictionary with month-year as key and number of commits as value
+        Dictionary mapping month strings to commit counts
     """
-    end_date = datetime.now(UTC)
-    start_date = end_date - timedelta(days=365)
-
-    date_format = "%Y-%m-%d"
-    since_date = start_date.strftime(date_format)
-    until_date = end_date.strftime(date_format)
-
-    # Validate repo_path format (should be owner/repo)
-    if not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo_path):
-        print(f"Invalid repository path format: {repo_path}")
-        return {}
-
-    repo_url = f"https://github.com/{repo_path}"
-
-    # Validate URL
+    original_dir = os.getcwd()
     try:
-        parsed_url = urlparse(repo_url)
-        if not all([parsed_url.scheme, parsed_url.netloc]):
-            print(f"Invalid URL: {repo_url}")
-            return {}
-    except Exception:
-        print(f"Invalid URL: {repo_url}")
-        return {}
+        # Change to repository directory
+        os.chdir(repo_path)
+        
+        # Get all commits
+        result = subprocess.run(
+            ["git", "log", "--format=%cd", "--date=short"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        
+        # Parse commit dates
+        commit_dates = result.stdout.strip().split("\n")
+        
+        # Group by month
+        monthly_counts = {}
+        for date_str in commit_dates:
+            if date_str:
+                # Extract year and month
+                year_month = date_str[:7]  # YYYY-MM
+                month_key = year_month
+                
+                if month_key not in monthly_counts:
+                    monthly_counts[month_key] = 0
+                
+                monthly_counts[month_key] += 1
 
-    try:
-        original_dir = os.getcwd()
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Using a safer approach with a list of arguments and shell=False
-            subprocess.run(
-                ["git", "clone", repo_url, temp_dir],
-                check=True,
-                capture_output=True,
-                shell=False,
-                text=True,
-            )
-            os.chdir(temp_dir)
-
-            # Using a safer approach with a list of arguments and shell=False
-            result = subprocess.run(
-                [
-                    "git",
-                    "log",
-                    f"--since={since_date}",
-                    f"--until={until_date}",
-                    "--format=%aI",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-                shell=False,
-            )
-            commit_dates = result.stdout.strip().split("\n")
-
-            monthly_counts = {}
-            current_date = start_date
-            while current_date <= end_date:
-                month_key = current_date.strftime("%Y-%m")
-                monthly_counts[month_key] = 0
-                current_date = (
-                    current_date.replace(day=1) + timedelta(days=32)
-                ).replace(day=1)
-
-            for date_str in commit_dates:
-                if date_str:  # Skip empty lines
-                    commit_date = datetime.fromisoformat(date_str.strip())
-                    month_key = commit_date.strftime("%Y-%m")
-                    if month_key in monthly_counts:
-                        monthly_counts[month_key] += 1
-
-            return dict(sorted(monthly_counts.items()))
-
+        os.chdir(original_dir)
+        return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        if 'original_dir' in locals():
+            os.chdir(original_dir)
+        return {"error": str(e)}
 
 # Helper functions for complexity analysis
 
