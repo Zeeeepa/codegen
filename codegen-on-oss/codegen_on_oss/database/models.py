@@ -1,11 +1,7 @@
-"""
-Database models for the codegen-on-oss system.
-"""
+"""Database models for the codegen-on-oss system."""
 from __future__ import annotations
 
-import datetime
 import enum
-from typing import Any, Dict, List, Optional, Protocol, Type, TypeVar, cast
 
 from sqlalchemy import (
     Boolean,
@@ -18,10 +14,9 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    create_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 # Create a base class for declarative models
