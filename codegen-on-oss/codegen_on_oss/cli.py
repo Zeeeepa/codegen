@@ -2,13 +2,12 @@ import sys
 from pathlib import Path
 
 import click
-from loguru import logger
-
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.csv_output import CSVOutput
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource, all_sources
+from loguru import logger
 
 logger.remove(0)
 

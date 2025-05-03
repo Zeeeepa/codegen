@@ -1,5 +1,88 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codegen-on-oss"
+version = "0.1.0"
+description = "Enhanced Codegen-on-OSS Architecture"
+readme = "README_ENHANCED.md"
+authors = [
+    {name = "Codegen", email = "info@codegen.sh"}
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "networkx",
+    "platformdirs",
+    "pydantic-settings",
+    "fastapi",
+    "requests",
+    "sqlalchemy",
+    "uvicorn",
+    "websockets",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "black",
+    "isort",
+    "pytest",
+    "ruff",
+    "pre-commit",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "B", "I"]
+ignore = []
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -8,26 +91,4 @@ check_untyped_defs = true
 disallow_untyped_decorators = true
 no_implicit_optional = true
 strict_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-follow_imports = "silent"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.analysis"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.commit_analysis"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.swe_harness_agent"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.snapshot.codebase_snapshot"
-ignore_errors = true
 

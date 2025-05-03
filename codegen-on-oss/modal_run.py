@@ -3,13 +3,12 @@ import sys
 from pathlib import Path
 
 import modal
-from loguru import logger
-
 from codegen_on_oss.bucket_store import BucketStore
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource
+from loguru import logger
 
 parse_app = modal.App("codegen-oss-parse")
 
@@ -33,12 +32,14 @@ except modal.exception.NotFoundError:
     if Path(".env").exists():
         aws_secrets = modal.Secret.from_dotenv()
     else:
-        aws_secrets = modal.Secret.from_dict({
-            "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID"),
-            "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY"),
-            "BUCKET_NAME": os.getenv("BUCKET_NAME"),
-            "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
-        })
+        aws_secrets = modal.Secret.from_dict(
+            {
+                "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID"),
+                "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY"),
+                "BUCKET_NAME": os.getenv("BUCKET_NAME"),
+                "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
+            }
+        )
 
 
 @parse_app.function(

@@ -4,16 +4,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+from codegen_on_oss.errors import PostValidationError
+from codegen_on_oss.metrics import MetricsProfiler
+from loguru import logger
+
 from codegen import Codebase
 from codegen.sdk.codebase.validation import (
     PostInitValidationStatus,
     post_init_validation,
 )
 from codegen.sdk.extensions.utils import uncache_all
-from loguru import logger
-
-from codegen_on_oss.errors import PostValidationError
-from codegen_on_oss.metrics import MetricsProfiler
 
 if TYPE_CHECKING:
     from codegen.sdk.codebase.config import ProjectConfig

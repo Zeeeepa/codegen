@@ -1,6 +1,5 @@
-from pydantic_settings import SettingsConfigDict
-
 from codegen_on_oss.outputs.sql_output import Base, SQLSettings, get_session_maker
+from pydantic_settings import SettingsConfigDict
 
 
 class DotEnvSQLSettings(SQLSettings):
