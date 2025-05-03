@@ -1,480 +1,350 @@
 """
-Function Call Analysis Module for Codegen-on-OSS
+Function call analysis module for code analysis.
 
-This module provides detailed analysis of function calls, including call graphs,
-call-in and call-out points, and parameter validation.
+This module provides classes and functions for analyzing function calls in code,
+including call graphs, parameter usage analysis, and call statistics.
 """
 
-import networkx as nx
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Any, Optional, Tuple
+from collections import defaultdict, Counter
 
 from codegen import Codebase
 from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_resolution import Import
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
-
+from codegen.sdk.core.parameter import Parameter
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.document_functions import hop_through_imports
 
 
 class FunctionCallGraph:
-    """Builds and analyzes a graph of function calls in a codebase."""
+    """
+    Represents a graph of function calls in a codebase.
+    
+    This class provides methods for analyzing function call relationships,
+    including finding callers and callees, calculating call depths, and
+    identifying entry points and leaf functions.
+    """
     
     def __init__(self, codebase: Codebase, context: Optional[CodebaseContext] = None):
-        """Initialize the function call graph.
+        """
+        Initialize the function call graph.
         
         Args:
-            codebase: The Codebase object to analyze
-            context: Optional CodebaseContext for additional analysis capabilities
+            codebase: The codebase to analyze
+            context: Optional context for the analysis
         """
         self.codebase = codebase
         self.context = context
-        self.graph = nx.DiGraph()
+        self.callers: Dict[str, Set[str]] = defaultdict(set)  # function -> set of functions that call it
+        self.callees: Dict[str, Set[str]] = defaultdict(set)  # function -> set of functions it calls
         self._build_graph()
     
     def _build_graph(self) -> None:
-        """Build the function call graph from the codebase."""
-        # Add all functions as nodes
+        """Build the function call graph."""
+        # Initialize all functions as nodes in the graph
         for function in self.codebase.functions:
-            self.graph.add_node(function.name, function=function)
+            self.callers[function.name] = set()
+            self.callees[function.name] = set()
         
         # Add edges for function calls
         for function in self.codebase.functions:
-            if not hasattr(function, "code_block") or not function.code_block:
+            if not hasattr(function, "code_block"):
                 continue
                 
-            for statement in function.code_block.statements:
-                if not hasattr(statement, "function_calls"):
+            for call in function.code_block.function_calls:
+                # Skip calls to functions not in the codebase
+                if call.name not in self.callees:
                     continue
                     
-                for call in statement.function_calls:
-                    # Try to resolve the called function
-                    called_func = self._resolve_function_call(call)
-                    if called_func:
-                        self.graph.add_edge(
-                            function.name, 
-                            called_func.name,
-                            call=call,
-                            line_number=call.line_number if hasattr(call, "line_number") else None
-                        )
+                self.callees[function.name].add(call.name)
+                self.callers[call.name].add(function.name)
     
-    def _resolve_function_call(self, call: Any) -> Optional[Function]:
-        """Resolve a function call to its definition.
-        
-        Args:
-            call: The function call to resolve
-            
-        Returns:
-            The Function object if found, None otherwise
+    def get_callers(self, function_name: str) -> Set[str]:
         """
-        # Try to find the function by name
-        for func in self.codebase.functions:
-            if func.name == call.name:
-                return func
-        
-        # If not found directly, try to resolve through imports
-        # This is a simplified approach and may not work for all cases
-        return None
-    
-    def get_callers(self, function_name: str) -> List[Function]:
-        """Get all functions that call the specified function.
+        Get all functions that call the specified function.
         
         Args:
             function_name: The name of the function
             
         Returns:
-            A list of Function objects that call the specified function
+            A set of function names that call the specified function
         """
-        callers = []
-        
-        for predecessor in self.graph.predecessors(function_name):
-            node_data = self.graph.nodes[predecessor]
-            if "function" in node_data:
-                callers.append(node_data["function"])
-        
-        return callers
+        return self.callers.get(function_name, set())
     
-    def get_callees(self, function_name: str) -> List[Function]:
-        """Get all functions called by the specified function.
+    def get_callees(self, function_name: str) -> Set[str]:
+        """
+        Get all functions called by the specified function.
         
         Args:
             function_name: The name of the function
             
         Returns:
-            A list of Function objects called by the specified function
+            A set of function names called by the specified function
         """
-        callees = []
-        
-        for successor in self.graph.successors(function_name):
-            node_data = self.graph.nodes[successor]
-            if "function" in node_data:
-                callees.append(node_data["function"])
-        
-        return callees
+        return self.callees.get(function_name, set())
     
-    def find_cycles(self) -> List[List[str]]:
-        """Find cycles in the call graph.
+    def get_entry_points(self) -> Set[str]:
+        """
+        Get all entry point functions (functions not called by any other function).
         
         Returns:
-            A list of cycles, where each cycle is a list of function names
+            A set of function names that are entry points
         """
-        cycles = list(nx.simple_cycles(self.graph))
-        return cycles
+        return {name for name, callers in self.callers.items() if not callers}
     
-    def get_call_chain(self, source: str, target: str) -> List[List[str]]:
-        """Find all paths from source function to target function.
-        
-        Args:
-            source: The name of the source function
-            target: The name of the target function
-            
-        Returns:
-            A list of paths, where each path is a list of function names
+    def get_leaf_functions(self) -> Set[str]:
         """
-        if not nx.has_path(self.graph, source, target):
-            return []
-            
-        return list(nx.all_simple_paths(self.graph, source, target))
-    
-    def get_entry_points(self) -> List[Function]:
-        """Get all functions that are not called by any other function.
+        Get all leaf functions (functions that don't call any other function).
         
         Returns:
-            A list of Function objects that are entry points
+            A set of function names that are leaf functions
         """
-        entry_points = []
-        
-        for node in self.graph.nodes:
-            if self.graph.in_degree(node) == 0:
-                node_data = self.graph.nodes[node]
-                if "function" in node_data:
-                    entry_points.append(node_data["function"])
-        
-        return entry_points
-    
-    def get_leaf_functions(self) -> List[Function]:
-        """Get all functions that don't call any other function.
-        
-        Returns:
-            A list of Function objects that are leaf functions
-        """
-        leaf_functions = []
-        
-        for node in self.graph.nodes:
-            if self.graph.out_degree(node) == 0:
-                node_data = self.graph.nodes[node]
-                if "function" in node_data:
-                    leaf_functions.append(node_data["function"])
-        
-        return leaf_functions
+        return {name for name, callees in self.callees.items() if not callees}
     
     def get_call_depth(self, function_name: str) -> int:
-        """Get the maximum depth of the call tree starting from the specified function.
+        """
+        Get the maximum call depth of a function.
         
         Args:
             function_name: The name of the function
             
         Returns:
-            The maximum depth of the call tree
+            The maximum call depth of the function
         """
-        if function_name not in self.graph:
-            return 0
-            
-        # Use BFS to find the maximum depth
-        visited = set([function_name])
-        queue = [(function_name, 0)]
-        max_depth = 0
+        visited = set()
         
-        while queue:
-            node, depth = queue.pop(0)
-            max_depth = max(max_depth, depth)
+        def dfs(node: str, depth: int) -> int:
+            if node in visited:
+                return 0
+                
+            visited.add(node)
             
-            for successor in self.graph.successors(node):
-                if successor not in visited:
-                    visited.add(successor)
-                    queue.append((successor, depth + 1))
+            if not self.callees.get(node, set()):
+                return depth
+                
+            return max(dfs(callee, depth + 1) for callee in self.callees[node])
         
-        return max_depth
+        return dfs(function_name, 0)
     
-    def get_most_called_functions(self, limit: int = 10) -> List[Tuple[Function, int]]:
-        """Get the most frequently called functions.
+    def find_path(self, from_function: str, to_function: str) -> List[str]:
+        """
+        Find a path from one function to another in the call graph.
         
         Args:
-            limit: The maximum number of functions to return
+            from_function: The starting function
+            to_function: The target function
             
         Returns:
-            A list of (Function, call_count) tuples, sorted by call count
+            A list of function names representing the path, or an empty list if no path exists
         """
-        in_degrees = {}
+        if from_function == to_function:
+            return [from_function]
+            
+        visited = set()
+        path = []
         
-        for node in self.graph.nodes:
-            in_degree = self.graph.in_degree(node)
-            if in_degree > 0:
-                node_data = self.graph.nodes[node]
-                if "function" in node_data:
-                    in_degrees[node_data["function"]] = in_degree
+        def dfs(node: str) -> bool:
+            if node == to_function:
+                path.append(node)
+                return True
+                
+            if node in visited:
+                return False
+                
+            visited.add(node)
+            path.append(node)
+            
+            for callee in self.callees.get(node, set()):
+                if dfs(callee):
+                    return True
+                    
+            path.pop()
+            return False
         
-        # Sort by in-degree (call count) in descending order
-        sorted_functions = sorted(in_degrees.items(), key=lambda x: x[1], reverse=True)
-        
-        return sorted_functions[:limit]
+        if dfs(from_function):
+            return path
+        else:
+            return []
     
-    def get_most_calling_functions(self, limit: int = 10) -> List[Tuple[Function, int]]:
-        """Get the functions that call the most other functions.
+    def get_most_called_functions(self, limit: int = 10) -> List[Tuple[str, int]]:
+        """
+        Get the most frequently called functions.
         
         Args:
-            limit: The maximum number of functions to return
+            limit: Maximum number of functions to return
             
         Returns:
-            A list of (Function, called_count) tuples, sorted by called count
+            A list of (function_name, call_count) tuples, sorted by call count
         """
-        out_degrees = {}
-        
-        for node in self.graph.nodes:
-            out_degree = self.graph.out_degree(node)
-            if out_degree > 0:
-                node_data = self.graph.nodes[node]
-                if "function" in node_data:
-                    out_degrees[node_data["function"]] = out_degree
-        
-        # Sort by out-degree (called count) in descending order
-        sorted_functions = sorted(out_degrees.items(), key=lambda x: x[1], reverse=True)
-        
-        return sorted_functions[:limit]
+        call_counts = [(name, len(callers)) for name, callers in self.callers.items()]
+        return sorted(call_counts, key=lambda x: x[1], reverse=True)[:limit]
     
-    def get_call_graph_stats(self) -> Dict[str, Any]:
-        """Get statistics about the call graph.
-        
-        Returns:
-            A dictionary of statistics
+    def get_functions_with_highest_call_depth(self, limit: int = 10) -> List[Tuple[str, int]]:
         """
-        return {
-            "total_functions": len(self.graph.nodes),
-            "total_calls": len(self.graph.edges),
-            "entry_points": len(self.get_entry_points()),
-            "leaf_functions": len(self.get_leaf_functions()),
-            "cycles": len(self.find_cycles()),
-            "connected_components": nx.number_weakly_connected_components(self.graph),
-            "average_calls_per_function": len(self.graph.edges) / len(self.graph.nodes) if len(self.graph.nodes) > 0 else 0,
-            "max_call_depth": max(self.get_call_depth(node) for node in self.graph.nodes) if self.graph.nodes else 0,
-        }
+        Get functions with the highest call depth.
+        
+        Args:
+            limit: Maximum number of functions to return
+            
+        Returns:
+            A list of (function_name, call_depth) tuples, sorted by call depth
+        """
+        depths = [(name, self.get_call_depth(name)) for name in self.callees.keys()]
+        return sorted(depths, key=lambda x: x[1], reverse=True)[:limit]
 
 
 class ParameterAnalysis:
-    """Analyzes function parameters and their usage."""
+    """
+    Analyzes parameter usage in functions.
+    
+    This class provides methods for analyzing how parameters are used in functions,
+    including parameter usage patterns and parameter type statistics.
+    """
     
     def __init__(self, codebase: Codebase, context: Optional[CodebaseContext] = None):
-        """Initialize the parameter analyzer.
+        """
+        Initialize the parameter analyzer.
         
         Args:
-            codebase: The Codebase object to analyze
-            context: Optional CodebaseContext for additional analysis capabilities
+            codebase: The codebase to analyze
+            context: Optional context for the analysis
         """
         self.codebase = codebase
         self.context = context
     
-    def analyze_parameter_usage(self, function: Function) -> Dict[str, Any]:
-        """Analyze how parameters are used in a function.
+    def get_parameter_usage(self, function_name: str) -> Dict[str, int]:
+        """
+        Get usage statistics for parameters of a function.
         
         Args:
-            function: The function to analyze
+            function_name: The name of the function
             
         Returns:
-            A dictionary with parameter usage information
+            A dictionary mapping parameter names to usage counts
         """
-        # Get all parameters
-        parameters = {param.name: {"used": False, "usage_count": 0, "has_default": param.has_default_value} 
-                     for param in function.parameters}
+        # Find the function
+        function = None
+        for f in self.codebase.functions:
+            if f.name == function_name:
+                function = f
+                break
+                
+        if not function or not hasattr(function, "parameters") or not function.parameters:
+            return {}
+            
+        # Get parameter names
+        param_names = {param.name for param in function.parameters}
         
-        # Check usage in code block
-        if hasattr(function, "code_block") and function.code_block:
-            for statement in function.code_block.statements:
-                self._analyze_statement_for_parameters(statement, parameters)
+        # Count variable references
+        usage_counts = Counter()
+        if hasattr(function, "code_block") and hasattr(function.code_block, "variable_references"):
+            for ref in function.code_block.variable_references:
+                if ref.name in param_names:
+                    usage_counts[ref.name] += 1
         
-        # Compute statistics
-        unused_params = [name for name, info in parameters.items() if not info["used"] and not name.startswith("_")]
-        used_params = [name for name, info in parameters.items() if info["used"]]
-        optional_params = [name for name, info in parameters.items() if info["has_default"]]
-        required_params = [name for name, info in parameters.items() if not info["has_default"]]
-        
-        return {
-            "total_parameters": len(parameters),
-            "unused_parameters": unused_params,
-            "used_parameters": used_params,
-            "optional_parameters": optional_params,
-            "required_parameters": required_params,
-            "parameter_details": parameters
-        }
+        return dict(usage_counts)
     
-    def _analyze_statement_for_parameters(self, statement: Any, parameters: Dict[str, Dict[str, Any]]) -> None:
-        """Analyze a statement for parameter usage.
+    def get_parameter_type_statistics(self) -> Dict[str, int]:
+        """
+        Get statistics on parameter types across the codebase.
+        
+        Returns:
+            A dictionary mapping parameter types to counts
+        """
+        type_counts = Counter()
+        
+        for function in self.codebase.functions:
+            if not hasattr(function, "parameters") or not function.parameters:
+                continue
+                
+            for param in function.parameters:
+                if hasattr(param, "type_annotation") and param.type_annotation:
+                    type_counts[param.type_annotation] += 1
+        
+        return dict(type_counts)
+    
+    def get_functions_with_most_parameters(self, limit: int = 10) -> List[Tuple[str, int]]:
+        """
+        Get functions with the most parameters.
         
         Args:
-            statement: The statement to analyze
-            parameters: Dictionary of parameter information to update
-        """
-        # Extract from expressions
-        if hasattr(statement, "expressions"):
-            for expr in statement.expressions:
-                self._analyze_expression_for_parameters(expr, parameters)
-        
-        # Extract from function calls
-        if hasattr(statement, "function_calls"):
-            for call in statement.function_calls:
-                for arg in call.args:
-                    if hasattr(arg, "name") and arg.name in parameters:
-                        parameters[arg.name]["used"] = True
-                        parameters[arg.name]["usage_count"] += 1
-        
-        # Extract from nested statements
-        if hasattr(statement, "statements"):
-            for nested_stmt in statement.statements:
-                self._analyze_statement_for_parameters(nested_stmt, parameters)
-        
-        # Handle specific statement types
-        if hasattr(statement, "type"):
-            if statement.type == "if_statement" and hasattr(statement, "blocks"):
-                for block in statement.blocks:
-                    for nested_stmt in block.statements:
-                        self._analyze_statement_for_parameters(nested_stmt, parameters)
-            elif statement.type == "for_statement" and hasattr(statement, "body"):
-                for nested_stmt in statement.body.statements:
-                    self._analyze_statement_for_parameters(nested_stmt, parameters)
-            elif statement.type == "while_statement" and hasattr(statement, "body"):
-                for nested_stmt in statement.body.statements:
-                    self._analyze_statement_for_parameters(nested_stmt, parameters)
-            elif statement.type == "try_statement":
-                if hasattr(statement, "try_block"):
-                    for nested_stmt in statement.try_block.statements:
-                        self._analyze_statement_for_parameters(nested_stmt, parameters)
-                if hasattr(statement, "catch_blocks"):
-                    for catch_block in statement.catch_blocks:
-                        for nested_stmt in catch_block.statements:
-                            self._analyze_statement_for_parameters(nested_stmt, parameters)
-                if hasattr(statement, "finally_block"):
-                    for nested_stmt in statement.finally_block.statements:
-                        self._analyze_statement_for_parameters(nested_stmt, parameters)
-    
-    def _analyze_expression_for_parameters(self, expr: Any, parameters: Dict[str, Dict[str, Any]]) -> None:
-        """Analyze an expression for parameter usage.
-        
-        Args:
-            expr: The expression to analyze
-            parameters: Dictionary of parameter information to update
-        """
-        if hasattr(expr, "elements"):
-            for elem in expr.elements:
-                if hasattr(elem, "name") and elem.name in parameters:
-                    parameters[elem.name]["used"] = True
-                    parameters[elem.name]["usage_count"] += 1
-        elif hasattr(expr, "argument") and hasattr(expr.argument, "name") and expr.argument.name in parameters:
-            parameters[expr.argument.name]["used"] = True
-            parameters[expr.argument.name]["usage_count"] += 1
-    
-    def analyze_all_functions(self) -> Dict[str, Dict[str, Any]]:
-        """Analyze parameter usage for all functions in the codebase.
-        
+            limit: Maximum number of functions to return
+            
         Returns:
-            A dictionary mapping function names to parameter usage information
+            A list of (function_name, parameter_count) tuples, sorted by parameter count
         """
-        results = {}
+        param_counts = []
         
         for function in self.codebase.functions:
-            results[function.name] = self.analyze_parameter_usage(function)
+            if hasattr(function, "parameters"):
+                param_counts.append((function.name, len(function.parameters)))
         
-        return results
+        return sorted(param_counts, key=lambda x: x[1], reverse=True)[:limit]
     
-    def get_functions_with_unused_parameters(self) -> List[Tuple[Function, List[str]]]:
-        """Get all functions with unused parameters.
+    def get_unused_parameters(self) -> Dict[str, List[str]]:
+        """
+        Get unused parameters for each function.
         
         Returns:
-            A list of (Function, unused_parameters) tuples
+            A dictionary mapping function names to lists of unused parameter names
         """
-        functions_with_unused = []
+        unused_params = {}
         
         for function in self.codebase.functions:
-            analysis = self.analyze_parameter_usage(function)
-            if analysis["unused_parameters"]:
-                functions_with_unused.append((function, analysis["unused_parameters"]))
+            if not hasattr(function, "parameters") or not function.parameters:
+                continue
+                
+            # Get parameter names
+            param_names = {param.name for param in function.parameters}
+            
+            # Get used variable names
+            used_names = set()
+            if hasattr(function, "code_block") and hasattr(function.code_block, "variable_references"):
+                used_names = {ref.name for ref in function.code_block.variable_references}
+            
+            # Find unused parameters
+            unused = param_names - used_names
+            if unused:
+                unused_params[function.name] = list(unused)
         
-        return functions_with_unused
-    
-    def get_parameter_usage_stats(self) -> Dict[str, Any]:
-        """Get statistics about parameter usage across the codebase.
-        
-        Returns:
-            A dictionary of statistics
-        """
-        total_params = 0
-        unused_params = 0
-        optional_params = 0
-        required_params = 0
-        
-        for function in self.codebase.functions:
-            analysis = self.analyze_parameter_usage(function)
-            total_params += analysis["total_parameters"]
-            unused_params += len(analysis["unused_parameters"])
-            optional_params += len(analysis["optional_parameters"])
-            required_params += len(analysis["required_parameters"])
-        
-        return {
-            "total_parameters": total_params,
-            "unused_parameters": unused_params,
-            "optional_parameters": optional_params,
-            "required_parameters": required_params,
-            "usage_ratio": (total_params - unused_params) / total_params if total_params > 0 else 0,
-            "optional_ratio": optional_params / total_params if total_params > 0 else 0,
-        }
+        return unused_params
 
 
 def analyze_function_calls(codebase: Codebase, context: Optional[CodebaseContext] = None) -> Dict[str, Any]:
-    """Analyze function calls in a codebase and return comprehensive results.
+    """
+    Analyze function calls in the codebase.
     
     Args:
-        codebase: The Codebase object to analyze
-        context: Optional CodebaseContext for additional analysis capabilities
+        codebase: The codebase to analyze
+        context: Optional context for the analysis
         
     Returns:
         A dictionary containing function call analysis results
     """
-    # Create analyzers
     call_graph = FunctionCallGraph(codebase, context)
-    param_analysis = ParameterAnalysis(codebase, context)
+    param_analyzer = ParameterAnalysis(codebase, context)
     
-    # Get call graph statistics
-    call_graph_stats = call_graph.get_call_graph_stats()
+    # Get call statistics
+    most_called = call_graph.get_most_called_functions(limit=10)
+    highest_depth = call_graph.get_functions_with_highest_call_depth(limit=10)
+    entry_points = call_graph.get_entry_points()
+    leaf_functions = call_graph.get_leaf_functions()
     
-    # Get parameter usage statistics
-    param_stats = param_analysis.get_parameter_usage_stats()
+    # Get parameter statistics
+    most_params = param_analyzer.get_functions_with_most_parameters(limit=10)
+    param_types = param_analyzer.get_parameter_type_statistics()
+    unused_params = param_analyzer.get_unused_parameters()
     
-    # Get most called functions
-    most_called = [(func.name, count) for func, count in call_graph.get_most_called_functions()]
-    
-    # Get most calling functions
-    most_calling = [(func.name, count) for func, count in call_graph.get_most_calling_functions()]
-    
-    # Get cycles
-    cycles = call_graph.find_cycles()
-    
-    # Get entry points
-    entry_points = [func.name for func in call_graph.get_entry_points()]
-    
-    # Get leaf functions
-    leaf_functions = [func.name for func in call_graph.get_leaf_functions()]
-    
-    # Get functions with unused parameters
-    unused_params = [(func.name, params) for func, params in param_analysis.get_functions_with_unused_parameters()]
-    
-    # Return the complete analysis
     return {
-        "call_graph_stats": call_graph_stats,
-        "parameter_stats": param_stats,
-        "most_called_functions": most_called,
-        "most_calling_functions": most_calling,
-        "cycles": cycles,
-        "entry_points": entry_points,
-        "leaf_functions": leaf_functions,
-        "functions_with_unused_parameters": unused_params
+        "call_statistics": {
+            "most_called_functions": most_called,
+            "functions_with_highest_call_depth": highest_depth,
+            "entry_points": list(entry_points),
+            "leaf_functions": list(leaf_functions),
+            "total_functions": len(codebase.functions)
+        },
+        "parameter_statistics": {
+            "functions_with_most_parameters": most_params,
+            "parameter_types": param_types,
+            "functions_with_unused_parameters": unused_params
+        }
     }
 

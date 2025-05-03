@@ -12,7 +12,7 @@ import re
 import subprocess
 import tempfile
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Set, TypeVar
 from urllib.parse import urlparse
 
 import networkx as nx
@@ -129,23 +129,35 @@ app.add_middleware(
 
 class CodeAnalyzer:
     """
-    Central class for code analysis that integrates all analysis components.
+    Central class for analyzing codebases.
     
-    This class serves as the main entry point for all code analysis functionality,
-    providing a unified interface to access various analysis capabilities.
+    This class provides a unified interface for analyzing codebases, including
+    code complexity, import dependencies, documentation, and more.
     """
     
-    def __init__(self, codebase: Codebase):
+    def __init__(self, codebase: Codebase, context: Optional[CodebaseContext] = None):
         """
-        Initialize the CodeAnalyzer with a codebase.
+        Initialize the analyzer with a codebase.
         
         Args:
-            codebase: The Codebase object to analyze
+            codebase: The codebase to analyze
+            context: Optional context for the analysis
         """
         self.codebase = codebase
-        self._context = None
-        self._initialized = False
+        self._context = context
+    
+    @property
+    def context(self) -> CodebaseContext:
+        """
+        Get the context for the analysis.
         
+        Returns:
+            The context for the analysis
+        """
+        if self._context is None:
+            self._context = CodebaseContext(self.codebase)
+        return self._context
+
     def initialize(self):
         """
         Initialize the analyzer by setting up the context and other necessary components.
@@ -184,19 +196,6 @@ class CodeAnalyzer:
         
         # Create and return a new context
         return CodebaseContext([project_config], config=CodebaseConfig())
-    
-    @property
-    def context(self) -> CodebaseContext:
-        """
-        Get the CodebaseContext for the current codebase.
-        
-        Returns:
-            A CodebaseContext object for the codebase
-        """
-        if not self._initialized:
-            self.initialize()
-            
-        return self._context
     
     def get_codebase_summary(self) -> str:
         """
@@ -344,7 +343,7 @@ class CodeAnalyzer:
         cycles = find_import_cycles(graph)
         
         # Find problematic import loops
-        problematic_loops = find_problematic_import_loops(graph)
+        problematic_loops = find_problematic_import_loops(graph, cycles)
         
         # Return the analysis results
         return {
@@ -362,7 +361,7 @@ class CodeAnalyzer:
             A dictionary containing complexity analysis results
         """
         # Initialize results
-        results = {
+        results: Dict[str, Dict[str, Any]] = {
             "cyclomatic_complexity": {},
             "line_metrics": {},
             "maintainability_index": {}

@@ -1,537 +1,370 @@
 """
-Type Validation Module for Codegen-on-OSS
+Type validation module for code analysis.
 
-This module provides type checking and validation capabilities for Python codebases,
-focusing on type annotations, type inference, and type compatibility.
+This module provides classes and functions for validating types in code,
+including type annotation validation, type compatibility checks, and type inference.
 """
 
-import ast
-import inspect
-import re
-from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Dict, List, Set, Any, Optional, Union, Tuple
+from dataclasses import dataclass
 
 from codegen import Codebase
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_resolution import Import
-from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
-from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
-from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
-
+from codegen.sdk.core.variable import Variable
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
 
 
-class TypeValidationError(Enum):
-    """Types of type validation errors."""
+class TypeIssue(Enum):
+    """Types of type validation issues."""
+    MISSING_ANNOTATION = auto()
+    TYPE_MISMATCH = auto()
     INCOMPATIBLE_TYPES = auto()
-    MISSING_TYPE_ANNOTATION = auto()
     INCONSISTENT_RETURN_TYPE = auto()
     INVALID_TYPE_ANNOTATION = auto()
-    UNUSED_TYPE_IMPORT = auto()
-    INCORRECT_GENERIC_USAGE = auto()
-    TYPE_NARROWING_ISSUE = auto()
 
 
 @dataclass
-class TypeIssue:
-    """Represents a type-related issue in the code."""
-    error_type: TypeValidationError
+class TypeValidationError:
+    """
+    Represents a type validation error.
+    
+    Attributes:
+        issue: The type of issue
+        message: A descriptive message about the error
+        file_path: Path to the file containing the error
+        line_number: Line number where the error occurs (optional)
+        function_name: Name of the function containing the error (optional)
+        symbol_name: Name of the symbol related to the error (optional)
+    """
+    issue: TypeIssue
     message: str
     file_path: str
     line_number: Optional[int] = None
-    column: Optional[int] = None
     function_name: Optional[str] = None
-    class_name: Optional[str] = None
-    code_snippet: Optional[str] = None
-    suggested_fix: Optional[str] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert the issue to a dictionary representation."""
-        return {
-            "error_type": self.error_type.name,
-            "message": self.message,
-            "file_path": self.file_path,
-            "line_number": self.line_number,
-            "column": self.column,
-            "function_name": self.function_name,
-            "class_name": self.class_name,
-            "code_snippet": self.code_snippet,
-            "suggested_fix": self.suggested_fix
-        }
-    
-    def __str__(self) -> str:
-        """String representation of the issue."""
-        location = f"{self.file_path}"
-        if self.line_number:
-            location += f":{self.line_number}"
-            if self.column:
-                location += f":{self.column}"
-        
-        context = ""
-        if self.function_name:
-            context += f" in function '{self.function_name}'"
-        if self.class_name:
-            context += f" of class '{self.class_name}'"
-        
-        return f"[{self.error_type.name}] {self.message} at {location}{context}"
+    symbol_name: Optional[str] = None
 
 
 class TypeValidator:
-    """Validates type annotations and type compatibility in a codebase."""
+    """
+    Validates types in code.
+    
+    This class provides methods for validating type annotations, checking type
+    compatibility, and identifying type-related issues.
+    """
     
     def __init__(self, codebase: Codebase, context: Optional[CodebaseContext] = None):
-        """Initialize the type validator.
+        """
+        Initialize the type validator.
         
         Args:
-            codebase: The Codebase object to analyze
-            context: Optional CodebaseContext for additional analysis capabilities
+            codebase: The codebase to analyze
+            context: Optional context for the analysis
         """
         self.codebase = codebase
         self.context = context
-        self.issues: List[TypeIssue] = []
-        
-        # Common Python types
-        self.builtin_types = {
-            "str", "int", "float", "bool", "list", "dict", "tuple", "set", "frozenset",
-            "bytes", "bytearray", "memoryview", "complex", "None", "Any", "Optional",
-            "Union", "List", "Dict", "Tuple", "Set", "FrozenSet", "Callable", "Type",
-            "Sequence", "Mapping", "Iterable", "Iterator", "Generator", "Coroutine",
-            "AsyncIterable", "AsyncIterator", "ContextManager", "AsyncContextManager"
-        }
+        self.errors: List[TypeValidationError] = []
     
-    def validate_types(self) -> List[TypeIssue]:
-        """Validate type annotations and compatibility in the codebase.
+    def validate_types(self) -> List[TypeValidationError]:
+        """
+        Validate types in the codebase.
         
         Returns:
-            A list of type issues
+            A list of type validation errors
         """
-        self.issues = []
+        self.errors = []
         
         # Validate function parameter and return types
-        for function in self.codebase.functions:
-            self._validate_function_types(function)
+        self._validate_function_types()
         
-        # Validate class attribute types
-        for cls in self.codebase.classes:
-            self._validate_class_types(cls)
+        # Validate variable types
+        self._validate_variable_types()
         
-        return self.issues
+        return self.errors
     
-    def _validate_function_types(self, function: Function) -> None:
-        """Validate type annotations in a function.
-        
-        Args:
-            function: The function to validate
-        """
-        # Check for missing return type annotation
-        if not hasattr(function, "return_type") or not function.return_type:
-            # Skip if it's a special method like __init__
-            if not function.name.startswith("__") or function.name == "__call__":
-                self.issues.append(TypeIssue(
-                    error_type=TypeValidationError.MISSING_TYPE_ANNOTATION,
+    def _validate_function_types(self) -> None:
+        """Validate function parameter and return types."""
+        for function in self.codebase.functions:
+            # Check for missing return type annotation
+            if not hasattr(function, "return_type") or not function.return_type:
+                self.errors.append(TypeValidationError(
+                    issue=TypeIssue.MISSING_ANNOTATION,
                     message=f"Function '{function.name}' is missing a return type annotation",
                     file_path=function.filepath,
-                    line_number=function.line_number,
-                    function_name=function.name,
-                    class_name=function.class_name if hasattr(function, "class_name") else None
+                    function_name=function.name
                 ))
-        
-        # Check parameter type annotations
-        for param in function.parameters:
-            if not param.type_annotation and not param.name.startswith("_"):
-                self.issues.append(TypeIssue(
-                    error_type=TypeValidationError.MISSING_TYPE_ANNOTATION,
-                    message=f"Parameter '{param.name}' in function '{function.name}' is missing a type annotation",
-                    file_path=function.filepath,
-                    line_number=function.line_number,
-                    function_name=function.name,
-                    class_name=function.class_name if hasattr(function, "class_name") else None
-                ))
-            elif param.type_annotation:
-                self._validate_type_annotation(param.type_annotation, function)
-        
-        # Check return type annotation if present
-        if hasattr(function, "return_type") and function.return_type:
-            self._validate_type_annotation(function.return_type, function)
-        
-        # Check for inconsistent return types
-        if hasattr(function, "return_statements") and function.return_statements:
-            self._check_return_type_consistency(function)
+            
+            # Check parameter type annotations
+            if hasattr(function, "parameters"):
+                for param in function.parameters:
+                    if not hasattr(param, "type_annotation") or not param.type_annotation:
+                        self.errors.append(TypeValidationError(
+                            issue=TypeIssue.MISSING_ANNOTATION,
+                            message=f"Parameter '{param.name}' in function '{function.name}' is missing a type annotation",
+                            file_path=function.filepath,
+                            function_name=function.name
+                        ))
+            
+            # Check for inconsistent return types
+            if hasattr(function, "code_block") and hasattr(function, "return_type"):
+                return_types = set()
+                for stmt in function.code_block.statements:
+                    if hasattr(stmt, "type") and stmt.type == "return_statement" and hasattr(stmt, "value") and hasattr(stmt.value, "type"):
+                        return_types.add(stmt.value.type)
+                
+                if len(return_types) > 1:
+                    self.errors.append(TypeValidationError(
+                        issue=TypeIssue.INCONSISTENT_RETURN_TYPE,
+                        message=f"Function '{function.name}' has inconsistent return types: {', '.join(return_types)}",
+                        file_path=function.filepath,
+                        function_name=function.name
+                    ))
     
-    def _validate_class_types(self, cls: Class) -> None:
-        """Validate type annotations in a class.
-        
-        Args:
-            cls: The class to validate
+    def _validate_variable_types(self) -> None:
+        """Validate variable types."""
+        for function in self.codebase.functions:
+            if not hasattr(function, "code_block"):
+                continue
+                
+            # Check variable declarations
+            for var in function.code_block.variable_declarations:
+                # Check for missing type annotation
+                if not hasattr(var, "type_annotation") or not var.type_annotation:
+                    self.errors.append(TypeValidationError(
+                        issue=TypeIssue.MISSING_ANNOTATION,
+                        message=f"Variable '{var.name}' in function '{function.name}' is missing a type annotation",
+                        file_path=function.filepath,
+                        function_name=function.name
+                    ))
+                
+                # Check for type mismatches
+                if hasattr(var, "type_annotation") and hasattr(var, "initializer") and hasattr(var.initializer, "type"):
+                    if var.type_annotation != var.initializer.type:
+                        self.errors.append(TypeValidationError(
+                            issue=TypeIssue.TYPE_MISMATCH,
+                            message=f"Type mismatch for variable '{var.name}' in function '{function.name}': declared as '{var.type_annotation}', initialized with '{var.initializer.type}'",
+                            file_path=function.filepath,
+                            function_name=function.name
+                        ))
+    
+    def get_errors_by_issue(self, issue: TypeIssue) -> List[TypeValidationError]:
         """
-        # Check attribute type annotations
-        for attr in cls.attributes:
-            if not attr.type_annotation and not attr.name.startswith("_"):
-                self.issues.append(TypeIssue(
-                    error_type=TypeValidationError.MISSING_TYPE_ANNOTATION,
-                    message=f"Attribute '{attr.name}' in class '{cls.name}' is missing a type annotation",
-                    file_path=cls.filepath,
-                    line_number=attr.line_number if hasattr(attr, "line_number") else cls.line_number,
-                    class_name=cls.name
-                ))
-            elif attr.type_annotation:
-                self._validate_type_annotation(attr.type_annotation, cls)
-    
-    def _validate_type_annotation(self, type_annotation: str, context_symbol: Union[Function, Class]) -> None:
-        """Validate a type annotation string.
+        Get errors of a specific issue type.
         
         Args:
-            type_annotation: The type annotation string to validate
-            context_symbol: The function or class containing the annotation
-        """
-        # Check for invalid type annotations
-        if type_annotation not in self.builtin_types:
-            # Check if it's a valid user-defined type
-            if not self._is_valid_user_type(type_annotation):
-                self.issues.append(TypeIssue(
-                    error_type=TypeValidationError.INVALID_TYPE_ANNOTATION,
-                    message=f"Type annotation '{type_annotation}' may not be a valid type",
-                    file_path=context_symbol.filepath,
-                    line_number=context_symbol.line_number,
-                    function_name=context_symbol.name if isinstance(context_symbol, Function) else None,
-                    class_name=context_symbol.name if isinstance(context_symbol, Class) else getattr(context_symbol, "class_name", None)
-                ))
-        
-        # Check for incorrect generic usage
-        if self._has_incorrect_generic_usage(type_annotation):
-            self.issues.append(TypeIssue(
-                error_type=TypeValidationError.INCORRECT_GENERIC_USAGE,
-                message=f"Incorrect generic usage in type annotation '{type_annotation}'",
-                file_path=context_symbol.filepath,
-                line_number=context_symbol.line_number,
-                function_name=context_symbol.name if isinstance(context_symbol, Function) else None,
-                class_name=context_symbol.name if isinstance(context_symbol, Class) else getattr(context_symbol, "class_name", None)
-            ))
-    
-    def _is_valid_user_type(self, type_name: str) -> bool:
-        """Check if a type name refers to a valid user-defined type.
-        
-        Args:
-            type_name: The type name to check
+            issue: The type of issue to filter by
             
         Returns:
-            True if the type is valid, False otherwise
+            A list of errors of the specified issue type
         """
-        # Remove generic parameters if present
-        base_type = type_name.split("[")[0].split(".")[-1]
-        
-        # Check if it's a class in the codebase
-        for cls in self.codebase.classes:
-            if cls.name == base_type:
-                return True
-        
-        # Check if it's imported
-        for imp in self.codebase.imports:
-            if imp.imported_name == base_type:
-                return True
-        
-        # It might be a valid type that we can't verify
-        return True
+        return [error for error in self.errors if error.issue == issue]
     
-    def _has_incorrect_generic_usage(self, type_annotation: str) -> bool:
-        """Check if a type annotation has incorrect generic usage.
+    def get_errors_by_file(self, file_path: str) -> List[TypeValidationError]:
+        """
+        Get errors in a specific file.
         
         Args:
-            type_annotation: The type annotation to check
+            file_path: The path to the file
             
         Returns:
-            True if the generic usage is incorrect, False otherwise
+            A list of errors in the specified file
         """
-        # Check for unbalanced brackets
-        if type_annotation.count("[") != type_annotation.count("]"):
-            return True
-        
-        # Check for common generic types
-        generic_types = ["List", "Dict", "Tuple", "Set", "FrozenSet", "Optional", "Union", "Callable"]
-        for generic in generic_types:
-            if type_annotation.startswith(f"{generic}[") and type_annotation.endswith("]"):
-                # Check specific rules for each generic type
-                if generic == "Dict" and "," not in type_annotation:
-                    return True
-                if generic == "Tuple" and not ("," in type_annotation or "..." in type_annotation):
-                    return True
-                if generic == "Callable" and "[" in type_annotation and "]" in type_annotation:
-                    # Callable[[arg1, arg2], return_type]
-                    if type_annotation.count("[") < 2 or type_annotation.count("]") < 2:
-                        return True
-        
-        return False
+        return [error for error in self.errors if error.file_path == file_path]
     
-    def _check_return_type_consistency(self, function: Function) -> None:
-        """Check if return statements are consistent with the declared return type.
+    def get_errors_by_function(self, function_name: str) -> List[TypeValidationError]:
+        """
+        Get errors in a specific function.
         
         Args:
-            function: The function to check
+            function_name: The name of the function
+            
+        Returns:
+            A list of errors in the specified function
         """
-        if not hasattr(function, "return_type") or not function.return_type:
-            return
-        
-        # Skip if return type is Any or similar
-        if function.return_type in ["Any", "Optional", "Union"]:
-            return
-        
-        # Check each return statement
-        for stmt in function.return_statements:
-            if not hasattr(stmt, "value") or not stmt.value:
-                # Return None
-                if function.return_type not in ["None", "Optional", "Any"]:
-                    self.issues.append(TypeIssue(
-                        error_type=TypeValidationError.INCONSISTENT_RETURN_TYPE,
-                        message=f"Return statement without value is inconsistent with declared return type '{function.return_type}'",
-                        file_path=function.filepath,
-                        line_number=stmt.line_number if hasattr(stmt, "line_number") else function.line_number,
-                        function_name=function.name,
-                        class_name=function.class_name if hasattr(function, "class_name") else None
-                    ))
-            elif hasattr(stmt.value, "type"):
-                # Check if return value type matches declared type
-                value_type = stmt.value.type
-                if value_type and value_type != function.return_type:
-                    self.issues.append(TypeIssue(
-                        error_type=TypeValidationError.INCONSISTENT_RETURN_TYPE,
-                        message=f"Return value of type '{value_type}' is inconsistent with declared return type '{function.return_type}'",
-                        file_path=function.filepath,
-                        line_number=stmt.line_number if hasattr(stmt, "line_number") else function.line_number,
-                        function_name=function.name,
-                        class_name=function.class_name if hasattr(function, "class_name") else None
-                    ))
+        return [error for error in self.errors if error.function_name == function_name]
 
 
 class TypeInferenceEngine:
-    """Infers types for variables and expressions in a codebase."""
+    """
+    Infers types for variables and expressions.
+    
+    This class provides methods for inferring types based on usage patterns
+    and context.
+    """
     
     def __init__(self, codebase: Codebase, context: Optional[CodebaseContext] = None):
-        """Initialize the type inference engine.
+        """
+        Initialize the type inference engine.
         
         Args:
-            codebase: The Codebase object to analyze
-            context: Optional CodebaseContext for additional analysis capabilities
+            codebase: The codebase to analyze
+            context: Optional context for the analysis
         """
         self.codebase = codebase
         self.context = context
-        self.type_map: Dict[str, Dict[str, str]] = {}  # file_path -> {symbol_name -> type}
+        self.inferred_types: Dict[str, Dict[str, str]] = {}  # function_name -> {variable_name: type}
     
     def infer_types(self) -> Dict[str, Dict[str, str]]:
-        """Infer types for variables and expressions in the codebase.
+        """
+        Infer types for variables in the codebase.
         
         Returns:
-            A dictionary mapping file paths to dictionaries mapping symbol names to inferred types
+            A dictionary mapping function names to dictionaries mapping variable names to inferred types
         """
-        self.type_map = {}
+        self.inferred_types = {}
         
-        # Process all functions
         for function in self.codebase.functions:
-            file_path = function.filepath
-            if file_path not in self.type_map:
-                self.type_map[file_path] = {}
+            if not hasattr(function, "code_block"):
+                continue
+                
+            self.inferred_types[function.name] = {}
             
-            # Add function return type
-            if hasattr(function, "return_type") and function.return_type:
-                self.type_map[file_path][function.name] = function.return_type
+            # Infer types from variable declarations with initializers
+            for var in function.code_block.variable_declarations:
+                if hasattr(var, "initializer") and hasattr(var.initializer, "type"):
+                    self.inferred_types[function.name][var.name] = var.initializer.type
             
-            # Add parameter types
-            for param in function.parameters:
-                if param.type_annotation:
-                    param_key = f"{function.name}.{param.name}"
-                    self.type_map[file_path][param_key] = param.type_annotation
+            # Infer types from assignments
+            for stmt in function.code_block.statements:
+                if hasattr(stmt, "type") and stmt.type == "assignment" and hasattr(stmt, "left") and hasattr(stmt, "right"):
+                    if hasattr(stmt.left, "name") and hasattr(stmt.right, "type"):
+                        self.inferred_types[function.name][stmt.left.name] = stmt.right.type
             
-            # Infer types in function body
-            if hasattr(function, "code_block") and function.code_block:
-                self._infer_types_in_block(function.code_block, function, file_path)
+            # Infer types from function calls
+            for call in function.code_block.function_calls:
+                if hasattr(call, "target") and hasattr(call, "name"):
+                    # Find the called function
+                    called_function = None
+                    for f in self.codebase.functions:
+                        if f.name == call.name:
+                            called_function = f
+                            break
+                    
+                    if called_function and hasattr(called_function, "return_type"):
+                        self.inferred_types[function.name][call.target] = called_function.return_type
         
-        # Process all classes
-        for cls in self.codebase.classes:
-            file_path = cls.filepath
-            if file_path not in self.type_map:
-                self.type_map[file_path] = {}
-            
-            # Add class type
-            self.type_map[file_path][cls.name] = "Type"
-            
-            # Add attribute types
-            for attr in cls.attributes:
-                if attr.type_annotation:
-                    attr_key = f"{cls.name}.{attr.name}"
-                    self.type_map[file_path][attr_key] = attr.type_annotation
-        
-        return self.type_map
+        return self.inferred_types
     
-    def _infer_types_in_block(self, block: Any, function: Function, file_path: str) -> None:
-        """Infer types for variables in a code block.
-        
-        Args:
-            block: The code block to analyze
-            function: The function containing the block
-            file_path: The file path for context
+    def get_inferred_type(self, function_name: str, variable_name: str) -> Optional[str]:
         """
-        if not hasattr(block, "statements"):
-            return
-        
-        for stmt in block.statements:
-            # Handle assignments
-            if hasattr(stmt, "type") and stmt.type == "assignment":
-                if hasattr(stmt, "left") and hasattr(stmt, "right"):
-                    # Infer type from right side
-                    right_type = self._infer_expression_type(stmt.right, file_path)
-                    if right_type and hasattr(stmt.left, "name"):
-                        var_key = f"{function.name}.{stmt.left.name}"
-                        self.type_map[file_path][var_key] = right_type
-            
-            # Handle nested blocks
-            if isinstance(stmt, IfBlockStatement):
-                for block in stmt.blocks:
-                    self._infer_types_in_block(block, function, file_path)
-            elif isinstance(stmt, ForLoopStatement) and hasattr(stmt, "body"):
-                self._infer_types_in_block(stmt.body, function, file_path)
-            elif isinstance(stmt, WhileStatement) and hasattr(stmt, "body"):
-                self._infer_types_in_block(stmt.body, function, file_path)
-            elif isinstance(stmt, TryCatchStatement):
-                if hasattr(stmt, "try_block"):
-                    self._infer_types_in_block(stmt.try_block, function, file_path)
-                if hasattr(stmt, "catch_blocks"):
-                    for catch_block in stmt.catch_blocks:
-                        self._infer_types_in_block(catch_block, function, file_path)
-                if hasattr(stmt, "finally_block"):
-                    self._infer_types_in_block(stmt.finally_block, function, file_path)
-    
-    def _infer_expression_type(self, expr: Any, file_path: str) -> Optional[str]:
-        """Infer the type of an expression.
+        Get the inferred type for a variable in a function.
         
         Args:
-            expr: The expression to analyze
-            file_path: The file path for context
+            function_name: The name of the function
+            variable_name: The name of the variable
             
         Returns:
-            The inferred type as a string, or None if the type cannot be inferred
+            The inferred type, or None if the type could not be inferred
         """
-        # Handle literals
-        if hasattr(expr, "type"):
-            if expr.type == "string_literal":
-                return "str"
-            elif expr.type == "number_literal":
-                # Check if it's an integer or float
-                if hasattr(expr, "value"):
-                    try:
-                        int(expr.value)
-                        return "int"
-                    except ValueError:
-                        try:
-                            float(expr.value)
-                            return "float"
-                        except ValueError:
-                            pass
-            elif expr.type == "boolean_literal":
-                return "bool"
-            elif expr.type == "null_literal":
-                return "None"
-            elif expr.type == "array_literal":
-                return "List"
-            elif expr.type == "object_literal":
-                return "Dict"
-        
-        # Handle variables
-        if hasattr(expr, "name"):
-            # Check if it's a known variable
-            for key, type_str in self.type_map.get(file_path, {}).items():
-                if key.endswith(f".{expr.name}"):
-                    return type_str
+        if not self.inferred_types:
+            self.infer_types()
             
-            # Check if it's a function
-            for function in self.codebase.functions:
-                if function.name == expr.name:
-                    return function.return_type if hasattr(function, "return_type") else None
+        return self.inferred_types.get(function_name, {}).get(variable_name)
+    
+    def get_inferred_types_for_function(self, function_name: str) -> Dict[str, str]:
+        """
+        Get all inferred types for variables in a function.
+        
+        Args:
+            function_name: The name of the function
             
-            # Check if it's a class
-            for cls in self.codebase.classes:
-                if cls.name == expr.name:
-                    return "Type"
-        
-        # Handle function calls
-        if hasattr(expr, "type") and expr.type == "call_expression":
-            if hasattr(expr, "callee") and hasattr(expr.callee, "name"):
-                # Try to find the function
-                for function in self.codebase.functions:
-                    if function.name == expr.callee.name:
-                        return function.return_type if hasattr(function, "return_type") else None
-        
-        # Handle binary expressions
-        if isinstance(expr, BinaryExpression):
-            # Infer based on operator and operands
-            if hasattr(expr, "operators") and expr.operators:
-                op = expr.operators[0].source if hasattr(expr.operators[0], "source") else None
-                if op in ["+", "-", "*", "/", "%", "**"]:
-                    # Numeric operations
-                    return "float"
-                elif op in ["==", "!=", "<", ">", "<=", ">=", "and", "or", "not"]:
-                    # Boolean operations
-                    return "bool"
-        
-        return None
+        Returns:
+            A dictionary mapping variable names to inferred types
+        """
+        if not self.inferred_types:
+            self.infer_types()
+            
+        return self.inferred_types.get(function_name, {})
 
 
 def analyze_types(codebase: Codebase, context: Optional[CodebaseContext] = None) -> Dict[str, Any]:
-    """Analyze types in a codebase and return comprehensive results.
+    """
+    Analyze types in the codebase.
     
     Args:
-        codebase: The Codebase object to analyze
-        context: Optional CodebaseContext for additional analysis capabilities
+        codebase: The codebase to analyze
+        context: Optional context for the analysis
         
     Returns:
         A dictionary containing type analysis results
     """
-    # Create analyzers
     validator = TypeValidator(codebase, context)
-    inference = TypeInferenceEngine(codebase, context)
+    inference_engine = TypeInferenceEngine(codebase, context)
     
     # Validate types
-    issues = validator.validate_types()
+    errors = validator.validate_types()
     
     # Infer types
-    inferred_types = inference.infer_types()
+    inferred_types = inference_engine.infer_types()
     
-    # Group issues by type
-    issues_by_type = {}
-    for issue in issues:
-        error_type = issue.error_type.name
-        if error_type not in issues_by_type:
-            issues_by_type[error_type] = []
-        issues_by_type[error_type].append(issue.to_dict())
+    # Group errors by issue type
+    errors_by_issue: Dict[str, List[Dict[str, Any]]] = {}
+    for error in errors:
+        issue = error.issue.name
+        if issue not in errors_by_issue:
+            errors_by_issue[issue] = []
+            
+        errors_by_issue[issue].append({
+            "message": error.message,
+            "file_path": error.file_path,
+            "function_name": error.function_name,
+            "line_number": error.line_number
+        })
     
-    # Group issues by file
-    issues_by_file = {}
-    for issue in issues:
-        file_path = issue.file_path
-        if file_path not in issues_by_file:
-            issues_by_file[file_path] = []
-        issues_by_file[file_path].append(issue.to_dict())
+    # Group errors by file
+    errors_by_file: Dict[str, List[Dict[str, Any]]] = {}
+    for error in errors:
+        file_path = error.file_path
+        if file_path not in errors_by_file:
+            errors_by_file[file_path] = []
+            
+        errors_by_file[file_path].append({
+            "message": error.message,
+            "issue": error.issue.name,
+            "function_name": error.function_name,
+            "line_number": error.line_number
+        })
     
-    # Compute summary statistics
-    summary = {
-        "total_issues": len(issues),
-        "issues_by_type": {error_type: len(issues) for error_type, issues in issues_by_type.items()},
-        "files_with_issues": len(issues_by_file),
+    # Collect type statistics
+    type_stats = {
+        "functions_with_return_type": 0,
+        "functions_without_return_type": 0,
+        "parameters_with_type": 0,
+        "parameters_without_type": 0,
+        "variables_with_type": 0,
+        "variables_without_type": 0
     }
     
-    # Return the complete analysis
+    for function in codebase.functions:
+        if hasattr(function, "return_type") and function.return_type:
+            type_stats["functions_with_return_type"] += 1
+        else:
+            type_stats["functions_without_return_type"] += 1
+            
+        if hasattr(function, "parameters"):
+            for param in function.parameters:
+                if hasattr(param, "type_annotation") and param.type_annotation:
+                    type_stats["parameters_with_type"] += 1
+                else:
+                    type_stats["parameters_without_type"] += 1
+                    
+        if hasattr(function, "code_block"):
+            for var in function.code_block.variable_declarations:
+                if hasattr(var, "type_annotation") and var.type_annotation:
+                    type_stats["variables_with_type"] += 1
+                else:
+                    type_stats["variables_without_type"] += 1
+    
     return {
-        "summary": summary,
-        "issues_by_type": issues_by_type,
-        "issues_by_file": issues_by_file,
-        "all_issues": [issue.to_dict() for issue in issues],
-        "inferred_types": inferred_types
+        "validation": {
+            "total_errors": len(errors),
+            "errors_by_issue": errors_by_issue,
+            "errors_by_file": errors_by_file
+        },
+        "inference": {
+            "inferred_types": inferred_types
+        },
+        "statistics": type_stats
     }
 
