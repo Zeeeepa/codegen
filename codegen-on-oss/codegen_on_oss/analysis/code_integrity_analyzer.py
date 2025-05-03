@@ -10,7 +10,7 @@ This module provides functionality to analyze code integrity, including:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple, Set
+from typing import Dict, List, Any, Optional, Tuple, Set, Union
 import difflib
 import re
 
@@ -170,8 +170,8 @@ class CodeIntegrityAnalyzer:
             codebase: The codebase to analyze
         """
         self.codebase = codebase
-        self.errors = []
-        self.warnings = []
+        self.errors: List[Dict[str, Any]] = []
+        self.warnings: List[Dict[str, Any]] = []
         
     def analyze(self) -> Dict[str, Any]:
         """
@@ -542,4 +542,3 @@ def analyze_pr(main_codebase: Codebase, pr_codebase: Codebase) -> Dict[str, Any]
     }
     
     return pr_analysis
-
