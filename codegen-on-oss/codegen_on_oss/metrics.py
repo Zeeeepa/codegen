@@ -1,27 +1,25 @@
 import json
 import os
 import time
-import math
 from collections.abc import Generator
 from contextlib import contextmanager
 from importlib.metadata import version
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import psutil
 from codegen import Codebase
 
-from codegen_on_oss.errors import ParseRunError
-from codegen_on_oss.outputs.base import BaseOutput
 from codegen_on_oss.analysis.analysis import (
     calculate_cyclomatic_complexity,
+    calculate_doi,
     calculate_halstead_volume,
     calculate_maintainability_index,
-    count_lines,
-    get_operators_and_operands,
     cc_rank,
+    count_lines,
     get_maintainability_rank,
-    calculate_doi,
+    get_operators_and_operands,
 )
+from codegen_on_oss.outputs.base import BaseOutput
 
 if TYPE_CHECKING:
     # Logger only available in type checking context.
@@ -56,7 +54,7 @@ class CodeMetrics:
         self._inheritance_metrics = None
         self._halstead_metrics = None
 
-    def calculate_all_metrics(self) -> Dict[str, Any]:
+    def calculate_all_metrics(self) -> dict[str, Any]:
         """
         Calculate all available metrics for the codebase.
 
@@ -72,7 +70,7 @@ class CodeMetrics:
         }
 
     @property
-    def complexity_metrics(self) -> Dict[str, Any]:
+    def complexity_metrics(self) -> dict[str, Any]:
         """
         Calculate cyclomatic complexity metrics for the codebase.
 
@@ -93,13 +91,11 @@ class CodeMetrics:
                 continue
 
             complexity = calculate_cyclomatic_complexity(func)
-            complexities.append(
-                {
-                    "name": func.name,
-                    "complexity": complexity,
-                    "rank": cc_rank(complexity),
-                }
-            )
+            complexities.append({
+                "name": func.name,
+                "complexity": complexity,
+                "rank": cc_rank(complexity),
+            })
 
         avg_complexity = (
             sum(item["complexity"] for item in complexities) / len(complexities)
@@ -116,7 +112,7 @@ class CodeMetrics:
         return self._complexity_metrics
 
     @property
-    def line_metrics(self) -> Dict[str, Any]:
+    def line_metrics(self) -> dict[str, Any]:
         """
         Calculate line-based metrics for the codebase.
 
@@ -134,16 +130,14 @@ class CodeMetrics:
             loc, lloc, sloc, comments = count_lines(file.source)
             comment_density = (comments / loc * 100) if loc > 0 else 0
 
-            file_metrics.append(
-                {
-                    "file": file.path,
-                    "loc": loc,
-                    "lloc": lloc,
-                    "sloc": sloc,
-                    "comments": comments,
-                    "comment_density": comment_density,
-                }
-            )
+            file_metrics.append({
+                "file": file.path,
+                "loc": loc,
+                "lloc": lloc,
+                "sloc": sloc,
+                "comments": comments,
+                "comment_density": comment_density,
+            })
 
             total_loc += loc
             total_lloc += lloc
@@ -166,7 +160,7 @@ class CodeMetrics:
         return self._line_metrics
 
     @property
-    def maintainability_metrics(self) -> Dict[str, Any]:
+    def maintainability_metrics(self) -> dict[str, Any]:
         """
         Calculate maintainability index metrics for the codebase.
 
@@ -192,13 +186,11 @@ class CodeMetrics:
             loc = len(func.code_block.source.splitlines())
             mi_score = calculate_maintainability_index(volume, complexity, loc)
 
-            mi_scores.append(
-                {
-                    "name": func.name,
-                    "mi_score": mi_score,
-                    "rank": get_maintainability_rank(mi_score),
-                }
-            )
+            mi_scores.append({
+                "name": func.name,
+                "mi_score": mi_score,
+                "rank": get_maintainability_rank(mi_score),
+            })
 
         avg_mi = (
             sum(item["mi_score"] for item in mi_scores) / len(mi_scores)
@@ -215,7 +207,7 @@ class CodeMetrics:
         return self._maintainability_metrics
 
     @property
-    def inheritance_metrics(self) -> Dict[str, Any]:
+    def inheritance_metrics(self) -> dict[str, Any]:
         """
         Calculate inheritance metrics for the codebase.
 
@@ -242,7 +234,7 @@ class CodeMetrics:
         return self._inheritance_metrics
 
     @property
-    def halstead_metrics(self) -> Dict[str, Any]:
+    def halstead_metrics(self) -> dict[str, Any]:
         """
         Calculate Halstead complexity metrics for the codebase.
 
@@ -268,24 +260,22 @@ class CodeMetrics:
             )
 
             # Calculate additional Halstead metrics
-            n = n_operators + n_operands
-            N = n1 + n2
+            n_operators + n_operands
+            n1 + n2
 
             difficulty = (n_operators / 2) * (n2 / n_operands) if n_operands > 0 else 0
             effort = difficulty * volume if volume > 0 else 0
             time_required = effort / 18 if effort > 0 else 0  # Seconds
             bugs_delivered = volume / 3000 if volume > 0 else 0
 
-            halstead_metrics.append(
-                {
-                    "name": func.name,
-                    "volume": volume,
-                    "difficulty": difficulty,
-                    "effort": effort,
-                    "time_required": time_required,  # in seconds
-                    "bugs_delivered": bugs_delivered,
-                }
-            )
+            halstead_metrics.append({
+                "name": func.name,
+                "volume": volume,
+                "difficulty": difficulty,
+                "effort": effort,
+                "time_required": time_required,  # in seconds
+                "bugs_delivered": bugs_delivered,
+            })
 
         avg_volume = (
             sum(item["volume"] for item in halstead_metrics) / len(halstead_metrics)
@@ -316,7 +306,7 @@ class CodeMetrics:
 
     def find_complex_functions(
         self, threshold: int = COMPLEXITY_THRESHOLD
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Find functions with cyclomatic complexity above the threshold.
 
@@ -331,7 +321,7 @@ class CodeMetrics:
 
     def find_low_maintainability_functions(
         self, threshold: int = MAINTAINABILITY_THRESHOLD
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Find functions with maintainability index below the threshold.
 
@@ -346,7 +336,7 @@ class CodeMetrics:
 
     def find_deep_inheritance_classes(
         self, threshold: int = INHERITANCE_DEPTH_THRESHOLD
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Find classes with depth of inheritance above the threshold.
 
@@ -359,7 +349,7 @@ class CodeMetrics:
         metrics = self.inheritance_metrics
         return [cls for cls in metrics["classes"] if cls["doi"] > threshold]
 
-    def find_high_volume_functions(self, threshold: int = 1000) -> List[Dict[str, Any]]:
+    def find_high_volume_functions(self, threshold: int = 1000) -> list[dict[str, Any]]:
         """
         Find functions with Halstead volume above the threshold.
 
@@ -374,7 +364,7 @@ class CodeMetrics:
 
     def find_high_effort_functions(
         self, threshold: int = 50000
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Find functions with high Halstead effort (difficult to maintain).
 
@@ -387,7 +377,7 @@ class CodeMetrics:
         metrics = self.halstead_metrics
         return [func for func in metrics["functions"] if func["effort"] > threshold]
 
-    def find_bug_prone_functions(self, threshold: float = 0.5) -> List[Dict[str, Any]]:
+    def find_bug_prone_functions(self, threshold: float = 0.5) -> list[dict[str, Any]]:
         """
         Find functions with high estimated bug delivery.
 
@@ -402,7 +392,7 @@ class CodeMetrics:
             func for func in metrics["functions"] if func["bugs_delivered"] > threshold
         ]
 
-    def get_code_quality_summary(self) -> Dict[str, Any]:
+    def get_code_quality_summary(self) -> dict[str, Any]:
         """
         Generate a comprehensive code quality summary.
 
@@ -454,7 +444,7 @@ class MetricsProfiler:
 
     @contextmanager
     def start_profiler(
-        self, name: str, revision: str, language: Optional[str], logger: "Logger"
+        self, name: str, revision: str, language: str | None, logger: "Logger"
     ) -> Generator["MetricsProfile", None, None]:
         """
         Starts a new profiling session for a given profile name.
@@ -565,21 +555,19 @@ class MetricsProfile:
         memory_delta = finish_mem - self.last_measure_mem
 
         # Record the overall profile measurement.
-        self.write_output(
-            {
-                "repo": self.name,
-                "revision": self.revision,
-                "codegen_version": codegen_version,
-                "language": self.language,
-                "action": "total_parse",
-                "delta_time": total_duration,
-                "cumulative_time": total_duration,
-                "cpu_time": finish_cpu,
-                "memory_usage": finish_mem,
-                "memory_delta": memory_delta,
-                "error": None,
-            }
-        )
+        self.write_output({
+            "repo": self.name,
+            "revision": self.revision,
+            "codegen_version": codegen_version,
+            "language": self.language,
+            "action": "total_parse",
+            "delta_time": total_duration,
+            "cumulative_time": total_duration,
+            "cpu_time": finish_cpu,
+            "memory_usage": finish_mem,
+            "memory_delta": memory_delta,
+            "error": None,
+        })
 
     def write_output(self, measurement: dict[str, Any]):
         """

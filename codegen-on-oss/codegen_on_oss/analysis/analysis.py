@@ -1,23 +1,25 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import Dict, List, Tuple, Any, Optional, Union
+import contextlib
+import math
+import os
+import re
+import subprocess
+import tempfile
+from datetime import datetime, timedelta
+from typing import Any
+
+import requests
+import uvicorn
 from codegen import Codebase
+from codegen.sdk.core.expressions.binary_expression import BinaryExpression
+from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
 from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
 from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-import math
-import re
-import requests
-from datetime import datetime, timedelta
-import subprocess
-import os
-import tempfile
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+from pydantic import BaseModel
 import networkx as nx
 
 # Import from other analysis modules
@@ -85,7 +87,7 @@ app.add_middleware(
 )
 
 
-def get_monthly_commits(repo_path: str) -> Dict[str, int]:
+def get_monthly_commits(repo_path: str) -> dict[str, int]:
     """
     Get the number of commits per month for the last 12 months.
 
@@ -101,17 +103,24 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     date_format = "%Y-%m-%d"
     since_date = start_date.strftime(date_format)
     until_date = end_date.strftime(date_format)
-    repo_path = "https://github.com/" + repo_path
+    
+    # Ensure repo_path is properly formatted to prevent command injection
+    if not re.match(r'^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$', repo_path):
+        print(f"Invalid repository path format: {repo_path}")
+        return {}
+        
+    repo_url = f"https://github.com/{repo_path}"
 
     try:
         original_dir = os.getcwd()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            subprocess.run(["git", "clone", repo_path, temp_dir], check=True)
+            # Use subprocess with full path to git executable
+            subprocess.run(["/usr/bin/git", "clone", repo_url, temp_dir], check=True)
             os.chdir(temp_dir)
 
             cmd = [
-                "git",
+                "/usr/bin/git",
                 "log",
                 f"--since={since_date}",
                 f"--until={until_date}",
@@ -147,10 +156,8 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
         print(f"Error processing git commits: {e}")
         return {}
     finally:
-        try:
+        with contextlib.suppress(Exception):
             os.chdir(original_dir)
-        except Exception:
-            pass
 
 
 def calculate_cyclomatic_complexity(function):
@@ -172,7 +179,7 @@ def calculate_cyclomatic_complexity(function):
             if hasattr(statement, "elif_statements"):
                 complexity += len(statement.elif_statements)
 
-        elif isinstance(statement, (ForLoopStatement, WhileStatement)):
+        elif isinstance(statement, ForLoopStatement | WhileStatement):
             complexity += 1
 
         elif isinstance(statement, TryCatchStatement):
@@ -346,10 +353,7 @@ def count_lines(source: str):
                 comments += 1
                 if line.strip().startswith('"""') or line.strip().startswith("'''"):
                     code_part = ""
-        elif in_multiline:
-            comments += 1
-            code_part = ""
-        elif line.strip().startswith("#"):
+        elif in_multiline or line.strip().startswith("#"):
             comments += 1
             code_part = ""
 
@@ -438,7 +442,8 @@ def get_github_repo_description(repo_url):
     """
     api_url = f"https://api.github.com/repos/{repo_url}"
 
-    response = requests.get(api_url)
+    # Add timeout to requests call
+    response = requests.get(api_url, timeout=10)
 
     if response.status_code == 200:
         repo_data = response.json()
@@ -454,7 +459,7 @@ class RepoRequest(BaseModel):
 
 
 @app.post("/analyze_repo")
-async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
+async def analyze_repo(request: RepoRequest) -> dict[str, Any]:
     """
     Analyze a repository and return comprehensive metrics.
 
@@ -551,4 +556,5 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     # Run the FastAPI app locally with uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use 127.0.0.1 instead of 0.0.0.0 for security
+    uvicorn.run(app, host="127.0.0.1", port=8000)
