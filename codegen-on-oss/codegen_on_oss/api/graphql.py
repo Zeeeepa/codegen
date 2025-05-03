@@ -682,9 +682,9 @@ class Query(ObjectType):
             issues = issue_repo.get_all(limit=limit, offset=offset)
         
         # Apply filters
-        if issue_type and analysis_result_id or file_id:
+        if issue_type and (analysis_result_id or file_id):
             issues = [i for i in issues if i.issue_type == issue_type]
-        if severity and analysis_result_id or file_id:
+        if severity and (analysis_result_id or file_id):
             issues = [i for i in issues if i.severity == severity]
         
         # Apply limit and offset
@@ -721,4 +721,3 @@ def execute_query(query, variables=None):
     except Exception as e:
         logger.error(f"Error executing GraphQL query: {e}")
         return {"errors": [str(e)]}
-

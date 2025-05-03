@@ -16,6 +16,7 @@ from functools import wraps
 from pathlib import Path
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 
 try:
     import redis
@@ -185,10 +186,37 @@ class RedisCache(CacheBackend[T]):
         if not REDIS_AVAILABLE:
             raise ImportError("Redis is not available. Install it with 'pip install redis'.")
         
-        self.redis = redis.Redis(host=host, port=port, db=db, password=password)
+        self.redis_params = {
+            'host': host,
+            'port': port,
+            'db': db,
+            'password': password
+        }
+        self._redis = None
         self.prefix = prefix
         self.serializer = serializer
         self.deserializer = deserializer
+    
+    @property
+    def redis(self):
+        """Lazy initialization of Redis connection."""
+        if self._redis is None:
+            self._redis = redis.Redis(**self.redis_params)
+        return self._redis
+    
+    def close(self):
+        """Close the Redis connection."""
+        if self._redis is not None:
+            self._redis.close()
+            self._redis = None
+    
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.close()
     
     def _prefixed_key(self, key: str) -> str:
         """Add the prefix to a key."""
@@ -576,6 +604,11 @@ class CacheManager:
             return wrapper
         
         return decorator
+    
+    def close(self):
+        """Close the cache backend if it supports closing."""
+        if hasattr(self.backend, 'close'):
+            self.backend.close()
 
 
 # Global cache manager instance
@@ -599,4 +632,3 @@ def initialize_cache(backend: str = 'memory', **backend_kwargs) -> CacheManager:
     global cache_manager
     cache_manager = CacheManager(backend, **backend_kwargs)
     return cache_manager
-
