@@ -761,20 +761,18 @@ class CodeAnalyzer:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
         """
-            # Count changes per file
-            file_changes = {}
-            for commit in commits:
-                for file in commit.files:
-                    if file.filename in file_changes:
-                        file_changes[file.filename] += 1
-                    else:
-                        file_changes[file.filename] = 1
-            
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
-        except Exception as e:
-            return {"error": str(e)}
+        # Count changes per file
+        file_changes = {}
+        for commit in commits:
+            for file in commit.files:
+                if file.filename in file_changes:
+                    file_changes[file.filename] += 1
+                else:
+                    file_changes[file.filename] = 1
+        
+        # Sort by change count and limit results
+        sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
+        return dict(sorted_files)
     
     def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
@@ -966,7 +964,12 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                     if month_key in monthly_counts:
                         monthly_counts[month_key] += 1
 
+            os.chdir(original_dir)
             return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        if 'original_dir' in locals():
+            os.chdir(original_dir)
+        return {"error": str(e)}
 
 
 # Helper functions for complexity analysis
