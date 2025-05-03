@@ -151,24 +151,57 @@ class CodebaseSnapshot:
         return import_metrics
     
     def _calculate_cyclomatic_complexity(self, func: Function) -> int:
-        """Calculate the cyclomatic complexity of a function."""
-        # Basic implementation - count decision points + 1
-        # This is a simplified version and could be expanded
-        complexity = 1  # Base complexity
+        """
+        Calculate the cyclomatic complexity of a function.
         
-        # Count if statements
-        complexity += len([node for node in func.ast_nodes if node.type == "if_statement"])
+        This is a more comprehensive implementation that considers:
+        - If statements
+        - For loops
+        - While loops
+        - Try/except blocks
+        - Ternary operators
+        - Logical operators (and, or)
+        - List/dict/set comprehensions
+        - Lambda expressions
         
-        # Count for loops
-        complexity += len([node for node in func.ast_nodes if node.type == "for_statement"])
+        Args:
+            func: The function to analyze
+            
+        Returns:
+            The cyclomatic complexity score
+        """
+        # Base complexity
+        complexity = 1
         
-        # Count while loops
-        complexity += len([node for node in func.ast_nodes if node.type == "while_statement"])
+        if not func.ast_nodes:
+            return complexity
         
-        # Count logical operators (and, or) in conditions
-        # This is a simplification - a more accurate implementation would parse the AST
+        # Count decision points in AST nodes
+        for node in func.ast_nodes:
+            # Control flow statements
+            if node.type in [
+                "if_statement", "for_statement", "while_statement", 
+                "try_statement", "catch_clause", "case_statement",
+                "ternary_expression", "list_comprehension", "dictionary_comprehension",
+                "set_comprehension", "lambda_expression"
+            ]:
+                complexity += 1
+        
+        # Count logical operators in source code
         if func.source:
+            # Count logical operators that create branches
             complexity += func.source.count(" and ") + func.source.count(" or ")
+            
+            # Count ternary operators if not already counted in AST
+            complexity += func.source.count(" if ") - func.source.count("if ")
+            
+            # Count exception handling if not already counted in AST
+            complexity += func.source.count("except ") - func.source.count("except:")
+            
+            # Count early returns which create additional paths
+            complexity += func.source.count("return ") - 1
+            if complexity < 1:
+                complexity = 1  # Ensure at least one return is not counted as complexity
         
         return complexity
     
@@ -393,4 +426,3 @@ class SnapshotManager:
         """
         codebase = self.create_codebase_from_repo(repo_url, commit_sha, github_token)
         return self.create_snapshot(codebase, commit_sha, snapshot_id)
-

@@ -177,10 +177,25 @@ class SWEHarnessAgent:
             
         Returns:
             A dictionary with agent analysis results, or None if agent analysis fails
+            
+        Note:
+            This is a placeholder method that will be implemented in a future version.
+            Currently returns a structured response indicating the feature is not yet implemented.
         """
-        # This is a placeholder for agent-based analysis
-        # In a real implementation, this would use the agent to analyze the commit
-        return None
+        # TODO: Implement agent-based analysis in a future version
+        # This would involve:
+        # 1. Setting up the agent with appropriate tools for code analysis
+        # 2. Providing the agent with context about the commit
+        # 3. Getting the agent's analysis and recommendations
+        
+        logger.info("Agent-based commit analysis requested but not yet implemented")
+        
+        return {
+            "status": "not_implemented",
+            "message": "Agent-based commit analysis is not yet implemented",
+            "implementation_status": "planned for future release",
+            "fallback": "Using standard analysis methods instead"
+        }
     
     def _get_agent_pr_analysis(
         self, 
@@ -196,10 +211,25 @@ class SWEHarnessAgent:
             
         Returns:
             A dictionary with agent analysis results, or None if agent analysis fails
+            
+        Note:
+            This is a placeholder method that will be implemented in a future version.
+            Currently returns a structured response indicating the feature is not yet implemented.
         """
-        # This is a placeholder for agent-based PR analysis
-        # In a real implementation, this would use the agent to analyze the PR
-        return None
+        # TODO: Implement agent-based PR analysis in a future version
+        # This would involve:
+        # 1. Setting up the agent with appropriate tools for PR analysis
+        # 2. Providing the agent with context about the PR (title, description, files changed)
+        # 3. Getting the agent's analysis and recommendations
+        
+        logger.info("Agent-based PR analysis requested but not yet implemented")
+        
+        return {
+            "status": "not_implemented",
+            "message": "Agent-based PR analysis is not yet implemented",
+            "implementation_status": "planned for future release",
+            "fallback": "Using standard analysis methods instead"
+        }
     
     def create_comment_for_pr(
         self, 
@@ -391,4 +421,3 @@ if __name__ == "__main__":
     
     # Print the results
     print(json.dumps(results, indent=2))
-

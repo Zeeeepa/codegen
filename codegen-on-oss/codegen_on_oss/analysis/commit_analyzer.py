@@ -102,8 +102,9 @@ class CommitAnalyzer:
         Returns:
             A dictionary with quality assessment metrics
         """
-        summary = diff_analyzer.get_summary()
-        high_risk = diff_analyzer.get_high_risk_changes()
+        # Get analysis results with fallbacks for None values
+        summary = diff_analyzer.get_summary() or {}
+        high_risk = diff_analyzer.get_high_risk_changes() or {}
         
         # Initialize quality metrics
         quality = {
@@ -119,8 +120,9 @@ class CommitAnalyzer:
         score = 10.0
         
         # Check for high-risk changes
-        if high_risk['complexity_increases']:
-            num_increases = len(high_risk['complexity_increases'])
+        complexity_increases = high_risk.get('complexity_increases', [])
+        if complexity_increases:
+            num_increases = len(complexity_increases)
             if num_increases > 5:
                 score -= 2.0
                 quality['issues'].append(f"Significant complexity increases in {num_increases} functions")
@@ -128,8 +130,9 @@ class CommitAnalyzer:
                 score -= 0.5
                 quality['warnings'].append(f"Complexity increases in {num_increases} functions")
         
-        if high_risk['core_file_changes']:
-            num_core_changes = len(high_risk['core_file_changes'])
+        core_file_changes = high_risk.get('core_file_changes', [])
+        if core_file_changes:
+            num_core_changes = len(core_file_changes)
             if num_core_changes > 3:
                 score -= 1.5
                 quality['issues'].append(f"Changes to {num_core_changes} core files with many dependencies")
@@ -137,8 +140,9 @@ class CommitAnalyzer:
                 score -= 0.5
                 quality['warnings'].append(f"Changes to {num_core_changes} core files")
         
-        if high_risk['interface_changes']:
-            num_interface_changes = len(high_risk['interface_changes'])
+        interface_changes = high_risk.get('interface_changes', [])
+        if interface_changes:
+            num_interface_changes = len(interface_changes)
             if num_interface_changes > 3:
                 score -= 1.5
                 quality['issues'].append(f"Interface changes to {num_interface_changes} functions")
@@ -147,19 +151,26 @@ class CommitAnalyzer:
                 quality['warnings'].append(f"Interface changes to {num_interface_changes} functions")
         
         # Check for positive aspects
-        if summary['complexity_changes']['decreased'] > summary['complexity_changes']['increased']:
+        complexity_changes = summary.get('complexity_changes', {})
+        decreased = complexity_changes.get('decreased', 0)
+        increased = complexity_changes.get('increased', 0)
+        if decreased > increased:
             score += 0.5
             quality['positive_aspects'].append("Overall complexity decreased")
         
-        if summary['function_changes']['added'] > 0 and summary['function_changes']['deleted'] == 0:
+        function_changes = summary.get('function_changes', {})
+        added = function_changes.get('added', 0)
+        deleted = function_changes.get('deleted', 0)
+        if added > 0 and deleted == 0:
             score += 0.5
             quality['positive_aspects'].append("Added new functionality without removing existing functions")
         
         # Adjust score based on the size of the commit
+        file_changes = summary.get('file_changes', {})
         total_changes = (
-            summary['file_changes']['added'] + 
-            summary['file_changes']['deleted'] + 
-            summary['file_changes']['modified']
+            file_changes.get('added', 0) + 
+            file_changes.get('deleted', 0) + 
+            file_changes.get('modified', 0)
         )
         
         # Very large commits are often problematic
@@ -204,57 +215,101 @@ class CommitAnalyzer:
         Returns:
             A formatted string with the analysis report
         """
-        summary = analysis_results['summary']
-        quality = analysis_results['quality_assessment']
+        # Safely access nested dictionaries with .get() method
+        summary = analysis_results.get('summary', {})
+        quality = analysis_results.get('quality_assessment', {})
+        high_risk = analysis_results.get('high_risk_changes', {})
+        
+        # Get values with fallbacks
+        score = quality.get('score', 0.0)
+        assessment = quality.get('overall_assessment', 'Unknown')
+        is_properly_implemented = quality.get('is_properly_implemented', False)
+        
+        # File changes
+        file_changes = summary.get('file_changes', {})
+        files_added = file_changes.get('added', 0)
+        files_deleted = file_changes.get('deleted', 0)
+        files_modified = file_changes.get('modified', 0)
+        
+        # Function changes
+        function_changes = summary.get('function_changes', {})
+        funcs_added = function_changes.get('added', 0)
+        funcs_deleted = function_changes.get('deleted', 0)
+        funcs_modified = function_changes.get('modified', 0)
+        
+        # Class changes
+        class_changes = summary.get('class_changes', {})
+        classes_added = class_changes.get('added', 0)
+        classes_deleted = class_changes.get('deleted', 0)
+        classes_modified = class_changes.get('modified', 0)
+        
+        # Complexity changes
+        complexity_changes = summary.get('complexity_changes', {})
+        complexity_increased = complexity_changes.get('increased', 0)
+        complexity_decreased = complexity_changes.get('decreased', 0)
         
         report = f"""
 Commit Analysis Report
 =====================
 
-Quality Score: {quality['score']}/10.0 - {quality['overall_assessment']}
-Properly Implemented: {'Yes' if quality['is_properly_implemented'] else 'No'}
+Quality Score: {score}/10.0 - {assessment}
+Properly Implemented: {'Yes' if is_properly_implemented else 'No'}
 
 Summary:
-- Files: {summary['file_changes']['added']} added, {summary['file_changes']['deleted']} deleted, {summary['file_changes']['modified']} modified
-- Functions: {summary['function_changes']['added']} added, {summary['function_changes']['deleted']} deleted, {summary['function_changes']['modified']} modified
-- Classes: {summary['class_changes']['added']} added, {summary['class_changes']['deleted']} deleted, {summary['class_changes']['modified']} modified
-- Complexity: {summary['complexity_changes']['increased']} functions increased, {summary['complexity_changes']['decreased']} decreased
+- Files: {files_added} added, {files_deleted} deleted, {files_modified} modified
+- Functions: {funcs_added} added, {funcs_deleted} deleted, {funcs_modified} modified
+- Classes: {classes_added} added, {classes_deleted} deleted, {classes_modified} modified
+- Complexity: {complexity_increased} functions increased, {complexity_decreased} decreased
 """
         
-        if quality['issues']:
+        # Add issues if there are any
+        issues = quality.get('issues', [])
+        if issues:
             report += "\nIssues:\n"
-            for issue in quality['issues']:
+            for issue in issues:
                 report += f"- {issue}\n"
         
-        if quality['warnings']:
+        # Add warnings if there are any
+        warnings = quality.get('warnings', [])
+        if warnings:
             report += "\nWarnings:\n"
-            for warning in quality['warnings']:
+            for warning in warnings:
                 report += f"- {warning}\n"
         
-        if quality['positive_aspects']:
+        # Add positive aspects if there are any
+        positive_aspects = quality.get('positive_aspects', [])
+        if positive_aspects:
             report += "\nPositive Aspects:\n"
-            for aspect in quality['positive_aspects']:
+            for aspect in positive_aspects:
                 report += f"- {aspect}\n"
         
         # Add high risk changes
-        high_risk = analysis_results['high_risk_changes']
-        
-        if high_risk['complexity_increases']:
+        complexity_increases = high_risk.get('complexity_increases', [])
+        if complexity_increases:
             report += "\nSignificant Complexity Increases:\n"
-            for item in high_risk['complexity_increases'][:5]:  # Limit to top 5
-                report += f"- {item['function']}: {item['original']} → {item['modified']} ({item['delta']:+d}, {item['percent_change']:.1f}%)\n"
-            if len(high_risk['complexity_increases']) > 5:
-                report += f"  ... and {len(high_risk['complexity_increases']) - 5} more\n"
+            for item in complexity_increases[:5]:  # Limit to top 5
+                function_name = item.get('function', 'Unknown')
+                original = item.get('original', 0)
+                modified = item.get('modified', 0)
+                delta = item.get('delta', 0)
+                percent_change = item.get('percent_change', 0.0)
+                report += f"- {function_name}: {original} → {modified} ({delta:+d}, {percent_change:.1f}%)\n"
+            if len(complexity_increases) > 5:
+                report += f"  ... and {len(complexity_increases) - 5} more\n"
         
-        if high_risk['interface_changes']:
+        interface_changes = high_risk.get('interface_changes', [])
+        if interface_changes:
             report += "\nInterface Changes:\n"
-            for item in high_risk['interface_changes'][:5]:  # Limit to top 5
-                report += f"- {item['function']}: Parameters changed from {item['original_params']} to {item['modified_params']}\n"
-            if len(high_risk['interface_changes']) > 5:
-                report += f"  ... and {len(high_risk['interface_changes']) - 5} more\n"
+            for item in interface_changes[:5]:  # Limit to top 5
+                function_name = item.get('function', 'Unknown')
+                original_params = item.get('original_params', 'Unknown')
+                modified_params = item.get('modified_params', 'Unknown')
+                report += f"- {function_name}: Parameters changed from {original_params} to {modified_params}\n"
+            if len(interface_changes) > 5:
+                report += f"  ... and {len(interface_changes) - 5} more\n"
         
         # Add conclusion
-        if quality['is_properly_implemented']:
+        if is_properly_implemented:
             report += "\nConclusion: This commit is properly implemented and has no significant issues.\n"
         else:
             report += "\nConclusion: This commit has issues that should be addressed before merging.\n"
@@ -273,38 +328,53 @@ Summary:
         Args:
             repo_url: The repository URL or owner/repo string
             pr_number: The pull request number
-            github_token: Optional GitHub token for accessing private repositories
+            github_token: Optional GitHub token for accessing private repositories.
+                          It's recommended to use environment variables instead.
             
         Returns:
             A dictionary with analysis results
+            
+        Raises:
+            ValueError: If no GitHub token is available
         """
         from github import Github
+        import os
         
-        # Use the provided token or the instance token
-        token = github_token or self.github_token
+        # Use token from environment variable if available, otherwise use provided token or instance token
+        token = os.environ.get("GITHUB_TOKEN") or github_token or self.github_token
+        
         if not token:
-            raise ValueError("GitHub token is required to analyze pull requests")
+            logger.error("No GitHub token available for PR analysis")
+            raise ValueError(
+                "GitHub token is required to analyze pull requests. "
+                "Set it via the GITHUB_TOKEN environment variable or provide it as a parameter."
+            )
         
-        # Parse the repo URL to get owner and repo name
-        if "/" in repo_url and "github.com" not in repo_url:
-            owner, repo_name = repo_url.split("/")
-        else:
-            # Extract owner/repo from a full GitHub URL
-            parts = repo_url.rstrip("/").split("/")
-            owner = parts[-2]
-            repo_name = parts[-1]
-            if repo_name.endswith(".git"):
-                repo_name = repo_name[:-4]
-        
-        # Get the PR details from GitHub
-        g = Github(token)
-        repo = g.get_repo(f"{owner}/{repo_name}")
-        pr = repo.get_pull(pr_number)
-        
-        # Get the base and head commits
-        base_commit = pr.base.sha
-        head_commit = pr.head.sha
-        
-        # Analyze the commits
-        return self.analyze_commit(repo_url, base_commit, head_commit)
-
+        try:
+            # Parse the repo URL to get owner and repo name
+            if "/" in repo_url and "github.com" not in repo_url:
+                owner, repo_name = repo_url.split("/")
+            else:
+                # Extract owner/repo from a full GitHub URL
+                parts = repo_url.rstrip("/").split("/")
+                owner = parts[-2]
+                repo_name = parts[-1]
+                if repo_name.endswith(".git"):
+                    repo_name = repo_name[:-4]
+            
+            # Get the PR details from GitHub
+            g = Github(token)
+            repo = g.get_repo(f"{owner}/{repo_name}")
+            pr = repo.get_pull(pr_number)
+            
+            # Get the base and head commits
+            base_commit = pr.base.sha
+            head_commit = pr.head.sha
+            
+            logger.info(f"Analyzing PR #{pr_number} in {repo_url} (base: {base_commit}, head: {head_commit})")
+            
+            # Analyze the commits
+            return self.analyze_commit(repo_url, base_commit, head_commit)
+        except Exception as e:
+            logger.error(f"Error analyzing PR #{pr_number} in {repo_url}: {str(e)}")
+            raise
