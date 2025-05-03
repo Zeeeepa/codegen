@@ -1,17 +1,16 @@
 import os
+import re
 import sys
 from pathlib import Path
-import re
-from typing import Dict, Any
+from typing import Any
 
 import modal
-from loguru import logger
-
 from codegen_on_oss.bucket_store import BucketStore
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource
+from loguru import logger
 
 parse_app = modal.App("codegen-oss-parse")
 
@@ -69,8 +68,7 @@ def parse_repo_on_modal(
     log_output_path: str = "output.logs",
     metrics_output_path: str = "metrics.csv",
 ):
-    """
-    Parse repositories on Modal.
+    """Parse repositories on Modal.
 
     Args:
         source: The source of the repositories to parse.
@@ -112,18 +110,15 @@ def parse_repo_on_modal(
 
 @parse_app.local_entrypoint()
 def main(
-    source: str = "csv",
-    csv_file: str = "input.csv",
-    single_url: str = "https://github.com/codegen-sh/codegen-sdk.git",
-    single_commit: str | None = None,
-    github_language: str = "python",
-    github_heuristic: str = "stars",
-    github_num_repos: int = 50,
+    source: str = "single",
+    csv_file: str = "",
+    single_url: str = "",
+    single_commit: str = "",
+    github_language: str = "",
+    github_heuristic: str = "",
+    github_num_repos: int = 10,
 ):
-    """
-    Main entrypoint for the parse app.
-    """
-    
+    """Main entrypoint for the parse app."""
     if source == "csv":
         input_path = Path(csv_file).relative_to(".")
         with codegen_input_volume.batch_upload(force=True) as b:
@@ -152,7 +147,7 @@ def main(
     )
 
 
-def parse_repo(source: str, env: Dict[str, str] = None) -> Dict[str, Any]:
+def parse_repo(source: str, env: dict[str, str] | None = None) -> dict[str, Any]:
     """Parse a repository using Modal.
 
     Args:
