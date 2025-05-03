@@ -5,13 +5,8 @@ This module provides functionality for handling webhooks from Git providers
 and triggering analysis based on webhook events.
 """
 
-import os
-import json
 import logging
-import hmac
-import hashlib
-from typing import Dict, List, Optional, Any, Union, Set
-from datetime import datetime
+from typing import Dict, Any
 
 import requests
 from fastapi import Request, HTTPException, status
@@ -430,7 +425,11 @@ class WebhookHandler:
         
         # Get the source branch and commit hash
         source_branch = payload.get("object_attributes", {}).get("source_branch")
-        commit_hash = payload.get("object_attributes", {}).get("last_commit", {}).get("id")
+        commit_hash = (
+            payload.get("object_attributes", {})
+            .get("last_commit", {})
+            .get("id")
+        )
         
         if not source_branch or not commit_hash:
             raise HTTPException(

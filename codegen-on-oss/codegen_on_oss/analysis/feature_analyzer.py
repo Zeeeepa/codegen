@@ -534,5 +534,4 @@ class FeatureAnalyzer:
                     complexity += len(switch.cases)
         
         return complexity
-"""
 
