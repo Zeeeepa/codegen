@@ -13,6 +13,8 @@ import logging
 from typing import Dict, List, Any, Optional, Tuple, Set, Union
 import difflib
 import re
+import ast
+from pathlib import Path
 
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
@@ -25,7 +27,6 @@ from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, SymbolType
 
 logger = logging.getLogger(__name__)
-
 
 def get_codebase_summary(codebase: Codebase) -> str:
     """
@@ -55,7 +56,6 @@ def get_codebase_summary(codebase: Codebase) -> str:
 
     return f"{node_summary}\n{edge_summary}"
 
-
 def get_file_summary(file: SourceFile) -> str:
     """
     Get a summary of a file.
@@ -78,7 +78,6 @@ def get_file_summary(file: SourceFile) -> str:
 - {len(file.imports)} importers
 """
 
-
 def get_class_summary(cls: Class) -> str:
     """
     Get a summary of a class.
@@ -98,7 +97,6 @@ def get_class_summary(cls: Class) -> str:
 
 {get_symbol_summary(cls)}
     """
-
 
 def get_function_summary(func: Function) -> str:
     """
@@ -120,7 +118,6 @@ def get_function_summary(func: Function) -> str:
 
 {get_symbol_summary(func)}
         """
-
 
 def get_symbol_summary(symbol: Symbol) -> str:
     """
@@ -150,7 +147,6 @@ def get_symbol_summary(symbol: Symbol) -> str:
 \t\t- {len([x for x in imported_symbols if isinstance(x, SourceFile)])} files
     """
 
-
 class CodeIntegrityAnalyzer:
     """
     Analyzer for code integrity issues.
@@ -160,18 +156,63 @@ class CodeIntegrityAnalyzer:
     - Identifying errors in functions and classes
     - Detecting improper parameter usage
     - Finding incorrect function callback points
+    
+    Attributes:
+        codebase (Codebase): The codebase to analyze
+        errors (List): List of errors found during analysis
+        warnings (List): List of warnings found during analysis
+        config (Dict): Configuration options for the analyzer
     """
     
-    def __init__(self, codebase: Codebase):
+    # Default thresholds for code quality metrics
+    DEFAULT_CONFIG = {
+        "max_function_parameters": 7,
+        "max_function_returns": 5,
+        "max_class_methods": 20,
+        "max_class_attributes": 15,
+        "max_function_complexity": 15,
+        "max_line_length": 100,
+        "require_docstrings": True,
+        "require_type_hints": False,
+        "ignore_patterns": [r"__pycache__", r"\.git", r"\.venv", r"\.env"],
+        "severity_levels": {
+            "missing_docstring": "warning",
+            "empty_function": "error",
+            "unused_parameter": "warning",
+            "too_many_parameters": "warning",
+            "too_many_returns": "warning",
+            "empty_class": "error",
+            "too_many_methods": "warning",
+            "too_many_attributes": "warning",
+            "missing_init": "warning",
+            "wrong_parameter_type": "error",
+            "wrong_callback_signature": "error",
+            "high_complexity": "warning",
+            "long_line": "warning",
+            "missing_type_hints": "warning",
+            "inconsistent_return_type": "error",
+            "mutable_default_argument": "warning",
+            "unused_import": "warning",
+            "duplicate_code": "warning"
+        }
+    }
+    
+    def __init__(self, codebase: Codebase, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the analyzer.
         
         Args:
             codebase: The codebase to analyze
+            config: Optional configuration options to override defaults
         """
         self.codebase = codebase
         self.errors: List[Dict[str, Any]] = []
         self.warnings: List[Dict[str, Any]] = []
+        
+        # Merge provided config with defaults
+        self.config = self.DEFAULT_CONFIG.copy()
+        if config:
+            self.config.update(config)
         
     def analyze(self) -> Dict[str, Any]:
         """
@@ -183,6 +224,7 @@ class CodeIntegrityAnalyzer:
         # Get all functions and classes
         functions = list(self.codebase.functions)
         classes = list(self.codebase.classes)
+        files = list(self.codebase.files)
         
         # Analyze functions
         function_errors = self._analyze_functions(functions)
@@ -196,19 +238,48 @@ class CodeIntegrityAnalyzer:
         # Analyze callback points
         callback_errors = self._analyze_callback_points(functions)
         
+        # Analyze imports
+        import_errors = self._analyze_imports(files)
+        
+        # Analyze code complexity
+        complexity_errors = self._analyze_complexity(functions)
+        
+        # Analyze type hints
+        type_hint_errors = self._analyze_type_hints(functions, classes) if self.config["require_type_hints"] else []
+        
+        # Analyze code duplication
+        duplication_errors = self._analyze_code_duplication(files)
+        
         # Combine all errors
-        all_errors = function_errors + class_errors + parameter_errors + callback_errors
+        all_errors = (
+            function_errors + 
+            class_errors + 
+            parameter_errors + 
+            callback_errors + 
+            import_errors + 
+            complexity_errors + 
+            type_hint_errors + 
+            duplication_errors
+        )
+        
+        # Filter errors by severity level if requested
+        filtered_errors = all_errors
         
         # Create summary
         summary = {
             "total_functions": len(functions),
             "total_classes": len(classes),
-            "total_errors": len(all_errors),
+            "total_files": len(files),
+            "total_errors": len(filtered_errors),
             "function_errors": len(function_errors),
             "class_errors": len(class_errors),
             "parameter_errors": len(parameter_errors),
             "callback_errors": len(callback_errors),
-            "errors": all_errors,
+            "import_errors": len(import_errors),
+            "complexity_errors": len(complexity_errors),
+            "type_hint_errors": len(type_hint_errors),
+            "duplication_errors": len(duplication_errors),
+            "errors": filtered_errors,
             "codebase_summary": get_codebase_summary(self.codebase)
         }
         
@@ -267,7 +338,7 @@ class CodeIntegrityAnalyzer:
                     })
             
             # Check for too many parameters
-            if len(func.parameters) > 7:  # Arbitrary threshold
+            if len(func.parameters) > self.config["max_function_parameters"]:  # Arbitrary threshold
                 errors.append({
                     "type": "function_error",
                     "error_type": "too_many_parameters",
@@ -278,7 +349,7 @@ class CodeIntegrityAnalyzer:
                 })
             
             # Check for too many return statements
-            if len(func.return_statements) > 5:  # Arbitrary threshold
+            if len(func.return_statements) > self.config["max_function_returns"]:  # Arbitrary threshold
                 errors.append({
                     "type": "function_error",
                     "error_type": "too_many_returns",
@@ -326,7 +397,7 @@ class CodeIntegrityAnalyzer:
                 })
             
             # Check for too many methods
-            if len(cls.methods) > 20:  # Arbitrary threshold
+            if len(cls.methods) > self.config["max_class_methods"]:  # Arbitrary threshold
                 errors.append({
                     "type": "class_error",
                     "error_type": "too_many_methods",
@@ -337,7 +408,7 @@ class CodeIntegrityAnalyzer:
                 })
             
             # Check for too many attributes
-            if len(cls.attributes) > 15:  # Arbitrary threshold
+            if len(cls.attributes) > self.config["max_class_attributes"]:  # Arbitrary threshold
                 errors.append({
                     "type": "class_error",
                     "error_type": "too_many_attributes",
@@ -427,6 +498,231 @@ class CodeIntegrityAnalyzer:
                                         "line": call.line_range[0],
                                         "message": f"Function '{func.name}' passes '{callback_func.name}' as a callback, but it has no parameters"
                                     })
+        
+        return errors
+    
+    def _analyze_imports(self, files: List[SourceFile]) -> List[Dict[str, Any]]:
+        """
+        Analyze imports for errors.
+        
+        Args:
+            files: List of files to analyze
+            
+        Returns:
+            List of import errors
+        """
+        errors = []
+        
+        for file in files:
+            # Skip files that match ignore patterns
+            if any(re.search(pattern, file.filepath) for pattern in self.config["ignore_patterns"]):
+                continue
+                
+            # Check for unused imports
+            used_imports = set()
+            for symbol in file.symbols:
+                for usage in symbol.symbol_usages:
+                    if isinstance(usage, Import):
+                        used_imports.add(usage)
+            
+            unused_imports = set(file.imports) - used_imports
+            for unused_import in unused_imports:
+                errors.append({
+                    "type": "import_error",
+                    "error_type": "unused_import",
+                    "name": unused_import.name if hasattr(unused_import, "name") else "unknown",
+                    "filepath": file.filepath,
+                    "line": unused_import.line_range[0] if hasattr(unused_import, "line_range") else 0,
+                    "message": f"Unused import in {file.name}",
+                    "severity": self.config["severity_levels"]["unused_import"]
+                })
+        
+        return errors
+    
+    def _analyze_complexity(self, functions: List[Function]) -> List[Dict[str, Any]]:
+        """
+        Analyze code complexity.
+        
+        Args:
+            functions: List of functions to analyze
+            
+        Returns:
+            List of complexity errors
+        """
+        errors = []
+        
+        for func in functions:
+            # Skip functions that match ignore patterns
+            if any(re.search(pattern, func.filepath) for pattern in self.config["ignore_patterns"]):
+                continue
+                
+            # Calculate cyclomatic complexity (simplified)
+            # In a real implementation, this would use a more sophisticated algorithm
+            complexity = 1  # Base complexity
+            
+            # Count branches (if, for, while, etc.)
+            if func.body:
+                for node in func.body:
+                    if hasattr(node, "type"):
+                        if node.type in ["if", "for", "while", "try", "with"]:
+                            complexity += 1
+            
+            # Check if complexity exceeds threshold
+            if complexity > self.config["max_function_complexity"]:
+                errors.append({
+                    "type": "complexity_error",
+                    "error_type": "high_complexity",
+                    "name": func.name,
+                    "filepath": func.filepath,
+                    "line": func.line_range[0],
+                    "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity})",
+                    "complexity": complexity,
+                    "severity": self.config["severity_levels"]["high_complexity"]
+                })
+            
+            # Check for mutable default arguments
+            for param in func.parameters:
+                if hasattr(param, "default") and param.default:
+                    if isinstance(param.default, (list, dict, set)):
+                        errors.append({
+                            "type": "complexity_error",
+                            "error_type": "mutable_default_argument",
+                            "name": func.name,
+                            "filepath": func.filepath,
+                            "line": func.line_range[0],
+                            "message": f"Function '{func.name}' uses mutable default argument for parameter '{param.name}'",
+                            "severity": self.config["severity_levels"]["mutable_default_argument"]
+                        })
+        
+        return errors
+    
+    def _analyze_type_hints(self, functions: List[Function], classes: List[Class]) -> List[Dict[str, Any]]:
+        """
+        Analyze type hints.
+        
+        Args:
+            functions: List of functions to analyze
+            classes: List of classes to analyze
+            
+        Returns:
+            List of type hint errors
+        """
+        errors = []
+        
+        # Check functions for missing type hints
+        for func in functions:
+            # Skip functions that match ignore patterns
+            if any(re.search(pattern, func.filepath) for pattern in self.config["ignore_patterns"]):
+                continue
+                
+            # Check for missing parameter type hints
+            for param in func.parameters:
+                if param.name not in ["self", "cls"] and not param.annotation:
+                    errors.append({
+                        "type": "type_hint_error",
+                        "error_type": "missing_type_hints",
+                        "name": func.name,
+                        "filepath": func.filepath,
+                        "line": func.line_range[0],
+                        "message": f"Function '{func.name}' is missing type hint for parameter '{param.name}'",
+                        "severity": self.config["severity_levels"]["missing_type_hints"]
+                    })
+            
+            # Check for missing return type hint
+            if not hasattr(func, "return_annotation") or not func.return_annotation:
+                # Only flag if the function has return statements
+                if func.return_statements:
+                    errors.append({
+                        "type": "type_hint_error",
+                        "error_type": "missing_type_hints",
+                        "name": func.name,
+                        "filepath": func.filepath,
+                        "line": func.line_range[0],
+                        "message": f"Function '{func.name}' is missing return type hint",
+                        "severity": self.config["severity_levels"]["missing_type_hints"]
+                    })
+            
+            # Check for inconsistent return types
+            return_types = set()
+            for ret in func.return_statements:
+                if hasattr(ret, "value") and hasattr(ret.value, "type"):
+                    return_types.add(ret.value.type)
+            
+            if len(return_types) > 1:
+                errors.append({
+                    "type": "type_hint_error",
+                    "error_type": "inconsistent_return_type",
+                    "name": func.name,
+                    "filepath": func.filepath,
+                    "line": func.line_range[0],
+                    "message": f"Function '{func.name}' has inconsistent return types: {', '.join(return_types)}",
+                    "severity": self.config["severity_levels"]["inconsistent_return_type"]
+                })
+        
+        return errors
+    
+    def _analyze_code_duplication(self, files: List[SourceFile]) -> List[Dict[str, Any]]:
+        """
+        Analyze code for duplication.
+        
+        Args:
+            files: List of files to analyze
+            
+        Returns:
+            List of code duplication errors
+        """
+        errors = []
+        
+        # This is a simplified implementation
+        # In a real implementation, this would use a more sophisticated algorithm
+        # like suffix trees or rolling hashes
+        
+        # Extract code blocks (e.g., functions, methods) from files
+        code_blocks = []
+        for file in files:
+            # Skip files that match ignore patterns
+            if any(re.search(pattern, file.filepath) for pattern in self.config["ignore_patterns"]):
+                continue
+                
+            # Add functions from this file
+            for func in file.functions:
+                if func.body:
+                    code_blocks.append({
+                        "name": func.name,
+                        "filepath": file.filepath,
+                        "line": func.line_range[0],
+                        "code": "\n".join(func.body) if isinstance(func.body, list) else str(func.body)
+                    })
+        
+        # Compare code blocks for similarity
+        for i, block1 in enumerate(code_blocks):
+            for j in range(i + 1, len(code_blocks)):
+                block2 = code_blocks[j]
+                
+                # Skip comparing blocks from the same file with similar names
+                # (e.g., overloaded methods or test functions)
+                if block1["filepath"] == block2["filepath"] and (
+                    block1["name"] in block2["name"] or block2["name"] in block1["name"]
+                ):
+                    continue
+                
+                # Calculate similarity ratio
+                similarity = difflib.SequenceMatcher(None, block1["code"], block2["code"]).ratio()
+                
+                # Flag if similarity is above threshold (e.g., 0.8 or 80%)
+                if similarity > 0.8:
+                    errors.append({
+                        "type": "duplication_error",
+                        "error_type": "duplicate_code",
+                        "name": f"{block1['name']} and {block2['name']}",
+                        "filepath": block1["filepath"],
+                        "line": block1["line"],
+                        "message": f"Duplicate code detected between '{block1['name']}' in {block1['filepath']} and '{block2['name']}' in {block2['filepath']} (similarity: {similarity:.2f})",
+                        "duplicate_filepath": block2["filepath"],
+                        "duplicate_line": block2["line"],
+                        "similarity": similarity,
+                        "severity": self.config["severity_levels"]["duplicate_code"]
+                    })
         
         return errors
 

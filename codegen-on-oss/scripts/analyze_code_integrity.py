@@ -8,6 +8,9 @@ This script analyzes code integrity in a repository, including:
 - Detecting improper parameter usage
 - Finding incorrect function callback points
 - Comparing error counts between branches
+- Analyzing code complexity and duplication
+- Checking for type hint usage
+- Detecting unused imports
 """
 
 import argparse
@@ -15,7 +18,9 @@ import json
 import logging
 import os
 import sys
-from typing import Dict, Any, Optional
+import yaml
+from typing import Dict, Any, Optional, List
+from pathlib import Path
 
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
@@ -80,12 +85,43 @@ def load_codebase(repo_path: str, branch: Optional[str] = None, commit: Optional
     return codebase
 
 
-def analyze_codebase(codebase: Codebase, output_file: Optional[str] = None) -> Dict[str, Any]:
+def load_config(config_file: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Load configuration from a file.
+    
+    Args:
+        config_file: Path to the configuration file
+        
+    Returns:
+        Configuration dictionary
+    """
+    if not config_file:
+        return {}
+    
+    logger.info(f"Loading configuration from {config_file}")
+    
+    config = {}
+    try:
+        with open(config_file, 'r') as f:
+            if config_file.endswith('.json'):
+                config = json.load(f)
+            elif config_file.endswith(('.yaml', '.yml')):
+                config = yaml.safe_load(f)
+            else:
+                logger.warning(f"Unknown configuration file format: {config_file}")
+    except Exception as e:
+        logger.error(f"Error loading configuration: {e}")
+    
+    return config
+
+
+def analyze_codebase(codebase: Codebase, config: Dict[str, Any] = None, output_file: Optional[str] = None) -> Dict[str, Any]:
     """
     Analyze a codebase for integrity issues.
     
     Args:
         codebase: The codebase to analyze
+        config: Configuration options for the analyzer
         output_file: Optional file to write the results to
         
     Returns:
@@ -94,13 +130,21 @@ def analyze_codebase(codebase: Codebase, output_file: Optional[str] = None) -> D
     logger.info("Analyzing codebase for integrity issues")
     
     # Create analyzer
-    analyzer = CodeIntegrityAnalyzer(codebase)
+    analyzer = CodeIntegrityAnalyzer(codebase, config)
     
     # Analyze codebase
     results = analyzer.analyze()
     
     # Print summary
     logger.info(f"Found {results['total_errors']} errors in {results['total_functions']} functions and {results['total_classes']} classes")
+    logger.info(f"Function errors: {results['function_errors']}")
+    logger.info(f"Class errors: {results['class_errors']}")
+    logger.info(f"Parameter errors: {results['parameter_errors']}")
+    logger.info(f"Callback errors: {results['callback_errors']}")
+    logger.info(f"Import errors: {results['import_errors']}")
+    logger.info(f"Complexity errors: {results['complexity_errors']}")
+    logger.info(f"Type hint errors: {results['type_hint_errors']}")
+    logger.info(f"Duplication errors: {results['duplication_errors']}")
     
     # Write results to file if requested
     if output_file:
@@ -111,19 +155,28 @@ def analyze_codebase(codebase: Codebase, output_file: Optional[str] = None) -> D
     return results
 
 
-def compare_codebases(main_codebase: Codebase, branch_codebase: Codebase, output_file: Optional[str] = None) -> Dict[str, Any]:
+def compare_codebases(main_codebase: Codebase, branch_codebase: Codebase, config: Dict[str, Any] = None, output_file: Optional[str] = None) -> Dict[str, Any]:
     """
     Compare two codebases for integrity issues.
     
     Args:
         main_codebase: The main branch codebase
         branch_codebase: The feature branch codebase
+        config: Configuration options for the analyzer
         output_file: Optional file to write the results to
         
     Returns:
         Comparison results
     """
     logger.info("Comparing codebases for integrity issues")
+    
+    # Create analyzers with the same configuration
+    main_analyzer = CodeIntegrityAnalyzer(main_codebase, config)
+    branch_analyzer = CodeIntegrityAnalyzer(branch_codebase, config)
+    
+    # Analyze both codebases
+    main_results = main_analyzer.analyze()
+    branch_results = branch_analyzer.analyze()
     
     # Compare branches
     comparison = compare_branches(main_codebase, branch_codebase)
@@ -144,19 +197,28 @@ def compare_codebases(main_codebase: Codebase, branch_codebase: Codebase, output
     return comparison
 
 
-def analyze_pull_request(main_codebase: Codebase, pr_codebase: Codebase, output_file: Optional[str] = None) -> Dict[str, Any]:
+def analyze_pull_request(main_codebase: Codebase, pr_codebase: Codebase, config: Dict[str, Any] = None, output_file: Optional[str] = None) -> Dict[str, Any]:
     """
     Analyze a pull request for integrity issues.
     
     Args:
         main_codebase: The main branch codebase
         pr_codebase: The PR branch codebase
+        config: Configuration options for the analyzer
         output_file: Optional file to write the results to
         
     Returns:
         Analysis results
     """
     logger.info("Analyzing pull request for integrity issues")
+    
+    # Create analyzers with the same configuration
+    main_analyzer = CodeIntegrityAnalyzer(main_codebase, config)
+    pr_analyzer = CodeIntegrityAnalyzer(pr_codebase, config)
+    
+    # Analyze both codebases
+    main_results = main_analyzer.analyze()
+    pr_results = pr_analyzer.analyze()
     
     # Analyze PR
     pr_analysis = analyze_pr(main_codebase, pr_codebase)
@@ -207,277 +269,279 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 border-radius: 5px;
                 margin-bottom: 20px;
             }
-            .error {
-                background-color: #ffebee;
+            .error-list {
+                margin-top: 20px;
+            }
+            .error-item {
+                background-color: #fff;
                 padding: 10px;
-                margin: 5px 0;
+                margin-bottom: 10px;
+                border-left: 4px solid #e74c3c;
                 border-radius: 3px;
             }
-            .error-type {
-                font-weight: bold;
-                color: #c62828;
+            .error-item.warning {
+                border-left-color: #f39c12;
             }
-            .file-path {
-                color: #1565c0;
+            .error-item h4 {
+                margin-top: 0;
+                margin-bottom: 5px;
+            }
+            .error-item p {
+                margin: 5px 0;
+            }
+            .error-item .location {
                 font-family: monospace;
-            }
-            .line-number {
-                color: #6a1b9a;
-                font-family: monospace;
-            }
-            .message {
-                margin-top: 5px;
+                color: #7f8c8d;
             }
             .tabs {
                 display: flex;
-                margin-bottom: 10px;
+                margin-bottom: 20px;
+                border-bottom: 1px solid #ddd;
             }
             .tab {
                 padding: 10px 15px;
                 cursor: pointer;
-                background-color: #e0e0e0;
+                background-color: #f8f9fa;
+                border: 1px solid #ddd;
+                border-bottom: none;
                 margin-right: 5px;
                 border-radius: 3px 3px 0 0;
             }
             .tab.active {
-                background-color: #2196f3;
-                color: white;
+                background-color: #fff;
+                border-bottom: 1px solid #fff;
+                margin-bottom: -1px;
             }
             .tab-content {
                 display: none;
-                padding: 15px;
-                background-color: #f5f5f5;
-                border-radius: 0 3px 3px 3px;
             }
             .tab-content.active {
                 display: block;
+            }
+            .stats {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            .stat-box {
+                background-color: #ecf0f1;
+                padding: 10px;
+                border-radius: 5px;
+                min-width: 150px;
+                text-align: center;
+            }
+            .stat-box h3 {
+                margin: 0;
+                font-size: 24px;
+            }
+            .stat-box p {
+                margin: 5px 0 0 0;
+                font-size: 14px;
+            }
+            .severity-error {
+                color: #e74c3c;
+            }
+            .severity-warning {
+                color: #f39c12;
+            }
+            .filter-controls {
+                margin-bottom: 15px;
+                padding: 10px;
+                background-color: #f8f9fa;
+                border-radius: 5px;
+            }
+            .filter-controls select, .filter-controls input {
+                margin-right: 10px;
+                padding: 5px;
+            }
+            .progress-bar {
+                height: 20px;
+                background-color: #ecf0f1;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                overflow: hidden;
+            }
+            .progress-bar-fill {
+                height: 100%;
+                background-color: #2ecc71;
+                width: 0%;
+                transition: width 0.5s ease-in-out;
             }
         </style>
     </head>
     <body>
         <h1>Code Integrity Analysis Report</h1>
-    """
-    
-    # Add summary
-    html += """
-        <div class="summary">
-            <h2>Summary</h2>
-    """
-    
-    if "total_functions" in results:
-        # Single codebase analysis
-        html += f"""
-            <p>Analyzed {results['total_functions']} functions and {results['total_classes']} classes.</p>
-            <p>Found {results['total_errors']} errors:</p>
-            <ul>
-                <li>{results['function_errors']} function errors</li>
-                <li>{results['class_errors']} class errors</li>
-                <li>{results['parameter_errors']} parameter usage errors</li>
-                <li>{results['callback_errors']} callback point errors</li>
-            </ul>
-        """
-    elif "comparison" in results:
-        # PR analysis
-        comparison = results["comparison"]
-        html += f"""
-            <p>PR adds {results['new_functions']} new functions and {results['new_classes']} new classes.</p>
-            <p>PR modifies {results['modified_functions']} functions and {results['modified_classes']} classes.</p>
-            <p>PR introduces {results['total_new_errors']} new errors.</p>
-            <p>Main branch has {comparison['main_error_count']} errors.</p>
-            <p>PR branch has {comparison['branch_error_count']} errors.</p>
-            <p>Difference: {comparison['error_diff']} errors.</p>
-            <p>New errors: {len(comparison['new_errors'])}</p>
-            <p>Fixed errors: {len(comparison['fixed_errors'])}</p>
-        """
-    else:
-        # Branch comparison
-        html += f"""
-            <p>Main branch has {results['main_error_count']} errors.</p>
-            <p>Feature branch has {results['branch_error_count']} errors.</p>
-            <p>Difference: {results['error_diff']} errors.</p>
-            <p>New errors: {len(results['new_errors'])}</p>
-            <p>Fixed errors: {len(results['fixed_errors'])}</p>
-        """
-    
-    html += """
-        </div>
-    """
-    
-    # Add tabs
-    html += """
+        
         <div class="tabs">
+            <div class="tab active" onclick="showTab('summary')">Summary</div>
+            <div class="tab" onclick="showTab('errors')">Errors</div>
+            <div class="tab" onclick="showTab('codebase')">Codebase</div>
+        </div>
+        
+        <div id="summary" class="tab-content active">
+            <div class="summary">
+                <h2>Analysis Summary</h2>
+                <div class="stats">
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('total_errors', 0)) + """</h3>
+                        <p>Total Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('total_functions', 0)) + """</h3>
+                        <p>Functions</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('total_classes', 0)) + """</h3>
+                        <p>Classes</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('total_files', 0)) + """</h3>
+                        <p>Files</p>
+                    </div>
+                </div>
+                
+                <h3>Error Breakdown</h3>
+                <div class="stats">
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('function_errors', 0)) + """</h3>
+                        <p>Function Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('class_errors', 0)) + """</h3>
+                        <p>Class Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('parameter_errors', 0)) + """</h3>
+                        <p>Parameter Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('callback_errors', 0)) + """</h3>
+                        <p>Callback Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('import_errors', 0)) + """</h3>
+                        <p>Import Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('complexity_errors', 0)) + """</h3>
+                        <p>Complexity Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('type_hint_errors', 0)) + """</h3>
+                        <p>Type Hint Errors</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>""" + str(results.get('duplication_errors', 0)) + """</h3>
+                        <p>Duplication Errors</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="errors" class="tab-content">
+            <div class="filter-controls">
+                <h3>Filter Errors</h3>
+                <select id="error-type-filter">
+                    <option value="all">All Error Types</option>
+                    <option value="function_error">Function Errors</option>
+                    <option value="class_error">Class Errors</option>
+                    <option value="parameter_error">Parameter Errors</option>
+                    <option value="callback_error">Callback Errors</option>
+                    <option value="import_error">Import Errors</option>
+                    <option value="complexity_error">Complexity Errors</option>
+                    <option value="type_hint_error">Type Hint Errors</option>
+                    <option value="duplication_error">Duplication Errors</option>
+                </select>
+                <select id="severity-filter">
+                    <option value="all">All Severities</option>
+                    <option value="error">Errors Only</option>
+                    <option value="warning">Warnings Only</option>
+                </select>
+                <input type="text" id="search-filter" placeholder="Search by name or file...">
+                <button onclick="applyFilters()">Apply Filters</button>
+            </div>
+            
+            <div class="error-list">
     """
     
-    if "total_functions" in results:
-        # Single codebase analysis
-        html += """
-            <div class="tab active" onclick="showTab('errors')">Errors</div>
-            <div class="tab" onclick="showTab('codebase')">Codebase Summary</div>
-        """
-    elif "comparison" in results:
-        # PR analysis
-        html += """
-            <div class="tab active" onclick="showTab('new-errors')">New Errors</div>
-            <div class="tab" onclick="showTab('fixed-errors')">Fixed Errors</div>
-            <div class="tab" onclick="showTab('comparison')">Comparison</div>
-        """
-    else:
-        # Branch comparison
-        html += """
-            <div class="tab active" onclick="showTab('new-errors')">New Errors</div>
-            <div class="tab" onclick="showTab('fixed-errors')">Fixed Errors</div>
-            <div class="tab" onclick="showTab('comparison')">Comparison</div>
+    # Add error items
+    for error in results.get('errors', []):
+        severity_class = "warning" if error.get('severity', 'error') == 'warning' else ""
+        severity_text = f"<span class='severity-{error.get('severity', 'error')}'>{error.get('severity', 'error').upper()}</span>"
+        
+        html += f"""
+                <div class="error-item {severity_class}" data-type="{error.get('type', '')}" data-severity="{error.get('severity', 'error')}">
+                    <h4>{error.get('error_type', 'Unknown Error').replace('_', ' ').title()} - {severity_text}</h4>
+                    <p>{error.get('message', 'No message')}</p>
+                    <p class="location">File: {error.get('filepath', 'Unknown')} (Line {error.get('line', 'N/A')})</p>
+                </div>
         """
     
     html += """
-        </div>
-    """
-    
-    # Add tab content
-    if "total_functions" in results:
-        # Single codebase analysis
-        html += """
-        <div id="errors" class="tab-content active">
-            <h2>Errors</h2>
-        """
-        
-        for error in results["errors"]:
-            html += f"""
-            <div class="error">
-                <div class="error-type">{error['error_type']}</div>
-                <div class="file-path">{error['filepath']}</div>
-                <div class="line-number">Line: {error['line']}</div>
-                <div class="message">{error['message']}</div>
             </div>
-            """
-        
-        html += """
         </div>
         
         <div id="codebase" class="tab-content">
-            <h2>Codebase Summary</h2>
-            <pre>{results['codebase_summary']}</pre>
-        </div>
-        """
-    elif "comparison" in results:
-        # PR analysis
-        comparison = results["comparison"]
-        
-        html += """
-        <div id="new-errors" class="tab-content active">
-            <h2>New Errors</h2>
-        """
-        
-        for error in results["new_function_errors"] + results["new_class_errors"] + results["modified_function_errors"] + results["modified_class_errors"]:
-            html += f"""
-            <div class="error">
-                <div class="error-type">{error['error_type']}</div>
-                <div class="file-path">{error['filepath']}</div>
-                <div class="line-number">Line: {error['line']}</div>
-                <div class="message">{error['message']}</div>
+            <div class="summary">
+                <h2>Codebase Summary</h2>
+                <pre>""" + results.get('codebase_summary', 'No codebase summary available') + """</pre>
             </div>
-            """
-        
-        html += """
         </div>
         
-        <div id="fixed-errors" class="tab-content">
-            <h2>Fixed Errors</h2>
-        """
-        
-        for error in comparison["fixed_errors"]:
-            html += f"""
-            <div class="error">
-                <div class="error-type">{error['error_type']}</div>
-                <div class="file-path">{error['filepath']}</div>
-                <div class="line-number">Line: {error['line']}</div>
-                <div class="message">{error['message']}</div>
-            </div>
-            """
-        
-        html += """
-        </div>
-        
-        <div id="comparison" class="tab-content">
-            <h2>Comparison</h2>
-            <h3>Main Branch Summary</h3>
-            <pre>{comparison['main_summary']}</pre>
-            <h3>PR Branch Summary</h3>
-            <pre>{comparison['branch_summary']}</pre>
-        </div>
-        """
-    else:
-        # Branch comparison
-        html += """
-        <div id="new-errors" class="tab-content active">
-            <h2>New Errors</h2>
-        """
-        
-        for error in results["new_errors"]:
-            html += f"""
-            <div class="error">
-                <div class="error-type">{error['error_type']}</div>
-                <div class="file-path">{error['filepath']}</div>
-                <div class="line-number">Line: {error['line']}</div>
-                <div class="message">{error['message']}</div>
-            </div>
-            """
-        
-        html += """
-        </div>
-        
-        <div id="fixed-errors" class="tab-content">
-            <h2>Fixed Errors</h2>
-        """
-        
-        for error in results["fixed_errors"]:
-            html += f"""
-            <div class="error">
-                <div class="error-type">{error['error_type']}</div>
-                <div class="file-path">{error['filepath']}</div>
-                <div class="line-number">Line: {error['line']}</div>
-                <div class="message">{error['message']}</div>
-            </div>
-            """
-        
-        html += """
-        </div>
-        
-        <div id="comparison" class="tab-content">
-            <h2>Comparison</h2>
-            <h3>Main Branch Summary</h3>
-            <pre>{results['main_summary']}</pre>
-            <h3>Feature Branch Summary</h3>
-            <pre>{results['branch_summary']}</pre>
-        </div>
-        """
-    
-    # Add JavaScript
-    html += """
         <script>
             function showTab(tabId) {
-                // Hide all tabs
+                // Hide all tab contents
                 var tabContents = document.getElementsByClassName('tab-content');
                 for (var i = 0; i < tabContents.length; i++) {
                     tabContents[i].classList.remove('active');
                 }
                 
-                // Show selected tab
-                document.getElementById(tabId).classList.add('active');
-                
-                // Update tab buttons
+                // Deactivate all tabs
                 var tabs = document.getElementsByClassName('tab');
                 for (var i = 0; i < tabs.length; i++) {
                     tabs[i].classList.remove('active');
                 }
                 
-                // Find the tab button that corresponds to the tabId
-                for (var i = 0; i < tabs.length; i++) {
-                    if (tabs[i].getAttribute('onclick').includes(tabId)) {
-                        tabs[i].classList.add('active');
+                // Show the selected tab content
+                document.getElementById(tabId).classList.add('active');
+                
+                // Activate the clicked tab
+                var clickedTab = document.querySelector('.tab[onclick="showTab(\\''+tabId+'\\')"]');
+                clickedTab.classList.add('active');
+            }
+            
+            function applyFilters() {
+                var typeFilter = document.getElementById('error-type-filter').value;
+                var severityFilter = document.getElementById('severity-filter').value;
+                var searchFilter = document.getElementById('search-filter').value.toLowerCase();
+                
+                var errorItems = document.getElementsByClassName('error-item');
+                for (var i = 0; i < errorItems.length; i++) {
+                    var item = errorItems[i];
+                    var type = item.getAttribute('data-type');
+                    var severity = item.getAttribute('data-severity');
+                    var text = item.textContent.toLowerCase();
+                    
+                    var typeMatch = typeFilter === 'all' || type === typeFilter;
+                    var severityMatch = severityFilter === 'all' || severity === severityFilter;
+                    var searchMatch = searchFilter === '' || text.includes(searchFilter);
+                    
+                    if (typeMatch && severityMatch && searchMatch) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
                     }
                 }
             }
+            
+            // Initialize progress bar
+            window.onload = function() {
+                var progressBar = document.querySelector('.progress-bar-fill');
+                if (progressBar) {
+                    progressBar.style.width = '100%';
+                }
+            };
         </script>
     </body>
     </html>
@@ -486,18 +550,22 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
     # Write HTML to file
     with open(output_file, 'w') as f:
         f.write(html)
+    
+    logger.info(f"HTML report generated at {output_file}")
 
 
 def main():
-    """Main function."""
+    """Main entry point for the script."""
     parser = argparse.ArgumentParser(description='Analyze code integrity in a repository')
-    parser.add_argument('--repo', required=True, help='Repository path or URL')
+    
+    parser.add_argument('--repo', required=True, help='Path to the repository')
+    parser.add_argument('--mode', choices=['analyze', 'compare', 'pr'], default='analyze',
+                      help='Mode of operation: analyze a single codebase, compare branches, or analyze a PR')
+    parser.add_argument('--main-branch', help='Main branch name (for compare and pr modes)')
+    parser.add_argument('--feature-branch', help='Feature branch name (for compare and pr modes)')
     parser.add_argument('--output', help='Output file for results (JSON)')
     parser.add_argument('--html', help='Output file for HTML report')
-    parser.add_argument('--mode', choices=['analyze', 'compare', 'pr'], default='analyze', help='Analysis mode')
-    parser.add_argument('--main-branch', default='main', help='Main branch name (for compare and pr modes)')
-    parser.add_argument('--feature-branch', help='Feature branch name (for compare and pr modes)')
-    parser.add_argument('--pr-number', type=int, help='PR number (for pr mode)')
+    parser.add_argument('--config', help='Configuration file (JSON or YAML)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
     
     args = parser.parse_args()
@@ -506,47 +574,53 @@ def main():
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Validate arguments
-    if args.mode in ['compare', 'pr'] and not args.feature_branch and not args.pr_number:
-        parser.error('--feature-branch or --pr-number is required for compare and pr modes')
+    # Load configuration
+    config = load_config(args.config)
     
-    # Load codebases
+    # Process based on mode
     if args.mode == 'analyze':
-        # Load single codebase
+        # Analyze a single codebase
         codebase = load_codebase(args.repo)
+        results = analyze_codebase(codebase, config, args.output)
         
-        # Analyze codebase
-        results = analyze_codebase(codebase, args.output)
+        # Generate HTML report if requested
+        if args.html:
+            generate_html_report(results, args.html)
+    
     elif args.mode == 'compare':
-        # Load main branch codebase
-        main_codebase = load_codebase(args.repo, branch=args.main_branch)
-        
-        # Load feature branch codebase
-        feature_branch = args.feature_branch
-        feature_codebase = load_codebase(args.repo, branch=feature_branch)
-        
-        # Compare codebases
-        results = compare_codebases(main_codebase, feature_codebase, args.output)
-    elif args.mode == 'pr':
-        # Load main branch codebase
-        main_codebase = load_codebase(args.repo, branch=args.main_branch)
-        
-        # Load PR branch codebase
-        if args.feature_branch:
-            pr_codebase = load_codebase(args.repo, branch=args.feature_branch)
-        elif args.pr_number:
-            # TODO: Implement loading PR codebase by PR number
-            logger.error("Loading PR by number is not implemented yet")
+        # Compare branches
+        if not args.main_branch or not args.feature_branch:
+            logger.error("Both --main-branch and --feature-branch are required for compare mode")
             sys.exit(1)
         
-        # Analyze PR
-        results = analyze_pull_request(main_codebase, pr_codebase, args.output)
+        # Load codebases
+        main_codebase = load_codebase(args.repo, args.main_branch)
+        feature_codebase = load_codebase(args.repo, args.feature_branch)
+        
+        # Compare codebases
+        comparison = compare_codebases(main_codebase, feature_codebase, config, args.output)
+        
+        # Generate HTML report if requested
+        if args.html:
+            generate_html_report(comparison, args.html)
     
-    # Generate HTML report if requested
-    if args.html:
-        generate_html_report(results, args.html)
+    elif args.mode == 'pr':
+        # Analyze a PR
+        if not args.main_branch or not args.feature_branch:
+            logger.error("Both --main-branch and --feature-branch are required for PR mode")
+            sys.exit(1)
+        
+        # Load codebases
+        main_codebase = load_codebase(args.repo, args.main_branch)
+        pr_codebase = load_codebase(args.repo, args.feature_branch)
+        
+        # Analyze PR
+        pr_analysis = analyze_pull_request(main_codebase, pr_codebase, config, args.output)
+        
+        # Generate HTML report if requested
+        if args.html:
+            generate_html_report(pr_analysis, args.html)
 
 
 if __name__ == '__main__':
     main()
-
