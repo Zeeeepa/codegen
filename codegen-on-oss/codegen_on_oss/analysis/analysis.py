@@ -49,3 +49,4 @@ class CodeAnalyzer:
         if file is None:
             return f"File not found: {file_path}"
         return get_file_summary(file)
+# Additional comment to trigger CI
