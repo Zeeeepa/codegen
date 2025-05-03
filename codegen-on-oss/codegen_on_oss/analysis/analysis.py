@@ -90,6 +90,31 @@ from codegen_on_oss.analysis.analysis_import import (
     find_problematic_import_loops
 )
 
+# Import new analysis modules
+from codegen_on_oss.analysis.error_detection import (
+    ErrorSeverity,
+    ErrorCategory,
+    CodeError,
+    ErrorDetector,
+    ParameterValidator,
+    CallValidator,
+    ReturnValidator,
+    CodeAnalysisError,
+    analyze_errors
+)
+from codegen_on_oss.analysis.function_call_analysis import (
+    FunctionCallGraph,
+    ParameterAnalysis,
+    analyze_function_calls
+)
+from codegen_on_oss.analysis.type_validation import (
+    TypeValidationError,
+    TypeIssue,
+    TypeValidator,
+    TypeInferenceEngine,
+    analyze_types
+)
+
 # Create FastAPI app
 app = FastAPI()
 
@@ -312,430 +337,164 @@ class CodeAnalyzer:
         Returns:
             A dictionary containing import analysis results
         """
-        graph = create_graph_from_codebase(self.codebase.repo_name)
-        cycles = find_import_cycles(graph)
-        problematic_loops = find_problematic_import_loops(graph, cycles)
+        # Create a graph from the codebase
+        graph = create_graph_from_codebase(self.codebase)
         
+        # Find import cycles
+        cycles = find_import_cycles(graph)
+        
+        # Find problematic import loops
+        problematic_loops = find_problematic_import_loops(graph)
+        
+        # Return the analysis results
         return {
             "import_cycles": cycles,
-            "problematic_loops": problematic_loops
+            "problematic_loops": problematic_loops,
+            "total_imports": len(list(self.codebase.imports)),
+            "external_modules": len(list(self.codebase.external_modules))
         }
-    
-    def convert_args_to_kwargs(self) -> None:
-        """
-        Convert all function call arguments to keyword arguments.
-        """
-        convert_all_calls_to_kwargs(self.codebase)
-    
-    def visualize_module_dependencies(self) -> None:
-        """
-        Visualize module dependencies in the codebase.
-        """
-        module_dependencies_run(self.codebase)
-    
-    def generate_mdx_documentation(self, class_name: str) -> str:
-        """
-        Generate MDX documentation for a class.
-        
-        Args:
-            class_name: Name of the class to document
-            
-        Returns:
-            MDX documentation as a string
-        """
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                return render_mdx_page_for_class(cls)
-        return f"Class not found: {class_name}"
-    
-    def print_symbol_attribution(self) -> None:
-        """
-        Print attribution information for symbols in the codebase.
-        """
-        print_symbol_attribution(self.codebase)
-    
-    def get_extended_symbol_context(self, symbol_name: str, degree: int = 2) -> Dict[str, List[str]]:
-        """
-        Get extended context (dependencies and usages) for a symbol.
-        
-        Args:
-            symbol_name: Name of the symbol to analyze
-            degree: How many levels deep to collect dependencies and usages
-            
-        Returns:
-            A dictionary containing dependencies and usages
-        """
-        symbol = self.find_symbol_by_name(symbol_name)
-        if symbol:
-            dependencies, usages = get_extended_context(symbol, degree)
-            return {
-                "dependencies": [dep.name for dep in dependencies],
-                "usages": [usage.name for usage in usages]
-            }
-        return {"dependencies": [], "usages": []}
-    
-    def get_symbol_dependencies(self, symbol_name: str) -> List[str]:
-        """
-        Get direct dependencies of a symbol.
-        
-        Args:
-            symbol_name: Name of the symbol to analyze
-            
-        Returns:
-            A list of dependency symbol names
-        """
-        symbol = self.find_symbol_by_name(symbol_name)
-        if symbol and hasattr(symbol, "dependencies"):
-            return [dep.name for dep in symbol.dependencies]
-        return []
-    
-    def get_symbol_usages(self, symbol_name: str) -> List[str]:
-        """
-        Get direct usages of a symbol.
-        
-        Args:
-            symbol_name: Name of the symbol to analyze
-            
-        Returns:
-            A list of usage symbol names
-        """
-        symbol = self.find_symbol_by_name(symbol_name)
-        if symbol and hasattr(symbol, "symbol_usages"):
-            return [usage.name for usage in symbol.symbol_usages]
-        return []
-    
-    def get_file_imports(self, file_path: str) -> List[str]:
-        """
-        Get all imports in a file.
-        
-        Args:
-            file_path: Path to the file to analyze
-            
-        Returns:
-            A list of import statements
-        """
-        file = self.find_file_by_path(file_path)
-        if file and hasattr(file, "imports"):
-            return [imp.source for imp in file.imports]
-        return []
-    
-    def get_file_exports(self, file_path: str) -> List[str]:
-        """
-        Get all exports from a file.
-        
-        Args:
-            file_path: Path to the file to analyze
-            
-        Returns:
-            A list of exported symbol names
-        """
-        file = self.find_file_by_path(file_path)
-        if file is None:
-            return []
-            
-        exports = []
-        for symbol in file.symbols:
-            # Check if this symbol is exported
-            if hasattr(symbol, "is_exported") and symbol.is_exported:
-                exports.append(symbol.name)
-            # For TypeScript/JavaScript, check for export keyword
-            elif hasattr(symbol, "modifiers") and "export" in symbol.modifiers:
-                exports.append(symbol.name)
-                
-        return exports
     
     def analyze_complexity(self) -> Dict[str, Any]:
         """
         Analyze code complexity metrics for the codebase.
         
         Returns:
-            A dictionary containing complexity metrics
+            A dictionary containing complexity analysis results
         """
-        results = {}
-        
-        # Analyze cyclomatic complexity
-        complexity_results = []
-        for func in self.codebase.functions:
-            if hasattr(func, "code_block"):
-                complexity = calculate_cyclomatic_complexity(func)
-                complexity_results.append({
-                    "name": func.name,
-                    "complexity": complexity,
-                    "rank": cc_rank(complexity)
-                })
-        
-        # Calculate average complexity
-        if complexity_results:
-            avg_complexity = sum(item["complexity"] for item in complexity_results) / len(complexity_results)
-        else:
-            avg_complexity = 0
-        
-        results["cyclomatic_complexity"] = {
-            "functions": complexity_results,
-            "average": avg_complexity
+        # Initialize results
+        results = {
+            "cyclomatic_complexity": {},
+            "line_metrics": {},
+            "maintainability_index": {}
         }
         
-        # Analyze line metrics
-        line_metrics = {}
-        total_loc = 0
-        total_lloc = 0
-        total_sloc = 0
-        total_comments = 0
-        
-        for file in self.codebase.files:
-            if hasattr(file, "source"):
-                loc, lloc, sloc, comments = count_lines(file.source)
-                line_metrics[file.name] = {
-                    "loc": loc,
-                    "lloc": lloc,
-                    "sloc": sloc,
-                    "comments": comments,
-                    "comment_ratio": comments / loc if loc > 0 else 0
-                }
-                total_loc += loc
-                total_lloc += lloc
-                total_sloc += sloc
-                total_comments += comments
-        
-        results["line_metrics"] = {
-            "files": line_metrics,
-            "total": {
-                "loc": total_loc,
-                "lloc": total_lloc,
-                "sloc": total_sloc,
-                "comments": total_comments,
-                "comment_ratio": total_comments / total_loc if total_loc > 0 else 0
-            }
-        }
-        
-        # Analyze Halstead metrics
-        halstead_results = []
-        total_volume = 0
-        
-        for func in self.codebase.functions:
-            if hasattr(func, "code_block"):
-                operators, operands = get_operators_and_operands(func)
-                volume, N1, N2, n1, n2 = calculate_halstead_volume(operators, operands)
+        # Calculate complexity metrics for each function
+        for function in self.codebase.functions:
+            # Skip functions without code blocks
+            if not hasattr(function, "code_block"):
+                continue
                 
-                # Calculate maintainability index
-                loc = len(func.code_block.source.splitlines())
-                complexity = calculate_cyclomatic_complexity(func)
-                mi_score = calculate_maintainability_index(volume, complexity, loc)
-                
-                halstead_results.append({
-                    "name": func.name,
-                    "volume": volume,
-                    "unique_operators": n1,
-                    "unique_operands": n2,
-                    "total_operators": N1,
-                    "total_operands": N2,
-                    "maintainability_index": mi_score,
-                    "maintainability_rank": get_maintainability_rank(mi_score)
-                })
-                
-                total_volume += volume
-        
-        results["halstead_metrics"] = {
-            "functions": halstead_results,
-            "total_volume": total_volume,
-            "average_volume": total_volume / len(halstead_results) if halstead_results else 0
-        }
-        
-        # Analyze inheritance depth
-        inheritance_results = []
-        total_doi = 0
-        
-        for cls in self.codebase.classes:
-            doi = calculate_doi(cls)
-            inheritance_results.append({
-                "name": cls.name,
-                "depth": doi
-            })
-            total_doi += doi
-        
-        results["inheritance_depth"] = {
-            "classes": inheritance_results,
-            "average": total_doi / len(inheritance_results) if inheritance_results else 0
-        }
-        
-        # Analyze dependencies
-        dependency_graph = nx.DiGraph()
-        
-        for symbol in self.codebase.symbols:
-            dependency_graph.add_node(symbol.name)
+            # Calculate cyclomatic complexity
+            complexity = calculate_cyclomatic_complexity(function)
+            rank = cc_rank(complexity)
             
-            if hasattr(symbol, "dependencies"):
-                for dep in symbol.dependencies:
-                    dependency_graph.add_edge(symbol.name, dep.name)
-        
-        # Calculate centrality metrics
-        if dependency_graph.nodes:
-            try:
-                in_degree_centrality = nx.in_degree_centrality(dependency_graph)
-                out_degree_centrality = nx.out_degree_centrality(dependency_graph)
-                betweenness_centrality = nx.betweenness_centrality(dependency_graph)
-                
-                # Find most central symbols
-                most_imported = sorted(in_degree_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-                most_dependent = sorted(out_degree_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-                most_central = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
-                
-                results["dependency_metrics"] = {
-                    "most_imported": most_imported,
-                    "most_dependent": most_dependent,
-                    "most_central": most_central
-                }
-            except Exception as e:
-                results["dependency_metrics"] = {"error": str(e)}
+            # Calculate line metrics
+            source = function.code_block.source
+            loc, lloc, sloc, comments = count_lines(source)
+            
+            # Calculate Halstead volume
+            operators, operands = get_operators_and_operands(function)
+            volume, N1, N2, n1, n2 = calculate_halstead_volume(operators, operands)
+            
+            # Calculate maintainability index
+            mi_score = calculate_maintainability_index(volume, complexity, loc)
+            mi_rank = get_maintainability_rank(mi_score)
+            
+            # Store results
+            function_key = f"{function.filepath}:{function.name}"
+            results["cyclomatic_complexity"][function_key] = {
+                "complexity": complexity,
+                "rank": rank
+            }
+            results["line_metrics"][function_key] = {
+                "loc": loc,
+                "lloc": lloc,
+                "sloc": sloc,
+                "comments": comments
+            }
+            results["maintainability_index"][function_key] = {
+                "score": mi_score,
+                "rank": mi_rank
+            }
         
         return results
     
-    def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
+    def analyze_errors(self) -> Dict[str, Any]:
         """
-        Get all dependencies of a file, including imports and symbol dependencies.
+        Analyze the codebase for errors and issues.
         
-        Args:
-            file_path: Path to the file to analyze
-            
         Returns:
-            A dictionary containing different types of dependencies
+            A dictionary containing error analysis results
         """
-        file = self.find_file_by_path(file_path)
-        if file is None:
-            return {"imports": [], "symbols": [], "external": []}
-            
-        imports = []
-        symbols = []
-        external = []
+        return analyze_errors(self.codebase, self.context)
+    
+    def analyze_function_calls(self) -> Dict[str, Any]:
+        """
+        Analyze function calls in the codebase.
         
-        # Get imports
-        if hasattr(file, "imports"):
-            for imp in file.imports:
-                if hasattr(imp, "module_name"):
-                    imports.append(imp.module_name)
-                elif hasattr(imp, "source"):
-                    imports.append(imp.source)
+        Returns:
+            A dictionary containing function call analysis results
+        """
+        return analyze_function_calls(self.codebase, self.context)
+    
+    def analyze_types(self) -> Dict[str, Any]:
+        """
+        Analyze types in the codebase.
         
-        # Get symbol dependencies
-        for symbol in file.symbols:
-            if hasattr(symbol, "dependencies"):
-                for dep in symbol.dependencies:
-                    if isinstance(dep, ExternalModule):
-                        external.append(dep.name)
-                    else:
-                        symbols.append(dep.name)
+        Returns:
+            A dictionary containing type analysis results
+        """
+        return analyze_types(self.codebase, self.context)
+    
+    def get_function_call_graph(self) -> FunctionCallGraph:
+        """
+        Get a function call graph for the codebase.
         
+        Returns:
+            A FunctionCallGraph object
+        """
+        return FunctionCallGraph(self.codebase, self.context)
+    
+    def get_parameter_analysis(self) -> ParameterAnalysis:
+        """
+        Get a parameter analyzer for the codebase.
+        
+        Returns:
+            A ParameterAnalysis object
+        """
+        return ParameterAnalysis(self.codebase, self.context)
+    
+    def get_error_detector(self) -> CodeAnalysisError:
+        """
+        Get an error detector for the codebase.
+        
+        Returns:
+            A CodeAnalysisError object
+        """
+        return CodeAnalysisError(self.codebase, self.context)
+    
+    def get_type_validator(self) -> TypeValidator:
+        """
+        Get a type validator for the codebase.
+        
+        Returns:
+            A TypeValidator object
+        """
+        return TypeValidator(self.codebase, self.context)
+    
+    def get_type_inference_engine(self) -> TypeInferenceEngine:
+        """
+        Get a type inference engine for the codebase.
+        
+        Returns:
+            A TypeInferenceEngine object
+        """
+        return TypeInferenceEngine(self.codebase, self.context)
+    
+    def analyze_all(self) -> Dict[str, Any]:
+        """
+        Perform a comprehensive analysis of the codebase.
+        
+        Returns:
+            A dictionary containing all analysis results
+        """
         return {
-            "imports": list(set(imports)),
-            "symbols": list(set(symbols)),
-            "external": list(set(external))
+            "complexity": self.analyze_complexity(),
+            "imports": self.analyze_imports(),
+            "errors": self.analyze_errors(),
+            "function_calls": self.analyze_function_calls(),
+            "types": self.analyze_types()
         }
-    
-    def get_codebase_structure(self) -> Dict[str, Any]:
-        """
-        Get a hierarchical representation of the codebase structure.
-        
-        Returns:
-            A dictionary representing the codebase structure
-        """
-        # Initialize the structure with root directories
-        structure = {}
-        
-        # Process all files
-        for file in self.codebase.files:
-            path_parts = file.name.split('/')
-            current = structure
-            
-            # Build the directory structure
-            for i, part in enumerate(path_parts[:-1]):
-                if part not in current:
-                    current[part] = {}
-                current = current[part]
-            
-            # Add the file with its symbols
-            file_info = {
-                "type": "file",
-                "symbols": []
-            }
-            
-            # Add symbols in the file
-            for symbol in file.symbols:
-                symbol_info = {
-                    "name": symbol.name,
-                    "type": str(symbol.symbol_type) if hasattr(symbol, "symbol_type") else "unknown"
-                }
-                file_info["symbols"].append(symbol_info)
-            
-            current[path_parts[-1]] = file_info
-        
-        return structure
-    
-    def get_monthly_commit_activity(self) -> Dict[str, int]:
-        """
-        Get monthly commit activity for the codebase.
-        
-        Returns:
-            A dictionary mapping month strings to commit counts
-        """
-        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
-            return {}
-            
-        try:
-            # Get commits from the last year
-            end_date = datetime.now(UTC)
-            start_date = end_date - timedelta(days=365)
-            
-            # Get all commits in the date range
-            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
-            
-            # Group commits by month
-            monthly_commits = {}
-            for commit in commits:
-                month_key = commit.committed_datetime.strftime("%Y-%m")
-                if month_key in monthly_commits:
-                    monthly_commits[month_key] += 1
-                else:
-                    monthly_commits[month_key] = 1
-                    
-            return monthly_commits
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def get_file_change_frequency(self, limit: int = 10) -> Dict[str, int]:
-        """
-        Get the most frequently changed files in the codebase.
-        
-        Args:
-            limit: Maximum number of files to return
-            
-        Returns:
-            A dictionary mapping file paths to change counts
-        """
-        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
-            return {}
-            
-        try:
-            # Get commits from the last year
-            end_date = datetime.now(UTC)
-            start_date = end_date - timedelta(days=365)
-            
-            # Get all commits in the date range
-            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
-            
-            # Count file changes
-            file_changes = {}
-            for commit in commits:
-                for file in commit.stats.files:
-                    if file in file_changes:
-                        file_changes[file] += 1
-                    else:
-                        file_changes[file] = 1
-            
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
-        except Exception as e:
-            return {"error": str(e)}
 
 def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     """
@@ -1150,70 +909,232 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
     # Create analyzer instance
     analyzer = CodeAnalyzer(codebase)
     
-    # Get complexity metrics
-    complexity_results = analyzer.analyze_complexity()
-    
-    # Get monthly commits
-    monthly_commits = get_monthly_commits(repo_url)
+    # Perform comprehensive analysis
+    analysis_results = analyzer.analyze_all()
     
     # Get repository description
     desc = get_github_repo_description(repo_url)
     
-    # Analyze imports
-    import_analysis = analyzer.analyze_imports()
-    
     # Combine all results
     results = {
         "repo_url": repo_url,
-        "line_metrics": complexity_results["line_metrics"],
-        "cyclomatic_complexity": complexity_results["cyclomatic_complexity"],
         "description": desc,
         "num_files": len(codebase.files),
         "num_functions": len(codebase.functions),
         "num_classes": len(codebase.classes),
-        "monthly_commits": monthly_commits,
-        "import_analysis": import_analysis
-    }
-    
-    # Add depth of inheritance
-    total_doi = sum(calculate_doi(cls) for cls in codebase.classes)
-    results["depth_of_inheritance"] = {
-        "average": (total_doi / len(codebase.classes) if codebase.classes else 0),
-    }
-    
-    # Add Halstead metrics
-    total_volume = 0
-    num_callables = 0
-    total_mi = 0
-    
-    for func in codebase.functions:
-        if not hasattr(func, "code_block"):
-            continue
-            
-        complexity = calculate_cyclomatic_complexity(func)
-        operators, operands = get_operators_and_operands(func)
-        volume, _, _, _, _ = calculate_halstead_volume(operators, operands)
-        loc = len(func.code_block.source.splitlines())
-        mi_score = calculate_maintainability_index(volume, complexity, loc)
-        
-        total_volume += volume
-        total_mi += mi_score
-        num_callables += 1
-    
-    results["halstead_metrics"] = {
-        "total_volume": int(total_volume),
-        "average_volume": (
-            int(total_volume / num_callables) if num_callables > 0 else 0
-        ),
-    }
-    
-    results["maintainability_index"] = {
-        "average": (
-            int(total_mi / num_callables) if num_callables > 0 else 0
-        ),
+        "complexity_metrics": analysis_results["complexity"],
+        "import_analysis": analysis_results["imports"],
+        "error_analysis": analysis_results["errors"],
+        "function_call_analysis": analysis_results["function_calls"],
+        "type_analysis": analysis_results["types"]
     }
     
     return results
+
+
+class FileAnalysisRequest(BaseModel):
+    """Request model for file analysis."""
+    repo_url: str
+    file_path: str
+
+
+@app.post("/analyze_file")
+async def analyze_file(request: FileAnalysisRequest) -> Dict[str, Any]:
+    """
+    Analyze a specific file in a repository.
+    
+    Args:
+        request: The file analysis request
+        
+    Returns:
+        A dictionary of analysis results for the file
+    """
+    repo_url = request.repo_url
+    file_path = request.file_path
+    codebase = Codebase.from_repo(repo_url)
+    
+    # Create analyzer instance
+    analyzer = CodeAnalyzer(codebase)
+    
+    # Get the file
+    file = analyzer.find_file_by_path(file_path)
+    if file is None:
+        return {"error": f"File not found: {file_path}"}
+    
+    # Get file summary
+    summary = analyzer.get_file_summary(file_path)
+    
+    # Get error analysis
+    error_analysis = analyzer.analyze_errors()
+    file_errors = error_analysis["errors_by_file"].get(file_path, [])
+    
+    # Get type analysis
+    type_analysis = analyzer.analyze_types()
+    file_type_issues = type_analysis["issues_by_file"].get(file_path, [])
+    
+    # Get complexity metrics
+    complexity_analysis = analyzer.analyze_complexity()
+    file_complexity = {}
+    for metric_type, metrics in complexity_analysis.items():
+        file_complexity[metric_type] = {k: v for k, v in metrics.items() if k.startswith(file_path)}
+    
+    # Return the results
+    return {
+        "repo_url": repo_url,
+        "file_path": file_path,
+        "summary": summary,
+        "errors": file_errors,
+        "type_issues": file_type_issues,
+        "complexity": file_complexity
+    }
+
+
+class FunctionAnalysisRequest(BaseModel):
+    """Request model for function analysis."""
+    repo_url: str
+    function_name: str
+
+
+@app.post("/analyze_function")
+async def analyze_function(request: FunctionAnalysisRequest) -> Dict[str, Any]:
+    """
+    Analyze a specific function in a repository.
+    
+    Args:
+        request: The function analysis request
+        
+    Returns:
+        A dictionary of analysis results for the function
+    """
+    repo_url = request.repo_url
+    function_name = request.function_name
+    codebase = Codebase.from_repo(repo_url)
+    
+    # Create analyzer instance
+    analyzer = CodeAnalyzer(codebase)
+    
+    # Get the function
+    function = analyzer.find_function_by_name(function_name)
+    if function is None:
+        return {"error": f"Function not found: {function_name}"}
+    
+    # Get function summary
+    summary = analyzer.get_function_summary(function_name)
+    
+    # Get call graph analysis
+    call_graph = analyzer.get_function_call_graph()
+    callers = call_graph.get_callers(function_name)
+    callees = call_graph.get_callees(function_name)
+    call_depth = call_graph.get_call_depth(function_name)
+    
+    # Get parameter analysis
+    param_analysis = analyzer.get_parameter_analysis()
+    param_usage = param_analysis.analyze_parameter_usage(function)
+    
+    # Get error analysis
+    error_detector = analyzer.get_error_detector()
+    errors = [error.to_dict() for error in error_detector.detect_errors() 
+              if error.function_name == function_name]
+    
+    # Get complexity metrics
+    complexity = calculate_cyclomatic_complexity(function)
+    
+    # Get Halstead metrics
+    operators, operands = get_operators_and_operands(function)
+    volume, N1, N2, n1, n2 = calculate_halstead_volume(operators, operands)
+    
+    # Calculate maintainability index
+    if hasattr(function, "code_block"):
+        loc = len(function.code_block.source.splitlines())
+        mi_score = calculate_maintainability_index(volume, complexity, loc)
+        mi_rank = get_maintainability_rank(mi_score)
+    else:
+        loc = 0
+        mi_score = 0
+        mi_rank = "N/A"
+    
+    # Return the results
+    return {
+        "repo_url": repo_url,
+        "function_name": function_name,
+        "summary": summary,
+        "file_path": function.filepath,
+        "line_number": function.line_number,
+        "callers": [caller.name for caller in callers],
+        "callees": [callee.name for callee in callees],
+        "call_depth": call_depth,
+        "parameter_analysis": param_usage,
+        "errors": errors,
+        "complexity": {
+            "cyclomatic_complexity": complexity,
+            "rank": cc_rank(complexity),
+            "halstead_volume": volume,
+            "unique_operators": n1,
+            "unique_operands": n2,
+            "total_operators": N1,
+            "total_operands": N2,
+            "maintainability_index": mi_score,
+            "maintainability_rank": mi_rank,
+            "loc": loc
+        }
+    }
+
+
+class ErrorAnalysisRequest(BaseModel):
+    """Request model for error analysis."""
+    repo_url: str
+    severity_filter: Optional[str] = None
+    category_filter: Optional[str] = None
+
+
+@app.post("/analyze_errors")
+async def analyze_errors_endpoint(request: ErrorAnalysisRequest) -> Dict[str, Any]:
+    """
+    Analyze errors in a repository with optional filtering.
+    
+    Args:
+        request: The error analysis request
+        
+    Returns:
+        A dictionary of error analysis results
+    """
+    repo_url = request.repo_url
+    codebase = Codebase.from_repo(repo_url)
+    
+    # Create analyzer instance
+    analyzer = CodeAnalyzer(codebase)
+    
+    # Get error analysis
+    error_analysis = analyzer.analyze_errors()
+    
+    # Apply filters if specified
+    if request.severity_filter:
+        # Filter errors by severity
+        filtered_errors = []
+        for error in error_analysis["all_errors"]:
+            if error["severity"] == request.severity_filter:
+                filtered_errors.append(error)
+        error_analysis["all_errors"] = filtered_errors
+        
+        # Update summary
+        error_analysis["summary"]["total_errors"] = len(filtered_errors)
+    
+    if request.category_filter:
+        # Filter errors by category
+        filtered_errors = []
+        for error in error_analysis["all_errors"]:
+            if error["category"] == request.category_filter:
+                filtered_errors.append(error)
+        error_analysis["all_errors"] = filtered_errors
+        
+        # Update summary
+        error_analysis["summary"]["total_errors"] = len(filtered_errors)
+    
+    # Return the results
+    return {
+        "repo_url": repo_url,
+        "error_analysis": error_analysis
+    }
 
 
 if __name__ == "__main__":
