@@ -645,5 +645,3 @@ class ProjectManager:
                 successful_webhooks += 1
         
         return successful_webhooks
-"""
-
