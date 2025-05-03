@@ -1,214 +1,224 @@
 """
-Example script demonstrating the use of the commit analysis functionality.
+Commit Analysis Example
 
-This script shows how to use the CommitAnalyzer class to analyze and compare
-commits in a repository.
+This script demonstrates how to use the commit analysis functionality.
 """
 
 import os
+import sys
 import tempfile
 import subprocess
-from pathlib import Path
+from typing import Dict, Any, Optional
 
-from codegen import Codebase
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer, CommitAnalysisResult
-
-
-def analyze_commit_from_repo_url(repo_url: str, commit_hash: str):
-    """
-    Analyze a commit from a repository URL and commit hash.
-    
-    Args:
-        repo_url: URL of the repository
-        commit_hash: Hash of the commit to analyze
-    """
-    print(f"Analyzing commit {commit_hash} in repository {repo_url}...")
-    
-    # Use the class method to analyze the commit
-    result = CodeAnalyzer.analyze_commit_from_repo_and_commit(repo_url, commit_hash)
-    
-    # Print the analysis summary
-    print("\n" + "=" * 80)
-    print(result.get_summary())
-    print("=" * 80)
-    
-    # Return the result for further processing if needed
-    return result
-
-
-def analyze_commit_from_local_repos(original_path: str, commit_path: str):
-    """
-    Analyze a commit by comparing two local repository paths.
-    
-    Args:
-        original_path: Path to the original repository
-        commit_path: Path to the commit repository
-    """
-    print(f"Analyzing commit by comparing repositories:")
-    print(f"  Original: {original_path}")
-    print(f"  Commit: {commit_path}")
-    
-    # Create a CommitAnalyzer instance from paths
-    analyzer = CommitAnalyzer.from_paths(original_path, commit_path)
-    
-    # Analyze the commit
-    result = analyzer.analyze_commit()
-    
-    # Print the analysis summary
-    print("\n" + "=" * 80)
-    print(result.get_summary())
-    print("=" * 80)
-    
-    # Return the result for further processing if needed
-    return result
-
-
-def analyze_commit_with_codebases(original_codebase: Codebase, commit_codebase: Codebase):
-    """
-    Analyze a commit by comparing two codebases.
-    
-    Args:
-        original_codebase: The original codebase before the commit
-        commit_codebase: The codebase after the commit
-    """
-    print("Analyzing commit by comparing codebases...")
-    
-    # Create a CommitAnalyzer instance
-    analyzer = CommitAnalyzer(
-        original_codebase=original_codebase,
-        commit_codebase=commit_codebase
-    )
-    
-    # Analyze the commit
-    result = analyzer.analyze_commit()
-    
-    # Print the analysis summary
-    print("\n" + "=" * 80)
-    print(result.get_summary())
-    print("=" * 80)
-    
-    # Return the result for further processing if needed
-    return result
-
-
-def clone_repo_at_different_commits(repo_url: str, before_commit: str, after_commit: str):
-    """
-    Clone a repository at two different commits for comparison.
-    
-    Args:
-        repo_url: URL of the repository
-        before_commit: Commit hash for the "before" state
-        after_commit: Commit hash for the "after" state
-        
-    Returns:
-        Tuple of (original_path, commit_path)
-    """
-    # Create temporary directories
-    original_dir = tempfile.mkdtemp()
-    commit_dir = tempfile.mkdtemp()
-    
-    try:
-        # Clone the repository for the "before" state
-        subprocess.run(
-            ["git", "clone", repo_url, original_dir],
-            check=True,
-            capture_output=True
-        )
-        
-        # Checkout the "before" commit
-        subprocess.run(
-            ["git", "-C", original_dir, "checkout", before_commit],
-            check=True,
-            capture_output=True
-        )
-        
-        # Clone the repository for the "after" state
-        subprocess.run(
-            ["git", "clone", repo_url, commit_dir],
-            check=True,
-            capture_output=True
-        )
-        
-        # Checkout the "after" commit
-        subprocess.run(
-            ["git", "-C", commit_dir, "checkout", after_commit],
-            check=True,
-            capture_output=True
-        )
-        
-        return original_dir, commit_dir
-    except Exception as e:
-        # Clean up temporary directories on error
-        if os.path.exists(original_dir):
-            subprocess.run(["rm", "-rf", original_dir])
-        if os.path.exists(commit_dir):
-            subprocess.run(["rm", "-rf", commit_dir])
-        raise e
-
+from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
+from codegen_on_oss.analysis.commit_analysis import (
+    CommitAnalysisOptions,
+)
 
 def main():
-    """
-    Main function demonstrating different ways to use the commit analysis functionality.
-    """
-    # Example 1: Analyze a commit from a repository URL and commit hash
-    print("Example 1: Analyze a commit from a repository URL and commit hash")
-    repo_url = "https://github.com/fastapi/fastapi"
-    commit_hash = "HEAD"  # Use the latest commit
+    """Main function to run the example."""
+    print("Commit Analysis Examples")
+    print("=======================")
     
-    try:
-        result1 = analyze_commit_from_repo_url(repo_url, commit_hash)
-    except Exception as e:
-        print(f"Error in Example 1: {e}")
+    # Example 1: Analyze a local Git repository
+    print("\nExample 1: Analyze a local Git repository")
     
-    # Example 2: Analyze a commit by comparing two local repository paths
-    print("\nExample 2: Analyze a commit by comparing two local repository paths")
+    # Create a temporary directory for the repository
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Initialize a Git repository
+        repo_path = os.path.join(temp_dir, "example_repo")
+        os.makedirs(repo_path)
+        
+        try:
+            # Initialize the repository
+            subprocess.run(["git", "init"], cwd=repo_path, check=True)
+            
+            # Create a sample file
+            with open(os.path.join(repo_path, "sample.py"), "w") as f:
+                f.write("print('Hello, World!')")
+            
+            # Add and commit the file
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit"],
+                cwd=repo_path,
+                check=True
+            )
+            
+            # Create a commit analyzer
+            analyzer = CommitAnalyzer(repo_path)
+            
+            # Analyze the commit
+            analysis = analyzer.analyze_commit("HEAD")
+            
+            # Print the analysis result
+            print("Commit analysis result:")
+            print(f"  Commit hash: {analysis.commit_hash}")
+            print(f"  Author: {analysis.author}")
+            print(f"  Date: {analysis.date}")
+            print(f"  Message: {analysis.message}")
+            print(f"  Files changed: {len(analysis.files_changed)}")
+            
+            for file_change in analysis.files_changed:
+                print(f"    {file_change.status}: {file_change.filepath}")
+        
+        except Exception as e:
+            print(f"Error in Example 1: {e}")
     
-    try:
-        # Clone a repository at two different commits
-        repo_url = "https://github.com/fastapi/fastapi"
-        before_commit = "HEAD~5"  # 5 commits before HEAD
-        after_commit = "HEAD"     # Latest commit
-        
-        original_path, commit_path = clone_repo_at_different_commits(
-            repo_url, before_commit, after_commit
-        )
-        
-        result2 = analyze_commit_from_local_repos(original_path, commit_path)
-        
-        # Clean up temporary directories
-        subprocess.run(["rm", "-rf", original_path])
-        subprocess.run(["rm", "-rf", commit_path])
-    except Exception as e:
-        print(f"Error in Example 2: {e}")
+    # Example 2: Analyze a commit with options
+    print("\nExample 2: Analyze a commit with options")
     
-    # Example 3: Analyze a commit by comparing two codebases
-    print("\nExample 3: Analyze a commit by comparing two codebases")
+    # Create a temporary directory for the repository
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Initialize a Git repository
+        repo_path = os.path.join(temp_dir, "example_repo_2")
+        os.makedirs(repo_path)
+        
+        try:
+            # Initialize the repository
+            subprocess.run(["git", "init"], cwd=repo_path, check=True)
+            
+            # Create a sample file
+            with open(os.path.join(repo_path, "sample.py"), "w") as f:
+                f.write("def add(a, b):\n    return a + b\n")
+            
+            # Add and commit the file
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit"],
+                cwd=repo_path,
+                check=True
+            )
+            
+            # Modify the file
+            with open(os.path.join(repo_path, "sample.py"), "w") as f:
+                f.write("def add(a, b):\n    return a + b\n\ndef subtract(a, b):\n    return a - b\n")
+            
+            # Add and commit the changes
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Add subtract function"],
+                cwd=repo_path,
+                check=True
+            )
+            
+            # Create a commit analyzer
+            analyzer = CommitAnalyzer(repo_path)
+            
+            # Set analysis options
+            options = CommitAnalysisOptions(
+                include_diff=True,
+                include_file_content=True,
+                include_function_changes=True
+            )
+            
+            # Analyze the commit
+            analysis = analyzer.analyze_commit("HEAD", options)
+            
+            # Print the analysis result
+            print("Commit analysis result with options:")
+            print(f"  Commit hash: {analysis.commit_hash}")
+            print(f"  Author: {analysis.author}")
+            print(f"  Date: {analysis.date}")
+            print(f"  Message: {analysis.message}")
+            print(f"  Files changed: {len(analysis.files_changed)}")
+            
+            for file_change in analysis.files_changed:
+                print(f"    {file_change.status}: {file_change.filepath}")
+                
+                if file_change.diff:
+                    print(f"    Diff: {file_change.diff[:50]}...")
+                
+                if file_change.functions_added:
+                    print(f"    Functions added: {len(file_change.functions_added)}")
+                    for func in file_change.functions_added:
+                        print(f"      {func}")
+        
+        except Exception as e:
+            print(f"Error in Example 2: {e}")
     
-    try:
-        # Create codebases from directories
-        repo_url = "https://github.com/fastapi/fastapi"
-        before_commit = "HEAD~3"  # 3 commits before HEAD
-        after_commit = "HEAD"     # Latest commit
+    # Example 3: Compare commits
+    print("\nExample 3: Compare commits")
+    
+    # Create a temporary directory for the repository
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Initialize a Git repository
+        repo_path = os.path.join(temp_dir, "example_repo_3")
+        os.makedirs(repo_path)
         
-        original_path, commit_path = clone_repo_at_different_commits(
-            repo_url, before_commit, after_commit
-        )
+        try:
+            # Initialize the repository
+            subprocess.run(["git", "init"], cwd=repo_path, check=True)
+            
+            # Create a sample file
+            with open(os.path.join(repo_path, "sample.py"), "w") as f:
+                f.write("def add(a, b):\n    return a + b\n")
+            
+            # Add and commit the file
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit"],
+                cwd=repo_path,
+                check=True
+            )
+            
+            # Get the first commit hash
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            first_commit = result.stdout.strip()
+            
+            # Modify the file
+            with open(os.path.join(repo_path, "sample.py"), "w") as f:
+                f.write("def add(a, b):\n    return a + b\n\ndef subtract(a, b):\n    return a - b\n")
+            
+            # Add and commit the changes
+            subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Add subtract function"],
+                cwd=repo_path,
+                check=True
+            )
+            
+            # Get the second commit hash
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            second_commit = result.stdout.strip()
+            
+            # Create a commit analyzer
+            analyzer = CommitAnalyzer(repo_path)
+            
+            # Compare the commits
+            comparison = analyzer.compare_commits(first_commit, second_commit)
+            
+            # Print the comparison result
+            print("Commit comparison result:")
+            print(f"  Base commit: {comparison.base_commit_hash}")
+            print(f"  Compare commit: {comparison.compare_commit_hash}")
+            print(f"  Files changed: {len(comparison.files_changed)}")
+            
+            for file_change in comparison.files_changed:
+                print(f"    {file_change.status}: {file_change.filepath}")
+                
+                if file_change.functions_added:
+                    print(f"    Functions added: {len(file_change.functions_added)}")
+                    for func in file_change.functions_added:
+                        print(f"      {func}")
         
-        original_codebase = Codebase.from_directory(original_path)
-        commit_codebase = Codebase.from_directory(commit_path)
-        
-        result3 = analyze_commit_with_codebases(original_codebase, commit_codebase)
-        
-        # Clean up temporary directories
-        subprocess.run(["rm", "-rf", original_path])
-        subprocess.run(["rm", "-rf", commit_path])
-    except Exception as e:
-        print(f"Error in Example 3: {e}")
+        except Exception as e:
+            print(f"Error in Example 3: {e}")
     
     print("\nCommit analysis examples completed!")
 
 
 if __name__ == "__main__":
     main()
-
