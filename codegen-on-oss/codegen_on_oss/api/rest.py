@@ -27,6 +27,7 @@ from codegen_on_oss.events.bus import get_event_bus, EventType
 from codegen_on_oss.api.graphql import execute_query
 from codegen_on_oss.analysis.code_analyzer import CodeAnalyzer
 from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
+from codegen_on_oss.api.auth import verify_api_key, sanitize_github_token, configure_auth
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +195,7 @@ def create_app() -> FastAPI:
     @app.post("/analyze_repo")
     async def analyze_repo(
         request: RepoAnalysisRequest,
+        background_tasks: BackgroundTasks,
         api_key: APIKeyHeader = Depends(verify_api_key)
     ):
         """
@@ -339,6 +341,7 @@ def create_app() -> FastAPI:
     @app.post("/create_snapshot")
     async def create_snapshot(
         request: SnapshotRequest,
+        background_tasks: BackgroundTasks,
         api_key: APIKeyHeader = Depends(verify_api_key)
     ):
         """

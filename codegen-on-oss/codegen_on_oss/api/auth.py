@@ -140,6 +140,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     except JWTError:
         raise credentials_exception
     
+    # Fix the mypy error by ensuring username is a string
+    if token_data.username is None:
+        raise credentials_exception
+        
     user = fake_users_db.get(token_data.username)
     
     if user is None:
@@ -280,4 +284,3 @@ def requires_auth(func: Callable) -> Callable:
         return await func(*args, **kwargs)
     
     return wrapper
-
