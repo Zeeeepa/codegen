@@ -131,9 +131,21 @@ class CommitAnalysisResult:
 class CommitAnalyzer:
     """
     Analyzer for comparing and evaluating commits.
-    
-    This class provides functionality to analyze two versions of a codebase (original and commit),
-    compare them, and determine if the commit is properly implemented.
+class CommitAnalyzer:
+    def __init__(self, original_codebase: Codebase, commit_codebase: Codebase) -> None:
+        self.original_codebase = original_codebase
+        self.commit_codebase = commit_codebase
+        self.result = CommitAnalysisResult(is_properly_implemented=True)
+        self._cancelled = False
+        
+    def cancel_analysis(self) -> None:
+        """Cancel ongoing analysis."""
+        self._cancelled = True
+        
+    def _check_cancelled(self) -> None:
+        """Check if analysis was cancelled."""
+        if self._cancelled:
+            raise CancellationError("Analysis was cancelled")
     """
     
     def __init__(self, original_codebase: Codebase, commit_codebase: Codebase) -> None:
