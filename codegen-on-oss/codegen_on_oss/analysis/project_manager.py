@@ -1,210 +1,160 @@
 """
 Project Manager Module
 
-This module provides functionality for managing projects and webhooks
-for the analysis server.
+This module provides functionality for managing projects in the analysis server.
 """
 
-import os
-import json
-import uuid
 import logging
+import uuid
+from typing import Dict, List, Optional, Any
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Union, Set
-from pathlib import Path
 
-logger = logging.getLogger(__name__)
 
 class Project:
     """
-    Represents a project registered for analysis.
+    Represents a project in the analysis server.
+    
+    A project is a repository that can be analyzed by the server.
     """
     
     def __init__(
         self,
-        project_id: str,
-        name: str,
         repo_url: str,
+        name: str,
         description: Optional[str] = None,
-        default_branch: str = "main",
-        webhook_url: Optional[str] = None,
-        github_token: Optional[str] = None,
-        created_at: Optional[datetime] = None,
-        last_analyzed: Optional[datetime] = None
+        default_branch: str = "main"
     ):
         """
         Initialize a new Project.
         
         Args:
-            project_id: Unique identifier for the project
-            name: Name of the project
             repo_url: URL of the repository
+            name: Name of the project
             description: Optional description of the project
             default_branch: Default branch of the repository
-            webhook_url: Optional webhook URL to notify when analysis is complete
-            github_token: Optional GitHub token for private repositories
-            created_at: When the project was created
-            last_analyzed: When the project was last analyzed
         """
-        self.project_id = project_id
-        self.name = name
+        self.project_id = str(uuid.uuid4())
         self.repo_url = repo_url
+        self.name = name
         self.description = description
         self.default_branch = default_branch
-        self.webhook_url = webhook_url
-        self.github_token = github_token
-        self.created_at = created_at or datetime.now()
-        self.last_analyzed = last_analyzed
+        self.created_at = datetime.now()
+        self.last_analyzed = None
+        self.metadata = {}
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the project to a dictionary."""
+        """
+        Convert the project to a dictionary.
+        
+        Returns:
+            A dictionary representation of the project
+        """
         return {
             "project_id": self.project_id,
-            "name": self.name,
             "repo_url": self.repo_url,
+            "name": self.name,
             "description": self.description,
             "default_branch": self.default_branch,
-            "webhook_url": self.webhook_url,
-            "github_token": self.github_token,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_analyzed": self.last_analyzed.isoformat() if self.last_analyzed else None
+            "created_at": self.created_at.isoformat(),
+            "last_analyzed": (
+                self.last_analyzed.isoformat() if self.last_analyzed else None
+            ),
+            "metadata": self.metadata
         }
     
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Project":
-        """Create a project from a dictionary."""
-        created_at = datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
-        last_analyzed = datetime.fromisoformat(data["last_analyzed"]) if data.get("last_analyzed") else None
-        
-        return cls(
-            project_id=data["project_id"],
-            name=data["name"],
-            repo_url=data["repo_url"],
-            description=data.get("description"),
-            default_branch=data.get("default_branch", "main"),
-            webhook_url=data.get("webhook_url"),
-            github_token=data.get("github_token"),
-            created_at=created_at,
-            last_analyzed=last_analyzed
-        )
-
-class Webhook:
-    """
-    Represents a webhook registered for a project.
-    """
-    
-    def __init__(
-        self,
-        webhook_id: str,
-        project_id: str,
-        webhook_url: str,
-        events: List[str],
-        secret: Optional[str] = None,
-        created_at: Optional[datetime] = None,
-        last_triggered: Optional[datetime] = None
-    ):
+    def update_metadata(self, key: str, value: Any) -> None:
         """
-        Initialize a new Webhook.
+        Update a metadata value for the project.
         
         Args:
-            webhook_id: Unique identifier for the webhook
-            project_id: ID of the project the webhook is for
-            webhook_url: URL to send webhook notifications to
-            events: Events to trigger the webhook
-            secret: Optional secret to sign webhook payloads with
-            created_at: When the webhook was created
-            last_triggered: When the webhook was last triggered
+            key: Metadata key
+            value: Metadata value
         """
-        self.webhook_id = webhook_id
-        self.project_id = project_id
-        self.webhook_url = webhook_url
-        self.events = events
-        self.secret = secret
-        self.created_at = created_at or datetime.now()
-        self.last_triggered = last_triggered
+        self.metadata[key] = value
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert the webhook to a dictionary."""
-        return {
-            "webhook_id": self.webhook_id,
-            "project_id": self.project_id,
-            "webhook_url": self.webhook_url,
-            "events": self.events,
-            "secret": self.secret,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_triggered": self.last_triggered.isoformat() if self.last_triggered else None
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Webhook":
-        """Create a webhook from a dictionary."""
-        created_at = datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
-        last_triggered = datetime.fromisoformat(data["last_triggered"]) if data.get("last_triggered") else None
-        
-        return cls(
-            webhook_id=data["webhook_id"],
-            project_id=data["project_id"],
-            webhook_url=data["webhook_url"],
-            events=data["events"],
-            secret=data.get("secret"),
-            created_at=created_at,
-            last_triggered=last_triggered
-        )
+    def mark_analyzed(self) -> None:
+        """Mark the project as analyzed."""
+        self.last_analyzed = datetime.now()
+
 
 class ProjectManager:
     """
-    Manager for projects registered for analysis.
+    Manages projects in the analysis server.
+    
+    This class provides functionality for registering, retrieving, and managing
+    projects in the analysis server.
     """
     
-    def __init__(self) -> None:
-        """
-        Initialize the project manager.
-        """
-        self.projects: Dict[str, Dict[str, Any]] = {}
-        self.webhooks: Dict[str, Dict[str, Any]] = {}
+    def __init__(self):
+        """Initialize a new ProjectManager."""
+        self.projects: Dict[str, Project] = {}
+        self.logger = logging.getLogger(__name__)
     
-    def register_project(self, repo_url: str, name: str, description: Optional[str] = None, 
-                         default_branch: str = "main", webhook_url: Optional[str] = None, 
-                         github_token: Optional[str] = None) -> str:
+    def register_project(
+        self,
+        repo_url: str,
+        name: str,
+        description: Optional[str] = None,
+        default_branch: str = "main"
+    ) -> Project:
         """
-        Register a project for analysis.
+        Register a new project.
         
         Args:
-            repo_url: The URL of the repository.
-            name: The name of the project.
-            description: The description of the project.
-            default_branch: The default branch of the repository.
-            webhook_url: The webhook URL to notify when analysis is complete.
-            github_token: The GitHub token for private repositories.
+            repo_url: URL of the repository
+            name: Name of the project
+            description: Optional description of the project
+            default_branch: Default branch of the repository
             
         Returns:
-            The ID of the registered project.
+            The registered project
         """
-        # Generate a unique ID for the project
-        project_id = str(uuid.uuid4())
+        project = Project(
+            repo_url=repo_url,
+            name=name,
+            description=description,
+            default_branch=default_branch
+        )
         
-        # Create the project
-        self.projects[project_id] = {
-            "project_id": project_id,
-            "name": name,
-            "repo_url": repo_url,
-            "description": description,
-            "default_branch": default_branch,
-            "webhook_url": webhook_url,
-            "github_token": github_token,
-            "created_at": datetime.now().isoformat(),
-        }
+        self.projects[project.project_id] = project
+        self.logger.info(f"Registered project {name} with ID {project.project_id}")
         
-        return project_id
+        return project
     
-    def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
+    def get_project(self, project_id: str) -> Optional[Project]:
         """
         Get a project by ID.
         
         Args:
-            project_id: The ID of the project.
+            project_id: ID of the project
             
         Returns:
-            The project data, or None if not found.
+            The project, or None if not found
         """
         return self.projects.get(project_id)
+    
+    def get_projects(self) -> List[Project]:
+        """
+        Get all projects.
+        
+        Returns:
+            A list of all projects
+        """
+        return list(self.projects.values())
+    
+    def delete_project(self, project_id: str) -> bool:
+        """
+        Delete a project.
+        
+        Args:
+            project_id: ID of the project
+            
+        Returns:
+            True if the project was deleted, False otherwise
+        """
+        if project_id in self.projects:
+            del self.projects[project_id]
+            self.logger.info(f"Deleted project with ID {project_id}")
+            return True
+        
+        return False
