@@ -1,27 +1,24 @@
 """
-Code integrity analyzer for the codegen-on-oss system.
+Analysis module for code integrity.
 
-This module provides functionality to analyze code integrity, including:
-- Finding all functions and classes
-- Identifying errors in functions and classes
-- Detecting improper parameter usage
-- Finding incorrect function callback points
+This module provides tools for analyzing code integrity, including:
+- Finding functions with issues
+- Identifying classes with problems
+- Detecting parameter usage errors
 - Comparing error counts between branches
 """
 
-import ast
 import difflib
 import logging
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Any, Dict, List, Optional
 
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_resolution import Import
+from codegen.sdk.core.import_statement import Import
+from codegen.sdk.core.source_file import SourceFile
 from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, SymbolType
 
@@ -50,7 +47,8 @@ def get_codebase_summary(codebase: Codebase) -> str:
 """
     edge_summary = f"""Contains {len(codebase.ctx.edges)} edges
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_USAGE])} symbol -> used symbol
-- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} import -> used symbol
+- {len([x for x in codebase.ctx.edges 
+        if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} import -> used symbol
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.EXPORT])} export -> exported symbol
     """
 
@@ -138,15 +136,23 @@ def get_symbol_summary(symbol: Symbol) -> str:
 
     return f"""==== [ `{symbol.name}` ({type(symbol).__name__}) Usage Summary ] ====
 - {len(usages)} usages
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+\t- {len([x for x in usages 
+            if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
+\t- {len([x for x in usages 
+            if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
+\t- {len([x for x in usages 
+            if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
+\t- {len([x for x in usages 
+            if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
 \t- {len(imported_symbols)} imports
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+\t\t- {len([x for x in imported_symbols 
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
+\t\t- {len([x for x in imported_symbols 
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
+\t\t- {len([x for x in imported_symbols 
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
+\t\t- {len([x for x in imported_symbols 
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
 \t\t- {len([x for x in imported_symbols if isinstance(x, ExternalModule)])} external modules
 \t\t- {len([x for x in imported_symbols if isinstance(x, SourceFile)])} files
     """
@@ -361,7 +367,8 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many parameters ({len(func.parameters)})",
+                        "message": f"Function '{func.name}' has too many parameters "
+                        f"({len(func.parameters)})"
                     }
                 )
 
@@ -376,7 +383,8 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many return statements ({len(func.return_statements)})",
+                        "message": f"Function '{func.name}' has too many return statements "
+                        f"({len(func.return_statements)})"
                     }
                 )
 
@@ -675,7 +683,10 @@ class CodeIntegrityAnalyzer:
                             "name": func.name,
                             "filepath": func.filepath,
                             "line": func.line_range[0],
-                            "message": f"Function '{func.name}' is missing type hint for parameter '{param.name}'",
+                            "message": (
+                                f"Function '{func.name}' is missing type hint "
+                                f"for parameter '{param.name}'"
+                            ),
                             "severity": self.config["severity_levels"]["missing_type_hints"],
                         }
                     )
@@ -710,7 +721,10 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has inconsistent return types: {', '.join(return_types)}",
+                        "message": (
+                            f"Function '{func.name}' has inconsistent return types: "
+                            f"{', '.join(return_types)}"
+                        ),
                         "severity": self.config["severity_levels"]["inconsistent_return_type"],
                     }
                 )
@@ -778,7 +792,10 @@ class CodeIntegrityAnalyzer:
                             "name": f"{block1['name']} and {block2['name']}",
                             "filepath": block1["filepath"],
                             "line": block1["line"],
-                            "message": f"Duplicate code detected between '{block1['name']}' in {block1['filepath']} and '{block2['name']}' in {block2['filepath']} (similarity: {similarity:.2f})",
+                            "message": f"Duplicate code detected: '{block1['name']}' "
+                            f"in {block1['filepath']} "
+                            f"and '{block2['name']}' in {block2['filepath']} "
+                            f"(similarity: {similarity:.2f})",
                             "duplicate_filepath": block2["filepath"],
                             "duplicate_line": block2["line"],
                             "similarity": similarity,

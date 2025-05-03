@@ -1,31 +1,36 @@
 """
-HTML Report Generator for Code Integrity Analysis
+HTML report generator for code integrity analysis results.
 
-This module provides functionality to generate HTML reports from code integrity analysis results.
+This module provides functions for generating HTML reports from code integrity analysis results.
 """
 
-import json
-import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 
 def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = "single") -> None:
-    """Generate an HTML report from code integrity analysis results.
-    
-    Args:
-        results: Analysis results dictionary containing required keys based on mode
-        output_path: Path to save the HTML report
-        mode: Analysis mode (single, compare, or pr)
-        
-    Raises:
-        ValueError: If mode is invalid or required keys are missing in results
-        IOError: If file operations fail
     """
-    if not isinstance(results, dict):
-        raise ValueError("Results must be a dictionary")
-    
-    _validate_results(results, mode)
-    
+    Generate an HTML report from code integrity analysis results.
+
+    Args:
+        results: The analysis results
+        output_path: The path to write the HTML report to
+        mode: The mode of the report (single, compare, or pr)
+    """
+    # Validate results
+    if not results:
+        raise ValueError("Results cannot be empty")
+
+    # Check for required keys based on mode
+    if mode == "single":
+        _validate_results(results, mode)
+    elif mode == "compare":
+        _validate_results(results, mode)
+    elif mode == "pr":
+        _validate_results(results, mode)
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
+
     # Create HTML content based on the analysis mode
     if mode == "single":
         html_content = _generate_single_branch_report(results)
@@ -35,7 +40,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = 
         html_content = _generate_pr_analysis_report(results)
     else:
         raise ValueError(f"Invalid mode: {mode}")
-    
+
     # Write HTML content to file
     with open(output_path, 'w') as f:
         f.write(html_content)
@@ -44,22 +49,22 @@ def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = 
 def _validate_results(results: Dict[str, Any], mode: str) -> None:
     """
     Validate that the results dictionary contains the required keys for the specified mode.
-    
+
     Args:
         results: Analysis results dictionary
         mode: Analysis mode (single, compare, or pr)
-        
-    Raises:
-        ValueError: If required keys are missing in results
     """
     required_keys = []
     
     if mode == "single":
-        required_keys = ["total_functions", "total_classes", "total_files", "total_errors", "errors"]
+        required_keys = ["total_functions", "total_classes", "total_files", 
+                         "total_errors", "errors"]
     elif mode == "compare":
-        required_keys = ["main_error_count", "branch_error_count", "error_diff", "new_errors", "fixed_errors"]
+        required_keys = ["main_error_count", "branch_error_count", "error_diff", 
+                         "new_errors", "fixed_errors"]
     elif mode == "pr":
-        required_keys = ["comparison", "new_functions", "new_classes", "modified_functions", "modified_classes"]
+        required_keys = ["main_error_count", "branch_error_count", "error_diff", 
+                         "new_errors", "fixed_errors"]
     else:
         raise ValueError(f"Invalid mode: {mode}")
     
@@ -71,10 +76,10 @@ def _validate_results(results: Dict[str, Any], mode: str) -> None:
 def _generate_single_branch_report(results: Dict[str, Any]) -> str:
     """
     Generate HTML report for single branch analysis.
-    
+
     Args:
         results: Analysis results
-    
+
     Returns:
         HTML content as a string
     """
@@ -173,10 +178,10 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
 def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
     """
     Generate HTML report for branch comparison analysis.
-    
+
     Args:
         results: Comparison results
-    
+
     Returns:
         HTML content as a string
     """
@@ -273,10 +278,10 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
 def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
     """
     Generate HTML report for PR analysis.
-    
+
     Args:
         results: PR analysis results
-    
+
     Returns:
         HTML content as a string
     """
@@ -378,25 +383,25 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
                     <h2>Branch Comparison</h2>
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <span class="summary-value">{comparison.get("main_error_count", 0)}</span>
+                            <span class="summary-value">{comparison.get('main_error_count', 0)}</span>
                             <span class="summary-label">Main Branch Errors</span>
                         </div>
-                        <div class="summary-item {_get_error_class(comparison.get("branch_error_count", 0))}">
-                            <span class="summary-value">{comparison.get("branch_error_count", 0)}</span>
+                        <div class="summary-item {_get_error_class(comparison.get('branch_error_count', 0))}">
+                            <span class="summary-value">{comparison.get('branch_error_count', 0)}</span>
                             <span class="summary-label">PR Branch Errors</span>
                         </div>
-                        <div class="summary-item {_get_diff_class(comparison.get("error_diff", 0))}">
-                            <span class="summary-value">{comparison.get("error_diff", 0):+d}</span>
+                        <div class="summary-item {_get_diff_class(comparison.get('error_diff', 0))}">
+                            <span class="summary-value">{comparison.get('error_diff', 0):+d}</span>
                             <span class="summary-label">Error Difference</span>
                         </div>
                     </div>
                     <h3>New Errors in PR Branch</h3>
                     <div class="error-list">
-                        {_generate_error_list(comparison.get("new_errors", []))}
+                        {_generate_error_list(comparison.get('new_errors', []))}
                     </div>
                     <h3>Errors Fixed in PR Branch</h3>
                     <div class="error-list">
-                        {_generate_error_list(comparison.get("fixed_errors", []))}
+                        {_generate_error_list(comparison.get('fixed_errors', []))}
                     </div>
                 </div>
             </div>
@@ -415,10 +420,10 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
 def _generate_error_list(errors: List[Dict[str, Any]]) -> str:
     """
     Generate HTML for a list of errors.
-    
+
     Args:
         errors: List of error dictionaries
-    
+
     Returns:
         HTML content as a string
     """
@@ -450,10 +455,10 @@ def _generate_error_list(errors: List[Dict[str, Any]]) -> str:
 def _generate_error_type_list(error_types: Dict[str, List[Dict[str, Any]]]) -> str:
     """
     Generate HTML for errors grouped by type.
-    
+
     Args:
         error_types: Dictionary mapping error types to lists of errors
-    
+
     Returns:
         HTML content as a string
     """
@@ -478,10 +483,10 @@ def _generate_error_type_list(error_types: Dict[str, List[Dict[str, Any]]]) -> s
 def _get_severity_class(errors: List[Dict[str, Any]]) -> str:
     """
     Get the highest severity class for a list of errors.
-    
+
     Args:
         errors: List of error dictionaries
-    
+
     Returns:
         CSS class name for the severity
     """
@@ -496,10 +501,10 @@ def _get_severity_class(errors: List[Dict[str, Any]]) -> str:
 def _get_error_class(error_count: int) -> str:
     """
     Get the CSS class for an error count.
-    
+
     Args:
         error_count: Number of errors
-    
+
     Returns:
         CSS class name
     """
@@ -514,10 +519,10 @@ def _get_error_class(error_count: int) -> str:
 def _get_diff_class(diff: int) -> str:
     """
     Get the CSS class for an error difference.
-    
+
     Args:
         diff: Error difference
-    
+
     Returns:
         CSS class name
     """
@@ -532,7 +537,7 @@ def _get_diff_class(diff: int) -> str:
 def _get_css_styles() -> str:
     """
     Get CSS styles for the HTML report.
-    
+
     Returns:
         CSS styles as a string
     """
@@ -558,7 +563,8 @@ def _get_css_styles() -> str:
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                "Helvetica Neue", Arial, sans-serif;
             line-height: 1.5;
             color: #333;
             background-color: #f5f5f5;
@@ -805,7 +811,7 @@ def _get_css_styles() -> str:
 def _get_javascript() -> str:
     """
     Get JavaScript for the HTML report.
-    
+
     Returns:
         JavaScript as a string
     """
