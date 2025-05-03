@@ -90,6 +90,12 @@ from codegen_on_oss.analysis.analysis_import import (
     find_problematic_import_loops
 )
 
+# Import new analysis modules
+from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
+from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
+
 # Create FastAPI app
 app = FastAPI()
 
@@ -722,20 +728,130 @@ class CodeAnalyzer:
             # Get all commits in the date range
             commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
             
-            # Count file changes
+            # Count changes per file
             file_changes = {}
             for commit in commits:
-                for file in commit.stats.files:
-                    if file in file_changes:
-                        file_changes[file] += 1
+                for file in commit.files:
+                    if file.filename in file_changes:
+                        file_changes[file.filename] += 1
                     else:
-                        file_changes[file] = 1
+                        file_changes[file.filename] = 1
             
             # Sort by change count and limit results
             sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
             return dict(sorted_files)
         except Exception as e:
             return {"error": str(e)}
+    
+    def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
+        """
+        Create a snapshot of the current codebase.
+        
+        Args:
+            commit_sha: Optional commit SHA to associate with the snapshot
+            
+        Returns:
+            A CodebaseSnapshot object
+        """
+        return CodebaseSnapshot(self.codebase, commit_sha)
+    
+    def analyze_commit(
+        self, 
+        base_commit: str, 
+        head_commit: str,
+        github_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze a commit by comparing the codebase before and after the commit.
+        
+        Args:
+            base_commit: The base commit SHA (before the changes)
+            head_commit: The head commit SHA (after the changes)
+            github_token: Optional GitHub token for accessing private repositories
+            
+        Returns:
+            A dictionary with analysis results
+        """
+        # Create a commit analyzer
+        snapshot_manager = SnapshotManager()
+        commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
+        
+        # Analyze the commit
+        return commit_analyzer.analyze_commit(
+            self.codebase.repo_path, base_commit, head_commit
+        )
+    
+    def analyze_pull_request(
+        self, 
+        pr_number: int,
+        github_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze a pull request by comparing the base and head commits.
+        
+        Args:
+            pr_number: The pull request number
+            github_token: Optional GitHub token for accessing private repositories
+            
+        Returns:
+            A dictionary with analysis results
+        """
+        # Create a commit analyzer
+        snapshot_manager = SnapshotManager()
+        commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
+        
+        # Analyze the pull request
+        return commit_analyzer.analyze_pull_request(
+            self.codebase.repo_path, pr_number, github_token
+        )
+    
+    def create_swe_harness_agent(
+        self, 
+        github_token: Optional[str] = None,
+        snapshot_dir: Optional[str] = None,
+        use_agent: bool = True
+    ) -> SWEHarnessAgent:
+        """
+        Create a SWE harness agent for analyzing commits and pull requests.
+        
+        Args:
+            github_token: Optional GitHub token for accessing private repositories
+            snapshot_dir: Optional directory to store snapshots
+            use_agent: Whether to use an LLM-based agent for enhanced analysis
+            
+        Returns:
+            A SWEHarnessAgent instance
+        """
+        return SWEHarnessAgent(github_token, snapshot_dir, use_agent)
+    
+    def compare_snapshots(
+        self, 
+        original_snapshot: CodebaseSnapshot, 
+        modified_snapshot: CodebaseSnapshot
+    ) -> Dict[str, Any]:
+        """
+        Compare two codebase snapshots and analyze the differences.
+        
+        Args:
+            original_snapshot: The original/base codebase snapshot
+            modified_snapshot: The modified/new codebase snapshot
+            
+        Returns:
+            A dictionary with comparison results
+        """
+        # Create a diff analyzer
+        diff_analyzer = DiffAnalyzer(original_snapshot, modified_snapshot)
+        
+        # Get the summary and high-risk changes
+        summary = diff_analyzer.get_summary()
+        high_risk_changes = diff_analyzer.get_high_risk_changes()
+        
+        return {
+            "summary": summary,
+            "high_risk_changes": high_risk_changes,
+            "formatted_summary": diff_analyzer.format_summary_text()
+        }
+
 
 def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     """
