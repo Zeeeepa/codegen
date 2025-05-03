@@ -1,5 +1,4 @@
 import modal
-
 from codegen_on_oss.sources import GithubSettings, GithubSource
 
 app = modal.App("codegen-oss-parse")
@@ -11,9 +10,7 @@ def main(
     heuristic: str = "stars",
     num_repos: int = 100,
 ):
-    """
-    Main entrypoint for the parse app.
-    """
+    """Main entrypoint for the parse app."""
     parse_repo_on_modal_fn = modal.Function.from_name("codegen-oss-parse", "parse_repo")
     for language in languages.split(","):
         repo_source = GithubSource(
