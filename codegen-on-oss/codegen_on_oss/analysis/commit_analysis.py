@@ -26,7 +26,7 @@ from codegen_on_oss.analysis.analysis import CodeAnalyzer
 
 @dataclass
 class CommitIssue:
-    """Represents an issue found in a commit."""
+    """Represents an issue found in a commit.
     issue_type: str
     severity: str  # "critical", "warning", "info"
     message: str
@@ -35,7 +35,7 @@ class CommitIssue:
     code_snippet: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the issue to a dictionary."""
+        """Convert the issue to a dictionary.
         return {
             "issue_type": self.issue_type,
             "severity": self.severity,
@@ -48,7 +48,7 @@ class CommitIssue:
 
 @dataclass
 class CommitAnalysisResult:
-    """Result of a commit analysis."""
+    """Result of a commit analysis.
     is_properly_implemented: bool
     issues: List[CommitIssue] = field(default_factory=list)
     metrics_diff: Dict[str, Any] = field(default_factory=dict)
@@ -57,7 +57,7 @@ class CommitAnalysisResult:
     files_removed: List[str] = field(default_factory=list)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the result to a dictionary."""
+        """Convert the result to a dictionary.
         return {
             "is_properly_implemented": self.is_properly_implemented,
             "issues": [issue.to_dict() for issue in self.issues],
@@ -68,7 +68,7 @@ class CommitAnalysisResult:
         }
     
     def get_summary(self) -> str:
-        """Get a summary of the analysis result."""
+        """Get a summary of the analysis result.
         status = "✅ Properly implemented" if self.is_properly_implemented else "❌ Issues found"
         
         summary = f"Commit Analysis Summary: {status}\n\n"
@@ -121,12 +121,12 @@ class CommitAnalysisResult:
 
 
 class CommitAnalyzer:
-    """
+    
     Analyzer for comparing and evaluating commits.
     
     This class provides functionality to analyze two versions of a codebase (original and commit),
     compare them, and determine if the commit is properly implemented.
-    """
+    
     
     def __init__(
         self, 
@@ -135,7 +135,7 @@ class CommitAnalyzer:
         original_path: Optional[str] = None,
         commit_path: Optional[str] = None
     ):
-        """
+        
         Initialize the CommitAnalyzer.
         
         Args:
@@ -143,7 +143,7 @@ class CommitAnalyzer:
             commit_codebase: The codebase after the commit
             original_path: Path to the original repository (optional)
             commit_path: Path to the commit repository (optional)
-        """
+        
         self.original_codebase = original_codebase
         self.commit_codebase = commit_codebase
         self.original_path = original_path
@@ -162,7 +162,7 @@ class CommitAnalyzer:
         
     @classmethod
     def from_paths(cls, original_path: str, commit_path: str) -> 'CommitAnalyzer':
-        """
+        
         Create a CommitAnalyzer from repository paths.
         
         Args:
@@ -171,7 +171,7 @@ class CommitAnalyzer:
             
         Returns:
             A CommitAnalyzer instance
-        """
+        
         original_codebase = Codebase.from_directory(original_path)
         commit_codebase = Codebase.from_directory(commit_path)
         
@@ -184,7 +184,7 @@ class CommitAnalyzer:
     
     @classmethod
     def from_repo_and_commit(cls, repo_url: str, commit_hash: str) -> 'CommitAnalyzer':
-        """
+        
         Create a CommitAnalyzer from a repository URL and commit hash.
         
         Args:
@@ -193,7 +193,7 @@ class CommitAnalyzer:
             
         Returns:
             A CommitAnalyzer instance
-        """
+        
         # Create temporary directories for the repositories
         original_dir = tempfile.mkdtemp()
         commit_dir = tempfile.mkdtemp()
@@ -239,12 +239,12 @@ class CommitAnalyzer:
             raise e
     
     def analyze_commit(self) -> CommitAnalysisResult:
-        """
+        
         Analyze the commit and determine if it's properly implemented.
         
         Returns:
             A CommitAnalysisResult object containing the analysis results
-        """
+        
         # Identify file changes
         self._identify_file_changes()
         
@@ -271,7 +271,7 @@ class CommitAnalyzer:
         )
     
     def _identify_file_changes(self):
-        """Identify added, modified, and removed files between the two codebases."""
+        """Identify added, modified, and removed files between the two codebases.
         original_files = {file.path: file for file in self.original_codebase.files}
         commit_files = {file.path: file for file in self.commit_codebase.files}
         
@@ -293,7 +293,7 @@ class CommitAnalyzer:
                 self.files_modified.append(path)
     
     def _analyze_complexity_changes(self):
-        """Analyze changes in code complexity metrics."""
+        """Analyze changes in code complexity metrics.
         # Get complexity metrics for both codebases
         original_complexity = self.original_analyzer.analyze_complexity()
         commit_complexity = self.commit_analyzer.analyze_complexity()
@@ -331,7 +331,7 @@ class CommitAnalyzer:
                     ))
     
     def _analyze_import_changes(self):
-        """Analyze changes in imports and dependencies."""
+        """Analyze changes in imports and dependencies.
         # Get import analysis for both codebases
         original_imports = self.original_analyzer.analyze_imports()
         commit_imports = self.commit_analyzer.analyze_imports()
@@ -351,7 +351,7 @@ class CommitAnalyzer:
             ))
     
     def _check_for_issues(self):
-        """Check for various issues in the commit."""
+        """Check for various issues in the commit.
         # Check for syntax errors in added or modified files
         for file_path in self.files_added + self.files_modified:
             file = next((f for f in self.commit_codebase.files if f.path == file_path), None)
@@ -375,7 +375,7 @@ class CommitAnalyzer:
         self._check_documentation_updates()
     
     def _check_broken_references(self):
-        """Check for broken references in the code."""
+        """Check for broken references in the code.
         # This is a simplified implementation
         # In a real implementation, you would check for references to removed symbols
         
@@ -398,7 +398,7 @@ class CommitAnalyzer:
                     ))
     
     def _check_test_coverage(self):
-        """Check for test coverage changes."""
+        """Check for test coverage changes.
         # This is a placeholder for test coverage analysis
         # In a real implementation, you would run tests and compare coverage
         
@@ -418,7 +418,7 @@ class CommitAnalyzer:
             ))
     
     def _check_documentation_updates(self):
-        """Check for documentation updates."""
+        """Check for documentation updates.
         # Check if code was added/modified but no documentation was updated
         doc_files_modified = [f for f in self.files_modified if f.endswith((".md", ".rst", ".txt"))]
         code_files_added = [f for f in self.files_added if f.endswith((".py", ".js", ".ts", ".java", ".c", ".cpp"))]
@@ -449,7 +449,7 @@ class CommitAnalyzer:
             ))
     
     def get_diff_summary(self, file_path: str) -> str:
-        """
+        
         Get a summary of changes for a specific file.
         
         Args:
@@ -457,7 +457,7 @@ class CommitAnalyzer:
             
         Returns:
             A string containing a summary of the changes
-        """
+        
         if file_path in self.files_added:
             return f"File added: {file_path}"
         
@@ -484,12 +484,12 @@ class CommitAnalyzer:
         return f"No changes found for {file_path}"
     
     def get_detailed_report(self) -> Dict[str, Any]:
-        """
+        
         Get a detailed report of the commit analysis.
         
         Returns:
             A dictionary containing detailed analysis information
-        """
+        
         # Analyze the commit if not already done
         if not hasattr(self, "result"):
             self.result = self.analyze_commit()
@@ -513,5 +513,5 @@ class CommitAnalyzer:
             report["diffs"][file_path] = self.get_diff_summary(file_path)
         
         return report
-"""
+
 
