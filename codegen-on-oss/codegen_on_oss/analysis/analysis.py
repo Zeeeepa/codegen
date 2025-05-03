@@ -36,6 +36,8 @@ from codegen.sdk.enums import EdgeType, SymbolType
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import difflib
+import git
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
@@ -761,6 +763,38 @@ class CodeAnalyzer:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
         """
+        try:
+            # Get the file content from both codebases
+            original_content = self.codebase.get_file_content(file_path)
+            commit_content = commit_codebase.get_file_content(file_path)
+            
+            # Generate a diff
+            diff = difflib.unified_diff(
+                original_content.splitlines(keepends=True),
+                commit_content.splitlines(keepends=True),
+                fromfile=f"a/{file_path}",
+                tofile=f"b/{file_path}"
+            )
+            
+            return "".join(diff)
+        except Exception as e:
+            return f"Error generating diff: {str(e)}"
+    
+    def get_hotspots(self, repo_url: str, limit: int = 10) -> Dict[str, int]:
+        """
+        Identify code hotspots by analyzing commit history.
+        
+        Args:
+            repo_url: URL of the repository
+            limit: Maximum number of hotspots to return
+        """
+        try:
+            # Clone the repository
+            repo = git.Repo.clone_from(repo_url, tempfile.mkdtemp())
+            
+            # Get commit history
+            commits = list(repo.iter_commits('master', max_count=100))
+            
             # Count changes per file
             file_changes = {}
             for commit in commits:
@@ -967,6 +1001,15 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                         monthly_counts[month_key] += 1
 
             return dict(sorted(monthly_counts.items()))
+
+    except Exception as e:
+        print(f"Error analyzing commit history: {str(e)}")
+        os.chdir(original_dir)
+        return {"error": str(e)}
+    finally:
+        # Make sure we return to the original directory
+        if 'original_dir' in locals():
+            os.chdir(original_dir)
 
 
 # Helper functions for complexity analysis
