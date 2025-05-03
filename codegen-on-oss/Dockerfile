@@ -1,34 +1,29 @@
-# Install uv
-FROM python:3.12-slim AS installer
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+FROM python:3.10-slim
 
-# Change the working directory to the `app` directory
 WORKDIR /app
 
-# Copy the lockfile and `pyproject.toml` into the image
-COPY uv.lock /app/uv.lock
-COPY pyproject.toml /app/pyproject.toml
-
-# Install dependencies
-RUN apt-get update && apt-get install -y git \
-    && uv sync --frozen --no-install-project \
-    && apt-get clean \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements and install dependencies
+COPY pyproject.toml /app/
+COPY README.md /app/
 
-FROM python:3.12-slim
+# Install the package
+RUN pip install --no-cache-dir -e .
 
-ENV PATH="/venv/bin:/app/scripts:$PATH"
-# Copy the project into the image
-COPY --from=installer /app/.venv/ /venv
+# Copy the rest of the application
+COPY . /app/
 
-RUN apt-get update && apt-get install -y postgresql-client \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+# Initialize the database
+RUN mkdir -p /app/storage
+RUN codegen-oss init
 
+# Expose the API port
+EXPOSE 8000
 
-WORKDIR /app
-
-COPY . .
-
-CMD ["python", "modal_run.py"]
+# Run the API server
+CMD ["codegen-oss", "server"]

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=postgresql://postgres:postgres@db:5432/codegen
+      - STORAGE_TYPE=local
+      - LOCAL_STORAGE_PATH=/app/storage
+      - REDIS_URL=redis://redis:6379/0
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_WORKERS=4
+      - ENABLE_GRAPHQL=true
+      - ENABLE_WEBSOCKETS=true
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      - db
+      - redis
+    command: ["codegen-oss", "server"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_URL=postgresql://postgres:postgres@db:5432/codegen
+      - STORAGE_TYPE=local
+      - LOCAL_STORAGE_PATH=/app/storage
+      - REDIS_URL=redis://redis:6379/0
+      - MAX_WORKERS=4
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      - db
+      - redis
+    command: ["codegen-oss", "worker"]
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=codegen
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+

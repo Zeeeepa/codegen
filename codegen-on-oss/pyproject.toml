@@ -31,3 +31,48 @@ ignore_errors = true
 module = "codegen_on_oss.snapshot.codebase_snapshot"
 ignore_errors = true
 
+[project]
+name = "codegen-on-oss"
+version = "1.0.0"
+description = "Codegen OSS Analysis System"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Codegen Team", email = "info@codegen.sh" }
+]
+dependencies = [
+    "click>=8.1.3",
+    "loguru>=0.7.0",
+    "codegen>=0.1.0",
+    "fastapi>=0.103.1",
+    "uvicorn>=0.23.2",
+    "sqlalchemy>=2.0.20",
+    "alembic>=1.12.0",
+    "pydantic>=2.3.0",
+    "pydantic-settings>=2.0.3",
+    "strawberry-graphql>=0.205.0",
+    "redis>=5.0.0",
+    "rq>=1.15.1",
+    "boto3>=1.28.40",
+    "websockets>=11.0.3",
+    "httpx>=0.24.1",
+    "python-multipart>=0.0.6",
+    "asyncpg>=0.28.0",
+    "psycopg2-binary>=2.9.7",
+    "aiosqlite>=0.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.1",
+    "pytest-cov>=4.1.0",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.1",
+    "ruff>=0.0.287",
+]
+
+[project.scripts]
+codegen-oss = "codegen_on_oss.cli:main"
