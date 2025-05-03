@@ -14,7 +14,7 @@ import difflib
 import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.codebase import Codebase
