@@ -1,279 +1,216 @@
-# Analysis Module
+# Enhanced Analysis Architecture for Codegen-on-OSS
 
-The Analysis Module integrates various specialized analysis components into a comprehensive system for analyzing codebases.
+This directory contains the enhanced analysis architecture for Codegen-on-OSS, which provides a comprehensive pipeline for analyzing code repositories, commits, symbols, and features.
 
-## Features
+## Overview
 
-- Comprehensive code analysis
-- Code quality metrics
-- Import analysis
-- Symbol attribution
-- Visualization of module dependencies
-- Comprehensive code quality metrics
-- Commit analysis and comparison
-- Repository and PR/Branch/Commit comparison
+The enhanced analysis architecture provides:
 
+1. **Analysis Pipeline**: A structured pipeline for code analysis, with different analyzers for repositories, commits, symbols, and features.
+
+2. **Coordinator Pattern**: A coordinator that orchestrates the execution of different analyzers and collectors.
+
+3. **Metrics Collection**: Comprehensive metrics collection for code quality analysis.
+
+4. **Issue Detection**: Detection of code quality issues, such as high complexity, low maintainability, and code smells.
+
+5. **Dependency Analysis**: Analysis of dependencies between symbols, such as function calls, class inheritance, and imports.
+
+6. **Snapshot Generation**: Generation of snapshots of codebases at specific points in time, with support for differential snapshots.
+
+7. **API Integration**: Integration with the API server, providing endpoints for analyzing repositories, commits, symbols, and features.
 
 ## Components
 
-The module consists of the following key components:
+### Coordinator
 
-- **CodeAnalyzer**: Central class that orchestrates all analysis functionality
+The `coordinator.py` file provides a coordinator for the analysis pipeline:
 
-- **DiffAnalyzer**: Class for analyzing differences between codebase snapshots
-- **CommitAnalyzer**: Class for analyzing commits by comparing snapshots
-- **SWEHarnessAgent**: Harness for a Software Engineering agent that analyzes commits and PRs
-- **Metrics Integration**: Connection with the CodeMetrics class for comprehensive metrics
-- **Import Analysis**: Tools for analyzing import relationships and cycles
-- **Documentation Tools**: Functions for generating documentation for code
-- **Server**: FastAPI server for analyzing repositories, commits, branches, and PRs
+- **AnalysisCoordinator**: Orchestrates the execution of different analyzers and collectors.
+- **AnalysisContext**: Context for an analysis run, containing state and results.
+
+### Analyzers
+
+The analysis architecture includes several analyzers:
+
+- **RepositoryAnalyzer**: Analyzes repositories and extracts metadata about them.
+- **CommitAnalyzer**: Analyzes commits and extracts metadata about them.
+- **SymbolAnalyzer**: Analyzes symbols (functions, classes, variables) and extracts metadata about them.
+- **FeatureAnalyzer**: Analyzes features (files or directories) and extracts metadata about them.
+- **DependencyAnalyzer**: Analyzes dependencies between symbols.
+
+### Collectors
+
+The analysis architecture includes several collectors:
+
+- **MetricsCollector**: Collects code quality metrics for repositories, files, and symbols.
+- **IssueDetector**: Detects code quality issues in repositories, files, and symbols.
+
+### Snapshot Generator
+
+The `snapshot_generator.py` file provides a snapshot generator:
+
+- **SnapshotGenerator**: Creates snapshots of codebases at specific points in time, with support for differential snapshots.
+
+### API Endpoints
+
+The `api_endpoints.py` file provides API endpoints for the analysis architecture:
+
+- **analyze_repository**: Analyzes a repository and returns comprehensive metrics.
+- **analyze_commit**: Analyzes a commit in a repository.
+- **create_snapshot**: Creates a snapshot of a repository.
+- **compare_snapshots**: Compares two snapshots.
+- **analyze_symbol**: Analyzes a specific symbol in a repository.
 
 ## Usage
 
-### Basic Analysis
+### Analyzing a Repository
 
 ```python
 from codegen import Codebase
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.coordinator import AnalysisCoordinator
 
-# Create a codebase from a directory
-codebase = Codebase.from_directory("/path/to/repo")
+# Create a Codebase instance
+codebase = Codebase.from_repo("https://github.com/example/example-repo")
 
-# Create an analyzer
-analyzer = CodeAnalyzer(codebase)
+# Create an AnalysisCoordinator instance
+coordinator = AnalysisCoordinator()
 
-# Get a summary of the codebase
-summary = analyzer.get_codebase_summary()
-print(summary)
+# Analyze the repository
+result = await coordinator.analyze_repository(
+    repo_url="https://github.com/example/example-repo",
+    codebase=codebase
+)
 
-# Analyze complexity
-complexity = analyzer.analyze_complexity()
-print(complexity)
-
-# Analyze imports
-imports = analyzer.analyze_imports()
-print(imports)
+# Access the results
+repository_data = result.get("repository", {})
+commit_data = result.get("commit", {})
+symbols_data = result.get("symbols", {})
+metrics_data = result.get("metrics", {})
+issues_data = result.get("issues", {})
+snapshot_data = result.get("snapshot", {})
+dependencies_data = result.get("dependencies", {})
 ```
 
-### Metrics
+### Creating a Snapshot
 
 ```python
 from codegen import Codebase
-from codegen_on_oss.analysis.metrics import CodeMetrics
+from codegen_on_oss.analysis.coordinator import AnalysisCoordinator
 
-# Create a codebase from a directory
-codebase = Codebase.from_directory("/path/to/repo")
+# Create a Codebase instance
+codebase = Codebase.from_repo("https://github.com/example/example-repo")
 
-# Create a metrics instance
-metrics = CodeMetrics(codebase)
+# Create an AnalysisCoordinator instance
+coordinator = AnalysisCoordinator()
 
-# Calculate all metrics
-all_metrics = metrics.calculate_all_metrics()
-print(all_metrics)
-
-# Get code quality summary
-quality_summary = metrics.get_code_quality_summary()
-print(quality_summary)
-```
-
-### Commit Analysis
-
-```python
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-
-# Create analyzer instance
-analyzer = CodeAnalyzer(codebase)
-
-# Analyze a commit
-analysis_results = analyzer.analyze_commit(
-    base_commit="abc123",
-    head_commit="def456",
-    github_token="your_github_token"
+# Analyze the repository and create a snapshot
+result = await coordinator.analyze_repository(
+    repo_url="https://github.com/example/example-repo",
+    codebase=codebase
 )
 
-# Print the results
-print(f"Is properly implemented: {analysis_results['quality_assessment']['is_properly_implemented']}")
-print(f"Quality score: {analysis_results['quality_assessment']['score']}")
-print(f"Overall assessment: {analysis_results['quality_assessment']['overall_assessment']}")
+# Access the snapshot data
+snapshot_data = result.get("snapshot", {})
+snapshot_id = snapshot_data.get("id")
+snapshot_hash = snapshot_data.get("snapshot_hash")
 ```
 
-### PR Analysis
-
-```python
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-
-# Create analyzer instance
-analyzer = CodeAnalyzer(codebase)
-
-# Analyze a PR
-analysis_results = analyzer.analyze_pull_request(
-    pr_number=123,
-    github_token="your_github_token"
-)
-
-# Print the results
-print(f"Is properly implemented: {analysis_results['quality_assessment']['is_properly_implemented']}")
-print(f"Quality score: {analysis_results['quality_assessment']['score']}")
-print(f"Overall assessment: {analysis_results['quality_assessment']['overall_assessment']}")
-```
-
-### SWE Harness Agent
-
-```python
-from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-
-# Create a SWE harness agent
-swe_agent = SWEHarnessAgent(github_token="your_github_token")
-
-# Analyze a PR
-results = swe_agent.analyze_pull_request("owner/repo", pr_number=123)
-print(results)
-
-# Analyze a commit
-results = swe_agent.analyze_commit("owner/repo", base_commit="abc123", head_commit="def456")
-print(results)
-
-# Analyze and comment on a PR
-results = swe_agent.analyze_and_comment_on_pr("owner/repo", pr_number=123, post_comment=True)
-print(results)
-```
-
-### Web API
-
-The module provides functionality for analyzing and comparing commits:
+### Analyzing a Symbol
 
 ```python
 from codegen import Codebase
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
+from codegen_on_oss.analysis.coordinator import AnalysisCoordinator
 
-# Method 1: Analyze a commit from a repository URL and commit hash
-result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
-    repo_url="https://github.com/owner/repo",
-    commit_hash="abc123"
+# Create a Codebase instance
+codebase = Codebase.from_repo("https://github.com/example/example-repo")
+
+# Create an AnalysisCoordinator instance
+coordinator = AnalysisCoordinator()
+
+# Analyze the repository
+result = await coordinator.analyze_repository(
+    repo_url="https://github.com/example/example-repo",
+    codebase=codebase
 )
-print(result.get_summary())
 
-# Method 2: Analyze a commit by comparing two local repository paths
-analyzer = CommitAnalyzer.from_paths(
-    original_path="/path/to/original/repo",
-    commit_path="/path/to/commit/repo"
-)
-result = analyzer.analyze_commit()
-print(result.get_summary())
-
-# Method 3: Analyze a commit by comparing two codebases
-original_codebase = Codebase.from_directory("/path/to/original/repo")
-commit_codebase = Codebase.from_directory("/path/to/commit/repo")
-
-analyzer = CommitAnalyzer(
-    original_codebase=original_codebase,
-    commit_codebase=commit_codebase
-)
-result = analyzer.analyze_commit()
-print(result.get_summary())
+# Access the symbol data
+symbols_data = result.get("symbols", {})
+symbol_list = symbols_data.get("symbols", {}).get("functions", [])
+for symbol in symbol_list:
+    if symbol["name"] == "example_function":
+        # Found the symbol
+        print(f"Symbol: {symbol['name']}")
+        print(f"File: {symbol['file_path']}")
+        print(f"Lines: {symbol['line_start']}-{symbol['line_end']}")
 ```
 
-### Analysis Server
+## Analysis Pipeline
 
-The module provides a FastAPI server for analyzing repositories, commits, branches, and PRs:
+The analysis pipeline consists of the following stages:
 
-```python
-from codegen_on_oss.analysis.server import run_server
+1. **Repository Analysis**: Analyzes the repository and extracts metadata about it.
+2. **Commit Analysis**: Analyzes the commit and extracts metadata about it.
+3. **Symbol Analysis**: Analyzes symbols (functions, classes, variables) and extracts metadata about them.
+4. **Feature Analysis**: Analyzes features (files or directories) and extracts metadata about them.
+5. **Metrics Collection**: Collects code quality metrics for repositories, files, and symbols.
+6. **Issue Detection**: Detects code quality issues in repositories, files, and symbols.
+7. **Dependency Analysis**: Analyzes dependencies between symbols.
+8. **Snapshot Generation**: Creates a snapshot of the codebase.
 
-# Start the server
-run_server(host="0.0.0.0", port=8000)
-```
+## Metrics
 
-You can then make requests to the server:
+The analysis architecture collects the following metrics:
 
-```bash
-# Analyze a repository
-curl -X POST http://localhost:8000/analyze_repo \
-  -H "Content-Type: application/json" \
-  -d '{"repo_url": "https://github.com/owner/repo"}'
+- **Cyclomatic Complexity**: Measures the complexity of a function or method.
+- **Maintainability Index**: Measures how maintainable the code is.
+- **Halstead Volume**: Measures the size of the code in terms of operators and operands.
+- **Lines of Code**: Counts the number of lines of code.
+- **Comment Ratio**: Measures the ratio of comment lines to code lines.
+- **Method Count**: Counts the number of methods in a class.
+- **Degree of Interest**: Measures how interesting a symbol is based on complexity, volume, and size.
 
-# Analyze a commit
-curl -X POST http://localhost:8000/analyze_commit \
-  -H "Content-Type: application/json" \
-  -d '{"repo_url": "https://github.com/owner/repo", "commit_hash": "abc123"}'
+## Issues
 
-# Compare branches
-curl -X POST http://localhost:8000/compare_branches \
-  -H "Content-Type: application/json" \
-  -d '{"repo_url": "https://github.com/owner/repo", "base_branch": "main", "compare_branch": "feature"}'
+The analysis architecture detects the following issues:
 
-# Analyze a PR
-curl -X POST http://localhost:8000/analyze_pr \
-  -H "Content-Type: application/json" \
-  -d '{"repo_url": "https://github.com/owner/repo", "pr_number": 123}'
-```
+- **High Complexity**: Functions or methods with high cyclomatic complexity.
+- **Low Maintainability**: Code with low maintainability index.
+- **Large Files**: Files with too many lines of code.
+- **Large Functions**: Functions with too many lines of code.
+- **Large Classes**: Classes with too many methods or lines of code.
+- **Low Comment Ratio**: Code with too few comments.
+- **Duplicate Code**: Code that is duplicated across multiple files.
+- **Long Parameter Lists**: Functions with too many parameters.
 
-### Web API
+## Dependencies
 
-The module also provides a FastAPI web interface for analyzing repositories:
+The analysis architecture analyzes the following dependencies:
 
-```python
-from codegen_on_oss.analysis.analysis import app
-import uvicorn
+- **Function Calls**: Functions that call other functions.
+- **Class Inheritance**: Classes that inherit from other classes.
+- **Imports**: Modules that import other modules.
 
-# Run the FastAPI app
-uvicorn.run(app, host="0.0.0.0", port=8000)
-```
+## Snapshots
 
-Then you can make POST requests to `/analyze_repo` with a JSON body:
+The analysis architecture supports differential snapshots to reduce storage requirements. When creating a snapshot, the system checks if a file has changed since the previous snapshot. If not, the file is referenced from the previous snapshot instead of being stored again.
 
-```json
-{
-  "repo_url": "https://github.com/owner/repo"
-}
-```
+## API Integration
 
-## Capabilities
+The analysis architecture is integrated with the API server, providing endpoints for:
 
-### Code Analysis
+- Analyzing repositories and commits.
+- Creating and comparing snapshots.
+- Analyzing symbols and features.
+- Retrieving metrics and issues.
 
-- Analyze code complexity
-- Identify complex functions
-- Find import cycles
-- Find central files
-- Identify dependency cycles
+## Future Enhancements
 
-### Commit and PR Analysis
+Future enhancements to the analysis architecture may include:
 
-- Compare codebases before and after changes
-- Analyze file, function, and class changes
-- Identify high-risk changes
-- Evaluate commit quality
-- Determine if a commit is properly implemented
+- Support for more programming languages.
+- More advanced code quality metrics and issue detection.
+- Integration with more code analysis tools.
+- Support for distributed analysis for large codebases.
+- Real-time analysis with WebSocket support.
 
-### Snapshot Integration
-
-- Create and compare codebase snapshots
-- Analyze differences between snapshots
-- Track changes over time
-
-## Integration with Metrics
-
-The Analysis Module is fully integrated with the CodeMetrics class, which provides:
-
-- Cyclomatic complexity metrics
-- Line-based metrics (LOC, LLOC, SLOC, comments)
-- Maintainability index metrics
-- Inheritance depth metrics
-- Halstead complexity metrics
-
-
-## Integration with Snapshot Module
-
-The Analysis Module integrates with the Snapshot Module to:
-
-- Create snapshots of codebases at specific commits
-- Compare snapshots to analyze changes
-- Track changes over time
-- Analyze commits and PRs
-
-## Example
-
-
-See `example.py` for a demonstration of the basic analysis functionality and `swe_harness_example.py` for a demonstration of the commit and PR analysis functionality.
