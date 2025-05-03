@@ -19,9 +19,10 @@ import networkx as nx
 import requests
 import uvicorn
 from codegen import Codebase
+from codegen.sdk.core.binary_expression import BinaryExpression
+from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.conditional_expression import ConditionalExpression
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.external_module import ExternalModule
 from codegen.sdk.core.file import SourceFile
@@ -29,8 +30,8 @@ from codegen.sdk.core.directory import Directory
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.import_resolution import Import
 from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
-from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
+from codegen.sdk.core.statements.if_statement import IfStatement
+from codegen.sdk.core.statements.switch_statement import SwitchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, SymbolType
@@ -42,11 +43,15 @@ from zoneinfo import ZoneInfo
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.codebase_analysis import (
-    get_codebase_summary,
-    get_file_summary,
-    get_class_summary,
-    get_function_summary,
-    get_symbol_summary
+    calculate_cyclomatic_complexity,
+    calculate_doi,
+    calculate_halstead_volume,
+    calculate_maintainability_index,
+    cc_rank,
+    count_lines,
+    get_maintainability_rank,
+    get_operators_and_operands,
+    print_symbol_attribution,
 )
 from codegen_on_oss.analysis.codegen_sdk_codebase import (
     get_codegen_sdk_subdirectories,
@@ -123,7 +128,7 @@ class CodeAnalyzer:
         self._context = None
         self._initialized = False
         
-    def initialize(self):
+    def initialize(self) -> None:
         """
         Initialize the analyzer by setting up the context and other necessary components.
         This is called automatically when needed but can be called explicitly for eager initialization.
@@ -573,13 +578,13 @@ class CodeAnalyzer:
 
 def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     """
-    Get the number of commits per month for the last 12 months.
-
+    Get monthly commit counts for a repository.
+    
     Args:
-        repo_path: Path to the git repository
-
+        repo_path: Path to the repository
+        
     Returns:
-        Dictionary with month-year as key and number of commits as value
+        A dictionary mapping month strings to commit counts
     """
     end_date = datetime.now(UTC)
     start_date = end_date - timedelta(days=365)
@@ -664,284 +669,7 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
             os.chdir(original_dir)
 
 
-def calculate_cyclomatic_complexity(function):
-    """
-    Calculate the cyclomatic complexity of a function.
-    
-    Args:
-        function: The function to analyze
-        
-    Returns:
-        The cyclomatic complexity score
-    """
-    def analyze_statement(statement):
-        complexity = 0
-
-        if isinstance(statement, IfBlockStatement):
-            complexity += 1
-            if hasattr(statement, "elif_statements"):
-                complexity += len(statement.elif_statements)
-
-        elif isinstance(statement, ForLoopStatement | WhileStatement):
-            complexity += 1
-
-        elif isinstance(statement, TryCatchStatement):
-            complexity += len(getattr(statement, "except_blocks", []))
-
-        if hasattr(statement, "condition") and isinstance(statement.condition, str):
-            complexity += statement.condition.count(
-                " and "
-            ) + statement.condition.count(" or ")
-
-        if hasattr(statement, "nested_code_blocks"):
-            for block in statement.nested_code_blocks:
-                complexity += analyze_block(block)
-
-        return complexity
-
-    def analyze_block(block):
-        if not block or not hasattr(block, "statements"):
-            return 0
-        return sum(analyze_statement(stmt) for stmt in block.statements)
-
-    return (
-        1 + analyze_block(function.code_block) if hasattr(function, "code_block") else 1
-    )
-
-
-def cc_rank(complexity):
-    """
-    Convert cyclomatic complexity score to a letter grade.
-    
-    Args:
-        complexity: The cyclomatic complexity score
-        
-    Returns:
-        A letter grade from A to F
-    """
-    if complexity < 0:
-        raise ValueError("Complexity must be a non-negative value")
-
-    ranks = [
-        (1, 5, "A"),
-        (6, 10, "B"),
-        (11, 20, "C"),
-        (21, 30, "D"),
-        (31, 40, "E"),
-        (41, float("inf"), "F"),
-    ]
-    for low, high, rank in ranks:
-        if low <= complexity <= high:
-            return rank
-    return "F"
-
-
-def calculate_doi(cls):
-    """
-    Calculate the depth of inheritance for a given class.
-    
-    Args:
-        cls: The class to analyze
-        
-    Returns:
-        The depth of inheritance
-    """
-    return len(cls.superclasses)
-
-
-def get_operators_and_operands(function):
-    """
-    Extract operators and operands from a function.
-    
-    Args:
-        function: The function to analyze
-        
-    Returns:
-        A tuple of (operators, operands)
-    """
-    operators = []
-    operands = []
-
-    for statement in function.code_block.statements:
-        for call in statement.function_calls:
-            operators.append(call.name)
-            for arg in call.args:
-                operands.append(arg.source)
-
-        if hasattr(statement, "expressions"):
-            for expr in statement.expressions:
-                if isinstance(expr, BinaryExpression):
-                    operators.extend([op.source for op in expr.operators])
-                    operands.extend([elem.source for elem in expr.elements])
-                elif isinstance(expr, UnaryExpression):
-                    operators.append(expr.ts_node.type)
-                    operands.append(expr.argument.source)
-                elif isinstance(expr, ComparisonExpression):
-                    operators.extend([op.source for op in expr.operators])
-                    operands.extend([elem.source for elem in expr.elements])
-
-        if hasattr(statement, "expression"):
-            expr = statement.expression
-            if isinstance(expr, BinaryExpression):
-                operators.extend([op.source for op in expr.operators])
-                operands.extend([elem.source for elem in expr.elements])
-            elif isinstance(expr, UnaryExpression):
-                operators.append(expr.ts_node.type)
-                operands.append(expr.argument.source)
-            elif isinstance(expr, ComparisonExpression):
-                operators.extend([op.source for op in expr.operators])
-                operands.extend([elem.source for elem in expr.elements])
-
-    return operators, operands
-
-
-def calculate_halstead_volume(operators, operands):
-    """
-    Calculate Halstead volume metrics.
-    
-    Args:
-        operators: List of operators
-        operands: List of operands
-        
-    Returns:
-        A tuple of (volume, N1, N2, n1, n2)
-    """
-    n1 = len(set(operators))
-    n2 = len(set(operands))
-
-    N1 = len(operators)
-    N2 = len(operands)
-
-    N = N1 + N2
-    n = n1 + n2
-
-    if n > 0:
-        volume = N * math.log2(n)
-        return volume, N1, N2, n1, n2
-    return 0, N1, N2, n1, n2
-
-
-def count_lines(source: str):
-    """
-    Count different types of lines in source code.
-    
-    Args:
-        source: The source code as a string
-        
-    Returns:
-        A tuple of (loc, lloc, sloc, comments)
-    """
-    if not source.strip():
-        return 0, 0, 0, 0
-
-    lines = [line.strip() for line in source.splitlines()]
-    loc = len(lines)
-    sloc = len([line for line in lines if line])
-
-    in_multiline = False
-    comments = 0
-    code_lines = []
-
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        code_part = line
-        if not in_multiline and "#" in line:
-            comment_start = line.find("#")
-            if not re.search(r'[\"\\\']\s*#\s*[\"\\\']\s*', line[:comment_start]):
-                code_part = line[:comment_start].strip()
-                if line[comment_start:].strip():
-                    comments += 1
-
-        if ('"""' in line or "'''" in line) and not (
-            line.count('"""') % 2 == 0 or line.count("'''") % 2 == 0
-        ):
-            if in_multiline:
-                in_multiline = False
-                comments += 1
-            else:
-                in_multiline = True
-                comments += 1
-                if line.strip().startswith('"""') or line.strip().startswith("'''"):
-                    code_part = ""
-        elif in_multiline or line.strip().startswith("#"):
-            comments += 1
-            code_part = ""
-
-        if code_part.strip():
-            code_lines.append(code_part)
-
-        i += 1
-
-    lloc = 0
-    continued_line = False
-    for line in code_lines:
-        if continued_line:
-            if not any(line.rstrip().endswith(c) for c in ("\\", ",", "{", "[", "(")):
-                continued_line = False
-            continue
-
-        lloc += len([stmt for stmt in line.split(";") if stmt.strip()])
-
-        if any(line.rstrip().endswith(c) for c in ("\\", ",", "{", "[", "(")):
-            continued_line = True
-
-    return loc, lloc, sloc, comments
-
-
-def calculate_maintainability_index(
-    halstead_volume: float, cyclomatic_complexity: float, loc: int
-) -> int:
-    """
-    Calculate the normalized maintainability index for a given function.
-    
-    Args:
-        halstead_volume: The Halstead volume
-        cyclomatic_complexity: The cyclomatic complexity
-        loc: Lines of code
-        
-    Returns:
-        The maintainability index score (0-100)
-    """
-    if loc <= 0:
-        return 100
-
-    try:
-        raw_mi = (
-            171
-            - 5.2 * math.log(max(1, halstead_volume))
-            - 0.23 * cyclomatic_complexity
-            - 16.2 * math.log(max(1, loc))
-        )
-        normalized_mi = max(0, min(100, raw_mi * 100 / 171))
-        return int(normalized_mi)
-    except (ValueError, TypeError):
-        return 0
-
-
-def get_maintainability_rank(mi_score: float) -> str:
-    """
-    Convert maintainability index score to a letter grade.
-    
-    Args:
-        mi_score: The maintainability index score
-        
-    Returns:
-        A letter grade from A to F
-    """
-    if mi_score >= 85:
-        return "A"
-    elif mi_score >= 65:
-        return "B"
-    elif mi_score >= 45:
-        return "C"
-    elif mi_score >= 25:
-        return "D"
-    else:
-        return "F"
-
-
-def get_github_repo_description(repo_url):
+def get_github_repo_description(repo_url: str) -> str:
     """
     Get the description of a GitHub repository.
     
@@ -970,7 +698,7 @@ class RepoRequest(BaseModel):
 @app.post("/analyze_repo")
 async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
     """
-    Analyze a repository and return comprehensive metrics.
+    Analyze a repository and return various metrics.
     
     Args:
         request: The repository request containing the repo URL
@@ -1011,44 +739,6 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
         "monthly_commits": monthly_commits,
         "import_analysis": import_analysis,
         "structure_analysis": structure_analysis
-    }
-    
-    # Add depth of inheritance
-    total_doi = sum(calculate_doi(cls) for cls in codebase.classes)
-    results["depth_of_inheritance"] = {
-        "average": (total_doi / len(codebase.classes) if codebase.classes else 0),
-    }
-    
-    # Add Halstead metrics
-    total_volume = 0
-    num_callables = 0
-    total_mi = 0
-    
-    for func in codebase.functions:
-        if not hasattr(func, "code_block"):
-            continue
-            
-        complexity = calculate_cyclomatic_complexity(func)
-        operators, operands = get_operators_and_operands(func)
-        volume, _, _, _, _ = calculate_halstead_volume(operators, operands)
-        loc = len(func.code_block.source.splitlines())
-        mi_score = calculate_maintainability_index(volume, complexity, loc)
-        
-        total_volume += volume
-        total_mi += mi_score
-        num_callables += 1
-    
-    results["halstead_metrics"] = {
-        "total_volume": int(total_volume),
-        "average_volume": (
-            int(total_volume / num_callables) if num_callables > 0 else 0
-        ),
-    }
-    
-    results["maintainability_index"] = {
-        "average": (
-            int(total_mi / num_callables) if num_callables > 0 else 0
-        ),
     }
     
     return results
@@ -1133,3 +823,4 @@ async def analyze_file(request: FileRequest) -> Dict[str, Any]:
 if __name__ == "__main__":
     # Run the FastAPI app locally with uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
