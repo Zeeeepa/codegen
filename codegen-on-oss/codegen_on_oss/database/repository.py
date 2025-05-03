@@ -5,7 +5,7 @@ This module provides repository classes for performing CRUD operations on databa
 """
 
 import logging
-from typing import List, Optional, Dict, Any, TypeVar, Generic, Type, Union
+from typing import List, Optional, Dict, Any, TypeVar, Generic, Type, Union, cast, Protocol
 from datetime import datetime
 from uuid import uuid4
 
@@ -21,8 +21,13 @@ from codegen_on_oss.database.connection import get_db_manager
 
 logger = logging.getLogger(__name__)
 
+# Define a Protocol for SQLAlchemy models
+class SQLAlchemyModel(Protocol):
+    """Protocol for SQLAlchemy models with an ID attribute."""
+    id: str
+
 # Type variable for generic repository
-T = TypeVar('T', bound=Base)
+T = TypeVar('T', bound=SQLAlchemyModel)
 
 class BaseRepository(Generic[T]):
     """
@@ -714,4 +719,3 @@ class WebhookConfigRepository(BaseRepository[WebhookConfig]):
             Updated WebhookConfig instance if found, None otherwise.
         """
         return self.update(webhook_id, last_triggered=datetime.utcnow())
-

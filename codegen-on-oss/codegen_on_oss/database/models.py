@@ -7,7 +7,7 @@ and other data in a relational database.
 
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Type, cast
 
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, 
@@ -16,7 +16,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
-Base = declarative_base()
+# Create a properly typed Base for mypy
+Base = declarative_base()  # type: ignore
 
 # Association tables for many-to-many relationships
 snapshot_file_association = Table(
@@ -340,4 +341,3 @@ class WebhookConfig(Base):
     
     def __repr__(self):
         return f"<WebhookConfig(id='{self.id}', url='{self.url}')>"
-
