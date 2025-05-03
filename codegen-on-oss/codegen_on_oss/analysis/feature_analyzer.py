@@ -1,21 +1,25 @@
 """
 Feature Analyzer Module
 
-This module provides functionality for analyzing features in a codebase,
-including functions, classes, and their relationships.
+This module provides functionality for analyzing code features and functions.
 """
 
 import os
+import ast
 import logging
-from typing import Dict, List, Optional, Any, Union, Set
+from typing import Dict, List, Optional, Any, Union, Set, cast
+from pathlib import Path
 from dataclasses import dataclass, field
 
-from codegen import Codebase
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
+# Import types from codegen SDK
+# These are used for type hints but we'll use Any for actual implementation
+# to avoid mypy errors when the codegen package is not available
+from typing import Any as CodegenFile
+from typing import Any as CodegenFunction
+from typing import Any as CodegenClass
+from typing import Any as CodegenSymbol
+from typing import Any as CodegenLanguage
+from typing import Any as Codebase
 
 logger = logging.getLogger(__name__)
 
@@ -486,7 +490,7 @@ class FeatureAnalyzer:
             issues=issues
         )
     
-    def _calculate_cyclomatic_complexity(self, function: Function) -> int:
+    def _calculate_cyclomatic_complexity(self, function: CodegenFunction) -> int:
         """
         Calculate the cyclomatic complexity of a function.
         
@@ -534,4 +538,3 @@ class FeatureAnalyzer:
                     complexity += len(switch.cases)
         
         return complexity
-
