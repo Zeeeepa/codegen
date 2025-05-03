@@ -1,33 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codegen-on-oss"
+version = "0.1.0"
+authors = [
+    {name = "Codegen Team", email = "info@codegen.sh"},
+]
+description = "Codegen on OSS"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "codegen>=0.1.0",
+    "fastapi>=0.95.0",
+    "uvicorn>=0.21.1",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "boto3>=1.26.0",
+    "networkx>=3.0",
+    "requests>=2.28.0",
+    "aiohttp>=3.8.0",
+    "websockets>=11.0.0",
+    "psycopg2-binary>=2.9.0",
+    "alembic>=1.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.3.1",
+    "pytest-cov>=4.1.0",
+    "black>=23.3.0",
+    "isort>=5.12.0",
+    "mypy>=1.3.0",
+    "ruff>=0.0.262",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/codegen-sh/codegen"
+"Bug Tracker" = "https://github.com/codegen-sh/codegen/issues"
+
+[tool.setuptools.packages.find]
+include = ["codegen_on_oss*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-strict_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-follow_imports = "silent"
-ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.analysis"
-ignore_errors = true
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+select = ["E", "F", "B", "I"]
+ignore = []
 
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.commit_analysis"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.swe_harness_agent"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.snapshot.codebase_snapshot"
-ignore_errors = true
-
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+python_classes = "Test*"
