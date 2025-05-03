@@ -5,24 +5,42 @@ This module serves as a central hub for all code analysis functionality, integra
 various specialized analysis components into a cohesive system.
 """
 
-from typing import Any
+import contextlib
+import math
+import os
+import re
+import subprocess
+import tempfile
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
+import requests
 import uvicorn
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.directory import Directory
+from codegen.sdk.core.expressions.binary_expression import BinaryExpression
+from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.unary_expression import UnaryExpression
+from codegen.sdk.core.external_module import ExternalModule
 from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.import_resolution import Import
+from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
+from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
+from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
+from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, SymbolType
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# Import from other analysis modules
 from codegen_on_oss.analysis.analysis_import import (
     create_graph_from_codebase,
+    convert_all_calls_to_kwargs,
     find_import_cycles,
     find_problematic_import_loops,
 )
@@ -33,11 +51,44 @@ from codegen_on_oss.analysis.codebase_analysis import (
     get_function_summary,
     get_symbol_summary,
 )
-
-# Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.document_functions import run as document_functions_run
+from codegen_on_oss.analysis.codegen_sdk_codebase import (
+    get_codegen_sdk_subdirectories,
+    get_codegen_sdk_codebase,
+)
+from codegen_on_oss.analysis.current_code_codebase import (
+    get_graphsitter_repo_path,
+    get_codegen_codebase_base_path,
+    get_current_code_codebase,
+    import_all_codegen_sdk_modules,
+    DocumentedObjects,
+    get_documented_objects,
+)
+from codegen_on_oss.analysis.document_functions import (
+    hop_through_imports,
+    get_extended_context,
+    run as document_functions_run,
+)
 from codegen_on_oss.analysis.error_context import CodeError, ErrorContextAnalyzer
+from codegen_on_oss.analysis.mdx_docs_generation import (
+    render_mdx_page_for_class,
+    render_mdx_page_title,
+    render_mdx_inheritence_section,
+    render_mdx_attributes_section,
+    render_mdx_methods_section,
+    render_mdx_for_attribute,
+    format_parameter_for_mdx,
+    format_parameters_for_mdx,
+    format_return_for_mdx,
+    render_mdx_for_method,
+    get_mdx_route_for_class,
+    format_type_string,
+    resolve_type_string,
+    format_builtin_type_string,
+    span_type_string_by_pipe,
+    parse_link,
+)
+from codegen_on_oss.analysis.module_dependencies import run as module_dependencies_run
 from codegen_on_oss.analysis.symbolattr import print_symbol_attribution
 
 # Create FastAPI app
@@ -50,7 +101,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 class CodeAnalyzer:
     """
@@ -544,6 +594,310 @@ class CodeAnalyzer:
             A dictionary with detailed context information
         """
         return self.error_analyzer.get_error_context(error)
+        
+    def convert_args_to_kwargs(self) -> None:
+        """
+        Convert all function call arguments to keyword arguments.
+        """
+        convert_all_calls_to_kwargs(self.codebase)
+    
+    def visualize_module_dependencies(self) -> None:
+        """
+        Visualize module dependencies in the codebase.
+        """
+        module_dependencies_run(self.codebase)
+    
+    def generate_mdx_documentation(self, class_name: str) -> str:
+        """
+        Generate MDX documentation for a class.
+        
+        Args:
+            class_name: Name of the class to document
+            
+        Returns:
+            MDX documentation as a string
+        """
+        for cls in self.codebase.classes:
+            if cls.name == class_name:
+                return render_mdx_page_for_class(cls)
+        return f"Class not found: {class_name}"
+    
+    def print_symbol_attribution(self) -> None:
+        """
+        Print attribution information for symbols in the codebase.
+        """
+        print_symbol_attribution(self.codebase)
+    
+    def get_extended_symbol_context(self, symbol_name: str, degree: int = 2) -> Dict[str, List[str]]:
+        """
+        Get extended context (dependencies and usages) for a symbol.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            degree: How many levels deep to collect dependencies and usages
+            
+        Returns:
+            A dictionary containing dependencies and usages
+        """
+        symbol = self.find_symbol_by_name(symbol_name)
+        if symbol:
+            dependencies, usages = get_extended_context(symbol, degree)
+            return {
+                "dependencies": [dep.name for dep in dependencies],
+                "usages": [usage.name for usage in usages]
+            }
+        return {"dependencies": [], "usages": []}
+    
+    def get_file_imports(self, file_path: str) -> List[str]:
+        """
+        Get all imports in a file.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            A list of import statements
+        """
+        file = self.find_file_by_path(file_path)
+        if file and hasattr(file, "imports"):
+            return [imp.source for imp in file.imports]
+        return []
+    
+    def get_file_exports(self, file_path: str) -> List[str]:
+        """
+        Get all exports from a file.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            A list of exported symbol names
+        """
+        file = self.find_file_by_path(file_path)
+        if not file:
+            return []
+            
+        exports = []
+        for symbol in self.codebase.symbols:
+            if hasattr(symbol, "file") and symbol.file == file:
+                exports.append(symbol.name)
+                
+        return exports
+    
+    def analyze_complexity(self, file_path: str = None) -> Dict[str, Any]:
+        """
+        Analyze code complexity metrics for the codebase or a specific file.
+        
+        Args:
+            file_path: Optional path to a specific file to analyze
+            
+        Returns:
+            A dictionary containing complexity metrics
+        """
+        files_to_analyze = []
+        if file_path:
+            file = self.find_file_by_path(file_path)
+            if file:
+                files_to_analyze = [file]
+            else:
+                return {"error": f"File not found: {file_path}"}
+        else:
+            files_to_analyze = self.codebase.files
+            
+        # Calculate complexity metrics
+        results = {
+            "cyclomatic_complexity": {
+                "total": 0,
+                "average": 0,
+                "max": 0,
+                "max_file": "",
+                "max_function": "",
+                "by_file": {}
+            },
+            "halstead_complexity": {
+                "total": 0,
+                "average": 0,
+                "max": 0,
+                "max_file": "",
+                "by_file": {}
+            },
+            "maintainability_index": {
+                "total": 0,
+                "average": 0,
+                "min": 100,
+                "min_file": "",
+                "by_file": {}
+            },
+            "line_metrics": {
+                "total_loc": 0,
+                "total_lloc": 0,
+                "total_sloc": 0,
+                "total_comments": 0,
+                "comment_ratio": 0,
+                "by_file": {}
+            }
+        }
+        
+        # Process each file
+        for file in files_to_analyze:
+            # Skip non-Python files
+            if not file.name.endswith(".py"):
+                continue
+                
+            file_path = file.name
+            file_content = file.content
+            
+            # Calculate cyclomatic complexity
+            cc_total = 0
+            cc_max = 0
+            cc_max_function = ""
+            
+            # Count decision points (if, for, while, etc.)
+            for func in file.functions:
+                func_cc = 1  # Base complexity
+                
+                # Count control structures
+                for node in func.ast_node.body:
+                    if isinstance(node, (ast.If, ast.For, ast.While, ast.Try)):
+                        func_cc += 1
+                    
+                    # Count logical operators in conditions
+                    if isinstance(node, ast.If) and isinstance(node.test, ast.BoolOp):
+                        func_cc += len(node.test.values) - 1
+                
+                cc_total += func_cc
+                if func_cc > cc_max:
+                    cc_max = func_cc
+                    cc_max_function = func.name
+            
+            # Update cyclomatic complexity metrics
+            results["cyclomatic_complexity"]["by_file"][file_path] = {
+                "total": cc_total,
+                "average": cc_total / len(file.functions) if file.functions else 0,
+                "max": cc_max,
+                "max_function": cc_max_function
+            }
+            
+            results["cyclomatic_complexity"]["total"] += cc_total
+            if cc_max > results["cyclomatic_complexity"]["max"]:
+                results["cyclomatic_complexity"]["max"] = cc_max
+                results["cyclomatic_complexity"]["max_file"] = file_path
+                results["cyclomatic_complexity"]["max_function"] = cc_max_function
+            
+            # Calculate line metrics
+            loc = len(file_content.splitlines())
+            lloc = sum(1 for line in file_content.splitlines() if line.strip() and not line.strip().startswith("#"))
+            sloc = sum(1 for line in file_content.splitlines() if line.strip())
+            comments = sum(1 for line in file_content.splitlines() if line.strip().startswith("#"))
+            
+            results["line_metrics"]["by_file"][file_path] = {
+                "loc": loc,
+                "lloc": lloc,
+                "sloc": sloc,
+                "comments": comments,
+                "comment_ratio": comments / loc if loc else 0
+            }
+            
+            results["line_metrics"]["total_loc"] += loc
+            results["line_metrics"]["total_lloc"] += lloc
+            results["line_metrics"]["total_sloc"] += sloc
+            results["line_metrics"]["total_comments"] += comments
+            
+            # Simple Halstead complexity approximation
+            operators = len(re.findall(r'[\+\-\*/=<>!&|^~]', file_content))
+            operands = len(re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', file_content))
+            
+            n1 = len(set(re.findall(r'[\+\-\*/=<>!&|^~]', file_content)))
+            n2 = len(set(re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', file_content)))
+            
+            N = operators + operands
+            n = n1 + n2
+            
+            # Calculate Halstead metrics
+            if n1 > 0 and n2 > 0:
+                volume = N * math.log2(n)
+                difficulty = (n1 / 2) * (operands / n2)
+                effort = volume * difficulty
+            else:
+                volume = 0
+                difficulty = 0
+                effort = 0
+            
+            results["halstead_complexity"]["by_file"][file_path] = {
+                "volume": volume,
+                "difficulty": difficulty,
+                "effort": effort
+            }
+            
+            results["halstead_complexity"]["total"] += effort
+            if effort > results["halstead_complexity"]["max"]:
+                results["halstead_complexity"]["max"] = effort
+                results["halstead_complexity"]["max_file"] = file_path
+            
+            # Calculate maintainability index
+            if lloc > 0:
+                mi = 171 - 5.2 * math.log(volume) - 0.23 * cc_total - 16.2 * math.log(lloc)
+                mi = max(0, min(100, mi))
+            else:
+                mi = 100
+                
+            results["maintainability_index"]["by_file"][file_path] = mi
+            results["maintainability_index"]["total"] += mi
+            
+            if mi < results["maintainability_index"]["min"]:
+                results["maintainability_index"]["min"] = mi
+                results["maintainability_index"]["min_file"] = file_path
+        
+        # Calculate averages
+        num_files = len(results["cyclomatic_complexity"]["by_file"])
+        if num_files > 0:
+            results["cyclomatic_complexity"]["average"] = results["cyclomatic_complexity"]["total"] / num_files
+            results["halstead_complexity"]["average"] = results["halstead_complexity"]["total"] / num_files
+            results["maintainability_index"]["average"] = results["maintainability_index"]["total"] / num_files
+            
+        total_loc = results["line_metrics"]["total_loc"]
+        if total_loc > 0:
+            results["line_metrics"]["comment_ratio"] = results["line_metrics"]["total_comments"] / total_loc
+            
+        return results
+    
+    def find_central_files(self) -> List[Dict[str, Any]]:
+        """
+        Find the most central files in the codebase based on dependency analysis.
+        
+        Returns:
+            A list of dictionaries containing file information and centrality metrics
+        """
+        G = self.get_dependency_graph()
+        
+        # Calculate centrality metrics
+        degree_centrality = nx.degree_centrality(G)
+        betweenness_centrality = nx.betweenness_centrality(G)
+        closeness_centrality = nx.closeness_centrality(G)
+        
+        # Combine metrics
+        centrality = {}
+        for node in G.nodes():
+            centrality[node] = {
+                "file": node,
+                "degree": degree_centrality.get(node, 0),
+                "betweenness": betweenness_centrality.get(node, 0),
+                "closeness": closeness_centrality.get(node, 0),
+                "combined": (
+                    degree_centrality.get(node, 0) + 
+                    betweenness_centrality.get(node, 0) + 
+                    closeness_centrality.get(node, 0)
+                ) / 3
+            }
+        
+        # Sort by combined centrality
+        sorted_centrality = sorted(
+            centrality.values(), 
+            key=lambda x: x["combined"], 
+            reverse=True
+        )
+        
+        return sorted_centrality[:10]  # Return top 10 most central files
 
 
 # Request models for API endpoints
@@ -580,6 +934,20 @@ class ErrorRequest(BaseModel):
     repo_url: str
     file_path: str | None = None
     function_name: str | None = None
+
+
+class ComplexityRequest(BaseModel):
+    """Request model for complexity analysis."""
+
+    repo_url: str
+    file_path: str | None = None
+
+
+class DocumentationRequest(BaseModel):
+    """Request model for documentation generation."""
+
+    repo_url: str
+    class_name: str | None = None
 
 
 # API endpoints
@@ -769,6 +1137,73 @@ async def analyze_errors(request: ErrorRequest) -> dict[str, Any]:
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error analyzing errors: {e!s}"
+        ) from e
+
+
+@app.post("/analyze_complexity")
+async def analyze_complexity(request: ComplexityRequest) -> dict[str, Any]:
+    """
+    Analyze code complexity metrics for a repository or specific file.
+
+    Args:
+        request: The complexity request containing the repo URL and optional file path
+
+    Returns:
+        A dictionary of complexity analysis results
+    """
+    repo_url = request.repo_url
+    file_path = request.file_path
+
+    try:
+        codebase = Codebase.from_repo(repo_url)
+        analyzer = CodeAnalyzer(codebase)
+
+        # Analyze complexity
+        complexity_results = analyzer.analyze_complexity(file_path)
+
+        return {
+            "repo_url": repo_url,
+            "file_path": file_path,
+            "complexity_analysis": complexity_results
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error analyzing complexity: {e!s}"
+        ) from e
+
+
+@app.post("/generate_documentation")
+async def generate_documentation(request: DocumentationRequest) -> dict[str, Any]:
+    """
+    Generate documentation for a class or the entire codebase.
+
+    Args:
+        request: The documentation request containing the repo URL and optional class name
+
+    Returns:
+        A dictionary containing the generated documentation
+    """
+    repo_url = request.repo_url
+    class_name = request.class_name
+
+    try:
+        codebase = Codebase.from_repo(repo_url)
+        analyzer = CodeAnalyzer(codebase)
+
+        if class_name:
+            # Generate documentation for a specific class
+            mdx_doc = analyzer.generate_mdx_documentation(class_name)
+            return {
+                "class_name": class_name,
+                "documentation": mdx_doc
+            }
+        else:
+            # Generate documentation for all functions
+            analyzer.document_functions()
+            return {"message": "Documentation generated for all functions"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error generating documentation: {e!s}"
         ) from e
 
 
