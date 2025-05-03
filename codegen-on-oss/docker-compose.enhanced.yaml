@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: codegen
+      POSTGRES_PASSWORD: codegen
+      POSTGRES_DB: codegen
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codegen"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # API server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      CODEGEN_DB_URL: postgresql://codegen:codegen@postgres/codegen
+      CODEGEN_CACHE_BACKEND: redis
+      CODEGEN_CACHE_REDIS_HOST: redis
+      CODEGEN_CACHE_REDIS_PORT: 6379
+      CODEGEN_REST_HOST: 0.0.0.0
+      CODEGEN_REST_PORT: 8000
+      CODEGEN_WEBSOCKET_HOST: 0.0.0.0
+      CODEGEN_WEBSOCKET_PORT: 8765
+    ports:
+      - "8000:8000"
+      - "8765:8765"
+    volumes:
+      - ./:/app
+    command: ["codegen-on-oss"]
+
+  # Database initialization
+  db-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      CODEGEN_DB_URL: postgresql://codegen:codegen@postgres/codegen
+    volumes:
+      - ./:/app
+    command: ["codegen-on-oss-db", "init"]
+    restart: on-failure
+
+volumes:
+  postgres_data:
+  redis_data:
+

@@ -1,33 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "codegen-on-oss"
+version = "0.1.0"
+description = "Codegen on OSS"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Codegen Team", email = "team@codegen.sh" },
+]
+dependencies = [
+    "codegen>=0.1.0",
+    "boto3>=1.28.0",
+    "platformdirs>=3.10.0",
+    "fastapi>=0.103.1",
+    "uvicorn>=0.23.2",
+    "pydantic>=2.3.0",
+    "sqlalchemy>=2.0.20",
+    "alembic>=1.12.0",
+    "psycopg2-binary>=2.9.7",
+    "redis>=5.0.0",
+    "websockets>=11.0.3",
+    "graphene>=3.3",
+    "graphql-core>=3.2.3",
+    "starlette>=0.27.0",
+    "python-multipart>=0.0.6",
+    "httpx>=0.24.1",
+    "aiohttp>=3.8.5",
+    "python-dotenv>=1.0.0",
+    "click>=8.1.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.1",
+    "ruff>=0.0.287",
+]
+
+[project.scripts]
+codegen-on-oss = "codegen_on_oss.app:main"
+codegen-on-oss-db = "codegen_on_oss.database.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["codegen_on_oss"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-strict_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-follow_imports = "silent"
-ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.analysis"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.commit_analysis"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.analysis.swe_harness_agent"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "codegen_on_oss.snapshot.codebase_snapshot"
-ignore_errors = true
-
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+select = ["E", "F", "B", "I"]
+ignore = []

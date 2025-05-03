@@ -1,34 +1,22 @@
-# Install uv
-FROM python:3.12-slim AS installer
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+FROM python:3.11-slim
 
-# Change the working directory to the `app` directory
 WORKDIR /app
 
-# Copy the lockfile and `pyproject.toml` into the image
-COPY uv.lock /app/uv.lock
-COPY pyproject.toml /app/pyproject.toml
-
-# Install dependencies
-RUN apt-get update && apt-get install -y git \
-    && uv sync --frozen --no-install-project \
-    && apt-get clean \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements and install dependencies
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir -e .
 
-FROM python:3.12-slim
-
-ENV PATH="/venv/bin:/app/scripts:$PATH"
-# Copy the project into the image
-COPY --from=installer /app/.venv/ /venv
-
-RUN apt-get update && apt-get install -y postgresql-client \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-
-WORKDIR /app
-
+# Copy the rest of the application
 COPY . .
 
-CMD ["python", "modal_run.py"]
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Run the application
+CMD ["codegen-on-oss"]
