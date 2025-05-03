@@ -8,10 +8,9 @@ from .event_bus import Event, EventType, event_bus
 from .handlers import AnalysisHandler, SnapshotHandler
 
 __all__ = [
-    'Event',
-    'EventType',
-    'event_bus',
-    'AnalysisHandler',
-    'SnapshotHandler',
+    "Event",
+    "EventType",
+    "event_bus",
+    "AnalysisHandler",
+    "SnapshotHandler",
 ]
-
