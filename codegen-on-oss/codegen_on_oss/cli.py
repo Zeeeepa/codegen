@@ -13,7 +13,10 @@ from codegen_on_oss.database.service import DatabaseService, DatabaseConfig
 from codegen_on_oss.events.event_bus import Event, EventType, event_bus
 from codegen_on_oss.events.handlers import AnalysisHandler, SnapshotHandler
 from codegen_on_oss.api.server import run_server
-from codegen_on_oss.snapshot.enhanced_snapshot import EnhancedCodebaseSnapshot, EnhancedSnapshotManager
+from codegen_on_oss.snapshot.enhanced_snapshot import (
+    EnhancedCodebaseSnapshot,
+    EnhancedSnapshotManager,
+)
 from codegen import Codebase
 
 logger.remove(0)
@@ -158,16 +161,16 @@ def serve(
     """
     logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
     logger.info(f"Starting API server on {host}:{port}")
-    
+
     # Initialize database
     db_config = DatabaseConfig()
     db_service = DatabaseService(db_config)
     db_service.create_tables()
-    
+
     # Initialize event handlers
     analysis_handler = AnalysisHandler(db_service)
     snapshot_handler = SnapshotHandler(db_service)
-    
+
     # Run the server
     run_server(host=host, port=port)
 
@@ -206,16 +209,16 @@ def snapshot(
     Create a snapshot of a repository.
     """
     logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
-    
+
     try:
         # Create a codebase from the repository
         logger.info(f"Creating codebase from {url}")
         codebase = Codebase.from_repo(url)
-        
+
         if commit_hash:
             logger.info(f"Checking out commit {commit_hash}")
             codebase.checkout(commit=commit_hash)
-        
+
         # Create a snapshot
         if enhanced:
             logger.info("Creating enhanced snapshot")
@@ -223,15 +226,16 @@ def snapshot(
         else:
             logger.info("Creating basic snapshot")
             from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
+
             snapshot = CodebaseSnapshot(codebase, commit_sha=commit_hash)
-        
+
         # Save the snapshot to a file
         logger.info(f"Saving snapshot to {output_path}")
         snapshot.save_to_file(output_path)
-        
+
         logger.info(f"Snapshot created successfully: {snapshot.snapshot_id}")
         logger.info(snapshot.get_summary())
-        
+
     except Exception as e:
         logger.error(f"Error creating snapshot: {e}")
         sys.exit(1)
@@ -268,26 +272,28 @@ def compare(
     Compare two snapshots.
     """
     import json
-    
+
     logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
-    
+
     try:
         # Load the snapshots
         logger.info(f"Loading snapshots: {snapshot1} and {snapshot2}")
-        
+
         # Check if these are enhanced snapshots
-        with open(snapshot1, 'r') as f:
+        with open(snapshot1, "r") as f:
             data1 = json.load(f)
-        
-        with open(snapshot2, 'r') as f:
+
+        with open(snapshot2, "r") as f:
             data2 = json.load(f)
-        
+
         is_enhanced = "enhanced_metadata" in data1 and "enhanced_metadata" in data2
-        
+
         if is_enhanced:
             logger.info("Using enhanced snapshot comparison")
-            from codegen_on_oss.snapshot.enhanced_snapshot import EnhancedCodebaseSnapshot
-            
+            from codegen_on_oss.snapshot.enhanced_snapshot import (
+                EnhancedCodebaseSnapshot,
+            )
+
             # We would need to reconstruct the codebases to fully deserialize
             # For now, just use the metadata for comparison
             comparison = {
@@ -311,27 +317,37 @@ def compare(
                     "total_removed": 0,
                     "total_modified": 0,
                     "total_unchanged": 0,
-                }
+                },
             }
         else:
             logger.info("Using basic snapshot comparison")
             from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
-            
+
             snapshot1_obj = CodebaseSnapshot.load_from_file(snapshot1)
             snapshot2_obj = CodebaseSnapshot.load_from_file(snapshot2)
-            
+
             # Basic comparison
-            files1 = {filepath: metrics for filepath, metrics in snapshot1_obj.file_metrics.items()}
-            files2 = {filepath: metrics for filepath, metrics in snapshot2_obj.file_metrics.items()}
-            
+            files1 = {
+                filepath: metrics
+                for filepath, metrics in snapshot1_obj.file_metrics.items()
+            }
+            files2 = {
+                filepath: metrics
+                for filepath, metrics in snapshot2_obj.file_metrics.items()
+            }
+
             added_files = [filepath for filepath in files2 if filepath not in files1]
             removed_files = [filepath for filepath in files1 if filepath not in files2]
             modified_files = []
-            
+
             for filepath in files1:
-                if filepath in files2 and files1[filepath]["content_hash"] != files2[filepath]["content_hash"]:
+                if (
+                    filepath in files2
+                    and files1[filepath]["content_hash"]
+                    != files2[filepath]["content_hash"]
+                ):
                     modified_files.append(filepath)
-            
+
             comparison = {
                 "snapshot1": {
                     "id": snapshot1_obj.snapshot_id,
@@ -347,26 +363,40 @@ def compare(
                     "added": added_files,
                     "removed": removed_files,
                     "modified": modified_files,
-                    "unchanged": [filepath for filepath in files1 if filepath in files2 and files1[filepath]["content_hash"] == files2[filepath]["content_hash"]],
+                    "unchanged": [
+                        filepath
+                        for filepath in files1
+                        if filepath in files2
+                        and files1[filepath]["content_hash"]
+                        == files2[filepath]["content_hash"]
+                    ],
                     "total_added": len(added_files),
                     "total_removed": len(removed_files),
                     "total_modified": len(modified_files),
-                    "total_unchanged": len([filepath for filepath in files1 if filepath in files2 and files1[filepath]["content_hash"] == files2[filepath]["content_hash"]]),
-                }
+                    "total_unchanged": len(
+                        [
+                            filepath
+                            for filepath in files1
+                            if filepath in files2
+                            and files1[filepath]["content_hash"]
+                            == files2[filepath]["content_hash"]
+                        ]
+                    ),
+                },
             }
-        
+
         # Save the comparison to a file
         logger.info(f"Saving comparison to {output_path}")
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(comparison, f, indent=2)
-        
+
         # Print a summary
         logger.info(f"Comparison created successfully")
         logger.info(f"Added files: {comparison['files']['total_added']}")
         logger.info(f"Removed files: {comparison['files']['total_removed']}")
         logger.info(f"Modified files: {comparison['files']['total_modified']}")
         logger.info(f"Unchanged files: {comparison['files']['total_unchanged']}")
-        
+
     except Exception as e:
         logger.error(f"Error comparing snapshots: {e}")
         sys.exit(1)
@@ -408,26 +438,27 @@ def analyze(
     """
     import json
     from datetime import datetime
-    
+
     logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
-    
+
     try:
         # Create a codebase from the repository
         logger.info(f"Creating codebase from {url}")
         codebase = Codebase.from_repo(url)
-        
+
         if commit_hash:
             logger.info(f"Checking out commit {commit_hash}")
             codebase.checkout(commit=commit_hash)
-        
+
         # Create a snapshot
         logger.info("Creating snapshot")
         from codegen_on_oss.snapshot.enhanced_snapshot import EnhancedCodebaseSnapshot
+
         snapshot = EnhancedCodebaseSnapshot(codebase, commit_sha=commit_hash)
-        
+
         # Perform analysis
         results = {}
-        
+
         if analysis_type in ["dependency", "all"]:
             logger.info("Performing dependency analysis")
             results["dependency"] = {
@@ -438,19 +469,32 @@ def analyze(
                 },
                 "summary": "Dependency analysis completed successfully.",
             }
-        
+
         if analysis_type in ["complexity", "all"]:
             logger.info("Performing complexity analysis")
             results["complexity"] = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "data": {
                     "function_metrics": snapshot.function_metrics,
-                    "average_complexity": sum(func["cyclomatic_complexity"] for func in snapshot.function_metrics.values()) / max(1, len(snapshot.function_metrics)),
-                    "max_complexity": max([func["cyclomatic_complexity"] for func in snapshot.function_metrics.values()]) if snapshot.function_metrics else 0,
+                    "average_complexity": sum(
+                        func["cyclomatic_complexity"]
+                        for func in snapshot.function_metrics.values()
+                    )
+                    / max(1, len(snapshot.function_metrics)),
+                    "max_complexity": (
+                        max(
+                            [
+                                func["cyclomatic_complexity"]
+                                for func in snapshot.function_metrics.values()
+                            ]
+                        )
+                        if snapshot.function_metrics
+                        else 0
+                    ),
                 },
                 "summary": "Complexity analysis completed successfully.",
             }
-        
+
         if analysis_type in ["security", "all"]:
             logger.info("Performing security analysis")
             results["security"] = {
@@ -458,14 +502,14 @@ def analyze(
                 "data": snapshot.security_metrics,
                 "summary": "Security analysis completed successfully.",
             }
-        
+
         # Save the analysis results to a file
         logger.info(f"Saving analysis results to {output_path}")
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(results, f, indent=2)
-        
+
         logger.info(f"Analysis completed successfully")
-        
+
     except Exception as e:
         logger.error(f"Error analyzing repository: {e}")
         sys.exit(1)
@@ -519,7 +563,7 @@ def init_db(
     Initialize the database.
     """
     logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
-    
+
     try:
         # Create database configuration
         db_config = DatabaseConfig(
@@ -530,16 +574,16 @@ def init_db(
             database=db_name,
             echo=debug,
         )
-        
+
         # Create database service
         db_service = DatabaseService(db_config)
-        
+
         # Create tables
         logger.info("Creating database tables")
         db_service.create_tables()
-        
+
         logger.info("Database initialized successfully")
-        
+
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         sys.exit(1)
@@ -547,4 +591,3 @@ def init_db(
 
 if __name__ == "__main__":
     cli()
-
