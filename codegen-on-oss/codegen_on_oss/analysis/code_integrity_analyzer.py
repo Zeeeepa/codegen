@@ -42,7 +42,7 @@ def get_codebase_summary(codebase: Codebase) -> str:
 - {len(list(codebase.symbols))} symbols
 \t- {len(list(codebase.classes))} classes
 \t- {len(list(codebase.functions))} functions
-\t- {len(list(codebase.global_vars))} global_vars
+\t- {len(list(codebase.global_vars))} global vars
 \t- {len(list(codebase.interfaces))} interfaces
 """
     edge_summary = f"""Contains {len(codebase.ctx.edges)} edges
@@ -70,7 +70,7 @@ def get_file_summary(file: SourceFile) -> str:
 - {len(file.symbols)} symbol references
 \t- {len(file.classes)} classes
 \t- {len(file.functions)} functions
-\t- {len(file.global_vars)} global variables
+\t- {len(file.global_vars)} global vars
 \t- {len(file.interfaces)} interfaces
 
 ==== [ `{file.name}` Usage Summary ] ====
@@ -141,7 +141,7 @@ def get_symbol_summary(symbol: Symbol) -> str:
 \t- {len([x for x in usages 
             if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
 \t- {len([x for x in usages 
-            if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
+            if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global vars
 \t- {len([x for x in usages 
             if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
 \t- {len(imported_symbols)} imports
@@ -150,7 +150,7 @@ def get_symbol_summary(symbol: Symbol) -> str:
 \t\t- {len([x for x in imported_symbols 
                 if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
 \t\t- {len([x for x in imported_symbols 
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global vars
 \t\t- {len([x for x in imported_symbols 
                 if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
 \t\t- {len([x for x in imported_symbols if isinstance(x, ExternalModule)])} external modules
