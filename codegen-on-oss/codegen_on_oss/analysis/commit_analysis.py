@@ -312,22 +312,25 @@ class CommitAnalyzer:
         critical_issues = [issue for issue in self.result.issues if issue.severity == "critical"]
         if critical_issues:
             self.result.is_properly_implemented = False
+def _calculate_complexity(self, func: Function) -> int:
+    """Calculate the cyclomatic complexity of a function."""
+    if not hasattr(func, 'code_block') or not func.code_block:
+        return 1
     
-    def _calculate_complexity(self, func: Function) -> int:
-        """
-        Calculate the complexity of a function.
-        
-        Args:
-            func: The function to analyze
-            
-        Returns:
-            The complexity score
-        """
-        # Simple complexity calculation based on function length
-        if not hasattr(func, "code_block") or not func.code_block:
-            return 1
-        
-        # Start with base complexity of 1
+    complexity = 1  # Base complexity
+    
+    # Count decision points
+    code = func.code_block.source
+    complexity += code.count('if ')
+    complexity += code.count('elif ')
+    complexity += code.count('else:')
+    complexity += code.count('for ')
+    complexity += code.count('while ')
+    complexity += code.count('except ')
+    complexity += code.count(' and ')
+    complexity += code.count(' or ')
+    
+    return complexity
         complexity = 1
         
         # Add complexity for each line
