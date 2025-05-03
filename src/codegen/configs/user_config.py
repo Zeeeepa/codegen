@@ -56,13 +56,15 @@ class UserConfig:
         key_segments = full_key.split("_")
         prefix = key_segments[0].upper()
         key = "_".join(key_segments[1:])
-        match f"{prefix}_":
-            case self.repository.env_prefix:
-                self.repository.set(self.env_filepath, key, value)
-            case self.codebase.env_prefix:
-                self.codebase.set(self.env_filepath, key, value)
-            case _:
-                self.secrets.set(self.env_filepath, full_key, value)
+        
+        # Replace match statement with if-elif for compatibility
+        prefix_with_underscore = f"{prefix}_"
+        if prefix_with_underscore == self.repository.env_prefix:
+            self.repository.set(self.env_filepath, key, value)
+        elif prefix_with_underscore == self.codebase.env_prefix:
+            self.codebase.set(self.env_filepath, key, value)
+        else:
+            self.secrets.set(self.env_filepath, full_key, value)
 
     def __str__(self) -> str:
         """Return a pretty-printed string representation of the config."""

@@ -3,16 +3,16 @@ from codegen.cli.env.global_env import global_env
 
 
 def get_modal_workspace():
-    match global_env.ENV:
-        case Environment.PRODUCTION:
-            return "codegen-sh"
-        case Environment.STAGING:
-            return "codegen-sh-staging"
-        case Environment.DEVELOP:
-            return "codegen-sh-develop"
-        case _:
-            msg = f"Invalid environment: {global_env.ENV}"
-            raise ValueError(msg)
+    # Replace match statement with if-elif for compatibility
+    if global_env.ENV == Environment.PRODUCTION:
+        return "codegen-sh"
+    elif global_env.ENV == Environment.STAGING:
+        return "codegen-sh-staging"
+    elif global_env.ENV == Environment.DEVELOP:
+        return "codegen-sh-dev"
+    else:
+        msg = f"Invalid environment: {global_env.ENV}"
+        raise ValueError(msg)
 
 
 def get_modal_prefix():

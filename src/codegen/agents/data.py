@@ -69,4 +69,5 @@ class UnknownMessage(BaseMessage):
     type: Literal["unknown"] = field(default="unknown")
 
 
-type AgentRunMessage = Union[UserMessage, SystemMessageData, AssistantMessage, ToolMessageData, FunctionMessageData, UnknownMessage]
+# Change from type statement to traditional type alias
+AgentRunMessage = Union[UserMessage, SystemMessageData, AssistantMessage, ToolMessageData, FunctionMessageData, UnknownMessage]
