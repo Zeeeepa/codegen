@@ -1,6 +1,6 @@
 import logging
-from codegen.extensions.github.types.pull_request import PullRequestLabeledEvent
 
+from codegen.extensions.github.types.pull_request import PullRequestLabeledEvent
 from codegen.sdk.core.codebase import Codebase
 
 logging.basicConfig(level=logging.INFO, force=True)

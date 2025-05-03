@@ -7,9 +7,7 @@ from .base import RepoSource, SourceSettings
 
 
 class GithubSettings(SourceSettings, env_prefix="GITHUB_"):
-    """
-    Settings for the Github source.
-    """
+    """Settings for the Github source."""
 
     language: Literal["python", "typescript"] = "python"
     heuristic: Literal[
@@ -27,9 +25,7 @@ class GithubSettings(SourceSettings, env_prefix="GITHUB_"):
 
 
 class GithubSource(RepoSource[GithubSettings]):
-    """
-    Source for Github repositories via Github Search API
-    """
+    """Source for Github repositories via Github Search API"""
 
     if TYPE_CHECKING:
         github_client: Github

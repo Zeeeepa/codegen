@@ -3,13 +3,12 @@ import sys
 from pathlib import Path
 
 import modal
-from loguru import logger
-
 from codegen_on_oss.bucket_store import BucketStore
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource
+from loguru import logger
 
 parse_app = modal.App("codegen-oss-parse")
 
@@ -26,19 +25,19 @@ codegen_input_volume = modal.Volume.from_name(
 )
 
 try:
-    aws_secrets = modal.Secret.from_name(
-        os.getenv("CODEGEN_MODAL_SECRET_NAME", "codegen-oss-bucket-credentials")
-    )
+    aws_secrets = modal.Secret.from_name(os.getenv("CODEGEN_MODAL_SECRET_NAME", "codegen-oss-bucket-credentials"))
 except modal.exception.NotFoundError:
     if Path(".env").exists():
         aws_secrets = modal.Secret.from_dotenv()
     else:
-        aws_secrets = modal.Secret.from_dict({
-            "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID"),
-            "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY"),
-            "BUCKET_NAME": os.getenv("BUCKET_NAME"),
-            "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
-        })
+        aws_secrets = modal.Secret.from_dict(
+            {
+                "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID"),
+                "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY"),
+                "BUCKET_NAME": os.getenv("BUCKET_NAME"),
+                "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
+            }
+        )
 
 
 @parse_app.function(
@@ -67,8 +66,7 @@ def parse_repo_on_modal(
     log_output_path: str = "output.logs",
     metrics_output_path: str = "metrics.csv",
 ):
-    """
-    Parse repositories on Modal.
+    """Parse repositories on Modal.
 
     Args:
         source: The source of the repositories to parse.
@@ -118,10 +116,7 @@ def main(
     github_heuristic: str = "stars",
     github_num_repos: int = 50,
 ):
-    """
-    Main entrypoint for the parse app.
-    """
-
+    """Main entrypoint for the parse app."""
     match source:
         case "csv":
             input_path = Path(csv_file).relative_to(".")

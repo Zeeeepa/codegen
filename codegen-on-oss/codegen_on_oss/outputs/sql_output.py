@@ -19,7 +19,7 @@ class SQLSettings(BaseSettings):
     host: str = "localhost"
     port: int = 5432
     user: str = "postgres"
-    password: str = "postgres"  # noqa: S105
+    password: str = "postgres"
     database: str = "postgres"
     dialect: str = "postgresql"
 
@@ -99,9 +99,7 @@ class ParseMetricsSQLOutput(BaseOutput):
 
     def write_output(self, value: dict[str, Any]):
         with self.session_maker() as session:
-            stmt = insert(ParseMetrics).values(
-                **value, modal_function_call_id=self.modal_function_call_id
-            )
+            stmt = insert(ParseMetrics).values(**value, modal_function_call_id=self.modal_function_call_id)
             stmt = stmt.on_conflict_do_update(
                 index_elements=[
                     ParseMetrics.repo,
@@ -143,8 +141,6 @@ class SWEBenchSQLOutput(BaseOutput):
 
     def write_output(self, value: dict[str, Any]):
         with self.session_maker() as session:
-            stmt = insert(SWEBenchResult).values(
-                **value, modal_function_call_id=self.modal_function_call_id
-            )
+            stmt = insert(SWEBenchResult).values(**value, modal_function_call_id=self.modal_function_call_id)
             session.execute(stmt)
             session.commit()

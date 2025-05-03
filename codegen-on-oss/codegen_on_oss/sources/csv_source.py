@@ -8,9 +8,7 @@ from .base import RepoSource, SourceSettings
 
 
 class CSVInputSettings(SourceSettings, env_prefix="CSV_"):
-    """
-    CSVInputSettings is a class that contains the settings for a CSVInputSource.
-    """
+    """CSVInputSettings is a class that contains the settings for a CSVInputSource."""
 
     file_path: Path = Path("input.csv")
 
@@ -23,9 +21,7 @@ class CSVInputSettings(SourceSettings, env_prefix="CSV_"):
 
 
 class CSVInputSource(RepoSource):
-    """
-    CSVInputSource is a source that reads URLs from a CSV file.
-    """
+    """CSVInputSource is a source that reads URLs from a CSV file."""
 
     source_type = "csv"
     settings_cls = CSVInputSettings

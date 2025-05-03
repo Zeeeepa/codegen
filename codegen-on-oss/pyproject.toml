@@ -30,4 +30,3 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = "codegen_on_oss.snapshot.codebase_snapshot"
 ignore_errors = true
-

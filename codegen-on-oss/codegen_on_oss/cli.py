@@ -56,9 +56,7 @@ def run_one(
     error_output_path: Path = str(cachedir / "errors.log"),
     debug: bool = False,
 ):
-    """
-    Parse a repository with codegen
-    """
+    """Parse a repository with codegen"""
     logger.add(error_output_path, level="ERROR")
     logger.add(sys.stdout, level="DEBUG" if debug else "INFO")
     output = CSVOutput(MetricsProfiler.fields(), output_path)
@@ -104,12 +102,8 @@ def run(
     cache_dir: str,
     debug: bool,
 ):
-    """
-    Run codegen parsing pipeline on repositories from a given repository source.
-    """
-    logger.add(
-        error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR"
-    )
+    """Run codegen parsing pipeline on repositories from a given repository source."""
+    logger.add(error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR")
     logger.add(
         sys.stdout,
         format="{time: HH:mm:ss} {level} {message}",

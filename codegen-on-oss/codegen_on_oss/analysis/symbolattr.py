@@ -85,7 +85,7 @@ if __name__ == "__main__":
         print_symbol_attribution(codebase)
 
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
+        print(f"\n❌ Error: {e!s}")
         import traceback
 
         traceback.print_exc()

@@ -5,9 +5,7 @@ from loguru import logger
 
 
 class BaseOutput:
-    """
-    BaseOutput is a class that defines the interface for all output classes.
-    """
+    """BaseOutput is a class that defines the interface for all output classes."""
 
     def __init__(self, fields: list[str]):
         self.fields = fields

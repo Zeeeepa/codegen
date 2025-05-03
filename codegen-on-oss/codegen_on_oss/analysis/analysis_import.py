@@ -1,11 +1,12 @@
 import logging
 
 import modal
-from codegen import CodegenApp, Codebase
+import networkx as nx
+from dotenv import load_dotenv
+
+from codegen import Codebase, CodegenApp
 from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
 from codegen.extensions.tools.github.create_pr_comment import create_pr_comment
-from dotenv import load_dotenv
-import networkx as nx
 
 load_dotenv()
 

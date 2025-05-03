@@ -1,24 +1,19 @@
-from github import Github
-from codegen.extensions.github.types.events.pull_request import PullRequestUnlabeledEvent
+import logging
+import os
 from logging import getLogger
 
-import os
+from dotenv import load_dotenv
+from github import Github
 
-from codegen import Codebase
-
-from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
+from codegen import CodeAgent, Codebase
 from codegen.configs.models.secrets import SecretsConfig
-from codegen import CodeAgent
-
+from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent, PullRequestUnlabeledEvent
 from codegen.extensions.langchain.tools import (
-    # Github
-    GithubViewPRTool,
     GithubCreatePRCommentTool,
     GithubCreatePRReviewCommentTool,
+    # Github
+    GithubViewPRTool,
 )
-
-from dotenv import load_dotenv
-import logging
 
 load_dotenv()
 

@@ -99,7 +99,7 @@ ISSUES: 172
 
 ## 5. Issues Categorized
 
-```
+````
 ------------------------------------------
 Unused Imports: 134 (7.1%) / 1,876
 List Filenames and imports:
@@ -138,7 +138,7 @@ Location and codeblocks:
            else:
                result[key] = value
        return result
-   ```
+````
 
 2. src/core/processor.py (lines 156-172) and src/api/handlers.py (lines 78-94)
    ```python
@@ -151,7 +151,9 @@ Location and codeblocks:
                raise ValueError(f"Missing required field: {field}")
        return True
    ```
-------------
+
+______________________________________________________________________
+
 Issues with Function Call in/out points: 72
 (From Call site tracking and Function call relationships)
 
@@ -159,65 +161,77 @@ Issues with Function Call in/out points: 72
 - src/utils/validator.py/validate_input - Missing required parameters in 3 locations
 - src/api/routes.py/register_routes - Incorrect return value handling in 4 locations
 - src/models/user.py/User.from_dict - Passing non-dict values in 2 locations
-------------
+
+______________________________________________________________________
+
 Input/output parameter analysis
 Valid 1726 parameters
 Issues 11 parameters:
+
 1. /src/core/processor.py/Processor/process_data/options - Type mismatch (expected Dict, received List)
-2. /src/api/routes.py/create_user/user_data - Missing validation for required fields
-3. /src/utils/formatter.py/format_output/data - Null value passed without null check
-4. /src/models/transaction.py/Transaction/validate/amount - Negative values not handled
-5. /src/core/analyzer.py/analyze_code/filepath - Non-existent file paths not handled
-------------
+1. /src/api/routes.py/create_user/user_data - Missing validation for required fields
+1. /src/utils/formatter.py/format_output/data - Null value passed without null check
+1. /src/models/transaction.py/Transaction/validate/amount - Negative values not handled
+1. /src/core/analyzer.py/analyze_code/filepath - Non-existent file paths not handled
+
+______________________________________________________________________
+
 Interface implementation verification:
 Valid: 71 components
 Issues: 6 components:
+
 1. src/models/user.tsx - UserComponent doesn't implement all required UserProps
-2. src/components/form.tsx - FormInput missing required onChange handler
-3. src/views/dashboard.tsx - DashboardView implements deprecated IDashboard interface
-4. src/api/client.ts - ApiClient missing required error handling methods
-5. src/utils/formatter.tsx - DataFormatter missing required format method
-6. src/components/table.tsx - TableComponent not implementing required sorting functionality
+1. src/components/form.tsx - FormInput missing required onChange handler
+1. src/views/dashboard.tsx - DashboardView implements deprecated IDashboard interface
+1. src/api/client.ts - ApiClient missing required error handling methods
+1. src/utils/formatter.tsx - DataFormatter missing required format method
+1. src/components/table.tsx - TableComponent not implementing required sorting functionality
+
 ```
 
 ## 6. Visualization Types
 
 ```
+
 ALL VISUALIZATION TYPES
 Selection 1- type (Example - hierarchy, dependency)
 after selecting 1-> 2nd selection is corresponding parameter (example -call hierarchy, symbol hierarchy, Inheritance hierarchy)
 Again- corresponding parameter selection (if applicable)- (For example - codefile / class / method)
 
 Hierarchy Visualizations:
-  - Call hierarchy visualization
-    - By file: src/core/processor.py
-    - By class: Processor
-    - By method: process_data
-  - Symbol hierarchy visualization
-    - By module: src/core
-    - By file: src/core/processor.py
-    - By class: Processor
-  - Inheritance hierarchy visualization
-    - By class: BaseProcessor
+
+- Call hierarchy visualization
+  - By file: src/core/processor.py
+  - By class: Processor
+  - By method: process_data
+- Symbol hierarchy visualization
+  - By module: src/core
+  - By file: src/core/processor.py
+  - By class: Processor
+- Inheritance hierarchy visualization
+  - By class: BaseProcessor
 
 Dependency Visualizations:
-  - Module dependency visualization
-    - By module: src/core
-    - By file: src/core/processor.py
-  - Symbol dependency visualization
-    - By class: Processor
-    - By function: process_data
+
+- Module dependency visualization
+  - By module: src/core
+  - By file: src/core/processor.py
+- Symbol dependency visualization
+  - By class: Processor
+  - By function: process_data
 
 Flow Visualizations:
-  - Function call visualization
-    - By function: process_data
-    - By class method: Processor.validate_input
-  - Package structure visualization
-    - Full project
-    - By module: src/core
-  - Variable usage tracking
-    - By variable: config
-    - By class attribute: Processor.options
+
+- Function call visualization
+  - By function: process_data
+  - By class method: Processor.validate_input
+- Package structure visualization
+  - Full project
+  - By module: src/core
+- Variable usage tracking
+  - By variable: config
+  - By class attribute: Processor.options
+
 ```
 
 ## Suggested Views
@@ -279,4 +293,4 @@ For the Full Specific Issues View, I recommend a detailed, filterable list of al
    - Specific, actionable steps to resolve each issue
    - Code examples of proper implementation
    - Links to relevant documentation or best practices
-
+```

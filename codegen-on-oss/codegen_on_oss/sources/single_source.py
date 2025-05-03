@@ -1,24 +1,21 @@
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, ClassVar
 
-from github import Github  # nosemgrep
-
 from .base import RepoSource, SourceSettings
+
+if TYPE_CHECKING:
+    from github import Github
 
 
 class SingleSettings(SourceSettings, env_prefix="SINGLE_"):
-    """
-    Settings for the Single source.
-    """
+    """Settings for the Single source."""
 
     url: str
     commit: str | None = None
 
 
 class SingleSource(RepoSource[SingleSettings]):
-    """
-    Source for a single repository.
-    """
+    """Source for a single repository."""
 
     if TYPE_CHECKING:
         github_client: Github

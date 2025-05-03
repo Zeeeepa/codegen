@@ -2,12 +2,11 @@ import sys
 from pathlib import Path
 
 import modal
-from loguru import logger
-
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.sql_output import ParseMetricsSQLOutput
 from codegen_on_oss.parser import CodegenParser
+from loguru import logger
 
 app = modal.App("codegen-oss-parse")
 
@@ -51,8 +50,7 @@ def parse_repo(
     commit_hash: str | None,
     language: str | None = None,
 ):
-    """
-    Parse repositories on Modal.
+    """Parse repositories on Modal.
 
     Args:
         repo_url: The URL of the repository to parse.
@@ -60,9 +58,7 @@ def parse_repo(
     """
     logger.add(sys.stdout, format="{time: HH:mm:ss} {level} {message}", level="DEBUG")
 
-    output = ParseMetricsSQLOutput(
-        modal_function_call_id=modal.current_function_call_id()
-    )
+    output = ParseMetricsSQLOutput(modal_function_call_id=modal.current_function_call_id())
     metrics_profiler = MetricsProfiler(output)
     parser = CodegenParser(Path(cachedir) / "repositories", metrics_profiler)
     # Refresh any updating repo data from other instances

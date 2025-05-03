@@ -1,5 +1,6 @@
-import codegen
 import networkx as nx
+
+import codegen
 from codegen import Codebase
 
 

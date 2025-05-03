@@ -13,7 +13,6 @@ The Analysis Module integrates various specialized analysis components into a co
 - Commit analysis and comparison
 - Repository and PR/Branch/Commit comparison
 
-
 ## Components
 
 The module consists of the following key components:
@@ -21,11 +20,17 @@ The module consists of the following key components:
 - **CodeAnalyzer**: Central class that orchestrates all analysis functionality
 
 - **DiffAnalyzer**: Class for analyzing differences between codebase snapshots
+
 - **CommitAnalyzer**: Class for analyzing commits by comparing snapshots
+
 - **SWEHarnessAgent**: Harness for a Software Engineering agent that analyzes commits and PRs
+
 - **Metrics Integration**: Connection with the CodeMetrics class for comprehensive metrics
+
 - **Import Analysis**: Tools for analyzing import relationships and cycles
+
 - **Documentation Tools**: Functions for generating documentation for code
+
 - **Server**: FastAPI server for analyzing repositories, commits, branches, and PRs
 
 ## Usage
@@ -85,11 +90,7 @@ from codegen_on_oss.analysis.analysis import CodeAnalyzer
 analyzer = CodeAnalyzer(codebase)
 
 # Analyze a commit
-analysis_results = analyzer.analyze_commit(
-    base_commit="abc123",
-    head_commit="def456",
-    github_token="your_github_token"
-)
+analysis_results = analyzer.analyze_commit(base_commit="abc123", head_commit="def456", github_token="your_github_token")
 
 # Print the results
 print(f"Is properly implemented: {analysis_results['quality_assessment']['is_properly_implemented']}")
@@ -106,10 +107,7 @@ from codegen_on_oss.analysis.analysis import CodeAnalyzer
 analyzer = CodeAnalyzer(codebase)
 
 # Analyze a PR
-analysis_results = analyzer.analyze_pull_request(
-    pr_number=123,
-    github_token="your_github_token"
-)
+analysis_results = analyzer.analyze_pull_request(pr_number=123, github_token="your_github_token")
 
 # Print the results
 print(f"Is properly implemented: {analysis_results['quality_assessment']['is_properly_implemented']}")
@@ -148,17 +146,11 @@ from codegen_on_oss.analysis.analysis import CodeAnalyzer
 from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
 
 # Method 1: Analyze a commit from a repository URL and commit hash
-result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
-    repo_url="https://github.com/owner/repo",
-    commit_hash="abc123"
-)
+result = CodeAnalyzer.analyze_commit_from_repo_and_commit(repo_url="https://github.com/owner/repo", commit_hash="abc123")
 print(result.get_summary())
 
 # Method 2: Analyze a commit by comparing two local repository paths
-analyzer = CommitAnalyzer.from_paths(
-    original_path="/path/to/original/repo",
-    commit_path="/path/to/commit/repo"
-)
+analyzer = CommitAnalyzer.from_paths(original_path="/path/to/original/repo", commit_path="/path/to/commit/repo")
 result = analyzer.analyze_commit()
 print(result.get_summary())
 
@@ -166,10 +158,7 @@ print(result.get_summary())
 original_codebase = Codebase.from_directory("/path/to/original/repo")
 commit_codebase = Codebase.from_directory("/path/to/commit/repo")
 
-analyzer = CommitAnalyzer(
-    original_codebase=original_codebase,
-    commit_codebase=commit_codebase
-)
+analyzer = CommitAnalyzer(original_codebase=original_codebase, commit_codebase=commit_codebase)
 result = analyzer.analyze_commit()
 print(result.get_summary())
 ```
@@ -263,7 +252,6 @@ The Analysis Module is fully integrated with the CodeMetrics class, which provid
 - Inheritance depth metrics
 - Halstead complexity metrics
 
-
 ## Integration with Snapshot Module
 
 The Analysis Module integrates with the Snapshot Module to:
@@ -274,6 +262,5 @@ The Analysis Module integrates with the Snapshot Module to:
 - Analyze commits and PRs
 
 ## Example
-
 
 See `example.py` for a demonstration of the basic analysis functionality and `swe_harness_example.py` for a demonstration of the commit and PR analysis functionality.

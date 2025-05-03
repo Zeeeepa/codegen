@@ -59,11 +59,7 @@ from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
 snapshot_manager = SnapshotManager()
 
 # Create a snapshot directly from a repository
-snapshot = snapshot_manager.snapshot_repo(
-    repo_url="owner/repo",
-    commit_sha="abc123",
-    github_token="your_github_token"
-)
+snapshot = snapshot_manager.snapshot_repo(repo_url="owner/repo", commit_sha="abc123", github_token="your_github_token")
 ```
 
 ### Comparing Snapshots
@@ -138,4 +134,3 @@ The module includes event handlers for automatically creating snapshots on GitHu
 ## Example
 
 See `swe_harness_example.py` in the analysis module for a complete demonstration of the snapshot module's capabilities.
-
