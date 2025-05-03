@@ -338,4 +338,3 @@ def analyze_commit(payload: Dict[str, Any]):
 app = modal.App("Events", secrets=[modal.Secret.from_dotenv(".env")])
 app.include(event_handlers_app)
 app.include(codegen_events_app)
-

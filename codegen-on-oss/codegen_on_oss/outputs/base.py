@@ -14,4 +14,3 @@ class BaseOutput:
 
     def write_output(self, value: dict[str, Any]):
         logger.info(json.dumps(value, indent=4))
-

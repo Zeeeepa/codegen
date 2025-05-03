@@ -208,4 +208,3 @@ def print_symbol_attribution(codebase: Codebase) -> None:
         )
         print(f"Total Lines: {attribution['total_lines']}")
         print()
-

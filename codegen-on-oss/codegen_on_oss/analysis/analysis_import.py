@@ -169,4 +169,3 @@ app = modal.App("codegen-import-cycles-github-check")
 def fastapi_app():
     print("Starting codegen fastapi app")
     return cg.app
-

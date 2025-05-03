@@ -374,4 +374,3 @@ class AnalysisJobRepository(BaseRepository[AnalysisJob]):
         if status:
             query = query.filter(self.model.status == status)
         return query.all()
-

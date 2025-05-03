@@ -29,4 +29,3 @@ class SingleSource(RepoSource[SingleSettings]):
 
     def __iter__(self) -> Iterator[tuple[str, str | None]]:
         yield self.settings.url, self.settings.commit
-

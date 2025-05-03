@@ -436,4 +436,3 @@ if __name__ == "__main__":
 
     # Print the results
     print(json.dumps(results, indent=2))
-

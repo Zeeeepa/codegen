@@ -15,4 +15,3 @@ session_maker = get_session_maker(settings)
 
 with session_maker() as session:
     Base.metadata.create_all(bind=session.bind)
-

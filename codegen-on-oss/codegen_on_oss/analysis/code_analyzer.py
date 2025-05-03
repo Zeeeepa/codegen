@@ -23,4 +23,3 @@ __all__ = [
     "get_function_summary",
     "get_symbol_summary",
 ]
-

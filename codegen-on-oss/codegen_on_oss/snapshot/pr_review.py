@@ -71,4 +71,3 @@ def handle_unlabeled(event: PullRequestUnlabeledEvent):
 def entrypoint(event: dict, request: Request):
     logger.info("[OUTER] Received GitHub webhook")
     return app.github.handle(event, request)
-

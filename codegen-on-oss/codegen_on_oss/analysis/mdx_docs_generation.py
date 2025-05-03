@@ -250,4 +250,3 @@ def generate_mdx_docs(
         include_patterns: Optional list of patterns to include
         exclude_patterns: Optional list of patterns to exclude
     """
-

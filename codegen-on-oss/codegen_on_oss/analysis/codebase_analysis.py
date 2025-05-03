@@ -85,4 +85,3 @@ def get_symbol_summary(symbol: Symbol) -> str:
 \t\t- {len([x for x in imported_symbols if isinstance(x, ExternalModule)])} external modules
 \t\t- {len([x for x in imported_symbols if isinstance(x, SourceFile)])} files
     """
-

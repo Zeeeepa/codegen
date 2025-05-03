@@ -332,4 +332,3 @@ class AnalysisJob(Base):
     progress = Column(Integer, nullable=False, default=0)
     error_message = Column(Text, nullable=True)
     result_data = Column(JSON, nullable=True)
-

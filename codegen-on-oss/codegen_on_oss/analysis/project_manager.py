@@ -167,4 +167,3 @@ class ProjectManager:
             return True
 
         return False
-

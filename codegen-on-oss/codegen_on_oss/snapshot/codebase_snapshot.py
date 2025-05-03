@@ -444,4 +444,3 @@ class SnapshotManager:
         """
         codebase = self.create_codebase_from_repo(repo_url, commit_sha, github_token)
         return self.create_snapshot(codebase, commit_sha, snapshot_id)
-

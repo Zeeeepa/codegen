@@ -26,4 +26,3 @@ def main(
                 commit_hash=commit_hash,
                 language=language,
             )
-

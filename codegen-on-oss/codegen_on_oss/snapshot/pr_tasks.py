@@ -120,4 +120,3 @@ def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeled
         codebase._op.create_pr_comment(
             event.pull_request.number, review_attention_message
         )
-

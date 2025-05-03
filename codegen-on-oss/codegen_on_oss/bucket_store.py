@@ -24,4 +24,3 @@ class BucketStore:
             key,
         )
         return key
-

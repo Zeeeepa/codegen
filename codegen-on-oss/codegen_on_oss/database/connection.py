@@ -136,4 +136,3 @@ def get_db() -> Session:
 def init_db() -> None:
     """Initialize the database by creating all tables."""
     db_manager.create_tables()
-

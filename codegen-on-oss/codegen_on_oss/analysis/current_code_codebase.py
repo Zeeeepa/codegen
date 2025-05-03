@@ -136,4 +136,3 @@ def get_documented_objects() -> DocumentedObjects:
         "ts_apidoc": ts_apidoc_objects,
         "no_apidoc": no_apidoc_objects,
     }
-

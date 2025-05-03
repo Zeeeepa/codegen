@@ -18,4 +18,3 @@ def get_codegen_sdk_codebase() -> Codebase:
         subdirectories=get_codegen_sdk_subdirectories()
     )
     return codebase
-

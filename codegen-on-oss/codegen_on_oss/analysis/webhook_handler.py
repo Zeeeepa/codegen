@@ -263,4 +263,3 @@ class WebhookHandler:
             )
         except Exception as e:
             self.logger.error(f"Error triggering webhook {webhook.webhook_id}: {e}")
-

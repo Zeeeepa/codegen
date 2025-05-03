@@ -93,4 +93,3 @@ class CommitComparisonResult:
             "compare_commit_hash": self.compare_commit_hash,
             "files_changed": [file.to_dict() for file in self.files_changed],
         }
-

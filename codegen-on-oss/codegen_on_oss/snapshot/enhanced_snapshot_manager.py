@@ -467,4 +467,3 @@ class EnhancedSnapshotManager:
                 + len(modified_files),
             },
         }
-

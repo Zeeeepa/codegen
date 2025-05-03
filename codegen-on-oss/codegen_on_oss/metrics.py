@@ -690,4 +690,3 @@ class MetricsProfile:
         """
         self.logger.info(json.dumps(measurement, indent=4))
         self.output.write_output(measurement)
-

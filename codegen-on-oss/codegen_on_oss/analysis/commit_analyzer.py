@@ -513,4 +513,3 @@ class CommitAnalyzer:
         # For simplicity, we're not detecting modified functions
 
         return added_functions, modified_functions, removed_functions
-

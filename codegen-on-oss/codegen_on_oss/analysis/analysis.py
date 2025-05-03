@@ -1345,4 +1345,3 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
 if __name__ == "__main__":
     # Run the FastAPI app locally with uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

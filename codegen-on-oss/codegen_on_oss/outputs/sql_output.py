@@ -148,4 +148,3 @@ class SWEBenchSQLOutput(BaseOutput):
             )
             session.execute(stmt)
             session.commit()
-

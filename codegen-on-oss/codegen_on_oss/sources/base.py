@@ -114,4 +114,3 @@ class Source:
             List of directory paths
         """
         raise NotImplementedError
-

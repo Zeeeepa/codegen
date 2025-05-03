@@ -83,4 +83,3 @@ def run_app(host: str = "0.0.0.0", port: int = 8000):
         port: Port to bind to
     """
     uvicorn.run(app, host=host, port=port)
-

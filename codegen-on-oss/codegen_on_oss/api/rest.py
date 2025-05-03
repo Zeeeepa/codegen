@@ -576,4 +576,3 @@ async def compare_snapshots(
         comparison_data["snapshot_id_1"],
         comparison_data["snapshot_id_2"],
     )
-

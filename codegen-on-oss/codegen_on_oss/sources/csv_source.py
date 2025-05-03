@@ -37,4 +37,3 @@ class CSVInputSource(RepoSource):
 
             for row in reader:
                 yield row["url"], row.get("commit_hash") or None
-

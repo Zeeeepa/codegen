@@ -57,4 +57,3 @@ class GithubSource(RepoSource[GithubSettings]):
                 break
             commit = repository.get_commits()[0]
             yield repository.clone_url, commit.sha
-

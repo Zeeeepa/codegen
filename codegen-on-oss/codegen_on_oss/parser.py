@@ -84,4 +84,3 @@ class CodegenParser:
     def gc(self):
         uncache_all()
         gc.collect()
-

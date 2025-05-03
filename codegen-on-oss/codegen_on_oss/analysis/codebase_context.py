@@ -1052,4 +1052,3 @@ class CodebaseContext:
             )
             self._ts_declassify.start()  # Install react-declassify
         return self._ts_declassify
-
