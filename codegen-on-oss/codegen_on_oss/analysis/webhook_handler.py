@@ -25,14 +25,16 @@ class WebhookHandler:
     Handles webhooks from Git providers and triggers analysis based on webhook events.
     """
     
-    def __init__(self, project_manager: ProjectManager):
+    def __init__(self, project_manager: ProjectManager, server_url: str):
         """
         Initialize a new WebhookHandler.
         
         Args:
             project_manager: The ProjectManager instance to use
+            server_url: The base URL of the server
         """
         self.project_manager = project_manager
+        self.server_url = server_url
     
     async def handle_github_webhook(self, request: Request) -> Dict[str, Any]:
         """
@@ -94,7 +96,7 @@ class WebhookHandler:
         Args:
             project_id: ID of the project
             payload: The webhook payload
-            
+        
         Returns:
             A dictionary with the result of handling the webhook
         """
@@ -103,7 +105,7 @@ class WebhookHandler:
         
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=404,
                 detail=f"Project {project_id} not found"
             )
         
@@ -112,7 +114,7 @@ class WebhookHandler:
         
         if not ref:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing ref in payload"
             )
         
@@ -124,15 +126,14 @@ class WebhookHandler:
         
         if not commit_hash:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing after (commit hash) in payload"
             )
         
         # Trigger analysis of the commit
         try:
-            # Make a request to the analyze_commit endpoint
             response = requests.post(
-                "http://localhost:8000/analyze_commit",
+                f"{self.server_url}/analyze_commit",
                 json={
                     "repo_url": project.repo_url,
                     "commit_hash": commit_hash
@@ -146,10 +147,9 @@ class WebhookHandler:
             
             # Trigger webhooks for the project
             self.project_manager.trigger_webhooks_for_project(
-                project_id,
-                "commit",
-                {
-                    "repo_url": project.repo_url,
+                project_id=project_id,
+                event="commit",
+                payload={
                     "commit_hash": commit_hash,
                     "branch": branch,
                     "analysis_result": analysis_result
@@ -158,18 +158,13 @@ class WebhookHandler:
             
             return {
                 "status": "success",
-                "event_type": "push",
-                "branch": branch,
                 "commit_hash": commit_hash,
+                "branch": branch,
                 "analysis_result": analysis_result
             }
         except Exception as e:
-            logger.error(f"Error analyzing commit {commit_hash} for project {project_id}: {e}")
             return {
                 "status": "error",
-                "event_type": "push",
-                "branch": branch,
-                "commit_hash": commit_hash,
                 "error": str(e)
             }
     
@@ -180,7 +175,7 @@ class WebhookHandler:
         Args:
             project_id: ID of the project
             payload: The webhook payload
-            
+        
         Returns:
             A dictionary with the result of handling the webhook
         """
@@ -189,7 +184,7 @@ class WebhookHandler:
         
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=404,
                 detail=f"Project {project_id} not found"
             )
         
@@ -198,17 +193,14 @@ class WebhookHandler:
         
         if not action:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing action in payload"
             )
         
         # Only handle opened, reopened, and synchronize events
         if action not in ["opened", "reopened", "synchronize"]:
-            logger.info(f"Ignoring pull request action: {action}")
             return {
-                "status": "ignored",
-                "event_type": "pull_request",
-                "action": action,
+                "status": "skipped",
                 "reason": "Unsupported action"
             }
         
@@ -217,15 +209,14 @@ class WebhookHandler:
         
         if not pr_number:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing pull request number in payload"
             )
         
         # Trigger analysis of the pull request
         try:
-            # Make a request to the analyze_pr endpoint
             response = requests.post(
-                "http://localhost:8000/analyze_pr",
+                f"{self.server_url}/analyze_pr",
                 json={
                     "repo_url": project.repo_url,
                     "pr_number": pr_number
@@ -239,10 +230,9 @@ class WebhookHandler:
             
             # Trigger webhooks for the project
             self.project_manager.trigger_webhooks_for_project(
-                project_id,
-                "pr",
-                {
-                    "repo_url": project.repo_url,
+                project_id=project_id,
+                event="pr",
+                payload={
                     "pr_number": pr_number,
                     "action": action,
                     "analysis_result": analysis_result
@@ -251,18 +241,13 @@ class WebhookHandler:
             
             return {
                 "status": "success",
-                "event_type": "pull_request",
-                "action": action,
                 "pr_number": pr_number,
+                "action": action,
                 "analysis_result": analysis_result
             }
         except Exception as e:
-            logger.error(f"Error analyzing pull request {pr_number} for project {project_id}: {e}")
             return {
                 "status": "error",
-                "event_type": "pull_request",
-                "action": action,
-                "pr_number": pr_number,
                 "error": str(e)
             }
     
@@ -326,7 +311,7 @@ class WebhookHandler:
         Args:
             project_id: ID of the project
             payload: The webhook payload
-            
+        
         Returns:
             A dictionary with the result of handling the webhook
         """
@@ -335,7 +320,7 @@ class WebhookHandler:
         
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=404,
                 detail=f"Project {project_id} not found"
             )
         
@@ -344,7 +329,7 @@ class WebhookHandler:
         
         if not ref:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing ref in payload"
             )
         
@@ -356,15 +341,14 @@ class WebhookHandler:
         
         if not commit_hash:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing after (commit hash) in payload"
             )
         
         # Trigger analysis of the commit
         try:
-            # Make a request to the analyze_commit endpoint
             response = requests.post(
-                "http://localhost:8000/analyze_commit",
+                f"{self.server_url}/analyze_commit",
                 json={
                     "repo_url": project.repo_url,
                     "commit_hash": commit_hash
@@ -378,10 +362,9 @@ class WebhookHandler:
             
             # Trigger webhooks for the project
             self.project_manager.trigger_webhooks_for_project(
-                project_id,
-                "commit",
-                {
-                    "repo_url": project.repo_url,
+                project_id=project_id,
+                event="commit",
+                payload={
                     "commit_hash": commit_hash,
                     "branch": branch,
                     "analysis_result": analysis_result
@@ -390,18 +373,13 @@ class WebhookHandler:
             
             return {
                 "status": "success",
-                "event_type": "push",
-                "branch": branch,
                 "commit_hash": commit_hash,
+                "branch": branch,
                 "analysis_result": analysis_result
             }
         except Exception as e:
-            logger.error(f"Error analyzing commit {commit_hash} for project {project_id}: {e}")
             return {
                 "status": "error",
-                "event_type": "push",
-                "branch": branch,
-                "commit_hash": commit_hash,
                 "error": str(e)
             }
     
@@ -412,7 +390,7 @@ class WebhookHandler:
         Args:
             project_id: ID of the project
             payload: The webhook payload
-            
+        
         Returns:
             A dictionary with the result of handling the webhook
         """
@@ -421,7 +399,7 @@ class WebhookHandler:
         
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=404,
                 detail=f"Project {project_id} not found"
             )
         
@@ -430,17 +408,14 @@ class WebhookHandler:
         
         if not action:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing action in payload"
             )
         
         # Only handle open, reopen, and update events
         if action not in ["open", "reopen", "update"]:
-            logger.info(f"Ignoring merge request action: {action}")
             return {
-                "status": "ignored",
-                "event_type": "merge_request",
-                "action": action,
+                "status": "skipped",
                 "reason": "Unsupported action"
             }
         
@@ -449,7 +424,7 @@ class WebhookHandler:
         
         if not mr_number:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing merge request number in payload"
             )
         
@@ -459,15 +434,14 @@ class WebhookHandler:
         
         if not source_branch or not commit_hash:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Missing source branch or commit hash in payload"
             )
         
         # Trigger analysis of the merge request
         try:
-            # Make a request to the compare_branches endpoint
             response = requests.post(
-                "http://localhost:8000/compare_branches",
+                f"{self.server_url}/compare_branches",
                 json={
                     "repo_url": project.repo_url,
                     "base_branch": project.default_branch,
@@ -482,10 +456,9 @@ class WebhookHandler:
             
             # Trigger webhooks for the project
             self.project_manager.trigger_webhooks_for_project(
-                project_id,
-                "mr",
-                {
-                    "repo_url": project.repo_url,
+                project_id=project_id,
+                event="mr",
+                payload={
                     "mr_number": mr_number,
                     "action": action,
                     "source_branch": source_branch,
@@ -496,23 +469,14 @@ class WebhookHandler:
             
             return {
                 "status": "success",
-                "event_type": "merge_request",
-                "action": action,
                 "mr_number": mr_number,
+                "action": action,
                 "source_branch": source_branch,
                 "commit_hash": commit_hash,
                 "analysis_result": analysis_result
             }
         except Exception as e:
-            logger.error(f"Error analyzing merge request {mr_number} for project {project_id}: {e}")
             return {
                 "status": "error",
-                "event_type": "merge_request",
-                "action": action,
-                "mr_number": mr_number,
-                "source_branch": source_branch,
-                "commit_hash": commit_hash,
                 "error": str(e)
             }
-"""
-
