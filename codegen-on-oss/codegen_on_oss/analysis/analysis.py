@@ -696,7 +696,8 @@ class CodeAnalyzer:
                 
             return monthly_commits
         except Exception as e:
-            return {"error": str(e)}
+            print(f"Error getting monthly commits: {e}")
+            return {}
             
     def analyze_commit(self, commit_codebase: Codebase) -> CommitAnalysisResult:
         """
@@ -761,6 +762,7 @@ class CodeAnalyzer:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
         """
+        try:
             # Count changes per file
             file_changes = {}
             for commit in commits:
@@ -967,6 +969,9 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                         monthly_counts[month_key] += 1
 
             return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        print(f"Error getting monthly commits: {e}")
+        return {}
 
 
 # Helper functions for complexity analysis
