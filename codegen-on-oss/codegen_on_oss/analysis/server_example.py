@@ -1,197 +1,180 @@
 """
-Example script demonstrating how to use the code analysis server.
+Server Example
 
-This script shows how to start the server and make requests to analyze
-repositories, commits, branches, and pull requests.
+This script demonstrates how to use the analysis server.
 """
 
-import os
-import sys
 import argparse
-import requests
 import json
+import requests
 from typing import Dict, Any, Optional
 
-from codegen_on_oss.analysis.server import run_server
 
-def print_json(data: Dict[str, Any]) -> None:
-    """Print JSON data in a formatted way."""
-    print(json.dumps(data, indent=2))
-
-def analyze_repo(base_url: str, repo_url: str) -> Optional[Dict[str, Any]]:
-    """
-    Analyze a repository.
+class CodeAnalysisClient:
+    """Client for interacting with the code analysis server."""
     
-    Args:
-        base_url: Base URL of the analysis server
-        repo_url: URL of the repository to analyze
+    def __init__(self, base_url: str = "http://localhost:8000"):
+        """
+        Initialize a new CodeAnalysisClient.
         
-    Returns:
-        Analysis result or None if an error occurred
-    """
-    print(f"Analyzing repository: {repo_url}")
+        Args:
+            base_url: Base URL of the analysis server
+        """
+        self.base_url = base_url
     
-    try:
+    def analyze_repo(self, repo_url: str) -> Dict[str, Any]:
+        """
+        Analyze a repository.
+        
+        Args:
+            repo_url: URL of the repository to analyze
+            
+        Returns:
+            Analysis results
+        """
         response = requests.post(
-            f"{base_url}/analyze_repo",
+            f"{self.base_url}/analyze_repo",
             json={"repo_url": repo_url}
         )
         response.raise_for_status()
-        result = response.json()
-        
-        print("\nAnalysis result:")
-        print_json(result)
-        
-        return result
-    except Exception as e:
-        print(f"Error analyzing repository: {e}")
-        return None
-
-def analyze_commit(base_url: str, repo_url: str, commit_hash: str) -> Optional[Dict[str, Any]]:
-    """
-    Analyze a commit in a repository.
+        return response.json()
     
-    Args:
-        base_url: Base URL of the analysis server
-        repo_url: URL of the repository to analyze
-        commit_hash: Hash of the commit to analyze
+    def analyze_file(self, repo_url: str, file_path: str) -> Dict[str, Any]:
+        """
+        Analyze a specific file in a repository.
         
-    Returns:
-        Analysis result or None if an error occurred
-    """
-    print(f"Analyzing commit {commit_hash} in repository {repo_url}")
-    
-    try:
+        Args:
+            repo_url: URL of the repository
+            file_path: Path to the file to analyze
+            
+        Returns:
+            Analysis results
+        """
         response = requests.post(
-            f"{base_url}/analyze_commit",
+            f"{self.base_url}/analyze_file",
             json={
                 "repo_url": repo_url,
-                "commit_hash": commit_hash
+                "file_path": file_path
             }
         )
         response.raise_for_status()
-        result = response.json()
-        
-        print("\nAnalysis result:")
-        print_json(result)
-        
-        return result
-    except Exception as e:
-        print(f"Error analyzing commit: {e}")
-        return None
+        return response.json()
 
-def compare_branches(base_url: str, repo_url: str, base_branch: str, compare_branch: str) -> Optional[Dict[str, Any]]:
+
+class CodeAnalysisServer:
+    """Server for analyzing code."""
+    
+    def __init__(self, host: str = "localhost", port: int = 8000):
+        """
+        Initialize a new CodeAnalysisServer.
+        
+        Args:
+            host: Host to run the server on
+            port: Port to run the server on
+        """
+        self.host = host
+        self.port = port
+    
+    def start(self) -> None:
+        """Start the analysis server."""
+        from codegen_on_oss.analysis.server import run_server
+        run_server(host=self.host, port=self.port)
+
+
+def analyze_repository(repo_url: str, server_url: str = "http://localhost:8000") -> None:
     """
-    Compare two branches in a repository.
+    Analyze a repository and print the results.
     
     Args:
-        base_url: Base URL of the analysis server
         repo_url: URL of the repository to analyze
-        base_branch: Base branch name
-        compare_branch: Branch to compare against the base branch
-        
-    Returns:
-        Comparison result or None if an error occurred
+        server_url: URL of the analysis server
     """
-    print(f"Comparing branches {base_branch} and {compare_branch} in repository {repo_url}")
+    client = CodeAnalysisClient(server_url)
     
-    try:
-        response = requests.post(
-            f"{base_url}/compare_branches",
-            json={
-                "repo_url": repo_url,
-                "base_branch": base_branch,
-                "compare_branch": compare_branch
-            }
-        )
-        response.raise_for_status()
-        result = response.json()
-        
-        print("\nComparison result:")
-        print_json(result)
-        
-        return result
-    except Exception as e:
-        print(f"Error comparing branches: {e}")
-        return None
+    print(f"Analyzing repository: {repo_url}")
+    results = client.analyze_repo(repo_url)
+    
+    print("\nAnalysis Results:")
+    print(json.dumps(results, indent=2))
 
-def analyze_pr(base_url: str, repo_url: str, pr_number: int) -> Optional[Dict[str, Any]]:
+
+def analyze_file(
+    repo_url: str,
+    file_path: str,
+    server_url: str = "http://localhost:8000"
+) -> None:
     """
-    Analyze a pull request in a repository.
+    Analyze a specific file in a repository and print the results.
     
     Args:
-        base_url: Base URL of the analysis server
-        repo_url: URL of the repository to analyze
-        pr_number: Pull request number to analyze
-        
-    Returns:
-        Analysis result or None if an error occurred
+        repo_url: URL of the repository
+        file_path: Path to the file to analyze
+        server_url: URL of the analysis server
     """
-    print(f"Analyzing PR #{pr_number} in repository {repo_url}")
+    client = CodeAnalysisClient(server_url)
     
-    try:
-        response = requests.post(
-            f"{base_url}/analyze_pr",
-            json={
-                "repo_url": repo_url,
-                "pr_number": pr_number
-            }
-        )
-        response.raise_for_status()
-        result = response.json()
-        
-        print("\nAnalysis result:")
-        print_json(result)
-        
-        return result
-    except Exception as e:
-        print(f"Error analyzing PR: {e}")
-        return None
+    print(f"Analyzing file: {file_path} in repository {repo_url}")
+    results = client.analyze_file(repo_url, file_path)
+    
+    print("\nAnalysis Results:")
+    print(json.dumps(results, indent=2))
 
-def main():
+
+def main() -> None:
     """Main function to run the example."""
     parser = argparse.ArgumentParser(description="Code Analysis Server Example")
-    parser.add_argument("--start-server", action="store_true", help="Start the analysis server")
-    parser.add_argument("--host", default="localhost", help="Server host (default: localhost)")
-    parser.add_argument("--port", type=int, default=8000, help="Server port (default: 8000)")
-    parser.add_argument("--analyze-repo", help="Analyze a repository")
-    parser.add_argument("--analyze-commit", nargs=2, metavar=("REPO_URL", "COMMIT_HASH"), help="Analyze a commit")
-    parser.add_argument("--compare-branches", nargs=3, metavar=("REPO_URL", "BASE_BRANCH", "COMPARE_BRANCH"), help="Compare two branches")
-    parser.add_argument("--analyze-pr", nargs=2, metavar=("REPO_URL", "PR_NUMBER"), help="Analyze a pull request")
+    
+    parser.add_argument(
+        "--start-server",
+        action="store_true",
+        help="Start the analysis server"
+    )
+    
+    parser.add_argument(
+        "--host",
+        default="localhost",
+        help="Host to run the server on"
+    )
+    
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to run the server on"
+    )
+    
+    parser.add_argument(
+        "--analyze-repo",
+        help="URL of the repository to analyze"
+    )
+    
+    parser.add_argument(
+        "--analyze-file",
+        nargs=2,
+        metavar=("REPO_URL", "FILE_PATH"),
+        help="Analyze a specific file in a repository"
+    )
+    
+    parser.add_argument(
+        "--server-url",
+        default="http://localhost:8000",
+        help="URL of the analysis server"
+    )
     
     args = parser.parse_args()
     
-    # Start the server if requested
     if args.start_server:
+        server = CodeAnalysisServer(args.host, args.port)
         print(f"Starting analysis server on {args.host}:{args.port}")
-        run_server(host=args.host, port=args.port)
-        return
-    
-    # Base URL for API requests
-    base_url = f"http://{args.host}:{args.port}"
-    
-    # Analyze a repository
-    if args.analyze_repo:
-        analyze_repo(base_url, args.analyze_repo)
-    
-    # Analyze a commit
-    elif args.analyze_commit:
-        repo_url, commit_hash = args.analyze_commit
-        analyze_commit(base_url, repo_url, commit_hash)
-    
-    # Compare branches
-    elif args.compare_branches:
-        repo_url, base_branch, compare_branch = args.compare_branches
-        compare_branches(base_url, repo_url, base_branch, compare_branch)
-    
-    # Analyze a pull request
-    elif args.analyze_pr:
-        repo_url, pr_number = args.analyze_pr
-        analyze_pr(base_url, repo_url, int(pr_number))
-    
-    # If no action specified, print help
+        server.start()
+    elif args.analyze_repo:
+        analyze_repository(args.analyze_repo, args.server_url)
+    elif args.analyze_file:
+        repo_url, file_path = args.analyze_file
+        analyze_file(repo_url, file_path, args.server_url)
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
