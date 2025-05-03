@@ -387,6 +387,17 @@ def run_pr_validation_workflow(base_url: str, repo_url: str, pr_number: int) -> 
     else:
         print("No PR analysis results available.")
 
+def run_server(host: str = "0.0.0.0", port: int = 8000) -> None:
+    """
+    Run the enhanced server.
+    
+    Args:
+        host: The host to run the server on.
+        port: The port to run the server on.
+    """
+    print(f"Starting analysis server on {host}:{port}")
+    run_server(host=host, port=port)
+
 def main():
     """Main function to run the example."""
     parser = argparse.ArgumentParser(description="Enhanced Code Analysis Server Example")

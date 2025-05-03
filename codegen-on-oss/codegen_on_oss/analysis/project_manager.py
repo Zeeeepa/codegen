@@ -153,106 +153,32 @@ class Webhook:
 
 class ProjectManager:
     """
-    Manages projects and webhooks for the analysis server.
+    Manager for projects registered for analysis.
     """
     
-    def __init__(self, data_dir: Optional[str] = None):
+    def __init__(self) -> None:
         """
-        Initialize a new ProjectManager.
+        Initialize the project manager.
+        """
+        self.projects = {}
+        self.webhooks = {}
+    
+    def register_project(self, repo_url: str, name: str, description: Optional[str] = None, 
+                         default_branch: str = "main", webhook_url: Optional[str] = None, 
+                         github_token: Optional[str] = None) -> str:
+        """
+        Register a project for analysis.
         
         Args:
-            data_dir: Directory to store project data
-        """
-        self.data_dir = data_dir or os.path.join(os.path.expanduser("~"), ".codegen_analysis")
-        self.projects_file = os.path.join(self.data_dir, "projects.json")
-        self.webhooks_file = os.path.join(self.data_dir, "webhooks.json")
-        
-        # Create data directory if it doesn't exist
-        os.makedirs(self.data_dir, exist_ok=True)
-        
-        # Load projects and webhooks
-        self.projects: Dict[str, Project] = {}
-        self.webhooks: Dict[str, Webhook] = {}
-        
-        self._load_projects()
-        self._load_webhooks()
-    
-    def _load_projects(self):
-        """Load projects from the projects file."""
-        if os.path.exists(self.projects_file):
-            try:
-                with open(self.projects_file, "r") as f:
-                    projects_data = json.load(f)
-                
-                for project_data in projects_data:
-                    project = Project.from_dict(project_data)
-                    self.projects[project.project_id] = project
-                
-                logger.info(f"Loaded {len(self.projects)} projects")
-            except Exception as e:
-                logger.error(f"Error loading projects: {e}")
-    
-    def _load_webhooks(self):
-        """Load webhooks from the webhooks file."""
-        if os.path.exists(self.webhooks_file):
-            try:
-                with open(self.webhooks_file, "r") as f:
-                    webhooks_data = json.load(f)
-                
-                for webhook_data in webhooks_data:
-                    webhook = Webhook.from_dict(webhook_data)
-                    self.webhooks[webhook.webhook_id] = webhook
-                
-                logger.info(f"Loaded {len(self.webhooks)} webhooks")
-            except Exception as e:
-                logger.error(f"Error loading webhooks: {e}")
-    
-    def _save_projects(self):
-        """Save projects to the projects file."""
-        try:
-            projects_data = [project.to_dict() for project in self.projects.values()]
-            
-            with open(self.projects_file, "w") as f:
-                json.dump(projects_data, f, indent=2)
-            
-            logger.info(f"Saved {len(self.projects)} projects")
-        except Exception as e:
-            logger.error(f"Error saving projects: {e}")
-    
-    def _save_webhooks(self):
-        """Save webhooks to the webhooks file."""
-        try:
-            webhooks_data = [webhook.to_dict() for webhook in self.webhooks.values()]
-            
-            with open(self.webhooks_file, "w") as f:
-                json.dump(webhooks_data, f, indent=2)
-            
-            logger.info(f"Saved {len(self.webhooks)} webhooks")
-        except Exception as e:
-            logger.error(f"Error saving webhooks: {e}")
-    
-    def register_project(
-        self,
-        name: str,
-        repo_url: str,
-        description: Optional[str] = None,
-        default_branch: str = "main",
-        webhook_url: Optional[str] = None,
-        github_token: Optional[str] = None
-    ) -> Project:
-        """
-        Register a new project for analysis.
-        
-        Args:
-            name: Name of the project
-            repo_url: URL of the repository
-            description: Optional description of the project
-            default_branch: Default branch of the repository
-            webhook_url: Optional webhook URL to notify when analysis is complete
-            github_token: Optional GitHub token for private repositories
+            repo_url: The URL of the repository.
+            name: The name of the project.
+            description: The description of the project.
+            default_branch: The default branch of the repository.
+            webhook_url: The webhook URL to notify when analysis is complete.
+            github_token: The GitHub token for private repositories.
             
         Returns:
-            The registered project
+            The ID of the registered project.
         """
         # Generate a unique ID for the project
         project_id = str(uuid.uuid4())
@@ -274,17 +200,17 @@ class ProjectManager:
         # Save the projects
         self._save_projects()
         
-        return project
+        return project_id
     
-    def get_project(self, project_id: str) -> Optional[Project]:
+    def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
         """
         Get a project by ID.
         
         Args:
-            project_id: ID of the project to get
+            project_id: The ID of the project.
             
         Returns:
-            The project, or None if not found
+            The project data, or None if not found.
         """
         return self.projects.get(project_id)
     

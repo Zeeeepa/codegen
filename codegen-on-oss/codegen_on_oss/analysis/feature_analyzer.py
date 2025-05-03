@@ -25,20 +25,56 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FunctionAnalysisResult:
-    """Result of a function analysis."""
-    function_name: str
-    complexity: int
-    parameters: List[str]
-    return_type: str
-    line_count: int
-    dependencies: List[str] = field(default_factory=list)
-    callers: List[str] = field(default_factory=list)
-    is_tested: bool = False
-    test_coverage: Optional[float] = None
-    issues: List[Dict[str, Any]] = field(default_factory=list)
+    """
+    Result of analyzing a function.
+    """
+    
+    def __init__(
+        self,
+        function_name: str,
+        complexity: int,
+        parameters: List[str],
+        return_type: str,
+        line_count: int,
+        dependencies: List[str],
+        callers: List[str],
+        is_tested: bool,
+        test_coverage: Optional[float] = None,
+        issues: Optional[List[Dict[str, Any]]] = None
+    ) -> None:
+        """
+        Initialize a function analysis result.
+        
+        Args:
+            function_name: Name of the function.
+            complexity: Cyclomatic complexity of the function.
+            parameters: List of parameter names.
+            return_type: Return type of the function.
+            line_count: Number of lines in the function.
+            dependencies: List of dependencies.
+            callers: List of functions that call this function.
+            is_tested: Whether the function is tested.
+            test_coverage: Test coverage percentage.
+            issues: List of issues found in the function.
+        """
+        self.function_name = function_name
+        self.complexity = complexity
+        self.parameters = parameters
+        self.return_type = return_type
+        self.line_count = line_count
+        self.dependencies = dependencies
+        self.callers = callers
+        self.is_tested = is_tested
+        self.test_coverage = test_coverage
+        self.issues = issues or []
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the result to a dictionary."""
+        """
+        Convert the function analysis result to a dictionary.
+        
+        Returns:
+            Dictionary representation of the function analysis result.
+        """
         return {
             "function_name": self.function_name,
             "complexity": self.complexity,
@@ -54,16 +90,44 @@ class FunctionAnalysisResult:
 
 @dataclass
 class FeatureAnalysisResult:
-    """Result of a feature analysis."""
-    feature_path: str
-    functions: List[Dict[str, Any]] = field(default_factory=list)
-    classes: List[Dict[str, Any]] = field(default_factory=list)
-    complexity: Dict[str, Any] = field(default_factory=dict)
-    dependencies: List[str] = field(default_factory=list)
-    issues: List[Dict[str, Any]] = field(default_factory=list)
+    """
+    Result of analyzing a feature.
+    """
+    
+    def __init__(
+        self,
+        feature_path: str,
+        functions: List[Dict[str, Any]],
+        classes: List[Dict[str, Any]],
+        complexity: Dict[str, Any],
+        dependencies: List[str],
+        issues: List[Dict[str, Any]]
+    ) -> None:
+        """
+        Initialize a feature analysis result.
+        
+        Args:
+            feature_path: Path to the feature.
+            functions: List of function analysis results.
+            classes: List of class analysis results.
+            complexity: Complexity metrics.
+            dependencies: List of dependencies.
+            issues: List of issues found in the feature.
+        """
+        self.feature_path = feature_path
+        self.functions = functions
+        self.classes = classes
+        self.complexity = complexity
+        self.dependencies = dependencies
+        self.issues = issues
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the result to a dictionary."""
+        """
+        Convert the feature analysis result to a dictionary.
+        
+        Returns:
+            Dictionary representation of the feature analysis result.
+        """
         return {
             "feature_path": self.feature_path,
             "functions": self.functions,
