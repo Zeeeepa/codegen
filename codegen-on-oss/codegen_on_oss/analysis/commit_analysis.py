@@ -396,7 +396,7 @@ class CommitAnalyzer:
         Returns:
             A dictionary containing detailed analysis information
         """
-        report = {
+        report: Dict[str, Any] = {
             "summary": self.result.get_summary(),
             "is_properly_implemented": self.result.is_properly_implemented,
             "issues": [issue.to_dict() for issue in self.result.issues],
