@@ -12,7 +12,7 @@ import re
 import subprocess
 import tempfile
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Set
 from urllib.parse import urlparse
 
 import networkx as nx
@@ -739,172 +739,119 @@ class CodeAnalyzer:
 
 def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     """
-    Get the number of commits per month for the last 12 months.
-
-    Args:
-        repo_path: Path to the git repository
-
-    Returns:
-        Dictionary with month-year as key and number of commits as value
-    """
-    end_date = datetime.now(UTC)
-    start_date = end_date - timedelta(days=365)
-
-    date_format = "%Y-%m-%d"
-    since_date = start_date.strftime(date_format)
-    until_date = end_date.strftime(date_format)
-
-    # Validate repo_path format (should be owner/repo)
-    if not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo_path):
-        print(f"Invalid repository path format: {repo_path}")
-        return {}
-
-    repo_url = f"https://github.com/{repo_path}"
-
-    # Validate URL
-    try:
-        parsed_url = urlparse(repo_url)
-        if not all([parsed_url.scheme, parsed_url.netloc]):
-            print(f"Invalid URL: {repo_url}")
-            return {}
-    except Exception:
-        print(f"Invalid URL: {repo_url}")
-        return {}
-
-    try:
-        original_dir = os.getcwd()
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Using a safer approach with a list of arguments and shell=False
-            subprocess.run(
-                ["git", "clone", repo_url, temp_dir],
-                check=True,
-                capture_output=True,
-                shell=False,
-                text=True,
-            )
-            os.chdir(temp_dir)
-
-            # Using a safer approach with a list of arguments and shell=False
-            result = subprocess.run(
-                [
-                    "git",
-                    "log",
-                    f"--since={since_date}",
-                    f"--until={until_date}",
-                    "--format=%aI",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-                shell=False,
-            )
-            commit_dates = result.stdout.strip().split("\n")
-
-            monthly_counts = {}
-            current_date = start_date
-            while current_date <= end_date:
-                month_key = current_date.strftime("%Y-%m")
-                monthly_counts[month_key] = 0
-                current_date = (
-                    current_date.replace(day=1) + timedelta(days=32)
-                ).replace(day=1)
-
-            for date_str in commit_dates:
-                if date_str:  # Skip empty lines
-                    commit_date = datetime.fromisoformat(date_str.strip())
-                    month_key = commit_date.strftime("%Y-%m")
-                    if month_key in monthly_counts:
-                        monthly_counts[month_key] += 1
-
-            return dict(sorted(monthly_counts.items()))
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing git command: {e}")
-        return {}
-    except Exception as e:
-        print(f"Error processing git commits: {e}")
-        return {}
-    finally:
-        with contextlib.suppress(Exception):
-            os.chdir(original_dir)
-
-
-def calculate_cyclomatic_complexity(function):
-    """
-    Calculate the cyclomatic complexity of a function.
+    Get monthly commit activity for a repository.
     
     Args:
-        function: The function to analyze
+        repo_path: Path to the repository
+        
+    Returns:
+        A dictionary mapping month strings to commit counts
+    """
+    # ... existing function body ...
+
+def get_extended_context(symbol: Symbol, degree: int = 2) -> Tuple[Set[Symbol], Set[Symbol]]:
+    """
+    Get extended context for a symbol, including dependencies and usages.
+    
+    Args:
+        symbol: The symbol to analyze
+        degree: The degree of separation to include
+        
+    Returns:
+        A tuple of (dependencies, usages) sets
+    """
+    # ... existing function body ...
+
+def calculate_cyclomatic_complexity(func: Function) -> int:
+    """
+    Calculate cyclomatic complexity for a function.
+    
+    Args:
+        func: The function to analyze
         
     Returns:
         The cyclomatic complexity score
     """
-    def analyze_statement(statement):
-        complexity = 0
+    # ... existing function body ...
 
-        if isinstance(statement, IfBlockStatement):
-            complexity += 1
-            if hasattr(statement, "elif_statements"):
-                complexity += len(statement.elif_statements)
-
-        elif isinstance(statement, ForLoopStatement | WhileStatement):
-            complexity += 1
-
-        elif isinstance(statement, TryCatchStatement):
-            complexity += len(getattr(statement, "except_blocks", []))
-
-        if hasattr(statement, "condition") and isinstance(statement.condition, str):
-            complexity += statement.condition.count(
-                " and "
-            ) + statement.condition.count(" or ")
-
-        if hasattr(statement, "nested_code_blocks"):
-            for block in statement.nested_code_blocks:
-                complexity += analyze_block(block)
-
-        return complexity
-
-    def analyze_block(block):
-        if not block or not hasattr(block, "statements"):
-            return 0
-        return sum(analyze_statement(stmt) for stmt in block.statements)
-
-    return (
-        1 + analyze_block(function.code_block) if hasattr(function, "code_block") else 1
-    )
-
-
-def cc_rank(complexity):
+def count_lines(source: str) -> Tuple[int, int, int, int]:
     """
-    Convert cyclomatic complexity score to a letter grade.
+    Count different types of lines in source code.
     
     Args:
-        complexity: The cyclomatic complexity score
+        source: The source code to analyze
         
     Returns:
-        A letter grade from A to F
+        A tuple of (total lines, logical lines, source lines, comment lines)
     """
-    if complexity < 0:
-        raise ValueError("Complexity must be a non-negative value")
+    # ... existing function body ...
 
-    ranks = [
-        (1, 5, "A"),
-        (6, 10, "B"),
-        (11, 20, "C"),
-        (21, 30, "D"),
-        (31, 40, "E"),
-        (41, float("inf"), "F"),
-    ]
-    for low, high, rank in ranks:
-        if low <= complexity <= high:
-            return rank
-    return "F"
-
-
-def calculate_doi(cls):
+def cc_rank(score: float) -> str:
     """
-    Calculate the depth of inheritance for a given class.
+    Get a rank for a cyclomatic complexity score.
+    
+    Args:
+        score: The complexity score
+        
+    Returns:
+        A rank string (A-F)
+    """
+    # ... existing function body ...
+
+def get_operators_and_operands(func: Function) -> Tuple[List[str], List[str]]:
+    """
+    Extract operators and operands from a function.
+    
+    Args:
+        func: The function to analyze
+        
+    Returns:
+        A tuple of (operators, operands) lists
+    """
+    # ... existing function body ...
+
+def calculate_halstead_volume(operators: List[str], operands: List[str]) -> Tuple[float, int, int, int, int]:
+    """
+    Calculate Halstead volume metrics.
+    
+    Args:
+        operators: List of operators in the code
+        operands: List of operands in the code
+        
+    Returns:
+        A tuple of (volume, total operators, total operands, unique operators, unique operands)
+    """
+    # ... existing function body ...
+
+def calculate_maintainability_index(volume: float, complexity: int, loc: int) -> float:
+    """
+    Calculate maintainability index.
+    
+    Args:
+        volume: Halstead volume
+        complexity: Cyclomatic complexity
+        loc: Lines of code
+        
+    Returns:
+        The maintainability index score
+    """
+    # ... existing function body ...
+
+def get_maintainability_rank(score: float) -> str:
+    """
+    Get a rank for a maintainability index score.
+    
+    Args:
+        score: The maintainability score
+        
+    Returns:
+        A rank string (A-F)
+    """
+    # ... existing function body ...
+
+def calculate_doi(cls: Class) -> int:
+    """
+    Calculate depth of inheritance for a class.
     
     Args:
         cls: The class to analyze
@@ -912,200 +859,765 @@ def calculate_doi(cls):
     Returns:
         The depth of inheritance
     """
-    return len(cls.superclasses)
+    # ... existing function body ...
 
-
-def get_operators_and_operands(function):
+class CodebaseAnalyzer:
     """
-    Extract operators and operands from a function.
+    Analyzer for codebase structure and metrics.
+    """
+    
+    def __init__(self, codebase: Codebase) -> None:
+        """
+        Initialize the analyzer with a codebase.
+        
+        Args:
+            codebase: The codebase to analyze
+        """
+        self.codebase = codebase
+        self._context = None
+        self._initialized = False
+        
+    def initialize(self) -> None:
+        """
+        Initialize the analyzer by setting up the context and other necessary components.
+        This is called automatically when needed but can be called explicitly for eager initialization.
+        """
+        if self._initialized:
+            return
+            
+        # Initialize context if not already done
+        if self._context is None:
+            self._context = self._create_context()
+            
+        self._initialized = True
+    
+    def _create_context(self) -> CodebaseContext:
+        """
+        Create a CodebaseContext instance for the current codebase.
+        
+        Returns:
+            A new CodebaseContext instance
+        """
+        # If the codebase already has a context, use it
+        if hasattr(self.codebase, "ctx") and self.codebase.ctx is not None:
+            return self.codebase.ctx
+            
+        # Otherwise, create a new context from the codebase's configuration
+        from codegen.sdk.codebase.config import ProjectConfig
+        from codegen.configs.models.codebase import CodebaseConfig
+        
+        # Create a project config from the codebase
+        project_config = ProjectConfig(
+            repo_operator=self.codebase.repo_operator,
+            programming_language=self.codebase.programming_language,
+            base_path=self.codebase.base_path
+        )
+        
+        # Create and return a new context
+        return CodebaseContext([project_config], config=CodebaseConfig())
+    
+    @property
+    def context(self) -> CodebaseContext:
+        """
+        Get the CodebaseContext for the codebase.
+        
+        Returns:
+            A CodebaseContext object for the codebase
+        """
+        if not self._initialized:
+            self.initialize()
+            
+        return self._context
+    
+    def get_codebase_summary(self) -> str:
+        """
+        Generate a summary of the codebase.
+        
+        Returns:
+            A string summary of the codebase
+        """
+        return get_codebase_summary(self.codebase)
+    
+    def get_file_summary(self, file_path: str) -> str:
+        """
+        Get a summary of a specific file.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            A string containing summary information about the file
+        """
+        file = self.codebase.get_file(file_path)
+        if file is None:
+            return f"File not found: {file_path}"
+        return get_file_summary(file)
+    
+    def get_class_summary(self, class_name: str) -> str:
+        """
+        Get a summary of a specific class.
+        
+        Args:
+            class_name: Name of the class to analyze
+            
+        Returns:
+            A string containing summary information about the class
+        """
+        for cls in self.codebase.classes:
+            if cls.name == class_name:
+                return get_class_summary(cls)
+        return f"Class not found: {class_name}"
+    
+    def get_function_summary(self, function_name: str) -> str:
+        """
+        Get a summary of a specific function.
+        
+        Args:
+            function_name: Name of the function to analyze
+            
+        Returns:
+            A string containing summary information about the function
+        """
+        for func in self.codebase.functions:
+            if func.name == function_name:
+                return get_function_summary(func)
+        return f"Function not found: {function_name}"
+    
+    def get_symbol_summary(self, symbol_name: str) -> str:
+        """
+        Get a summary of a specific symbol.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            A string containing summary information about the symbol
+        """
+        for symbol in self.codebase.symbols:
+            if symbol.name == symbol_name:
+                return get_symbol_summary(symbol)
+        return f"Symbol not found: {symbol_name}"
+    
+    def find_symbol_by_name(self, symbol_name: str) -> Optional[Symbol]:
+        """
+        Find a symbol by its name.
+        
+        Args:
+            symbol_name: Name of the symbol to find
+            
+        Returns:
+            The Symbol object if found, None otherwise
+        """
+        for symbol in self.codebase.symbols:
+            if symbol.name == symbol_name:
+                return symbol
+        return None
+    
+    def find_file_by_path(self, file_path: str) -> Optional[SourceFile]:
+        """
+        Find a file by its path.
+        
+        Args:
+            file_path: Path to the file to find
+            
+        Returns:
+            The SourceFile object if found, None otherwise
+        """
+        return self.codebase.get_file(file_path)
+    
+    def find_class_by_name(self, class_name: str) -> Optional[Class]:
+        """
+        Find a class by its name.
+        
+        Args:
+            class_name: Name of the class to find
+            
+        Returns:
+            The Class object if found, None otherwise
+        """
+        for cls in self.codebase.classes:
+            if cls.name == class_name:
+                return cls
+        return None
+    
+    def find_function_by_name(self, function_name: str) -> Optional[Function]:
+        """
+        Find a function by its name.
+        
+        Args:
+            function_name: Name of the function to find
+            
+        Returns:
+            The Function object if found, None otherwise
+        """
+        for func in self.codebase.functions:
+            if func.name == function_name:
+                return func
+        return None
+    
+    def document_functions(self) -> None:
+        """
+        Generate documentation for functions in the codebase.
+        """
+        document_functions_run(self.codebase)
+    
+    def analyze_imports(self) -> Dict[str, Any]:
+        """
+        Analyze import relationships in the codebase.
+        
+        Returns:
+            A dictionary containing import analysis results
+        """
+        graph = create_graph_from_codebase(self.codebase.repo_name)
+        cycles = find_import_cycles(graph)
+        problematic_loops = find_problematic_import_loops(graph, cycles)
+        
+        return {
+            "import_cycles": cycles,
+            "problematic_loops": problematic_loops
+        }
+    
+    def convert_args_to_kwargs(self) -> None:
+        """
+        Convert all function call arguments to keyword arguments.
+        """
+        convert_all_calls_to_kwargs(self.codebase)
+    
+    def visualize_module_dependencies(self) -> None:
+        """
+        Visualize module dependencies in the codebase.
+        """
+        module_dependencies_run(self.codebase)
+    
+    def generate_mdx_documentation(self, class_name: str) -> str:
+        """
+        Generate MDX documentation for a class.
+        
+        Args:
+            class_name: Name of the class to document
+            
+        Returns:
+            MDX documentation as a string
+        """
+        for cls in self.codebase.classes:
+            if cls.name == class_name:
+                return render_mdx_page_for_class(cls)
+        return f"Class not found: {class_name}"
+    
+    def print_symbol_attribution(self) -> None:
+        """
+        Print attribution information for symbols in the codebase.
+        """
+        print_symbol_attribution(self.codebase)
+    
+    def get_extended_symbol_context(self, symbol_name: str, degree: int = 2) -> Dict[str, List[str]]:
+        """
+        Get extended context for a symbol, including dependencies and usages.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            degree: The degree of separation to include
+            
+        Returns:
+            A dictionary containing dependencies and usages
+        """
+        symbol = self.find_symbol_by_name(symbol_name)
+        if symbol:
+            dependencies, usages = get_extended_context(symbol, degree)
+            return {
+                "dependencies": [dep.name for dep in dependencies],
+                "usages": [usage.name for usage in usages]
+            }
+        return {"dependencies": [], "usages": []}
+    
+    def get_symbol_dependencies(self, symbol_name: str) -> List[str]:
+        """
+        Get direct dependencies of a symbol.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            A list of dependency symbol names
+        """
+        symbol = self.find_symbol_by_name(symbol_name)
+        if symbol and hasattr(symbol, "dependencies"):
+            return [dep.name for dep in symbol.dependencies]
+        return []
+    
+    def get_symbol_usages(self, symbol_name: str) -> List[str]:
+        """
+        Get direct usages of a symbol.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            A list of usage symbol names
+        """
+        symbol = self.find_symbol_by_name(symbol_name)
+        if symbol and hasattr(symbol, "symbol_usages"):
+            return [usage.name for usage in symbol.symbol_usages]
+        return []
+    
+    def get_file_imports(self, file_path: str) -> List[str]:
+        """
+        Get all imports in a file.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            A list of import statements
+        """
+        file = self.find_file_by_path(file_path)
+        if file and hasattr(file, "imports"):
+            return [imp.source for imp in file.imports]
+        return []
+    
+    def get_file_exports(self, file_path: str) -> List[str]:
+        """
+        Get all exports from a file.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            A list of exported symbol names
+        """
+        file = self.find_file_by_path(file_path)
+        if file is None:
+            return []
+            
+        exports = []
+        for symbol in file.symbols:
+            # Check if this symbol is exported
+            if hasattr(symbol, "is_exported") and symbol.is_exported:
+                exports.append(symbol.name)
+            # For TypeScript/JavaScript, check for export keyword
+            elif hasattr(symbol, "modifiers") and "export" in symbol.modifiers:
+                exports.append(symbol.name)
+                
+        return exports
+    
+    def analyze_complexity(self) -> Dict[str, Any]:
+        """
+        Analyze code complexity metrics for the codebase.
+        
+        Returns:
+            A dictionary containing complexity metrics
+        """
+        results = {}
+        
+        # Analyze cyclomatic complexity
+        complexity_results = []
+        for func in self.codebase.functions:
+            if hasattr(func, "code_block"):
+                complexity = calculate_cyclomatic_complexity(func)
+                complexity_results.append({
+                    "name": func.name,
+                    "complexity": complexity,
+                    "rank": cc_rank(complexity)
+                })
+        
+        # Calculate average complexity
+        if complexity_results:
+            avg_complexity = sum(item["complexity"] for item in complexity_results) / len(complexity_results)
+        else:
+            avg_complexity = 0
+        
+        results["cyclomatic_complexity"] = {
+            "functions": complexity_results,
+            "average": avg_complexity
+        }
+        
+        # Analyze line metrics
+        line_metrics = {}
+        total_loc = 0
+        total_lloc = 0
+        total_sloc = 0
+        total_comments = 0
+        
+        for file in self.codebase.files:
+            if hasattr(file, "source"):
+                loc, lloc, sloc, comments = count_lines(file.source)
+                line_metrics[file.name] = {
+                    "loc": loc,
+                    "lloc": lloc,
+                    "sloc": sloc,
+                    "comments": comments,
+                    "comment_ratio": comments / loc if loc > 0 else 0
+                }
+                total_loc += loc
+                total_lloc += lloc
+                total_sloc += sloc
+                total_comments += comments
+        
+        results["line_metrics"] = {
+            "files": line_metrics,
+            "total": {
+                "loc": total_loc,
+                "lloc": total_lloc,
+                "sloc": total_sloc,
+                "comments": total_comments,
+                "comment_ratio": total_comments / total_loc if total_loc > 0 else 0
+            }
+        }
+        
+        # Analyze Halstead metrics
+        halstead_results = []
+        total_volume = 0
+        
+        for func in self.codebase.functions:
+            if hasattr(func, "code_block"):
+                operators, operands = get_operators_and_operands(func)
+                volume, N1, N2, n1, n2 = calculate_halstead_volume(operators, operands)
+                
+                # Calculate maintainability index
+                loc = len(func.code_block.source.splitlines())
+                complexity = calculate_cyclomatic_complexity(func)
+                mi_score = calculate_maintainability_index(volume, complexity, loc)
+                
+                halstead_results.append({
+                    "name": func.name,
+                    "volume": volume,
+                    "unique_operators": n1,
+                    "unique_operands": n2,
+                    "total_operators": N1,
+                    "total_operands": N2,
+                    "maintainability_index": mi_score,
+                    "maintainability_rank": get_maintainability_rank(mi_score)
+                })
+                
+                total_volume += volume
+        
+        results["halstead_metrics"] = {
+            "functions": halstead_results,
+            "total_volume": total_volume,
+            "average_volume": total_volume / len(halstead_results) if halstead_results else 0
+        }
+        
+        # Analyze inheritance depth
+        inheritance_results = []
+        total_doi = 0
+        
+        for cls in self.codebase.classes:
+            doi = calculate_doi(cls)
+            inheritance_results.append({
+                "name": cls.name,
+                "depth": doi
+            })
+            total_doi += doi
+        
+        results["inheritance_depth"] = {
+            "classes": inheritance_results,
+            "average": total_doi / len(inheritance_results) if inheritance_results else 0
+        }
+        
+        # Analyze dependencies
+        dependency_graph = nx.DiGraph()
+        
+        for symbol in self.codebase.symbols:
+            dependency_graph.add_node(symbol.name)
+            
+            if hasattr(symbol, "dependencies"):
+                for dep in symbol.dependencies:
+                    dependency_graph.add_edge(symbol.name, dep.name)
+        
+        # Calculate centrality metrics
+        if dependency_graph.nodes:
+            try:
+                in_degree_centrality = nx.in_degree_centrality(dependency_graph)
+                out_degree_centrality = nx.out_degree_centrality(dependency_graph)
+                betweenness_centrality = nx.betweenness_centrality(dependency_graph)
+                
+                # Find most central symbols
+                most_imported = sorted(in_degree_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+                most_dependent = sorted(out_degree_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+                most_central = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:10]
+                
+                results["dependency_metrics"] = {
+                    "most_imported": most_imported,
+                    "most_dependent": most_dependent,
+                    "most_central": most_central
+                }
+            except Exception as e:
+                results["dependency_metrics"] = {"error": str(e)}
+        
+        return results
+    
+    def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
+        """
+        Get all dependencies of a file, including imports and symbol dependencies.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            A dictionary containing different types of dependencies
+        """
+        file = self.find_file_by_path(file_path)
+        if file is None:
+            return {"imports": [], "symbols": [], "external": []}
+            
+        imports = []
+        symbols = []
+        external = []
+        
+        # Get imports
+        if hasattr(file, "imports"):
+            for imp in file.imports:
+                if hasattr(imp, "module_name"):
+                    imports.append(imp.module_name)
+                elif hasattr(imp, "source"):
+                    imports.append(imp.source)
+        
+        # Get symbol dependencies
+        for symbol in file.symbols:
+            if hasattr(symbol, "dependencies"):
+                for dep in symbol.dependencies:
+                    if isinstance(dep, ExternalModule):
+                        external.append(dep.name)
+                    else:
+                        symbols.append(dep.name)
+        
+        return {
+            "imports": list(set(imports)),
+            "symbols": list(set(symbols)),
+            "external": list(set(external))
+        }
+    
+    def get_codebase_structure(self) -> Dict[str, Any]:
+        """
+        Get a hierarchical representation of the codebase structure.
+        
+        Returns:
+            A dictionary representing the codebase structure
+        """
+        # Initialize the structure with root directories
+        structure = {}
+        
+        # Process all files
+        for file in self.codebase.files:
+            path_parts = file.name.split('/')
+            current = structure
+            
+            # Build the directory structure
+            for i, part in enumerate(path_parts[:-1]):
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
+            
+            # Add the file with its symbols
+            file_info = {
+                "type": "file",
+                "symbols": []
+            }
+            
+            # Add symbols in the file
+            for symbol in file.symbols:
+                symbol_info = {
+                    "name": symbol.name,
+                    "type": str(symbol.symbol_type) if hasattr(symbol, "symbol_type") else "unknown"
+                }
+                file_info["symbols"].append(symbol_info)
+            
+            current[path_parts[-1]] = file_info
+        
+        return structure
+    
+    def get_monthly_commit_activity(self) -> Dict[str, int]:
+        """
+        Get monthly commit activity for the codebase.
+        
+        Returns:
+            A dictionary mapping month strings to commit counts
+        """
+        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
+            return {}
+            
+        try:
+            # Get commits from the last year
+            end_date = datetime.now(UTC)
+            start_date = end_date - timedelta(days=365)
+            
+            # Get all commits in the date range
+            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
+            
+            # Group commits by month
+            monthly_commits = {}
+            for commit in commits:
+                month_key = commit.committed_datetime.strftime("%Y-%m")
+                if month_key in monthly_commits:
+                    monthly_commits[month_key] += 1
+                else:
+                    monthly_commits[month_key] = 1
+                    
+            return monthly_commits
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def get_file_change_frequency(self, limit: int = 10) -> Dict[str, int]:
+        """
+        Get the most frequently changed files in the codebase.
+        
+        Args:
+            limit: Maximum number of files to return
+            
+        Returns:
+            A dictionary mapping file paths to change counts
+        """
+        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
+            return {}
+            
+        try:
+            # Get commits from the last year
+            end_date = datetime.now(UTC)
+            start_date = end_date - timedelta(days=365)
+            
+            # Get all commits in the date range
+            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
+            
+            # Count file changes
+            file_changes = {}
+            for commit in commits:
+                for file in commit.stats.files:
+                    if file in file_changes:
+                        file_changes[file] += 1
+                    else:
+                        file_changes[file] = 1
+            
+            # Sort by change count and limit results
+            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
+            return dict(sorted_files)
+        except Exception as e:
+            return {"error": str(e)}
+
+def get_monthly_commits(repo_path: str) -> Dict[str, int]:
+    """
+    Get monthly commit activity for a repository.
     
     Args:
-        function: The function to analyze
+        repo_path: Path to the repository
         
     Returns:
-        A tuple of (operators, operands)
+        A dictionary mapping month strings to commit counts
     """
-    operators = []
-    operands = []
+    # ... existing function body ...
 
-    for statement in function.code_block.statements:
-        for call in statement.function_calls:
-            operators.append(call.name)
-            for arg in call.args:
-                operands.append(arg.source)
-
-        if hasattr(statement, "expressions"):
-            for expr in statement.expressions:
-                if isinstance(expr, BinaryExpression):
-                    operators.extend([op.source for op in expr.operators])
-                    operands.extend([elem.source for elem in expr.elements])
-                elif isinstance(expr, UnaryExpression):
-                    operators.append(expr.ts_node.type)
-                    operands.append(expr.argument.source)
-                elif isinstance(expr, ComparisonExpression):
-                    operators.extend([op.source for op in expr.operators])
-                    operands.extend([elem.source for elem in expr.elements])
-
-        if hasattr(statement, "expression"):
-            expr = statement.expression
-            if isinstance(expr, BinaryExpression):
-                operators.extend([op.source for op in expr.operators])
-                operands.extend([elem.source for elem in expr.elements])
-            elif isinstance(expr, UnaryExpression):
-                operators.append(expr.ts_node.type)
-                operands.append(expr.argument.source)
-            elif isinstance(expr, ComparisonExpression):
-                operators.extend([op.source for op in expr.operators])
-                operands.extend([elem.source for elem in expr.elements])
-
-    return operators, operands
-
-
-def calculate_halstead_volume(operators, operands):
+def get_extended_context(symbol: Symbol, degree: int = 2) -> Tuple[Set[Symbol], Set[Symbol]]:
     """
-    Calculate Halstead volume metrics.
+    Get extended context for a symbol, including dependencies and usages.
     
     Args:
-        operators: List of operators
-        operands: List of operands
+        symbol: The symbol to analyze
+        degree: The degree of separation to include
         
     Returns:
-        A tuple of (volume, N1, N2, n1, n2)
+        A tuple of (dependencies, usages) sets
     """
-    n1 = len(set(operators))
-    n2 = len(set(operands))
+    # ... existing function body ...
 
-    N1 = len(operators)
-    N2 = len(operands)
+def calculate_cyclomatic_complexity(func: Function) -> int:
+    """
+    Calculate cyclomatic complexity for a function.
+    
+    Args:
+        func: The function to analyze
+        
+    Returns:
+        The cyclomatic complexity score
+    """
+    # ... existing function body ...
 
-    N = N1 + N2
-    n = n1 + n2
-
-    if n > 0:
-        volume = N * math.log2(n)
-        return volume, N1, N2, n1, n2
-    return 0, N1, N2, n1, n2
-
-
-def count_lines(source: str):
+def count_lines(source: str) -> Tuple[int, int, int, int]:
     """
     Count different types of lines in source code.
     
     Args:
-        source: The source code as a string
+        source: The source code to analyze
         
     Returns:
-        A tuple of (loc, lloc, sloc, comments)
+        A tuple of (total lines, logical lines, source lines, comment lines)
     """
-    if not source.strip():
-        return 0, 0, 0, 0
+    # ... existing function body ...
 
-    lines = [line.strip() for line in source.splitlines()]
-    loc = len(lines)
-    sloc = len([line for line in lines if line])
-
-    in_multiline = False
-    comments = 0
-    code_lines = []
-
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        code_part = line
-        if not in_multiline and "#" in line:
-            comment_start = line.find("#")
-            if not re.search(r'[\"\\\']\s*#\s*[\"\\\']\s*', line[:comment_start]):
-                code_part = line[:comment_start].strip()
-                if line[comment_start:].strip():
-                    comments += 1
-
-        if ('"""' in line or "'''" in line) and not (
-            line.count('"""') % 2 == 0 or line.count("'''") % 2 == 0
-        ):
-            if in_multiline:
-                in_multiline = False
-                comments += 1
-            else:
-                in_multiline = True
-                comments += 1
-                if line.strip().startswith('"""') or line.strip().startswith("'''"):
-                    code_part = ""
-        elif in_multiline or line.strip().startswith("#"):
-            comments += 1
-            code_part = ""
-
-        if code_part.strip():
-            code_lines.append(code_part)
-
-        i += 1
-
-    lloc = 0
-    continued_line = False
-    for line in code_lines:
-        if continued_line:
-            if not any(line.rstrip().endswith(c) for c in ("\\", ",", "{", "[", "(")):
-                continued_line = False
-            continue
-
-        lloc += len([stmt for stmt in line.split(";") if stmt.strip()])
-
-        if any(line.rstrip().endswith(c) for c in ("\\", ",", "{", "[", "(")):
-            continued_line = True
-
-    return loc, lloc, sloc, comments
-
-
-def calculate_maintainability_index(
-    halstead_volume: float, cyclomatic_complexity: float, loc: int
-) -> int:
+def cc_rank(score: float) -> str:
     """
-    Calculate the normalized maintainability index for a given function.
+    Get a rank for a cyclomatic complexity score.
     
     Args:
-        halstead_volume: The Halstead volume
-        cyclomatic_complexity: The cyclomatic complexity
+        score: The complexity score
+        
+    Returns:
+        A rank string (A-F)
+    """
+    # ... existing function body ...
+
+def get_operators_and_operands(func: Function) -> Tuple[List[str], List[str]]:
+    """
+    Extract operators and operands from a function.
+    
+    Args:
+        func: The function to analyze
+        
+    Returns:
+        A tuple of (operators, operands) lists
+    """
+    # ... existing function body ...
+
+def calculate_halstead_volume(operators: List[str], operands: List[str]) -> Tuple[float, int, int, int, int]:
+    """
+    Calculate Halstead volume metrics.
+    
+    Args:
+        operators: List of operators in the code
+        operands: List of operands in the code
+        
+    Returns:
+        A tuple of (volume, total operators, total operands, unique operators, unique operands)
+    """
+    # ... existing function body ...
+
+def calculate_maintainability_index(volume: float, complexity: int, loc: int) -> float:
+    """
+    Calculate maintainability index.
+    
+    Args:
+        volume: Halstead volume
+        complexity: Cyclomatic complexity
         loc: Lines of code
         
     Returns:
-        The maintainability index score (0-100)
+        The maintainability index score
     """
-    if loc <= 0:
-        return 100
+    # ... existing function body ...
 
-    try:
-        raw_mi = (
-            171
-            - 5.2 * math.log(max(1, halstead_volume))
-            - 0.23 * cyclomatic_complexity
-            - 16.2 * math.log(max(1, loc))
-        )
-        normalized_mi = max(0, min(100, raw_mi * 100 / 171))
-        return int(normalized_mi)
-    except (ValueError, TypeError):
-        return 0
-
-
-def get_maintainability_rank(mi_score: float) -> str:
+def get_maintainability_rank(score: float) -> str:
     """
-    Convert maintainability index score to a letter grade.
+    Get a rank for a maintainability index score.
     
     Args:
-        mi_score: The maintainability index score
+        score: The maintainability score
         
     Returns:
-        A letter grade from A to F
+        A rank string (A-F)
     """
-    if mi_score >= 85:
-        return "A"
-    elif mi_score >= 65:
-        return "B"
-    elif mi_score >= 45:
-        return "C"
-    elif mi_score >= 25:
-        return "D"
-    else:
-        return "F"
+    # ... existing function body ...
 
+def calculate_doi(cls: Class) -> int:
+    """
+    Calculate depth of inheritance for a class.
+    
+    Args:
+        cls: The class to analyze
+        
+    Returns:
+        The depth of inheritance
+    """
+    # ... existing function body ...
+
+# ... rest of existing code ...
 
 def get_github_repo_description(repo_url):
     """
@@ -1126,7 +1638,6 @@ def get_github_repo_description(repo_url):
         return repo_data.get("description", "No description available")
     else:
         return ""
-
 
 class RepoRequest(BaseModel):
     """Request model for repository analysis."""
