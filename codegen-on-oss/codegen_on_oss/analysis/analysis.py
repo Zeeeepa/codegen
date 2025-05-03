@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional, Union
 from codegen import Codebase
 from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
 from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
@@ -8,7 +8,9 @@ from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.expressions.binary_expression import BinaryExpression
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.comparison_expression import (
+    ComparisonExpression
+)
 import math
 import re
 import requests
@@ -17,21 +19,66 @@ import subprocess
 import os
 import tempfile
 from fastapi.middleware.cors import CORSMiddleware
-import modal
+import uvicorn
+import networkx as nx
 
-image = (
-    modal.Image.debian_slim()
-    .apt_install("git")
-    .pip_install(
-        "codegen", "fastapi", "uvicorn", "gitpython", "requests", "pydantic", "datetime"
-    )
+# Import from other analysis modules
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from codegen_on_oss.analysis.codebase_analysis import (
+    get_codebase_summary, 
+    get_file_summary, 
+    get_class_summary, 
+    get_function_summary, 
+    get_symbol_summary
+)
+from codegen_on_oss.analysis.codegen_sdk_codebase import (
+    get_codegen_sdk_subdirectories, 
+    get_codegen_sdk_codebase
+)
+from codegen_on_oss.analysis.current_code_codebase import (
+    get_graphsitter_repo_path, 
+    get_codegen_codebase_base_path, 
+    get_current_code_codebase, 
+    import_all_codegen_sdk_module, 
+    DocumentedObjects, 
+    get_documented_objects
+)
+from codegen_on_oss.analysis.document_functions import (
+    hop_through_imports, 
+    get_extended_context, 
+    run as document_functions_run
+)
+from codegen_on_oss.analysis.mdx_docs_generation import (
+    render_mdx_page_for_class, 
+    render_mdx_page_title, 
+    render_mdx_inheritence_section, 
+    render_mdx_attributes_section, 
+    render_mdx_methods_section, 
+    render_mdx_for_attribute, 
+    format_parameter_for_mdx, 
+    format_parameters_for_mdx, 
+    format_return_for_mdx, 
+    render_mdx_for_method, 
+    get_mdx_route_for_class, 
+    format_type_string, 
+    resolve_type_string, 
+    format_builtin_type_string, 
+    span_type_string_by_pipe, 
+    parse_link
+)
+from codegen_on_oss.analysis.module_dependencies import run as module_dependencies_run
+from codegen_on_oss.analysis.symbolattr import print_symbol_attribution
+from codegen_on_oss.analysis.analysis_import import (
+    create_graph_from_codebase, 
+    convert_all_calls_to_kwargs, 
+    find_import_cycles, 
+    find_problematic_import_loops
 )
 
-app = modal.App(name="analytics-app", image=image)
+# Create FastAPI app
+app = FastAPI()
 
-fastapi_app = FastAPI()
-
-fastapi_app.add_middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -104,11 +151,20 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
     finally:
         try:
             os.chdir(original_dir)
-        except:
+        except Exception:
             pass
 
 
 def calculate_cyclomatic_complexity(function):
+    """
+    Calculate the cyclomatic complexity of a function.
+    
+    Args:
+        function: The function to analyze
+        
+    Returns:
+        The cyclomatic complexity score
+    """
     def analyze_statement(statement):
         complexity = 0
 
@@ -145,6 +201,15 @@ def calculate_cyclomatic_complexity(function):
 
 
 def cc_rank(complexity):
+    """
+    Convert cyclomatic complexity score to a letter grade.
+    
+    Args:
+        complexity: The cyclomatic complexity score
+        
+    Returns:
+        A letter grade from A to F
+    """
     if complexity < 0:
         raise ValueError("Complexity must be a non-negative value")
 
@@ -168,6 +233,15 @@ def calculate_doi(cls):
 
 
 def get_operators_and_operands(function):
+    """
+    Extract operators and operands from a function.
+    
+    Args:
+        function: The function to analyze
+        
+    Returns:
+        A tuple of (operators, operands)
+    """
     operators = []
     operands = []
 
@@ -205,6 +279,16 @@ def get_operators_and_operands(function):
 
 
 def calculate_halstead_volume(operators, operands):
+    """
+    Calculate Halstead volume metrics.
+    
+    Args:
+        operators: List of operators
+        operands: List of operands
+        
+    Returns:
+        A tuple of (volume, N1, N2, n1, n2)
+    """
     n1 = len(set(operators))
     n2 = len(set(operands))
 
@@ -221,7 +305,15 @@ def calculate_halstead_volume(operators, operands):
 
 
 def count_lines(source: str):
-    """Count different types of lines in source code."""
+    """
+    Count different types of lines in source code.
+    
+    Args:
+        source: The source code as a string
+        
+    Returns:
+        A tuple of (loc, lloc, sloc, comments)
+    """
     if not source.strip():
         return 0, 0, 0, 0
 
@@ -239,7 +331,7 @@ def count_lines(source: str):
         code_part = line
         if not in_multiline and "#" in line:
             comment_start = line.find("#")
-            if not re.search(r'["\'].*#.*["\']', line[:comment_start]):
+            if not re.search(r'[\"\\'].*#.*[\"\\']', line[:comment_start]):
                 code_part = line[:comment_start].strip()
                 if line[comment_start:].strip():
                     comments += 1
@@ -286,7 +378,17 @@ def count_lines(source: str):
 def calculate_maintainability_index(
     halstead_volume: float, cyclomatic_complexity: float, loc: int
 ) -> int:
-    """Calculate the normalized maintainability index for a given function."""
+    """
+    Calculate the normalized maintainability index for a given function.
+    
+    Args:
+        halstead_volume: The Halstead volume
+        cyclomatic_complexity: The cyclomatic complexity
+        loc: Lines of code
+        
+    Returns:
+        The maintainability index score (0-100)
+    """
     if loc <= 0:
         return 100
 
@@ -304,7 +406,15 @@ def calculate_maintainability_index(
 
 
 def get_maintainability_rank(mi_score: float) -> str:
-    """Convert maintainability index score to a letter grade."""
+    """
+    Convert maintainability index score to a letter grade.
+    
+    Args:
+        mi_score: The maintainability index score
+        
+    Returns:
+        A letter grade from A to F
+    """
     if mi_score >= 85:
         return "A"
     elif mi_score >= 65:
@@ -318,6 +428,15 @@ def get_maintainability_rank(mi_score: float) -> str:
 
 
 def get_github_repo_description(repo_url):
+    """
+    Get the description of a GitHub repository.
+    
+    Args:
+        repo_url: The repository URL in the format 'owner/repo'
+        
+    Returns:
+        The repository description
+    """
     api_url = f"https://api.github.com/repos/{repo_url}"
 
     response = requests.get(api_url)
@@ -330,12 +449,21 @@ def get_github_repo_description(repo_url):
 
 
 class RepoRequest(BaseModel):
+    """Request model for repository analysis."""
     repo_url: str
 
 
-@fastapi_app.post("/analyze_repo")
+@app.post("/analyze_repo")
 async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
-    """Analyze a repository and return comprehensive metrics."""
+    """
+    Analyze a repository and return comprehensive metrics.
+    
+    Args:
+        request: The repository request containing the repo URL
+        
+    Returns:
+        A dictionary of analysis results
+    """
     repo_url = request.repo_url
     codebase = Codebase.from_repo(repo_url)
 
@@ -359,7 +487,9 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
         total_sloc += sloc
         total_comments += comments
 
-    callables = codebase.functions + [m for c in codebase.classes for m in c.methods]
+    callables = codebase.functions + [
+        m for c in codebase.classes for m in c.methods
+    ]
 
     num_callables = 0
     for func in callables:
@@ -391,25 +521,31 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
                 "lloc": total_lloc,
                 "sloc": total_sloc,
                 "comments": total_comments,
-                "comment_density": (total_comments / total_loc * 100)
-                if total_loc > 0
-                else 0,
+                "comment_density": (
+                    total_comments / total_loc * 100 if total_loc > 0 else 0
+                ),
             },
         },
         "cyclomatic_complexity": {
-            "average": total_complexity if num_callables > 0 else 0,
+            "average": (
+                total_complexity / num_callables if num_callables > 0 else 0
+            ),
         },
         "depth_of_inheritance": {
-            "average": total_doi / len(codebase.classes) if codebase.classes else 0,
+            "average": (
+                total_doi / len(codebase.classes) if codebase.classes else 0
+            ),
         },
         "halstead_metrics": {
             "total_volume": int(total_volume),
-            "average_volume": int(total_volume / num_callables)
-            if num_callables > 0
-            else 0,
+            "average_volume": (
+                int(total_volume / num_callables) if num_callables > 0 else 0
+            ),
         },
         "maintainability_index": {
-            "average": int(total_mi / num_callables) if num_callables > 0 else 0,
+            "average": (
+                int(total_mi / num_callables) if num_callables > 0 else 0
+            ),
         },
         "description": desc,
         "num_files": num_files,
@@ -421,11 +557,7 @@ async def analyze_repo(request: RepoRequest) -> Dict[str, Any]:
     return results
 
 
-@app.function(image=image)
-@modal.asgi_app()
-def fastapi_modal_app():
-    return fastapi_app
-
-
 if __name__ == "__main__":
-    app.deploy("analytics-app")
+    # Run the FastAPI app locally with uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
