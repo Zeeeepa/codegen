@@ -760,21 +760,53 @@ class CodeAnalyzer:
         Args:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
-        """
-            # Count changes per file
-            file_changes = {}
-            for commit in commits:
-                for file in commit.files:
-                    if file.filename in file_changes:
-                        file_changes[file.filename] += 1
-                    else:
-                        file_changes[file.filename] = 1
             
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
-        except Exception as e:
-            return {"error": str(e)}
+        Returns:
+            A string containing the diff
+        """
+        # Get the file from both codebases
+        original_file = self.codebase.get_file(file_path)
+        commit_file = commit_codebase.get_file(file_path)
+        
+        # If either file is missing, return an appropriate message
+        if original_file is None and commit_file is None:
+            return f"File {file_path} not found in either codebase"
+        elif original_file is None:
+            return f"File {file_path} added in commit"
+        elif commit_file is None:
+            return f"File {file_path} deleted in commit"
+            
+        # Get the source code from both files
+        original_source = original_file.source if hasattr(original_file, "source") else ""
+        commit_source = commit_file.source if hasattr(commit_file, "source") else ""
+        
+        # If the sources are identical, return a message
+        if original_source == commit_source:
+            return f"No changes to file {file_path}"
+            
+        # Create a diff
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt") as original_temp, \
+             tempfile.NamedTemporaryFile(mode="w", suffix=".txt") as commit_temp:
+            
+            # Write the source code to temporary files
+            original_temp.write(original_source)
+            original_temp.flush()
+            
+            commit_temp.write(commit_source)
+            commit_temp.flush()
+            
+            # Run diff command
+            try:
+                result = subprocess.run(
+                    ["diff", "-u", original_temp.name, commit_temp.name],
+                    capture_output=True,
+                    text=True
+                )
+                
+                # Return the diff output
+                return result.stdout if result.stdout else "No changes detected by diff tool"
+            except Exception as e:
+                return f"Error generating diff: {str(e)}"
     
     def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
@@ -884,6 +916,37 @@ class CodeAnalyzer:
             "high_risk_changes": high_risk_changes,
             "formatted_summary": diff_analyzer.format_summary_text()
         }
+    
+    def get_file_change_frequency(self, repo_url: str, limit: int = 10) -> Dict[str, int]:
+        """Get the frequency of changes for each file in the repository.
+
+        Args:
+            repo_url: URL of the repository
+            limit: Maximum number of files to return
+
+        Returns:
+            Dictionary mapping file paths to change counts
+        """
+        try:
+            # Get repository and commits
+            g = Github(self.github_token)
+            repo = g.get_repo(repo_url.split("github.com/")[1].rstrip(".git"))
+            commits = list(repo.get_commits())
+
+            # Count changes per file
+            file_changes = {}
+            for commit in commits:
+                for file in commit.files:
+                    if file.filename in file_changes:
+                        file_changes[file.filename] += 1
+                    else:
+                        file_changes[file.filename] = 1
+            
+            # Sort by change count and limit results
+            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
+            return dict(sorted_files)
+        except Exception as e:
+            return {"error": str(e)}
 
 
 def get_monthly_commits(repo_path: str) -> Dict[str, int]:
@@ -966,7 +1029,13 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                     if month_key in monthly_counts:
                         monthly_counts[month_key] += 1
 
+            os.chdir(original_dir)
             return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        if 'original_dir' in locals():
+            os.chdir(original_dir)
+        print(f"Error getting monthly commits: {str(e)}")
+        return {}
 
 
 # Helper functions for complexity analysis

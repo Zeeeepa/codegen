@@ -1,531 +1,268 @@
 """
-Database Repository for Codegen-on-OSS
-
-This module provides repository classes for database operations on different
-entities, such as repositories, commits, files, symbols, snapshots, and analysis results.
+Repository pattern for database operations.
 """
+from __future__ import annotations
 
-import logging
-from typing import List, Optional, Dict, Any, Union, Type, TypeVar, Generic
-from datetime import datetime
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, cast
 
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, not_, func, desc, asc
 
 from codegen_on_oss.database.models import (
-    Repository, Commit, File, Symbol, Snapshot, 
-    AnalysisResult, Metric, Issue
+    AnalysisResult,
+    Base,
+    Commit,
+    File,
+    Issue,
+    Metric,
+    Repository,
+    Snapshot,
+    Symbol,
 )
-from codegen_on_oss.database.manager import get_db_session
 
-logger = logging.getLogger(__name__)
+# Type variable for models
+T = TypeVar("T")
 
-# Generic type for ORM models
-T = TypeVar('T')
 
 class BaseRepository(Generic[T]):
     """Base repository for database operations."""
-    
-    def __init__(self, model: Type[T]):
-        """
-        Initialize the repository.
-        
+
+    def __init__(self, session: Session, model_class: Any):
+        """Initialize the repository.
+
         Args:
-            model: The SQLAlchemy model class.
+            session: SQLAlchemy session
+            model_class: Model class
         """
-        self.model = model
-    
-    def get_by_id(self, session: Session, id: int) -> Optional[T]:
-        """
-        Get an entity by ID.
-        
-        Args:
-            session: The database session.
-            id: The entity ID.
-            
+        self.session = session
+        self.model_class = model_class
+
+    def get_all(self) -> List[T]:
+        """Get all records.
+
         Returns:
-            The entity or None if not found.
+            List of records
         """
-        return session.query(self.model).filter(self.model.id == id).first()
-    
-    def get_all(self, session: Session, limit: int = 100, offset: int = 0) -> List[T]:
-        """
-        Get all entities with pagination.
-        
+        return self.session.query(self.model_class).all()
+
+    def get_by_id(self, id: int) -> Optional[T]:
+        """Get a record by ID.
+
         Args:
-            session: The database session.
-            limit: Maximum number of entities to return.
-            offset: Number of entities to skip.
-            
+            id: Record ID
+
         Returns:
-            A list of entities.
+            Record or None
         """
-        return session.query(self.model).limit(limit).offset(offset).all()
-    
-    def create(self, session: Session, **kwargs) -> T:
-        """
-        Create a new entity.
-        
+        return self.session.query(self.model_class).filter(self.model_class.id == id).first()
+
+    def create(self, **kwargs: Any) -> T:
+        """Create a new record.
+
         Args:
-            session: The database session.
-            **kwargs: Entity attributes.
-            
+            **kwargs: Record attributes
+
         Returns:
-            The created entity.
+            Created record
         """
-        entity = self.model(**kwargs)
-        session.add(entity)
-        session.flush()
-        return entity
-    
-    def update(self, session: Session, id: int, **kwargs) -> Optional[T]:
-        """
-        Update an entity.
-        
+        record = self.model_class(**kwargs)
+        self.session.add(record)
+        self.session.commit()
+        return record
+
+    def update(self, id: int, **kwargs: Any) -> Optional[T]:
+        """Update a record.
+
         Args:
-            session: The database session.
-            id: The entity ID.
-            **kwargs: Entity attributes to update.
-            
+            id: Record ID
+            **kwargs: Record attributes to update
+
         Returns:
-            The updated entity or None if not found.
+            Updated record or None
         """
-        entity = self.get_by_id(session, id)
-        if entity:
+        record = self.get_by_id(id)
+        if record:
             for key, value in kwargs.items():
-                setattr(entity, key, value)
-            session.flush()
-        return entity
-    
-    def delete(self, session: Session, id: int) -> bool:
-        """
-        Delete an entity.
-        
+                setattr(record, key, value)
+            self.session.commit()
+        return record
+
+    def delete(self, id: int) -> bool:
+        """Delete a record.
+
         Args:
-            session: The database session.
-            id: The entity ID.
-            
+            id: Record ID
+
         Returns:
-            True if the entity was deleted, False otherwise.
+            True if deleted, False otherwise
         """
-        entity = self.get_by_id(session, id)
-        if entity:
-            session.delete(entity)
-            session.flush()
+        record = self.get_by_id(id)
+        if record:
+            self.session.delete(record)
+            self.session.commit()
             return True
         return False
+
+    def filter_by(self, **kwargs: Any) -> List[T]:
+        """Filter records by attributes.
+
+        Args:
+            **kwargs: Filter criteria
+
+        Returns:
+            List of records
+        """
+        return self.session.query(self.model_class).filter_by(**kwargs).all()
+
+    def first_by(self, **kwargs: Any) -> Optional[T]:
+        """Get first record by attributes.
+
+        Args:
+            **kwargs: Filter criteria
+
+        Returns:
+            Record or None
+        """
+        return self.session.query(self.model_class).filter_by(**kwargs).first()
 
 
 class RepositoryRepository(BaseRepository[Repository]):
-    """Repository for Repository entities."""
-    
-    def __init__(self):
-        super().__init__(Repository)
-    
-    def get_by_name_and_url(self, session: Session, name: str, url: str) -> Optional[Repository]:
-        """
-        Get a repository by name and URL.
-        
+    """Repository for Repository model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            name: The repository name.
-            url: The repository URL.
-            
-        Returns:
-            The repository or None if not found.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.name == name, self.model.url == url)
-        ).first()
-    
-    def get_by_name(self, session: Session, name: str) -> Optional[Repository]:
-        """
-        Get a repository by name.
-        
+        super().__init__(session, Repository)
+
+    def get_by_url(self, url: str) -> Optional[Repository]:
+        """Get a repository by URL.
+
         Args:
-            session: The database session.
-            name: The repository name.
-            
+            url: Repository URL
+
         Returns:
-            The repository or None if not found.
+            Repository or None
         """
-        return session.query(self.model).filter(self.model.name == name).first()
-    
-    def update_last_analyzed(self, session: Session, id: int) -> Optional[Repository]:
-        """
-        Update the last_analyzed timestamp of a repository.
-        
-        Args:
-            session: The database session.
-            id: The repository ID.
-            
-        Returns:
-            The updated repository or None if not found.
-        """
-        return self.update(session, id, last_analyzed=datetime.utcnow())
+        return self.first_by(url=url)
 
 
 class CommitRepository(BaseRepository[Commit]):
-    """Repository for Commit entities."""
-    
-    def __init__(self):
-        super().__init__(Commit)
-    
-    def get_by_sha(self, session: Session, repository_id: int, sha: str) -> Optional[Commit]:
-        """
-        Get a commit by SHA.
-        
+    """Repository for Commit model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            repository_id: The repository ID.
-            sha: The commit SHA.
-            
-        Returns:
-            The commit or None if not found.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.repository_id == repository_id, self.model.sha == sha)
-        ).first()
-    
-    def get_latest_commits(self, session: Session, repository_id: int, limit: int = 10) -> List[Commit]:
-        """
-        Get the latest commits for a repository.
-        
+        super().__init__(session, Commit)
+
+    def get_by_sha(self, repository_id: int, sha: str) -> Optional[Commit]:
+        """Get a commit by SHA.
+
         Args:
-            session: The database session.
-            repository_id: The repository ID.
-            limit: Maximum number of commits to return.
-            
+            repository_id: Repository ID
+            sha: Commit SHA
+
         Returns:
-            A list of commits.
+            Commit or None
         """
-        return session.query(self.model).filter(
-            self.model.repository_id == repository_id
-        ).order_by(desc(self.model.timestamp)).limit(limit).all()
+        return self.first_by(repository_id=repository_id, sha=sha)
 
 
 class FileRepository(BaseRepository[File]):
-    """Repository for File entities."""
-    
-    def __init__(self):
-        super().__init__(File)
-    
-    def get_by_path(self, session: Session, commit_id: int, path: str) -> Optional[File]:
-        """
-        Get a file by path.
-        
+    """Repository for File model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            commit_id: The commit ID.
-            path: The file path.
-            
-        Returns:
-            The file or None if not found.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.commit_id == commit_id, self.model.path == path)
-        ).first()
-    
-    def get_by_language(self, session: Session, commit_id: int, language: str) -> List[File]:
-        """
-        Get files by language.
-        
+        super().__init__(session, File)
+
+    def get_by_path(self, repository_id: int, path: str) -> Optional[File]:
+        """Get a file by path.
+
         Args:
-            session: The database session.
-            commit_id: The commit ID.
-            language: The file language.
-            
+            repository_id: Repository ID
+            path: File path
+
         Returns:
-            A list of files.
+            File or None
         """
-        return session.query(self.model).filter(
-            and_(self.model.commit_id == commit_id, self.model.language == language)
-        ).all()
+        return self.first_by(repository_id=repository_id, path=path)
 
 
 class SymbolRepository(BaseRepository[Symbol]):
-    """Repository for Symbol entities."""
-    
-    def __init__(self):
-        super().__init__(Symbol)
-    
-    def get_by_qualified_name(self, session: Session, file_id: int, qualified_name: str) -> Optional[Symbol]:
-        """
-        Get a symbol by qualified name.
-        
+    """Repository for Symbol model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            file_id: The file ID.
-            qualified_name: The symbol qualified name.
-            
-        Returns:
-            The symbol or None if not found.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.file_id == file_id, self.model.qualified_name == qualified_name)
-        ).first()
-    
-    def get_by_type(self, session: Session, file_id: int, type: str) -> List[Symbol]:
-        """
-        Get symbols by type.
-        
+        super().__init__(session, Symbol)
+
+    def get_by_name(self, name: str) -> List[Symbol]:
+        """Get symbols by name.
+
         Args:
-            session: The database session.
-            file_id: The file ID.
-            type: The symbol type.
-            
+            name: Symbol name
+
         Returns:
-            A list of symbols.
+            List of symbols
         """
-        return session.query(self.model).filter(
-            and_(self.model.file_id == file_id, self.model.type == type)
-        ).all()
-    
-    def add_dependency(self, session: Session, source_id: int, target_id: int) -> bool:
-        """
-        Add a dependency between two symbols.
-        
-        Args:
-            session: The database session.
-            source_id: The source symbol ID.
-            target_id: The target symbol ID.
-            
-        Returns:
-            True if the dependency was added, False otherwise.
-        """
-        source = self.get_by_id(session, source_id)
-        target = self.get_by_id(session, target_id)
-        
-        if source and target and target not in source.dependencies:
-            source.dependencies.append(target)
-            session.flush()
-            return True
-        return False
+        return self.filter_by(name=name)
 
 
 class SnapshotRepository(BaseRepository[Snapshot]):
-    """Repository for Snapshot entities."""
-    
-    def __init__(self):
-        super().__init__(Snapshot)
-    
-    def get_by_hash(self, session: Session, repository_id: int, snapshot_hash: str) -> Optional[Snapshot]:
-        """
-        Get a snapshot by hash.
-        
+    """Repository for Snapshot model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            repository_id: The repository ID.
-            snapshot_hash: The snapshot hash.
-            
-        Returns:
-            The snapshot or None if not found.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.repository_id == repository_id, self.model.snapshot_hash == snapshot_hash)
-        ).first()
-    
-    def get_latest_snapshots(self, session: Session, repository_id: int, limit: int = 10) -> List[Snapshot]:
-        """
-        Get the latest snapshots for a repository.
-        
-        Args:
-            session: The database session.
-            repository_id: The repository ID.
-            limit: Maximum number of snapshots to return.
-            
-        Returns:
-            A list of snapshots.
-        """
-        return session.query(self.model).filter(
-            self.model.repository_id == repository_id
-        ).order_by(desc(self.model.created_at)).limit(limit).all()
-    
-    def add_file(self, session: Session, snapshot_id: int, file_id: int) -> bool:
-        """
-        Add a file to a snapshot.
-        
-        Args:
-            session: The database session.
-            snapshot_id: The snapshot ID.
-            file_id: The file ID.
-            
-        Returns:
-            True if the file was added, False otherwise.
-        """
-        snapshot = self.get_by_id(session, snapshot_id)
-        file = session.query(File).filter(File.id == file_id).first()
-        
-        if snapshot and file and file not in snapshot.files:
-            snapshot.files.append(file)
-            session.flush()
-            return True
-        return False
+        super().__init__(session, Snapshot)
 
 
 class AnalysisResultRepository(BaseRepository[AnalysisResult]):
-    """Repository for AnalysisResult entities."""
-    
-    def __init__(self):
-        super().__init__(AnalysisResult)
-    
-    def get_by_type(self, session: Session, repository_id: int, analysis_type: str) -> List[AnalysisResult]:
-        """
-        Get analysis results by type.
-        
+    """Repository for AnalysisResult model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            repository_id: The repository ID.
-            analysis_type: The analysis type.
-            
-        Returns:
-            A list of analysis results.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.repository_id == repository_id, self.model.analysis_type == analysis_type)
-        ).all()
-    
-    def get_latest_by_type(self, session: Session, repository_id: int, analysis_type: str) -> Optional[AnalysisResult]:
-        """
-        Get the latest analysis result by type.
-        
-        Args:
-            session: The database session.
-            repository_id: The repository ID.
-            analysis_type: The analysis type.
-            
-        Returns:
-            The analysis result or None if not found.
-        """
-        return session.query(self.model).filter(
-            and_(self.model.repository_id == repository_id, self.model.analysis_type == analysis_type)
-        ).order_by(desc(self.model.created_at)).first()
-    
-    def mark_completed(self, session: Session, id: int, status: str = "success") -> Optional[AnalysisResult]:
-        """
-        Mark an analysis result as completed.
-        
-        Args:
-            session: The database session.
-            id: The analysis result ID.
-            status: The completion status.
-            
-        Returns:
-            The updated analysis result or None if not found.
-        """
-        return self.update(session, id, status=status, completed_at=datetime.utcnow())
+        super().__init__(session, AnalysisResult)
 
 
 class MetricRepository(BaseRepository[Metric]):
-    """Repository for Metric entities."""
-    
-    def __init__(self):
-        super().__init__(Metric)
-    
-    def get_by_name(self, session: Session, analysis_result_id: int, name: str) -> List[Metric]:
-        """
-        Get metrics by name.
-        
+    """Repository for Metric model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            analysis_result_id: The analysis result ID.
-            name: The metric name.
-            
-        Returns:
-            A list of metrics.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.analysis_result_id == analysis_result_id, self.model.name == name)
-        ).all()
-    
-    def get_for_file(self, session: Session, file_id: int) -> List[Metric]:
-        """
-        Get metrics for a file.
-        
-        Args:
-            session: The database session.
-            file_id: The file ID.
-            
-        Returns:
-            A list of metrics.
-        """
-        return session.query(self.model).filter(self.model.file_id == file_id).all()
-    
-    def get_for_symbol(self, session: Session, symbol_id: int) -> List[Metric]:
-        """
-        Get metrics for a symbol.
-        
-        Args:
-            session: The database session.
-            symbol_id: The symbol ID.
-            
-        Returns:
-            A list of metrics.
-        """
-        return session.query(self.model).filter(self.model.symbol_id == symbol_id).all()
+        super().__init__(session, Metric)
 
 
 class IssueRepository(BaseRepository[Issue]):
-    """Repository for Issue entities."""
-    
-    def __init__(self):
-        super().__init__(Issue)
-    
-    def get_by_type(self, session: Session, analysis_result_id: int, type: str) -> List[Issue]:
-        """
-        Get issues by type.
-        
+    """Repository for Issue model."""
+
+    def __init__(self, session: Session):
+        """Initialize the repository.
+
         Args:
-            session: The database session.
-            analysis_result_id: The analysis result ID.
-            type: The issue type.
-            
-        Returns:
-            A list of issues.
+            session: SQLAlchemy session
         """
-        return session.query(self.model).filter(
-            and_(self.model.analysis_result_id == analysis_result_id, self.model.type == type)
-        ).all()
-    
-    def get_by_severity(self, session: Session, analysis_result_id: int, severity: int) -> List[Issue]:
-        """
-        Get issues by severity.
-        
-        Args:
-            session: The database session.
-            analysis_result_id: The analysis result ID.
-            severity: The issue severity.
-            
-        Returns:
-            A list of issues.
-        """
-        return session.query(self.model).filter(
-            and_(self.model.analysis_result_id == analysis_result_id, self.model.severity == severity)
-        ).all()
-    
-    def get_for_file(self, session: Session, file_id: int) -> List[Issue]:
-        """
-        Get issues for a file.
-        
-        Args:
-            session: The database session.
-            file_id: The file ID.
-            
-        Returns:
-            A list of issues.
-        """
-        return session.query(self.model).filter(self.model.file_id == file_id).all()
-    
-    def get_for_symbol(self, session: Session, symbol_id: int) -> List[Issue]:
-        """
-        Get issues for a symbol.
-        
-        Args:
-            session: The database session.
-            symbol_id: The symbol ID.
-            
-        Returns:
-            A list of issues.
-        """
-        return session.query(self.model).filter(self.model.symbol_id == symbol_id).all()
+        super().__init__(session, Issue)
 

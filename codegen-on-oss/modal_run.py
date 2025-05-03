@@ -1,6 +1,8 @@
 import os
 import sys
 from pathlib import Path
+import re
+from typing import Dict, Any
 
 import modal
 from loguru import logger
@@ -121,29 +123,64 @@ def main(
     """
     Main entrypoint for the parse app.
     """
+    
+    if source == "csv":
+        input_path = Path(csv_file).relative_to(".")
+        with codegen_input_volume.batch_upload(force=True) as b:
+            b.put_file(csv_file, input_path)
 
-    match source:
-        case "csv":
-            input_path = Path(csv_file).relative_to(".")
-            with codegen_input_volume.batch_upload(force=True) as b:
-                b.put_file(csv_file, input_path)
+        env = {
+            "CSV_FILE_PATH": f"/app/inputs/{input_path}",
+        }
+    elif source == "single":
+        env = {"SINGLE_URL": single_url}
+        if single_commit:
+            env["SINGLE_COMMIT"] = single_commit
+    elif source == "github":
+        env = {
+            "GITHUB_LANGUAGE": github_language,
+            "GITHUB_HEURISTIC": github_heuristic,
+            "GITHUB_NUM_REPOS": str(github_num_repos),
+        }
+    else:
+        msg = f"Invalid source: {source}"
+        raise ValueError(msg)
 
-            env = {
-                "CSV_FILE_PATH": f"/app/inputs/{input_path}",
-            }
-        case "single":
-            env = {"SINGLE_URL": single_url}
-            if single_commit:
-                env["SINGLE_COMMIT"] = single_commit
-        case "github":
-            env = {
-                "GITHUB_LANGUAGE": github_language,
-                "GITHUB_HEURISTIC": github_heuristic,
-                "GITHUB_NUM_REPOS": str(github_num_repos),
-            }
-        case _:
-            msg = f"Invalid source: {source}"
-            raise ValueError(msg)
+    return parse_repo_on_modal.remote(
+        source=source,
+        env=env,
+    )
+
+
+def parse_repo(source: str, env: Dict[str, str] = None) -> Dict[str, Any]:
+    """Parse a repository using Modal.
+
+    Args:
+        source: Repository source (URL or local path)
+        env: Environment variables to pass to the parser
+
+    Returns:
+        Parsed repository data
+    """
+    if env is None:
+        env = {}
+
+    # Check if source is a URL
+    if source.startswith("http://") or source.startswith("https://"):
+        # It's a URL, use it directly
+        pass
+    # Check if source is a local path
+    elif os.path.exists(source):
+        # It's a local path, convert to absolute path
+        source = os.path.abspath(source)
+    # Check if source is a GitHub repo in the format owner/repo
+    elif re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", source):
+        # It's a GitHub repo, convert to URL
+        source = f"https://github.com/{source}"
+    else:
+        # Invalid source
+        msg = f"Invalid source: {source}"
+        raise ValueError(msg)
 
     return parse_repo_on_modal.remote(
         source=source,
