@@ -1,6 +1,6 @@
 import logging
-from codegen.extensions.github.types.pull_request import PullRequestLabeledEvent
 
+from codegen.extensions.github.types.pull_request import PullRequestLabeledEvent
 from codegen.sdk.core.codebase import Codebase
 
 logging.basicConfig(level=logging.INFO, force=True)
@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeledEvent):
     # Next.js codemod to detect imports of the react-dev-overlay module in production code
 
-    patch, commit_shas, modified_symbols = codebase.get_modified_symbols_in_pr(event.pull_request.number)
+    patch, commit_shas, modified_symbols = codebase.get_modified_symbols_in_pr(
+        event.pull_request.number
+    )
     modified_files = set(commit_shas.keys())
     from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
 
@@ -39,11 +41,17 @@ def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeled
         operator = condition.operator[-1].source
 
         # Check for non-production conditions
-        if operator in false_operators and condition.source == f"process.env.NODE_ENV {operator} 'production'":
+        if (
+            operator in false_operators
+            and condition.source == f"process.env.NODE_ENV {operator} 'production'"
+        ):
             return True
 
         # Check for explicit development conditions
-        if operator in true_operators and condition.source == f"process.env.NODE_ENV {operator} 'development'":
+        if (
+            operator in true_operators
+            and condition.source == f"process.env.NODE_ENV {operator} 'development'"
+        ):
             return True
 
         return False
@@ -66,7 +74,10 @@ def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeled
         operator = condition.operator[-1].source
 
         # Valid if the main if block checks for production
-        return operator in true_operators and condition.source == f"process.env.NODE_ENV {operator} 'production'"
+        return (
+            operator in true_operators
+            and condition.source == f"process.env.NODE_ENV {operator} 'production'"
+        )
 
     for file in directory.files(recursive=True):
         for imp in file.inbound_imports:
@@ -97,9 +108,13 @@ def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeled
     if violations:
         # Comment on PR with violations
         review_attention_message = "## Dev Import Violations Found\n\n"
-        review_attention_message += "The following files have imports that violate development overlay rules:\n\n"
+        review_attention_message += (
+            "The following files have imports that violate development overlay rules:\n\n"
+        )
         review_attention_message += "\n".join(violations)
-        review_attention_message += "\n\nPlease ensure that development imports are not imported in production code."
+        review_attention_message += (
+            "\n\nPlease ensure that development imports are not imported in production code."
+        )
 
         # Create PR comment with the formatted message
         codebase._op.create_pr_comment(event.pull_request.number, review_attention_message)

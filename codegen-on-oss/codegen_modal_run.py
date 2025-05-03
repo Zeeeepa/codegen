@@ -1,5 +1,4 @@
 import modal
-
 from codegen_on_oss.sources import GithubSettings, GithubSource
 
 app = modal.App("codegen-oss-parse")

@@ -7,9 +7,19 @@ This module defines the SQLAlchemy models for storing analysis data.
 import enum
 import uuid
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON, Enum, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -18,6 +28,7 @@ Base = declarative_base()
 
 class AnalysisType(enum.Enum):
     """Analysis type enum."""
+
     CODE_QUALITY = "code_quality"
     DEPENDENCIES = "dependencies"
     SECURITY = "security"
@@ -28,6 +39,7 @@ class AnalysisType(enum.Enum):
 
 class SymbolType(enum.Enum):
     """Symbol type enum."""
+
     FUNCTION = "function"
     CLASS = "class"
     VARIABLE = "variable"
@@ -38,6 +50,7 @@ class SymbolType(enum.Enum):
 
 class RelationshipType(enum.Enum):
     """Relationship type enum."""
+
     CALLS = "calls"
     IMPORTS = "imports"
     INHERITS = "inherits"
@@ -48,6 +61,7 @@ class RelationshipType(enum.Enum):
 
 class IssueSeverity(enum.Enum):
     """Issue severity enum."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -57,6 +71,7 @@ class IssueSeverity(enum.Enum):
 
 class Repository(Base):
     """Repository model."""
+
     __tablename__ = "repositories"
 
     id = Column(Integer, primary_key=True)
@@ -68,11 +83,14 @@ class Repository(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     snapshots = relationship("Snapshot", back_populates="repository", cascade="all, delete-orphan")
-    analysis_results = relationship("AnalysisResult", back_populates="repository", cascade="all, delete-orphan")
+    analysis_results = relationship(
+        "AnalysisResult", back_populates="repository", cascade="all, delete-orphan"
+    )
 
 
 class Snapshot(Base):
     """Snapshot model."""
+
     __tablename__ = "snapshots"
 
     id = Column(Integer, primary_key=True)
@@ -89,12 +107,15 @@ class Snapshot(Base):
 
     repository = relationship("Repository", back_populates="snapshots")
     parent_snapshot = relationship("Snapshot", remote_side=[id], backref="child_snapshots")
-    analysis_results = relationship("AnalysisResult", back_populates="snapshot", cascade="all, delete-orphan")
+    analysis_results = relationship(
+        "AnalysisResult", back_populates="snapshot", cascade="all, delete-orphan"
+    )
     files = relationship("File", back_populates="snapshot", cascade="all, delete-orphan")
 
 
 class File(Base):
     """File model."""
+
     __tablename__ = "files"
 
     id = Column(Integer, primary_key=True)
@@ -117,6 +138,7 @@ class File(Base):
 
 class Function(Base):
     """Function model."""
+
     __tablename__ = "functions"
 
     id = Column(Integer, primary_key=True)
@@ -138,6 +160,7 @@ class Function(Base):
 
 class Class(Base):
     """Class model."""
+
     __tablename__ = "classes"
 
     id = Column(Integer, primary_key=True)
@@ -157,6 +180,7 @@ class Class(Base):
 
 class Import(Base):
     """Import model."""
+
     __tablename__ = "imports"
 
     id = Column(Integer, primary_key=True)
@@ -174,6 +198,7 @@ class Import(Base):
 
 class AnalysisResult(Base):
     """Analysis result model."""
+
     __tablename__ = "analysis_results"
 
     id = Column(Integer, primary_key=True)
@@ -194,6 +219,7 @@ class AnalysisResult(Base):
 
 class Issue(Base):
     """Issue model."""
+
     __tablename__ = "issues"
 
     id = Column(Integer, primary_key=True)
@@ -214,6 +240,7 @@ class Issue(Base):
 
 class SymbolAnalysis(Base):
     """Symbol analysis model."""
+
     __tablename__ = "symbol_analyses"
 
     id = Column(Integer, primary_key=True)
@@ -231,6 +258,7 @@ class SymbolAnalysis(Base):
 
 class DependencyGraph(Base):
     """Dependency graph model."""
+
     __tablename__ = "dependency_graphs"
 
     id = Column(Integer, primary_key=True)
@@ -246,6 +274,7 @@ class DependencyGraph(Base):
 
 class CodeMetrics(Base):
     """Code metrics model."""
+
     __tablename__ = "code_metrics"
 
     id = Column(Integer, primary_key=True)
@@ -263,6 +292,7 @@ class CodeMetrics(Base):
 
 class AnalysisJob(Base):
     """Analysis job model."""
+
     __tablename__ = "analysis_jobs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -278,4 +308,3 @@ class AnalysisJob(Base):
     progress = Column(Integer, nullable=False, default=0)
     error_message = Column(Text, nullable=True)
     result_data = Column(JSON, nullable=True)
-

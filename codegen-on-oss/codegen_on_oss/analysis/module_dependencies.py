@@ -1,10 +1,23 @@
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+
 import codegen
 import networkx as nx
-from codegen import Codebase
+
+if TYPE_CHECKING:
+    from codegen import Codebase
 
 
-@codegen.function("visualize-modules-dependencies")
-def run(codebase: Codebase):
+@codegen.function("module-dependencies")
+def run(codebase: "Codebase") -> Dict[str, Any]:
+    """
+    Analyze module dependencies in a codebase.
+
+    Args:
+        codebase: The codebase to analyze
+
+    Returns:
+        Dictionary with module dependency information
+    """
     # Create a directed graph
     G = nx.DiGraph()
 
@@ -21,7 +34,9 @@ def run(codebase: Codebase):
                     # Check if the import statement is importing an app
                     for imp in import_statement.imports:
                         # Assuming app imports follow a specific naming convention or structure
-                        if "app" in imp.name:  # Adjust this condition based on your app naming convention
+                        if (
+                            "app" in imp.name
+                        ):  # Adjust this condition based on your app naming convention
                             G.add_edge(app, imp.import_statement.source)
 
     nodes_to_remove = [node for node, degree in G.degree() if degree == 1]
@@ -34,5 +49,9 @@ def run(codebase: Codebase):
 
 
 if __name__ == "__main__":
-    codebase = Codebase.from_repo("getsentry/sentry", commit="fb0d53b2210cc896fc3e2cf32dae149ea8a8a45a", language="python")
+    codebase = Codebase.from_repo(
+        "getsentry/sentry",
+        commit="fb0d53b2210cc896fc3e2cf32dae149ea8a8a45a",
+        language="python",
+    )
     run(codebase)

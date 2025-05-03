@@ -1,6 +1,9 @@
 import os.path
 
-from codegen.sdk.code_generation.current_code_codebase import get_codegen_codebase_base_path, get_current_code_codebase
+from codegen.sdk.code_generation.current_code_codebase import (
+    get_codegen_codebase_base_path,
+    get_current_code_codebase,
+)
 from codegen.sdk.core.codebase import Codebase
 
 

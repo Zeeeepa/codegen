@@ -20,4 +20,3 @@ ENV PYTHONUNBUFFERED=1
 
 # Run the application
 CMD ["python", "-m", "codegen_on_oss.app"]
-

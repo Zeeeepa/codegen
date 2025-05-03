@@ -1,7 +1,18 @@
 import re
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from codegen.sdk.code_generation.doc_utils.schemas import ClassDoc, MethodDoc, ParameterDoc
-from codegen.sdk.code_generation.doc_utils.utils import sanitize_html_for_mdx, sanitize_mdx_mintlify_description
+if TYPE_CHECKING:
+    from codegen import Codebase
+
+from codegen.sdk.code_generation.doc_utils.schemas import (
+    ClassDoc,
+    MethodDoc,
+    ParameterDoc,
+)
+from codegen.sdk.code_generation.doc_utils.utils import (
+    sanitize_html_for_mdx,
+    sanitize_mdx_mintlify_description,
+)
 
 
 def render_mdx_page_for_class(cls_doc: ClassDoc) -> str:
@@ -48,10 +59,16 @@ def render_mdx_inheritence_section(cls_doc: ClassDoc) -> str:
 
 def render_mdx_attributes_section(cls_doc: ClassDoc) -> str:
     """Renders the MDX for the attributes section"""
-    sorted_attributes = sorted(cls_doc.attributes + [method for method in cls_doc.methods if method.method_type == "property"], key=lambda x: x.name)
+    sorted_attributes = sorted(
+        cls_doc.attributes
+        + [method for method in cls_doc.methods if method.method_type == "property"],
+        key=lambda x: x.name,
+    )
     if len(sorted_attributes) <= 0:
         return ""
-    attributes_mdx_string = "\n".join([render_mdx_for_attribute(attribute) for attribute in sorted_attributes])
+    attributes_mdx_string = "\n".join(
+        [render_mdx_for_attribute(attribute) for attribute in sorted_attributes]
+    )
 
     return f"""## Attributes
 <HorizontalDivider />
@@ -64,7 +81,13 @@ def render_mdx_methods_section(cls_doc: ClassDoc) -> str:
     sorted_methods = sorted(cls_doc.methods, key=lambda x: x.name)
     if len(sorted_methods) <= 0:
         return ""
-    methods_mdx_string = "\n".join([render_mdx_for_method(method) for method in sorted_methods if method.method_type == "method"])
+    methods_mdx_string = "\n".join(
+        [
+            render_mdx_for_method(method)
+            for method in sorted_methods
+            if method.method_type == "method"
+        ]
+    )
 
     return f"""## Methods
 <HorizontalDivider />
@@ -192,7 +215,11 @@ def parse_link(type_string: str, href: bool = False) -> str:
             symbol = path.split("/")[-1]
 
             # Create a Link object
-            link = f'<a href="/{path}" style={{ {{fontWeight: "inherit", fontSize: "inherit"}} }}>{symbol}</a>' if href else f"[{symbol}](/{path})"
+            link = (
+                f'<a href="/{path}" style={{ {{fontWeight: "inherit", fontSize: "inherit"}} }}>{symbol}</a>'
+                if href
+                else f"[{symbol}](/{path})"
+            )
             result.append(link)
         else:
             part = format_builtin_type_string(part)
@@ -202,3 +229,20 @@ def parse_link(type_string: str, href: bool = False) -> str:
                 result.append(part.strip())
 
     return " ".join(result)
+
+
+def generate_mdx_docs(
+    codebase: Codebase,
+    output_dir: str,
+    include_patterns: Optional[List[str]] = None,
+    exclude_patterns: Optional[List[str]] = None,
+) -> None:
+    """
+    Generate MDX documentation for a codebase.
+
+    Args:
+        codebase: The codebase to generate documentation for
+        output_dir: The directory to write the documentation to
+        include_patterns: Optional list of patterns to include
+        exclude_patterns: Optional list of patterns to exclude
+    """

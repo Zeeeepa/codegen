@@ -4,26 +4,26 @@ Database package for the codegen-on-oss system.
 This package provides database models and utilities for storing and retrieving analysis data.
 """
 
+from codegen_on_oss.database.connection import db_manager, get_db, init_db
 from codegen_on_oss.database.models import (
+    AnalysisJob,
+    AnalysisResult,
+    AnalysisType,
     Base,
-    Repository,
-    Snapshot,
+    Class,
+    CodeMetrics,
+    DependencyGraph,
     File,
     Function,
-    Class,
     Import,
-    AnalysisResult,
     Issue,
-    SymbolAnalysis,
-    DependencyGraph,
-    CodeMetrics,
-    AnalysisJob,
-    AnalysisType,
-    SymbolType,
-    RelationshipType,
     IssueSeverity,
+    RelationshipType,
+    Repository,
+    Snapshot,
+    SymbolAnalysis,
+    SymbolType,
 )
-from codegen_on_oss.database.connection import db_manager, get_db, init_db
 
 __all__ = [
     "Base",
@@ -47,4 +47,3 @@ __all__ = [
     "get_db",
     "init_db",
 ]
-

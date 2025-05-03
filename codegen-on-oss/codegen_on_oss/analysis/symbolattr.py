@@ -43,7 +43,14 @@ def print_symbol_attribution(codebase):
             print("  • Last editor: Not available")
 
         if hasattr(symbol, "editor_history") and symbol.editor_history:
-            print(f"  • Editor history: {', '.join(symbol.editor_history[:5])}" + (f" and {len(symbol.editor_history) - 5} more..." if len(symbol.editor_history) > 5 else ""))
+            print(
+                f"  • Editor history: {', '.join(symbol.editor_history[:5])}"
+                + (
+                    f" and {len(symbol.editor_history) - 5} more..."
+                    if len(symbol.editor_history) > 5
+                    else ""
+                )
+            )
         else:
             print("  • Editor history: Not available")
 
@@ -64,7 +71,10 @@ if __name__ == "__main__":
             repo_config = RepoConfig.from_repo_path(repo_path)
             repo_operator = RepoOperator(repo_config=repo_config)
 
-            project = ProjectConfig.from_repo_operator(repo_operator=repo_operator, programming_language=ProgrammingLanguage.PYTHON)
+            project = ProjectConfig.from_repo_operator(
+                repo_operator=repo_operator,
+                programming_language=ProgrammingLanguage.PYTHON,
+            )
             codebase = Codebase(projects=[project])
         else:
             # Use from_repo method for a well-known repository
@@ -75,7 +85,9 @@ if __name__ == "__main__":
                 language="python",
             )
 
-        print(f"Codebase loaded with {len(codebase.files)} files and {len(codebase.symbols)} symbols")
+        print(
+            f"Codebase loaded with {len(codebase.files)} files and {len(codebase.symbols)} symbols"
+        )
 
         # First run the analysis to gather attribution data
         print("\n🔍 Running AI impact analysis...")

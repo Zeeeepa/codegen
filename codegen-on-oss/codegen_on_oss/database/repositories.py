@@ -4,15 +4,26 @@ Repository pattern implementation for database operations.
 This module provides repository classes for database operations.
 """
 
-from typing import List, Optional, Dict, Any, TypeVar, Generic, Type
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+
 from sqlalchemy.orm import Session
 
 from codegen_on_oss.database.models import (
-    Repository, Snapshot, File, Function, Class, Import,
-    AnalysisResult, Issue, SymbolAnalysis, DependencyGraph, CodeMetrics, AnalysisJob
+    AnalysisJob,
+    AnalysisResult,
+    Class,
+    CodeMetrics,
+    DependencyGraph,
+    File,
+    Function,
+    Import,
+    Issue,
+    Repository,
+    Snapshot,
+    SymbolAnalysis,
 )
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BaseRepository(Generic[T]):
@@ -264,7 +275,9 @@ class AnalysisResultRepository(BaseRepository[AnalysisResult]):
         """
         return self.db.query(self.model).filter(self.model.repository_id == repo_id).all()
 
-    def get_latest_result_for_snapshot(self, snapshot_id: int, analysis_type: str) -> Optional[AnalysisResult]:
+    def get_latest_result_for_snapshot(
+        self, snapshot_id: int, analysis_type: str
+    ) -> Optional[AnalysisResult]:
         """
         Get the latest analysis result for a snapshot and analysis type.
 
@@ -277,7 +290,10 @@ class AnalysisResultRepository(BaseRepository[AnalysisResult]):
         """
         return (
             self.db.query(self.model)
-            .filter(self.model.snapshot_id == snapshot_id, self.model.analysis_type == analysis_type)
+            .filter(
+                self.model.snapshot_id == snapshot_id,
+                self.model.analysis_type == analysis_type,
+            )
             .order_by(self.model.created_at.desc())
             .first()
         )
@@ -335,4 +351,3 @@ class AnalysisJobRepository(BaseRepository[AnalysisJob]):
         if status:
             query = query.filter(self.model.status == status)
         return query.all()
-

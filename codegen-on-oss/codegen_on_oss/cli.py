@@ -107,9 +107,7 @@ def run(
     """
     Run codegen parsing pipeline on repositories from a given repository source.
     """
-    logger.add(
-        error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR"
-    )
+    logger.add(error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR")
     logger.add(
         sys.stdout,
         format="{time: HH:mm:ss} {level} {message}",

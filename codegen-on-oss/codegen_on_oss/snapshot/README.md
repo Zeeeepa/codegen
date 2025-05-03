@@ -138,4 +138,3 @@ The module includes event handlers for automatically creating snapshots on GitHu
 ## Example
 
 See `swe_harness_example.py` in the analysis module for a complete demonstration of the snapshot module's capabilities.
-

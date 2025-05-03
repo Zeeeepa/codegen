@@ -10,7 +10,13 @@ from codegen.git.repo_operator.repo_operator import RepoOperator
 from codegen.git.schemas.repo_config import RepoConfig
 from codegen.sdk.codebase.config import ProjectConfig
 from codegen.sdk.core.codebase import Codebase, CodebaseType
-from codegen.shared.decorators.docs import DocumentedObject, apidoc_objects, no_apidoc_objects, py_apidoc_objects, ts_apidoc_objects
+from codegen.shared.decorators.docs import (
+    DocumentedObject,
+    apidoc_objects,
+    no_apidoc_objects,
+    py_apidoc_objects,
+    ts_apidoc_objects,
+)
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from codegen.shared.logging.get_logger import get_logger
 
@@ -35,7 +41,11 @@ def get_codegen_codebase_base_path() -> str:
     return "src" if "src" in codegen_base_dir else ""
 
 
-def get_current_code_codebase(config: CodebaseConfig | None = None, secrets: SecretsConfig | None = None, subdirectories: list[str] | None = None) -> CodebaseType:
+def get_current_code_codebase(
+    config: CodebaseConfig | None = None,
+    secrets: SecretsConfig | None = None,
+    subdirectories: list[str] | None = None,
+) -> CodebaseType:
     """Returns a Codebase for the code that is *currently running* (i.e. the Codegen repo)"""
     codegen_repo_path = get_graphsitter_repo_path()
     base_dir = get_codegen_codebase_base_path()
@@ -46,7 +56,14 @@ def get_current_code_codebase(config: CodebaseConfig | None = None, secrets: Sec
     op = RepoOperator(repo_config=repo_config, bot_commit=False)
 
     config = (config or CodebaseConfig()).model_copy(update={"base_path": base_dir})
-    projects = [ProjectConfig(repo_operator=op, programming_language=ProgrammingLanguage.PYTHON, subdirectories=subdirectories, base_path=base_dir)]
+    projects = [
+        ProjectConfig(
+            repo_operator=op,
+            programming_language=ProgrammingLanguage.PYTHON,
+            subdirectories=subdirectories,
+            base_path=base_dir,
+        )
+    ]
     codebase = Codebase(projects=projects, config=config, secrets=secrets)
     return codebase
 
@@ -86,9 +103,32 @@ def get_documented_objects() -> DocumentedObjects:
     from codegen.sdk.core.codebase import CodebaseType, PyCodebaseType, TSCodebaseType
 
     if PyCodebaseType not in apidoc_objects:
-        apidoc_objects.append(DocumentedObject(name="PyCodebaseType", module="codegen.sdk.core.codebase", object=PyCodebaseType))
+        apidoc_objects.append(
+            DocumentedObject(
+                name="PyCodebaseType",
+                module="codegen.sdk.core.codebase",
+                object=PyCodebaseType,
+            )
+        )
     if TSCodebaseType not in apidoc_objects:
-        apidoc_objects.append(DocumentedObject(name="TSCodebaseType", module="codegen.sdk.core.codebase", object=TSCodebaseType))
+        apidoc_objects.append(
+            DocumentedObject(
+                name="TSCodebaseType",
+                module="codegen.sdk.core.codebase",
+                object=TSCodebaseType,
+            )
+        )
     if CodebaseType not in apidoc_objects:
-        apidoc_objects.append(DocumentedObject(name="CodebaseType", module="codegen.sdk.core.codebase", object=CodebaseType))
-    return {"apidoc": apidoc_objects, "py_apidoc": py_apidoc_objects, "ts_apidoc": ts_apidoc_objects, "no_apidoc": no_apidoc_objects}
+        apidoc_objects.append(
+            DocumentedObject(
+                name="CodebaseType",
+                module="codegen.sdk.core.codebase",
+                object=CodebaseType,
+            )
+        )
+    return {
+        "apidoc": apidoc_objects,
+        "py_apidoc": py_apidoc_objects,
+        "ts_apidoc": ts_apidoc_objects,
+        "no_apidoc": no_apidoc_objects,
+    }
