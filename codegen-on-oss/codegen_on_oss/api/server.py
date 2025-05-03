@@ -54,38 +54,39 @@ def get_db():
 # Add GraphQL endpoint
 app.add_route("/graphql", GraphQLApp(schema=schema))
 
+
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
         self.connection_subscriptions: Dict[WebSocket, List[EventType]] = {}
-    
+
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
         self.connection_subscriptions[websocket] = []
-    
+
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
         if websocket in self.connection_subscriptions:
             del self.connection_subscriptions[websocket]
-    
+
     def subscribe(self, websocket: WebSocket, event_type: EventType):
         if websocket in self.connection_subscriptions:
             if event_type not in self.connection_subscriptions[websocket]:
                 self.connection_subscriptions[websocket].append(event_type)
-    
+
     def unsubscribe(self, websocket: WebSocket, event_type: EventType):
         if websocket in self.connection_subscriptions:
             if event_type in self.connection_subscriptions[websocket]:
                 self.connection_subscriptions[websocket].remove(event_type)
-    
+
     async def broadcast(self, event: Event):
         for websocket in self.active_connections:
             subscriptions = self.connection_subscriptions.get(websocket, [])
             if event.event_type in subscriptions:
                 await self.send_event(websocket, event)
-    
+
     async def send_event(self, websocket: WebSocket, event: Event):
         try:
             await websocket.send_text(event.to_json())
@@ -96,9 +97,11 @@ class ConnectionManager:
 # Create connection manager
 manager = ConnectionManager()
 
+
 # Register event handler for broadcasting events
 async def broadcast_event(event: Event):
     await manager.broadcast(event)
+
 
 # Register the async event handler with the event bus
 for event_type in EventType:
@@ -115,59 +118,86 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 message = json.loads(data)
                 action = message.get("action")
-                
+
                 if action == "subscribe":
                     event_type_name = message.get("event_type")
                     if event_type_name:
                         try:
                             event_type = EventType[event_type_name]
                             manager.subscribe(websocket, event_type)
-                            await websocket.send_text(json.dumps({
-                                "status": "success",
-                                "message": f"Subscribed to {event_type_name}",
-                            }))
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "status": "success",
+                                        "message": f"Subscribed to {event_type_name}",
+                                    }
+                                )
+                            )
                         except KeyError:
-                            await websocket.send_text(json.dumps({
-                                "status": "error",
-                                "message": f"Unknown event type: {event_type_name}",
-                            }))
-                
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "status": "error",
+                                        "message": f"Unknown event type: {event_type_name}",
+                                    }
+                                )
+                            )
+
                 elif action == "unsubscribe":
                     event_type_name = message.get("event_type")
                     if event_type_name:
                         try:
                             event_type = EventType[event_type_name]
                             manager.unsubscribe(websocket, event_type)
-                            await websocket.send_text(json.dumps({
-                                "status": "success",
-                                "message": f"Unsubscribed from {event_type_name}",
-                            }))
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "status": "success",
+                                        "message": f"Unsubscribed from {event_type_name}",
+                                    }
+                                )
+                            )
                         except KeyError:
-                            await websocket.send_text(json.dumps({
-                                "status": "error",
-                                "message": f"Unknown event type: {event_type_name}",
-                            }))
-                
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "status": "error",
+                                        "message": f"Unknown event type: {event_type_name}",
+                                    }
+                                )
+                            )
+
                 else:
-                    await websocket.send_text(json.dumps({
-                        "status": "error",
-                        "message": f"Unknown action: {action}",
-                    }))
-            
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "status": "error",
+                                "message": f"Unknown action: {action}",
+                            }
+                        )
+                    )
+
             except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "status": "error",
-                    "message": "Invalid JSON",
-                }))
-    
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "status": "error",
+                            "message": "Invalid JSON",
+                        }
+                    )
+                )
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
 
 # REST API endpoints for basic operations
 
+
 @app.get("/api/repositories")
-async def get_repositories(limit: int = 10, offset: int = 0, db: Session = Depends(get_db)):
+async def get_repositories(
+    limit: int = 10, offset: int = 0, db: Session = Depends(get_db)
+):
     """Get all repositories with pagination."""
     repositories = db_service.get_all(db, limit=limit, offset=offset)
     return {"repositories": repositories}
@@ -178,15 +208,24 @@ async def get_repository(repository_id: str, db: Session = Depends(get_db)):
     """Get a repository by ID."""
     repository = db_service.get_by_id(db, repository_id)
     if not repository:
-        return Response(status_code=404, content=json.dumps({"error": "Repository not found"}))
+        return Response(
+            status_code=404, content=json.dumps({"error": "Repository not found"})
+        )
     return {"repository": repository}
 
 
 @app.get("/api/snapshots")
-async def get_snapshots(repository_id: Optional[str] = None, limit: int = 10, offset: int = 0, db: Session = Depends(get_db)):
+async def get_snapshots(
+    repository_id: Optional[str] = None,
+    limit: int = 10,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
     """Get all snapshots with optional filtering by repository ID."""
     if repository_id:
-        snapshots = db_service.get_snapshots_by_repository(db, repository_id, limit=limit, offset=offset)
+        snapshots = db_service.get_snapshots_by_repository(
+            db, repository_id, limit=limit, offset=offset
+        )
     else:
         snapshots = db_service.get_all(db, limit=limit, offset=offset)
     return {"snapshots": snapshots}
@@ -197,7 +236,9 @@ async def get_snapshot(snapshot_id: str, db: Session = Depends(get_db)):
     """Get a snapshot by ID."""
     snapshot = db_service.get_by_id(db, snapshot_id)
     if not snapshot:
-        return Response(status_code=404, content=json.dumps({"error": "Snapshot not found"}))
+        return Response(
+            status_code=404, content=json.dumps({"error": "Snapshot not found"})
+        )
     return {"snapshot": snapshot}
 
 
@@ -209,7 +250,7 @@ async def get_analyses(
     status: Optional[str] = None,
     limit: int = 10,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get all analyses with optional filtering."""
     analyses = db_service.get_analyses(
@@ -219,7 +260,7 @@ async def get_analyses(
         analysis_type=analysis_type,
         status=status,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
     return {"analyses": analyses}
 
@@ -229,7 +270,9 @@ async def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
     """Get an analysis by ID."""
     analysis = db_service.get_by_id(db, analysis_id)
     if not analysis:
-        return Response(status_code=404, content=json.dumps({"error": "Analysis not found"}))
+        return Response(
+            status_code=404, content=json.dumps({"error": "Analysis not found"})
+        )
     return {"analysis": analysis}
 
 
@@ -238,11 +281,13 @@ async def compare_snapshots(
     snapshot_id_1: str,
     snapshot_id_2: str,
     detail_level: str = "summary",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Compare two snapshots."""
     try:
-        comparison = db_service.compare_snapshots(snapshot_id_1, snapshot_id_2, detail_level=detail_level)
+        comparison = db_service.compare_snapshots(
+            snapshot_id_1, snapshot_id_2, detail_level=detail_level
+        )
         return {"comparison": comparison}
     except ValueError as e:
         return Response(status_code=400, content=json.dumps({"error": str(e)}))
@@ -250,9 +295,7 @@ async def compare_snapshots(
 
 @app.get("/api/visualization")
 async def get_visualization_data(
-    snapshot_id: str,
-    format: str = "json",
-    db: Session = Depends(get_db)
+    snapshot_id: str, format: str = "json", db: Session = Depends(get_db)
 ):
     """Get visualization data for a snapshot."""
     try:
@@ -274,4 +317,3 @@ async def add_db_to_context(request: Request, call_next):
 def run_server(host: str = "0.0.0.0", port: int = 8000):
     """Run the API server."""
     uvicorn.run(app, host=host, port=port)
-
