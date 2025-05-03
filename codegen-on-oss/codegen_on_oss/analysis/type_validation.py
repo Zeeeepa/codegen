@@ -2,7 +2,8 @@
 Type validation module for code analysis.
 
 This module provides classes and functions for validating types in code,
-including type annotation validation, type compatibility checks, and type inference.
+including type annotation validation, type compatibility checks, and type
+inference.
 """
 
 from dataclasses import dataclass
@@ -96,7 +97,10 @@ class TypeValidator:
                 self.errors.append(
                     TypeValidationError(
                         issue=TypeIssue.MISSING_ANNOTATION,
-                        message=f"Function '{function.name}' is missing a return type annotation",
+                        message=(
+                            f"Function '{function.name}' is missing a return "
+                            "type annotation"
+                        ),
                         file_path=function.filepath,
                         function_name=function.name,
                     )
@@ -112,7 +116,11 @@ class TypeValidator:
                         self.errors.append(
                             TypeValidationError(
                                 issue=TypeIssue.MISSING_ANNOTATION,
-                                message=f"Parameter '{param.name}' in function '{function.name}' is missing a type annotation",
+                                message=(
+                                    f"Parameter '{param.name}' in function "
+                                    f"'{function.name}' is missing a type "
+                                    "annotation"
+                                ),
                                 file_path=function.filepath,
                                 function_name=function.name,
                             )
@@ -136,7 +144,10 @@ class TypeValidator:
                     self.errors.append(
                         TypeValidationError(
                             issue=TypeIssue.INCONSISTENT_RETURN_TYPE,
-                            message=f"Function '{function.name}' has inconsistent return types: {', '.join(return_types)}",
+                            message=(
+                                f"Function '{function.name}' has inconsistent "
+                                f"return types: {', '.join(return_types)}"
+                            ),
                             file_path=function.filepath,
                             function_name=function.name,
                         )
@@ -158,7 +169,11 @@ class TypeValidator:
                     self.errors.append(
                         TypeValidationError(
                             issue=TypeIssue.MISSING_ANNOTATION,
-                            message=f"Variable '{var.name}' in function '{function.name}' is missing a type annotation",
+                            message=(
+                                f"Variable '{var.name}' in function "
+                                f"'{function.name}' is missing a type "
+                                "annotation"
+                            ),
                             file_path=function.filepath,
                             function_name=function.name,
                         )
@@ -174,7 +189,12 @@ class TypeValidator:
                         self.errors.append(
                             TypeValidationError(
                                 issue=TypeIssue.TYPE_MISMATCH,
-                                message=f"Type mismatch for variable '{var.name}' in function '{function.name}': declared as '{var.type_annotation}', initialized with '{var.initializer.type}'",
+                                message=(
+                                    f"Type mismatch for variable '{var.name}' "
+                                    f"in function '{function.name}': declared "
+                                    f"as '{var.type_annotation}', initialized "
+                                    f"with '{var.initializer.type}'"
+                                ),
                                 file_path=function.filepath,
                                 function_name=function.name,
                             )
@@ -254,7 +274,8 @@ class TypeInferenceEngine:
         Infer types for variables in the codebase.
 
         Returns:
-            A dictionary mapping function names to dictionaries mapping variable names to inferred types
+            A dictionary mapping function names to dictionaries mapping
+            variable names to inferred types
         """
         self.inferred_types = {}
 

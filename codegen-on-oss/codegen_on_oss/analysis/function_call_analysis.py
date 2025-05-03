@@ -1,8 +1,8 @@
 """
 Function call analysis module for code analysis.
 
-This module provides classes and functions for analyzing function calls in code,
-including call graphs, parameter usage analysis, and call statistics.
+This module provides classes and functions for analyzing function calls in
+code, including call graphs, parameter usage analysis, and call statistics.
 """
 
 from collections import Counter, defaultdict
@@ -88,7 +88,8 @@ class FunctionCallGraph:
 
     def get_entry_points(self) -> set[str]:
         """
-        Get all entry point functions (functions not called by any other function).
+        Get all entry point functions (functions not called by any other
+        function).
 
         Returns:
             A set of function names that are entry points
@@ -138,7 +139,8 @@ class FunctionCallGraph:
             to_function: The target function
 
         Returns:
-            A list of function names representing the path, or an empty list if no path exists
+            A list of function names representing the path, or an empty list
+            if no path exists
         """
         if from_function == to_function:
             return [from_function]
@@ -206,8 +208,9 @@ class ParameterAnalysis:
     """
     Analyzes parameter usage in functions.
 
-    This class provides methods for analyzing how parameters are used in functions,
-    including parameter usage patterns and parameter type statistics.
+    This class provides methods for analyzing how parameters are used in
+    functions, including parameter usage patterns and parameter type
+    statistics.
     """
 
     def __init__(
@@ -290,7 +293,8 @@ class ParameterAnalysis:
             limit: Maximum number of functions to return
 
         Returns:
-            A list of (function_name, parameter_count) tuples, sorted by parameter count
+            A list of (function_name, parameter_count) tuples, sorted by
+            parameter count
         """
         param_counts = []
 
@@ -305,7 +309,8 @@ class ParameterAnalysis:
         Get unused parameters for each function.
 
         Returns:
-            A dictionary mapping function names to lists of unused parameter names
+            A dictionary mapping function names to lists of unused parameter
+            names
         """
         unused_params = {}
 
