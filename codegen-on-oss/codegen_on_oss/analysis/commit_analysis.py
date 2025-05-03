@@ -38,9 +38,17 @@ class CommitIssue:
         """Convert the issue to a dictionary."""
         return {
             "issue_type": self.issue_type,
-            "severity": self.severity,
-            "message": self.message,
-            "file_path": self.file_path,
+@dataclass
+class CommitAnalysisResult:
+    """Result of a commit analysis."""
+    is_properly_implemented: bool
+    created_at: datetime = field(default_factory=datetime.now)
+    ttl: timedelta = field(default=timedelta(hours=24))
+    issues: List["CommitIssue"] = field(default_factory=list)
+    metrics_diff: Dict[str, Any] = field(default_factory=dict)
+    files_added: List[str] = field(default_factory=list)
+    files_modified: List[str] = field(default_factory=list)
+    files_removed: List[str] = field(default_factory=list)
             "line_number": self.line_number,
             "code_snippet": self.code_snippet,
         }
