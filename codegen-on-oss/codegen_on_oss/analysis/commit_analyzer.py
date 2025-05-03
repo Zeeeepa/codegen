@@ -88,7 +88,7 @@ class CommitAnalyzer:
             "high_risk_changes": high_risk_changes,
             "quality_assessment": quality_assessment,
             "base_snapshot_id": base_snapshot.snapshot_id,
-            "head_snapshot_id": head_snapshot.snapshot_id,
+            "head_snapshot_id": head_snapshot.snapshot_id
         }
 
     def _assess_commit_quality(self, diff_analyzer: DiffAnalyzer) -> dict[str, Any]:
