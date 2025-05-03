@@ -760,7 +760,7 @@ class CodeAnalyzer:
         Args:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
-            
+        """
             # Count changes per file
             file_changes = {}
             for commit in commits:
