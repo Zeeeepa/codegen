@@ -25,13 +25,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = 
         raise ValueError("Results must be a dictionary")
     
     _validate_results(results, mode)
-    Generate an HTML report from code integrity analysis results.
     
-    Args:
-        results: Analysis results
-        output_path: Path to save the HTML report
-        mode: Analysis mode (single, compare, or pr)
-    """
     # Create HTML content based on the analysis mode
     if mode == "single":
         html_content = _generate_single_branch_report(results)
@@ -45,6 +39,33 @@ def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = 
     # Write HTML content to file
     with open(output_path, 'w') as f:
         f.write(html_content)
+
+
+def _validate_results(results: Dict[str, Any], mode: str) -> None:
+    """
+    Validate that the results dictionary contains the required keys for the specified mode.
+    
+    Args:
+        results: Analysis results dictionary
+        mode: Analysis mode (single, compare, or pr)
+        
+    Raises:
+        ValueError: If required keys are missing in results
+    """
+    required_keys = []
+    
+    if mode == "single":
+        required_keys = ["total_functions", "total_classes", "total_files", "total_errors", "errors"]
+    elif mode == "compare":
+        required_keys = ["main_error_count", "branch_error_count", "error_diff", "new_errors", "fixed_errors"]
+    elif mode == "pr":
+        required_keys = ["comparison", "new_functions", "new_classes", "modified_functions", "modified_classes"]
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
+    
+    missing_keys = [key for key in required_keys if key not in results]
+    if missing_keys:
+        raise ValueError(f"Missing required keys for {mode} mode: {', '.join(missing_keys)}")
 
 
 def _generate_single_branch_report(results: Dict[str, Any]) -> str:
