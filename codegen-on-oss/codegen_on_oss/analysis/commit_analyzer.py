@@ -1,380 +1,521 @@
 """
 Commit Analyzer Module
 
-This module provides functionality for analyzing commits by comparing
-the codebase before and after the commit.
+This module provides functionality for analyzing Git commits and comparing
+changes between commits.
 """
 
-import logging
-import os
-from typing import Dict, List, Optional, Set, Tuple, Any, Union
+import subprocess
+import tempfile
+from typing import Dict, Any, Optional
 
-from codegen import Codebase
-from codegen.configs.models.secrets import SecretsConfig
+from codegen_on_oss.analysis.commit_analysis import (
+    CommitAnalysisOptions,
+    CommitAnalysisResult,
+    CommitComparisonResult,
+    FileChange,
+)
 
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
-from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
-
-logger = logging.getLogger(__name__)
 
 class CommitAnalyzer:
     """
-    A class for analyzing commits by comparing snapshots of the codebase
-    before and after the commit.
+    Analyzer for Git commits.
+    
+    This class provides functionality to analyze Git commits and compare
+    changes between commits.
     """
     
-    def __init__(
-        self, 
-        snapshot_manager: Optional[SnapshotManager] = None,
-        github_token: Optional[str] = None
-    ):
+    def __init__(self, repo_path: str):
         """
         Initialize a new CommitAnalyzer.
         
         Args:
-            snapshot_manager: Optional SnapshotManager to use for creating and retrieving snapshots
-            github_token: Optional GitHub token for accessing private repositories
+            repo_path: Path to the Git repository
         """
-        self.snapshot_manager = snapshot_manager or SnapshotManager()
-        self.github_token = github_token
+        self.repo_path = repo_path
     
     def analyze_commit(
-        self, 
-        repo_url: str, 
-        base_commit: str, 
-        head_commit: str
-    ) -> Dict[str, Any]:
+        self,
+        commit_hash: str,
+        options: Optional[CommitAnalysisOptions] = None
+    ) -> CommitAnalysisResult:
         """
-        Analyze a commit by comparing the codebase before and after the commit.
+        Analyze a specific commit in the repository.
         
         Args:
-            repo_url: The repository URL or owner/repo string
-            base_commit: The base commit SHA (before the changes)
-            head_commit: The head commit SHA (after the changes)
+            commit_hash: Hash of the commit to analyze
+            options: Options for the analysis
             
         Returns:
-            A dictionary with analysis results
+            A CommitAnalysisResult with the analysis results
         """
-        # Check if we already have snapshots for these commits
-        base_snapshot = self.snapshot_manager.get_snapshot_by_commit(base_commit)
-        head_snapshot = self.snapshot_manager.get_snapshot_by_commit(head_commit)
+        # Use default options if none provided
+        if options is None:
+            options = CommitAnalysisOptions()
         
-        # Create snapshots if they don't exist
-        if not base_snapshot:
-            logger.info(f"Creating snapshot for base commit {base_commit}")
-            base_codebase = self.snapshot_manager.create_codebase_from_repo(
-                repo_url, base_commit, self.github_token
-            )
-            base_snapshot = self.snapshot_manager.create_snapshot(base_codebase, base_commit)
+        # Get commit metadata
+        commit_info = self._get_commit_info(commit_hash)
         
-        if not head_snapshot:
-            logger.info(f"Creating snapshot for head commit {head_commit}")
-            head_codebase = self.snapshot_manager.create_codebase_from_repo(
-                repo_url, head_commit, self.github_token
-            )
-            head_snapshot = self.snapshot_manager.create_snapshot(head_codebase, head_commit)
+        # Get the files changed in the commit
+        files_changed = self._get_files_changed(commit_hash, options)
         
-        # Analyze the differences between the snapshots
-        diff_analyzer = DiffAnalyzer(base_snapshot, head_snapshot)
-        
-        # Get the analysis results
-        summary = diff_analyzer.get_summary()
-        high_risk_changes = diff_analyzer.get_high_risk_changes()
-        
-        # Evaluate the commit quality
-        quality_assessment = self._assess_commit_quality(diff_analyzer)
-        
-        return {
-            'summary': summary,
-            'high_risk_changes': high_risk_changes,
-            'quality_assessment': quality_assessment,
-            'base_snapshot_id': base_snapshot.snapshot_id,
-            'head_snapshot_id': head_snapshot.snapshot_id
-        }
+        # Create the analysis result
+        return CommitAnalysisResult(
+            commit_hash=commit_hash,
+            author=commit_info.get("author", ""),
+            date=commit_info.get("date", ""),
+            message=commit_info.get("message", ""),
+            files_changed=files_changed
+        )
     
-    def _assess_commit_quality(self, diff_analyzer: DiffAnalyzer) -> Dict[str, Any]:
+    def compare_commits(
+        self,
+        base_commit: str,
+        compare_commit: str,
+        options: Optional[CommitAnalysisOptions] = None
+    ) -> CommitComparisonResult:
         """
-        Assess the quality of a commit based on the diff analysis.
+        Compare two commits in the repository.
         
         Args:
-            diff_analyzer: The DiffAnalyzer instance with the analysis results
+            base_commit: Hash of the base commit
+            compare_commit: Hash of the commit to compare against the base
+            options: Options for the comparison
             
         Returns:
-            A dictionary with quality assessment metrics
+            A CommitComparisonResult with the comparison results
         """
-        # Get analysis results with fallbacks for None values
-        summary = diff_analyzer.get_summary() or {}
-        high_risk = diff_analyzer.get_high_risk_changes() or {}
+        # Use default options if none provided
+        if options is None:
+            options = CommitAnalysisOptions()
         
-        # Initialize quality metrics
-        quality = {
-            'score': 0.0,  # 0.0 to 10.0
-            'issues': [],
-            'warnings': [],
-            'positive_aspects': [],
-            'overall_assessment': '',
-            'is_properly_implemented': False
-        }
-        
-        # Start with a perfect score and deduct points for issues
-        score = 10.0
-        
-        # Check for high-risk changes
-        complexity_increases = high_risk.get('complexity_increases', [])
-        if complexity_increases:
-            num_increases = len(complexity_increases)
-            if num_increases > 5:
-                score -= 2.0
-                quality['issues'].append(f"Significant complexity increases in {num_increases} functions")
-            elif num_increases > 0:
-                score -= 0.5
-                quality['warnings'].append(f"Complexity increases in {num_increases} functions")
-        
-        core_file_changes = high_risk.get('core_file_changes', [])
-        if core_file_changes:
-            num_core_changes = len(core_file_changes)
-            if num_core_changes > 3:
-                score -= 1.5
-                quality['issues'].append(f"Changes to {num_core_changes} core files with many dependencies")
-            elif num_core_changes > 0:
-                score -= 0.5
-                quality['warnings'].append(f"Changes to {num_core_changes} core files")
-        
-        interface_changes = high_risk.get('interface_changes', [])
-        if interface_changes:
-            num_interface_changes = len(interface_changes)
-            if num_interface_changes > 3:
-                score -= 1.5
-                quality['issues'].append(f"Interface changes to {num_interface_changes} functions")
-            elif num_interface_changes > 0:
-                score -= 0.5
-                quality['warnings'].append(f"Interface changes to {num_interface_changes} functions")
-        
-        # Check for positive aspects
-        complexity_changes = summary.get('complexity_changes', {})
-        decreased = complexity_changes.get('decreased', 0)
-        increased = complexity_changes.get('increased', 0)
-        if decreased > increased:
-            score += 0.5
-            quality['positive_aspects'].append("Overall complexity decreased")
-        
-        function_changes = summary.get('function_changes', {})
-        added = function_changes.get('added', 0)
-        deleted = function_changes.get('deleted', 0)
-        if added > 0 and deleted == 0:
-            score += 0.5
-            quality['positive_aspects'].append("Added new functionality without removing existing functions")
-        
-        # Adjust score based on the size of the commit
-        file_changes = summary.get('file_changes', {})
-        total_changes = (
-            file_changes.get('added', 0) + 
-            file_changes.get('deleted', 0) + 
-            file_changes.get('modified', 0)
+        # Get the files changed between the commits
+        files_changed = self._get_files_changed_between_commits(
+            base_commit,
+            compare_commit,
+            options
         )
         
-        # Very large commits are often problematic
-        if total_changes > 50:
-            score -= 1.0
-            quality['warnings'].append(f"Very large commit with {total_changes} file changes")
-        # Small, focused commits are good
-        elif total_changes < 5:
-            score += 0.5
-            quality['positive_aspects'].append("Small, focused commit")
-        
-        # Ensure score is within bounds
-        score = max(0.0, min(10.0, score))
-        quality['score'] = round(score, 1)
-        
-        # Determine overall assessment
-        if score >= 9.0:
-            quality['overall_assessment'] = "Excellent"
-            quality['is_properly_implemented'] = True
-        elif score >= 7.5:
-            quality['overall_assessment'] = "Good"
-            quality['is_properly_implemented'] = True
-        elif score >= 6.0:
-            quality['overall_assessment'] = "Satisfactory"
-            quality['is_properly_implemented'] = True
-        elif score >= 4.0:
-            quality['overall_assessment'] = "Needs Improvement"
-            quality['is_properly_implemented'] = False
-        else:
-            quality['overall_assessment'] = "Poor"
-            quality['is_properly_implemented'] = False
-        
-        return quality
+        # Create the comparison result
+        return CommitComparisonResult(
+            base_commit_hash=base_commit,
+            compare_commit_hash=compare_commit,
+            files_changed=files_changed
+        )
     
-    def format_analysis_report(self, analysis_results: Dict[str, Any]) -> str:
+    def _get_commit_info(self, commit_hash: str) -> Dict[str, str]:
         """
-        Format the analysis results as a human-readable report.
+        Get metadata for a commit.
         
         Args:
-            analysis_results: The analysis results from analyze_commit
+            commit_hash: Hash of the commit
             
         Returns:
-            A formatted string with the analysis report
+            A dictionary with commit metadata
         """
-        # Safely access nested dictionaries with .get() method
-        summary = analysis_results.get('summary', {})
-        quality = analysis_results.get('quality_assessment', {})
-        high_risk = analysis_results.get('high_risk_changes', {})
+        # Run git show to get commit info
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                self.repo_path,
+                "show",
+                "--no-patch",
+                "--format=%an%n%ad%n%s",
+                commit_hash
+            ],
+            capture_output=True,
+            text=True,
+            check=True
+        )
         
-        # Get values with fallbacks
-        score = quality.get('score', 0.0)
-        assessment = quality.get('overall_assessment', 'Unknown')
-        is_properly_implemented = quality.get('is_properly_implemented', False)
+        # Parse the output
+        lines = result.stdout.strip().split("\n")
         
-        # File changes
-        file_changes = summary.get('file_changes', {})
-        files_added = file_changes.get('added', 0)
-        files_deleted = file_changes.get('deleted', 0)
-        files_modified = file_changes.get('modified', 0)
+        if len(lines) >= 3:
+            return {
+                "author": lines[0],
+                "date": lines[1],
+                "message": lines[2]
+            }
         
-        # Function changes
-        function_changes = summary.get('function_changes', {})
-        funcs_added = function_changes.get('added', 0)
-        funcs_deleted = function_changes.get('deleted', 0)
-        funcs_modified = function_changes.get('modified', 0)
-        
-        # Class changes
-        class_changes = summary.get('class_changes', {})
-        classes_added = class_changes.get('added', 0)
-        classes_deleted = class_changes.get('deleted', 0)
-        classes_modified = class_changes.get('modified', 0)
-        
-        # Complexity changes
-        complexity_changes = summary.get('complexity_changes', {})
-        complexity_increased = complexity_changes.get('increased', 0)
-        complexity_decreased = complexity_changes.get('decreased', 0)
-        
-        report = f"""
-Commit Analysis Report
-=====================
-
-Quality Score: {score}/10.0 - {assessment}
-Properly Implemented: {'Yes' if is_properly_implemented else 'No'}
-
-Summary:
-- Files: {files_added} added, {files_deleted} deleted, {files_modified} modified
-- Functions: {funcs_added} added, {funcs_deleted} deleted, {funcs_modified} modified
-- Classes: {classes_added} added, {classes_deleted} deleted, {classes_modified} modified
-- Complexity: {complexity_increased} functions increased, {complexity_decreased} decreased
-"""
-        
-        # Add issues if there are any
-        issues = quality.get('issues', [])
-        if issues:
-            report += "\nIssues:\n"
-            for issue in issues:
-                report += f"- {issue}\n"
-        
-        # Add warnings if there are any
-        warnings = quality.get('warnings', [])
-        if warnings:
-            report += "\nWarnings:\n"
-            for warning in warnings:
-                report += f"- {warning}\n"
-        
-        # Add positive aspects if there are any
-        positive_aspects = quality.get('positive_aspects', [])
-        if positive_aspects:
-            report += "\nPositive Aspects:\n"
-            for aspect in positive_aspects:
-                report += f"- {aspect}\n"
-        
-        # Add high risk changes
-        complexity_increases = high_risk.get('complexity_increases', [])
-        if complexity_increases:
-            report += "\nSignificant Complexity Increases:\n"
-            for item in complexity_increases[:5]:  # Limit to top 5
-                function_name = item.get('function', 'Unknown')
-                original = item.get('original', 0)
-                modified = item.get('modified', 0)
-                delta = item.get('delta', 0)
-                percent_change = item.get('percent_change', 0.0)
-                report += f"- {function_name}: {original} → {modified} ({delta:+d}, {percent_change:.1f}%)\n"
-            if len(complexity_increases) > 5:
-                report += f"  ... and {len(complexity_increases) - 5} more\n"
-        
-        interface_changes = high_risk.get('interface_changes', [])
-        if interface_changes:
-            report += "\nInterface Changes:\n"
-            for item in interface_changes[:5]:  # Limit to top 5
-                function_name = item.get('function', 'Unknown')
-                original_params = item.get('original_params', 'Unknown')
-                modified_params = item.get('modified_params', 'Unknown')
-                report += f"- {function_name}: Parameters changed from {original_params} to {modified_params}\n"
-            if len(interface_changes) > 5:
-                report += f"  ... and {len(interface_changes) - 5} more\n"
-        
-        # Add conclusion
-        if is_properly_implemented:
-            report += "\nConclusion: This commit is properly implemented and has no significant issues.\n"
-        else:
-            report += "\nConclusion: This commit has issues that should be addressed before merging.\n"
-        
-        return report
+        return {
+            "author": "",
+            "date": "",
+            "message": ""
+        }
     
-    def analyze_pull_request(
-        self, 
-        repo_url: str, 
-        pr_number: int,
-        github_token: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def _get_files_changed(
+        self,
+        commit_hash: str,
+        options: CommitAnalysisOptions
+    ) -> list[FileChange]:
         """
-        Analyze a pull request by comparing the base and head commits.
+        Get the files changed in a commit.
         
         Args:
-            repo_url: The repository URL or owner/repo string
-            pr_number: The pull request number
-            github_token: Optional GitHub token for accessing private repositories.
-                          It's recommended to use environment variables instead.
+            commit_hash: Hash of the commit
+            options: Options for the analysis
             
         Returns:
-            A dictionary with analysis results
-            
-        Raises:
-            ValueError: If no GitHub token is available
+            A list of FileChange objects
         """
-        from github import Github
-        import os
+        # Run git show to get changed files
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                self.repo_path,
+                "show",
+                "--name-status",
+                commit_hash
+            ],
+            capture_output=True,
+            text=True,
+            check=True
+        )
         
-        # Use token from environment variable if available, otherwise use provided token or instance token
-        token = os.environ.get("GITHUB_TOKEN") or github_token or self.github_token
+        # Parse the output
+        lines = result.stdout.strip().split("\n")
+        files_changed = []
         
-        if not token:
-            logger.error("No GitHub token available for PR analysis")
-            raise ValueError(
-                "GitHub token is required to analyze pull requests. "
-                "Set it via the GITHUB_TOKEN environment variable or provide it as a parameter."
-            )
+        # Skip the commit message lines
+        start_index = 0
+        for i, line in enumerate(lines):
+            if line.strip() == "":
+                start_index = i + 1
+                break
         
+        # Process file changes
+        for line in lines[start_index:]:
+            if not line.strip():
+                continue
+            
+            parts = line.strip().split("\t")
+            
+            if len(parts) >= 2:
+                status = parts[0]
+                filepath = parts[1]
+                
+                # Map git status to our status
+                status_map = {
+                    "A": "added",
+                    "M": "modified",
+                    "D": "deleted",
+                    "R": "renamed",
+                    "C": "copied"
+                }
+                
+                status_code = status[0]  # Take first character for status
+                mapped_status = status_map.get(status_code, "modified")
+                
+                # Get file content if needed
+                content = None
+                if options.include_file_content and mapped_status != "deleted":
+                    content = self._get_file_content(commit_hash, filepath)
+                
+                # Get diff if needed
+                diff = None
+                if options.include_diff and mapped_status != "added":
+                    diff = self._get_file_diff(commit_hash, filepath)
+                
+                # Get function changes if needed
+                functions_added = []
+                functions_modified = []
+                functions_removed = []
+                
+                if options.include_function_changes:
+                    # This would require parsing the file to identify functions
+                    # For simplicity, we'll just use a placeholder implementation
+                    if mapped_status == "added" and content:
+                        functions_added = self._extract_functions(content)
+                    elif mapped_status == "modified" and diff:
+                        # This is a simplified approach
+                        functions_added, functions_modified, functions_removed = (
+                            self._analyze_function_changes(diff)
+                        )
+                
+                # Create the file change object
+                file_change = FileChange(
+                    filepath=filepath,
+                    status=mapped_status,
+                    content=content,
+                    diff=diff,
+                    functions_added=functions_added,
+                    functions_modified=functions_modified,
+                    functions_removed=functions_removed
+                )
+                
+                files_changed.append(file_change)
+        
+        return files_changed
+    
+    def _get_files_changed_between_commits(
+        self,
+        base_commit: str,
+        compare_commit: str,
+        options: CommitAnalysisOptions
+    ) -> list[FileChange]:
+        """
+        Get the files changed between two commits.
+        
+        Args:
+            base_commit: Hash of the base commit
+            compare_commit: Hash of the commit to compare against the base
+            options: Options for the comparison
+            
+        Returns:
+            A list of FileChange objects
+        """
+        # Run git diff to get changed files
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                self.repo_path,
+                "diff",
+                "--name-status",
+                f"{base_commit}..{compare_commit}"
+            ],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Parse the output
+        lines = result.stdout.strip().split("\n")
+        files_changed = []
+        
+        # Process file changes
+        for line in lines:
+            if not line.strip():
+                continue
+            
+            parts = line.strip().split("\t")
+            
+            if len(parts) >= 2:
+                status = parts[0]
+                filepath = parts[1]
+                
+                # Map git status to our status
+                status_map = {
+                    "A": "added",
+                    "M": "modified",
+                    "D": "deleted",
+                    "R": "renamed",
+                    "C": "copied"
+                }
+                
+                status_code = status[0]  # Take first character for status
+                mapped_status = status_map.get(status_code, "modified")
+                
+                # Get file content if needed
+                content = None
+                if options.include_file_content and mapped_status != "deleted":
+                    content = self._get_file_content(compare_commit, filepath)
+                
+                # Get diff if needed
+                diff = None
+                if options.include_diff:
+                    diff = self._get_file_diff_between_commits(
+                        base_commit,
+                        compare_commit,
+                        filepath
+                    )
+                
+                # Get function changes if needed
+                functions_added = []
+                functions_modified = []
+                functions_removed = []
+                
+                if options.include_function_changes:
+                    # This would require parsing the file to identify functions
+                    # For simplicity, we'll just use a placeholder implementation
+                    if mapped_status == "added" and content:
+                        functions_added = self._extract_functions(content)
+                    elif mapped_status == "modified" and diff:
+                        # This is a simplified approach
+                        functions_added, functions_modified, functions_removed = (
+                            self._analyze_function_changes(diff)
+                        )
+                
+                # Create the file change object
+                file_change = FileChange(
+                    filepath=filepath,
+                    status=mapped_status,
+                    content=content,
+                    diff=diff,
+                    functions_added=functions_added,
+                    functions_modified=functions_modified,
+                    functions_removed=functions_removed
+                )
+                
+                files_changed.append(file_change)
+        
+        return files_changed
+    
+    def _get_file_content(self, commit_hash: str, filepath: str) -> Optional[str]:
+        """
+        Get the content of a file at a specific commit.
+        
+        Args:
+            commit_hash: Hash of the commit
+            filepath: Path to the file
+            
+        Returns:
+            The file content, or None if the file doesn't exist
+        """
         try:
-            # Parse the repo URL to get owner and repo name
-            if "/" in repo_url and "github.com" not in repo_url:
-                owner, repo_name = repo_url.split("/")
-            else:
-                # Extract owner/repo from a full GitHub URL
-                parts = repo_url.rstrip("/").split("/")
-                owner = parts[-2]
-                repo_name = parts[-1]
-                if repo_name.endswith(".git"):
-                    repo_name = repo_name[:-4]
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    self.repo_path,
+                    "show",
+                    f"{commit_hash}:{filepath}"
+                ],
+                capture_output=True,
+                text=True,
+                check=True
+            )
             
-            # Get the PR details from GitHub
-            g = Github(token)
-            repo = g.get_repo(f"{owner}/{repo_name}")
-            pr = repo.get_pull(pr_number)
+            return result.stdout
+        except subprocess.CalledProcessError:
+            return None
+    
+    def _get_file_diff(self, commit_hash: str, filepath: str) -> Optional[str]:
+        """
+        Get the diff for a file in a commit.
+        
+        Args:
+            commit_hash: Hash of the commit
+            filepath: Path to the file
             
-            # Get the base and head commits
-            base_commit = pr.base.sha
-            head_commit = pr.head.sha
+        Returns:
+            The file diff, or None if there's no diff
+        """
+        try:
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    self.repo_path,
+                    "show",
+                    "--patch",
+                    commit_hash,
+                    "--",
+                    filepath
+                ],
+                capture_output=True,
+                text=True,
+                check=True
+            )
             
-            logger.info(f"Analyzing PR #{pr_number} in {repo_url} (base: {base_commit}, head: {head_commit})")
+            return result.stdout
+        except subprocess.CalledProcessError:
+            return None
+    
+    def _get_file_diff_between_commits(
+        self,
+        base_commit: str,
+        compare_commit: str,
+        filepath: str
+    ) -> Optional[str]:
+        """
+        Get the diff for a file between two commits.
+        
+        Args:
+            base_commit: Hash of the base commit
+            compare_commit: Hash of the commit to compare against the base
+            filepath: Path to the file
             
-            # Analyze the commits
-            return self.analyze_commit(repo_url, base_commit, head_commit)
-        except Exception as e:
-            logger.error(f"Error analyzing PR #{pr_number} in {repo_url}: {str(e)}")
-            raise
+        Returns:
+            The file diff, or None if there's no diff
+        """
+        try:
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    self.repo_path,
+                    "diff",
+                    "--patch",
+                    f"{base_commit}..{compare_commit}",
+                    "--",
+                    filepath
+                ],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            return result.stdout
+        except subprocess.CalledProcessError:
+            return None
+    
+    def _extract_functions(self, content: str) -> list[str]:
+        """
+        Extract function names from file content.
+        
+        Args:
+            content: The file content
+            
+        Returns:
+            A list of function names
+        """
+        # This is a simplified implementation that just looks for "def " or "function "
+        functions = []
+        
+        for line in content.split("\n"):
+            line = line.strip()
+            
+            if line.startswith("def "):
+                # Python function
+                function_name = line[4:].split("(")[0].strip()
+                functions.append(function_name)
+            elif line.startswith("function "):
+                # JavaScript/TypeScript function
+                function_name = line[9:].split("(")[0].strip()
+                functions.append(function_name)
+        
+        return functions
+    
+    def _analyze_function_changes(
+        self,
+        diff: str
+    ) -> tuple[list[str], list[str], list[str]]:
+        """
+        Analyze function changes from a diff.
+        
+        Args:
+            diff: The file diff
+            
+        Returns:
+            A tuple of (added_functions, modified_functions, removed_functions)
+        """
+        # This is a simplified implementation
+        added_functions = []
+        modified_functions = []
+        removed_functions = []
+        
+        for line in diff.split("\n"):
+            if line.startswith("+") and "def " in line:
+                # Added Python function
+                function_name = line.split("def ")[1].split("(")[0].strip()
+                added_functions.append(function_name)
+            elif line.startswith("-") and "def " in line:
+                # Removed Python function
+                function_name = line.split("def ")[1].split("(")[0].strip()
+                removed_functions.append(function_name)
+            elif line.startswith("+") and "function " in line:
+                # Added JavaScript/TypeScript function
+                function_name = line.split("function ")[1].split("(")[0].strip()
+                added_functions.append(function_name)
+            elif line.startswith("-") and "function " in line:
+                # Removed JavaScript/TypeScript function
+                function_name = line.split("function ")[1].split("(")[0].strip()
+                removed_functions.append(function_name)
+        
+        # For simplicity, we're not detecting modified functions
+        
+        return added_functions, modified_functions, removed_functions
