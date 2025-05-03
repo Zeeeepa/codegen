@@ -11,15 +11,24 @@ from typing import Dict, List, Optional, Any, Union, Set, cast
 from pathlib import Path
 from dataclasses import dataclass, field
 
-# Import types from codegen SDK
-# These are used for type hints but we'll use Any for actual implementation
-# to avoid mypy errors when the codegen package is not available
-from typing import Any as CodegenFile
-from typing import Any as CodegenFunction
-from typing import Any as CodegenClass
-from typing import Any as CodegenSymbol
-from typing import Any as CodegenLanguage
-from typing import Any as Codebase
+# Import from codegen SDK
+from codegen import Codebase
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.enums import EdgeType, SymbolType
+
+# Import from existing analysis modules
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from codegen_on_oss.analysis.codebase_analysis import (
+    get_codebase_summary,
+    get_file_summary,
+    get_class_summary,
+    get_function_summary,
+    get_symbol_summary
+)
 
 logger = logging.getLogger(__name__)
 

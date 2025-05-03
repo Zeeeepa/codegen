@@ -4,10 +4,19 @@ Project Manager Module
 This module provides functionality for managing projects in the analysis server.
 """
 
+import json
 import logging
+import os
 import uuid
 from typing import Dict, List, Optional, Any
 from datetime import datetime
+from pathlib import Path
+
+# Import from existing analysis modules
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from codegen_on_oss.bucket_store import BucketStore
+from codegen_on_oss.cache import Cache
 
 
 class Project:
