@@ -9,9 +9,22 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-
 def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = "single") -> None:
+    """Generate an HTML report from code integrity analysis results.
+    
+    Args:
+        results: Analysis results dictionary containing required keys based on mode
+        output_path: Path to save the HTML report
+        mode: Analysis mode (single, compare, or pr)
+        
+    Raises:
+        ValueError: If mode is invalid or required keys are missing in results
+        IOError: If file operations fail
     """
+    if not isinstance(results, dict):
+        raise ValueError("Results must be a dictionary")
+    
+    _validate_results(results, mode)
     Generate an HTML report from code integrity analysis results.
     
     Args:
