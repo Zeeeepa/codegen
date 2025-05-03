@@ -48,6 +48,19 @@ The module can detect the following types of errors:
 - **Unused Imports**: Imports that are not used in the code
 - **Circular Imports**: Circular dependencies between files
 - **Circular Dependencies**: Circular dependencies between symbols
+- **Name Errors**: References to undefined names
+- **Import Errors**: Problems with import statements
+- **Attribute Errors**: References to undefined attributes
+
+## Error Severity Levels
+
+The module assigns severity levels to each error:
+
+- **Critical**: Errors that will definitely cause the code to crash or fail
+- **High**: Errors that are likely to cause problems in most execution paths
+- **Medium**: Errors that may cause problems in some execution paths
+- **Low**: Minor issues that are unlikely to cause problems but should be fixed
+- **Info**: Informational messages about potential improvements
 
 ## Usage
 
@@ -145,6 +158,7 @@ The `ErrorContextAnalyzer` class is responsible for detecting and analyzing erro
 - **AST Analysis**: Parsing the code into an abstract syntax tree to detect syntax errors and undefined variables
 - **Graph Analysis**: Building dependency graphs to detect circular imports and dependencies
 - **Pattern Matching**: Using regular expressions to detect potential type errors and other issues
+- **Static Analysis**: Analyzing function parameters, return statements, and variable usage
 
 ### CodeError
 
@@ -167,4 +181,3 @@ python -m codegen_on_oss.analysis.analysis
 ```
 
 The server will be available at `http://localhost:8000`.
-
