@@ -6,69 +6,53 @@ the codebase before and after the commit.
 """
 
 import os
-import tempfile
 import subprocess
-import difflib
-import re
-from typing import Dict, List, Optional, Tuple, Union, Any, Set
+import tempfile
+from typing import Dict, List, Optional, Union, Any, Tuple
 from pathlib import Path
-from datetime import datetime
 
 from codegen import Codebase
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
-
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.commit_analysis import (
-    CommitAnalysisOptions,
-    FileChange,
-    CommitAnalysisResult,
-    CommitComparisonResult
-)
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
-
+from codegen_on_oss.analysis.commit_analysis import CommitAnalysisOptions, CommitAnalysisResult, FileChange
 
 class CommitAnalyzer:
     """
-    Analyzer for comparing and evaluating commits.
+    Analyzer for commits in a repository.
     
-    This class provides functionality for analyzing Git commits by comparing
-    the codebase before and after the commit.
+    This class provides functionality to analyze specific commits in a repository,
+    including getting commit metadata, file changes, and function changes.
     """
     
     def __init__(self, repo_path: Optional[str] = None):
         """
-        Initialize a new CommitAnalyzer.
+        Initialize the CommitAnalyzer.
         
         Args:
-            repo_path: Optional path to a local repository
+            repo_path: Path to the repository to analyze
         """
         self.repo_path = repo_path
-        self.temp_dir = None
-        
-    def __enter__(self):
-        """Context manager entry."""
+        self.temp_dir: Optional[tempfile.TemporaryDirectory] = None
+    
+    def __enter__(self) -> 'CommitAnalyzer':
+        """Enter context manager."""
         return self
-        
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
+    
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager and cleanup resources."""
         self.cleanup()
-        
-    def cleanup(self):
-        """Clean up temporary directories."""
+    
+    def cleanup(self) -> None:
+        """Clean up temporary resources."""
         if self.temp_dir:
             self.temp_dir.cleanup()
             self.temp_dir = None
             
-    def create_temp_dir(self):
+    def create_temp_dir(self) -> str:
         """Create a temporary directory if one doesn't exist."""
         if not self.temp_dir:
             self.temp_dir = tempfile.TemporaryDirectory()
-        return self.temp_dir.name
+        
+        # Explicitly cast to str to satisfy mypy
+        return str(self.temp_dir.name)
     
     def analyze_commit(
         self,
@@ -120,7 +104,7 @@ class CommitAnalyzer:
         """
         # Run git show to get commit information
         command = [
-            "git", "-C", self.repo_path, "show",
+            "git", "-C", str(self.repo_path), "show",
             "--no-patch",
             "--format=%an%n%ad%n%s",
             "--date=iso",
@@ -162,7 +146,7 @@ class CommitAnalyzer:
         """
         # Run git diff to get file changes
         command = [
-            "git", "-C", self.repo_path, "diff-tree",
+            "git", "-C", str(self.repo_path), "diff-tree",
             "--no-commit-id", "--name-status", "-r",
             commit_hash
         ]
@@ -220,7 +204,7 @@ class CommitAnalyzer:
             The content of the file
         """
         command = [
-            "git", "-C", self.repo_path, "show",
+            "git", "-C", str(self.repo_path), "show",
             f"{commit_hash}:{filepath}"
         ]
         
@@ -248,7 +232,7 @@ class CommitAnalyzer:
             The diff of the file
         """
         command = [
-            "git", "-C", self.repo_path, "diff",
+            "git", "-C", str(self.repo_path), "diff",
             f"{commit_hash}^..{commit_hash}", "--", filepath
         ]
         

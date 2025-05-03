@@ -760,21 +760,41 @@ class CodeAnalyzer:
         Args:
             commit_codebase: The codebase after the commit
             file_path: Path to the file to get the diff for
-        """
-            # Count changes per file
-            file_changes = {}
-            for commit in commits:
-                for file in commit.files:
-                    if file.filename in file_changes:
-                        file_changes[file.filename] += 1
-                    else:
-                        file_changes[file.filename] = 1
             
-            # Sort by change count and limit results
-            sorted_files = sorted(file_changes.items(), key=lambda x: x[1], reverse=True)[:limit]
-            return dict(sorted_files)
+        Returns:
+            A string containing the diff
+        """
+        try:
+            # Get the file from both codebases
+            original_file = self.codebase.get_file(file_path)
+            commit_file = commit_codebase.get_file(file_path)
+            
+            if original_file is None and commit_file is None:
+                return f"File {file_path} not found in either codebase"
+            
+            # If file only exists in one codebase, show full content as added/removed
+            if original_file is None:
+                return f"+ {commit_file.source}"
+            
+            if commit_file is None:
+                return f"- {original_file.source}"
+            
+            # Both files exist, generate a diff
+            import difflib
+            original_lines = original_file.source.splitlines()
+            commit_lines = commit_file.source.splitlines()
+            
+            diff = difflib.unified_diff(
+                original_lines,
+                commit_lines,
+                fromfile=f"a/{file_path}",
+                tofile=f"b/{file_path}",
+                lineterm=""
+            )
+            
+            return "\n".join(diff)
         except Exception as e:
-            return {"error": str(e)}
+            return f"Error generating diff: {str(e)}"
     
     def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
         """
@@ -967,6 +987,9 @@ def get_monthly_commits(repo_path: str) -> Dict[str, int]:
                         monthly_counts[month_key] += 1
 
             return dict(sorted(monthly_counts.items()))
+    except Exception as e:
+        print(f"Error analyzing commit activity: {str(e)}")
+        return {}
 
 
 # Helper functions for complexity analysis
