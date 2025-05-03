@@ -399,7 +399,7 @@ def run_server(host: str = "0.0.0.0", port: int = 8000) -> None:
     from codegen_on_oss.analysis.server import run_server as start_server
     start_server(host=host, port=port)
 
-def main():
+def main() -> None:
     """Main function to run the example."""
     parser = argparse.ArgumentParser(description="Enhanced Code Analysis Server Example")
     parser.add_argument("--start-server", action="store_true", help="Start the analysis server")

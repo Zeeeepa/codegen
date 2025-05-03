@@ -6,6 +6,8 @@ and triggering analysis based on webhook events.
 """
 
 import logging
+import uuid
+from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 import requests
@@ -28,10 +30,10 @@ class WebhookHandler:
             project_manager: The project manager instance.
         """
         self.project_manager = project_manager
-        self.webhooks = {}
-        self.handlers = {
-            'github': self.handle_github_webhook,
-            'gitlab': self.handle_gitlab_webhook,
+        self.webhooks: Dict[str, Dict[str, Any]] = {}
+        self.handlers: Dict[str, Any] = {
+            'github': self.handle_webhook,
+            'gitlab': self.handle_webhook,
         }
     
     def register_webhook(self, project_id: str, webhook_url: str, events: List[str], secret: Optional[str] = None) -> str:
@@ -47,7 +49,19 @@ class WebhookHandler:
         Returns:
             The ID of the registered webhook.
         """
-        # ... rest of the method ...
+        # Generate a unique ID for the webhook
+        webhook_id = str(uuid.uuid4())
+        
+        # Create the webhook
+        self.webhooks[webhook_id] = {
+            'project_id': project_id,
+            'webhook_url': webhook_url,
+            'events': events,
+            'secret': secret,
+            'created_at': datetime.now().isoformat(),
+        }
+        
+        return webhook_id
     
     def handle_webhook(self, provider: str, payload: Dict[str, Any], headers: Dict[str, str]) -> None:
         """
@@ -58,4 +72,24 @@ class WebhookHandler:
             payload: The webhook payload.
             headers: The webhook headers.
         """
-        # ... rest of the method ...
+        # Get the event type from the headers
+        event_type = headers.get(f"X-{provider.capitalize()}-Event")
+        
+        if not event_type:
+            logger.warning(f"Missing event type header for {provider} webhook")
+            return
+        
+        # Get the repository URL from the payload
+        repo_url = None
+        
+        if provider == 'github':
+            repo_url = payload.get("repository", {}).get("html_url")
+        elif provider == 'gitlab':
+            repo_url = payload.get("project", {}).get("web_url")
+        
+        if not repo_url:
+            logger.warning(f"Missing repository URL in {provider} webhook payload")
+            return
+        
+        # Log the webhook
+        logger.info(f"Received {provider} webhook for {repo_url}, event: {event_type}")
