@@ -9,8 +9,19 @@ import argparse
 import json
 import logging
 import requests
+import os
+import tempfile
+import subprocess
 from typing import Dict, List, Optional, Any
 from pathlib import Path
+
+# Import from existing analysis modules
+from codegen import Codebase
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
+from codegen_on_oss.outputs.base import OutputHandler
 
 
 class ProjectManager:

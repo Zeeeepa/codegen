@@ -1,38 +1,68 @@
 """
 Commit Analyzer Module
 
-This module provides functionality for analyzing Git commits and comparing
-changes between commits.
+This module provides functionality for analyzing Git commits by comparing
+the codebase before and after the commit.
 """
 
-import subprocess
+import os
 import tempfile
-from typing import Dict, Any, Optional
+import subprocess
+import difflib
+import re
+from typing import Dict, List, Optional, Tuple, Union, Any, Set
+from pathlib import Path
+from datetime import datetime
 
+from codegen import Codebase
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.enums import EdgeType, SymbolType
+
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalysisOptions,
-    CommitAnalysisResult,
-    CommitComparisonResult,
     FileChange,
+    CommitAnalysisResult,
+    CommitComparisonResult
 )
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
 
 
 class CommitAnalyzer:
     """
-    Analyzer for Git commits.
+    Analyzer for comparing and evaluating commits.
     
-    This class provides functionality to analyze Git commits and compare
-    changes between commits.
+    This class provides functionality for analyzing Git commits by comparing
+    the codebase before and after the commit.
     """
     
-    def __init__(self, repo_path: str):
+    def __init__(self, repo_path: Optional[str] = None):
         """
         Initialize a new CommitAnalyzer.
         
         Args:
-            repo_path: Path to the Git repository
+            repo_path: Optional path to a local repository
         """
         self.repo_path = repo_path
+        self.temp_dir = None
+        
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.cleanup()
+        
+    def cleanup(self):
+        """Clean up temporary directories."""
+        if self.temp_dir:
+            self.temp_dir.cleanup()
+            self.temp_dir = None
     
     def analyze_commit(
         self,

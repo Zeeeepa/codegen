@@ -1,8 +1,7 @@
 """
-Commit Analysis Module for Codegen-on-OSS
+Commit Analysis Module
 
-This module provides functionality for analyzing and comparing commits,
-determining if a commit is properly implemented, and identifying potential issues.
+This module provides functionality for analyzing Git commits.
 """
 
 import os
@@ -10,6 +9,18 @@ import tempfile
 import subprocess
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+
+from codegen import Codebase
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.enums import EdgeType, SymbolType
+
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
 
 
 @dataclass
