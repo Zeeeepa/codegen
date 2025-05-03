@@ -16,8 +16,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import networkx as nx
 import psutil
-from codegen import Codebase
-
 from codegen_on_oss.analysis.analysis import (
     CodeAnalyzer,
     calculate_cyclomatic_complexity,
@@ -31,6 +29,8 @@ from codegen_on_oss.analysis.analysis import (
 )
 from codegen_on_oss.errors import ParseRunError
 from codegen_on_oss.outputs.base import BaseOutput
+
+from codegen import Codebase
 
 if TYPE_CHECKING:
     # Logger only available in type checking context.
@@ -96,7 +96,9 @@ class CodeMetrics:
         if self._complexity_metrics is not None:
             return self._complexity_metrics
 
-        callables = self.codebase.functions + [m for c in self.codebase.classes for m in c.methods]
+        callables = self.codebase.functions + [
+            m for c in self.codebase.classes for m in c.methods
+        ]
 
         complexities = []
         for func in callables:
@@ -188,7 +190,9 @@ class CodeMetrics:
         if self._maintainability_metrics is not None:
             return self._maintainability_metrics
 
-        callables = self.codebase.functions + [m for c in self.codebase.classes for m in c.methods]
+        callables = self.codebase.functions + [
+            m for c in self.codebase.classes for m in c.methods
+        ]
 
         mi_scores = []
         for func in callables:
@@ -209,7 +213,11 @@ class CodeMetrics:
                 }
             )
 
-        avg_mi = sum(item["mi_score"] for item in mi_scores) / len(mi_scores) if mi_scores else 0
+        avg_mi = (
+            sum(item["mi_score"] for item in mi_scores) / len(mi_scores)
+            if mi_scores
+            else 0
+        )
 
         self._maintainability_metrics = {
             "average": avg_mi,
@@ -237,7 +245,9 @@ class CodeMetrics:
             class_metrics.append({"name": cls.name, "doi": doi})
 
         avg_doi = (
-            sum(item["doi"] for item in class_metrics) / len(class_metrics) if class_metrics else 0
+            sum(item["doi"] for item in class_metrics) / len(class_metrics)
+            if class_metrics
+            else 0
         )
 
         self._inheritance_metrics = {"average": avg_doi, "classes": class_metrics}
@@ -256,7 +266,9 @@ class CodeMetrics:
         if self._halstead_metrics is not None:
             return self._halstead_metrics
 
-        callables = self.codebase.functions + [m for c in self.codebase.classes for m in c.methods]
+        callables = self.codebase.functions + [
+            m for c in self.codebase.classes for m in c.methods
+        ]
 
         halstead_metrics = []
         for func in callables:
@@ -264,7 +276,9 @@ class CodeMetrics:
                 continue
 
             operators, operands = get_operators_and_operands(func)
-            volume, n1, n2, n_operators, n_operands = calculate_halstead_volume(operators, operands)
+            volume, n1, n2, n_operators, n_operands = calculate_halstead_volume(
+                operators, operands
+            )
 
             # Calculate additional Halstead metrics
             n = n_operators + n_operands
@@ -313,7 +327,9 @@ class CodeMetrics:
 
         return self._halstead_metrics
 
-    def find_complex_functions(self, threshold: int = COMPLEXITY_THRESHOLD) -> List[Dict[str, Any]]:
+    def find_complex_functions(
+        self, threshold: int = COMPLEXITY_THRESHOLD
+    ) -> List[Dict[str, Any]]:
         """
         Find functions with cyclomatic complexity above the threshold.
 
@@ -356,7 +372,9 @@ class CodeMetrics:
         metrics = self.inheritance_metrics
         return [cls for cls in metrics["classes"] if cls["doi"] > threshold]
 
-    def find_high_volume_functions(self, threshold: int = VOLUME_THRESHOLD) -> List[Dict[str, Any]]:
+    def find_high_volume_functions(
+        self, threshold: int = VOLUME_THRESHOLD
+    ) -> List[Dict[str, Any]]:
         """
         Find functions with Halstead volume above the threshold.
 
@@ -369,7 +387,9 @@ class CodeMetrics:
         metrics = self.halstead_metrics
         return [func for func in metrics["functions"] if func["volume"] > threshold]
 
-    def find_high_effort_functions(self, threshold: int = EFFORT_THRESHOLD) -> List[Dict[str, Any]]:
+    def find_high_effort_functions(
+        self, threshold: int = EFFORT_THRESHOLD
+    ) -> List[Dict[str, Any]]:
         """
         Find functions with high Halstead effort (difficult to maintain).
 
@@ -382,7 +402,9 @@ class CodeMetrics:
         metrics = self.halstead_metrics
         return [func for func in metrics["functions"] if func["effort"] > threshold]
 
-    def find_bug_prone_functions(self, threshold: float = BUG_THRESHOLD) -> List[Dict[str, Any]]:
+    def find_bug_prone_functions(
+        self, threshold: float = BUG_THRESHOLD
+    ) -> List[Dict[str, Any]]:
         """
         Find functions with high estimated bug delivery.
 
@@ -393,7 +415,9 @@ class CodeMetrics:
             A list of functions likely to contain bugs
         """
         metrics = self.halstead_metrics
-        return [func for func in metrics["functions"] if func["bugs_delivered"] > threshold]
+        return [
+            func for func in metrics["functions"] if func["bugs_delivered"] > threshold
+        ]
 
     def get_code_quality_summary(self) -> Dict[str, Any]:
         """
@@ -575,7 +599,9 @@ class MetricsProfile:
         # Capture initial metrics.
         self.start_time = time.perf_counter()
         self.start_cpu = time.process_time()
-        self.start_mem = int(psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024))
+        self.start_mem = int(
+            psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024)
+        )
 
         # For delta calculations, store the last measurement values.
         self.last_measure_time = self.start_time
@@ -664,3 +690,4 @@ class MetricsProfile:
         """
         self.logger.info(json.dumps(measurement, indent=4))
         self.output.write_output(measurement)
+

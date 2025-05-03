@@ -191,3 +191,4 @@ class EventBus:
 
 # Global event bus instance
 event_bus = EventBus()
+

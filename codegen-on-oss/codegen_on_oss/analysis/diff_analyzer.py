@@ -9,14 +9,14 @@ import difflib
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+# Import the CodebaseSnapshot class
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
+
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.symbol import Symbol
-
-# Import the CodebaseSnapshot class
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,9 @@ class DiffAnalyzer:
     A class for analyzing differences between two codebase snapshots.
     """
 
-    def __init__(self, original_snapshot: CodebaseSnapshot, modified_snapshot: CodebaseSnapshot):
+    def __init__(
+        self, original_snapshot: CodebaseSnapshot, modified_snapshot: CodebaseSnapshot
+    ):
         """
         Initialize a new DiffAnalyzer.
 
@@ -131,7 +133,8 @@ class DiffAnalyzer:
             elif (
                 original_func["parameter_count"] != modified_func["parameter_count"]
                 or original_func["line_count"] != modified_func["line_count"]
-                or original_func["cyclomatic_complexity"] != modified_func["cyclomatic_complexity"]
+                or original_func["cyclomatic_complexity"]
+                != modified_func["cyclomatic_complexity"]
             ):
                 self._function_diffs[func_name] = "modified"
             else:
@@ -182,8 +185,10 @@ class DiffAnalyzer:
             # Check if the class has changed (methods, attributes, etc.)
             elif (
                 original_class["method_count"] != modified_class["method_count"]
-                or original_class["attribute_count"] != modified_class["attribute_count"]
-                or original_class["parent_class_count"] != modified_class["parent_class_count"]
+                or original_class["attribute_count"]
+                != modified_class["attribute_count"]
+                or original_class["parent_class_count"]
+                != modified_class["parent_class_count"]
             ):
                 self._class_diffs[class_name] = "modified"
             else:
@@ -251,8 +256,12 @@ class DiffAnalyzer:
         ]
 
         for func_name in common_functions:
-            original_complexity = self.original.function_metrics[func_name]["cyclomatic_complexity"]
-            modified_complexity = self.modified.function_metrics[func_name]["cyclomatic_complexity"]
+            original_complexity = self.original.function_metrics[func_name][
+                "cyclomatic_complexity"
+            ]
+            modified_complexity = self.modified.function_metrics[func_name][
+                "cyclomatic_complexity"
+            ]
 
             delta = modified_complexity - original_complexity
 
@@ -285,8 +294,12 @@ class DiffAnalyzer:
 
         # Count file changes by type
         file_counts = {
-            "added": sum(1 for change_type in file_changes.values() if change_type == "added"),
-            "deleted": sum(1 for change_type in file_changes.values() if change_type == "deleted"),
+            "added": sum(
+                1 for change_type in file_changes.values() if change_type == "added"
+            ),
+            "deleted": sum(
+                1 for change_type in file_changes.values() if change_type == "deleted"
+            ),
             "modified": sum(
                 1 for change_type in file_changes.values() if change_type == "modified"
             ),
@@ -298,39 +311,63 @@ class DiffAnalyzer:
 
         # Count function changes by type
         function_counts = {
-            "added": sum(1 for change_type in function_changes.values() if change_type == "added"),
+            "added": sum(
+                1 for change_type in function_changes.values() if change_type == "added"
+            ),
             "deleted": sum(
-                1 for change_type in function_changes.values() if change_type == "deleted"
+                1
+                for change_type in function_changes.values()
+                if change_type == "deleted"
             ),
             "modified": sum(
-                1 for change_type in function_changes.values() if change_type == "modified"
+                1
+                for change_type in function_changes.values()
+                if change_type == "modified"
             ),
-            "moved": sum(1 for change_type in function_changes.values() if change_type == "moved"),
+            "moved": sum(
+                1 for change_type in function_changes.values() if change_type == "moved"
+            ),
             "unchanged": sum(
-                1 for change_type in function_changes.values() if change_type == "unchanged"
+                1
+                for change_type in function_changes.values()
+                if change_type == "unchanged"
             ),
             "total": len(function_changes),
         }
 
         # Count class changes by type
         class_counts = {
-            "added": sum(1 for change_type in class_changes.values() if change_type == "added"),
-            "deleted": sum(1 for change_type in class_changes.values() if change_type == "deleted"),
+            "added": sum(
+                1 for change_type in class_changes.values() if change_type == "added"
+            ),
+            "deleted": sum(
+                1 for change_type in class_changes.values() if change_type == "deleted"
+            ),
             "modified": sum(
                 1 for change_type in class_changes.values() if change_type == "modified"
             ),
-            "moved": sum(1 for change_type in class_changes.values() if change_type == "moved"),
+            "moved": sum(
+                1 for change_type in class_changes.values() if change_type == "moved"
+            ),
             "unchanged": sum(
-                1 for change_type in class_changes.values() if change_type == "unchanged"
+                1
+                for change_type in class_changes.values()
+                if change_type == "unchanged"
             ),
             "total": len(class_changes),
         }
 
         # Calculate complexity change statistics
         complexity_stats = {
-            "increased": sum(1 for change in complexity_changes.values() if change["delta"] > 0),
-            "decreased": sum(1 for change in complexity_changes.values() if change["delta"] < 0),
-            "unchanged": sum(1 for change in complexity_changes.values() if change["delta"] == 0),
+            "increased": sum(
+                1 for change in complexity_changes.values() if change["delta"] > 0
+            ),
+            "decreased": sum(
+                1 for change in complexity_changes.values() if change["delta"] < 0
+            ),
+            "unchanged": sum(
+                1 for change in complexity_changes.values() if change["delta"] == 0
+            ),
             "total": len(complexity_changes),
         }
 
@@ -372,7 +409,10 @@ class DiffAnalyzer:
             A list of diff lines, or None if the file doesn't exist in both snapshots
         """
         # Check if the file exists in both snapshots
-        if filepath not in self.original.file_metrics or filepath not in self.modified.file_metrics:
+        if (
+            filepath not in self.original.file_metrics
+            or filepath not in self.modified.file_metrics
+        ):
             return None
 
         # Get the file content from the codebases
@@ -439,23 +479,35 @@ class DiffAnalyzer:
         # Identify changes to core files (files with many dependencies)
         file_changes = self.analyze_file_changes()
         for filepath, change_type in file_changes.items():
-            if change_type in ["modified", "deleted"] and filepath in self.original.file_metrics:
+            if (
+                change_type in ["modified", "deleted"]
+                and filepath in self.original.file_metrics
+            ):
                 # Consider files with many symbols as core files
                 if self.original.file_metrics[filepath]["symbol_count"] > 10:
                     high_risk["core_file_changes"].append(
                         {
                             "filepath": filepath,
                             "change_type": change_type,
-                            "symbol_count": self.original.file_metrics[filepath]["symbol_count"],
+                            "symbol_count": self.original.file_metrics[filepath][
+                                "symbol_count"
+                            ],
                         }
                     )
 
         # Identify interface changes (changes to function parameters)
         function_changes = self.analyze_function_changes()
         for func_name, change_type in function_changes.items():
-            if change_type == "modified" and func_name in self.original.function_metrics:
-                original_params = self.original.function_metrics[func_name]["parameter_count"]
-                modified_params = self.modified.function_metrics[func_name]["parameter_count"]
+            if (
+                change_type == "modified"
+                and func_name in self.original.function_metrics
+            ):
+                original_params = self.original.function_metrics[func_name][
+                    "parameter_count"
+                ]
+                modified_params = self.modified.function_metrics[func_name][
+                    "parameter_count"
+                ]
 
                 if original_params != modified_params:
                     high_risk["interface_changes"].append(
@@ -562,3 +614,4 @@ Complexity Changes:
                     text += "\n"
 
         return text
+

@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
-import codegen
 import networkx as nx
+
+import codegen
 
 if TYPE_CHECKING:
     from codegen import Codebase
@@ -55,3 +56,4 @@ if __name__ == "__main__":
         language="python",
     )
     run(codebase)
+

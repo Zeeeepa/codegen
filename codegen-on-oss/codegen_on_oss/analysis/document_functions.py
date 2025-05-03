@@ -16,7 +16,9 @@ def hop_through_imports(imp: Import) -> Symbol | ExternalModule:
     return imp.imported_symbol
 
 
-def get_extended_context(symbol: Symbol, degree: int) -> tuple[set[Symbol], set[Symbol]]:
+def get_extended_context(
+    symbol: Symbol, degree: int
+) -> tuple[set[Symbol], set[Symbol]]:
     """Recursively collect dependencies and usages up to the specified degree.
 
     Args:
@@ -51,7 +53,9 @@ def get_extended_context(symbol: Symbol, degree: int) -> tuple[set[Symbol], set[
 
             if isinstance(usage_symbol, Symbol) and usage_symbol not in usages:
                 usages.add(usage_symbol)
-                usage_deps, usage_usages = get_extended_context(usage_symbol, degree - 1)
+                usage_deps, usage_usages = get_extended_context(
+                    usage_symbol, degree - 1
+                )
                 dependencies.update(usage_deps)
                 usages.update(usage_usages)
 
@@ -75,7 +79,9 @@ def run(codebase: Codebase):
     total_functions = len(functions)
     processed = 0
 
-    print(f"Found {total_functions} functions to process (excluding tests and tutorials)")
+    print(
+        f"Found {total_functions} functions to process (excluding tests and tutorials)"
+    )
 
     for function in functions:
         processed += 1
@@ -153,3 +159,4 @@ if __name__ == "__main__":
 
     print("Running function...")
     run(codebase)
+

@@ -14,13 +14,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from codegen import Codebase
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
-
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import (
@@ -30,6 +23,13 @@ from codegen_on_oss.analysis.commit_analysis import (
     FileChange,
 )
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
+
+from codegen import Codebase
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.enums import EdgeType, SymbolType
 
 
 class CommitAnalyzer:
@@ -475,7 +475,9 @@ class CommitAnalyzer:
 
         return functions
 
-    def _analyze_function_changes(self, diff: str) -> tuple[list[str], list[str], list[str]]:
+    def _analyze_function_changes(
+        self, diff: str
+    ) -> tuple[list[str], list[str], list[str]]:
         """
         Analyze function changes from a diff.
 
@@ -511,3 +513,4 @@ class CommitAnalyzer:
         # For simplicity, we're not detecting modified functions
 
         return added_functions, modified_functions, removed_functions
+

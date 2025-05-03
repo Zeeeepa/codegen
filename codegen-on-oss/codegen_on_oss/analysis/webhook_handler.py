@@ -16,14 +16,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-# Import from existing analysis modules
-from codegen import Codebase
-
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
 from codegen_on_oss.outputs.base import OutputHandler
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
+
+# Import from existing analysis modules
+from codegen import Codebase
 
 
 class Webhook:
@@ -78,7 +78,9 @@ class Webhook:
             "events": self.events,
             "secret": self.secret,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_triggered": (self.last_triggered.isoformat() if self.last_triggered else None),
+            "last_triggered": (
+                self.last_triggered.isoformat() if self.last_triggered else None
+            ),
         }
 
 
@@ -152,7 +154,11 @@ class WebhookHandler:
         Returns:
             A list of webhooks for the project
         """
-        return [webhook for webhook in self.webhooks.values() if webhook.project_id == project_id]
+        return [
+            webhook
+            for webhook in self.webhooks.values()
+            if webhook.project_id == project_id
+        ]
 
     def delete_webhook(self, webhook_id: str) -> bool:
         """
@@ -185,7 +191,9 @@ class WebhookHandler:
         self.event_handlers[event].append(handler)
         self.logger.info(f"Registered handler for event {event}")
 
-    def trigger_event(self, event: str, project_id: str, payload: Dict[str, Any]) -> None:
+    def trigger_event(
+        self, event: str, project_id: str, payload: Dict[str, Any]
+    ) -> None:
         """
         Trigger an event.
 
@@ -211,7 +219,9 @@ class WebhookHandler:
             if event in webhook.events:
                 self._trigger_webhook(webhook, event, payload)
 
-    def _trigger_webhook(self, webhook: Webhook, event: str, payload: Dict[str, Any]) -> None:
+    def _trigger_webhook(
+        self, webhook: Webhook, event: str, payload: Dict[str, Any]
+    ) -> None:
         """
         Trigger a webhook.
 
@@ -253,3 +263,4 @@ class WebhookHandler:
             )
         except Exception as e:
             self.logger.error(f"Error triggering webhook {webhook.webhook_id}: {e}")
+

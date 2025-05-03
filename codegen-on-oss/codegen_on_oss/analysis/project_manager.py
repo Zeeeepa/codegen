@@ -65,7 +65,9 @@ class Project:
             "description": self.description,
             "default_branch": self.default_branch,
             "created_at": self.created_at.isoformat(),
-            "last_analyzed": (self.last_analyzed.isoformat() if self.last_analyzed else None),
+            "last_analyzed": (
+                self.last_analyzed.isoformat() if self.last_analyzed else None
+            ),
             "metadata": self.metadata,
         }
 
@@ -165,3 +167,4 @@ class ProjectManager:
             return True
 
         return False
+

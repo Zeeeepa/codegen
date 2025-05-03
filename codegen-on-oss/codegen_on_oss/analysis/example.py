@@ -5,10 +5,10 @@ This script shows how to use the CodeAnalyzer and CodeMetrics classes
 to perform comprehensive code analysis on a repository.
 """
 
-from codegen import Codebase
-
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
 from codegen_on_oss.metrics import CodeMetrics
+
+from codegen import Codebase
 
 
 def main():
@@ -43,7 +43,9 @@ def main():
 
     # Find complex functions
     complex_functions = [
-        f for f in complexity_results["cyclomatic_complexity"]["functions"] if f["complexity"] > 10
+        f
+        for f in complexity_results["cyclomatic_complexity"]["functions"]
+        if f["complexity"] > 10
     ][
         :5
     ]  # Show top 5
@@ -51,7 +53,9 @@ def main():
     if complex_functions:
         print("\nTop complex functions:")
         for func in complex_functions:
-            print(f"- {func['name']}: Complexity {func['complexity']} (Rank {func['rank']})")
+            print(
+                f"- {func['name']}: Complexity {func['complexity']} (Rank {func['rank']})"
+            )
 
     # Analyze imports
     print("\n=== Import Analysis ===")
@@ -106,3 +110,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

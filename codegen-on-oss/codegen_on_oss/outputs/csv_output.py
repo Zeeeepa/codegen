@@ -28,3 +28,4 @@ class CSVOutput(BaseOutput):
             if not file_exists:
                 writer.writeheader()
             writer.writerow(value)
+

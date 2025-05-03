@@ -25,9 +25,7 @@ class SQLSettings(BaseSettings):
 
     @computed_field
     def url(self) -> str:
-        return (
-            f"{self.dialect}://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        )
+        return f"{self.dialect}://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
 def get_session_maker(settings: SQLSettings):
@@ -150,3 +148,4 @@ class SWEBenchSQLOutput(BaseOutput):
             )
             session.execute(stmt)
             session.commit()
+

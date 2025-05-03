@@ -184,3 +184,4 @@ class SystemEventHandler(EventHandler):
                 EventType.SYSTEM_INFO,
             ]
         )
+

@@ -11,16 +11,16 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
+
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, SymbolType
-
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
 
 
 @dataclass
@@ -93,3 +93,4 @@ class CommitComparisonResult:
             "compare_commit_hash": self.compare_commit_hash,
             "files_changed": [file.to_dict() for file in self.files_changed],
         }
+

@@ -80,9 +80,13 @@ class Repository(Base):
     description = Column(Text, nullable=True)
     default_branch = Column(String(255), nullable=False, default="main")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
-    snapshots = relationship("Snapshot", back_populates="repository", cascade="all, delete-orphan")
+    snapshots = relationship(
+        "Snapshot", back_populates="repository", cascade="all, delete-orphan"
+    )
     analysis_results = relationship(
         "AnalysisResult", back_populates="repository", cascade="all, delete-orphan"
     )
@@ -94,7 +98,9 @@ class Snapshot(Base):
     __tablename__ = "snapshots"
 
     id = Column(Integer, primary_key=True)
-    snapshot_id = Column(String(36), nullable=False, unique=True, default=lambda: str(uuid.uuid4()))
+    snapshot_id = Column(
+        String(36), nullable=False, unique=True, default=lambda: str(uuid.uuid4())
+    )
     repository_id = Column(Integer, ForeignKey("repositories.id"), nullable=False)
     commit_sha = Column(String(255), nullable=True)
     branch = Column(String(255), nullable=True)
@@ -106,11 +112,15 @@ class Snapshot(Base):
     parent_snapshot_id = Column(Integer, ForeignKey("snapshots.id"), nullable=True)
 
     repository = relationship("Repository", back_populates="snapshots")
-    parent_snapshot = relationship("Snapshot", remote_side=[id], backref="child_snapshots")
+    parent_snapshot = relationship(
+        "Snapshot", remote_side=[id], backref="child_snapshots"
+    )
     analysis_results = relationship(
         "AnalysisResult", back_populates="snapshot", cascade="all, delete-orphan"
     )
-    files = relationship("File", back_populates="snapshot", cascade="all, delete-orphan")
+    files = relationship(
+        "File", back_populates="snapshot", cascade="all, delete-orphan"
+    )
 
 
 class File(Base):
@@ -131,9 +141,13 @@ class File(Base):
 
     snapshot = relationship("Snapshot", back_populates="files")
     repository = relationship("Repository")
-    functions = relationship("Function", back_populates="file", cascade="all, delete-orphan")
+    functions = relationship(
+        "Function", back_populates="file", cascade="all, delete-orphan"
+    )
     classes = relationship("Class", back_populates="file", cascade="all, delete-orphan")
-    imports = relationship("Import", back_populates="file", cascade="all, delete-orphan")
+    imports = relationship(
+        "Import", back_populates="file", cascade="all, delete-orphan"
+    )
 
 
 class Function(Base):
@@ -214,7 +228,9 @@ class AnalysisResult(Base):
 
     repository = relationship("Repository", back_populates="analysis_results")
     snapshot = relationship("Snapshot", back_populates="analysis_results")
-    issues = relationship("Issue", back_populates="analysis_result", cascade="all, delete-orphan")
+    issues = relationship(
+        "Issue", back_populates="analysis_result", cascade="all, delete-orphan"
+    )
 
 
 class Issue(Base):
@@ -223,7 +239,9 @@ class Issue(Base):
     __tablename__ = "issues"
 
     id = Column(Integer, primary_key=True)
-    analysis_result_id = Column(Integer, ForeignKey("analysis_results.id"), nullable=False)
+    analysis_result_id = Column(
+        Integer, ForeignKey("analysis_results.id"), nullable=False
+    )
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     file_path = Column(String(255), nullable=True)
@@ -244,7 +262,9 @@ class SymbolAnalysis(Base):
     __tablename__ = "symbol_analyses"
 
     id = Column(Integer, primary_key=True)
-    analysis_result_id = Column(Integer, ForeignKey("analysis_results.id"), nullable=False)
+    analysis_result_id = Column(
+        Integer, ForeignKey("analysis_results.id"), nullable=False
+    )
     symbol_type = Column(Enum(SymbolType), nullable=False)
     symbol_name = Column(String(255), nullable=False)
     file_path = Column(String(255), nullable=False)
@@ -262,7 +282,9 @@ class DependencyGraph(Base):
     __tablename__ = "dependency_graphs"
 
     id = Column(Integer, primary_key=True)
-    analysis_result_id = Column(Integer, ForeignKey("analysis_results.id"), nullable=False)
+    analysis_result_id = Column(
+        Integer, ForeignKey("analysis_results.id"), nullable=False
+    )
     graph_data = Column(JSON, nullable=False)
     node_count = Column(Integer, nullable=False)
     edge_count = Column(Integer, nullable=False)
@@ -278,7 +300,9 @@ class CodeMetrics(Base):
     __tablename__ = "code_metrics"
 
     id = Column(Integer, primary_key=True)
-    analysis_result_id = Column(Integer, ForeignKey("analysis_results.id"), nullable=False)
+    analysis_result_id = Column(
+        Integer, ForeignKey("analysis_results.id"), nullable=False
+    )
     total_lines = Column(Integer, nullable=False)
     code_lines = Column(Integer, nullable=False)
     comment_lines = Column(Integer, nullable=False)
@@ -308,3 +332,4 @@ class AnalysisJob(Base):
     progress = Column(Integer, nullable=False, default=0)
     error_message = Column(Text, nullable=True)
     result_data = Column(JSON, nullable=True)
+

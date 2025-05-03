@@ -20,7 +20,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
 import uvicorn
-from codegen import Codebase
+from codegen_on_oss.analysis.code_analyzer import CodeAnalyzer
+from codegen_on_oss.analysis.feature_analyzer import FeatureAnalyzer
+from codegen_on_oss.analysis.project_manager import ProjectManager
+from codegen_on_oss.analysis.webhook_handler import WebhookHandler
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -36,10 +39,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field, root_validator, validator
 
-from codegen_on_oss.analysis.code_analyzer import CodeAnalyzer
-from codegen_on_oss.analysis.feature_analyzer import FeatureAnalyzer
-from codegen_on_oss.analysis.project_manager import ProjectManager
-from codegen_on_oss.analysis.webhook_handler import WebhookHandler
+from codegen import Codebase
 
 # Configure logging
 logging.basicConfig(
@@ -84,7 +84,9 @@ class BranchComparisonRequest(BaseModel):
 
     repo_url: str = Field(..., description="URL of the repository to analyze")
     base_branch: str = Field("main", description="Base branch name (default: main)")
-    compare_branch: str = Field(..., description="Branch to compare against the base branch")
+    compare_branch: str = Field(
+        ..., description="Branch to compare against the base branch"
+    )
 
 
 class PullRequestAnalysisRequest(BaseModel):
@@ -104,36 +106,54 @@ class ProjectRegistrationRequest(BaseModel):
     webhook_url: Optional[str] = Field(
         None, description="Webhook URL to notify when analysis is complete"
     )
-    github_token: Optional[str] = Field(None, description="GitHub token for private repositories")
+    github_token: Optional[str] = Field(
+        None, description="GitHub token for private repositories"
+    )
 
 
 class WebhookRegistrationRequest(BaseModel):
     """Request model for registering a webhook."""
 
-    project_id: str = Field(..., description="ID of the project to register the webhook for")
+    project_id: str = Field(
+        ..., description="ID of the project to register the webhook for"
+    )
     webhook_url: str = Field(..., description="URL to send webhook notifications to")
     events: List[str] = Field(
         ["pr", "commit", "branch"], description="Events to trigger the webhook"
     )
-    secret: Optional[str] = Field(None, description="Secret to sign webhook payloads with")
+    secret: Optional[str] = Field(
+        None, description="Secret to sign webhook payloads with"
+    )
 
 
 class FunctionAnalysisRequest(BaseModel):
     """Request model for analyzing a specific function."""
 
     repo_url: str = Field(..., description="URL of the repository to analyze")
-    function_name: str = Field(..., description="Fully qualified name of the function to analyze")
-    branch: Optional[str] = Field(None, description="Branch to analyze (default: default branch)")
-    commit: Optional[str] = Field(None, description="Commit to analyze (default: latest commit)")
+    function_name: str = Field(
+        ..., description="Fully qualified name of the function to analyze"
+    )
+    branch: Optional[str] = Field(
+        None, description="Branch to analyze (default: default branch)"
+    )
+    commit: Optional[str] = Field(
+        None, description="Commit to analyze (default: latest commit)"
+    )
 
 
 class FeatureAnalysisRequest(BaseModel):
     """Request model for analyzing a specific feature."""
 
     repo_url: str = Field(..., description="URL of the repository to analyze")
-    feature_path: str = Field(..., description="Path to the feature (file or directory)")
-    branch: Optional[str] = Field(None, description="Branch to analyze (default: default branch)")
-    commit: Optional[str] = Field(None, description="Commit to analyze (default: latest commit)")
+    feature_path: str = Field(
+        ..., description="Path to the feature (file or directory)"
+    )
+    branch: Optional[str] = Field(
+        None, description="Branch to analyze (default: default branch)"
+    )
+    commit: Optional[str] = Field(
+        None, description="Commit to analyze (default: latest commit)"
+    )
 
 
 # Define response models
@@ -336,7 +356,9 @@ async def analyze_repo(request: RepoAnalysisRequest):
 
 
 @app.post("/analyze_commit", response_model=CommitAnalysisResponse)
-async def analyze_commit(request: CommitAnalysisRequest, background_tasks: BackgroundTasks):
+async def analyze_commit(
+    request: CommitAnalysisRequest, background_tasks: BackgroundTasks
+):
     """
     Analyze a commit in a repository.
     """
@@ -348,7 +370,9 @@ async def analyze_commit(request: CommitAnalysisRequest, background_tasks: Backg
             logger.info(f"Using cached result for {cache_key}")
             return analysis_cache[cache_key]
 
-        logger.info(f"Analyzing commit {request.commit_hash} in repository {request.repo_url}")
+        logger.info(
+            f"Analyzing commit {request.commit_hash} in repository {request.repo_url}"
+        )
 
         result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
             repo_url=request.repo_url, commit_hash=request.commit_hash
@@ -389,7 +413,9 @@ async def analyze_commit(request: CommitAnalysisRequest, background_tasks: Backg
 
 
 @app.post("/compare_branches", response_model=BranchComparisonResponse)
-async def compare_branches(request: BranchComparisonRequest, background_tasks: BackgroundTasks):
+async def compare_branches(
+    request: BranchComparisonRequest, background_tasks: BackgroundTasks
+):
     """
     Compare two branches in a repository.
     """
@@ -445,7 +471,9 @@ async def compare_branches(request: BranchComparisonRequest, background_tasks: B
         compare_codebase = Codebase.from_directory(compare_dir)
 
         # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(original_codebase=base_codebase, commit_codebase=compare_codebase)
+        analyzer = CommitAnalyzer(
+            original_codebase=base_codebase, commit_codebase=compare_codebase
+        )
 
         # Analyze the differences
         result = analyzer.analyze_commit()
@@ -487,7 +515,9 @@ async def compare_branches(request: BranchComparisonRequest, background_tasks: B
 
 
 @app.post("/analyze_pr", response_model=PullRequestAnalysisResponse)
-async def analyze_pr(request: PullRequestAnalysisRequest, background_tasks: BackgroundTasks):
+async def analyze_pr(
+    request: PullRequestAnalysisRequest, background_tasks: BackgroundTasks
+):
     """
     Analyze a pull request in a repository.
     """
@@ -499,7 +529,9 @@ async def analyze_pr(request: PullRequestAnalysisRequest, background_tasks: Back
             logger.info(f"Using cached result for {cache_key}")
             return analysis_cache[cache_key]
 
-        logger.info(f"Analyzing PR #{request.pr_number} in repository {request.repo_url}")
+        logger.info(
+            f"Analyzing PR #{request.pr_number} in repository {request.repo_url}"
+        )
 
         # Create a temporary directory for the repository
         repo_dir = tempfile.mkdtemp()
@@ -609,7 +641,9 @@ async def analyze_pr(request: PullRequestAnalysisRequest, background_tasks: Back
         pr_codebase = Codebase.from_directory(pr_dir)
 
         # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(original_codebase=base_codebase, commit_codebase=pr_codebase)
+        analyzer = CommitAnalyzer(
+            original_codebase=base_codebase, commit_codebase=pr_codebase
+        )
 
         # Analyze the differences
         result = analyzer.analyze_commit()
@@ -727,14 +761,14 @@ async def analyze_function(request: FunctionAnalysisRequest):
     """
     try:
         # Check cache
-        cache_key = (
-            f"function:{request.repo_url}:{request.function_name}:{request.branch}:{request.commit}"
-        )
+        cache_key = f"function:{request.repo_url}:{request.function_name}:{request.branch}:{request.commit}"
         if cache_key in analysis_cache:
             logger.info(f"Using cached result for {cache_key}")
             return analysis_cache[cache_key]
 
-        logger.info(f"Analyzing function {request.function_name} in repository {request.repo_url}")
+        logger.info(
+            f"Analyzing function {request.function_name} in repository {request.repo_url}"
+        )
 
         # Create a temporary directory for the repository
         repo_dir = tempfile.mkdtemp()
@@ -805,14 +839,14 @@ async def analyze_feature(request: FeatureAnalysisRequest):
     """
     try:
         # Check cache
-        cache_key = (
-            f"feature:{request.repo_url}:{request.feature_path}:{request.branch}:{request.commit}"
-        )
+        cache_key = f"feature:{request.repo_url}:{request.feature_path}:{request.branch}:{request.commit}"
         if cache_key in analysis_cache:
             logger.info(f"Using cached result for {cache_key}")
             return analysis_cache[cache_key]
 
-        logger.info(f"Analyzing feature {request.feature_path} in repository {request.repo_url}")
+        logger.info(
+            f"Analyzing feature {request.feature_path} in repository {request.repo_url}"
+        )
 
         # Create a temporary directory for the repository
         repo_dir = tempfile.mkdtemp()
@@ -879,3 +913,4 @@ def run_server(host: str = "0.0.0.0", port: int = 8000):
 
 if __name__ == "__main__":
     run_server()
+

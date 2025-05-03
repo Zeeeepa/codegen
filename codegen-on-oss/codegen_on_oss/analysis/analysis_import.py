@@ -2,10 +2,11 @@ import logging
 
 import modal
 import networkx as nx
+from dotenv import load_dotenv
+
 from codegen import Codebase, CodegenApp
 from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
 from codegen.extensions.tools.github.create_pr_comment import create_pr_comment
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -47,7 +48,9 @@ def find_import_cycles(G):
 
     for i, cycle in enumerate(cycles, 1):
         print(f"\nCycle #{i}: Size {len(cycle)} files")
-        print(f"Total number of imports in cycle: {G.subgraph(cycle).number_of_edges()}")
+        print(
+            f"Total number of imports in cycle: {G.subgraph(cycle).number_of_edges()}"
+        )
 
         print("\nFiles in this cycle:")
         for file in cycle:
@@ -69,8 +72,12 @@ def find_problematic_import_loops(G, cycles):
             for to_file in scc:
                 if G.has_edge(from_file, to_file):
                     edges = G.get_edge_data(from_file, to_file)
-                    dynamic_count = sum(1 for e in edges.values() if e["color"] == "red")
-                    static_count = sum(1 for e in edges.values() if e["color"] == "black")
+                    dynamic_count = sum(
+                        1 for e in edges.values() if e["color"] == "red"
+                    )
+                    static_count = sum(
+                        1 for e in edges.values() if e["color"] == "black"
+                    )
 
                     if dynamic_count > 0 and static_count > 0:
                         mixed_imports[(from_file, to_file)] = {
@@ -80,9 +87,13 @@ def find_problematic_import_loops(G, cycles):
                         }
 
         if mixed_imports:
-            problematic_cycles.append({"files": scc, "mixed_imports": mixed_imports, "index": i})
+            problematic_cycles.append(
+                {"files": scc, "mixed_imports": mixed_imports, "index": i}
+            )
 
-    print(f"Found {len(problematic_cycles)} cycles with potentially problematic imports.")
+    print(
+        f"Found {len(problematic_cycles)} cycles with potentially problematic imports."
+    )
 
     for i, cycle in enumerate(problematic_cycles):
         print(
@@ -158,3 +169,4 @@ app = modal.App("codegen-import-cycles-github-check")
 def fastapi_app():
     print("Starting codegen fastapi app")
     return cg.app
+
