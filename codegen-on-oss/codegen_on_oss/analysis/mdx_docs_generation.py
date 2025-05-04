@@ -1,248 +1,196 @@
-import re
-from typing import TYPE_CHECKING, List, Optional
+"""
+MDX Documentation Generation Module
 
-if TYPE_CHECKING:
-    from codegen import Codebase
-
-from codegen.sdk.code_generation.doc_utils.schemas import (
-    ClassDoc,
-    MethodDoc,
-    ParameterDoc,
-)
-from codegen.sdk.code_generation.doc_utils.utils import (
-    sanitize_html_for_mdx,
-    sanitize_mdx_mintlify_description,
-)
-
-
-def render_mdx_page_for_class(cls_doc: ClassDoc) -> str:
-    """Renders the MDX for a single class"""
-    return f"""{render_mdx_page_title(cls_doc)}
-{render_mdx_inheritence_section(cls_doc)}
-{render_mdx_attributes_section(cls_doc)}
-{render_mdx_methods_section(cls_doc)}
+This module provides functions for generating MDX documentation from code.
 """
 
+from typing import Any, Dict, List, Optional
 
-def render_mdx_page_title(cls_doc: ClassDoc, icon: str | None = None) -> str:
-    """Renders the MDX for the page title"""
-    page_desc = cls_doc.description if hasattr(cls_doc, "description") else ""
+from codegen import Codebase
+from codegen.sdk.core.class_def import Class
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.parameter import Parameter
+from codegen.shared.logging.get_logger import get_logger
 
-    return f"""---
-title: "{cls_doc.title}"
-sidebarTitle: "{cls_doc.title}"
-icon: "{icon if icon else ""}"
-description: "{sanitize_mdx_mintlify_description(page_desc)}"
----
-import {{Parameter}} from '/snippets/Parameter.mdx';
-import {{ParameterWrapper}} from '/snippets/ParameterWrapper.mdx';
-import {{Return}} from '/snippets/Return.mdx';
-import {{HorizontalDivider}} from '/snippets/HorizontalDivider.mdx';
-import {{GithubLinkNote}} from '/snippets/GithubLinkNote.mdx';
-import {{Attribute}} from '/snippets/Attribute.mdx';
-
-<GithubLinkNote link="{cls_doc.github_url}" />
-"""
+logger = get_logger(__name__)
 
 
-def render_mdx_inheritence_section(cls_doc: ClassDoc) -> str:
-    """Renders the MDX for the inheritence section"""
-    # Filter on parents who we have docs for
-    parents = cls_doc.inherits_from
-    if not parents:
-        return ""
-    parents_string = ", ".join([parse_link(parent) for parent in parents])
-    return f"""### Inherits from
-{parents_string}
-"""
+class ClassDocumentation:
+    """Class for storing documentation about a class."""
+    
+    def __init__(self, cls: Class, codebase: Codebase):
+        """
+        Initialize a ClassDocumentation object.
+        
+        Args:
+            cls: The class to document
+            codebase: The codebase containing the class
+        """
+        self.cls = cls
+        self.codebase = codebase
+        self.name = cls.name
+        self.docstring = cls.docstring or ""
+        self.methods = []
+        self.properties = []
+        self.base_classes = []
+        
+        # Extract methods and properties
+        for method in cls.methods:
+            self.methods.append({
+                "name": method.name,
+                "docstring": method.docstring or "",
+                "parameters": [
+                    {
+                        "name": param.name,
+                        "type": param.type_annotation or "Any",
+                        "default": param.default_value,
+                        "description": _extract_param_description(method.docstring or "", param.name)
+                    }
+                    for param in method.parameters
+                ],
+                "return_type": method.return_type or "None",
+                "return_description": _extract_return_description(method.docstring or "")
+            })
+        
+        # Extract properties
+        for prop in cls.properties:
+            self.properties.append({
+                "name": prop.name,
+                "type": prop.type_annotation or "Any",
+                "docstring": prop.docstring or ""
+            })
+        
+        # Extract base classes
+        for base in cls.base_classes:
+            self.base_classes.append(base.name)
 
 
-def render_mdx_attributes_section(cls_doc: ClassDoc) -> str:
-    """Renders the MDX for the attributes section"""
-    sorted_attributes = sorted(
-        cls_doc.attributes
-        + [method for method in cls_doc.methods if method.method_type == "property"],
-        key=lambda x: x.name,
-    )
-    if len(sorted_attributes) <= 0:
-        return ""
-    attributes_mdx_string = "\n".join(
-        [render_mdx_for_attribute(attribute) for attribute in sorted_attributes]
-    )
-
-    return f"""## Attributes
-<HorizontalDivider />
-{attributes_mdx_string}
-"""
-
-
-def render_mdx_methods_section(cls_doc: ClassDoc) -> str:
-    """Renders the MDX for the methods section"""
-    sorted_methods = sorted(cls_doc.methods, key=lambda x: x.name)
-    if len(sorted_methods) <= 0:
-        return ""
-    methods_mdx_string = "\n".join(
-        [
-            render_mdx_for_method(method)
-            for method in sorted_methods
-            if method.method_type == "method"
-        ]
-    )
-
-    return f"""## Methods
-<HorizontalDivider />
-{methods_mdx_string}
-"""
-
-
-def render_mdx_for_attribute(attribute: MethodDoc) -> str:
-    """Renders the MDX for a single attribute"""
-    attribute_docstring = sanitize_mdx_mintlify_description(attribute.description)
-    if len(attribute.return_type) > 0:
-        return_type = f"{resolve_type_string(attribute.return_type[0])}"
-    else:
-        return_type = ""
-    if not attribute_docstring:
-        attribute_docstring = "\n"
-    return f"""### <span className="text-primary">{attribute.name}</span>
-<HorizontalDivider light={{true}} />
-<Attribute type={{ {return_type if return_type else "<span></span>"} }} description="{attribute_docstring}" />
-"""
-
-
-########################################################################################################################
-# METHODS
-########################################################################################################################
-
-
-def format_parameter_for_mdx(parameter: ParameterDoc) -> str:
-    type_string = resolve_type_string(parameter.type)
-    return f"""
-<Parameter
-    name="{parameter.name}"
-    type={{ {type_string} }}
-    description="{sanitize_html_for_mdx(parameter.description)}"
-    defaultValue="{sanitize_html_for_mdx(parameter.default)}"
-/>
-""".strip()
-
-
-def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
-    return "\n".join([format_parameter_for_mdx(parameter) for parameter in parameters])
-
-
-def format_return_for_mdx(return_type: list[str], return_description: str) -> str:
-    description = sanitize_html_for_mdx(return_description) if return_description else ""
-    return_type_str = resolve_type_string(return_type[0])
-
-    return f"""
-<Return return_type={{ {return_type_str} }} description="{description}"/>
-"""
-
-
-def render_mdx_for_method(method: MethodDoc) -> str:
-    description = sanitize_mdx_mintlify_description(method.description)
-    # =====[ RENDER ]=====
-    # TODO add links here
-    # TODO add inheritence info here
-    mdx_string = f"""### <span className="text-primary">{method.name}</span>
-{description}
-<GithubLinkNote link="{method.github_url}" />
-"""
-    if method.parameters:
-        mdx_string += f"""
-<ParameterWrapper>
-{format_parameters_for_mdx(method.parameters)}
-</ParameterWrapper>
-"""
-    if method.return_type:
-        mdx_string += f"""
-{format_return_for_mdx(method.return_type, method.return_description)}
-"""
-
-    return mdx_string
-
-
-def get_mdx_route_for_class(cls_doc: ClassDoc) -> str:
-    """Get the expected MDX route for a class
-    split by /core, /python, and /typescript
+def _extract_param_description(docstring: str, param_name: str) -> str:
     """
-    lower_class_name = cls_doc.title.lower()
-    if lower_class_name.startswith("py"):
-        return f"codebase-sdk/python/{cls_doc.title}"
-    elif lower_class_name.startswith(("ts", "jsx")):
-        return f"codebase-sdk/typescript/{cls_doc.title}"
-    else:
-        return f"codebase-sdk/core/{cls_doc.title}"
-
-
-def format_type_string(type_string: str) -> str:
-    type_strings = type_string.split("|")
-    return " | ".join([type_str.strip() for type_str in type_strings])
-
-
-def resolve_type_string(type_string: str) -> str:
-    if "<" in type_string:
-        return f"<>{parse_link(type_string, href=True)}</>"
-    else:
-        return f'<code className="text-sm bg-gray-100 px-2 py-0.5 rounded">{format_type_string(type_string)}</code>'
-
-
-def format_builtin_type_string(type_string: str) -> str:
-    if "|" in type_string:
-        type_strings = type_string.split("|")
-        return " | ".join([type_str.strip() for type_str in type_strings])
-    return type_string
-
-
-def span_type_string_by_pipe(type_string: str) -> str:
-    if "|" in type_string:
-        type_strings = type_string.split("|")
-        return " | ".join([f"<span>{type_str.strip()}</span>" for type_str in type_strings])
-    return type_string
-
-
-def parse_link(type_string: str, href: bool = False) -> str:
-    # Match components with angle brackets, handling nested structures
-
-    parts = [p for p in re.split(r"(<[^>]+>)", type_string) if p]
-
-    result = []
-    for part in parts:
-        if part.startswith("<") and part.endswith(">"):
-            # Extract the path from between angle brackets
-            path = part[1:-1]
-            symbol = path.split("/")[-1]
-
-            # Create a Link object
-            link = (
-                f'<a href="/{path}" style={{ {{fontWeight: "inherit", fontSize: "inherit"}} }}>{symbol}</a>'
-                if href
-                else f"[{symbol}](/{path})"
-            )
-            result.append(link)
-        else:
-            part = format_builtin_type_string(part)
-            if href:
-                result.append(f"<span>{part.strip()}</span>")
-            else:
-                result.append(part.strip())
-
-    return " ".join(result)
-
-
-def generate_mdx_docs(
-    codebase: Codebase,
-    output_dir: str,
-    include_patterns: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None,
-) -> None:
-    """
-    Generate MDX documentation for a codebase.
-
+    Extract the description of a parameter from a docstring.
+    
     Args:
-        codebase: The codebase to generate documentation for
-        output_dir: The directory to write the documentation to
-        include_patterns: Optional list of patterns to include
-        exclude_patterns: Optional list of patterns to exclude
+        docstring: The docstring to extract from
+        param_name: The name of the parameter
+        
+    Returns:
+        The description of the parameter, or an empty string if not found
     """
+    import re
+    
+    # Look for param in Args section
+    args_pattern = r"Args:.*?(?:Parameters:|Returns:|Raises:|Yields:|Examples:|Notes:|Attributes:|Warnings:|Todo:|References:|See Also:|\Z)"
+    args_match = re.search(args_pattern, docstring, re.DOTALL)
+    
+    if args_match:
+        args_section = args_match.group(0)
+        param_pattern = rf"{param_name}:\s*(.*?)(?:\n\s*\w+:|$)"
+        param_match = re.search(param_pattern, args_section, re.DOTALL)
+        
+        if param_match:
+            return param_match.group(1).strip()
+    
+    return ""
+
+
+def _extract_return_description(docstring: str) -> str:
+    """
+    Extract the description of the return value from a docstring.
+    
+    Args:
+        docstring: The docstring to extract from
+        
+    Returns:
+        The description of the return value, or an empty string if not found
+    """
+    import re
+    
+    # Look for Returns section
+    returns_pattern = r"Returns:\s*(.*?)(?:Raises:|Yields:|Examples:|Notes:|Attributes:|Warnings:|Todo:|References:|See Also:|\Z)"
+    returns_match = re.search(returns_pattern, docstring, re.DOTALL)
+    
+    if returns_match:
+        return returns_match.group(1).strip()
+    
+    return ""
+
+
+def create_class_doc(cls: Class, codebase: Codebase) -> ClassDocumentation:
+    """
+    Create a ClassDocumentation object for a class.
+    
+    Args:
+        cls: The class to document
+        codebase: The codebase containing the class
+        
+    Returns:
+        A ClassDocumentation object
+    """
+    return ClassDocumentation(cls, codebase)
+
+
+def render_mdx_page_for_class(class_doc: ClassDocumentation) -> str:
+    """
+    Render an MDX page for a class.
+    
+    Args:
+        class_doc: The ClassDocumentation object to render
+        
+    Returns:
+        An MDX string
+    """
+    mdx = f"# {class_doc.name}\n\n"
+    
+    # Add docstring
+    if class_doc.docstring:
+        mdx += f"{class_doc.docstring}\n\n"
+    
+    # Add inheritance
+    if class_doc.base_classes:
+        mdx += "## Inheritance\n\n"
+        mdx += f"Inherits from: {', '.join(class_doc.base_classes)}\n\n"
+    
+    # Add properties
+    if class_doc.properties:
+        mdx += "## Properties\n\n"
+        for prop in class_doc.properties:
+            mdx += f"### {prop['name']}\n\n"
+            mdx += f"**Type:** `{prop['type']}`\n\n"
+            if prop['docstring']:
+                mdx += f"{prop['docstring']}\n\n"
+    
+    # Add methods
+    if class_doc.methods:
+        mdx += "## Methods\n\n"
+        for method in class_doc.methods:
+            # Format parameters
+            params = []
+            for param in method['parameters']:
+                default = f" = {param['default']}" if param['default'] else ""
+                params.append(f"{param['name']}: {param['type']}{default}")
+            
+            # Method signature
+            mdx += f"### {method['name']}({', '.join(params)}) -> {method['return_type']}\n\n"
+            
+            # Method docstring
+            if method['docstring']:
+                mdx += f"{method['docstring']}\n\n"
+            
+            # Parameters table
+            if method['parameters']:
+                mdx += "#### Parameters\n\n"
+                mdx += "| Name | Type | Description |\n"
+                mdx += "| ---- | ---- | ----------- |\n"
+                for param in method['parameters']:
+                    mdx += f"| `{param['name']}` | `{param['type']}` | {param['description']} |\n"
+                mdx += "\n"
+            
+            # Return value
+            if method['return_type'] != "None":
+                mdx += "#### Returns\n\n"
+                mdx += f"**Type:** `{method['return_type']}`\n\n"
+                if method['return_description']:
+                    mdx += f"{method['return_description']}\n\n"
+    
+    return mdx
+

@@ -28,15 +28,17 @@ from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
 from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.symbol import Symbol
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from loguru import logger
+from pydantic import BaseModel, Field, validator
 
 from codegen_on_oss.analysis.analysis_import import (
     create_graph_from_codebase,
     find_import_cycles,
     find_problematic_import_loops,
 )
+from codegen_on_oss.analysis.code_transformations import convert_all_calls_to_kwargs
 from codegen_on_oss.analysis.codebase_analysis import (
     get_class_summary,
     get_codebase_summary,
@@ -44,6 +46,8 @@ from codegen_on_oss.analysis.codebase_analysis import (
     get_function_summary,
     get_symbol_summary,
 )
+from codegen_on_oss.analysis.complexity_analyzer import analyze_codebase_complexity
+from codegen_on_oss.analysis.mdx_docs_generation import create_class_doc, render_mdx_page_for_class
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
@@ -61,6 +65,12 @@ from codegen_on_oss.analysis.module_dependencies import (
     visualize_module_dependencies,
 )
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+from codegen_on_oss.errors import (
+    AnalysisError,
+    FileNotFoundError,
+    InvalidInputError,
+    SymbolNotFoundError,
+)
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 
 # Create FastAPI app
@@ -295,10 +305,17 @@ class CodeAnalyzer:
     def convert_args_to_kwargs(self) -> None:
         """
         Convert all function call arguments to keyword arguments.
+        
+        Raises:
+            AnalysisError: If conversion fails
         """
-        # TODO: Implement this function or import the required module
-        # convert_all_calls_to_kwargs(self.codebase)
-        pass
+        try:
+            logger.info("Converting args to kwargs")
+            convert_all_calls_to_kwargs(self.codebase)
+            logger.info("Successfully converted args to kwargs")
+        except Exception as e:
+            logger.exception(f"Failed to convert args to kwargs: {str(e)}")
+            raise AnalysisError(f"Failed to convert args to kwargs: {str(e)}") from e
 
     def visualize_module_dependencies(self) -> None:
         """
@@ -315,13 +332,29 @@ class CodeAnalyzer:
 
         Returns:
             MDX documentation as a string
+
+        Raises:
+            SymbolNotFoundError: If the class is not found
+            AnalysisError: If documentation generation fails
         """
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                # TODO: Implement this function or import the required module
-                # return render_mdx_page_for_class(cls)
-                return f"MDX documentation for {class_name}"
-        return f"Class not found: {class_name}"
+        if not class_name:
+            logger.error("Class name cannot be empty")
+            raise InvalidInputError("Class name cannot be empty", "class_name")
+
+        try:
+            logger.debug(f"Generating MDX documentation for class: {class_name}")
+            for cls in self.codebase.classes:
+                if cls.name == class_name:
+                    cls_doc = create_class_doc(cls, self.codebase)
+                    return render_mdx_page_for_class(cls_doc)
+
+            logger.error(f"Class not found: {class_name}")
+            raise SymbolNotFoundError(f"Class not found: {class_name}")
+        except SymbolNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to generate MDX documentation: {str(e)}")
+            raise AnalysisError(f"Failed to generate MDX documentation: {str(e)}") from e
 
     def print_symbol_attribution(self) -> None:
         """
@@ -432,43 +465,12 @@ class CodeAnalyzer:
 
     def analyze_complexity(self) -> Dict[str, Any]:
         """
-        Analyze code complexity metrics for the codebase.
+        Analyze the complexity of the codebase.
 
         Returns:
-            A dictionary containing complexity metrics
+            A dictionary with complexity metrics
         """
-        # TODO: This method requires several helper functions that are not yet implemented
-        # Returning a placeholder result for now
-        return {
-            "cyclomatic_complexity": {
-                "functions": [],
-                "average": 0,
-            },
-            "line_metrics": {
-                "files": {},
-                "total": {
-                    "loc": 0,
-                    "lloc": 0,
-                    "sloc": 0,
-                    "comments": 0,
-                    "comment_ratio": 0,
-                },
-            },
-            "halstead_metrics": {
-                "functions": [],
-                "total_volume": 0,
-                "average_volume": 0,
-            },
-            "inheritance_depth": {
-                "classes": [],
-                "average": 0,
-            },
-            "dependency_metrics": {
-                "most_imported": [],
-                "most_dependent": [],
-                "most_central": [],
-            },
-        }
+        return analyze_codebase_complexity(self.codebase)
 
     def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
         """
@@ -1150,7 +1152,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
             "imports": analyzer.analyze_imports(),
         }
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/analyze_commit")
@@ -1175,7 +1177,7 @@ async def analyze_commit(request: CommitAnalysisRequest):
             "files_removed": result.files_removed,
         }
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/analyze_local_commit")
@@ -1200,7 +1202,7 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
             "files_removed": result.files_removed,
         }
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
