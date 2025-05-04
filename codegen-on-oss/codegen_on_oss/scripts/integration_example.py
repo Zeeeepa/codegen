@@ -97,16 +97,21 @@ def format_text_report(metrics: dict, repo_name: str) -> str:
     lines.append(f"  Blank Lines: {metrics['blank_lines']}")
     lines.append(f"  Comment Ratio: {metrics['comment_ratio']}%")
     lines.append(f"  Average Complexity: {metrics['avg_complexity']}")
-    lines.append(f"  Average Maintainability: {metrics['avg_maintainability']}")
+    lines.append(
+        f"  Average Maintainability: {metrics['avg_maintainability']}"
+    )
     lines.append("")
 
     # File details
     lines.append("File Details:")
-    for path, file_metrics in list(metrics["files"].items())[:10]:  # Top 10
+    # Top 10 files
+    for path, file_metrics in list(metrics["files"].items())[:10]:
         lines.append(f"  {path}")
         lines.append(f"    Complexity: {file_metrics['complexity']}")
-        lines.append(f"    Maintainability: {file_metrics['maintainability']:.2f}")
-        lines.append(f"    Lines: {file_metrics['line_metrics']['total_lines']}")
+        maint = file_metrics['maintainability']
+        lines.append(f"    Maintainability: {maint:.2f}")
+        total = file_metrics['line_metrics']['total_lines']
+        lines.append(f"    Lines: {total}")
         lines.append("")
 
     return "\n".join(lines)
@@ -147,11 +152,11 @@ def generate_html_report(metrics: dict, repo_name: str) -> str:
         "    </style>",
         "</head>",
         "<body>",
-        '    <div class="container">',
+        "    <div class=\"container\">",
         f"        <h1>Code Metrics Report - {repo_name}</h1>",
         "",
         "        <h2>Overall Statistics</h2>",
-        '        <div class="stats">',
+        "        <div class=\"stats\">",
     ]
 
     # Overall statistics cards
@@ -168,61 +173,56 @@ def generate_html_report(metrics: dict, repo_name: str) -> str:
     ]
 
     for label, value in stats:
-        html.extend(
-            [
-                '            <div class="stat-card">',
-                f"                <div>{label}</div>",
-                f'                <div class="stat-value">{value}</div>',
-                "            </div>",
-            ]
-        )
+        html.extend([
+            "            <div class=\"stat-card\">",
+            f"                <div>{label}</div>",
+            f"                <div class=\"stat-value\">{value}</div>",
+            "            </div>",
+        ])
 
     html.append("        </div>")
 
     # File details table
-    html.extend(
-        [
-            "",
-            "        <h2>File Details</h2>",
-            "        <table>",
-            "            <tr>",
-            "                <th>File</th>",
-            "                <th>Complexity</th>",
-            "                <th>Maintainability</th>",
-            "                <th>Total Lines</th>",
-            "                <th>Code Lines</th>",
-            "                <th>Comment Lines</th>",
-            "                <th>Functions</th>",
-            "            </tr>",
-        ]
-    )
+    html.extend([
+        "",
+        "        <h2>File Details</h2>",
+        "        <table>",
+        "            <tr>",
+        "                <th>File</th>",
+        "                <th>Complexity</th>",
+        "                <th>Maintainability</th>",
+        "                <th>Total Lines</th>",
+        "                <th>Code Lines</th>",
+        "                <th>Comment Lines</th>",
+        "                <th>Functions</th>",
+        "            </tr>",
+    ])
 
     # Add file rows (top 20 files)
     for path, file_metrics in list(metrics["files"].items())[:20]:
         html.append("            <tr>")
         html.append(f"                <td>{path}</td>")
         html.append(f"                <td>{file_metrics['complexity']}</td>")
-        html.append(f"                <td>{file_metrics['maintainability']:.2f}</td>")
-        line_metrics = file_metrics["line_metrics"]
-        total_lines = line_metrics["total_lines"]
-        code_lines = line_metrics["code_lines"]
-        comment_lines = line_metrics["comment_lines"]
+        maint = file_metrics['maintainability']
+        html.append(f"                <td>{maint:.2f}</td>")
+        line_metrics = file_metrics['line_metrics']
+        total_lines = line_metrics['total_lines']
+        code_lines = line_metrics['code_lines']
+        comment_lines = line_metrics['comment_lines']
         html.append(f"                <td>{total_lines}</td>")
         html.append(f"                <td>{code_lines}</td>")
         html.append(f"                <td>{comment_lines}</td>")
-        func_count = file_metrics["function_metrics"]["count"]
+        func_count = file_metrics['function_metrics']['count']
         html.append(f"                <td>{func_count}</td>")
         html.append("            </tr>")
 
     # HTML footer
-    html.extend(
-        [
-            "        </table>",
-            "    </div>",
-            "</body>",
-            "</html>",
-        ]
-    )
+    html.extend([
+        "        </table>",
+        "    </div>",
+        "</body>",
+        "</html>",
+    ])
 
     return "\n".join(html)
 
@@ -240,7 +240,10 @@ def main() -> None:
         default="text",
         help="Output format (default: text)",
     )
-    parser.add_argument("--output", help="Output file (default: print to console)")
+    parser.add_argument(
+        "--output",
+        help="Output file (default: print to console)"
+    )
 
     args = parser.parse_args()
 
@@ -254,3 +257,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

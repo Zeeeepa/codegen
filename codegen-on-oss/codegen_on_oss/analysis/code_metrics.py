@@ -8,7 +8,7 @@ including cyclomatic complexity, maintainability index, and Halstead metrics.
 import ast
 import math
 import re
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from radon.complexity import cc_visit
 from radon.metrics import h_visit
@@ -163,7 +163,7 @@ def get_function_metrics(code: str) -> Dict[str, Any]:
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 # Get function code
-                func_lines = code.splitlines()[node.lineno-1:node.end_lineno]
+                func_lines = code.splitlines()[node.lineno - 1:node.end_lineno]
                 func_code = "\n".join(func_lines)
                 # Calculate metrics
                 complexity = calculate_cyclomatic_complexity(func_code)
@@ -274,7 +274,7 @@ def analyze_codebase_metrics(
         )
     # Calculate overall comment ratio
     if metrics["total_lines"] > 0:
-        metrics["comment_ratio"] = round(
-            (metrics["comment_lines"] / metrics["total_lines"] * 100), 2
-        )
+        ratio = metrics["comment_lines"] / metrics["total_lines"] * 100
+        metrics["comment_ratio"] = round(ratio, 2)
     return metrics
+
