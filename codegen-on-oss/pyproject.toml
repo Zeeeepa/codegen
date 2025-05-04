@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "codegen-on-oss"
 version = "0.1.0"
 description = "Enhanced Codegen-on-OSS Architecture"
-readme = "README_ENHANCED.md"
+readme = "README.md"
 authors = [{ name = "Codegen", email = "info@codegen.sh" }]
 requires-python = ">=3.11"
 classifiers = [
@@ -60,8 +60,6 @@ ensure_newline_before_comments = true
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-select = ["E", "F", "B", "I"]
-ignore = []
 exclude = [
   ".git",
   ".mypy_cache",
@@ -71,6 +69,10 @@ exclude = [
   "build",
   "dist",
 ]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = []
 
 [tool.mypy]
 python_version = "3.11"
