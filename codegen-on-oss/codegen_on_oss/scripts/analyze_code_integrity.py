@@ -21,7 +21,6 @@ import sys
 from typing import Any, Dict, Optional
 
 import yaml
-from codegen import Codebase
 from codegen.sdk.core.codebase import Codebase
 
 # Import the necessary modules
@@ -122,16 +121,12 @@ def analyze_codebase(
 
     # Print summary
     logger.info(
-        f"Found {results['total_errors']} errors in {results['total_functions']} functions and {results['total_classes']} classes"
+        f"Found {results['total_errors']} errors in {results['total_functions']} "
+        f"functions and {results['total_classes']} classes"
     )
     logger.info(f"Function errors: {results['function_errors']}")
     logger.info(f"Class errors: {results['class_errors']}")
     logger.info(f"Parameter errors: {results['parameter_errors']}")
-    logger.info(f"Callback errors: {results['callback_errors']}")
-    logger.info(f"Import errors: {results['import_errors']}")
-    logger.info(f"Complexity errors: {results['complexity_errors']}")
-    logger.info(f"Type hint errors: {results['type_hint_errors']}")
-    logger.info(f"Duplication errors: {results['duplication_errors']}")
 
     # Write results to file if requested
     if output_file:
@@ -222,10 +217,12 @@ def analyze_pull_request(
 
     # Print summary
     logger.info(
-        f"PR adds {pr_analysis['new_functions']} new functions and {pr_analysis['new_classes']} new classes"
+        f"PR adds {pr_analysis['new_functions']} new functions and "
+        f"{pr_analysis['new_classes']} new classes"
     )
     logger.info(
-        f"PR modifies {pr_analysis['modified_functions']} functions and {pr_analysis['modified_classes']} classes"
+        f"PR modifies {pr_analysis['modified_functions']} functions and "
+        f"{pr_analysis['modified_classes']} classes"
     )
     logger.info(f"PR introduces {pr_analysis['total_new_errors']} new errors")
 
@@ -501,7 +498,8 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 <div class="error-item {severity_class}" data-type="{error.get("type", "")}" data-severity="{error.get("severity", "error")}">
                     <h4>{error.get("error_type", "Unknown Error").replace("_", " ").title()} - {severity_text}</h4>
                     <p>{error.get("message", "No message")}</p>
-                    <p class="location">File: {error.get("filepath", "Unknown")} (Line {error.get("line", "N/A")})</p>
+                    <p class="location">File: {error.get("filepath", "Unknown")} 
+                        (Line {error.get("line", "N/A")})</p>
                 </div>
         """
 
