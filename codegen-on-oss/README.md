@@ -1,10 +1,11 @@
-# Overview
+# Codegen-on-OSS
 
 The **Codegen on OSS** package provides a modular pipeline that:
 
 - **Collects repository URLs** from different sources (e.g., CSV files or GitHub searches).
 - **Parses repositories** using the codegen tool.
 - **Profiles performance** and logs metrics for each parsing run.
+- **Analyzes code quality** with metrics like cyclomatic complexity and maintainability index.
 - **Logs errors** to help pinpoint parsing failures or performance bottlenecks.
 - **Provides a WSL2 server backend** for code validation, repository comparison, and PR analysis.
 
@@ -73,6 +74,12 @@ The package is composed of several modules:
   - Contains modules for analyzing code repositories and commits
   - Provides a WSL2 server backend for code validation, repository comparison, and PR analysis
   - Includes integration with external tools like ctrlplane, weave, probot, pkg.pr.new, and tldr
+  - Includes code metrics functionality for analyzing code quality:
+    - Cyclomatic complexity calculation
+    - Maintainability index calculation
+    - Halstead metrics
+    - Line metrics (code, comments, blank lines)
+    - Function analysis
   - See [WSL2 Server README](./codegen_on_oss/analysis/WSL_README.md) for more details
 
 ______________________________________________________________________
@@ -105,6 +112,34 @@ ______________________________________________________________________
 1. **Review Metrics and Logs**
 
    After parsing, check the CSV (default: `metrics.csv` ) to review performance measurements per repository. Error logs are written to the specified error output file (default: `errors.log`)
+
+1. **Analyze Code Metrics**
+
+   Use the code metrics functionality to analyze code quality:
+
+   ```python
+   from codegen import Codebase
+   from codegen_on_oss import analyze_codebase_metrics
+
+   # Load a codebase
+   codebase = Codebase.from_repo("owner/repo")
+
+   # Analyze code metrics
+   metrics = analyze_codebase_metrics(codebase)
+
+   # Print overall complexity
+   print(f"Overall complexity: {metrics['overall_complexity']}")
+   print(f"Average complexity: {metrics['average_complexity']}")
+
+   # Print complexity distribution
+   for rank, data in metrics['complexity_distribution'].items():
+       print(f"{rank} ({data['description']}): {data['count']} functions ({data['percentage']}%)")
+
+   # Print top hotspots
+   print("\nTop complexity hotspots:")
+   for i, hotspot in enumerate(metrics['hotspots'][:5], 1):
+       print(f"{i}. {hotspot['name']} - Complexity: {hotspot['complexity']} (Rank {hotspot['rank']})")
+   ```
 
 ______________________________________________________________________
 
@@ -174,6 +209,79 @@ $ uv run modal run modal_run.py
 
 - **Result Storage:**
   Upon completion, logs and metrics are automatically uploaded to the S3 bucket specified by the environment variable `BUCKET_NAME` (default: `codegen-oss-parse`). This allows for centralized storage and easy retrieval of run outputs. The AWS Credentials provided in the secret are used for this operation.
+
+______________________________________________________________________
+
+## Code Metrics Functionality
+
+The package includes a comprehensive set of code metrics tools to analyze code quality:
+
+### Cyclomatic Complexity
+
+Measures the number of linearly independent paths through a program's source code:
+
+```python
+from codegen import Codebase
+from codegen_on_oss import calculate_cyclomatic_complexity
+
+codebase = Codebase.from_repo("owner/repo")
+function = codebase.functions[0]
+complexity = calculate_cyclomatic_complexity(function.code_block)
+print(f"Cyclomatic complexity: {complexity}")
+```
+
+### Maintainability Index
+
+Calculates how maintainable (easy to support and change) the source code is:
+
+```python
+from codegen_on_oss import calculate_maintainability_index
+
+# Calculate maintainability index (0-100 scale)
+mi = calculate_maintainability_index(
+    cyclomatic_complexity=10,
+    halstead_volume=1000,
+    line_count=200,
+    comment_percentage=15
+)
+print(f"Maintainability index: {mi}")
+```
+
+### Halstead Metrics
+
+Measures computational complexity based on operators and operands:
+
+```python
+from codegen_on_oss import calculate_halstead_metrics
+
+halstead = calculate_halstead_metrics(function.code_block)
+print(f"Halstead volume: {halstead['volume']}")
+print(f"Estimated bugs: {halstead['bugs']}")
+```
+
+### Line Metrics
+
+Analyzes line-based metrics like code lines, comment lines, and blank lines:
+
+```python
+from codegen_on_oss import calculate_line_metrics
+
+line_metrics = calculate_line_metrics(file)
+print(f"Total lines: {line_metrics['total_lines']}")
+print(f"Code lines: {line_metrics['code_lines']}")
+print(f"Comment lines: {line_metrics['comment_lines']}")
+print(f"Comment ratio: {line_metrics['comment_ratio']}%")
+```
+
+### Integration Example
+
+The package includes an integration example script that demonstrates how to use these metrics:
+
+```bash
+python -m codegen_on_oss.scripts.integration_example https://github.com/owner/repo --format html --output report.html
+```
+
+This will generate a comprehensive HTML report with code metrics for the repository.
 
 ______________________________________________________________________
 
