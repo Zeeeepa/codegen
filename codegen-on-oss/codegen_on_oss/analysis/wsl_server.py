@@ -59,15 +59,16 @@ API_KEY = os.getenv("CODEGEN_API_KEY", "")
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for the application."""
-    logger.error(f"Unhandled exception: {str(exc)}")
+    error_id = str(uuid.uuid4())  # Generate unique error ID
+    logger.error(f"Error ID {error_id}: {str(exc)}")
     logger.error(traceback.format_exc())
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal Server Error",
-            "message": str(exc),
-            "traceback": traceback.format_exc() if os.getenv("DEBUG", "false").lower() == "true" else None,
+            "error_id": error_id,
+            "message": str(exc) if os.getenv("DEBUG", "false").lower() == "true" else "An unexpected error occurred",
         },
     )
 

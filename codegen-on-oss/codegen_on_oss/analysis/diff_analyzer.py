@@ -557,19 +557,14 @@ Complexity Changes:
 
         return text
 
-    def perform_detailed_analysis(self) -> Dict[str, Any]:
-        """
-        Perform a detailed analysis of the differences between the two snapshots.
-
-        This method provides a more comprehensive analysis of the changes,
-        including code quality metrics, potential issues, and recommendations.
-
-        Returns:
-            Dictionary containing detailed analysis results
-        """
-        # Initialize results dictionary
-        results = {
-            "added_files": [],
+def perform_detailed_analysis(self) -> Dict[str, Any]:
+    """Perform a detailed analysis of the differences between the two snapshots."""
+    results = self._initialize_analysis_results()
+    results.update(self._analyze_files_and_functions())
+    results.update(self._analyze_complexity())
+    results.update(self._analyze_risks())
+    results['recommendations'] = self._generate_recommendations(results)
+    return results
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],

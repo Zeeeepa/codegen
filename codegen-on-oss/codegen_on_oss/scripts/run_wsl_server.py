@@ -77,21 +77,18 @@ def parse_args() -> argparse.Namespace:
         help="Stop the server if it's running",
     )
     return parser.parse_args()
+from typing import Protocol
 
+class Deployer(Protocol):
+    def check_wsl_installed(self) -> bool: ...
+    def check_distro_installed(self) -> bool: ...
+    def install_dependencies(self) -> bool: ...
+    def deploy_server(self) -> bool: ...
 
-def deploy_server(args: argparse.Namespace) -> bool:
-    """
-    Deploy the WSL2 server.
-
-    Args:
-        args: Command-line arguments
-
-    Returns:
-        True if successful, False otherwise
-    """
+def deploy_server(args: argparse.Namespace, deployer_class: Type[Deployer] = WSLDeployment) -> bool:
     try:
         logger.info("Deploying WSL2 server...")
-        deployment = WSLDeployment(
+        deployment = deployer_class(
             wsl_distro=args.distro,
             port=args.port,
             api_key=args.api_key,
@@ -99,24 +96,20 @@ def deploy_server(args: argparse.Namespace) -> bool:
             use_ctrlplane=args.ctrlplane,
         )
 
-        # Check if WSL is installed
         if not deployment.check_wsl_installed():
             logger.error("WSL is not installed. Please install WSL first.")
             return False
 
-        # Check if the specified distribution is installed
         if not deployment.check_distro_installed():
             logger.error(f"WSL distribution '{args.distro}' is not installed.")
             logger.info(f"Please install it using: wsl --install -d {args.distro}")
             return False
 
-        # Install dependencies
         logger.info("Installing dependencies...")
         if not deployment.install_dependencies():
             logger.error("Failed to install dependencies.")
             return False
 
-        # Deploy server
         logger.info("Deploying server...")
         if not deployment.deploy_server():
             logger.error("Failed to deploy server.")
@@ -127,6 +120,9 @@ def deploy_server(args: argparse.Namespace) -> bool:
         return True
 
     except Exception as e:
+        logger.error(f"Error deploying server: {str(e)}")
+        logger.error(traceback.format_exc())
+        return False
         logger.error(f"Error deploying server: {str(e)}")
         logger.error(traceback.format_exc())
         return False
