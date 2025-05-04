@@ -150,7 +150,7 @@ class WSLDeployment:
                 f"Command timed out after {timeout} seconds",
                 command=cmd_str,
                 output=str(e),
-            )
+            ) from e
 
         except Exception as e:
             cmd_str = command if isinstance(command, str) else " ".join(command)
@@ -280,7 +280,7 @@ class WSLDeployment:
             True if successful, False otherwise
         """
         try:
-            # If server_dir is not provided, use the one from initialization or the current directory
+            # If server_dir is not provided, use the one from initialization or current directory
             server_dir = server_dir or self.server_dir or os.path.dirname(os.path.abspath(__file__))
             logger.info(f"Deploying server from {server_dir}")
 
