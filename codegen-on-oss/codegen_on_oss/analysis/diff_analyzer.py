@@ -556,3 +556,72 @@ Complexity Changes:
                     text += "\n"
 
         return text
+
+    def get_file_content_diff(self, diff_only: bool = True) -> Dict[str, Any]:
+        """
+        Get the content diff between files in the base and head snapshots.
+
+        Args:
+            diff_only: Whether to include only files that have changed
+
+        Returns:
+            Dictionary mapping file paths to their diff information
+        """
+        result = {}
+        
+        # Get all files from both snapshots
+        original_files = {}
+        for file in self.original.codebase.files:
+            original_files[file.filepath] = file.content
+            
+        modified_files = {}
+        for file in self.modified.codebase.files:
+            modified_files[file.filepath] = file.content
+        
+        # Determine which files to process
+        if diff_only:
+            # Only include files that have been added, modified, or deleted
+            file_changes = self.analyze_file_changes()
+            files_to_process = set(file_changes.keys())
+        else:
+            # Include all files from both snapshots
+            files_to_process = set(original_files.keys()) | set(modified_files.keys())
+        
+        # Process each file
+        for file_path in files_to_process:
+            original_content = original_files.get(file_path, "")
+            modified_content = modified_files.get(file_path, "")
+            
+            if file_path not in original_files:
+                # File was added
+                result[file_path] = {
+                    "status": "added",
+                    "content": modified_content,
+                    "diff": f"+{modified_content}",
+                }
+            elif file_path not in modified_files:
+                # File was deleted
+                result[file_path] = {
+                    "status": "deleted",
+                    "content": original_content,
+                    "diff": f"-{original_content}",
+                }
+            elif original_content != modified_content:
+                # File was modified
+                import difflib
+                diff = difflib.unified_diff(
+                    original_content.splitlines(keepends=True),
+                    modified_content.splitlines(keepends=True),
+                    fromfile=f"original/{file_path}",
+                    tofile=f"modified/{file_path}",
+                    n=3,  # Context lines
+                )
+                
+                result[file_path] = {
+                    "status": "modified",
+                    "original_content": original_content,
+                    "modified_content": modified_content,
+                    "diff": "".join(diff),
+                }
+        
+        return result

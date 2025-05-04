@@ -40,6 +40,11 @@ class SWEHarnessAgent:
         self.commit_analyzer = CommitAnalyzer(self.snapshot_manager, github_token)
         self.use_agent = use_agent
         self.agent = None
+        self.github_client = None
+        
+        if self.github_token:
+            from github import Github
+            self.github_client = Github(self.github_token)
 
         if self.use_agent:
             # Initialize the agent if needed
@@ -325,6 +330,21 @@ class SWEHarnessAgent:
             logger.error(f"Failed to post comment to PR: {e}")
             return False
 
+    def post_pr_comment(self, repo: str, pr_number: int, comment: str) -> bool:
+        """
+        Post a comment on a pull request.
+
+        Args:
+            repo: Repository in the format "owner/repo"
+            pr_number: PR number
+            comment: Comment text
+
+        Returns:
+            True if successful, False otherwise
+        """
+        # Use the existing post_comment_to_pr method
+        return self.post_comment_to_pr(repo, pr_number, comment)
+
     def analyze_and_comment_on_pr(
         self,
         repo_url: str,
@@ -359,6 +379,48 @@ class SWEHarnessAgent:
         analysis_results["comment"] = comment
 
         return analysis_results
+
+    def get_code_snippets(self, repo: str, pr_number: int) -> Dict[str, str]:
+        """
+        Get code snippets from a pull request.
+
+        Args:
+            repo: Repository in the format "owner/repo"
+            pr_number: PR number
+
+        Returns:
+            Dictionary mapping file paths to code snippets
+        """
+        try:
+            # Get PR details
+            pr = self.github_client.get_repo(repo).get_pull(pr_number)
+            
+            # Get files changed in the PR
+            files = pr.get_files()
+            
+            snippets = {}
+            for file in files:
+                # Skip binary files, deleted files, or files that are too large
+                if file.status == "removed" or file.additions + file.deletions > 1000:
+                    continue
+                
+                # Get the file content
+                try:
+                    content = self.github_client.get_repo(repo).get_contents(
+                        file.filename, ref=pr.head.sha
+                    ).decoded_content.decode("utf-8")
+                    
+                    # Add to snippets
+                    snippets[file.filename] = content
+                except Exception as e:
+                    logger.warning(f"Error getting content for {file.filename}: {str(e)}")
+                    continue
+            
+            return snippets
+            
+        except Exception as e:
+            logger.error(f"Error getting code snippets: {str(e)}")
+            return {}
 
 
 # Example usage

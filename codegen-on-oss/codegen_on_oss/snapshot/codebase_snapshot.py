@@ -304,6 +304,40 @@ Imports: {self.metadata["import_count"]}
 Symbols: {self.metadata["symbol_count"]}
 """
 
+    def get_file_count(self) -> int:
+        """
+        Get the number of files in the snapshot.
+
+        Returns:
+            Number of files
+        """
+        return len(self.file_metrics)
+
+    def get_language_breakdown(self) -> Dict[str, int]:
+        """
+        Get a breakdown of files by language.
+
+        Returns:
+            Dictionary mapping language names to file counts
+        """
+        languages = {}
+        for filepath, metrics in self.file_metrics.items():
+            language = metrics.get("language", "unknown")
+            languages[language] = languages.get(language, 0) + 1
+        return languages
+
+    def get_all_files(self) -> Dict[str, str]:
+        """
+        Get all files in the snapshot.
+
+        Returns:
+            Dictionary mapping file paths to file content
+        """
+        files = {}
+        for file in self.codebase.files:
+            files[file.filepath] = file.content
+        return files
+
 
 class SnapshotManager:
     """

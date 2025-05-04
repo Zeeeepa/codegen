@@ -850,6 +850,58 @@ class CodeIntegrityAnalyzer:
 
         return errors
 
+    def get_complexity_metrics(self) -> Dict[str, Any]:
+        """
+        Get complexity metrics for the codebase.
+
+        Returns:
+            Dictionary with complexity metrics
+        """
+        # Calculate average complexity
+        function_complexities = [
+            metrics["cyclomatic_complexity"]
+            for metrics in self.snapshot.function_metrics.values()
+        ]
+        
+        avg_complexity = sum(function_complexities) / len(function_complexities) if function_complexities else 0
+        
+        # Find functions with high complexity
+        high_complexity_functions = {
+            name: metrics
+            for name, metrics in self.snapshot.function_metrics.items()
+            if metrics["cyclomatic_complexity"] > 10  # Threshold for high complexity
+        }
+        
+        return {
+            "average_complexity": avg_complexity,
+            "max_complexity": max(function_complexities) if function_complexities else 0,
+            "high_complexity_functions": list(high_complexity_functions.keys()),
+            "complexity_distribution": {
+                "low": sum(1 for c in function_complexities if c <= 5),
+                "medium": sum(1 for c in function_complexities if 5 < c <= 10),
+                "high": sum(1 for c in function_complexities if c > 10),
+            },
+        }
+        
+    def get_dependency_graph(self) -> Dict[str, List[str]]:
+        """
+        Get a dependency graph for the codebase.
+
+        Returns:
+            Dictionary mapping modules to their dependencies
+        """
+        dependency_graph = {}
+        
+        # Build dependency graph from imports
+        for filepath, imports in self.snapshot.import_metrics.items():
+            # Extract module name from filepath
+            module_name = filepath.replace("/", ".").replace(".py", "")
+            
+            # Add dependencies
+            dependency_graph[module_name] = imports
+            
+        return dependency_graph
+
 
 def compare_branches(main_codebase: Codebase, branch_codebase: Codebase) -> Dict[str, Any]:
     """
