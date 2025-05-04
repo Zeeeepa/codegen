@@ -421,7 +421,6 @@ def get_pr_file_content(self, repo: str, pr_number: int) -> Dict[str, str]:
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
     return {}
-            return {}
 
 
 # Example usage

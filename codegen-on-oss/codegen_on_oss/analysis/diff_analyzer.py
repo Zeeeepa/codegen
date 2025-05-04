@@ -565,6 +565,10 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
     results.update(self._analyze_risks())
     results['recommendations'] = self._generate_recommendations(results)
     return results
+
+def _initialize_analysis_results(self) -> Dict[str, Any]:
+    """Initialize the structure for analysis results."""
+    return {
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],
@@ -576,54 +580,54 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
             "recommendations": [],
         }
 
-        # Analyze file changes
-        file_changes = self.analyze_file_changes()
-        for file_path, change_type in file_changes.items():
-            if change_type == "added":
-                results["added_files"].append(file_path)
-            elif change_type == "removed":
-                results["removed_files"].append(file_path)
-            elif change_type == "modified":
-                results["modified_files"].append(file_path)
+    # Analyze file changes
+    file_changes = self.analyze_file_changes()
+    for file_path, change_type in file_changes.items():
+        if change_type == "added":
+            results["added_files"].append(file_path)
+        elif change_type == "removed":
+            results["removed_files"].append(file_path)
+        elif change_type == "modified":
+            results["modified_files"].append(file_path)
 
-        # Analyze function changes
-        function_changes = self.analyze_function_changes()
-        for function_name, change_type in function_changes.items():
-            if change_type == "added":
-                results["added_functions"].append(function_name)
-            elif change_type == "removed":
-                results["removed_functions"].append(function_name)
-            elif change_type == "modified":
-                results["modified_functions"].append(function_name)
+    # Analyze function changes
+    function_changes = self.analyze_function_changes()
+    for function_name, change_type in function_changes.items():
+        if change_type == "added":
+            results["added_functions"].append(function_name)
+        elif change_type == "removed":
+            results["removed_functions"].append(function_name)
+        elif change_type == "modified":
+            results["modified_functions"].append(function_name)
 
-        # Analyze complexity changes
-        complexity_changes = self.analyze_complexity_changes()
-        for file_path, change in complexity_changes.items():
-            if change > 0:
-                results["complexity_increases"].append({
-                    "file": file_path,
-                    "increase": change,
-                })
-            elif change < 0:
-                results["complexity_decreases"].append({
-                    "file": file_path,
-                    "decrease": abs(change),
-                })
+    # Analyze complexity changes
+    complexity_changes = self.analyze_complexity_changes()
+    for file_path, change in complexity_changes.items():
+        if change > 0:
+            results["complexity_increases"].append({
+                "file": file_path,
+                "increase": change,
+            })
+        elif change < 0:
+            results["complexity_decreases"].append({
+                "file": file_path,
+                "decrease": abs(change),
+            })
 
-        # Identify potential issues
-        risk_assessment = self.assess_risk()
-        for category, risk_level in risk_assessment.items():
-            if risk_level in ["high", "medium"]:
-                results["potential_issues"].append({
-                    "category": category,
-                    "risk_level": risk_level,
-                    "description": self._get_risk_description(category, risk_level),
-                })
+    # Identify potential issues
+    risk_assessment = self.assess_risk()
+    for category, risk_level in risk_assessment.items():
+        if risk_level in ["high", "medium"]:
+            results["potential_issues"].append({
+                "category": category,
+                "risk_level": risk_level,
+                "description": self._get_risk_description(category, risk_level),
+            })
 
-        # Generate recommendations
-        results["recommendations"] = self._generate_recommendations(results)
+    # Generate recommendations
+    results["recommendations"] = self._generate_recommendations(results)
 
-        return results
+    return results
 
     def _get_risk_description(self, category: str, risk_level: str) -> str:
         """
