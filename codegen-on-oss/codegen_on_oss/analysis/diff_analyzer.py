@@ -557,14 +557,57 @@ Complexity Changes:
 
         return text
 
-def perform_detailed_analysis(self) -> Dict[str, Any]:
-    """Perform a detailed analysis of the differences between the two snapshots."""
-    results = self._initialize_analysis_results()
-    results.update(self._analyze_files_and_functions())
-    results.update(self._analyze_complexity())
-    results.update(self._analyze_risks())
-    results['recommendations'] = self._generate_recommendations(results)
-    return results
+    def format_diff_as_text(self) -> str:
+        """Format the diff as a text string."""
+        text = "Diff Analysis Results:\n"
+        text += "=====================\n\n"
+        
+        # Summary
+        text += "Summary:\n"
+        text += f"- Files Added: {len(self.added_files)}\n"
+        text += f"- Files Modified: {len(self.modified_files)}\n"
+        text += f"- Files Removed: {len(self.removed_files)}\n"
+        text += f"- Functions Added: {len(self.added_functions)}\n"
+        text += f"- Functions Modified: {len(self.modified_functions)}\n"
+        text += f"- Functions Removed: {len(self.removed_functions)}\n"
+        text += "\n"
+        
+        # Added Files
+        if self.added_files:
+            text += "Added Files:\n"
+            for file in self.added_files:
+                text += f"- {file}\n"
+            text += "\n"
+        
+        # Modified Files
+        if self.modified_files:
+            text += "Modified Files:\n"
+            for file in self.modified_files:
+                text += f"- {file}\n"
+            text += "\n"
+        
+        # Removed Files
+        if self.removed_files:
+            text += "Removed Files:\n"
+            for file in self.removed_files:
+                text += f"- {file}\n"
+            text += "\n"
+        
+        return text
+
+    def perform_detailed_analysis(self) -> Dict[str, Any]:
+        """Perform a detailed analysis of the differences between the two snapshots."""
+        results = self._initialize_analysis_results()
+        results.update(self._analyze_files_and_functions())
+        results.update(self._analyze_complexity())
+        results.update(self._analyze_risks())
+        results['recommendations'] = self._generate_recommendations(results)
+        return results
+        
+    def _initialize_analysis_results(self) -> Dict[str, Any]:
+        """Initialize the analysis results dictionary."""
+        return {
+            "added_files": [],
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],
@@ -573,57 +616,7 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
             "complexity_increases": [],
             "complexity_decreases": [],
             "potential_issues": [],
-            "recommendations": [],
         }
-
-        # Analyze file changes
-        file_changes = self.analyze_file_changes()
-        for file_path, change_type in file_changes.items():
-            if change_type == "added":
-                results["added_files"].append(file_path)
-            elif change_type == "removed":
-                results["removed_files"].append(file_path)
-            elif change_type == "modified":
-                results["modified_files"].append(file_path)
-
-        # Analyze function changes
-        function_changes = self.analyze_function_changes()
-        for function_name, change_type in function_changes.items():
-            if change_type == "added":
-                results["added_functions"].append(function_name)
-            elif change_type == "removed":
-                results["removed_functions"].append(function_name)
-            elif change_type == "modified":
-                results["modified_functions"].append(function_name)
-
-        # Analyze complexity changes
-        complexity_changes = self.analyze_complexity_changes()
-        for file_path, change in complexity_changes.items():
-            if change > 0:
-                results["complexity_increases"].append({
-                    "file": file_path,
-                    "increase": change,
-                })
-            elif change < 0:
-                results["complexity_decreases"].append({
-                    "file": file_path,
-                    "decrease": abs(change),
-                })
-
-        # Identify potential issues
-        risk_assessment = self.assess_risk()
-        for category, risk_level in risk_assessment.items():
-            if risk_level in ["high", "medium"]:
-                results["potential_issues"].append({
-                    "category": category,
-                    "risk_level": risk_level,
-                    "description": self._get_risk_description(category, risk_level),
-                })
-
-        # Generate recommendations
-        results["recommendations"] = self._generate_recommendations(results)
-
-        return results
 
     def _get_risk_description(self, category: str, risk_level: str) -> str:
         """

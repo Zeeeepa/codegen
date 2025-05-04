@@ -69,73 +69,6 @@ class WSLClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Error analyzing repository: {str(e)}")
             return {"error": str(e)}
-    
-    def compare_repositories(self, base_repo_path: str, head_repo_path: str) -> Dict[str, Any]:
-        """
-        Compare two repositories using the WSL server.
-        
-        Args:
-            base_repo_path: Path to the base repository
-            head_repo_path: Path to the head repository
-            
-        Returns:
-            Comparison results from the server
-        """
-        endpoint = f"{self.base_url}/analyze/compare"
-        payload = {
-            "base_repo_path": base_repo_path,
-            "head_repo_path": head_repo_path,
-        }
-        
-        try:
-            response = requests.post(endpoint, json=payload, headers=self.headers)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error comparing repositories: {str(e)}")
-            return {"error": str(e)}
-    
-    def analyze_pr(self, repo_url: str, pr_number: int) -> Dict[str, Any]:
-        """
-        Analyze a pull request using the WSL server.
-        
-        Args:
-            repo_url: URL of the repository
-            pr_number: PR number to analyze
-            
-        Returns:
-            PR analysis results from the server
-        """
-        endpoint = f"{self.base_url}/analyze/pr"
-        payload = {
-            "repo_url": repo_url,
-            "pr_number": pr_number,
-        }
-        
-        try:
-            response = requests.post(endpoint, json=payload, headers=self.headers)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error analyzing PR: {str(e)}")
-            return {"error": str(e)}
-    
-    def check_server_status(self) -> Dict[str, Any]:
-        """
-        Check the status of the WSL server.
-        
-        Returns:
-            Server status information
-        """
-        endpoint = f"{self.base_url}/status"
-        
-        try:
-            response = requests.get(endpoint, headers=self.headers)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error checking server status: {str(e)}")
-            return {"error": str(e), "status": "offline"}
 
 
 # Server models
@@ -246,113 +179,6 @@ class WSLServer:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Error analyzing repository: {str(e)}",
                 )
-        
-        @self.app.post("/analyze/compare")
-        async def compare_repositories(request: RepositoryComparisonRequest):
-            """Compare two repositories."""
-            try:
-                analyzer = CodeAnalyzer()
-                
-                results = analyzer.analyze_diff(
-                    base_path=request.base_repo_path,
-                    head_path=request.head_repo_path,
-                )
-                
-                return results
-            except Exception as e:
-                logger.error(f"Error comparing repositories: {str(e)}")
-                logger.error(traceback.format_exc())
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Error comparing repositories: {str(e)}",
-                )
-        
-        @self.app.post("/analyze/pr")
-        async def analyze_pr(request: PRAnalysisRequest, background_tasks: BackgroundTasks):
-            """Analyze a pull request."""
-            try:
-                # Clone the repository
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    repo_dir = os.path.join(temp_dir, "repo")
-                    
-                    # Clone the repository
-                    subprocess.run(
-                        ["git", "clone", request.repo_url, repo_dir],
-                        check=True,
-                        capture_output=True,
-                    )
-                    
-                    # Fetch the PR
-                    subprocess.run(
-                        ["git", "-C", repo_dir, "fetch", "origin", f"pull/{request.pr_number}/head:pr-{request.pr_number}"],
-                        check=True,
-                        capture_output=True,
-                    )
-                    
-                    # Get the base branch
-                    pr_info = subprocess.run(
-                        ["git", "-C", repo_dir, "show", f"pr-{request.pr_number}"],
-                        check=True,
-                        capture_output=True,
-                        text=True,
-                    )
-                    
-                    # Extract the base branch from the PR info
-                    base_branch = "main"  # Default to main
-                    for line in pr_info.stdout.splitlines():
-                        if line.startswith("Merge:"):
-                            base_branch = line.split()[1]
-                            break
-                    
-                    # Create temporary directories for base and head
-                    base_dir = os.path.join(temp_dir, "base")
-                    head_dir = os.path.join(temp_dir, "head")
-                    
-                    os.makedirs(base_dir)
-                    os.makedirs(head_dir)
-                    
-                    # Copy the base branch to base_dir
-                    subprocess.run(
-                        ["git", "-C", repo_dir, "checkout", base_branch],
-                        check=True,
-                        capture_output=True,
-                    )
-                    
-                    subprocess.run(
-                        ["cp", "-r", f"{repo_dir}/.", base_dir],
-                        check=True,
-                        capture_output=True,
-                    )
-                    
-                    # Copy the PR branch to head_dir
-                    subprocess.run(
-                        ["git", "-C", repo_dir, "checkout", f"pr-{request.pr_number}"],
-                        check=True,
-                        capture_output=True,
-                    )
-                    
-                    subprocess.run(
-                        ["cp", "-r", f"{repo_dir}/.", head_dir],
-                        check=True,
-                        capture_output=True,
-                    )
-                    
-                    # Analyze the diff
-                    analyzer = CodeAnalyzer()
-                    
-                    results = analyzer.analyze_diff(
-                        base_path=base_dir,
-                        head_path=head_dir,
-                    )
-                    
-                    return results
-            except Exception as e:
-                logger.error(f"Error analyzing PR: {str(e)}")
-                logger.error(traceback.format_exc())
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Error analyzing PR: {str(e)}",
-                )
     
     def run(self):
         """Run the FastAPI server."""
@@ -376,85 +202,6 @@ class WSLDeployment:
         """
         server = WSLServer(host=host, port=port, api_key=api_key)
         server.run()
-    
-    @staticmethod
-    def deploy_docker(image_name: str = "wsl-server", tag: str = "latest"):
-        """
-        Deploy the WSL server as a Docker container.
-        
-        Args:
-            image_name: Name of the Docker image
-            tag: Tag for the Docker image
-        """
-        # Create a temporary Dockerfile
-        with tempfile.NamedTemporaryFile(suffix=".dockerfile") as f:
-            f.write(
-                b"""
-                FROM python:3.9-slim
-                
-                WORKDIR /app
-                
-                COPY . /app/
-                
-                RUN pip install --no-cache-dir -r requirements.txt
-                
-                EXPOSE 8000
-                
-                CMD ["python", "-m", "codegen_on_oss.scripts.run_wsl_server"]
-                """
-            )
-            f.flush()
-            
-            # Build the Docker image
-            subprocess.run(
-                ["docker", "build", "-f", f.name, "-t", f"{image_name}:{tag}", "."],
-                check=True,
-            )
-        
-        logger.info(f"Docker image built: {image_name}:{tag}")
-        logger.info(f"Run with: docker run -p 8000:8000 -e WSL_API_KEY=your_key {image_name}:{tag}")
-    
-    @staticmethod
-    def deploy_ctrlplane(name: str = "wsl-server", region: str = "us-west-2"):
-        """
-        Deploy the WSL server to ctrlplane.
-        
-        Args:
-            name: Name of the deployment
-            region: AWS region for the deployment
-        """
-        try:
-            # Check if ctrlplane is installed
-            subprocess.run(["ctrlplane", "--version"], check=True, capture_output=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            logger.error("ctrlplane is not installed. Please install it first.")
-            return
-        
-        # Create a temporary deployment file
-        with tempfile.NamedTemporaryFile(suffix=".yaml") as f:
-            f.write(
-                f"""
-                name: {name}
-                region: {region}
-                
-                services:
-                  - name: wsl-server
-                    image: wsl-server:latest
-                    ports:
-                      - 8000:8000
-                    environment:
-                      - WSL_API_KEY=${WSL_API_KEY}
-                """.encode()
-            )
-            f.flush()
-            
-            # Deploy to ctrlplane
-            subprocess.run(
-                ["ctrlplane", "deploy", "-f", f.name],
-                check=True,
-            )
-        
-        logger.info(f"Deployed to ctrlplane: {name} in {region}")
 
 
 class WSLIntegration:
@@ -560,7 +307,7 @@ class WSLIntegration:
                       env:
                         WSL_API_KEY: {api_key or '${{ secrets.WSL_API_KEY }}'}
                       run: |
-                        if [ "${{ github.event_name }}" == "pull_request" ]; then
+                        if [ "${{{{ github.event_name }}}}" == "pull_request" ]; then
                           # For PR events
                           python -c "
                           import requests
@@ -574,8 +321,8 @@ class WSLIntegration:
                                   'X-API-Key': os.environ.get('WSL_API_KEY', '')
                               }},
                               json={{
-                                  'repo_url': '${{ github.repository }}',
-                                  'pr_number': ${{ github.event.pull_request.number }}
+                                  'repo_url': '${{{{ github.repository }}}}',
+                                  'pr_number': ${{{{ github.event.pull_request.number }}}}
                               }}
                           )
                           
@@ -583,7 +330,7 @@ class WSLIntegration:
                           print(json.dumps(result, indent=2))
                           
                           # Check for critical issues
-                          critical_issues = sum(1 for issue in result.get('integrity', {}).get('issues', []) if issue.get('severity') == 'error')
+                          critical_issues = sum(1 for issue in result.get('integrity', {{}}).get('issues', []) if issue.get('severity') == 'error')
                           
                           if critical_issues > 0:
                               print(f'Error: Found {{critical_issues}} critical issues.')
@@ -603,7 +350,7 @@ class WSLIntegration:
                                   'X-API-Key': os.environ.get('WSL_API_KEY', '')
                               }},
                               json={{
-                                  'repo_path': '${{ github.workspace }}'
+                                  'repo_path': '${{{{ github.workspace }}}}'
                               }}
                           )
                           
@@ -611,7 +358,7 @@ class WSLIntegration:
                           print(json.dumps(result, indent=2))
                           
                           # Check for critical issues
-                          critical_issues = sum(1 for issue in result.get('integrity', {}).get('issues', []) if issue.get('severity') == 'error')
+                          critical_issues = sum(1 for issue in result.get('integrity', {{}}).get('issues', []) if issue.get('severity') == 'error')
                           
                           if critical_issues > 0:
                               print(f'Error: Found {{critical_issues}} critical issues.')
@@ -649,96 +396,15 @@ def run_wsl_cli():
     analyze_parser.add_argument("--server-url", default="http://localhost:8000", help="URL of the WSL server")
     analyze_parser.add_argument("--api-key", help="API key for authentication")
     
-    # Compare repositories
-    compare_parser = client_subparsers.add_parser("compare", help="Compare two repositories")
-    compare_parser.add_argument("base_repo_path", help="Path to the base repository")
-    compare_parser.add_argument("head_repo_path", help="Path to the head repository")
-    compare_parser.add_argument("--server-url", default="http://localhost:8000", help="URL of the WSL server")
-    compare_parser.add_argument("--api-key", help="API key for authentication")
-    
-    # Analyze PR
-    pr_parser = client_subparsers.add_parser("pr", help="Analyze a pull request")
-    pr_parser.add_argument("repo_url", help="URL of the repository")
-    pr_parser.add_argument("pr_number", type=int, help="PR number to analyze")
-    pr_parser.add_argument("--server-url", default="http://localhost:8000", help="URL of the WSL server")
-    pr_parser.add_argument("--api-key", help="API key for authentication")
-    
-    # Deployment commands
-    deploy_parser = subparsers.add_parser("deploy", help="Deploy the WSL server")
-    deploy_subparsers = deploy_parser.add_subparsers(dest="deploy_command", help="Deployment command to run")
-    
-    # Deploy locally
-    local_parser = deploy_subparsers.add_parser("local", help="Deploy the WSL server locally")
-    local_parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to")
-    local_parser.add_argument("--port", type=int, default=8000, help="Port to bind the server to")
-    local_parser.add_argument("--api-key", help="API key for authentication")
-    
-    # Deploy to Docker
-    docker_parser = deploy_subparsers.add_parser("docker", help="Deploy the WSL server to Docker")
-    docker_parser.add_argument("--image-name", default="wsl-server", help="Name of the Docker image")
-    docker_parser.add_argument("--tag", default="latest", help="Tag for the Docker image")
-    
-    # Deploy to ctrlplane
-    ctrlplane_parser = deploy_subparsers.add_parser("ctrlplane", help="Deploy the WSL server to ctrlplane")
-    ctrlplane_parser.add_argument("--name", default="wsl-server", help="Name of the deployment")
-    ctrlplane_parser.add_argument("--region", default="us-west-2", help="AWS region for the deployment")
-    
-    # Integration commands
-    integration_parser = subparsers.add_parser("integration", help="Set up integrations")
-    integration_subparsers = integration_parser.add_subparsers(dest="integration_command", help="Integration command to run")
-    
-    # Set up Git hooks
-    hooks_parser = integration_subparsers.add_parser("hooks", help="Set up Git hooks")
-    hooks_parser.add_argument("repo_path", help="Path to the repository")
-    hooks_parser.add_argument("--server-url", default="http://localhost:8000", help="URL of the WSL server")
-    hooks_parser.add_argument("--api-key", help="API key for authentication")
-    
-    # Set up GitHub Actions
-    actions_parser = integration_subparsers.add_parser("actions", help="Set up GitHub Actions")
-    actions_parser.add_argument("repo_path", help="Path to the repository")
-    actions_parser.add_argument("--server-url", default="http://localhost:8000", help="URL of the WSL server")
-    actions_parser.add_argument("--api-key", help="API key for authentication")
-    
+    # Parse arguments and run the appropriate command
     args = parser.parse_args()
     
-    # Handle commands
     if args.command == "server":
         WSLDeployment.deploy_local(host=args.host, port=args.port, api_key=args.api_key)
-    elif args.command == "client":
-        if args.client_command == "analyze":
-            client = WSLClient(base_url=args.server_url, api_key=args.api_key)
-            result = client.analyze_repository(args.repo_path)
-            print(json.dumps(result, indent=2))
-        elif args.client_command == "compare":
-            client = WSLClient(base_url=args.server_url, api_key=args.api_key)
-            result = client.compare_repositories(args.base_repo_path, args.head_repo_path)
-            print(json.dumps(result, indent=2))
-        elif args.client_command == "pr":
-            client = WSLClient(base_url=args.server_url, api_key=args.api_key)
-            result = client.analyze_pr(args.repo_url, args.pr_number)
-            print(json.dumps(result, indent=2))
-        else:
-            parser.print_help()
-    elif args.command == "deploy":
-        if args.deploy_command == "local":
-            WSLDeployment.deploy_local(host=args.host, port=args.port, api_key=args.api_key)
-        elif args.deploy_command == "docker":
-            WSLDeployment.deploy_docker(image_name=args.image_name, tag=args.tag)
-        elif args.deploy_command == "ctrlplane":
-            WSLDeployment.deploy_ctrlplane(name=args.name, region=args.region)
-        else:
-            parser.print_help()
-    elif args.command == "integration":
-        if args.integration_command == "hooks":
-            WSLIntegration.setup_git_hooks(args.repo_path, args.server_url, args.api_key)
-        elif args.integration_command == "actions":
-            WSLIntegration.setup_github_actions(args.repo_path, args.server_url, args.api_key)
-        else:
-            parser.print_help()
+    elif args.command == "client" and args.client_command == "analyze":
+        client = WSLClient(base_url=args.server_url, api_key=args.api_key)
+        results = client.analyze_repository(args.repo_path)
+        print(json.dumps(results, indent=2))
     else:
         parser.print_help()
-
-
-if __name__ == "__main__":
-    run_wsl_cli()
 

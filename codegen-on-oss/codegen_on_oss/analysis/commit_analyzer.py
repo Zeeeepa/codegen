@@ -556,23 +556,22 @@ def analyze_commit_from_paths(
     base_files = {str(file.path): file for file in base_codebase.files}
     head_files = {str(file.path): file for file in head_codebase.files}
     
-    files_added = [path for path in head_files if path not in base_files]
-    files_removed = [path for path in base_files if path not in head_files]
-    files_modified = [
-        path for path in head_files 
-        if path in base_files and head_files[path].content != base_files[path].content
-    ]
+    files_added = set(head_files.keys()) - set(base_files.keys())
+    files_modified = set(path for path in set(head_files.keys()) & set(base_files.keys())
+                        if head_files[path].content != base_files[path].content)
+    files_removed = set(base_files.keys()) - set(head_files.keys())
     
-    # Analyze complexity for both snapshots
+    # Calculate complexity metrics for both codebases
     base_complexity = analyze_codebase_complexity(base_codebase)
     head_complexity = analyze_codebase_complexity(head_codebase)
     
     # Calculate metrics diff
     metrics_diff = {
-        "complexity_change": head_complexity["overall_complexity"] - base_complexity["overall_complexity"],
-        "function_count_change": head_complexity["function_count"] - base_complexity["function_count"],
-        "class_count_change": head_complexity["class_count"] - base_complexity["class_count"],
+        "files_added": len(files_added),
+        "files_modified": len(files_modified),
+        "files_removed": len(files_removed),
         "lines_added": sum(len(head_files[path].content.splitlines()) for path in files_added),
+        "lines_modified": sum(len(head_files[path].content.splitlines()) for path in files_modified),
         "lines_removed": sum(len(base_files[path].content.splitlines()) for path in files_removed),
     }
     
@@ -601,5 +600,3 @@ def analyze_commit_from_paths(
             files_removed=files_removed,
             summary=None,  # Will be generated when get_summary is called
         )
-"""
-

@@ -203,62 +203,22 @@ class SWEHarnessAgent:
             }
             
         try:
-from tenacity import retry, stop_after_attempt, wait_exponential
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
-    headers = {
-        "Authorization": f"Bearer {self.agent_api_key}",
-        "Content-Type": "application/json",
-    }
-    response = requests.post(
-        f"{self.agent_api_url}/{endpoint}",
-        headers=headers,
-        json=payload,
-        timeout=timeout
-    )
-    response.raise_for_status()
-    return response.json()
-            
-            # Get the commit message
-            commit_message = self._get_commit_message(repo_url, head_commit)
-            
-            # Prepare the request to the agent API
-            headers = {
-                "Authorization": f"Bearer {self.agent_api_key}",
-                "Content-Type": "application/json",
-            }
-            
+            # Prepare the payload
             payload = {
-                "repo_url": repo_url,
                 "base_commit": base_commit,
                 "head_commit": head_commit,
-                "diff": diff,
-                "commit_message": commit_message,
-                "analysis_type": "commit",
+                "repo_url": repo_url,
             }
             
-            # Send the request to the agent API
-            response = requests.post(
-                f"{self.agent_api_url}/analyze",
-                headers=headers,
-                json=payload,
-            )
+            # Make the request
+            response = self._make_agent_request("analyze_commit", payload, timeout=120)
             
-            # Check if the request was successful
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.warning(f"Agent API returned status code {response.status_code}")
-                logger.warning(f"Response: {response.text}")
-                return {
-                    "status": "api_error",
-                    "message": f"Agent API returned status code {response.status_code}",
-                    "fallback": "Using standard analysis methods instead",
-                }
-                
+            return {
+                "status": "success",
+                "agent_response": response,
+            }
         except Exception as e:
-            logger.exception(f"Error during agent-based commit analysis: {e}")
+            logger.error(f"Error during agent-based commit analysis: {str(e)}")
             return {
                 "status": "error",
                 "message": f"Error during agent-based analysis: {str(e)}",
@@ -667,6 +627,47 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
             logger.error(f"Unexpected error: {str(e)}")
         return {}
 
+    def analyze_commit_with_agent(self, base_commit: str, head_commit: str) -> Dict[str, Any]:
+        """
+        Analyze a commit using the agent.
+        
+        Args:
+            base_commit: The base commit SHA
+            head_commit: The head commit SHA
+            
+        Returns:
+            A dictionary with the analysis results
+        """
+        if not self.agent or not self.agent_api_key:
+            logger.info("Agent-based commit analysis requested but agent is not initialized")
+            return {
+                "status": "not_initialized",
+                "message": "Agent-based analysis is not initialized",
+                "fallback": "Using standard analysis methods instead",
+            }
+            
+        try:
+            # Prepare the payload
+            payload = {
+                "base_commit": base_commit,
+                "head_commit": head_commit,
+                "repo_url": self.repo_url,
+            }
+            
+            # Make the request
+            response = self._make_agent_request("analyze_commit", payload, timeout=120)
+            
+            return {
+                "status": "success",
+                "agent_response": response,
+            }
+        except Exception as e:
+            logger.error(f"Error during agent-based commit analysis: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Error during agent-based analysis: {str(e)}",
+                "fallback": "Using standard analysis methods instead",
+            }
 
 # Example usage
 if __name__ == "__main__":
