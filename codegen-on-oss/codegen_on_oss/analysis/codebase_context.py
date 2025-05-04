@@ -62,7 +62,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-# src/vs/platform/contextview/browser/contextMenuService.ts is ignored due to tree-sitter parsing error
+# contextMenuService.ts is ignored due to tree-sitter parsing error
 GLOBAL_FILE_IGNORE_LIST = [
     ".git/*",
     "*/.git/*",
@@ -265,7 +265,8 @@ class CodebaseContext:
             ):
                 syncs[SyncType.ADD].append(self.to_absolute(filepath))
         logger.info(
-            f"> Parsing {len(syncs[SyncType.ADD])} files in {self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions"
+            f"> Parsing {len(syncs[SyncType.ADD])} files in "
+            f"{self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions"
         )
         self._process_diff_files(syncs, incremental=False)
         files: list[SourceFile] = self.get_nodes(NodeType.FILE)
