@@ -22,7 +22,39 @@ def get_codebase_summary(codebase: Codebase) -> str:
     edge_summary = f"""Contains {len(codebase.ctx.edges)} edges
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_USAGE])} symbol -> used symbol
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} import -> used symbol
-- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.EXPORT])} export -> exported symbol
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_RESOLUTION])} import -> module
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_DECLARATION])} symbol -> declaration
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_DEFINITION])} symbol -> definition
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_REFERENCE])} symbol -> reference
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_IMPLEMENTATION])} symbol -> implementation
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_INHERITANCE])} symbol -> inheritance
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_OVERRIDE])} symbol -> override
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_EXTENSION])} symbol -> extension
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_MIXINS])} symbol -> mixins
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_IMPLEMENTS])} symbol -> implements
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_EXPORTS])} symbol -> exports
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_PARAMETER])} symbol -> type parameter
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_ARGUMENT])} symbol -> type argument
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_CONSTRAINT])} symbol -> type constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_BOUND])} symbol -> type bound
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_EXTENDS])} symbol -> type extends
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_IMPLEMENTS])} symbol -> type implements
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_ALIAS])} symbol -> type alias
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_REFERENCE])} symbol -> type reference
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_PARAMETER_CONSTRAINT])} symbol -> type parameter constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_PARAMETER_DEFAULT])} symbol -> type parameter default
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_ARGUMENT_CONSTRAINT])} symbol -> type argument constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_ARGUMENT_DEFAULT])} symbol -> type argument default
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_BOUND_CONSTRAINT])} symbol -> type bound constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_BOUND_DEFAULT])} symbol -> type bound default
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_EXTENDS_CONSTRAINT])} symbol -> type extends constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_EXTENDS_DEFAULT])} symbol -> type extends default
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_IMPLEMENTS_CONSTRAINT])} symbol -> type implements constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_IMPLEMENTS_DEFAULT])} symbol -> type implements default
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_ALIAS_CONSTRAINT])} symbol -> type alias constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_ALIAS_DEFAULT])} symbol -> type alias default
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_REFERENCE_CONSTRAINT])} symbol -> type reference constraint
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_TYPE_REFERENCE_DEFAULT])} symbol -> type reference default
     """
 
     return f"{node_summary}\n{edge_summary}"
