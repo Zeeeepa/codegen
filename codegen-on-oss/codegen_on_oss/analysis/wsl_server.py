@@ -61,7 +61,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for the application."""
     logger.error(f"Unhandled exception: {str(exc)}")
     logger.error(traceback.format_exc())
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -237,7 +237,7 @@ async def validate_code(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
+            SnapshotManager(temp_dir)
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshot from repository
@@ -351,7 +351,7 @@ async def compare_repositories(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
+            SnapshotManager(temp_dir)
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshots from repositories
@@ -382,10 +382,10 @@ async def compare_repositories(
             # Analyze differences
             logger.info("Analyzing file changes")
             file_changes = diff_analyzer.analyze_file_changes()
-            
+
             logger.info("Analyzing function changes")
             function_changes = diff_analyzer.analyze_function_changes()
-            
+
             logger.info("Analyzing complexity changes")
             complexity_changes = diff_analyzer.analyze_complexity_changes()
 
@@ -402,14 +402,14 @@ async def compare_repositories(
             if request.include_detailed_diff:
                 logger.info("Including detailed diffs in response")
                 detailed_diffs = {}
-                
+
                 # If specific file paths are provided, only include those
                 diff_paths = request.diff_file_paths or [
                     filepath
                     for filepath, change_type in file_changes.items()
                     if change_type in ["modified", "added"]
                 ]
-                
+
                 for filepath in diff_paths:
                     if filepath in file_changes and file_changes[filepath] in ["modified", "added"]:
                         diff = diff_analyzer.get_detailed_file_diff(filepath)
@@ -450,7 +450,7 @@ async def analyze_pull_request(
     """
     try:
         # Initialize SWE harness agent
-        logger.info(f"Initializing SWE harness agent for PR analysis")
+        logger.info("Initializing SWE harness agent for PR analysis")
         agent = SWEHarnessAgent(github_token=request.github_token)
 
         # Analyze pull request
@@ -460,7 +460,7 @@ async def analyze_pull_request(
             pr_number=request.pr_number,
             detailed=request.detailed,
         )
-        logger.info(f"Completed PR analysis")
+        logger.info("Completed PR analysis")
 
         # Post comment if requested
         if request.post_comment:
@@ -470,7 +470,7 @@ async def analyze_pull_request(
                 pr_number=request.pr_number,
                 comment=analysis_results["summary"],
             )
-            logger.info(f"Posted comment to PR")
+            logger.info("Posted comment to PR")
 
         # Extract relevant information
         code_quality_score = analysis_results.get("code_quality_score", 0.0)
@@ -487,29 +487,31 @@ async def analyze_pull_request(
                 pr_info = agent.get_pr_info(request.repo_url, request.pr_number)
                 base_branch = pr_info.get("base", {}).get("ref", "main")
                 head_branch = pr_info.get("head", {}).get("ref", "main")
-                head_repo_url = pr_info.get("head", {}).get("repo", {}).get("clone_url", request.repo_url)
-                
+                head_repo_url = (
+                    pr_info.get("head", {}).get("repo", {}).get("clone_url", request.repo_url)
+                )
+
                 # Create temporary directory for analysis
                 with tempfile.TemporaryDirectory() as temp_dir:
                     # Initialize snapshot manager
-                    snapshot_manager = SnapshotManager(temp_dir)
-                    
+                    SnapshotManager(temp_dir)
+
                     # Create snapshots from repositories
                     base_snapshot = CodebaseSnapshot.create_from_repo(
                         repo_url=request.repo_url,
                         branch=base_branch,
                         github_token=request.github_token,
                     )
-                    
+
                     head_snapshot = CodebaseSnapshot.create_from_repo(
                         repo_url=head_repo_url,
                         branch=head_branch,
                         github_token=request.github_token,
                     )
-                    
+
                     # Initialize diff analyzer
                     diff_analyzer = DiffAnalyzer(base_snapshot, head_snapshot)
-                    
+
                     # Get diff analysis
                     diff_analysis = {
                         "file_changes": diff_analyzer.analyze_file_changes(),
@@ -518,7 +520,7 @@ async def analyze_pull_request(
                         "risk_assessment": diff_analyzer.assess_risk(),
                         "summary": diff_analyzer.format_summary_text(),
                     }
-                    
+
                     logger.info(f"Completed diff analysis for PR {request.pr_number}")
             except Exception as diff_error:
                 logger.error(f"Error in diff analysis: {str(diff_error)}")

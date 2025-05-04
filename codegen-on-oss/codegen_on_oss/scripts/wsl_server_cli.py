@@ -1,38 +1,25 @@
 #!/usr/bin/env python3
 """
-WSL2 Server CLI
+CLI for interacting with the WSL2 server.
 
-This script provides a command-line interface for deploying, managing,
-and interacting with the WSL2 server for code validation.
-
-Example usage:
-    # Deploy the server
-    python -m codegen_on_oss.scripts.wsl_server_cli deploy
-
-    # Check server status
-    python -m codegen_on_oss.scripts.wsl_server_cli status
-
-    # Stop the server
-    python -m codegen_on_oss.scripts.wsl_server_cli stop
-
+Examples:
     # Validate a codebase
     python -m codegen_on_oss.scripts.wsl_server_cli validate --repo https://github.com/user/repo
 
     # Compare repositories
-    python -m codegen_on_oss.scripts.wsl_server_cli compare --base-repo https://github.com/user/repo1 --head-repo https://github.com/user/repo2
+    python -m codegen_on_oss.scripts.wsl_server_cli compare \
+        --base-repo https://github.com/user/repo1 \
+        --head-repo https://github.com/user/repo2
 
     # Analyze a PR
-    python -m codegen_on_oss.scripts.wsl_server_cli analyze-pr --repo https://github.com/user/repo --pr-number 123
+    python -m codegen_on_oss.scripts.wsl_server_cli analyze-pr \
+        --repo https://github.com/user/repo --pr-number 123
 """
 
 import argparse
 import json
 import logging
-import os
 import sys
-import time
-from pathlib import Path
-from typing import Any, Dict, Optional
 
 from codegen_on_oss.analysis.wsl_client import WSLClient
 from codegen_on_oss.analysis.wsl_deployment import WSLDeployment
@@ -659,4 +646,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

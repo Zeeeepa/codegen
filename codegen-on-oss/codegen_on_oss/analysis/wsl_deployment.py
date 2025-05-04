@@ -10,10 +10,8 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
@@ -81,9 +79,9 @@ class WSLDeployment:
             self.env["CODEGEN_API_KEY"] = self.api_key
 
     def _run_command(
-        self, 
-        command: Union[str, List[str]], 
-        check: bool = True, 
+        self,
+        command: Union[str, List[str]],
+        check: bool = True,
         capture_output: bool = True,
         timeout: Optional[int] = None,
         env: Optional[Dict[str, str]] = None,
@@ -111,7 +109,7 @@ class WSLDeployment:
 
         try:
             logger.debug(f"Running command: {command}")
-            
+
             if capture_output:
                 result = subprocess.run(
                     command,
@@ -135,7 +133,7 @@ class WSLDeployment:
                 )
                 stdout = ""
                 stderr = ""
-            
+
             if check and result.returncode != 0:
                 cmd_str = command if isinstance(command, str) else " ".join(command)
                 raise WSLDeploymentError(
@@ -143,9 +141,9 @@ class WSLDeployment:
                     command=cmd_str,
                     output=f"STDOUT:\n{stdout}\n\nSTDERR:\n{stderr}",
                 )
-            
+
             return result.returncode, stdout, stderr
-        
+
         except subprocess.TimeoutExpired as e:
             cmd_str = command if isinstance(command, str) else " ".join(command)
             raise WSLDeploymentError(
@@ -153,7 +151,7 @@ class WSLDeployment:
                 command=cmd_str,
                 output=str(e),
             )
-        
+
         except Exception as e:
             cmd_str = command if isinstance(command, str) else " ".join(command)
             raise WSLDeploymentError(
@@ -162,9 +160,9 @@ class WSLDeployment:
             )
 
     def _run_wsl_command(
-        self, 
-        command: Union[str, List[str]], 
-        check: bool = True, 
+        self,
+        command: Union[str, List[str]],
+        check: bool = True,
         capture_output: bool = True,
         timeout: Optional[int] = None,
     ) -> Tuple[int, str, str]:
@@ -185,7 +183,7 @@ class WSLDeployment:
         """
         if isinstance(command, list):
             command = " ".join(command)
-        
+
         wsl_command = ["wsl", "-d", self.wsl_distro, "--", "bash", "-c", command]
         return self._run_command(wsl_command, check, capture_output, timeout)
 
@@ -233,45 +231,31 @@ class WSLDeployment:
             self._run_wsl_command("sudo apt update")
 
             logger.info("Installing Python and dependencies...")
-            self._run_wsl_command(
-                "sudo apt install -y python3 python3-pip python3-venv git"
-            )
+            self._run_wsl_command("sudo apt install -y python3 python3-pip python3-venv git")
 
             # Install Docker if needed
             if self.use_docker:
                 logger.info("Installing Docker...")
-                self._run_wsl_command(
-                    "sudo apt install -y docker.io docker-compose"
-                )
+                self._run_wsl_command("sudo apt install -y docker.io docker-compose")
 
                 logger.info("Starting Docker service...")
-                self._run_wsl_command(
-                    "sudo systemctl start docker || true"
-                )
+                self._run_wsl_command("sudo systemctl start docker || true")
 
                 logger.info("Enabling Docker service...")
-                self._run_wsl_command(
-                    "sudo systemctl enable docker || true"
-                )
+                self._run_wsl_command("sudo systemctl enable docker || true")
 
                 # Add current user to docker group
                 logger.info("Adding current user to docker group...")
-                self._run_wsl_command(
-                    "sudo usermod -aG docker $USER || true"
-                )
+                self._run_wsl_command("sudo usermod -aG docker $USER || true")
 
             # Install ctrlplane if needed
             if self.use_ctrlplane:
                 logger.info("Installing ctrlplane...")
-                self._run_wsl_command(
-                    "pip3 install ctrlplane"
-                )
+                self._run_wsl_command("pip3 install ctrlplane")
 
             # Install additional Python packages
             logger.info("Installing Python packages...")
-            self._run_wsl_command(
-                "pip3 install fastapi uvicorn requests pydantic"
-            )
+            self._run_wsl_command("pip3 install fastapi uvicorn requests pydantic")
 
             logger.info("Dependencies installed successfully")
             return True
@@ -305,7 +289,9 @@ class WSLDeployment:
                 # Copy server files to temporary directory
                 logger.info(f"Copying server files to temporary directory {temp_dir}")
                 if os.path.isdir(server_dir):
-                    shutil.copytree(server_dir, os.path.join(temp_dir, "server"), dirs_exist_ok=True)
+                    shutil.copytree(
+                        server_dir, os.path.join(temp_dir, "server"), dirs_exist_ok=True
+                    )
                 else:
                     raise WSLDeploymentError(f"Server directory not found: {server_dir}")
 
@@ -316,7 +302,16 @@ class WSLDeployment:
                 # Copy files to WSL
                 logger.info("Copying files to WSL")
                 self._run_command(
-                    ["wsl", "-d", self.wsl_distro, "--", "cp", "-r", f"{temp_dir}/server/.", "/home/codegen-server/"]
+                    [
+                        "wsl",
+                        "-d",
+                        self.wsl_distro,
+                        "--",
+                        "cp",
+                        "-r",
+                        f"{temp_dir}/server/.",
+                        "/home/codegen-server/",
+                    ]
                 )
 
                 # Deploy based on the selected method
@@ -362,7 +357,7 @@ CMD ["python", "-m", "codegen_on_oss.analysis.wsl_server"]
 """
             logger.info("Creating Dockerfile")
             self._run_wsl_command(f'echo "{dockerfile_content}" > /home/codegen-server/Dockerfile')
-            
+
             return True
         except Exception as e:
             logger.error(f"Error creating Dockerfile: {str(e)}")
@@ -391,8 +386,10 @@ services:
     restart: unless-stopped
 """
             logger.info("Creating docker-compose.yml")
-            self._run_wsl_command(f'echo "{compose_content}" > /home/codegen-server/docker-compose.yml')
-            
+            self._run_wsl_command(
+                f'echo "{compose_content}" > /home/codegen-server/docker-compose.yml'
+            )
+
             return True
         except Exception as e:
             logger.error(f"Error creating docker-compose.yml: {str(e)}")
@@ -429,7 +426,7 @@ services:
                 "docker ps | grep wsl-server",
                 check=False,
             )
-            
+
             if returncode != 0:
                 logger.warning("Container not found in docker ps output, checking logs")
                 returncode, stdout, stderr = self._run_wsl_command(
@@ -437,7 +434,7 @@ services:
                     check=False,
                 )
                 logger.info(f"Docker logs: {stdout}")
-                
+
                 if "Error" in stdout or "error" in stdout:
                     raise WSLDeploymentError(
                         "Docker container failed to start",
@@ -492,15 +489,11 @@ services:
             # Write configuration to file
             config_path = "/home/codegen-server/ctrlplane.json"
             logger.info(f"Creating ctrlplane configuration at {config_path}")
-            self._run_wsl_command(
-                f"echo '{json.dumps(config, indent=2)}' > {config_path}"
-            )
+            self._run_wsl_command(f"echo '{json.dumps(config, indent=2)}' > {config_path}")
 
             # Deploy using ctrlplane
             logger.info("Deploying with ctrlplane")
-            self._run_wsl_command(
-                f"cd /home/codegen-server && ctrlplane deploy -f {config_path}"
-            )
+            self._run_wsl_command(f"cd /home/codegen-server && ctrlplane deploy -f {config_path}")
 
             # Verify the service is running
             logger.info("Verifying service is running")
@@ -509,7 +502,7 @@ services:
                 "ctrlplane list | grep codegen-wsl-server",
                 check=False,
             )
-            
+
             if returncode != 0:
                 logger.warning("Service not found in ctrlplane list output")
                 raise WSLDeploymentError(
@@ -539,9 +532,7 @@ services:
         try:
             # Create virtual environment
             logger.info("Creating virtual environment")
-            self._run_wsl_command(
-                "cd /home/codegen-server && python3 -m venv venv"
-            )
+            self._run_wsl_command("cd /home/codegen-server && python3 -m venv venv")
 
             # Install dependencies
             logger.info("Installing dependencies")
@@ -559,7 +550,7 @@ After=network.target
 [Service]
 User=$USER
 WorkingDirectory=/home/codegen-server
-Environment="CODEGEN_API_KEY={self.api_key or ''}"
+Environment="CODEGEN_API_KEY={self.api_key or ""}"
 ExecStart=/home/codegen-server/venv/bin/python -m codegen_on_oss.analysis.wsl_server --log-level {self.log_level}
 Restart=on-failure
 RestartSec=5s
@@ -568,38 +559,28 @@ RestartSec=5s
 WantedBy=multi-user.target
 """
             logger.info("Creating systemd service file")
-            self._run_wsl_command(
-                f'echo "{service_content}" > /tmp/codegen-wsl-server.service'
-            )
-            
+            self._run_wsl_command(f'echo "{service_content}" > /tmp/codegen-wsl-server.service')
+
             # Install the service file
             logger.info("Installing systemd service")
-            self._run_wsl_command(
-                "sudo mv /tmp/codegen-wsl-server.service /etc/systemd/system/"
-            )
-            
+            self._run_wsl_command("sudo mv /tmp/codegen-wsl-server.service /etc/systemd/system/")
+
             # Reload systemd
             logger.info("Reloading systemd")
-            self._run_wsl_command(
-                "sudo systemctl daemon-reload"
-            )
-            
+            self._run_wsl_command("sudo systemctl daemon-reload")
+
             # Enable and start the service
             logger.info("Enabling and starting service")
-            self._run_wsl_command(
-                "sudo systemctl enable codegen-wsl-server"
-            )
-            self._run_wsl_command(
-                "sudo systemctl start codegen-wsl-server"
-            )
-            
+            self._run_wsl_command("sudo systemctl enable codegen-wsl-server")
+            self._run_wsl_command("sudo systemctl start codegen-wsl-server")
+
             # Check service status
             logger.info("Checking service status")
             returncode, stdout, stderr = self._run_wsl_command(
                 "systemctl is-active codegen-wsl-server",
                 check=False,
             )
-            
+
             if returncode != 0:
                 logger.warning("Service is not active, checking logs")
                 returncode, stdout, stderr = self._run_wsl_command(
@@ -607,7 +588,7 @@ WantedBy=multi-user.target
                     check=False,
                 )
                 logger.info(f"Service logs: {stdout}")
-                
+
                 # Try starting the server directly as a fallback
                 logger.info("Attempting to start server directly as fallback")
                 self._run_wsl_command(
@@ -658,7 +639,7 @@ WantedBy=multi-user.target
                     "sudo systemctl stop codegen-wsl-server",
                     check=False,
                 )
-                
+
                 # Also kill any direct processes
                 logger.info("Killing any direct processes")
                 self._run_wsl_command(
@@ -677,7 +658,7 @@ WantedBy=multi-user.target
         except Exception as e:
             logger.error(f"Unexpected error stopping server: {str(e)}")
             return False
-    
+
     def get_server_status(self) -> Dict[str, str]:
         """
         Get the status of the WSL2 server.
@@ -686,14 +667,18 @@ WantedBy=multi-user.target
             Dictionary with status information
         """
         status = {
-            "deployment_type": "docker" if self.use_docker else "ctrlplane" if self.use_ctrlplane else "direct",
+            "deployment_type": "docker"
+            if self.use_docker
+            else "ctrlplane"
+            if self.use_ctrlplane
+            else "direct",
             "port": str(self.port),
             "wsl_distro": self.wsl_distro,
             "status": "unknown",
             "uptime": "unknown",
             "logs": "",
         }
-        
+
         try:
             if self.use_docker:
                 # Check Docker container status
@@ -701,50 +686,50 @@ WantedBy=multi-user.target
                     "docker ps --filter name=wsl-server --format '{{.Status}}'",
                     check=False,
                 )
-                
+
                 if stdout.strip():
                     status["status"] = "running"
                     status["uptime"] = stdout.strip()
                 else:
                     status["status"] = "stopped"
-                
+
                 # Get logs
                 returncode, stdout, stderr = self._run_wsl_command(
                     "cd /home/codegen-server && docker-compose logs --tail=20",
                     check=False,
                 )
                 status["logs"] = stdout
-                
+
             elif self.use_ctrlplane:
                 # Check ctrlplane service status
                 returncode, stdout, stderr = self._run_wsl_command(
                     "ctrlplane list | grep codegen-wsl-server",
                     check=False,
                 )
-                
+
                 if returncode == 0:
                     status["status"] = "running"
                     status["uptime"] = "N/A"
                 else:
                     status["status"] = "stopped"
-                
+
                 # Get logs
                 returncode, stdout, stderr = self._run_wsl_command(
                     "ctrlplane logs codegen-wsl-server --tail=20",
                     check=False,
                 )
                 status["logs"] = stdout
-                
+
             else:
                 # Check systemd service status
                 returncode, stdout, stderr = self._run_wsl_command(
                     "systemctl is-active codegen-wsl-server",
                     check=False,
                 )
-                
+
                 if returncode == 0:
                     status["status"] = "running"
-                    
+
                     # Get uptime
                     returncode, stdout, stderr = self._run_wsl_command(
                         "systemctl show codegen-wsl-server --property=ActiveState,ActiveEnterTimestamp",
@@ -753,16 +738,16 @@ WantedBy=multi-user.target
                     status["uptime"] = stdout.strip()
                 else:
                     status["status"] = "stopped"
-                
+
                 # Get logs
                 returncode, stdout, stderr = self._run_wsl_command(
                     "journalctl -u codegen-wsl-server -n 20",
                     check=False,
                 )
                 status["logs"] = stdout
-            
+
             return status
-            
+
         except Exception as e:
             logger.error(f"Error getting server status: {str(e)}")
             status["status"] = "error"

@@ -8,10 +8,9 @@ for code validation, repository comparison, and PR analysis.
 import json
 import logging
 import os
-import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError, Timeout
@@ -22,19 +21,21 @@ logger = logging.getLogger(__name__)
 class WSLClientError(Exception):
     """Exception raised for errors in the WSL client."""
 
-    def __init__(self, message: str, status_code: Optional[int] = None, response: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self, message: str, status_code: Optional[int] = None, response: Optional[Dict[str, Any]] = None
+    ):
         """
         Initialize a new WSLClientError.
 
         Args:
             message: Error message
-            status_code: Optional HTTP status code
-            response: Optional response data
+            status_code: HTTP status code
+            response: Response data
         """
         self.message = message
         self.status_code = status_code
         self.response = response
-        super().__init__(self.message)
+        super().__init__(message)
 
 
 class WSLClient:
@@ -43,12 +44,12 @@ class WSLClient:
     """
 
     def __init__(
-        self, 
-        base_url: str = "http://localhost:8000", 
+        self,
+        base_url: str = "http://localhost:8000",
         api_key: Optional[str] = None,
         timeout: int = 60,
         max_retries: int = 3,
-        retry_delay: int = 2
+        retry_delay: int = 2,
     ):
         """
         Initialize a new WSLClient.
@@ -71,12 +72,12 @@ class WSLClient:
             self.headers["X-API-Key"] = self.api_key
 
     def _make_request(
-        self, 
-        method: str, 
-        endpoint: str, 
+        self,
+        method: str,
+        endpoint: str,
         data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Make a request to the WSL2 server with retry logic.
@@ -102,18 +103,11 @@ class WSLClient:
             try:
                 if method.upper() == "GET":
                     response = requests.get(
-                        url, 
-                        headers=self.headers, 
-                        params=params,
-                        timeout=timeout
+                        url, headers=self.headers, params=params, timeout=timeout
                     )
                 elif method.upper() == "POST":
                     response = requests.post(
-                        url, 
-                        headers=self.headers, 
-                        json=data,
-                        params=params,
-                        timeout=timeout
+                        url, headers=self.headers, json=data, params=params, timeout=timeout
                     )
                 else:
                     raise WSLClientError(f"Unsupported HTTP method: {method}")
@@ -125,30 +119,32 @@ class WSLClient:
                 retries += 1
                 if retries > self.max_retries:
                     raise WSLClientError(f"Connection error: {str(e)}")
-                logger.warning(f"Connection error, retrying ({retries}/{self.max_retries}): {str(e)}")
+                logger.warning(
+                    f"Connection error, retrying ({retries}/{self.max_retries}): {str(e)}"
+                )
                 time.sleep(self.retry_delay)
 
             except Timeout as e:
                 retries += 1
                 if retries > self.max_retries:
                     raise WSLClientError(f"Request timed out: {str(e)}")
-                logger.warning(f"Request timed out, retrying ({retries}/{self.max_retries}): {str(e)}")
+                logger.warning(
+                    f"Request timed out, retrying ({retries}/{self.max_retries}): {str(e)}"
+                )
                 time.sleep(self.retry_delay)
 
             except HTTPError as e:
                 # Try to parse error response
                 error_detail = str(e)
                 status_code = e.response.status_code if hasattr(e, "response") else None
-                
+
                 try:
                     error_data = e.response.json() if hasattr(e, "response") else {}
                 except:
                     error_data = {}
-                
+
                 raise WSLClientError(
-                    f"HTTP error: {error_detail}",
-                    status_code=status_code,
-                    response=error_data
+                    f"HTTP error: {error_detail}", status_code=status_code, response=error_data
                 )
 
             except Exception as e:
@@ -252,7 +248,9 @@ class WSLClient:
         }
 
         try:
-            logger.info(f"Comparing repositories: {base_repo_url} ({base_branch}) vs {head_repo_url} ({head_branch})")
+            logger.info(
+                f"Comparing repositories: {base_repo_url} ({base_branch}) vs {head_repo_url} ({head_branch})"
+            )
             return self._make_request("POST", "compare", data=payload, timeout=timeout)
         except WSLClientError as e:
             logger.error(f"Repository comparison failed: {e.message}")
@@ -367,7 +365,7 @@ class WSLClient:
         modified = sum(1 for change in file_changes.values() if change == "modified")
         deleted = sum(1 for change in file_changes.values() if change == "deleted")
         unchanged = sum(1 for change in file_changes.values() if change == "unchanged")
-        
+
         markdown += "## File Changes Summary\n\n"
         markdown += f"- **Added**: {added}\n"
         markdown += f"- **Modified**: {modified}\n"
@@ -382,7 +380,7 @@ class WSLClient:
         deleted = sum(1 for change in function_changes.values() if change == "deleted")
         moved = sum(1 for change in function_changes.values() if change == "moved")
         unchanged = sum(1 for change in function_changes.values() if change == "unchanged")
-        
+
         markdown += "## Function Changes Summary\n\n"
         markdown += f"- **Added**: {added}\n"
         markdown += f"- **Modified**: {modified}\n"
@@ -406,7 +404,7 @@ class WSLClient:
                 if change != "unchanged" and count < 10:
                     markdown += f"- **{file}**: {change}\n"
                     count += 1
-            
+
             if count < len([c for c in file_changes.values() if c != "unchanged"]):
                 markdown += f"- ... and {len([c for c in file_changes.values() if c != 'unchanged']) - count} more\n"
             markdown += "\n"
@@ -414,14 +412,12 @@ class WSLClient:
         # Complexity changes (top 5 increases and decreases)
         if results["complexity_changes"]:
             markdown += "## Complexity Changes\n\n"
-            
+
             # Sort by complexity change (descending)
             sorted_complexity = sorted(
-                results["complexity_changes"].items(),
-                key=lambda x: x[1],
-                reverse=True
+                results["complexity_changes"].items(), key=lambda x: x[1], reverse=True
             )
-            
+
             # Top 5 increases
             increases = [item for item in sorted_complexity if item[1] > 0][:5]
             if increases:
@@ -429,7 +425,7 @@ class WSLClient:
                 for file, change in increases:
                     markdown += f"- **{file}**: +{change:.2f}\n"
                 markdown += "\n"
-            
+
             # Top 5 decreases
             decreases = [item for item in sorted_complexity if item[1] < 0][-5:]
             if decreases:
@@ -481,33 +477,33 @@ class WSLClient:
         # Include diff analysis if available
         if "diff_analysis" in results and results["diff_analysis"]:
             diff_analysis = results["diff_analysis"]
-            
+
             if "error" in diff_analysis:
                 markdown += "## Diff Analysis Error\n\n"
                 markdown += f"Error: {diff_analysis['error']}\n\n"
             else:
                 markdown += "## Diff Analysis\n\n"
-                
+
                 # File changes summary
                 if "file_changes" in diff_analysis:
                     file_changes = diff_analysis["file_changes"]
                     added = sum(1 for change in file_changes.values() if change == "added")
                     modified = sum(1 for change in file_changes.values() if change == "modified")
                     deleted = sum(1 for change in file_changes.values() if change == "deleted")
-                    
+
                     markdown += "### File Changes\n\n"
                     markdown += f"- **Added**: {added}\n"
                     markdown += f"- **Modified**: {modified}\n"
                     markdown += f"- **Deleted**: {deleted}\n"
                     markdown += f"- **Total**: {len(file_changes)}\n\n"
-                
+
                 # Risk assessment
                 if "risk_assessment" in diff_analysis and diff_analysis["risk_assessment"]:
                     markdown += "### Risk Assessment\n\n"
                     for category, risk in diff_analysis["risk_assessment"].items():
                         markdown += f"- **{category}**: {risk}\n"
                     markdown += "\n"
-                
+
                 # Summary
                 if "summary" in diff_analysis:
                     markdown += "### Diff Summary\n\n"
@@ -556,7 +552,7 @@ class WSLClient:
             results = json.load(f)
 
         return results
-    
+
     def save_markdown_to_file(self, markdown: str, filename: str) -> str:
         """
         Save markdown to a file.
