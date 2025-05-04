@@ -691,7 +691,8 @@ class CodeIntegrityAnalyzer:
                                 "name": func.name,
                                 "filepath": func.filepath,
                                 "line": func.line_range[0],
-                                "message": f"Function '{func.name}' uses mutable default argument for parameter '{param.name}'",
+                                "message": f"Function '{func.name}' uses mutable default argument "
+                                f"for parameter '{param.name}'",
                                 "severity": self.config["severity_levels"][
                                     "mutable_default_argument"
                                 ],
