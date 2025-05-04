@@ -35,6 +35,8 @@ from pydantic import BaseModel
 
 from codegen_on_oss.analysis.analysis_import import (
     find_import_cycles,
+    create_graph_from_codebase,
+    find_problematic_import_loops,
 )
 from codegen_on_oss.analysis.codebase_analysis import (
     get_class_summary,
