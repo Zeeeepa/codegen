@@ -252,7 +252,8 @@ class WSLClient:
 
         try:
             logger.info(
-                f"Comparing repositories: {base_repo_url} ({base_branch}) vs {head_repo_url} ({head_branch})"
+                f"Comparing repositories: {base_repo_url} ({base_branch}) "
+                f"vs {head_repo_url} ({head_branch})"
             )
             return self._make_request("POST", "compare", data=payload, timeout=timeout)
         except WSLClientError as e:
@@ -409,7 +410,8 @@ class WSLClient:
                     count += 1
 
             if count < len([c for c in file_changes.values() if c != "unchanged"]):
-                markdown += f"- ... and {len([c for c in file_changes.values() if c != 'unchanged']) - count} more\n"
+                remaining = len([c for c in file_changes.values() if c != "unchanged"]) - count
+                markdown += f"- ... and {remaining} more\n"
             markdown += "\n"
 
         # Complexity changes (top 5 increases and decreases)

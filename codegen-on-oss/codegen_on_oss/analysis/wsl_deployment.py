@@ -157,7 +157,7 @@ class WSLDeployment:
             raise WSLDeploymentError(
                 f"Error running command: {str(e)}",
                 command=cmd_str,
-            )
+            ) from e
 
     def _run_wsl_command(
         self,
