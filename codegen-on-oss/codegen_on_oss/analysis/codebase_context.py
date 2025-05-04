@@ -501,7 +501,7 @@ class CodebaseContext:
                 logger.info("> Starting dependency manager")
                 self.dependency_manager.start(async_start=False)
 
-        # Start the language engine. This may or may not run asynchronously, depending on the implementation
+        # Start the language engine. May run asynchronously, depending on implementation
         if self.language_engine is not None:
             # Check if its inital start or a reparse
             if not self.language_engine.ready() and not self.language_engine.error():
