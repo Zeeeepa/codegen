@@ -373,7 +373,8 @@ class CodebaseContext:
         self.pending_syncs.clear()  # Discard pending changes
         if len(self.all_syncs) > 0:
             logger.info(
-                f"Unapplying {len(self.all_syncs)} diffs to graph. Current graph commit: {self.synced_commit}"
+                f"Unapplying {len(self.all_syncs)} diffs to graph. "
+                 f"Current graph commit: {self.synced_commit}"
             )
             self._revert_diffs(list(reversed(self.all_syncs)))
         self.all_syncs.clear()
