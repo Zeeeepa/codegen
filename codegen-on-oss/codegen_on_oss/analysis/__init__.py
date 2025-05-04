@@ -4,8 +4,15 @@ Analysis package for codegen-on-oss.
 This package provides various code analysis tools and utilities.
 """
 
+from typing import Dict, Any, List, Optional
+
+from codegen.sdk.core.codebase import Codebase
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer
+from codegen_on_oss.analysis.code_integrity_analyzer import (
+    CodeIntegrityAnalyzer,
+    compare_branches,
+    analyze_pr,
+)
 from codegen_on_oss.analysis.code_integrity_main import analyze_code_integrity
 from codegen_on_oss.analysis.codebase_analysis import (
     get_class_summary,
@@ -24,4 +31,7 @@ __all__ = [
     "get_function_summary",
     "get_symbol_summary",
     "analyze_code_integrity",
+    "compare_branches",
+    "analyze_pr",
 ]
+
