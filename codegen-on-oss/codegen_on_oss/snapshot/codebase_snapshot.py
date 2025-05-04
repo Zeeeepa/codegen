@@ -96,8 +96,8 @@ class CodebaseSnapshot:
         # Create a temporary directory for the repo if needed
         temp_dir = tempfile.mkdtemp(prefix="codebase_snapshot_")
         try:
-            # Clone the repository
-            codebase = Codebase.from_repo(repo_url, secrets=secrets)
+            # Clone the repository into the temporary directory
+            codebase = Codebase.from_repo(repo_url, tmp_dir=temp_dir, secrets=secrets)
 
             # Checkout the specified commit if provided
             if commit_sha:
@@ -467,12 +467,24 @@ class SnapshotManager:
         if github_token:
             secrets = SecretsConfig(github_token=github_token)
 
-        codebase = Codebase.from_repo(repo_url, secrets=secrets)
+        # Create a temporary directory for the repo
+        temp_dir = tempfile.mkdtemp(prefix="codebase_snapshot_")
+        try:
+            # Clone the repository into the temporary directory
+            codebase = Codebase.from_repo(repo_url, tmp_dir=temp_dir, secrets=secrets)
 
-        if commit_sha:
-            codebase.checkout(commit=commit_sha)
+            if commit_sha:
+                codebase.checkout(commit=commit_sha)
 
-        return codebase
+            return codebase
+        except Exception as e:
+            logger.error(f"Failed to create codebase from repo {repo_url}: {e}")
+            raise
+        finally:
+            # Clean up the temporary directory
+            if temp_dir and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                logger.info(f"Cleaned up temporary directory: {temp_dir}")
 
     def snapshot_repo(
         self,
