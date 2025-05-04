@@ -524,7 +524,8 @@ class CodeIntegrityAnalyzer:
             for param in func.parameters:
                 if param.annotation:
                     # Check if the parameter is used with the correct type
-                    # This is a simplified check and would need more sophisticated analysis in a real implementation
+                    # This is a simplified check and would need more sophisticated 
+                    # analysis in a real implementation
                     for call in func.call_sites:
                         if hasattr(call, "args") and len(call.args) > 0:
                             for i, arg in enumerate(call.args):
@@ -568,7 +569,7 @@ class CodeIntegrityAnalyzer:
                             callback_func = next((f for f in functions if f.name == arg.name), None)
                             if callback_func:
                                 # Check if the callback function has the right signature
-                                # This is a simplified check and would need more sophisticated analysis in a real implementation
+                                # This is a simplified check and would need more sophisticated\n                                # analysis in a real implementation
                                 if len(callback_func.parameters) == 0:
                                     errors.append(
                                         {
