@@ -865,14 +865,14 @@ class CodebaseContext:
                     continue
             self._graph.remove_edge_from_index(edge)
 
-    @lru_cache(maxsize=10000)
+    @lru_cache(maxsize=10000)  # noqa: B019
     def to_absolute(self, filepath: PathLike | str) -> Path:
         path = Path(filepath)
         if not path.is_absolute():
             path = Path(self.repo_path) / path
         return path.resolve()
 
-    @lru_cache(maxsize=10000)
+    @lru_cache(maxsize=10000)  # noqa: B019
     def to_relative(self, filepath: PathLike | str) -> Path:
         path = self.to_absolute(filepath)
         if path == Path(self.repo_path) or Path(self.repo_path) in path.parents:
