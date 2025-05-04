@@ -454,7 +454,8 @@ class CodeAnalyzer:
             problematic_loops = find_problematic_import_loops(graph, cycles)
 
             logger.info(
-                f"Import analysis completed. Found {len(cycles)} cycles and {len(problematic_loops)} problematic loops"
+                f"Import analysis completed. Found {len(cycles)} cycles and "
+                f"{len(problematic_loops)} problematic loops"
             )
             return {"import_cycles": cycles, "problematic_loops": problematic_loops}
         except Exception as e:
