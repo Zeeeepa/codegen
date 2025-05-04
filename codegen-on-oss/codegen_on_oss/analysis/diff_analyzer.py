@@ -7,7 +7,10 @@ and analyzing the differences between them.
 
 import difflib
 import logging
-from typing import Any, Dict, List, Optional
+import os
+import re
+import time
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Import the CodebaseSnapshot class
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
@@ -37,6 +40,16 @@ class DiffAnalyzer:
         self._class_diffs = None
         self._import_diffs = None
         self._complexity_changes = None
+        
+        # Performance metrics
+        self.performance_metrics = {
+            "file_diff_time": 0,
+            "function_diff_time": 0,
+            "class_diff_time": 0,
+            "import_diff_time": 0,
+            "complexity_diff_time": 0,
+            "risk_assessment_time": 0,
+        }
 
     def analyze_file_changes(self) -> Dict[str, str]:
         """
@@ -49,6 +62,8 @@ class DiffAnalyzer:
             - 'modified': File exists in both but has changed
             - 'unchanged': File exists in both and has not changed
         """
+        start_time = time.time()
+        
         if self._file_diffs is not None:
             return self._file_diffs
 
@@ -78,6 +93,9 @@ class DiffAnalyzer:
                 self._file_diffs[filepath] = "modified"
             else:
                 self._file_diffs[filepath] = "unchanged"
+        
+        # Record performance metrics
+        self.performance_metrics["file_diff_time"] = time.time() - start_time
 
         return self._file_diffs
 
@@ -92,7 +110,10 @@ class DiffAnalyzer:
             - 'modified': Function exists in both but has changed
             - 'unchanged': Function exists in both and has not changed
             - 'moved': Function exists in both but has moved to a different file
+            - 'renamed': Function exists in both but has been renamed
         """
+        start_time = time.time()
+        
         if self._function_diffs is not None:
             return self._function_diffs
 
@@ -129,9 +150,152 @@ class DiffAnalyzer:
             ):
                 self._function_diffs[func_name] = "modified"
             else:
-                self._function_diffs[func_name] = "unchanged"
+                # Check for semantic changes by comparing function bodies
+                if self._has_semantic_changes(func_name, "function"):
+                    self._function_diffs[func_name] = "modified"
+                else:
+                    self._function_diffs[func_name] = "unchanged"
+
+        # Try to identify renamed functions
+        self._identify_renamed_functions()
+        
+        # Record performance metrics
+        self.performance_metrics["function_diff_time"] = time.time() - start_time
 
         return self._function_diffs
+    
+    def _has_semantic_changes(self, symbol_name: str, symbol_type: str) -> bool:
+        """
+        Check if a symbol (function or class) has semantic changes.
+        
+        Args:
+            symbol_name: The name of the symbol
+            symbol_type: The type of the symbol ('function' or 'class')
+            
+        Returns:
+            True if the symbol has semantic changes, False otherwise
+        """
+        # Get the original and modified files
+        if symbol_type == "function":
+            original_metrics = self.original.function_metrics.get(symbol_name)
+            modified_metrics = self.modified.function_metrics.get(symbol_name)
+        elif symbol_type == "class":
+            original_metrics = self.original.class_metrics.get(symbol_name)
+            modified_metrics = self.modified.class_metrics.get(symbol_name)
+        else:
+            return False
+            
+        if not original_metrics or not modified_metrics:
+            return False
+            
+        # Get the file paths
+        original_filepath = original_metrics["filepath"]
+        modified_filepath = modified_metrics["filepath"]
+        
+        # Get the line ranges
+        original_start = original_metrics["line_start"]
+        original_end = original_metrics["line_end"]
+        modified_start = modified_metrics["line_start"]
+        modified_end = modified_metrics["line_end"]
+        
+        # Get the file content
+        original_file = None
+        for file in self.original.codebase.files:
+            if file.filepath == original_filepath:
+                original_file = file
+                break
+                
+        modified_file = None
+        for file in self.modified.codebase.files:
+            if file.filepath == modified_filepath:
+                modified_file = file
+                break
+                
+        if not original_file or not modified_file:
+            return False
+            
+        # Extract the symbol content
+        original_lines = original_file.content.splitlines()[original_start-1:original_end]
+        modified_lines = modified_file.content.splitlines()[modified_start-1:modified_end]
+        
+        # Normalize whitespace and comments
+        original_normalized = self._normalize_code("\n".join(original_lines))
+        modified_normalized = self._normalize_code("\n".join(modified_lines))
+        
+        # Compare normalized content
+        return original_normalized != modified_normalized
+    
+    def _normalize_code(self, code: str) -> str:
+        """
+        Normalize code by removing comments and normalizing whitespace.
+        
+        Args:
+            code: The code to normalize
+            
+        Returns:
+            Normalized code
+        """
+        # Remove comments
+        code = re.sub(r'#.*$', '', code, flags=re.MULTILINE)  # Python single-line comments
+        code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)  # C/C++/Java single-line comments
+        code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)  # C/C++/Java multi-line comments
+        
+        # Normalize whitespace
+        code = re.sub(r'\s+', ' ', code)  # Replace multiple whitespace with a single space
+        code = re.sub(r'^\s+|\s+$', '', code, flags=re.MULTILINE)  # Trim leading/trailing whitespace
+        
+        return code.strip()
+    
+    def _identify_renamed_functions(self) -> None:
+        """
+        Identify renamed functions by comparing function signatures and bodies.
+        """
+        # Get added and deleted functions
+        added_funcs = [f for f, change in self._function_diffs.items() if change == "added"]
+        deleted_funcs = [f for f, change in self._function_diffs.items() if change == "deleted"]
+        
+        # For each deleted function, check if it was renamed to one of the added functions
+        for deleted_func in deleted_funcs:
+            deleted_metrics = self.original.function_metrics[deleted_func]
+            
+            for added_func in added_funcs:
+                added_metrics = self.modified.function_metrics[added_func]
+                
+                # Check if the functions have similar metrics
+                if (
+                    deleted_metrics["parameter_count"] == added_metrics["parameter_count"]
+                    and abs(deleted_metrics["line_count"] - added_metrics["line_count"]) <= 3
+                    and abs(deleted_metrics["cyclomatic_complexity"] - added_metrics["cyclomatic_complexity"]) <= 2
+                ):
+                    # Get the function bodies
+                    deleted_file = None
+                    for file in self.original.codebase.files:
+                        if file.filepath == deleted_metrics["filepath"]:
+                            deleted_file = file
+                            break
+                            
+                    added_file = None
+                    for file in self.modified.codebase.files:
+                        if file.filepath == added_metrics["filepath"]:
+                            added_file = file
+                            break
+                            
+                    if deleted_file and added_file:
+                        # Extract the function bodies
+                        deleted_lines = deleted_file.content.splitlines()[deleted_metrics["line_start"]-1:deleted_metrics["line_end"]]
+                        added_lines = added_file.content.splitlines()[added_metrics["line_start"]-1:added_metrics["line_end"]]
+                        
+                        # Normalize and compare
+                        deleted_normalized = self._normalize_code("\n".join(deleted_lines))
+                        added_normalized = self._normalize_code("\n".join(added_lines))
+                        
+                        # Calculate similarity
+                        similarity = difflib.SequenceMatcher(None, deleted_normalized, added_normalized).ratio()
+                        
+                        # If similarity is high, consider it a rename
+                        if similarity > 0.8:
+                            self._function_diffs[added_func] = f"renamed_from:{deleted_func}"
+                            self._function_diffs[deleted_func] = f"renamed_to:{added_func}"
 
     def analyze_class_changes(self) -> Dict[str, str]:
         """
@@ -144,7 +308,10 @@ class DiffAnalyzer:
             - 'modified': Class exists in both but has changed
             - 'unchanged': Class exists in both and has not changed
             - 'moved': Class exists in both but has moved to a different file
+            - 'renamed': Class exists in both but has been renamed
         """
+        start_time = time.time()
+        
         if self._class_diffs is not None:
             return self._class_diffs
 
@@ -181,9 +348,70 @@ class DiffAnalyzer:
             ):
                 self._class_diffs[class_name] = "modified"
             else:
-                self._class_diffs[class_name] = "unchanged"
+                # Check for semantic changes by comparing class bodies
+                if self._has_semantic_changes(class_name, "class"):
+                    self._class_diffs[class_name] = "modified"
+                else:
+                    self._class_diffs[class_name] = "unchanged"
+        
+        # Try to identify renamed classes
+        self._identify_renamed_classes()
+        
+        # Record performance metrics
+        self.performance_metrics["class_diff_time"] = time.time() - start_time
 
         return self._class_diffs
+    
+    def _identify_renamed_classes(self) -> None:
+        """
+        Identify renamed classes by comparing class structures and bodies.
+        """
+        # Get added and deleted classes
+        added_classes = [c for c, change in self._class_diffs.items() if change == "added"]
+        deleted_classes = [c for c, change in self._class_diffs.items() if change == "deleted"]
+        
+        # For each deleted class, check if it was renamed to one of the added classes
+        for deleted_class in deleted_classes:
+            deleted_metrics = self.original.class_metrics[deleted_class]
+            
+            for added_class in added_classes:
+                added_metrics = self.modified.class_metrics[added_class]
+                
+                # Check if the classes have similar metrics
+                if (
+                    deleted_metrics["method_count"] == added_metrics["method_count"]
+                    and deleted_metrics["attribute_count"] == added_metrics["attribute_count"]
+                    and deleted_metrics["parent_class_count"] == added_metrics["parent_class_count"]
+                ):
+                    # Get the class bodies
+                    deleted_file = None
+                    for file in self.original.codebase.files:
+                        if file.filepath == deleted_metrics["filepath"]:
+                            deleted_file = file
+                            break
+                            
+                    added_file = None
+                    for file in self.modified.codebase.files:
+                        if file.filepath == added_metrics["filepath"]:
+                            added_file = file
+                            break
+                            
+                    if deleted_file and added_file:
+                        # Extract the class bodies
+                        deleted_lines = deleted_file.content.splitlines()[deleted_metrics["line_start"]-1:deleted_metrics["line_end"]]
+                        added_lines = added_file.content.splitlines()[added_metrics["line_start"]-1:added_metrics["line_end"]]
+                        
+                        # Normalize and compare
+                        deleted_normalized = self._normalize_code("\n".join(deleted_lines))
+                        added_normalized = self._normalize_code("\n".join(added_lines))
+                        
+                        # Calculate similarity
+                        similarity = difflib.SequenceMatcher(None, deleted_normalized, added_normalized).ratio()
+                        
+                        # If similarity is high, consider it a rename
+                        if similarity > 0.8:
+                            self._class_diffs[added_class] = f"renamed_from:{deleted_class}"
+                            self._class_diffs[deleted_class] = f"renamed_to:{added_class}"
 
     def analyze_import_changes(self) -> Dict[str, Dict[str, List[str]]]:
         """
