@@ -159,7 +159,7 @@ COMPLEXITY_RANKS = {
 
 def analyze_codebase_complexity(
     codebase: Codebase, file_patterns: Optional[List[str]] = None
-) -> Dict[str, Any]:
+) -> Dict[str, Union[int, Dict[str, Union[int, Dict[str, Union[int, float]]]]]]:
     """
     Analyze the complexity of a codebase.
     
@@ -171,7 +171,7 @@ def analyze_codebase_complexity(
         A dictionary with complexity metrics
     """
     # Initialize metrics
-    metrics = {
+    metrics: Dict[str, Union[int, Dict[str, Union[int, Dict[str, Union[int, float]]]]]] = {
         "overall_complexity": 0,
         "function_count": 0,
         "class_count": 0,

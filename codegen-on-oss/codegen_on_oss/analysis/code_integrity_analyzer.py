@@ -478,18 +478,14 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many attributes
-            if len(cls.attributes) > self.config["max_class_attributes"]:  # Arbitrary threshold
-                errors.append(
-                    {
-                        "type": "class_error",
-                        "error_type": "too_many_attributes",
-                        "name": cls.name,
-                        "filepath": cls.filepath,
-                        "line": cls.line_range[0],
-                        "message": (
-                            f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})"
-                        ),
-                    }
+            if len(cls.attributes) > int(self.config["max_class_attributes"]):  # Arbitrary threshold
+                self.add_issue(
+                    f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})",
+                    file_path=str(file.path),
+                    line=cls.start_line,
+                    severity="warning",
+                    category="design",
+                    suggestion="Consider breaking this class into smaller, more focused classes.",
                 )
 
             # Check for missing __init__ method
@@ -664,7 +660,7 @@ class CodeIntegrityAnalyzer:
                             complexity += 1
 
             # Check if complexity exceeds threshold
-            if complexity > self.config["max_function_complexity"]:
+            if complexity > int(self.config["max_function_complexity"]):
                 errors.append(
                     {
                         "type": "complexity_error",

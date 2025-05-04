@@ -554,7 +554,7 @@ class CodeAnalyzer:
         except Exception as e:
             return {"error": str(e)}
 
-    def analyze_commit(self, commit_codebase: Codebase) -> CommitAnalysisResult:
+    def analyze_commit(self, commit_codebase: Codebase) -> 'commit_analysis.CommitAnalysisResult':
         """
         Analyze a commit by comparing the current codebase with a commit codebase.
 
@@ -568,12 +568,13 @@ class CodeAnalyzer:
         analyzer = CommitAnalyzer(original_codebase=self.codebase, commit_codebase=commit_codebase)
 
         # Analyze the commit
-        return analyzer.analyze_commit()
+        result = analyzer.analyze_commit()
+        return result
 
     @classmethod
     def analyze_commit_from_repo_and_commit(
         cls, repo_url: str, commit_hash: str, base_commit: Optional[str] = None
-    ) -> CommitAnalysisResult:
+    ) -> 'commit_analysis.CommitAnalysisResult':
         """
         Analyze a commit from a repository and commit hash.
 
@@ -591,7 +592,7 @@ class CodeAnalyzer:
     @classmethod
     def analyze_commit_from_paths(
         cls, original_path: str, commit_path: str
-    ) -> CommitAnalysisResult:
+    ) -> 'commit_analysis.CommitAnalysisResult':
         """
         Analyze a commit by comparing two local repository paths.
 

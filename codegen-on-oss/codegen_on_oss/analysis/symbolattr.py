@@ -120,12 +120,14 @@ def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str
     total_lines = len(blame_info)
     primary_percentage = (primary_author[1] / total_lines) * 100 if total_lines > 0 else 0
 
-    return {
+    attribution: Dict[str, Union[str, int]] = {
         "primary_author": primary_author[0],
         "primary_author_lines": primary_author[1],
         "primary_author_percentage": primary_percentage,
         "total_lines": total_lines,
     }
+
+    return attribution
 
 
 def _get_author_breakdown(blame_info: List[Dict[str, str]]) -> List[Dict[str, Union[str, int]]]:
