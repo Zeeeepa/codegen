@@ -479,13 +479,15 @@ class CodeIntegrityAnalyzer:
 
             # Check for too many attributes
             if len(cls.attributes) > int(self.config["max_class_attributes"]):  # Arbitrary threshold
-                self.add_issue(
-                    f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})",
-                    file_path=str(file.path),
-                    line=cls.start_line,
-                    severity="warning",
-                    category="design",
-                    suggestion="Consider breaking this class into smaller, more focused classes.",
+                errors.append(
+                    {
+                        "type": "class_error",
+                        "error_type": "too_many_attributes",
+                        "name": cls.name,
+                        "filepath": cls.filepath,
+                        "line": cls.line_range[0],
+                        "message": f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})",
+                    }
                 )
 
             # Check for missing __init__ method
@@ -848,6 +850,39 @@ class CodeIntegrityAnalyzer:
                     )
 
         return errors
+
+    def add_issue(
+        self,
+        message: str,
+        file_path: str,
+        line: int,
+        severity: str = "warning",
+        category: str = "design",
+        suggestion: str = "",
+    ) -> None:
+        """
+        Add an issue to the list of issues.
+
+        Args:
+            message: The issue message
+            file_path: Path to the file with the issue
+            line: Line number of the issue
+            severity: Severity level (error, warning, info)
+            category: Category of the issue
+            suggestion: Suggestion for fixing the issue
+        """
+        issue = {
+            "message": message,
+            "file_path": file_path,
+            "line": line,
+            "severity": severity,
+            "category": category,
+            "suggestion": suggestion,
+        }
+        if severity == "error":
+            self.errors.append(issue)
+        else:
+            self.warnings.append(issue)
 
 
 def compare_branches(main_codebase: Codebase, branch_codebase: Codebase) -> Dict[str, Any]:

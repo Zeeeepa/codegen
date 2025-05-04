@@ -47,9 +47,7 @@ from codegen_on_oss.analysis.codebase_analysis import (
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.commit_analysis import (
-    CommitAnalysisResult,
-)
+from codegen_on_oss.analysis.commit_analysis import CommitAnalysisResult
 from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
 # Import new analysis modules
@@ -315,7 +313,10 @@ class CodeAnalyzer:
         Returns:
             MDX documentation as a string
         """
-        from codegen_on_oss.analysis.mdx_docs_generation import create_class_doc, render_mdx_page_for_class
+        from codegen_on_oss.analysis.mdx_docs_generation import (
+            create_class_doc,
+            render_mdx_page_for_class,
+        )
         
         for cls in self.codebase.classes:
             if cls.name == class_name:
@@ -554,7 +555,7 @@ class CodeAnalyzer:
         except Exception as e:
             return {"error": str(e)}
 
-    def analyze_commit(self, commit_codebase: Codebase) -> 'commit_analysis.CommitAnalysisResult':
+    def analyze_commit(self, commit_codebase: Codebase) -> CommitAnalysisResult:
         """
         Analyze a commit by comparing the current codebase with a commit codebase.
 
@@ -574,7 +575,7 @@ class CodeAnalyzer:
     @classmethod
     def analyze_commit_from_repo_and_commit(
         cls, repo_url: str, commit_hash: str, base_commit: Optional[str] = None
-    ) -> 'commit_analysis.CommitAnalysisResult':
+    ) -> CommitAnalysisResult:
         """
         Analyze a commit from a repository and commit hash.
 
@@ -592,7 +593,7 @@ class CodeAnalyzer:
     @classmethod
     def analyze_commit_from_paths(
         cls, original_path: str, commit_path: str
-    ) -> 'commit_analysis.CommitAnalysisResult':
+    ) -> CommitAnalysisResult:
         """
         Analyze a commit by comparing two local repository paths.
 
