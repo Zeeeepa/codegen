@@ -380,9 +380,11 @@ class CodeIntegrityAnalyzer:
 
             for param in func.parameters:
                 if param.name not in used_params and param.name != "self" and param.name != "cls":
-                    warnings.append(
+                    errors.append(
                         {
-                            "type": "unused_parameter",
+                            "type": "function_error",
+                            "error_type": "unused_parameter",
+                            "name": func.name,
                             "filepath": func.filepath,
                             "line": func.line_range[0],
                             "message": (
@@ -484,7 +486,9 @@ class CodeIntegrityAnalyzer:
                         "name": cls.name,
                         "filepath": cls.filepath,
                         "line": cls.line_range[0],
-                        "message": f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})",
+                        "message": (
+                            f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})"
+                        ),
                     }
                 )
 
