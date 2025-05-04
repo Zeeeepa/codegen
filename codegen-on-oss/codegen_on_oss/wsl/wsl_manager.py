@@ -8,15 +8,12 @@ including client, server, deployment, and integration components.
 import json
 import logging
 import os
-import subprocess
-import tempfile
 import traceback
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import requests
 import uvicorn
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
@@ -388,12 +385,18 @@ def run_wsl_cli():
     
     # Client commands
     client_parser = subparsers.add_parser("client", help="Run WSL client commands")
-    client_subparsers = client_parser.add_subparsers(dest="client_command", help="Client command to run")
+    client_subparsers = client_parser.add_subparsers(
+        dest="client_command", help="Client command to run"
+    )
     
     # Analyze repository
     analyze_parser = client_subparsers.add_parser("analyze", help="Analyze a repository")
     analyze_parser.add_argument("repo_path", help="Path to the repository to analyze")
-    analyze_parser.add_argument("--server-url", default="http://localhost:8000", help="URL of the WSL server")
+    analyze_parser.add_argument(
+        "--server-url", 
+        default="http://localhost:8000", 
+        help="URL of the WSL server"
+    )
     analyze_parser.add_argument("--api-key", help="API key for authentication")
     
     # Parse arguments and run the appropriate command
@@ -407,4 +410,3 @@ def run_wsl_cli():
         print(json.dumps(results, indent=2))
     else:
         parser.print_help()
-
