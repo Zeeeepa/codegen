@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import tempfile
+import shutil
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -64,6 +65,53 @@ class CodebaseSnapshot:
         self.function_metrics = self._capture_function_metrics()
         self.class_metrics = self._capture_class_metrics()
         self.import_metrics = self._capture_import_metrics()
+
+    @classmethod
+    def create_from_repo(
+        cls,
+        repo_url: str,
+        commit_sha: Optional[str] = None,
+        github_token: Optional[str] = None,
+        snapshot_id: Optional[str] = None,
+        cleanup: bool = True,
+    ) -> "CodebaseSnapshot":
+        """
+        Create a snapshot directly from a repository URL.
+
+        Args:
+            repo_url: The repository URL or owner/repo string
+            commit_sha: Optional commit SHA to checkout
+            github_token: Optional GitHub token for private repositories
+            snapshot_id: Optional custom ID for the snapshot
+            cleanup: Whether to clean up temporary directories after creating the snapshot
+
+        Returns:
+            A new CodebaseSnapshot instance
+        """
+        # Set up secrets if a GitHub token is provided
+        secrets = None
+        if github_token:
+            secrets = SecretsConfig(github_token=github_token)
+
+        # Create a temporary directory for the repo if needed
+        temp_dir = None
+        try:
+            # Clone the repository
+            codebase = Codebase.from_repo(repo_url, secrets=secrets)
+
+            # Checkout the specified commit if provided
+            if commit_sha:
+                codebase.checkout(commit=commit_sha)
+
+            # Create the snapshot
+            snapshot = cls(codebase, commit_sha, snapshot_id)
+
+            return snapshot
+        finally:
+            # Clean up the temporary directory if requested
+            if cleanup and temp_dir and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                logger.info(f"Cleaned up temporary directory: {temp_dir}")
 
     def _capture_metadata(self) -> Dict[str, Any]:
         """Capture general metadata about the codebase."""

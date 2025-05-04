@@ -1,167 +1,191 @@
-# Enhanced Codegen-on-OSS Architecture
+# Codegen on OSS
 
-This document describes the enhanced architecture for the Codegen-on-OSS system, which improves interconnected analysis, database storage, snapshotting, and frontend data transmission.
+The **Codegen on OSS** package provides a comprehensive set of tools for analyzing codebases, comparing code changes, and evaluating pull requests. It includes:
 
-## Architecture Overview
+1. **Codebase Analysis**: Analyze repositories to extract metrics, structure, and quality indicators
+2. **Diff Analysis**: Compare different versions of a codebase to identify changes and potential issues
+3. **PR Analysis**: Evaluate pull requests to determine if they're properly implemented
+4. **Snapshot Management**: Create and manage snapshots of codebases at specific points in time
 
-The enhanced architecture is built around the following key components:
+## Key Features
 
-1. **Event-Driven Architecture**: A central event bus connects all components, allowing for decoupled communication and real-time updates.
-2. **Comprehensive Database Schema**: An expanded database schema stores all analysis artifacts, including codebases, snapshots, analysis results, symbols, metrics, issues, and relationships.
-3. **Enhanced Snapshotting System**: Differential snapshots reduce storage requirements, and improved comparison capabilities make it easier to track code evolution.
-4. **Standardized Frontend Data Transmission**: GraphQL and WebSocket support provide flexible and efficient data retrieval for frontend applications.
+- **Codebase Snapshots**: Capture the state of a codebase at a specific point in time
+- **Diff Analysis**: Compare snapshots to identify changes, including high-risk modifications
+- **PR Evaluation**: Analyze pull requests to determine quality and implementation correctness
+- **CLI Interface**: Easy-to-use command-line tools for all functionality
+- **GitHub Integration**: Seamless integration with GitHub repositories and pull requests
 
-## Key Components
+## Package Structure
 
-### Event System
+The package is organized into several modules:
 
-The event system provides a central event bus for communication between components. Events are published by components and consumed by subscribers, allowing for decoupled communication and real-time updates.
+- **`snapshot`**: Tools for creating and managing codebase snapshots
+  - `codebase_snapshot.py`: Core classes for creating and managing snapshots
+  - `enhanced_snapshot_manager.py`: Advanced snapshot management capabilities
 
-Key files:
-- `events/event_bus.py`: Implements the event bus and event types
-- `events/handlers.py`: Provides base classes for event handlers
+- **`analysis`**: Tools for analyzing codebases and changes
+  - `diff_analyzer.py`: Compare snapshots to identify changes
+  - `swe_harness_agent.py`: Analyze commits and PRs for quality and correctness
+  - `swe_harness_cli.py`: Command-line interface for analysis tools
+  - `code_integrity_analyzer.py`: Analyze code for integrity and quality issues
 
-### Database Schema
+- **`sources`**: Repository source definitions
+  - `github_source.py`: Fetch repositories from GitHub
+  - `csv_source.py`: Read repository URLs from CSV files
 
-The database schema stores all analysis artifacts, including codebases, snapshots, analysis results, symbols, metrics, issues, and relationships.
-
-```
-┌─────────────────────────┐      ┌─────────────────────────┐      ┌─────────────────────────┐
-│ CodebaseSnapshot        │      │ AnalysisResult          │      │ CodeMetrics             │
-├─────────────────────────┤      ├─────────────────────────┤      ├─────────────────────────┤
-│ id                      │      │ id                      │      │ id                      │
-│ snapshot_id             │◄─────┤ snapshot_id             │      │ analysis_id             │◄─┐
-│ commit_sha              │      │ analyzer_type           │      │ complexity              │  │
-│ timestamp               │      │ status                  │      │ maintainability         │  │
-│ metadata                │      │ created_at              │      │ halstead_metrics        │  │
-│ storage_path            │      │ completed_at            │      │ doi_metrics             │  │
-└─────────────────────────┘      │ result_data             │      │ lines_of_code           │  │
-                                 └─────────────────────────┘      └─────────────────────────┘  │
-                                   ▲                                                           │
-                                   │                                                           │
-                                   │                                                           │
-┌─────────────────────────┐      ┌┴───────────────────────┐                                  │
-│ SymbolAnalysis          │      │ DependencyGraph         │                                  │
-├─────────────────────────┤      ├─────────────────────────┤                                  │
-│ id                      │      │ id                      │                                  │
-│ analysis_id             │◄─┐   │ analysis_id             │◄─────────────────────────────────┘
-│ symbol_type             │  │   │ graph_data              │
-│ symbol_name             │  │   │ node_count              │
-│ file_path               │  │   │ edge_count              │
-│ line_number             │  │   │ clusters                │
-│ complexity              │  │   │ central_nodes           │
-│ dependencies            │  │   └─────────────────────────┘
-└─────────────────────────┘  │
-                             │
-                             └───────────────────────────────────────────────────────────────┘
-```
-
-Key files:
-- `database/models.py`: Defines the database models
-- `database/session.py`: Provides utilities for creating and managing database sessions
-
-### Snapshotting System
-
-The enhanced snapshotting system supports differential snapshots, which store only changes between versions to reduce storage requirements. It also provides improved comparison capabilities for tracking code evolution.
-
-Key files:
-- `snapshot/enhanced_snapshot_manager.py`: Implements the enhanced snapshot manager
-
-### API Layer
-
-The API layer provides standardized interfaces for frontend applications to access analysis data. It includes a REST API, a GraphQL API, and WebSocket support for real-time updates.
-
-Key files:
-- `api/rest.py`: Implements the REST API
-- `api/graphql.py`: Implements the GraphQL API
-- `api/websocket.py`: Implements WebSocket support
-
-## Event Flow
-
-The event-driven architecture enables a clear flow of data through the system:
-
-1. A user initiates a code analysis through the API
-2. The API publishes an `ANALYSIS_STARTED` event
-3. The analysis component subscribes to this event and begins analysis
-4. As analysis progresses, it publishes events like `ISSUE_DETECTED`
-5. When analysis completes, it publishes an `ANALYSIS_COMPLETED` event
-6. The snapshot manager subscribes to this event and creates a snapshot
-7. The snapshot manager publishes a `SNAPSHOT_CREATED` event
-8. The frontend receives these events via WebSocket and updates in real-time
+- **`outputs`**: Output formatting and storage
+  - `csv_output.py`: Write results to CSV files
+  - `sql_output.py`: Store results in SQL databases
 
 ## Getting Started
 
-To run the enhanced Codegen-on-OSS system:
+### Installation
 
-1. Install dependencies:
-   ```
-   pip install -e ".[dev]"
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/Zeeeepa/codegen.git
+cd codegen/codegen-on-oss
 
-2. Initialize the database:
-   ```
-   python -c "from codegen_on_oss.database import init_db; init_db()"
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-3. Run the application:
-   ```
-   python -m codegen_on_oss.app
-   ```
-
-4. Access the API at `http://localhost:8000` and the GraphQL playground at `http://localhost:8000/graphql`
-
-## API Documentation
-
-### REST API
-
-The REST API provides endpoints for accessing analysis results, snapshots, and other data. Key endpoints include:
-
-- `/codebases`: CRUD operations for codebases
-- `/snapshots`: CRUD operations for snapshots
-- `/analysis-results`: CRUD operations for analysis results
-- `/issues`: CRUD operations for issues
-
-### GraphQL API
-
-The GraphQL API provides a flexible way to query analysis data. Example queries:
-
-```graphql
-# Get a codebase with its snapshots and analysis results
-query {
-  codebase(id: 1) {
-    id
-    name
-    repository_url
-    snapshots {
-      id
-      commit_hash
-      created_at
-    }
-    analysis_results {
-      id
-      analysis_type
-      summary
-    }
-  }
-}
+# Install the package in development mode
+pip install -e .
 ```
 
-### WebSocket API
+### Basic Usage
 
-The WebSocket API provides real-time updates for analysis progress and results. Connect to `/ws/{client_id}` and subscribe to events:
+#### Analyzing a Pull Request
 
-```json
-{
-  "type": "subscribe",
-  "event_types": ["ANALYSIS_STARTED", "ANALYSIS_COMPLETED", "ISSUE_DETECTED"]
-}
+```bash
+# Analyze a pull request and post a comment with the results
+python -m codegen_on_oss.analysis.swe_harness_cli analyze-pr \
+  --token YOUR_GITHUB_TOKEN \
+  --comment \
+  username/repo 123
 ```
 
-## Future Enhancements
+#### Comparing Commits
 
-Potential future enhancements include:
+```bash
+# Compare two commits in a repository
+python -m codegen_on_oss.analysis.swe_harness_cli analyze-commit \
+  --token YOUR_GITHUB_TOKEN \
+  username/repo base_commit_sha head_commit_sha
+```
 
-1. **Distributed Analysis**: Support for distributed analysis across multiple workers
-2. **Advanced Visualization**: Enhanced visualization capabilities for analysis results
-3. **Machine Learning Integration**: Integration with machine learning models for code quality prediction
-4. **Plugin System**: Support for custom analysis plugins
+#### Creating a Snapshot
+
+```bash
+# Create a snapshot of a repository at a specific commit
+python -m codegen_on_oss.analysis.swe_harness_cli create-snapshot \
+  --token YOUR_GITHUB_TOKEN \
+  --commit commit_sha \
+  username/repo
+```
+
+#### Comparing Branches
+
+```bash
+# Compare two branches and output the results as formatted text
+python -m codegen_on_oss.analysis.swe_harness_cli compare-branches \
+  --token YOUR_GITHUB_TOKEN \
+  --text \
+  --high-risk \
+  username/repo main feature-branch
+```
+
+## Advanced Usage
+
+### Creating and Comparing Snapshots Programmatically
+
+```python
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
+from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+
+# Create snapshots of the original and modified codebases
+original_snapshot = CodebaseSnapshot.create_from_repo(
+    "username/repo", 
+    commit_sha="base_commit_sha", 
+    github_token="YOUR_GITHUB_TOKEN"
+)
+
+modified_snapshot = CodebaseSnapshot.create_from_repo(
+    "username/repo", 
+    commit_sha="head_commit_sha", 
+    github_token="YOUR_GITHUB_TOKEN"
+)
+
+# Analyze the differences
+diff_analyzer = DiffAnalyzer(original_snapshot, modified_snapshot)
+
+# Get a summary of the changes
+summary = diff_analyzer.get_summary()
+print(diff_analyzer.format_summary_text())
+
+# Identify high-risk changes
+high_risk_changes = diff_analyzer.get_high_risk_changes()
+```
+
+### Analyzing a PR and Posting Comments
+
+```python
+from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+
+# Initialize the agent
+agent = SWEHarnessAgent(github_token="YOUR_GITHUB_TOKEN")
+
+# Analyze a PR and post a comment with the results
+results = agent.analyze_and_comment_on_pr(
+    repo_url="username/repo",
+    pr_number=123,
+    post_comment=True,
+    detailed=True
+)
+
+# Print the analysis results
+print(f"PR Quality Score: {results['quality_score']}/10.0")
+print(f"Overall Assessment: {results['overall_assessment']}")
+```
+
+## CLI Reference
+
+The package provides a comprehensive command-line interface for all functionality:
+
+```
+usage: swe_harness_cli.py [-h] [--verbose] [--token TOKEN] [--snapshot-dir SNAPSHOT_DIR] [--output OUTPUT]
+                          {analyze-pr,analyze-commit,compare-branches,create-snapshot} ...
+
+SWE Harness CLI for analyzing commits and pull requests
+
+options:
+  -h, --help            show this help message and exit
+  --verbose, -v         Enable verbose logging
+  --token TOKEN         GitHub token for private repositories
+  --snapshot-dir SNAPSHOT_DIR
+                        Directory to store snapshots
+  --output OUTPUT, -o OUTPUT
+                        Output file for results (default: stdout)
+
+command:
+  {analyze-pr,analyze-commit,compare-branches,create-snapshot}
+                        Command to run
+    analyze-pr          Analyze a pull request
+    analyze-commit      Analyze a commit
+    compare-branches    Compare two branches
+    create-snapshot     Create a snapshot of a repository
+```
+
+## Contributing
+
+Contributions are welcome! Here are some ways you can contribute:
+
+- Report bugs and request features by creating issues
+- Submit pull requests to fix bugs or add new features
+- Improve documentation
+- Share your experiences and use cases
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+

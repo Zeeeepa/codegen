@@ -282,82 +282,45 @@ class DiffAnalyzer:
 
     def get_summary(self) -> Dict[str, Any]:
         """
-        Get a summary of all changes between the two snapshots.
+        Get a summary of the differences between the two snapshots.
 
         Returns:
-            A dictionary with summary statistics for different types of changes.
+            A dictionary with summary statistics
         """
+        # Analyze file changes
         file_changes = self.analyze_file_changes()
-        function_changes = self.analyze_function_changes()
-        class_changes = self.analyze_class_changes()
-        complexity_changes = self.analyze_complexity_changes()
-
-        # Count file changes by type
         file_counts = {
-            "added": sum(
-                1 for change_type in file_changes.values() if change_type == "added"
-            ),
-            "deleted": sum(
-                1 for change_type in file_changes.values() if change_type == "deleted"
-            ),
-            "modified": sum(
-                1 for change_type in file_changes.values() if change_type == "modified"
-            ),
-            "unchanged": sum(
-                1 for change_type in file_changes.values() if change_type == "unchanged"
-            ),
+            "added": sum(1 for change_type in file_changes.values() if change_type == "added"),
+            "deleted": sum(1 for change_type in file_changes.values() if change_type == "deleted"),
+            "modified": sum(1 for change_type in file_changes.values() if change_type == "modified"),
+            "unchanged": sum(1 for change_type in file_changes.values() if change_type == "unchanged"),
             "total": len(file_changes),
         }
 
-        # Count function changes by type
+        # Analyze function changes
+        function_changes = self.analyze_function_changes()
         function_counts = {
-            "added": sum(
-                1 for change_type in function_changes.values() if change_type == "added"
-            ),
-            "deleted": sum(
-                1
-                for change_type in function_changes.values()
-                if change_type == "deleted"
-            ),
-            "modified": sum(
-                1
-                for change_type in function_changes.values()
-                if change_type == "modified"
-            ),
-            "moved": sum(
-                1 for change_type in function_changes.values() if change_type == "moved"
-            ),
-            "unchanged": sum(
-                1
-                for change_type in function_changes.values()
-                if change_type == "unchanged"
-            ),
+            "added": sum(1 for change_type in function_changes.values() if change_type == "added"),
+            "deleted": sum(1 for change_type in function_changes.values() if change_type == "deleted"),
+            "modified": sum(1 for change_type in function_changes.values() if change_type == "modified"),
+            "moved": sum(1 for change_type in function_changes.values() if change_type == "moved"),
+            "unchanged": sum(1 for change_type in function_changes.values() if change_type == "unchanged"),
             "total": len(function_changes),
         }
 
-        # Count class changes by type
+        # Analyze class changes
+        class_changes = self.analyze_class_changes()
         class_counts = {
-            "added": sum(
-                1 for change_type in class_changes.values() if change_type == "added"
-            ),
-            "deleted": sum(
-                1 for change_type in class_changes.values() if change_type == "deleted"
-            ),
-            "modified": sum(
-                1 for change_type in class_changes.values() if change_type == "modified"
-            ),
-            "moved": sum(
-                1 for change_type in class_changes.values() if change_type == "moved"
-            ),
-            "unchanged": sum(
-                1
-                for change_type in class_changes.values()
-                if change_type == "unchanged"
-            ),
+            "added": sum(1 for change_type in class_changes.values() if change_type == "added"),
+            "deleted": sum(1 for change_type in class_changes.values() if change_type == "deleted"),
+            "modified": sum(1 for change_type in class_changes.values() if change_type == "modified"),
+            "moved": sum(1 for change_type in class_changes.values() if change_type == "moved"),
+            "unchanged": sum(1 for change_type in class_changes.values() if change_type == "unchanged"),
             "total": len(class_changes),
         }
 
-        # Calculate complexity change statistics
+        # Analyze complexity changes
+        complexity_changes = self.analyze_complexity_changes()
         complexity_stats = {
             "increased": sum(
                 1 for change in complexity_changes.values() if change["delta"] > 0
@@ -501,6 +464,7 @@ class DiffAnalyzer:
             if (
                 change_type == "modified"
                 and func_name in self.original.function_metrics
+                and func_name in self.modified.function_metrics
             ):
                 original_params = self.original.function_metrics[func_name][
                     "parameter_count"
