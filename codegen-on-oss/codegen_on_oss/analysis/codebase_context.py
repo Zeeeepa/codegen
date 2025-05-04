@@ -590,7 +590,7 @@ class CodebaseContext:
                 content = self.io.read_text(filepath)
             except UnicodeDecodeError:
                 logger.warning(
-                    f"Can't read file at:{filepath} since it contains non-unicode characters. File will be ignored!"
+                    f"Can't read file at:{filepath} with non-unicode characters. File will be ignored!"
                 )
                 continue
             # TODO: this is wrong with context changes
