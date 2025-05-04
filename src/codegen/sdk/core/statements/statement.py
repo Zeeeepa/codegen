@@ -81,7 +81,14 @@ class Statement(Expression[Parent], Generic[Parent]):
     statement_type: StatementType = StatementType.UNSPECIFIED
     _pos: int
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         self._pos = pos
 
@@ -106,8 +113,12 @@ class Statement(Expression[Parent], Generic[Parent]):
     @classmethod
     @noapidoc
     @final
-    def from_code_block(cls, ts_node: TSNode, code_block: CodeBlock, pos: int | None = None) -> Statement:
-        return cls(ts_node, code_block.file_node_id, code_block.ctx, parent=code_block, pos=pos)
+    def from_code_block(
+        cls, ts_node: TSNode, code_block: CodeBlock, pos: int | None = None
+    ) -> Statement:
+        return cls(
+            ts_node, code_block.file_node_id, code_block.ctx, parent=code_block, pos=pos
+        )
 
     @cached_property
     @reader
@@ -119,11 +130,15 @@ class Statement(Expression[Parent], Generic[Parent]):
         Returns:
             list[TCodeBlock]: A list of parsed code blocks that are directly nested within this statement. Each block has a level one higher than its parent block.
         """
-        block_nodes = find_all_descendants(self.ts_node, {"block", "statement_block"}, max_depth=1)
+        block_nodes = find_all_descendants(
+            self.ts_node, {"block", "statement_block"}, max_depth=1
+        )
 
         nested_blocks = []
         for block_node in block_nodes:
-            block = self.ctx.node_classes.code_block_cls(block_node, self.parent.level + 1, self.parent, self)
+            block = self.ctx.node_classes.code_block_cls(
+                block_node, self.parent.level + 1, self.parent, self
+            )
             block.parse()
             nested_blocks.append(block)
         return nested_blocks

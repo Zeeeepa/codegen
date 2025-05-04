@@ -23,7 +23,13 @@ class CodebaseClient(Client):
 
     repo_config: RepoConfig
 
-    def __init__(self, repo_config: RepoConfig, host: str = "127.0.0.1", port: int = SANDBOX_SERVER_PORT, server_path: str = RUNNER_SERVER_PATH):
+    def __init__(
+        self,
+        repo_config: RepoConfig,
+        host: str = "127.0.0.1",
+        port: int = SANDBOX_SERVER_PORT,
+        server_path: str = RUNNER_SERVER_PATH,
+    ):
         super().__init__(host=host, port=port)
         self.repo_config = repo_config
         self._process = None

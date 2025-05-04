@@ -53,7 +53,9 @@ sum_even_numbers([1, 2, 3, 4, 5])
         statements = file.get_function("sum_even_numbers").code_block.get_statements()
 
         assert len(statements) == 17
-        statement_types = [(x.index, x.statement_type, x.parent.level) for x in statements]
+        statement_types = [
+            (x.index, x.statement_type, x.parent.level) for x in statements
+        ]
         assert statement_types == [
             (0, StatementType.COMMENT, 1),
             (1, StatementType.COMMENT, 1),
@@ -107,7 +109,9 @@ def foo(x: int, y: str) -> MyClass:
         files={file_name: content},
     ) as codebase:
         file = codebase.get_file(file_name)
-        local_var_assignments = file.get_function("foo").code_block.local_var_assignments
+        local_var_assignments = file.get_function(
+            "foo"
+        ).code_block.local_var_assignments
 
         assert len(local_var_assignments) == 8
         assert [v.name for v in local_var_assignments] == [
@@ -136,7 +140,9 @@ def foo(x: int, y: str) -> MyClass:
     obj.attr1 = z
     return obj
     """
-    with get_codebase_session(tmpdir=tmpdir, files={file_name: content}) as mock_codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={file_name: content}
+    ) as mock_codebase:
         file = mock_codebase.get_file(file_name)
         func = file.get_function("foo")
 
@@ -237,7 +243,10 @@ def foo(x: int, y: str) -> MyClass:
         obj_usages[0].edit("new_obj")
         all_z_usages = code_block.get_variable_usages(z_name)
         assert len(all_z_usages) == 4
-    assert 'if new_z == "some random string":\n        new_obj.attr1 = new_z' in file.content
+    assert (
+        'if new_z == "some random string":\n        new_obj.attr1 = new_z'
+        in file.content
+    )
 
 
 def test_code_block_get_variable_usage_func_call(tmpdir) -> None:
@@ -389,7 +398,9 @@ def my_db_query(
         code_block = func.code_block
 
         # Step 2: Remove the proxy variable declaration + comment
-        codegen_comment = code_block.get_comment(WRAP_REDUCE_MIGRATION_STRING_IDENTIFIER)
+        codegen_comment = code_block.get_comment(
+            WRAP_REDUCE_MIGRATION_STRING_IDENTIFIER
+        )
         comment_index = code_block.statements.index(codegen_comment)
         proxy_var = code_block.statements[comment_index - 1]
         codegen_comment.remove()
@@ -406,7 +417,9 @@ def my_db_query(
                 usage.replace(f"{proxy_var.left}.", "parent.")
 
         # Case 3: <proxy_var> -> parent.proxy
-        proxy_var_whole_word_usages = code_block.search(rf"\b(?<!\.){proxy_var.left}(?!\.)\b")
+        proxy_var_whole_word_usages = code_block.search(
+            rf"\b(?<!\.){proxy_var.left}(?!\.)\b"
+        )
         for usage in proxy_var_whole_word_usages[1:]:
             usage.edit("parent.proxy")
 
@@ -467,8 +480,22 @@ def foo():
         function = file.get_function("foo")
         if_blocks = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
         assert len(if_blocks) == 4
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level)) == 1
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level + 1)) == 4
+        assert (
+            len(
+                function.code_block.get_statements(
+                    StatementType.IF_BLOCK_STATEMENT, function.code_block.level
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                function.code_block.get_statements(
+                    StatementType.IF_BLOCK_STATEMENT, function.code_block.level + 1
+                )
+            )
+            == 4
+        )
         statements = function.code_block.get_statements()
         assert len(statements) == 13
         statement_types = [(x.statement_type, x.parent.level) for x in statements]

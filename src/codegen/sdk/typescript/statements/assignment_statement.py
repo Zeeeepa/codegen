@@ -26,12 +26,26 @@ logger = get_logger(__name__)
 class TSAssignmentStatement(AssignmentStatement["TSCodeBlock", TSAssignment]):
     """A class that represents a TypeScript assignment statement in a codebase, such as `const x = 1` or `const { a: b } = myFunc()`."""
 
-    assignment_types = {"assignment_expression", "augmented_assignment_expression", "variable_declarator", "public_field_definition", "property_signature"}
+    assignment_types = {
+        "assignment_expression",
+        "augmented_assignment_expression",
+        "variable_declarator",
+        "public_field_definition",
+        "property_signature",
+    }
 
     @classmethod
     @reader
     @noapidoc
-    def from_assignment(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TSCodeBlock, pos: int, assignment_node: TSNode) -> TSAssignmentStatement:
+    def from_assignment(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TSCodeBlock,
+        pos: int,
+        assignment_node: TSNode,
+    ) -> TSAssignmentStatement:
         """Creates an assignment statement node from a TreeSitter assignment node.
 
         This class method constructs a TSAssignmentStatement from a TreeSitter node representing an assignment. The method validates that the assignment node type is
@@ -56,24 +70,69 @@ class TSAssignmentStatement(AssignmentStatement["TSCodeBlock", TSAssignment]):
             msg = f"Invalid assignment node type: {assignment_node.type}"
             raise ValueError(msg)
 
-        return cls(ts_node, file_node_id, ctx, parent, pos, assignment_node=assignment_node)
+        return cls(
+            ts_node, file_node_id, ctx, parent, pos, assignment_node=assignment_node
+        )
 
-    def _parse_assignments(self, assignment_node: TSNode) -> MultiExpression[Self, TSAssignment]:
-        if assignment_node.type in ["assignment_expression", "augmented_assignment_expression"]:
-            return TSAssignment.from_assignment(assignment_node, self.file_node_id, self.ctx, self)
-        elif assignment_node.type in ["variable_declarator", "public_field_definition", "property_signature"]:
-            return TSAssignment.from_named_expression(assignment_node, self.file_node_id, self.ctx, self)
+    def _parse_assignments(
+        self, assignment_node: TSNode
+    ) -> MultiExpression[Self, TSAssignment]:
+        if assignment_node.type in [
+            "assignment_expression",
+            "augmented_assignment_expression",
+        ]:
+            return TSAssignment.from_assignment(
+                assignment_node, self.file_node_id, self.ctx, self
+            )
+        elif assignment_node.type in [
+            "variable_declarator",
+            "public_field_definition",
+            "property_signature",
+        ]:
+            return TSAssignment.from_named_expression(
+                assignment_node, self.file_node_id, self.ctx, self
+            )
 
         logger.info(f"Unknown assignment type: {assignment_node.type}")
-        return MultiExpression(assignment_node, self.file_node_id, self.ctx, self.parent, [self.parent._parse_expression(assignment_node)])
+        return MultiExpression(
+            assignment_node,
+            self.file_node_id,
+            self.ctx,
+            self.parent,
+            [self.parent._parse_expression(assignment_node)],
+        )
 
-    def _DEPRECATED_parse_assignments(self) -> MultiExpression[TSHasBlock, TSAssignment]:
+    def _DEPRECATED_parse_assignments(
+        self,
+    ) -> MultiExpression[TSHasBlock, TSAssignment]:
         if self.ts_node.type in ["lexical_declaration", "variable_declaration"]:
-            return MultiExpression(self.ts_node, self.file_node_id, self.ctx, self.parent, self._DEPRECATED_parse_assignment_declarations())
+            return MultiExpression(
+                self.ts_node,
+                self.file_node_id,
+                self.ctx,
+                self.parent,
+                self._DEPRECATED_parse_assignment_declarations(),
+            )
         elif self.ts_node.type in ["expression_statement"]:
-            return MultiExpression(self.ts_node, self.file_node_id, self.ctx, self.parent, self._DEPRECATED_parse_assignment_expression())
-        elif self.ts_node.type in ["public_field_definition", "property_signature", "enum_assignment"]:
-            return MultiExpression(self.ts_node, self.file_node_id, self.ctx, self.parent, self._DEPRECATED_parse_attribute_assignments())
+            return MultiExpression(
+                self.ts_node,
+                self.file_node_id,
+                self.ctx,
+                self.parent,
+                self._DEPRECATED_parse_assignment_expression(),
+            )
+        elif self.ts_node.type in [
+            "public_field_definition",
+            "property_signature",
+            "enum_assignment",
+        ]:
+            return MultiExpression(
+                self.ts_node,
+                self.file_node_id,
+                self.ctx,
+                self.parent,
+                self._DEPRECATED_parse_attribute_assignments(),
+            )
         else:
             msg = f"Unknown assignment type: {self.ts_node.type}"
             raise ValueError(msg)
@@ -81,7 +140,11 @@ class TSAssignmentStatement(AssignmentStatement["TSCodeBlock", TSAssignment]):
     def _DEPRECATED_parse_attribute_assignments(self) -> list[TSAssignment]:
         left = self.ts_node.child_by_field_name("name")
         right = self.ts_node.child_by_field_name("value")
-        return [TSAssignment(self.ts_node, self.file_node_id, self.ctx, self, left, right, left)]
+        return [
+            TSAssignment(
+                self.ts_node, self.file_node_id, self.ctx, self, left, right, left
+            )
+        ]
 
     def _DEPRECATED_parse_assignment_declarations(self) -> list[TSAssignment]:
         assignments = []
@@ -92,7 +155,9 @@ class TSAssignmentStatement(AssignmentStatement["TSCodeBlock", TSAssignment]):
             type_node = variable_declarator.child_by_field_name("type")
             right = variable_declarator.child_by_field_name("value")
             if len(left.named_children) > 0:
-                to_parse: deque[tuple[TSNode, TSNode | None]] = deque([(left, type_node)])
+                to_parse: deque[tuple[TSNode, TSNode | None]] = deque(
+                    [(left, type_node)]
+                )
                 while to_parse:
                     child, _type = to_parse.popleft()
                     for identifier in child.named_children:
@@ -101,29 +166,86 @@ class TSAssignmentStatement(AssignmentStatement["TSCodeBlock", TSAssignment]):
                             to_parse.append((value, _type))  # TODO:CG-10064
                             if value.type == "identifier":
                                 # TODO: Support type resolution for aliased object unpacks
-                                assignments.append(TSAssignment(variable_declarator, self.file_node_id, self.ctx, self, left, right, value))
+                                assignments.append(
+                                    TSAssignment(
+                                        variable_declarator,
+                                        self.file_node_id,
+                                        self.ctx,
+                                        self,
+                                        left,
+                                        right,
+                                        value,
+                                    )
+                                )
                             else:
                                 key = identifier.child_by_field_name("key")
-                                assignments.append(TSAssignment(variable_declarator, self.file_node_id, self.ctx, self, left, right, key))
+                                assignments.append(
+                                    TSAssignment(
+                                        variable_declarator,
+                                        self.file_node_id,
+                                        self.ctx,
+                                        self,
+                                        left,
+                                        right,
+                                        key,
+                                    )
+                                )
                         else:
-                            assignments.append(TSAssignment(variable_declarator, self.file_node_id, self.ctx, self, left, right, identifier))
+                            assignments.append(
+                                TSAssignment(
+                                    variable_declarator,
+                                    self.file_node_id,
+                                    self.ctx,
+                                    self,
+                                    left,
+                                    right,
+                                    identifier,
+                                )
+                            )
 
             else:
-                assignments.append(TSAssignment(variable_declarator, self.file_node_id, self.ctx, self, left, right, left))
+                assignments.append(
+                    TSAssignment(
+                        variable_declarator,
+                        self.file_node_id,
+                        self.ctx,
+                        self,
+                        left,
+                        right,
+                        left,
+                    )
+                )
                 while right and right.type == "assignment_expression":
                     left = right.child_by_field_name("left")
                     right = right.child_by_field_name("right")
-                    assignments.append(TSAssignment(variable_declarator, self.file_node_id, self.ctx, self, left, right, left))
+                    assignments.append(
+                        TSAssignment(
+                            variable_declarator,
+                            self.file_node_id,
+                            self.ctx,
+                            self,
+                            left,
+                            right,
+                            left,
+                        )
+                    )
 
         return assignments
 
     def _DEPRECATED_parse_assignment_expression(self) -> list[TSAssignment]:
         assignments = []
         for child in self.ts_node.named_children:
-            if child.type not in ["assignment_expression", "augmented_assignment_expression"]:
+            if child.type not in [
+                "assignment_expression",
+                "augmented_assignment_expression",
+            ]:
                 continue
             left = child.child_by_field_name("left")
             right = child.child_by_field_name("right")
-            assignments.append(TSAssignment(child, self.file_node_id, self.ctx, self, left, right, left))
+            assignments.append(
+                TSAssignment(
+                    child, self.file_node_id, self.ctx, self, left, right, left
+                )
+            )
 
         return assignments

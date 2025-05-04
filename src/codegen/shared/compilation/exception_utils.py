@@ -5,7 +5,9 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 
 
-def get_offset_traceback(tb_lines: list[str], line_offset: int = 0, filenameFilter: str = "<string>") -> str:
+def get_offset_traceback(
+    tb_lines: list[str], line_offset: int = 0, filenameFilter: str = "<string>"
+) -> str:
     """Generate a traceback string with offset line numbers.
 
     :param tb_lines: lines output for the traceback
@@ -16,7 +18,10 @@ def get_offset_traceback(tb_lines: list[str], line_offset: int = 0, filenameFilt
     offset_tb_lines = []
     for line in tb_lines:
         if line.lstrip().startswith("File"):
-            if line.lstrip().startswith(f'File "{filenameFilter}"') and "execute" not in line:
+            if (
+                line.lstrip().startswith(f'File "{filenameFilter}"')
+                and "execute" not in line
+            ):
                 # This line contains file and line number information
                 parts = line.split(", line ")
                 if len(parts) > 1:
@@ -32,11 +37,18 @@ def get_offset_traceback(tb_lines: list[str], line_offset: int = 0, filenameFilt
     return "".join(offset_tb_lines)
 
 
-def get_local_frame(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType) -> FrameType | None:
+def get_local_frame(
+    exc_type: type[BaseException],
+    exc_value: BaseException,
+    exc_traceback: TracebackType,
+) -> FrameType | None:
     LOCAL_FILENAME = "<string>"
     LOCAL_MODULE_DIR = "codegen-backend/app/"
     tb = exc_traceback
-    while tb and ((tb.tb_next and tb.tb_frame.f_code.co_filename != LOCAL_FILENAME) or LOCAL_MODULE_DIR in tb.tb_frame.f_code.co_filename):
+    while tb and (
+        (tb.tb_next and tb.tb_frame.f_code.co_filename != LOCAL_FILENAME)
+        or LOCAL_MODULE_DIR in tb.tb_frame.f_code.co_filename
+    ):
         tb = tb.tb_next
 
     frame = tb.tb_frame if tb else None

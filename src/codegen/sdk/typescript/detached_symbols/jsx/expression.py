@@ -35,12 +35,18 @@ class JSXExpression(Unwrappable["Function | JSXElement | JSXProp"]):
         Returns:
             Editable[Self]: A Editable object representing the statement of this JSX expression. None if the object doesn't have an Editable object.
         """
-        return self._parse_expression(self.ts_node.named_children[0]) if len(self.ts_node.named_children) > 0 else None
+        return (
+            self._parse_expression(self.ts_node.named_children[0])
+            if len(self.ts_node.named_children) > 0
+            else None
+        )
 
     @commiter
     @noapidoc
     @override
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         if self.statement:
             self.statement._compute_dependencies(usage_type, dest=dest)
 

@@ -18,7 +18,11 @@ from codegen.cli.workspace.examples_workspace import populate_examples
 from codegen.cli.workspace.venv_manager import VenvManager
 
 
-def initialize_codegen(session: CodegenSession, status: Status | str = "Initializing", fetch_docs: bool = False) -> CodegenSession:
+def initialize_codegen(
+    session: CodegenSession,
+    status: Status | str = "Initializing",
+    fetch_docs: bool = False,
+) -> CodegenSession:
     """Initialize or update the codegen directory structure and content.
 
     Args:
@@ -38,7 +42,11 @@ def initialize_codegen(session: CodegenSession, status: Status | str = "Initiali
     SYSTEM_PROMPT_PATH = CODEGEN_FOLDER / "codegen-system-prompt.txt"
 
     # If status is a string, create a new spinner
-    context = create_spinner(f"   {status} folders...") if isinstance(status, str) else nullcontext()
+    context = (
+        create_spinner(f"   {status} folders...")
+        if isinstance(status, str)
+        else nullcontext()
+    )
 
     with context as spinner:
         status_obj = spinner if isinstance(status, str) else status
@@ -50,7 +58,9 @@ def initialize_codegen(session: CodegenSession, status: Status | str = "Initiali
         CODEMODS_DIR.mkdir(parents=True, exist_ok=True)
 
         # Initialize virtual environment
-        status_obj.update(f"   {'Creating' if isinstance(status, str) else 'Checking'} virtual environment...")
+        status_obj.update(
+            f"   {'Creating' if isinstance(status, str) else 'Checking'} virtual environment..."
+        )
         venv = VenvManager(session.codegen_dir)
         if not venv.is_initialized():
             venv.create_venv()
@@ -62,9 +72,13 @@ def initialize_codegen(session: CodegenSession, status: Status | str = "Initiali
             response.raise_for_status()
             SYSTEM_PROMPT_PATH.write_text(response.text)
         except Exception as e:
-            rich.print(f"[yellow]Warning: Could not download system prompt: {e}[/yellow]")
+            rich.print(
+                f"[yellow]Warning: Could not download system prompt: {e}[/yellow]"
+            )
 
-        status_obj.update(f"   {'Updating' if isinstance(status, Status) else status} .gitignore...")
+        status_obj.update(
+            f"   {'Updating' if isinstance(status, Status) else status} .gitignore..."
+        )
         modify_gitignore(CODEGEN_FOLDER)
 
         # Create notebook template

@@ -46,7 +46,9 @@ class TSObjectPair(TSPair, Generic[Parent]):
             value = TSFunctionType(self.ts_node, self.file_node_id, self.ctx, self)
             key = self._parse_expression(self.ts_node.child_by_field_name("name"))
         elif self.ts_node_type == "method_definition":
-            key = self._parse_expression(self.ts_node.child_by_field_name("mapped_clause_type"))
+            key = self._parse_expression(
+                self.ts_node.child_by_field_name("mapped_clause_type")
+            )
             value = self._parse_expression(self.ts_node.child_by_field_name("type"))
         else:
             key, value = super()._get_key_value()
@@ -54,7 +56,9 @@ class TSObjectPair(TSPair, Generic[Parent]):
             # HACK: sometimes types are weird
             value = self._parse_expression(value.ts_node.named_children[0])
         elif not isinstance(value, Type):
-            self._log_parse(f"{value} of type {value.__class__.__name__} from {self.ts_node} not a valid type")
+            self._log_parse(
+                f"{value} of type {value.__class__.__name__} from {self.ts_node} not a valid type"
+            )
 
         return key, value
 
@@ -72,8 +76,16 @@ class TSObjectType(TSDict, Type[Parent], Generic[Parent]):
     in TypeScript code.
     """
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent) -> None:
-        super().__init__(ts_node, file_node_id, ctx, parent, delimiter=";", pair_type=TSObjectPair)
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ) -> None:
+        super().__init__(
+            ts_node, file_node_id, ctx, parent, delimiter=";", pair_type=TSObjectPair
+        )
 
     def _compute_dependencies(self, usage_type: UsageKind, dest: Importable):
         for child in self.values():

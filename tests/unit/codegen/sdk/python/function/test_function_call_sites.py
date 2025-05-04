@@ -59,7 +59,9 @@ def i():
     f().h()
     g().j().g()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
 
@@ -119,7 +121,9 @@ def j():
     h()
     g()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
 
@@ -129,7 +133,11 @@ def j():
         assert len(g.call_sites) == 3
 
         assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {"g", "i"}
-        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {"f", "i", "j"}
+        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {
+            "f",
+            "i",
+            "j",
+        }
 
         f.rename("renamed_f")
         g.rename("renamed_g")
@@ -189,7 +197,14 @@ def k():
 def l():
     my_file.g() + g()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
@@ -201,8 +216,16 @@ def l():
         assert len(g.usages) == 5
         assert len(f.call_sites) == 4
         assert len(g.call_sites) == 3
-        assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {"g", "i", "k"}
-        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {"f", "i", "l"}
+        assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {
+            "g",
+            "i",
+            "k",
+        }
+        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {
+            "f",
+            "i",
+            "l",
+        }
 
         f.rename("renamed_f")
         g.rename("renamed_g")
@@ -278,7 +301,14 @@ def k():
 def l():
     my_file.g()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
@@ -295,8 +325,17 @@ def l():
         assert len(f.call_sites) == 4
         assert len(g.call_sites) == 4
 
-        assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {"g", "i", "k"}
-        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {"f", "i", "j", "l"}
+        assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {
+            "g",
+            "i",
+            "k",
+        }
+        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {
+            "f",
+            "i",
+            "j",
+            "l",
+        }
 
         f.rename("renamed_f")
         g.rename("renamed_g")
@@ -375,7 +414,14 @@ def k():
 def l():
     my_file.g().h()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
@@ -385,8 +431,17 @@ def l():
         assert len(f.call_sites) == 3
         assert len(g.call_sites) == 4
 
-        assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {"g", "i", "k"}
-        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {"f", "j", "k", "l"}
+        assert set([fcall.parent_symbol.name for fcall in f.call_sites]) == {
+            "g",
+            "i",
+            "k",
+        }
+        assert set([fcall.parent_symbol.name for fcall in g.call_sites]) == {
+            "f",
+            "j",
+            "k",
+            "l",
+        }
 
         f.rename("renamed_f")
         g.rename("renamed_g")

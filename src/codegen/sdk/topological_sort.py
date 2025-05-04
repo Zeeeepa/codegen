@@ -14,7 +14,9 @@ def pseudo_topological_sort(graph: PyDiGraph, flatten: bool = True):
         return sorted_nodes
     except DAGHasCycle:
         # If a cycle is detected, handle it separately
-        logger.warning("The graph contains a cycle. Performing an approximate topological sort.")
+        logger.warning(
+            "The graph contains a cycle. Performing an approximate topological sort."
+        )
 
         # Find the strongly connected components in the graph
         sccs = list(nx.strongly_connected_components(graph))

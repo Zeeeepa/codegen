@@ -27,7 +27,12 @@ TType = TypeVar("TType", bound="Type")
 
 
 @apidoc
-class Interface(Inherits, HasBlock, HasAttribute[TAttribute], Generic[TCodeBlock, TAttribute, TFunction, TType]):
+class Interface(
+    Inherits,
+    HasBlock,
+    HasAttribute[TAttribute],
+    Generic[TCodeBlock, TAttribute, TFunction, TType],
+):
     """Abstract representation of an Interface class.
 
     Attributes:
@@ -60,11 +65,15 @@ class Interface(Inherits, HasBlock, HasAttribute[TAttribute], Generic[TCodeBlock
         return next((x for x in self.attributes if x.name == name), None)
 
     @reader
-    def extends(self, parent_interface: str | Interface, max_depth: int | None = None) -> bool:
+    def extends(
+        self, parent_interface: str | Interface, max_depth: int | None = None
+    ) -> bool:
         """Returns True if the interface implements the given parent interface."""
         if self.parent_interfaces is None:
             return False
-        return self.parent_interfaces.is_subclass_of(parent_interface, max_depth=max_depth)
+        return self.parent_interfaces.is_subclass_of(
+            parent_interface, max_depth=max_depth
+        )
 
     @proxy_property
     @reader

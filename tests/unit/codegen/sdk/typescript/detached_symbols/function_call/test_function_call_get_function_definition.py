@@ -20,7 +20,11 @@ function bar() {
 }
 """
 
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"src.ts": src_file, "dest.ts": dest_file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"src.ts": src_file, "dest.ts": dest_file},
+    ) as ctx:
         src_file = ctx.get_file("src.ts")
         dest_file = ctx.get_file("dest.ts")
         foo_function = src_file.get_symbol("foo")

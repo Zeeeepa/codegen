@@ -42,7 +42,12 @@ def world():
         )
     ],
 )
-async def test_progress(lsp_client_uninitialized: LanguageClient, codebase: Codebase, assert_expected, original: dict[str, str]):
+async def test_progress(
+    lsp_client_uninitialized: LanguageClient,
+    codebase: Codebase,
+    assert_expected,
+    original: dict[str, str],
+):
     token = str(uuid.uuid4())
     assert lsp_client_uninitialized.progress_reports.get(token, None) is None
     req = await lsp_client_uninitialized.initialize_session(
@@ -57,12 +62,18 @@ async def test_progress(lsp_client_uninitialized: LanguageClient, codebase: Code
     assert reports is not None
     check_reports(reports)
     for file in original.keys():
-        assert any(file in report.message for report in reports if isinstance(report, types.WorkDoneProgressReport))
+        assert any(
+            file in report.message
+            for report in reports
+            if isinstance(report, types.WorkDoneProgressReport)
+        )
     rename_token = str(uuid.uuid4())
     result = await lsp_client_uninitialized.text_document_rename_async(
         params=types.RenameParams(
             position=types.Position(line=0, character=5),
-            text_document=types.TextDocumentIdentifier(uri=f"file://{codebase.repo_path}/test.py"),
+            text_document=types.TextDocumentIdentifier(
+                uri=f"file://{codebase.repo_path}/test.py"
+            ),
             new_name="world",
             work_done_token=rename_token,
         )

@@ -39,7 +39,12 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, include_dependencies=True, strategy="add_back_edge", cleanup_unused_imports=False)
+        bar.move_to_file(
+            file3,
+            include_dependencies=True,
+            strategy="add_back_edge",
+            cleanup_unused_imports=False,
+        )
 
     assert file1.content == content1
     # language=python
@@ -100,7 +105,9 @@ def main_func(input_id):
         files={"file.py": content},
     ) as codebase:
         for function in codebase.functions:
-            local_vars = function.code_block.get_local_var_assignments("var", fuzzy_match=True)
+            local_vars = function.code_block.get_local_var_assignments(
+                "var", fuzzy_match=True
+            )
             for local_var in local_vars:
                 local_var.rename(local_var.name.replace("var", "renamed_var"))
 

@@ -8,7 +8,9 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 
-def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = "single") -> None:
+def generate_html_report(
+    results: Dict[str, Any], output_path: str, mode: str = "single"
+) -> None:
     """
     Generate an HTML report from code integrity analysis results.
 
@@ -85,7 +87,9 @@ def _validate_results(results: Dict[str, Any], mode: str) -> None:
 
     missing_keys = [key for key in required_keys if key not in results]
     if missing_keys:
-        raise ValueError(f"Missing required keys for {mode} mode: {', '.join(missing_keys)}")
+        raise ValueError(
+            f"Missing required keys for {mode} mode: {', '.join(missing_keys)}"
+        )
 
 
 def _generate_single_branch_report(results: Dict[str, Any]) -> str:

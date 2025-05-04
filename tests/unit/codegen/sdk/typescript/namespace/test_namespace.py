@@ -10,7 +10,11 @@ def test_empty_namespace(tmpdir) -> None:
     FILE_CONTENT = """
     namespace MyNamespace {} // not exported
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file(FILE_NAME)
         namespace: TSNamespace = codebase.get_symbol("MyNamespace")
         assert namespace is not None
@@ -21,7 +25,11 @@ def test_empty_namespace(tmpdir) -> None:
     FILE_CONTENT = """
     export namespace MyNamespace {} // exported
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file(FILE_NAME)
         namespace: TSNamespace = codebase.get_symbol("MyNamespace")
         assert namespace is not None
@@ -37,7 +45,11 @@ def test_basic_namespace_creation(tmpdir) -> None:
         export const x = 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace: TSNamespace = codebase.get_symbol("SimpleNamespace")
         assert namespace is not None
         assert namespace.name == "SimpleNamespace"
@@ -55,7 +67,11 @@ def test_namespace_basic_symbols(tmpdir) -> None:
         const privateVar = 3;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace = codebase.get_symbol("BasicSymbols")
         assert namespace is not None
 
@@ -83,7 +99,11 @@ def test_namespace_recursive_symbol_lookup(tmpdir) -> None:
         }
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         root = codebase.get_symbol("Root")
 
         # Test non-recursive lookup
@@ -108,7 +128,11 @@ def test_namespace_functions(tmpdir) -> None:
         function privateFunc() { return 3; }  // not exported
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace: TSNamespace = codebase.get_symbol("Functions")
 
         # Test get_function
@@ -140,7 +164,11 @@ def test_namespace_function_overloading(tmpdir) -> None:
         }
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace = codebase.get_symbol("Math")
         calculate = namespace.get_function("calculate")
         assert calculate is not None
@@ -161,7 +189,11 @@ def test_namespace_classes(tmpdir) -> None:
         class PrivateClass {}
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace = codebase.get_symbol("Classes")
 
         # Test class access
@@ -187,7 +219,11 @@ def test_namespace_interfaces(tmpdir) -> None:
         interface PrivateInterface {}
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace = codebase.get_symbol("Interfaces")
 
         # Test interface access
@@ -207,7 +243,11 @@ def test_namespace_types(tmpdir) -> None:
         type PrivateType = string;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace = codebase.get_symbol("Types")
 
         # Test type access
@@ -231,7 +271,11 @@ def test_namespace_enums(tmpdir) -> None:
         enum PrivateEnum { A, B }
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace = codebase.get_symbol("Enums")
 
         # Test enum access
@@ -252,7 +296,11 @@ def test_namespace_nested_basic(tmpdir) -> None:
         }
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         math = codebase.get_symbol("Math")
         advanced = math.get_namespace("Advanced")
         assert advanced is not None
@@ -272,7 +320,11 @@ def test_namespace_nested_deep(tmpdir) -> None:
         export const x = 2;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace_a: TSNamespace = codebase.get_symbol("A")
         assert namespace_a is not None
 
@@ -321,7 +373,11 @@ def test_namespace_imports(tmpdir) -> None:
     console.log(Math.Advanced.cube(3));
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME_1: FILE_CONTENT_1, FILE_NAME_2: FILE_CONTENT_2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME_1: FILE_CONTENT_1, FILE_NAME_2: FILE_CONTENT_2},
+    ) as codebase:
         math_ns = codebase.get_symbol("Math")
         assert math_ns is not None
         assert math_ns.name == "Math"

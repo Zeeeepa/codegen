@@ -18,7 +18,9 @@ def bar():
 """
     foo_filepath = "foo_file.py"
     bar_filepath = "bar_file.py"
-    with get_codebase_session(tmpdir=tmpdir, files={foo_filepath: foo, bar_filepath: bar}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={foo_filepath: foo, bar_filepath: bar}, commit=True
+    ) as codebase:
         foo_file = codebase.get_file(foo_filepath)
         bar_file = codebase.get_file(bar_filepath)
 
@@ -54,7 +56,9 @@ def bar():
 """
     foo_filepath = "foo_file.py"
     bar_filepath = "bar_file.py"
-    with get_codebase_session(tmpdir=tmpdir, files={foo_filepath: foo, bar_filepath: bar}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={foo_filepath: foo, bar_filepath: bar}, commit=True
+    ) as codebase:
         foo_file = codebase.get_file(foo_filepath)
         bar_file = codebase.get_file(bar_filepath)
 
@@ -90,7 +94,12 @@ def bar():
 """
     foo_filepath = "foo_file.py"
     bar_filepath = "bar_file.py"
-    with get_codebase_session(tmpdir=tmpdir, files={foo_filepath: foo, bar_filepath: bar}, commit=True, sync_graph=False) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={foo_filepath: foo, bar_filepath: bar},
+        commit=True,
+        sync_graph=False,
+    ) as codebase:
         foo_file = codebase.get_file(foo_filepath)
 
         new_file = "baz_file.py"
@@ -116,7 +125,9 @@ def foo():
     foo_filepath = "foo_file.py"
     new_filepath = "new_file.py"
 
-    with get_codebase_session(tmpdir=tmpdir, files={foo_filepath: foo_content}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={foo_filepath: foo_content}, commit=True
+    ) as codebase:
         file = codebase.get_file(foo_filepath)
         file.update_filepath(new_filepath)
         codebase.commit()

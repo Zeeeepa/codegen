@@ -34,7 +34,13 @@ class Importable(Expression[Parent], HasName, Generic[Parent]):
 
     node_id: int
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ) -> None:
         if not hasattr(self, "node_id"):
             self.node_id = ctx.add_node(self)
         super().__init__(ts_node, file_node_id, ctx, parent)
@@ -43,7 +49,11 @@ class Importable(Expression[Parent], HasName, Generic[Parent]):
 
     @proxy_property
     @reader(cache=False)
-    def dependencies(self, usage_types: UsageType | None = UsageType.DIRECT, max_depth: int | None = None) -> list[Union["Symbol", "Import"]]:
+    def dependencies(
+        self,
+        usage_types: UsageType | None = UsageType.DIRECT,
+        max_depth: int | None = None,
+    ) -> list[Union["Symbol", "Import"]]:
         """Returns a list of symbols that this symbol depends on.
 
         Args:
@@ -62,14 +72,18 @@ class Importable(Expression[Parent], HasName, Generic[Parent]):
         avoid = set(self.descendant_symbols)
         deps = []
         for symbol in self.descendant_symbols:
-            deps.extend(filter(lambda x: x not in avoid, symbol._get_dependencies(usage_types)))
+            deps.extend(
+                filter(lambda x: x not in avoid, symbol._get_dependencies(usage_types))
+            )
 
         if max_depth is not None and max_depth > 1:
             # For max_depth > 1, recursively collect dependencies
             seen = set(deps)
             for dep in list(deps):  # Create a copy of deps to iterate over
                 if isinstance(dep, Importable):
-                    next_deps = dep.dependencies(usage_types=usage_types, max_depth=max_depth - 1)
+                    next_deps = dep.dependencies(
+                        usage_types=usage_types, max_depth=max_depth - 1
+                    )
                     for next_dep in next_deps:
                         if next_dep not in seen:
                             seen.add(next_dep)
@@ -79,16 +93,25 @@ class Importable(Expression[Parent], HasName, Generic[Parent]):
 
     @reader(cache=False)
     @noapidoc
-    def _get_dependencies(self, usage_types: UsageType) -> list[Union["Symbol", "Import"]]:
+    def _get_dependencies(
+        self, usage_types: UsageType
+    ) -> list[Union["Symbol", "Import"]]:
         """Symbols that this symbol depends on.
 
         Opposite of `usages`
         """
         # TODO: sort out attribute usages in dependencies
-        edges = [x for x in self.ctx.out_edges(self.node_id) if x[2].type == EdgeType.SYMBOL_USAGE]
+        edges = [
+            x
+            for x in self.ctx.out_edges(self.node_id)
+            if x[2].type == EdgeType.SYMBOL_USAGE
+        ]
         unique_dependencies = []
         for edge in edges:
-            if edge[2].usage.usage_type is None or edge[2].usage.usage_type in usage_types:
+            if (
+                edge[2].usage.usage_type is None
+                or edge[2].usage.usage_type in usage_types
+            ):
                 dependency = self.ctx.get_node(edge[1])
                 unique_dependencies.append(dependency)
         return sort_editables(unique_dependencies, by_file=True)
@@ -106,7 +129,9 @@ class Importable(Expression[Parent], HasName, Generic[Parent]):
         try:
             self._compute_dependencies()
         except Exception as e:
-            logger.exception(f"Error in file {self.file.path} while computing dependencies for symbol {self.name}")
+            logger.exception(
+                f"Error in file {self.file.path} while computing dependencies for symbol {self.name}"
+            )
             raise e
         if incremental:
             return self.descendant_symbols + self.file.get_nodes(sort=False)

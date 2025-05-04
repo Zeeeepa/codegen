@@ -23,6 +23,8 @@ def track_batches(
         bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} examples [{elapsed}<{remaining}, {rate_fmt}]",
     ) as pbar:
         for batch_num, batch in enumerate(batched(items, batch_size), 1):
-            pbar.set_postfix({"batch": f"{batch_num}/{total_batches}", "batch_size": len(batch)})
+            pbar.set_postfix(
+                {"batch": f"{batch_num}/{total_batches}", "batch_size": len(batch)}
+            )
             yield batch_num, batch
             pbar.update(len(batch))

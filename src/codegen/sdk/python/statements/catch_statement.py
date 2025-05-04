@@ -24,11 +24,20 @@ class PyCatchStatement(CatchStatement[PyCodeBlock], PyBlockStatement):
         condition: The condition which triggers this clause
     """
 
-    def __init__(self, ts_node: PyNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: PyNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.condition = self.children[0]
 
     @property
     @noapidoc
     def other_possible_blocks(self) -> list[ConditionalBlock]:
-        return [clause for clause in self.parent.except_clauses if clause != self] + [self.parent]
+        return [clause for clause in self.parent.except_clauses if clause != self] + [
+            self.parent
+        ]

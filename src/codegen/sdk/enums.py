@@ -13,7 +13,9 @@ class NodeType(IntEnum):
     IMPORT = auto()  # Node representing an import statement
     EXPORT = auto()  # Node representing an export statement
     SYMBOL = auto()  # Node representing a symbol defined in a file
-    EXTERNAL = auto()  # Node representing something external to the codebase, e.g. `datetime`
+    EXTERNAL = (
+        auto()
+    )  # Node representing something external to the codebase, e.g. `datetime`
     EXPRESSION = auto()  # Node representing an expression within a statement.
 
 
@@ -77,7 +79,9 @@ class ImportType(IntEnum):
     # Imports the module, not doesn't actually allow access to any of the exports
     # Resolves to the file.
     SIDE_EFFECT = auto()
-    UNKNOWN = auto()  # TODO: get rid of this - mostly used to set default value. we should just set to None.
+    UNKNOWN = (
+        auto()
+    )  # TODO: get rid of this - mostly used to set default value. we should just set to None.
 
 
 class Edge(NamedTuple):

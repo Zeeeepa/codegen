@@ -37,7 +37,12 @@ def list_command():
     sorted_items = sorted(flat_config.items(), key=lambda x: x[0])
 
     # Create table
-    table = Table(title="Configuration Values", border_style="blue", show_header=True, title_justify="center")
+    table = Table(
+        title="Configuration Values",
+        border_style="blue",
+        show_header=True,
+        title_justify="center",
+    )
     table.add_column("Key", style="cyan", no_wrap=True)
     table.add_column("Value", style="magenta")
 
@@ -112,7 +117,9 @@ def set_command(key: str, value: str):
             rich.print(f"[red]{e}[/red]")
             return
 
-    rich.print(f"[green]Successfully set {key}=[magenta]{value}[/magenta] and saved to {ENV_FILENAME}[/green]")
+    rich.print(
+        f"[green]Successfully set {key}=[magenta]{value}[/magenta] and saved to {ENV_FILENAME}[/green]"
+    )
 
 
 def _get_user_config() -> UserConfig:

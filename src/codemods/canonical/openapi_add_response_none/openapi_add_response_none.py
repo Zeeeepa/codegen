@@ -57,7 +57,9 @@ class OpenAPIAddResponseNone(Codemod, Skill):
 
         for cls in codebase.classes:
             # Get Flask Resource classes
-            if cls.superclasses and any("Resource" in sc.source for sc in cls.superclasses):
+            if cls.superclasses and any(
+                "Resource" in sc.source for sc in cls.superclasses
+            ):
                 for method in cls.methods:
                     # Filter to HTTP methods
                     if method.name in ("get", "post", "put", "patch", "delete"):
@@ -68,8 +70,14 @@ class OpenAPIAddResponseNone(Codemod, Skill):
                             ns_decorator = get_namespace_decorator(cls)
                             if ns_decorator is not None:
                                 # Check if returns a status code
-                                if method.return_statements and not any(ret.value and ret.value.ts_node_type == "expression_list" for ret in method.return_statements):
+                                if method.return_statements and not any(
+                                    ret.value
+                                    and ret.value.ts_node_type == "expression_list"
+                                    for ret in method.return_statements
+                                ):
                                     # Extract the namespace name
-                                    ns_name = ns_decorator.source.split("@")[1].split(".")[0]
+                                    ns_name = ns_decorator.source.split("@")[1].split(
+                                        "."
+                                    )[0]
                                     # Add the decorator
                                     method.add_decorator(f"@{ns_name}.response(200)")

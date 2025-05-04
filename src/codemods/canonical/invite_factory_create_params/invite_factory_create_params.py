@@ -37,7 +37,9 @@ class InviteFactoryCreateParams(Codemod, Skill):
         # Iterate over all files
         for file in codebase.files:
             # Find invocations of InviteFactory.create and InviteFactory.build in the file
-            usages = file.find("InviteFactory.create", exact=True)  # returns an Editable
+            usages = file.find(
+                "InviteFactory.create", exact=True
+            )  # returns an Editable
             usages += file.find("InviteFactory.build", exact=True)
             usages += file.search(r"\bInviteFactory\(")
 

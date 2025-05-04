@@ -19,7 +19,11 @@ class Foo {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         foo = codebase.get_symbol("Foo")
         do_something = foo.get_method("doSomething")
         do_something_decorators = do_something.decorators
@@ -51,7 +55,11 @@ class Foo {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         foo = codebase.get_symbol("Foo")
         do_something_1 = foo.get_method("doSomething1")
         do_something_1_decorators = do_something_1.decorators

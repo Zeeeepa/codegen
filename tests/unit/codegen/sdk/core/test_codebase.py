@@ -30,7 +30,9 @@ class Greeter:
     def greet(self):
         hello()
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"src/main.py": content}, verify_output=False) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"src/main.py": content}, verify_output=False
+    ) as codebase:
         yield codebase
 
 
@@ -44,6 +46,14 @@ def test_codeowners_property(context_mock, codebase):
 
 
 def test_from_codebase_non_existent_repo(context_mock, tmpdir):
-    with get_codebase_session(tmpdir=tmpdir, files={"src/main.py": "print('Hello, world!')"}, verify_output=False) as codebase:
-        codebase = Codebase.from_repo("some-org/non-existent-repo", tmp_dir=tmpdir, secrets=SecretsConfig(github_token="some-token"))
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"src/main.py": "print('Hello, world!')"},
+        verify_output=False,
+    ) as codebase:
+        codebase = Codebase.from_repo(
+            "some-org/non-existent-repo",
+            tmp_dir=tmpdir,
+            secrets=SecretsConfig(github_token="some-token"),
+        )
         assert codebase is None

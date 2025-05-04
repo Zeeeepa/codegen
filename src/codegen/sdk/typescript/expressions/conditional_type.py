@@ -38,7 +38,13 @@ class TSConditionalType(Type[Parent], Generic[Parent]):
     consequence: "TSType[Self]"
     alternative: "TSType[Self]"
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.left = self.child_by_field_name("left")
         self.right = self.child_by_field_name("right")

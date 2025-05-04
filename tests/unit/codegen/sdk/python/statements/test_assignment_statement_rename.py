@@ -25,7 +25,9 @@ def main_func(input_id):
     """
     with get_codebase_session(tmpdir=tmpdir, files={"file.py": content}) as codebase:
         for function in codebase.functions:
-            local_vars = function.code_block.get_local_var_assignments("var", fuzzy_match=False)
+            local_vars = function.code_block.get_local_var_assignments(
+                "var", fuzzy_match=False
+            )
             for local_var in local_vars:
                 local_var.rename("renamed_var")
 
@@ -56,7 +58,9 @@ def main_func(input_id):
     """
     with get_codebase_session(tmpdir=tmpdir, files={"file.py": content}) as codebase:
         for function in codebase.functions:
-            local_vars = function.code_block.get_local_var_assignments("var_a", fuzzy_match=False)
+            local_vars = function.code_block.get_local_var_assignments(
+                "var_a", fuzzy_match=False
+            )
             for local_var in local_vars:
                 local_var.rename("renamed_var_a")
 
@@ -108,7 +112,9 @@ def main_func(input_id):
     """
     with get_codebase_session(tmpdir=tmpdir, files={"file.py": content}) as codebase:
         for function in codebase.functions:
-            local_vars = function.code_block.get_local_var_assignments("var", fuzzy_match=True)
+            local_vars = function.code_block.get_local_var_assignments(
+                "var", fuzzy_match=True
+            )
             for local_var in local_vars:
                 local_var.rename(local_var.name.replace("var", "renamed_var"))
 

@@ -81,7 +81,9 @@ class FileIndex(CodeIndex):
                 logger.info(f"Successfully deleted Modal Dict: {dict_id}")
                 return True
             except Exception as e:
-                logger.info(f"Modal Dict {dict_id} does not exist or cannot be deleted: {e}")
+                logger.info(
+                    f"Modal Dict {dict_id} does not exist or cannot be deleted: {e}"
+                )
                 return False
         except Exception as e:
             logger.exception(f"Failed to delete Modal Dict: {e}")
@@ -151,7 +153,9 @@ class FileIndex(CodeIndex):
         all_embeddings = []
         for i in tqdm(range(0, len(texts), self.BATCH_SIZE), desc="Getting embeddings"):
             batch = texts[i : i + self.BATCH_SIZE]
-            response = self.client.embeddings.create(model=self.EMBEDDING_MODEL, input=batch, encoding_format="float")
+            response = self.client.embeddings.create(
+                model=self.EMBEDDING_MODEL, input=batch, encoding_format="float"
+            )
             all_embeddings.extend(data.embedding for data in response.data)
 
         return all_embeddings
@@ -172,7 +176,9 @@ class FileIndex(CodeIndex):
         if len(files) == 1:
             logger.info(f"Processing file: {files[0].filepath}")
         else:
-            logger.info(f"Found {len(files_to_process)} indexable files out of {len(files)} total files")
+            logger.info(
+                f"Found {len(files_to_process)} indexable files out of {len(files)} total files"
+            )
 
         # Collect all chunks that need to be processed
         for file in files_to_process:
@@ -218,7 +224,9 @@ class FileIndex(CodeIndex):
         """Save index data to disk and optionally to Modal Dict."""
         # Save to local pickle file
         with open(path, "wb") as f:
-            pickle.dump({"E": self.E, "items": self.items, "commit_hash": self.commit_hash}, f)
+            pickle.dump(
+                {"E": self.E, "items": self.items, "commit_hash": self.commit_hash}, f
+            )
 
         # Save to Modal Dict if enabled
         if self.USE_MODAL_DICT:
@@ -227,7 +235,11 @@ class FileIndex(CodeIndex):
                 logger.info(f"Saving index to Modal Dict: {dict_id}")
 
                 # Convert numpy arrays to lists for JSON serialization
-                modal_data = {"E": self.E.tolist() if self.E is not None else None, "items": self.items.tolist() if self.items is not None else None, "commit_hash": self.commit_hash}
+                modal_data = {
+                    "E": self.E.tolist() if self.E is not None else None,
+                    "items": self.items.tolist() if self.items is not None else None,
+                    "commit_hash": self.commit_hash,
+                }
 
                 # Create or update Modal Dict
                 # Note: from_name is lazy, so we need to explicitly set the data
@@ -255,17 +267,27 @@ class FileIndex(CodeIndex):
 
                         # Convert lists back to numpy arrays
                         self.E = np.array(data["E"]) if data["E"] is not None else None
-                        self.items = np.array(data["items"]) if data["items"] is not None else None
+                        self.items = (
+                            np.array(data["items"])
+                            if data["items"] is not None
+                            else None
+                        )
                         self.commit_hash = data["commit_hash"]
 
-                        logger.info(f"Successfully loaded index from Modal Dict: {dict_id}")
+                        logger.info(
+                            f"Successfully loaded index from Modal Dict: {dict_id}"
+                        )
                         return
                     else:
                         logger.info(f"No index data found in Modal Dict: {dict_id}")
                 except Exception as e:
-                    logger.warning(f"Modal Dict {dict_id} not found or error accessing it: {e}")
+                    logger.warning(
+                        f"Modal Dict {dict_id} not found or error accessing it: {e}"
+                    )
             except Exception as e:
-                logger.warning(f"Failed to load index from Modal Dict, falling back to local file: {e}")
+                logger.warning(
+                    f"Failed to load index from Modal Dict, falling back to local file: {e}"
+                )
 
         # Fall back to loading from local file
         try:
@@ -344,7 +366,9 @@ class FileIndex(CodeIndex):
                 self.items = np.append(self.items, item)
                 num_added += 1
 
-        logger.info(f"Updated {num_updated} existing embeddings and added {num_added} new embeddings")
+        logger.info(
+            f"Updated {num_updated} existing embeddings and added {num_added} new embeddings"
+        )
 
         # Update commit hash
         self.commit_hash = self._get_current_commit()
@@ -356,7 +380,11 @@ class FileIndex(CodeIndex):
                 logger.info(f"Updating index in Modal Dict: {dict_id}")
 
                 # Convert numpy arrays to lists for JSON serialization
-                modal_data = {"E": self.E.tolist() if self.E is not None else None, "items": self.items.tolist() if self.items is not None else None, "commit_hash": self.commit_hash}
+                modal_data = {
+                    "E": self.E.tolist() if self.E is not None else None,
+                    "items": self.items.tolist() if self.items is not None else None,
+                    "commit_hash": self.commit_hash,
+                }
 
                 # Create or update Modal Dict
                 modal_dict = modal.Dict.from_name(dict_id, create_if_missing=True)

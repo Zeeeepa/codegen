@@ -9,7 +9,9 @@ from codegen.sdk.core.expressions.defined_name import DefinedName
 from codegen.sdk.core.expressions.name import Name
 from codegen.sdk.core.expressions.none_type import NoneType
 from codegen.sdk.core.expressions.number import Number
-from codegen.sdk.core.expressions.parenthesized_expression import ParenthesizedExpression
+from codegen.sdk.core.expressions.parenthesized_expression import (
+    ParenthesizedExpression,
+)
 from codegen.sdk.core.expressions.subscript_expression import SubscriptExpression
 from codegen.sdk.core.expressions.tuple_type import TupleType
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
@@ -59,7 +61,9 @@ from codegen.sdk.typescript.type_alias import TSTypeAlias
 
 
 def parse_dict(node: TSNode, *args):
-    if node.prev_named_sibling and node.prev_named_sibling.text.decode("utf-8").endswith("propTypes"):
+    if node.prev_named_sibling and node.prev_named_sibling.text.decode(
+        "utf-8"
+    ).endswith("propTypes"):
         return TSObjectType(node, *args)
     return TSDict(node, *args)
 
@@ -118,7 +122,10 @@ TSStatementMap = {
 }
 
 TSSymbolMap = {
-    **{function_type.value: TSFunction.from_function_type for function_type in TSFunctionTypeNames},
+    **{
+        function_type.value: TSFunction.from_function_type
+        for function_type in TSFunctionTypeNames
+    },
     "class_declaration": TSClass,
     "abstract_class_declaration": TSClass,
     "interface_declaration": TSInterface,

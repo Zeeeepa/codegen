@@ -82,7 +82,9 @@ class TSHasBlock(HasBlock["TSCodeBlock", TSDecorator]):
         """
         jsx_elements = []
         for node in self.extended_nodes:
-            jsx_element_nodes = find_all_descendants(node.ts_node, {"jsx_element", "jsx_self_closing_element"})
+            jsx_element_nodes = find_all_descendants(
+                node.ts_node, {"jsx_element", "jsx_self_closing_element"}
+            )
             jsx_elements.extend([self._parse_expression(x) for x in jsx_element_nodes])
         return jsx_elements
 
@@ -135,7 +137,14 @@ class TSHasBlock(HasBlock["TSCodeBlock", TSDecorator]):
         return TSCommentGroup.from_docstring(self)
 
     @writer
-    def set_docstring(self, docstring: str, auto_format: bool = True, clean_format: bool = True, leading_star: bool = True, force_multiline: bool = False) -> None:
+    def set_docstring(
+        self,
+        docstring: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        leading_star: bool = True,
+        force_multiline: bool = False,
+    ) -> None:
         """Sets or updates a docstring for a code element.
 
         Adds a new docstring if none exists, or updates the existing docstring. Handles formatting and placement
@@ -163,7 +172,12 @@ class TSHasBlock(HasBlock["TSCodeBlock", TSDecorator]):
                 self.docstring.edit(docstring)
         else:
             if auto_format:
-                docstring = TSComment.generate_comment(docstring, TSCommentType.SLASH_STAR, leading_star=leading_star, force_multiline=force_multiline)
+                docstring = TSComment.generate_comment(
+                    docstring,
+                    TSCommentType.SLASH_STAR,
+                    leading_star=leading_star,
+                    force_multiline=force_multiline,
+                )
             # If a comment exists, insert the docstring after it
             if self.comment:
                 self.comment.insert_after(docstring)

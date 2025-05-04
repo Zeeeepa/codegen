@@ -43,7 +43,9 @@ def committed_repo(initialized_repo: Path, committed_state: dict[str, str]) -> P
     """Repo with committed_state committed"""
     setup_repo_state(initialized_repo, committed_state)
     subprocess.run(["git", "add", "."], cwd=initialized_repo, check=True)
-    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=initialized_repo, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial commit"], cwd=initialized_repo, check=True
+    )
     return initialized_repo
 
 
@@ -92,14 +94,20 @@ def get_git_status(repo_path: Path) -> tuple[set[str], set[str], set[str]]:
 
 
 def verify_git_state(
-    repo_path: Path, expected_staged: set[str] | None = None, expected_modified: set[str] | None = None, expected_untracked: set[str] | None = None, rename_pairs: list[tuple[str, str]] | None = None
+    repo_path: Path,
+    expected_staged: set[str] | None = None,
+    expected_modified: set[str] | None = None,
+    expected_untracked: set[str] | None = None,
+    rename_pairs: list[tuple[str, str]] | None = None,
 ):
     """Verify git status matches expected state"""
     if rename_pairs is not None:
         for old_path, new_path in rename_pairs:
             corrected = f"{old_path} -> {new_path}"
             if expected_staged is not None and old_path in expected_staged:
-                assert new_path in expected_staged, f"Expected {old_path} to be renamed to {new_path}, but it was not staged"
+                assert (
+                    new_path in expected_staged
+                ), f"Expected {old_path} to be renamed to {new_path}, but it was not staged"
                 expected_staged.remove(old_path)
                 expected_staged.remove(new_path)
                 expected_staged.add(corrected)
@@ -107,11 +115,17 @@ def verify_git_state(
     staged, modified, untracked = get_git_status(repo_path)
 
     if expected_staged is not None:
-        assert staged == expected_staged, f"Staged files mismatch.\nExpected: {expected_staged}\nActual: {staged}"
+        assert (
+            staged == expected_staged
+        ), f"Staged files mismatch.\nExpected: {expected_staged}\nActual: {staged}"
     if expected_modified is not None:
-        assert modified == expected_modified, f"Modified files mismatch.\nExpected: {expected_modified}\nActual: {modified}"
+        assert (
+            modified == expected_modified
+        ), f"Modified files mismatch.\nExpected: {expected_modified}\nActual: {modified}"
     if expected_untracked is not None:
-        assert untracked == expected_untracked, f"Untracked files mismatch.\nExpected: {expected_untracked}\nActual: {untracked}"
+        assert (
+            untracked == expected_untracked
+        ), f"Untracked files mismatch.\nExpected: {expected_untracked}\nActual: {untracked}"
 
 
 def verify_repo_state(repo_path: Path, expected_content: dict[str, str | None]):
@@ -202,7 +216,10 @@ def create_test_case(
                 },
                 stage=True,
                 committed_state=committed_state,
-                expected_staged={".codegen/codemods/base.py", ".codegen/codemods/new_staged.py"},
+                expected_staged={
+                    ".codegen/codemods/base.py",
+                    ".codegen/codemods/new_staged.py",
+                },
             ),
             id="staged_changes",
         ),
@@ -225,12 +242,19 @@ def create_test_case(
                 name="staged renames",
                 changes={
                     ".codegen/codemods/base.py": None,  # Delete original
-                    ".codegen/codemods/renamed_base.py": committed_state[".codegen/codemods/base.py"],  # Add with same content
+                    ".codegen/codemods/renamed_base.py": committed_state[
+                        ".codegen/codemods/base.py"
+                    ],  # Add with same content
                 },
                 stage=True,
                 committed_state=committed_state,
-                expected_staged={".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py"},
-                rename_pairs=[(".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py")],
+                expected_staged={
+                    ".codegen/codemods/base.py",
+                    ".codegen/codemods/renamed_base.py",
+                },
+                rename_pairs=[
+                    (".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py")
+                ],
             ),
             id="staged_renames",
         ),
@@ -239,13 +263,17 @@ def create_test_case(
                 name="unstaged renames",
                 changes={
                     ".codegen/codemods/base.py": None,  # Delete original
-                    ".codegen/codemods/renamed_base.py": committed_state[".codegen/codemods/base.py"],  # Add with same content
+                    ".codegen/codemods/renamed_base.py": committed_state[
+                        ".codegen/codemods/base.py"
+                    ],  # Add with same content
                 },
                 stage=False,
                 committed_state=committed_state,
                 expected_modified={".codegen/codemods/base.py"},
                 expected_untracked={".codegen/codemods/renamed_base.py"},
-                rename_pairs=[(".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py")],
+                rename_pairs=[
+                    (".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py")
+                ],
             ),
             id="unstaged_renames",
         ),
@@ -254,18 +282,31 @@ def create_test_case(
                 name="staged rename with modifications",
                 changes={
                     ".codegen/codemods/base.py": None,  # Delete original
-                    ".codegen/codemods/renamed_base.py": committed_state[".codegen/codemods/base.py"] + "\n# Modified",  # Add with modified content
+                    ".codegen/codemods/renamed_base.py": committed_state[
+                        ".codegen/codemods/base.py"
+                    ]
+                    + "\n# Modified",  # Add with modified content
                 },
                 stage=True,
                 committed_state=committed_state,
-                expected_staged={".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py"},
-                rename_pairs=[(".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py")],
+                expected_staged={
+                    ".codegen/codemods/base.py",
+                    ".codegen/codemods/renamed_base.py",
+                },
+                rename_pairs=[
+                    (".codegen/codemods/base.py", ".codegen/codemods/renamed_base.py")
+                ],
             ),
             id="staged_rename_with_modifications",
         ),
     ],
 )
-def test_reset(committed_repo: Path, committed_state: dict[str, str], test_case: ResetTestCase, runner: CliRunner):
+def test_reset(
+    committed_repo: Path,
+    committed_state: dict[str, str],
+    test_case: ResetTestCase,
+    runner: CliRunner,
+):
     """Test reset command with various scenarios"""
     # Get test case from factory function if needed
     if callable(test_case):
@@ -299,7 +340,9 @@ def test_reset(committed_repo: Path, committed_state: dict[str, str], test_case:
     )
 
 
-def test_reset_with_mixed_states(committed_repo: Path, committed_state: dict[str, str], runner: CliRunner):
+def test_reset_with_mixed_states(
+    committed_repo: Path, committed_state: dict[str, str], runner: CliRunner
+):
     """Test reset with a mix of staged, unstaged, and untracked changes"""
     # 1. Staged modifications
     staged_changes = {
@@ -335,7 +378,9 @@ def test_reset_with_mixed_states(committed_repo: Path, committed_state: dict[str
             "src/hello.py": committed_state["src/hello.py"],
             "untracked.py": None,
             ".codegen/codemods/base.py": unstaged_changes[".codegen/codemods/base.py"],
-            ".codegen/codemods/untracked.py": untracked_changes[".codegen/codemods/untracked.py"],
+            ".codegen/codemods/untracked.py": untracked_changes[
+                ".codegen/codemods/untracked.py"
+            ],
         },
     )
 
@@ -348,12 +393,16 @@ def test_reset_with_mixed_states(committed_repo: Path, committed_state: dict[str
     )
 
 
-def test_reset_with_mixed_renames(committed_repo: Path, committed_state: dict[str, str], runner: CliRunner):
+def test_reset_with_mixed_renames(
+    committed_repo: Path, committed_state: dict[str, str], runner: CliRunner
+):
     """Test reset with a mix of staged and unstaged renames"""
     # 1. Staged rename
     staged_changes = {
         ".codegen/codemods/base.py": None,
-        ".codegen/codemods/staged_rename.py": committed_state[".codegen/codemods/base.py"],
+        ".codegen/codemods/staged_rename.py": committed_state[
+            ".codegen/codemods/base.py"
+        ],
     }
     setup_repo_state(committed_repo, staged_changes)
     subprocess.run(["git", "add", "."], cwd=committed_repo, check=True)
@@ -374,7 +423,9 @@ def test_reset_with_mixed_renames(committed_repo: Path, committed_state: dict[st
         committed_repo,
         {
             ".codegen/codemods/base.py": None,
-            ".codegen/codemods/staged_rename.py": committed_state[".codegen/codemods/base.py"],
+            ".codegen/codemods/staged_rename.py": committed_state[
+                ".codegen/codemods/base.py"
+            ],
             "README.md": committed_state["README.md"],
             "README.mdx": None,
         },
@@ -383,8 +434,13 @@ def test_reset_with_mixed_renames(committed_repo: Path, committed_state: dict[st
     # Verify git state
     verify_git_state(
         committed_repo,
-        expected_staged={".codegen/codemods/base.py", ".codegen/codemods/staged_rename.py"},
+        expected_staged={
+            ".codegen/codemods/base.py",
+            ".codegen/codemods/staged_rename.py",
+        },
         expected_modified=set(),
         expected_untracked=set(),
-        rename_pairs=[(".codegen/codemods/base.py", ".codegen/codemods/staged_rename.py")],
+        rename_pairs=[
+            (".codegen/codemods/base.py", ".codegen/codemods/staged_rename.py")
+        ],
     )

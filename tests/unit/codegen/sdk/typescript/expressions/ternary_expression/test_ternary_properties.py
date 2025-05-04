@@ -12,7 +12,11 @@ def test_parse_simple_ternary_expression(tmpdir) -> None:
     content = """
 const result = a + b ? a : b;
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         expression = file.symbols[0].value
         assert expression.condition.source == "a + b"
@@ -25,7 +29,11 @@ def test_parse_nested_ternary_expressions(tmpdir) -> None:
     content = """
 const result = a ? (b ? c : d) : e;
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         top_expression = file.symbols[0].value
 
@@ -45,7 +53,11 @@ def test_parse_complex_ternary_expression(tmpdir) -> None:
     content = """
 const result = (a + b) ? a : (b ? c : d);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
 
         top_expression = file.symbols[0].value

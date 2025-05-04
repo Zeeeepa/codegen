@@ -45,7 +45,9 @@ def test_check_changes_with_pending_changes(file_io, tmp_path, caplog):
 
     file_io.check_changes()
 
-    assert "Directly called file write without calling commit_transactions" in caplog.text
+    assert (
+        "Directly called file write without calling commit_transactions" in caplog.text
+    )
 
 
 def test_check_changes_no_pending_changes(file_io):

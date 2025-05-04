@@ -72,9 +72,15 @@ from c import y
     content3 = """
 from a import y
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"a.py": content1, "b.py": content2, "c.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"a.py": content1, "b.py": content2, "c.py": content3}
+    ) as codebase:
         file = codebase.get_file("a.py")
         imp = file.imports[0]
 
-        assert set([x.source for x in imp.symbol_usages]) == {"from b import y", "from c import y", "from a import y"}
+        assert set([x.source for x in imp.symbol_usages]) == {
+            "from b import y",
+            "from c import y",
+            "from a import y",
+        }
         assert len(imp.symbol_usages) == 3

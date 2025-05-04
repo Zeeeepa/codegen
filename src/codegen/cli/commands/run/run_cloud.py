@@ -15,7 +15,12 @@ from codegen.cli.rich.spinners import create_spinner
 from codegen.cli.utils.url import generate_webapp_url
 
 
-def run_cloud(session: CodegenSession, function, apply_local: bool = False, diff_preview: int | None = None):
+def run_cloud(
+    session: CodegenSession,
+    function,
+    apply_local: bool = False,
+    diff_preview: int | None = None,
+):
     """Run a function on the cloud service.
 
     Args:
@@ -37,18 +42,38 @@ def run_cloud(session: CodegenSession, function, apply_local: bool = False, diff
                 run_id = run_output.web_link.split("/run/")[1].split("/")[0]
                 function_id = run_output.web_link.split("/codemod/")[1].split("/")[0]
 
-                rich.print("   [dim]Web viewer:[/dim] [blue underline]" + run_output.web_link + "[/blue underline]")
-                run_details_url = generate_webapp_url(f"functions/{function_id}/run/{run_id}")
-                rich.print(f"   [dim]Run details:[/dim] [blue underline]{run_details_url}[/blue underline]")
+                rich.print(
+                    "   [dim]Web viewer:[/dim] [blue underline]"
+                    + run_output.web_link
+                    + "[/blue underline]"
+                )
+                run_details_url = generate_webapp_url(
+                    f"functions/{function_id}/run/{run_id}"
+                )
+                rich.print(
+                    f"   [dim]Run details:[/dim] [blue underline]{run_details_url}[/blue underline]"
+                )
 
             if run_output.logs:
                 rich.print("")
-                panel = Panel(run_output.logs, title="[bold]Logs[/bold]", border_style="blue", padding=(1, 2), expand=False)
+                panel = Panel(
+                    run_output.logs,
+                    title="[bold]Logs[/bold]",
+                    border_style="blue",
+                    padding=(1, 2),
+                    expand=False,
+                )
                 rich.print(panel)
 
             if run_output.error:
                 rich.print("")
-                panel = Panel(run_output.error, title="[bold]Error[/bold]", border_style="red", padding=(1, 2), expand=False)
+                panel = Panel(
+                    run_output.error,
+                    title="[bold]Error[/bold]",
+                    border_style="red",
+                    padding=(1, 2),
+                    expand=False,
+                )
                 rich.print(panel)
 
             if run_output.observation:
@@ -65,19 +90,27 @@ def run_cloud(session: CodegenSession, function, apply_local: bool = False, diff
                         if apply_local:
                             limited_diff += "\n\n...\n\n[yellow]diff truncated to {diff_preview} lines, view the full change set in your local file system[/yellow]"
                         else:
-                            limited_diff += (
-                                "\n\n...\n\n[yellow]diff truncated to {diff_preview} lines, view the full change set on your local file system after using run with `--apply-local`[/yellow]"
-                            )
+                            limited_diff += "\n\n...\n\n[yellow]diff truncated to {diff_preview} lines, view the full change set on your local file system after using run with `--apply-local`[/yellow]"
 
-                    panel = Panel(limited_diff, title="[bold]Diff Preview[/bold]", border_style="blue", padding=(1, 2), expand=False)
+                    panel = Panel(
+                        limited_diff,
+                        title="[bold]Diff Preview[/bold]",
+                        border_style="blue",
+                        padding=(1, 2),
+                        expand=False,
+                    )
                     rich.print(panel)
 
                 if not apply_local:
                     rich.print("")
                     rich.print("Apply changes locally:")
-                    rich.print(format_command(f"codegen run {function.name} --apply-local"))
+                    rich.print(
+                        format_command(f"codegen run {function.name} --apply-local")
+                    )
                     rich.print("Create a PR:")
-                    rich.print(format_command(f"codegen run {function.name} --create-pr"))
+                    rich.print(
+                        format_command(f"codegen run {function.name} --create-pr")
+                    )
             else:
                 rich.print("")
                 rich.print("[yellow] No changes were produced by this codemod[/yellow]")
@@ -91,22 +124,40 @@ def run_cloud(session: CodegenSession, function, apply_local: bool = False, diff
                     git_repo = Repository(str(session.repo_path))
                     apply_patch(git_repo, f"\n{run_output.observation}\n")
                     rich.print("")
-                    rich.print("[green]✓ Changes have been applied to your local filesystem[/green]")
-                    rich.print("[yellow]→ Don't forget to commit your changes:[/yellow]")
+                    rich.print(
+                        "[green]✓ Changes have been applied to your local filesystem[/green]"
+                    )
+                    rich.print(
+                        "[yellow]→ Don't forget to commit your changes:[/yellow]"
+                    )
                     rich.print(format_command("git add ."))
-                    rich.print(format_command("git commit -m 'Applied codemod changes'"))
+                    rich.print(
+                        format_command("git commit -m 'Applied codemod changes'")
+                    )
                 except Exception as e:
                     rich.print("")
                     rich.print("[red]✗ Failed to apply changes locally[/red]")
-                    rich.print("\n[yellow]This usually happens when you have uncommitted changes.[/yellow]")
+                    rich.print(
+                        "\n[yellow]This usually happens when you have uncommitted changes.[/yellow]"
+                    )
                     rich.print("\nOption 1 - Save your changes:")
-                    rich.print("  1. [blue]git status[/blue]        (check your working directory)")
-                    rich.print("  2. [blue]git add .[/blue]         (stage your changes)")
-                    rich.print("  3. [blue]git commit -m 'msg'[/blue]  (commit your changes)")
+                    rich.print(
+                        "  1. [blue]git status[/blue]        (check your working directory)"
+                    )
+                    rich.print(
+                        "  2. [blue]git add .[/blue]         (stage your changes)"
+                    )
+                    rich.print(
+                        "  3. [blue]git commit -m 'msg'[/blue]  (commit your changes)"
+                    )
                     rich.print("  4. Run this command again")
                     rich.print("\nOption 2 - Discard your changes:")
-                    rich.print("  1. [red]git reset --hard HEAD[/red]     (⚠️ discards all uncommitted changes)")
-                    rich.print("  2. [red]git clean -fd[/red]            (⚠️ removes all untracked files)")
+                    rich.print(
+                        "  1. [red]git reset --hard HEAD[/red]     (⚠️ discards all uncommitted changes)"
+                    )
+                    rich.print(
+                        "  2. [red]git clean -fd[/red]            (⚠️ removes all untracked files)"
+                    )
                     rich.print("  3. Run this command again\n")
                     msg = "Failed to apply patch to local filesystem"
                     raise click.ClickException(msg)

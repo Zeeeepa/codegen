@@ -65,8 +65,14 @@ def symbol():
         symbol = file.get_symbol("symbol")
         assert symbol.comment is None
         assert symbol.docstring is not None
-        assert symbol.docstring.text == "This is a multi-line docstring.\nIt has multiple lines."
-        assert symbol.docstring.source == '"""\n    This is a multi-line docstring.\n    It has multiple lines.\n    """'
+        assert (
+            symbol.docstring.text
+            == "This is a multi-line docstring.\nIt has multiple lines."
+        )
+        assert (
+            symbol.docstring.source
+            == '"""\n    This is a multi-line docstring.\n    It has multiple lines.\n    """'
+        )
 
 
 def test_multiline_docstring_google_style(tmpdir) -> None:
@@ -84,8 +90,14 @@ def symbol():
         symbol = file.get_symbol("symbol")
         assert symbol.comment is None
         assert symbol.docstring is not None
-        assert symbol.docstring.text == "This is a multi-line docstring.\nIt has multiple lines."
-        assert symbol.docstring.source == '"""This is a multi-line docstring.\n    It has multiple lines.\n    """'
+        assert (
+            symbol.docstring.text
+            == "This is a multi-line docstring.\nIt has multiple lines."
+        )
+        assert (
+            symbol.docstring.source
+            == '"""This is a multi-line docstring.\n    It has multiple lines.\n    """'
+        )
 
 
 def test_docstring_with_indentation(tmpdir) -> None:
@@ -105,7 +117,10 @@ def symbol():
         assert symbol.comment is None
         assert symbol.docstring is not None
         assert symbol.docstring.text == "This is a docstring\nthat has indentation."
-        assert symbol.docstring.source == '"""\n        This is a docstring\n        that has indentation.\n    """'
+        assert (
+            symbol.docstring.source
+            == '"""\n        This is a docstring\n        that has indentation.\n    """'
+        )
 
 
 def test_docstring_partial_indentation(tmpdir) -> None:
@@ -124,8 +139,14 @@ def symbol():
         symbol = file.get_symbol("symbol")
         assert symbol.comment is None
         assert symbol.docstring is not None
-        assert symbol.docstring.text == "    This is a docstring\nthat has partial indentation."
-        assert symbol.docstring.source == '"""\n        This is a docstring\n    that has partial indentation.\n    """'
+        assert (
+            symbol.docstring.text
+            == "    This is a docstring\nthat has partial indentation."
+        )
+        assert (
+            symbol.docstring.source
+            == '"""\n        This is a docstring\n    that has partial indentation.\n    """'
+        )
 
 
 def test_docstring_empty_lines(tmpdir) -> None:
@@ -147,8 +168,14 @@ def symbol():
         symbol = file.get_symbol("symbol")
         assert symbol.comment is None
         assert symbol.docstring is not None
-        assert symbol.docstring.text == "This is a docstring\nthat has empty lines.\n\n\nAnd a second paragraph."
-        assert symbol.docstring.source == '"""\n    This is a docstring\n    that has empty lines.\n\n\n    And a second paragraph.\n    """'
+        assert (
+            symbol.docstring.text
+            == "This is a docstring\nthat has empty lines.\n\n\nAnd a second paragraph."
+        )
+        assert (
+            symbol.docstring.source
+            == '"""\n    This is a docstring\n    that has empty lines.\n\n\n    And a second paragraph.\n    """'
+        )
 
 
 def test_docstring_with_comments(tmpdir) -> None:
@@ -170,7 +197,10 @@ def symbol():
         assert symbol.comment.text == "This is a comment"
         assert symbol.docstring is not None
         assert symbol.docstring.text == "This is a docstring\nthat has comments."
-        assert symbol.docstring.source == '"""\n    This is a docstring\n    that has comments.\n    """'
+        assert (
+            symbol.docstring.source
+            == '"""\n    This is a docstring\n    that has comments.\n    """'
+        )
 
 
 def test_docstring_weird_spacing(tmpdir) -> None:
@@ -189,7 +219,10 @@ def symbol():
         assert symbol.comment is None
         assert symbol.docstring is not None
         assert symbol.docstring.text == "This is a docstring\nwith weird spacing."
-        assert symbol.docstring.source == '"""\n    This is a docstring\n    with weird spacing."""'
+        assert (
+            symbol.docstring.source
+            == '"""\n    This is a docstring\n    with weird spacing."""'
+        )
 
 
 def test_docstring_classes(tmpdir) -> None:
@@ -213,13 +246,19 @@ class SymbolA:
         assert class_a.comment is None
         assert class_a.docstring is not None
         assert class_a.docstring.text == "This is a docstring for class A."
-        assert class_a.docstring.source == '"""\n    This is a docstring for class A.\n    """'
+        assert (
+            class_a.docstring.source
+            == '"""\n    This is a docstring for class A.\n    """'
+        )
 
         func_b = class_a.get_method("funcB")
         assert func_b.comment is None
         assert func_b.docstring is not None
         assert func_b.docstring.text == "This is a docstring for function B."
-        assert func_b.docstring.source == "'''\n        This is a docstring for function B.\n        '''"
+        assert (
+            func_b.docstring.source
+            == "'''\n        This is a docstring for function B.\n        '''"
+        )
 
 
 def test_docstring_classes_google_style(tmpdir) -> None:
@@ -239,5 +278,11 @@ class SymbolA:
         func_b = class_a.get_method("funcB")
         assert func_b.comment is None
         assert func_b.docstring is not None
-        assert func_b.docstring.text == "This is a docstring for function B.\nthat is in Google style."
-        assert func_b.docstring.source == "'''This is a docstring for function B.\n        that is in Google style.\n        '''"
+        assert (
+            func_b.docstring.text
+            == "This is a docstring for function B.\nthat is in Google style."
+        )
+        assert (
+            func_b.docstring.source
+            == "'''This is a docstring for function B.\n        that is in Google style.\n        '''"
+        )

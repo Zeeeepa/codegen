@@ -26,7 +26,9 @@ def run(codebase: Codebase):
                 new_text = original_text.replace("`", "")
 
                 # Replace the link in content
-                new_content = new_content.replace(match.group(0), f"[{new_text}]({match.group(2)})")
+                new_content = new_content.replace(
+                    match.group(0), f"[{new_text}]({match.group(2)})"
+                )
 
             # Update file content if changes were made
             if new_content != file.content:

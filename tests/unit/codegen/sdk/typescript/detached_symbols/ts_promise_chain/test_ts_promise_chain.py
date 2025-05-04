@@ -22,7 +22,11 @@ def test_simple_promise_chain(tmpdir) -> None:
         });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("getValue")
         promise_chain = function_symbol.promise_chains[0]
 
@@ -56,7 +60,11 @@ def test_nested_promise_chain_with_catch(tmpdir) -> None:
             });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("getUserDataAndPosts")
         promise_chain = function_symbol.promise_chains[0]
 
@@ -95,7 +103,11 @@ def test_promise_all_with_destructuring(tmpdir) -> None:
         });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("getAllUserInfo")
         promise_chain = function_symbol.promise_chains[0]
 
@@ -138,7 +150,11 @@ def test_complex_promise_chain_with_catch_finally(tmpdir) -> None:
             });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("processUserData")
         promise_chain = function_symbol.promise_chains[0]
 
@@ -210,7 +226,11 @@ def test_long_promise_chain(tmpdir) -> None:
         });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("ensureTable")
         promise_chain = function_symbol.promise_chains[0]
 
@@ -260,7 +280,11 @@ def test_complex_returns_with_anonymous_function(tmpdir) -> None:
         return qResponse;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("create")
         promise_chain = function_symbol.promise_chains[0]
 
@@ -298,7 +322,11 @@ def test_file_promise_chains(tmpdir) -> None:
         return 42;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         promise_chains = file.promise_chains
 
@@ -310,7 +338,9 @@ def test_file_promise_chains(tmpdir) -> None:
         assert function_names == {"first", "second"}
 
         # Convert first chain and verify
-        first_chain = next(chain for chain in promise_chains if chain.parent_function.name == "first")
+        first_chain = next(
+            chain for chain in promise_chains if chain.parent_function.name == "first"
+        )
         async_code = first_chain.convert_to_async_await(inplace_edit=False)
         expected = """
         let value = await Promise.resolve(10);
@@ -335,7 +365,11 @@ def test_function_promise_chains_multiple(tmpdir) -> None:
             .then(posts => console.log(posts));
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("multipleChains")
         chains = function_symbol.promise_chains
 
@@ -352,7 +386,9 @@ def test_function_promise_chains_multiple(tmpdir) -> None:
             console.error(err);
         }
         """
-        assert normalize_whitespace(first_chain_code) == normalize_whitespace(expected_first)
+        assert normalize_whitespace(first_chain_code) == normalize_whitespace(
+            expected_first
+        )
 
 
 def test_promise_chain_attributes(tmpdir) -> None:
@@ -371,7 +407,11 @@ def test_promise_chain_attributes(tmpdir) -> None:
             });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_function("chainWithAll")
         chain = function_symbol.promise_chains[0]
 

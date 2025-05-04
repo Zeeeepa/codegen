@@ -141,14 +141,20 @@ class RestAPI:
 
         # Only include source if requested
         if include_source:
-            source = function.get_current_source() if isinstance(function, Codemod) else function.source
+            source = (
+                function.get_current_source()
+                if isinstance(function, Codemod)
+                else function.source
+            )
             base_input["codemod_source"] = convert_to_ui(source)
 
         # Add template context if provided
         if template_context:
             base_input["template_context"] = template_context
 
-        input_data = RunCodemodInput(input=RunCodemodInput.BaseRunCodemodInput(**base_input))
+        input_data = RunCodemodInput(
+            input=RunCodemodInput.BaseRunCodemodInput(**base_input)
+        )
         return self._make_request(
             "POST",
             RUN_ENDPOINT,
@@ -162,7 +168,11 @@ class RestAPI:
         return self._make_request(
             "GET",
             DOCS_ENDPOINT,
-            DocsInput(docs_input=DocsInput.BaseDocsInput(repo_full_name=session.config.repository.full_name)),
+            DocsInput(
+                docs_input=DocsInput.BaseDocsInput(
+                    repo_full_name=session.config.repository.full_name
+                )
+            ),
             DocsResponse,
         )
 
@@ -182,7 +192,11 @@ class RestAPI:
         return self._make_request(
             "GET",
             CREATE_ENDPOINT,
-            CreateInput(input=CreateInput.BaseCreateInput(name=name, query=query, language=language)),
+            CreateInput(
+                input=CreateInput.BaseCreateInput(
+                    name=name, query=query, language=language
+                )
+            ),
             CreateResponse,
         )
 
@@ -229,11 +243,22 @@ class RestAPI:
         return self._make_request(
             "GET",
             LOOKUP_ENDPOINT,
-            LookupInput(input=LookupInput.BaseLookupInput(codemod_name=codemod_name, repo_full_name=session.config.repository.full_name)),
+            LookupInput(
+                input=LookupInput.BaseLookupInput(
+                    codemod_name=codemod_name,
+                    repo_full_name=session.config.repository.full_name,
+                )
+            ),
             LookupOutput,
         )
 
-    def run_on_pr(self, codemod_name: str, repo_full_name: str, github_pr_number: int, language: str | None = None) -> RunOnPRResponse:
+    def run_on_pr(
+        self,
+        codemod_name: str,
+        repo_full_name: str,
+        github_pr_number: int,
+        language: str | None = None,
+    ) -> RunOnPRResponse:
         """Test a webhook against a specific PR."""
         return self._make_request(
             "POST",
@@ -254,15 +279,34 @@ class RestAPI:
         return self._make_request(
             "GET",
             PR_LOOKUP_ENDPOINT,
-            PRLookupInput(input=PRLookupInput.BasePRLookupInput(repo_full_name=repo_full_name, github_pr_number=github_pr_number)),
+            PRLookupInput(
+                input=PRLookupInput.BasePRLookupInput(
+                    repo_full_name=repo_full_name, github_pr_number=github_pr_number
+                )
+            ),
             PRLookupResponse,
         )
 
-    def improve_codemod(self, codemod: str, task: str, concerns: list[str], context: dict[str, str], language: ProgrammingLanguage) -> ImproveCodemodResponse:
+    def improve_codemod(
+        self,
+        codemod: str,
+        task: str,
+        concerns: list[str],
+        context: dict[str, str],
+        language: ProgrammingLanguage,
+    ) -> ImproveCodemodResponse:
         """Improve a codemod."""
         return self._make_request(
             "GET",
             IMPROVE_ENDPOINT,
-            ImproveCodemodInput(input=ImproveCodemodInput.BaseImproveCodemodInput(codemod=codemod, task=task, concerns=concerns, context=context, language=language)),
+            ImproveCodemodInput(
+                input=ImproveCodemodInput.BaseImproveCodemodInput(
+                    codemod=codemod,
+                    task=task,
+                    concerns=concerns,
+                    context=context,
+                    language=language,
+                )
+            ),
             ImproveCodemodResponse,
         )

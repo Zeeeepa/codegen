@@ -37,7 +37,11 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("🔍 Analyzing codebase...")
-    codebase = Codebase.from_repo("tox-dev/tox", language="python", commit="b588b696e0940c1813014b31b68d7660d8a1914f")
+    codebase = Codebase.from_repo(
+        "tox-dev/tox",
+        language="python",
+        commit="b588b696e0940c1813014b31b68d7660d8a1914f",
+    )
 
     print("🚮 Deleting dead code...")
     run(codebase)

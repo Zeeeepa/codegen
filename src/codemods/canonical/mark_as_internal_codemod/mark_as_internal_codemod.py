@@ -36,14 +36,25 @@ class MarkAsInternalCodemod(Codemod, Skill):
             # Ignore functions that are exported
             if function.is_exported:
                 # Check if all usages of the function are in the same file
-                if all([check_caller_directory(caller.file.filepath, function.file.filepath) for caller in function.symbol_usages]):
+                if all(
+                    [
+                        check_caller_directory(
+                            caller.file.filepath, function.file.filepath
+                        )
+                        for caller in function.symbol_usages
+                    ]
+                ):
                     # Check if function is not re-exported
                     if not function.is_reexported and not function.is_overload:
                         # Check if function is not already marked as internal
-                        docstring = function.docstring.text if function.docstring else ""
+                        docstring = (
+                            function.docstring.text if function.docstring else ""
+                        )
                         if "@internal" not in docstring:
                             # Add @internal to the docstring
                             if function.docstring:
-                                function.set_docstring(f"{function.docstring.text}\n\n@internal")
+                                function.set_docstring(
+                                    f"{function.docstring.text}\n\n@internal"
+                                )
                             else:
                                 function.set_docstring("@internal")

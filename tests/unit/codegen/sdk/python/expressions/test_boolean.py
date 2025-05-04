@@ -13,7 +13,11 @@ b = False
 c = True
 d = a or b or False or c
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         a = file.get_global_var("a")
         b = file.get_global_var("b")
@@ -25,4 +29,9 @@ d = a or b or False or c
         assert isinstance(b.value, Boolean)
         assert isinstance(d.value, BinaryExpression)
         # TODO: FIX THIS, should all resolve to Boolean types (CG-9489)
-        assert [type(e.resolved_value) for e in d.value.elements] == [Boolean, PyAssignment, Boolean, Boolean]
+        assert [type(e.resolved_value) for e in d.value.elements] == [
+            Boolean,
+            PyAssignment,
+            Boolean,
+            Boolean,
+        ]

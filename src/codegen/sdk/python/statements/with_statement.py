@@ -47,12 +47,23 @@ class WithStatement(Statement["PyCodeBlock"], PyHasBlock):
     code_block: PyCodeBlock[WithStatement]
     clause: ExpressionGroup
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.code_block = self._parse_code_block()
         self.code_block.parse()
         clause = next(x for x in self.ts_node.children if x.type == "with_clause")
-        items = [self._parse_expression(item.child_by_field_name("value")) for item in clause.children if item.type == "with_item"]
+        items = [
+            self._parse_expression(item.child_by_field_name("value"))
+            for item in clause.children
+            if item.type == "with_item"
+        ]
         self.clause = ExpressionGroup(self.file_node_id, self.ctx, self, children=items)
 
     @property
@@ -83,6 +94,8 @@ class WithStatement(Statement["PyCodeBlock"], PyHasBlock):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self.clause._compute_dependencies(usage_type, dest)
         self.code_block._compute_dependencies(usage_type, dest)

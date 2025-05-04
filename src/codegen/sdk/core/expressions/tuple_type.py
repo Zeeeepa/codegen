@@ -26,7 +26,13 @@ class TupleType(Collection[Type, Parent], Type[Parent], Generic[TType, Parent]):
     For example `[number, number]`.
     """
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent, delimiter=" |")
         elements = list(self._get_types(ts_node))
         self._init_children(elements)

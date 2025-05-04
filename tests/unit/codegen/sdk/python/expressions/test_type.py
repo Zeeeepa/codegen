@@ -114,7 +114,9 @@ class D(Generic[A]):
 E: A = 1
 F: int = 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={file: content, file2: content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={file: content, file2: content2}
+    ) as codebase:
         a: PyFunction = codebase.get_symbol("A")
         b: PyFunction = codebase.get_symbol("B")
         c: PyClass = codebase.get_symbol("C")

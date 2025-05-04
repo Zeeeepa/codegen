@@ -69,9 +69,19 @@ def make_relative(path: Path) -> str:
 @requires_init
 @click.argument("name", type=str)
 @click.argument("path", type=click.Path(path_type=Path), default=None)
-@click.option("--description", "-d", default=None, help="Description of what this codemod does.")
-@click.option("--overwrite", is_flag=True, help="Overwrites function if it already exists.")
-def create_command(session: CodegenSession, name: str, path: Path | None, description: str | None = None, overwrite: bool = False):
+@click.option(
+    "--description", "-d", default=None, help="Description of what this codemod does."
+)
+@click.option(
+    "--overwrite", is_flag=True, help="Overwrites function if it already exists."
+)
+def create_command(
+    session: CodegenSession,
+    name: str,
+    path: Path | None,
+    description: str | None = None,
+    overwrite: bool = False,
+):
     """Create a new codegen function.
 
     NAME is the name/label for the function
@@ -83,7 +93,9 @@ def create_command(session: CodegenSession, name: str, path: Path | None, descri
     # Check if file exists
     if codemod_path.exists() and not overwrite:
         rel_path = make_relative(codemod_path)
-        pretty_print_error(f"File already exists at {format_path(rel_path)}\n\nTo overwrite the file:\n{format_command(f'codegen create {name} {rel_path} --overwrite')}")
+        pretty_print_error(
+            f"File already exists at {format_path(rel_path)}\n\nTo overwrite the file:\n{format_command(f'codegen create {name} {rel_path} --overwrite')}"
+        )
         return
 
     response = None
@@ -91,9 +103,15 @@ def create_command(session: CodegenSession, name: str, path: Path | None, descri
     try:
         if description:
             # Use API to generate implementation
-            with create_spinner("Generating function (using LLM, this will take ~10s)") as status:
-                response = RestAPI(get_current_token()).create(name=name, query=description)
-                code = convert_to_cli(response.code, session.config.repository.language, name)
+            with create_spinner(
+                "Generating function (using LLM, this will take ~10s)"
+            ) as status:
+                response = RestAPI(get_current_token()).create(
+                    name=name, query=description
+                )
+                code = convert_to_cli(
+                    response.code, session.config.repository.language, name
+                )
                 prompt_path.parent.mkdir(parents=True, exist_ok=True)
                 prompt_path.write_text(response.context)
         else:
@@ -110,7 +128,9 @@ def create_command(session: CodegenSession, name: str, path: Path | None, descri
         raise click.ClickException(str(e))
 
     # Success message
-    rich.print(f"\n✅ {'Overwrote' if overwrite and codemod_path.exists() else 'Created'} function '{name}'")
+    rich.print(
+        f"\n✅ {'Overwrote' if overwrite and codemod_path.exists() else 'Created'} function '{name}'"
+    )
     rich.print("")
     rich.print("📁 Files Created:")
     rich.print(f"   [dim]Function:[/dim]  {make_relative(codemod_path)}")

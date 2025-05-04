@@ -33,7 +33,11 @@ if TYPE_CHECKING:
 
 
 @ts_apidoc
-class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface, TSCodeBlock], TSHasBlock, Exportable):
+class TSFile(
+    SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface, TSCodeBlock],
+    TSHasBlock,
+    Exportable,
+):
     """Extends the SourceFile class to provide TypeScript-specific functionality.
 
     Attributes:
@@ -56,7 +60,16 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
             list[TSExport]: A list of TSExport objects representing all top-level export declarations in the file.
         """
         # Filter to only get exports that are direct children of the file's code block
-        return sort_editables(filter(lambda node: isinstance(node, TSExport) and ((node.parent.parent.parent == self) or (node.parent.parent == self)), self.get_nodes(sort=False)), by_id=True)
+        return sort_editables(
+            filter(
+                lambda node: isinstance(node, TSExport)
+                and (
+                    (node.parent.parent.parent == self) or (node.parent.parent == self)
+                ),
+                self.get_nodes(sort=False),
+            ),
+            by_id=True,
+        )
 
     @property
     @reader(cache=False)
@@ -196,7 +209,9 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
         """
         if symbol.symbol_type == SymbolType.Function:
             if symbol.is_jsx:
-                if not (self.file_path.endswith("tsx") or self.file_path.endswith("jsx")):
+                if not (
+                    self.file_path.endswith("tsx") or self.file_path.endswith("jsx")
+                ):
                     return False
         return True
 
@@ -249,7 +264,10 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
 
             exported_symbol = export.resolved_symbol
             for export_usage in export.symbol_usages:
-                if export_usage.node_type == NodeType.IMPORT or (export_usage.node_type == NodeType.EXPORT and export_usage.resolved_symbol != exported_symbol):
+                if export_usage.node_type == NodeType.IMPORT or (
+                    export_usage.node_type == NodeType.EXPORT
+                    and export_usage.resolved_symbol != exported_symbol
+                ):
                     # If the import has no usages then we can add the import to the list of symbols to remove
                     reexport_usages = export_usage.symbol_usages
                     if len(reexport_usages) == 0:
@@ -257,7 +275,9 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
                         break
 
                     # If any of the import's usages are valid symbol usages, export is used.
-                    if any(usage.node_type == NodeType.SYMBOL for usage in reexport_usages):
+                    if any(
+                        usage.node_type == NodeType.SYMBOL for usage in reexport_usages
+                    ):
                         symbol_export_unused = False
                         break
 
@@ -285,18 +305,24 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
                     export.remove()
 
     @noapidoc
-    def _get_export_data(self, relative_path: str, export_type: str = "EXPORT") -> tuple[tuple[str, str], dict[str, callable]]:
+    def _get_export_data(
+        self, relative_path: str, export_type: str = "EXPORT"
+    ) -> tuple[tuple[str, str], dict[str, callable]]:
         quoted_paths = (f"'{relative_path}'", f'"{relative_path}"')
         export_type_conditions = {
             "WILDCARD": lambda exp: exp.is_wildcard_export(),
             "TYPE": lambda exp: exp.is_type_export(),
             # Changed this condition - it was incorrectly handling type exports
-            "EXPORT": lambda exp: (not exp.is_type_export() and not exp.is_wildcard_export()),
+            "EXPORT": lambda exp: (
+                not exp.is_type_export() and not exp.is_wildcard_export()
+            ),
         }
         return quoted_paths, export_type_conditions
 
     @reader
-    def has_export_statement_for_path(self, relative_path: str, export_type: str = "EXPORT") -> bool:
+    def has_export_statement_for_path(
+        self, relative_path: str, export_type: str = "EXPORT"
+    ) -> bool:
         """Checks if the file has exports of specified type that contains the given path in single or double quotes.
 
         Args:
@@ -310,17 +336,25 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
         if not self.export_statements:
             return False
 
-        quoted_paths, export_type_conditions = self._get_export_data(relative_path, export_type)
+        quoted_paths, export_type_conditions = self._get_export_data(
+            relative_path, export_type
+        )
         condition = export_type_conditions[export_type]
 
-        return any(any(quoted_path in stmt.source for quoted_path in quoted_paths) and any(condition(exp) for exp in stmt.exports) for stmt in self.export_statements)
+        return any(
+            any(quoted_path in stmt.source for quoted_path in quoted_paths)
+            and any(condition(exp) for exp in stmt.exports)
+            for stmt in self.export_statements
+        )
 
     ####################################################################################################################
     # GETTERS
     ####################################################################################################################
 
     @reader
-    def get_export_statement_for_path(self, relative_path: str, export_type: str = "EXPORT") -> ExportStatement | None:
+    def get_export_statement_for_path(
+        self, relative_path: str, export_type: str = "EXPORT"
+    ) -> ExportStatement | None:
         """Gets the first export of specified type that contains the given path in single or double quotes.
 
         Args:
@@ -333,7 +367,9 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
         if not self.export_statements:
             return None
 
-        quoted_paths, export_type_conditions = self._get_export_data(relative_path, export_type)
+        quoted_paths, export_type_conditions = self._get_export_data(
+            relative_path, export_type
+        )
         condition = export_type_conditions[export_type]
 
         for stmt in self.export_statements:
@@ -345,7 +381,9 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
         return None
 
     @noapidoc
-    def get_import_module_name_for_file(self, filepath: str, ctx: CodebaseContext) -> str:
+    def get_import_module_name_for_file(
+        self, filepath: str, ctx: CodebaseContext
+    ) -> str:
         """Returns the module name that this file gets imported as"""
         # TODO: support relative and absolute module path
         import_path = filepath
@@ -359,7 +397,13 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
         return f"'{import_path}'"
 
     @reader
-    def get_import_string(self, alias: str | None = None, module: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> str:
+    def get_import_string(
+        self,
+        alias: str | None = None,
+        module: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> str:
         """Generates and returns an import statement for the file.
 
         Constructs an import statement string based on the file's name and module information.
@@ -407,7 +451,9 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
             None
         """
         # =====[ Add the new filepath as a new file node in the graph ]=====
-        new_file = self.ctx.node_classes.file_cls.from_content(new_filepath, self.content, self.ctx)
+        new_file = self.ctx.node_classes.file_cls.from_content(
+            new_filepath, self.content, self.ctx
+        )
         # =====[ Change the file on disk ]=====
         self.transaction_manager.add_file_rename_transaction(self, new_filepath)
         # =====[ Update all the inbound imports to point to the new module ]=====
@@ -433,7 +479,10 @@ class TSFile(SourceFile[TSImport, TSFunction, TSClass, TSAssignment, TSInterface
         Returns:
             TSNamespace | None: The namespace with the specified name if found, None otherwise.
         """
-        return next((x for x in self.symbols if isinstance(x, TSNamespace) and x.name == name), None)
+        return next(
+            (x for x in self.symbols if isinstance(x, TSNamespace) and x.name == name),
+            None,
+        )
 
     @property
     @reader

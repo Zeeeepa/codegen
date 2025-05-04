@@ -23,8 +23,17 @@ if TYPE_CHECKING:
 class TSAttribute(Attribute[TSCodeBlock, TSAssignment], TSAssignmentStatement):
     """Typescript implementation of Attribute detached symbol."""
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TSCodeBlock, pos: int) -> None:
-        super().__init__(ts_node, file_node_id, ctx, parent, pos=pos, assignment_node=ts_node)
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TSCodeBlock,
+        pos: int,
+    ) -> None:
+        super().__init__(
+            ts_node, file_node_id, ctx, parent, pos=pos, assignment_node=ts_node
+        )
         self.type = self.assignments[0].type
 
     @reader
@@ -54,7 +63,10 @@ class TSAttribute(Attribute[TSCodeBlock, TSAssignment], TSAssignmentStatement):
             var_references = statement.find(f"this.{self.name}", exact=True)
             for var_reference in var_references:
                 # Exclude the variable usage in the assignment itself
-                if self.ts_node.byte_range[0] <= var_reference.ts_node.start_byte and self.ts_node.byte_range[1] >= var_reference.ts_node.end_byte:
+                if (
+                    self.ts_node.byte_range[0] <= var_reference.ts_node.start_byte
+                    and self.ts_node.byte_range[1] >= var_reference.ts_node.end_byte
+                ):
                     continue
                 usages.append(var_reference)
         return sorted(dict.fromkeys(usages), key=lambda x: x.ts_node.start_byte)

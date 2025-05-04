@@ -61,17 +61,29 @@ class ExternalProcess(ABC):
         logger.info(f"Waiting for {self.__class__.__name__} to be ready...")
         # Wait for 3 minutes first
         start_time = time.time()
-        while not self.ready() and not self.error() and (time.time() - start_time) < 60 * 3:
+        while (
+            not self.ready()
+            and not self.error()
+            and (time.time() - start_time) < 60 * 3
+        ):
             time.sleep(1)
 
         # After 3 minutes, check every 15 seconds and warn
-        while not self.ready() and not self.error() and (time.time() - start_time) < 60 * 5:
-            logger.warning(f"{self.__class__.__name__} still not ready after 3 minutes for {self.full_path}")
+        while (
+            not self.ready()
+            and not self.error()
+            and (time.time() - start_time) < 60 * 5
+        ):
+            logger.warning(
+                f"{self.__class__.__name__} still not ready after 3 minutes for {self.full_path}"
+            )
             time.sleep(15)
 
         # After 5 minutes, check every 30 seconds and error
         while not self.ready() and not self.error():
-            logger.error(f"{self.__class__.__name__} still not ready after 5 minutes for {self.full_path}")
+            logger.error(
+                f"{self.__class__.__name__} still not ready after 5 minutes for {self.full_path}"
+            )
             time.sleep(30)
 
         if not ignore_error and self.error():

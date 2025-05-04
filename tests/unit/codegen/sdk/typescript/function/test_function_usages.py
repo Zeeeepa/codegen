@@ -15,13 +15,27 @@ const {d, e} = foo();
 export const [f, g] = foo();
 export const {h, i} = foo();
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
 
         assert len(file.global_vars) == 9
         assert len(foo.symbol_usages) == 9
-        assert {usage.name for usage in foo.symbol_usages} == {"a", "b", "c", "d", "e", "f", "g", "h", "i"}
+        assert {usage.name for usage in foo.symbol_usages} == {
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+        }
 
 
 def test_usages_in_if(tmpdir) -> None:
@@ -39,13 +53,21 @@ if (true) {
     const GLOBAL_VAR_3 = foo();
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
 
         assert len(file.global_vars) == 3
         assert len(foo.symbol_usages) == 3
-        assert {usage.name for usage in foo.symbol_usages} == {"GLOBAL_VAR", "GLOBAL_VAR_2", "GLOBAL_VAR_3"}
+        assert {usage.name for usage in foo.symbol_usages} == {
+            "GLOBAL_VAR",
+            "GLOBAL_VAR_2",
+            "GLOBAL_VAR_3",
+        }
 
 
 def test_usages_in_test(tmpdir) -> None:
@@ -91,7 +113,11 @@ describe("TestComponent", () => {
     })
 })
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.tsx")
         component = file.get_function("TestComponent")
         assert component.is_jsx
@@ -165,7 +191,11 @@ function ParentComponent({
     )
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.tsx")
         component = file.get_function("ChildComponent")
         assert component.is_jsx
@@ -188,7 +218,11 @@ export async function parent2() {
     return `${child()}`
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test dependencies ]=====

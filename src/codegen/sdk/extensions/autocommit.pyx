@@ -4,7 +4,8 @@ from typing import Any, ParamSpec, TypeVar, Union, overload
 
 import wrapt
 
-from codegen.sdk.core.autocommit.constants import AutoCommitState, OutdatedNodeError, enabled
+from codegen.sdk.core.autocommit.constants import (AutoCommitState,
+                                                   OutdatedNodeError, enabled)
 
 P = ParamSpec("P")
 T = TypeVar("T")

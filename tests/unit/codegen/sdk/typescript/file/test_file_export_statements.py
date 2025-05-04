@@ -169,7 +169,11 @@ def test_generics__export_class(export_check):
 def test_has_export_empty_file(tmpdir) -> None:
     # language=typescript
     content = ""
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("anything", "WILDCARD") is False
         assert file.has_export_statement_for_path("anything", "TYPE") is False
@@ -182,7 +186,11 @@ def test_has_export_no_exports(tmpdir) -> None:
     const x = 5;
     function test() {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("anything", "WILDCARD") is False
         assert file.has_export_statement_for_path("anything", "TYPE") is False
@@ -194,7 +202,11 @@ def test_has_export_non_wildcard(tmpdir) -> None:
     content = """
     export { something } from './path';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./path", "WILDCARD") is False
         assert file.has_export_statement_for_path("./path", "TYPE") is False
@@ -208,7 +220,11 @@ def test_has_export_wrong_path(tmpdir) -> None:
     export type { MyType } from './wrong/path2';
     export { something } from './wrong/path3';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./correct/path", "WILDCARD") is False
         assert file.has_export_statement_for_path("./correct/path", "TYPE") is False
@@ -222,7 +238,11 @@ def test_has_export_multiple_exports(tmpdir) -> None:
     export * from './path2';
     export type { MyType } from './path3';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./path1", "EXPORT") is True
         assert file.has_export_statement_for_path("./path2", "WILDCARD") is True
@@ -236,7 +256,11 @@ def test_has_export_substring(tmpdir) -> None:
     export type { MyType } from './type/subpath';
     export { something } from './export/subpath';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./path", "WILDCARD") is False
         assert file.has_export_statement_for_path("./type", "TYPE") is False
@@ -250,7 +274,11 @@ def test_has_export_case_sensitivity(tmpdir) -> None:
     export type { MyType } from './Type';
     export { something } from './Export';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./path", "WILDCARD") is False
         assert file.has_export_statement_for_path("./type", "TYPE") is False
@@ -264,7 +292,11 @@ def test_has_export_quote_types(tmpdir) -> None:
     export type { MyType } from './path2';
     export { something } from "./path3";
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./path1", "WILDCARD") is True
         assert file.has_export_statement_for_path("./path2", "TYPE") is True
@@ -278,7 +310,11 @@ def test_has_export_mixed_types(tmpdir) -> None:
     export type { MyType } from './path';
     export { something } from './path';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.has_export_statement_for_path("./path", "WILDCARD") is True
         assert file.has_export_statement_for_path("./path", "TYPE") is True
@@ -290,7 +326,11 @@ def test_has_export_default_parameter(tmpdir) -> None:
     content = """
     export { something } from './path';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         # Testing the default export_type parameter (should be "EXPORT")
         assert file.has_export_statement_for_path("./path") is True
@@ -299,7 +339,11 @@ def test_has_export_default_parameter(tmpdir) -> None:
 def test_get_export_statement_empty_file(tmpdir) -> None:
     # language=typescript
     content = ""
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.get_export_statement_for_path("anything", "WILDCARD") is None
         assert file.get_export_statement_for_path("anything", "TYPE") is None
@@ -312,7 +356,11 @@ def test_get_export_statement_no_exports(tmpdir) -> None:
     const x = 5;
     function test() {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.get_export_statement_for_path("anything", "WILDCARD") is None
         assert file.get_export_statement_for_path("anything", "TYPE") is None
@@ -324,7 +372,11 @@ def test_get_export_statement_non_wildcard(tmpdir) -> None:
     content = """
     export { something } from './path';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         assert file.get_export_statement_for_path("./path", "WILDCARD") is None
         assert file.get_export_statement_for_path("./path", "TYPE") is None
@@ -342,7 +394,11 @@ def test_get_export_statement_multiple_exports(tmpdir) -> None:
     export * from './path2';
     export type { MyType } from './path3';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         regular_stmt = file.get_export_statement_for_path("./path1", "EXPORT")
         wildcard_stmt = file.get_export_statement_for_path("./path2", "WILDCARD")
@@ -379,7 +435,11 @@ def test_get_export_statement_mixed_types(tmpdir) -> None:
     export { something } from './path';
     """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": main_content, "path.ts": path_content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": main_content, "path.ts": path_content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         wildcard_stmt = file.get_export_statement_for_path("./path", "WILDCARD")
@@ -406,7 +466,11 @@ def test_get_export_statement_quote_types(tmpdir) -> None:
     export * from "./path1";
     export type { MyType } from './path2';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         wildcard_stmt = file.get_export_statement_for_path("./path1", "WILDCARD")
         type_stmt = file.get_export_statement_for_path("./path2", "TYPE")

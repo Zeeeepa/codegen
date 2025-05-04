@@ -47,27 +47,41 @@ class Greeter_duplicate:
 
 def test_format_link_linear():
     """Test linear link formatting."""
-    assert format_link("test", "http://example.com", MessageChannel.LINEAR) == "[test](http://example.com)"
+    assert (
+        format_link("test", "http://example.com", MessageChannel.LINEAR)
+        == "[test](http://example.com)"
+    )
 
 
 def test_format_link_markdown():
     """Test markdown link formatting."""
-    assert format_link("test", "http://example.com", MessageChannel.MARKDOWN) == "[test](http://example.com)"
+    assert (
+        format_link("test", "http://example.com", MessageChannel.MARKDOWN)
+        == "[test](http://example.com)"
+    )
 
 
 def test_format_link_html():
     """Test HTML link formatting."""
-    assert format_link("test", "http://example.com", MessageChannel.HTML) == "<a href='http://example.com'>test</a>"
+    assert (
+        format_link("test", "http://example.com", MessageChannel.HTML)
+        == "<a href='http://example.com'>test</a>"
+    )
 
 
 def test_format_link_slack():
     """Test Slack link formatting."""
-    assert format_link("test", "http://example.com", MessageChannel.SLACK) == "<http://example.com|test>"
+    assert (
+        format_link("test", "http://example.com", MessageChannel.SLACK)
+        == "<http://example.com|test>"
+    )
 
 
 def test_extract_code_snippets():
     """Test extracting code snippets from messages."""
-    message = "Here is some `code` and `more code` and ```a code block``` and `final code`"
+    message = (
+        "Here is some `code` and `more code` and ```a code block``` and `final code`"
+    )
     snippets = extract_code_snippets(message)
     assert snippets == ["code", "more code", "final code"]
 

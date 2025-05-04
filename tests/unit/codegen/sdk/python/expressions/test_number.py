@@ -26,5 +26,15 @@ d = a + 5 / b * c
         assert isinstance(b.value, Number)
         assert isinstance(c.value, Number)
         assert isinstance(d.value, BinaryExpression)
-        assert [type(e.resolved_value) for e in d.value.elements] == [Number, Number, Number, Number]
-        assert [e.resolved_value.source for e in d.value.elements] == ["1", "5", "2", "3"]
+        assert [type(e.resolved_value) for e in d.value.elements] == [
+            Number,
+            Number,
+            Number,
+            Number,
+        ]
+        assert [e.resolved_value.source for e in d.value.elements] == [
+            "1",
+            "5",
+            "2",
+            "3",
+        ]

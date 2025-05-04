@@ -23,7 +23,11 @@ function calculateRectangleArea(a: string, b?: string, c?: boolean): string {
     return x + y + z + a
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.replace("a", "A")
     # language=typescript
@@ -72,7 +76,11 @@ function calculateRectangleArea(a: string, b?: string, c?: boolean): string {
     return x + y + z + a
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.replace(r"\ba\b", "A", is_regex=True)
     # language=typescript
@@ -121,7 +129,11 @@ function calculateRectangleArea(a: string, b?: string, c?: boolean): string {
     return x + y + z + a
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.replace("a", "A", count=32)
     # language=typescript

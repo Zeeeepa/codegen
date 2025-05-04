@@ -32,7 +32,14 @@ class PyForLoopStatement(ForLoopStatement["PyCodeBlock"], PyBlockStatement):
     item: Expression[PyForLoopStatement]
     iterable: Expression[PyForLoopStatement]
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.item = self.child_by_field_name("left")
         self.iterable = self.child_by_field_name("right")
@@ -56,7 +63,9 @@ class PyForLoopStatement(ForLoopStatement["PyCodeBlock"], PyBlockStatement):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self.item._compute_dependencies(usage_type, dest)
         self.iterable._compute_dependencies(usage_type, dest)
         super()._compute_dependencies(usage_type, dest)

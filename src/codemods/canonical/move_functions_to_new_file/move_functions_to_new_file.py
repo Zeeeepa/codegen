@@ -36,4 +36,8 @@ class MoveFunctionsToNewFile(Codemod, Skill):
             for function in file.functions:
                 if function.name.startswith("pylsp_"):
                     # Move each function that matches the criteria to the new file
-                    function.move_to_file(new_file, include_dependencies=True, strategy="update_all_imports")
+                    function.move_to_file(
+                        new_file,
+                        include_dependencies=True,
+                        strategy="update_all_imports",
+                    )

@@ -11,7 +11,15 @@ from codegen.sdk.output.utils import safe_getattr
 from codegen.sdk.types import JSON
 from codegen.shared.decorators.docs import noapidoc
 
-BLACKLIST = ["json", "G", "viz", "autocommit_cache", "ts_node", "symbol_usages", "usages"]
+BLACKLIST = [
+    "json",
+    "G",
+    "viz",
+    "autocommit_cache",
+    "ts_node",
+    "symbol_usages",
+    "usages",
+]
 
 
 @noapidoc
@@ -56,9 +64,19 @@ class JSONable(ABC):
             if isinstance(val, JSONable):
                 val = val.json(depth, methods)
             if isinstance(val, list):
-                val = [elem.json(depth, methods) if isinstance(elem, JSONable) else elem for elem in val]
+                val = [
+                    elem.json(depth, methods) if isinstance(elem, JSONable) else elem
+                    for elem in val
+                ]
             if isinstance(val, dict):
-                val = {key: elem.json(depth, methods) if isinstance(elem, JSONable) else elem for key, elem in val.items()}
+                val = {
+                    key: (
+                        elem.json(depth, methods)
+                        if isinstance(elem, JSONable)
+                        else elem
+                    )
+                    for key, elem in val.items()
+                }
             if isinstance(val, dict | str | list | int | float | bool | None):
                 res[attr] = val
 
@@ -76,7 +94,12 @@ class JSONable(ABC):
             Placeholder: A simplified representation containing the object's span, string representation,
                 kind_id from the TreeSitter node, and class name.
         """
-        return Placeholder(span=self.span, preview=repr(self), kind_id=self.ts_node.kind_id, name=self.__class__.__name__)
+        return Placeholder(
+            span=self.span,
+            preview=repr(self),
+            kind_id=self.ts_node.kind_id,
+            name=self.__class__.__name__,
+        )
 
     @property
     @abstractmethod

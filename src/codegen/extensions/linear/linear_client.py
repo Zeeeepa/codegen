@@ -5,7 +5,12 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from codegen.extensions.linear.types import LinearComment, LinearIssue, LinearTeam, LinearUser
+from codegen.extensions.linear.types import (
+    LinearComment,
+    LinearIssue,
+    LinearTeam,
+    LinearUser,
+)
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
@@ -15,7 +20,13 @@ class LinearClient:
     api_headers: dict
     api_endpoint = "https://api.linear.app/graphql"
 
-    def __init__(self, access_token: Optional[str] = None, team_id: Optional[str] = None, max_retries: int = 3, backoff_factor: float = 0.5):
+    def __init__(
+        self,
+        access_token: Optional[str] = None,
+        team_id: Optional[str] = None,
+        max_retries: int = 3,
+        backoff_factor: float = 0.5,
+    ):
         if not access_token:
             access_token = os.getenv("LINEAR_ACCESS_TOKEN")
             if not access_token:
@@ -55,10 +66,18 @@ class LinearClient:
             }
         """
         variables = {"issueId": issue_id}
-        response = self.session.post(self.api_endpoint, headers=self.api_headers, json={"query": query, "variables": variables})
+        response = self.session.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": query, "variables": variables},
+        )
         data = response.json()
         issue_data = data["data"]["issue"]
-        return LinearIssue(id=issue_data["id"], title=issue_data["title"], description=issue_data["description"])
+        return LinearIssue(
+            id=issue_data["id"],
+            title=issue_data["title"],
+            description=issue_data["description"],
+        )
 
     def get_issue_comments(self, issue_id: str) -> list[LinearComment]:
         query = """
@@ -79,7 +98,11 @@ class LinearClient:
             }
         """
         variables = {"issueId": issue_id}
-        response = self.session.post(self.api_endpoint, headers=self.api_headers, json={"query": query, "variables": variables})
+        response = self.session.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": query, "variables": variables},
+        )
         data = response.json()
         comments = data["data"]["issue"]["comments"]["nodes"]
 
@@ -87,7 +110,15 @@ class LinearClient:
         parsed_comments = []
         for comment in comments:
             user = comment.get("user", None)
-            parsed_comment = LinearComment(id=comment["id"], body=comment["body"], user=LinearUser(id=user.get("id"), name=user.get("name")) if user else None)
+            parsed_comment = LinearComment(
+                id=comment["id"],
+                body=comment["body"],
+                user=(
+                    LinearUser(id=user.get("id"), name=user.get("name"))
+                    if user
+                    else None
+                ),
+            )
             parsed_comments.append(parsed_comment)
 
         # Convert raw comments to LinearComment objects
@@ -119,14 +150,27 @@ class LinearClient:
         try:
             comment_data = data["data"]["commentCreate"]["comment"]
             user_data = comment_data.get("user", None)
-            user = LinearUser(id=user_data["id"], name=user_data["name"]) if user_data else None
+            user = (
+                LinearUser(id=user_data["id"], name=user_data["name"])
+                if user_data
+                else None
+            )
 
-            return LinearComment(id=comment_data["id"], body=comment_data["body"], user=user)
+            return LinearComment(
+                id=comment_data["id"], body=comment_data["body"], user=user
+            )
         except Exception as e:
             msg = f"Error creating comment\n{data}\n{e}"
             raise ValueError(msg)
 
-    def register_webhook(self, webhook_url: str, team_id: str, secret: str, enabled: bool, resource_types: list[str]):
+    def register_webhook(
+        self,
+        webhook_url: str,
+        team_id: str,
+        secret: str,
+        enabled: bool,
+        resource_types: list[str],
+    ):
         mutation = """
             mutation createWebhook($input: WebhookCreateInput!) {
                 webhookCreate(input: $input) {
@@ -149,7 +193,11 @@ class LinearClient:
             }
         }
 
-        response = self.session.post(self.api_endpoint, headers=self.api_headers, json={"query": mutation, "variables": variables})
+        response = self.session.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": mutation, "variables": variables},
+        )
         body = response.json()
         return body
 
@@ -196,7 +244,9 @@ class LinearClient:
             msg = f"Error searching issues\n{data}\n{e}"
             raise Exception(msg)
 
-    def create_issue(self, title: str, description: str | None = None, team_id: str | None = None) -> LinearIssue:
+    def create_issue(
+        self, title: str, description: str | None = None, team_id: str | None = None
+    ) -> LinearIssue:
         """Create a new issue.
 
         Args:

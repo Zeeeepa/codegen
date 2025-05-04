@@ -24,7 +24,9 @@ class CodegenSession:
 
     def __init__(self, repo_path: Path, git_token: str | None = None) -> None:
         if not repo_path.exists() or get_git_repo(repo_path) is None:
-            rich.print(f"\n[bold red]Error:[/bold red] Path to git repo does not exist at {self.repo_path}")
+            rich.print(
+                f"\n[bold red]Error:[/bold red] Path to git repo does not exist at {self.repo_path}"
+            )
             raise click.Abort()
 
         self.repo_path = repo_path
@@ -49,11 +51,24 @@ class CodegenSession:
         """Initialize the codegen session"""
         self._validate()
 
-        self.config.repository.path = self.config.repository.path or str(self.local_git.repo_path)
-        self.config.repository.owner = self.config.repository.owner or self.local_git.owner
-        self.config.repository.user_name = self.config.repository.user_name or self.local_git.user_name
-        self.config.repository.user_email = self.config.repository.user_email or self.local_git.user_email
-        self.config.repository.language = self.config.repository.language or self.local_git.get_language(access_token=self.config.secrets.github_token).upper()
+        self.config.repository.path = self.config.repository.path or str(
+            self.local_git.repo_path
+        )
+        self.config.repository.owner = (
+            self.config.repository.owner or self.local_git.owner
+        )
+        self.config.repository.user_name = (
+            self.config.repository.user_name or self.local_git.user_name
+        )
+        self.config.repository.user_email = (
+            self.config.repository.user_email or self.local_git.user_email
+        )
+        self.config.repository.language = (
+            self.config.repository.language
+            or self.local_git.get_language(
+                access_token=self.config.secrets.github_token
+            ).upper()
+        )
         self.config.save()
 
     def _validate(self) -> None:
@@ -70,8 +85,12 @@ class CodegenSession:
             rich.print(format_command("codegen init --token <your-token>"))
 
         if self.local_git.origin_remote is None:
-            rich.print("\n[bold yellow]Warning:[/bold yellow] No remote found for repository")
-            rich.print("[white]To enable full functionality, please add a remote to the repository[/white]")
+            rich.print(
+                "\n[bold yellow]Warning:[/bold yellow] No remote found for repository"
+            )
+            rich.print(
+                "[white]To enable full functionality, please add a remote to the repository[/white]"
+            )
             rich.print("\n[dim]To add a remote to the repository:[/dim]")
             rich.print(format_command("git remote add origin <your-repo-url>"))
 
@@ -79,8 +98,14 @@ class CodegenSession:
             if git_token is not None:
                 Github(login_or_token=git_token).get_repo(self.local_git.full_name)
         except BadCredentialsException:
-            rich.print(format_command(f"\n[bold red]Error:[/bold red] Invalid GitHub token={git_token} for repo={self.local_git.full_name}"))
-            rich.print("[white]Please provide a valid GitHub token for this repository.[/white]")
+            rich.print(
+                format_command(
+                    f"\n[bold red]Error:[/bold red] Invalid GitHub token={git_token} for repo={self.local_git.full_name}"
+                )
+            )
+            rich.print(
+                "[white]Please provide a valid GitHub token for this repository.[/white]"
+            )
             raise click.Abort()
 
     def __str__(self) -> str:

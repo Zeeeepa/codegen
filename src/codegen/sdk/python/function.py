@@ -13,7 +13,9 @@ from codegen.sdk.python.detached_symbols.decorator import PyDecorator
 from codegen.sdk.python.detached_symbols.parameter import PyParameter
 from codegen.sdk.python.expressions.type import PyType
 from codegen.sdk.python.interfaces.has_block import PyHasBlock
-from codegen.sdk.python.placeholder.placeholder_return_type import PyReturnTypePlaceholder
+from codegen.sdk.python.placeholder.placeholder_return_type import (
+    PyReturnTypePlaceholder,
+)
 from codegen.sdk.python.symbol import PySymbol
 from codegen.shared.decorators.docs import noapidoc, py_apidoc
 from codegen.shared.logging.get_logger import get_logger
@@ -33,12 +35,21 @@ logger = get_logger(__name__)
 
 
 @py_apidoc
-class PyFunction(Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasBlock, PySymbol):
+class PyFunction(
+    Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasBlock, PySymbol
+):
     """Extends Function for Python codebases."""
 
     _decorated_node: TSNode | None
 
-    def __init__(self, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: PyHasBlock, decorated_node: TSNode | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyHasBlock,
+        decorated_node: TSNode | None = None,
+    ) -> None:
         super().__init__(ts_node, file_id, ctx, parent)
         self._decorated_node = decorated_node
 
@@ -80,7 +91,10 @@ class PyFunction(Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasB
         Returns:
             bool: True if function has an overload decorator, False otherwise.
         """
-        return any(dec in ("@overload", "@typing.overload", "@typing_extensions.overload") for dec in self.decorators)
+        return any(
+            dec in ("@overload", "@typing.overload", "@typing_extensions.overload")
+            for dec in self.decorators
+        )
 
     @property
     @reader
@@ -121,7 +135,9 @@ class PyFunction(Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasB
 
     @noapidoc
     @reader
-    def resolve_name(self, name: str, start_byte: int | None = None, strict: bool = True) -> Generator[Symbol | Import | WildcardImport]:
+    def resolve_name(
+        self, name: str, start_byte: int | None = None, strict: bool = True
+    ) -> Generator[Symbol | Import | WildcardImport]:
         if self.is_method:
             if not self.is_static_method:
                 if len(self.parameters.symbols) > 0:
@@ -137,7 +153,9 @@ class PyFunction(Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasB
     @commiter
     def parse(self, ctx: CodebaseContext) -> None:
         super().parse(ctx)
-        self.return_type = self.child_by_field_name("return_type", placeholder=PyReturnTypePlaceholder)
+        self.return_type = self.child_by_field_name(
+            "return_type", placeholder=PyReturnTypePlaceholder
+        )
         if parameters_node := self.ts_node.child_by_field_name("parameters"):
             params = [
                 x
@@ -152,8 +170,12 @@ class PyFunction(Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasB
                     "dictionary_splat_pattern",
                 )
             ]
-            self._parameters = Collection(parameters_node, self.file_node_id, self.ctx, self)
-            self._parameters._init_children([PyParameter(x, i, self._parameters) for (i, x) in enumerate(params)])
+            self._parameters = Collection(
+                parameters_node, self.file_node_id, self.ctx, self
+            )
+            self._parameters._init_children(
+                [PyParameter(x, i, self._parameters) for (i, x) in enumerate(params)]
+            )
         else:
             logger.warning(f"Couldn't find parameters for {self!r}")
             self._parameters = []
@@ -161,7 +183,9 @@ class PyFunction(Function[PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasB
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         dest = dest or self.self_dest
 
         # =====[ Decorated functions ]=====

@@ -30,7 +30,9 @@ def parse_codebase(
     codebase = Codebase(
         projects=[
             ProjectConfig(
-                repo_operator=RepoOperator(repo_config=RepoConfig.from_repo_path(repo_path=repo_path)),
+                repo_operator=RepoOperator(
+                    repo_config=RepoConfig.from_repo_path(repo_path=repo_path)
+                ),
                 subdirectories=subdirectories,
                 programming_language=language or determine_project_language(repo_path),
             )
@@ -52,8 +54,15 @@ def run_local(
         diff_preview: Number of lines of diff to preview (None for all)
     """
     # Parse codebase and run
-    with Status(f"[bold]Parsing codebase at {session.repo_path} with subdirectories {function.subdirectories or 'ALL'} and language {function.language or 'AUTO'} ...", spinner="dots") as status:
-        codebase = parse_codebase(repo_path=session.repo_path, subdirectories=function.subdirectories, language=function.language)
+    with Status(
+        f"[bold]Parsing codebase at {session.repo_path} with subdirectories {function.subdirectories or 'ALL'} and language {function.language or 'AUTO'} ...",
+        spinner="dots",
+    ) as status:
+        codebase = parse_codebase(
+            repo_path=session.repo_path,
+            subdirectories=function.subdirectories,
+            language=function.language,
+        )
         status.update("[bold green]✓ Parsed codebase")
 
         status.update("[bold]Running codemod...")
@@ -76,9 +85,17 @@ def run_local(
         limited_diff = "\n".join(diff_lines[:diff_preview])
 
         if truncated:
-            limited_diff += f"\n\n...\n\n[yellow]diff truncated to {diff_preview} lines[/yellow]"
+            limited_diff += (
+                f"\n\n...\n\n[yellow]diff truncated to {diff_preview} lines[/yellow]"
+            )
 
-        panel = Panel(limited_diff, title="[bold]Diff Preview[/bold]", border_style="blue", padding=(1, 2), expand=False)
+        panel = Panel(
+            limited_diff,
+            title="[bold]Diff Preview[/bold]",
+            border_style="blue",
+            padding=(1, 2),
+            expand=False,
+        )
         rich.print(panel)
 
     # Apply changes

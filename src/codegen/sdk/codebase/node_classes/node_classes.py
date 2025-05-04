@@ -37,13 +37,19 @@ class NodeClasses:
     dynamic_import_parent_types: set[type[Editable]]
     symbol_map: dict[str, type[Symbol]] = field(default_factory=dict)
     expression_map: dict[str, type[Expression]] = field(default_factory=dict)
-    type_map: dict[str, type[Type] | dict[str, type[Type]]] = field(default_factory=dict)
+    type_map: dict[str, type[Type] | dict[str, type[Type]]] = field(
+        default_factory=dict
+    )
     keywords: list[str] = field(default_factory=list)
     type_node_type: str = ""
     int_dict_key: bool = False
 
     @cached_property
     def resolvables(self) -> set[str]:
-        id_types = {k for k, v in self.expression_map.items() if isinstance(v, type) and issubclass(v, Resolvable)}
+        id_types = {
+            k
+            for k, v in self.expression_map.items()
+            if isinstance(v, type) and issubclass(v, Resolvable)
+        }
         id_types.update(["identifier"])
         return id_types

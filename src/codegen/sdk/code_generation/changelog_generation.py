@@ -71,13 +71,19 @@ class ContextMock:
 
 
 def generate_release_summary_context(release: Release):
-    release_summary_context = {"version": release["version"].tag_format, "date": release["tagged_date"].strftime("%B %d, %Y"), "commits": dict()}
+    release_summary_context = {
+        "version": release["version"].tag_format,
+        "date": release["tagged_date"].strftime("%B %d, %Y"),
+        "commits": dict(),
+    }
     elements = release["elements"]
     for title, commits in elements.items():
         release_summary_context["commits"][title] = []
         for parsed_commit in commits:
             if isinstance(parsed_commit, ParsedCommit):
-                release_summary_context["commits"][title].append(parsed_commit.descriptions[0])
+                release_summary_context["commits"][title].append(
+                    parsed_commit.descriptions[0]
+                )
             elif isinstance(parsed_commit, ParseError):
                 release_summary_context["commits"][title].append(parsed_commit.message)
     return release_summary_context
@@ -110,7 +116,9 @@ Please write a high level summary of the changes in 1 to 5 bullet points.
 
 
 def generate_changelog(client: OpenAI, latest_existing_version: str | None = None):
-    ctx = CliContextObj(ContextMock(), logger=logger, global_opts=GlobalCommandLineOptions())
+    ctx = CliContextObj(
+        ContextMock(), logger=logger, global_opts=GlobalCommandLineOptions()
+    )
     runtime = ctx.runtime_ctx
     translator = runtime.version_translator
     with Repo(Path(codegen.__file__).parents[2]) as codegen_sdk_repo:
@@ -123,7 +131,9 @@ def generate_changelog(client: OpenAI, latest_existing_version: str | None = Non
 
     releases = []
     parsed_releases: list[Release] = release_history.released.values()
-    parsed_releases = sorted(parsed_releases, key=lambda x: x["tagged_date"], reverse=True)
+    parsed_releases = sorted(
+        parsed_releases, key=lambda x: x["tagged_date"], reverse=True
+    )
     for release in parsed_releases:
         version = f"v{release['version']!s}"
         if latest_existing_version and version == latest_existing_version:

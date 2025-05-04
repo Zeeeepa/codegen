@@ -10,7 +10,11 @@ import * as f2 from 'b/c';
 import { bar1 as bar2 } from 'd/f';
 import bar from 'd/f';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file1.ts")
         assert file.has_import("foo2")
         assert file.has_import("f2")
@@ -31,7 +35,11 @@ import type {
     E,
 } from "some/module";
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file1.ts")
         imports = file.imports
         assert not file.has_import("TEST")

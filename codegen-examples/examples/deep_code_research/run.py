@@ -6,6 +6,11 @@ from pathlib import Path
 from typing import Optional
 
 import rich_click as click
+from langchain_core.messages import SystemMessage
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.prompt import Prompt
+
 from codegen import Codebase
 from codegen.extensions.langchain.agent import create_agent_with_tools
 from codegen.extensions.langchain.tools import (
@@ -15,13 +20,11 @@ from codegen.extensions.langchain.tools import (
     SemanticSearchTool,
     ViewFileTool,
 )
-from langchain_core.messages import SystemMessage
-from rich.console import Console
-from rich.markdown import Markdown
-from rich.prompt import Prompt
 
 # Suppress LangSmith warning
-warnings.filterwarnings("ignore", message="API key must be provided when using hosted LangSmith API")
+warnings.filterwarnings(
+    "ignore", message="API key must be provided when using hosted LangSmith API"
+)
 
 # Add the project root to Python path
 project_root = str(Path(__file__).parent.parent.parent)
@@ -33,7 +36,9 @@ click.rich_click.USE_MARKDOWN = True
 click.rich_click.SHOW_ARGUMENTS = True
 click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
 click.rich_click.STYLE_ERRORS_SUGGESTION = "yellow italic"
-click.rich_click.ERRORS_SUGGESTION = "Try running the command with --help for more information"
+click.rich_click.ERRORS_SUGGESTION = (
+    "Try running the command with --help for more information"
+)
 
 console = Console()
 
@@ -78,8 +83,14 @@ def cli():
 
 @cli.command()
 @click.argument("repo_name", required=False)
-@click.option("--query", "-q", default=None, help="Initial research query to start with.")
-def research(repo_name: Optional[str] = None, query: Optional[str] = None, thread_id: Optional[int] = 100):
+@click.option(
+    "--query", "-q", default=None, help="Initial research query to start with."
+)
+def research(
+    repo_name: Optional[str] = None,
+    query: Optional[str] = None,
+    thread_id: Optional[int] = 100,
+):
     """[bold green]Start a code research session[/bold green]
 
     [blue]Arguments:[/blue]
@@ -88,7 +99,9 @@ def research(repo_name: Optional[str] = None, query: Optional[str] = None, threa
     # If no repo name provided, prompt for it
     if not repo_name:
         console.print("\n[bold]Welcome to the Code Research CLI![/bold]")
-        console.print("\nEnter a GitHub repository to analyze (format: owner/repo)\nExamples:\n  • fastapi/fastapi\n  • pytorch/pytorch\n  • microsoft/TypeScript")
+        console.print(
+            "\nEnter a GitHub repository to analyze (format: owner/repo)\nExamples:\n  • fastapi/fastapi\n  • pytorch/pytorch\n  • microsoft/TypeScript"
+        )
         repo_name = Prompt.ask("\n[bold cyan]Repository name[/bold cyan]")
 
     # Initialize codebase
@@ -106,8 +119,14 @@ def research(repo_name: Optional[str] = None, query: Optional[str] = None, threa
     ]
 
     # Initialize agent with research tools
-    with console.status("[bold blue]Initializing research agent...[/bold blue]") as status:
-        agent = create_agent_with_tools(codebase=codebase, tools=tools, system_message=SystemMessage(content=RESEARCH_AGENT_PROMPT))
+    with console.status(
+        "[bold blue]Initializing research agent...[/bold blue]"
+    ) as status:
+        agent = create_agent_with_tools(
+            codebase=codebase,
+            tools=tools,
+            system_message=SystemMessage(content=RESEARCH_AGENT_PROMPT),
+        )
         status.update("[bold green]✓ Research agent ready![/bold green]")
 
     # Get initial query if not provided
@@ -128,11 +147,15 @@ def research(repo_name: Optional[str] = None, query: Optional[str] = None, threa
             query = Prompt.ask("\n[bold cyan]Research query[/bold cyan]")
 
         if query.lower() in ["exit", "quit"]:
-            console.print("\n[bold green]Thanks for using the Code Research CLI! Goodbye![/bold green]")
+            console.print(
+                "\n[bold green]Thanks for using the Code Research CLI! Goodbye![/bold green]"
+            )
             break
 
         # Run the agent
-        with console.status("[bold blue]Researching...[/bold blue]", spinner="dots") as status:
+        with console.status(
+            "[bold blue]Researching...[/bold blue]", spinner="dots"
+        ) as status:
             try:
                 result = agent.invoke(
                     {"input": query},

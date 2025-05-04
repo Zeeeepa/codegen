@@ -63,8 +63,13 @@ class PyComment(Comment):
         Returns:
             bool: True if the docstring follows Google style formatting, False otherwise.
         """
-        if self.comment_type == PyCommentType.MULTI_LINE_QUOTE or self.comment_type == PyCommentType.MULTI_LINE_DOUBLE_QUOTE:
-            return (self.source.startswith('"""') and not self.source.startswith('"""\n')) or (self.source.startswith("'''") and not self.source.startswith("'''\n"))
+        if (
+            self.comment_type == PyCommentType.MULTI_LINE_QUOTE
+            or self.comment_type == PyCommentType.MULTI_LINE_DOUBLE_QUOTE
+        ):
+            return (
+                self.source.startswith('"""') and not self.source.startswith('"""\n')
+            ) or (self.source.startswith("'''") and not self.source.startswith("'''\n"))
         return False
 
     @noapidoc
@@ -78,7 +83,10 @@ class PyComment(Comment):
                 return self.source[1:]
             else:
                 return self.source
-        elif self.comment_type == PyCommentType.MULTI_LINE_QUOTE or self.comment_type == PyCommentType.MULTI_LINE_DOUBLE_QUOTE:
+        elif (
+            self.comment_type == PyCommentType.MULTI_LINE_QUOTE
+            or self.comment_type == PyCommentType.MULTI_LINE_DOUBLE_QUOTE
+        ):
             # Handle edge case with google style docstrings
             skip_lines = 1 if self.google_style else 0
             # Remove the triple quotes and extract the text content
@@ -90,7 +98,9 @@ class PyComment(Comment):
             # Get indentation level
             padding = lowest_indentation(text_lines, skip_lines=skip_lines)
             # Remove indentation
-            formatted_lines = text_lines[:skip_lines] + [line[padding:] for line in text_lines[skip_lines:]]
+            formatted_lines = text_lines[:skip_lines] + [
+                line[padding:] for line in text_lines[skip_lines:]
+            ]
             return "\n".join(formatted_lines).rstrip()
         else:
             # Return the source if the comment type is unknown
@@ -100,10 +110,17 @@ class PyComment(Comment):
     @reader
     def _unparse_comment(self, new_src: str):
         """Unparses cleaned text content into a comment block"""
-        return self.generate_comment(new_src, self.comment_type, google_style=self.google_style)
+        return self.generate_comment(
+            new_src, self.comment_type, google_style=self.google_style
+        )
 
     @staticmethod
-    def generate_comment(new_src: str, comment_type: PyCommentType, force_multiline: bool = False, google_style: bool = True) -> str:
+    def generate_comment(
+        new_src: str,
+        comment_type: PyCommentType,
+        force_multiline: bool = False,
+        google_style: bool = True,
+    ) -> str:
         """Converts text content into a Python comment block.
 
         Takes a string of text content and converts it into a Python comment block based on the specified comment type.

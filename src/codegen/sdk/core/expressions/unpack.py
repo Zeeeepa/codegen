@@ -44,16 +44,27 @@ class Unpack(Unwrappable[Parent], HasValue, IWrapper, Generic[Parent]):
         if isinstance(node, Dict) and isinstance(self.parent, Dict):
             if self.start_point[0] != self.parent.start_point[0]:
                 self.remove(delete_formatting=False)
-                self.remove_byte_range(self.start_byte - self.start_point[1], self.start_byte)
+                self.remove_byte_range(
+                    self.start_byte - self.start_point[1], self.start_byte
+                )
                 next_sibling = self.next_sibling
                 if next_sibling.source == ",":
                     next_sibling = next_sibling.next_sibling
                     indent_start = next_sibling.start_byte - next_sibling.start_point[1]
                     self.remove_byte_range(self.end_byte, next_sibling.start_byte)
-                    self.insert_at(next_sibling.start_byte, self.file.content_bytes[indent_start : next_sibling.start_byte].decode("utf-8"), priority=-10)
+                    self.insert_at(
+                        next_sibling.start_byte,
+                        self.file.content_bytes[
+                            indent_start : next_sibling.start_byte
+                        ].decode("utf-8"),
+                        priority=-10,
+                    )
                 else:
                     # Delete the remaining characters on this line
-                    self.remove_byte_range(self.end_byte, next_sibling.start_byte - next_sibling.start_point[1])
+                    self.remove_byte_range(
+                        self.end_byte,
+                        next_sibling.start_byte - next_sibling.start_point[1],
+                    )
 
             else:
                 self.remove()

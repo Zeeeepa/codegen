@@ -5,7 +5,10 @@ import pygit2
 
 import codegen
 from codegen import Codebase
-from codegen.extensions.attribution.main import add_attribution_to_symbols, analyze_ai_impact
+from codegen.extensions.attribution.main import (
+    add_attribution_to_symbols,
+    analyze_ai_impact,
+)
 
 
 def diagnose_repository(codebase):
@@ -28,12 +31,18 @@ def diagnose_repository(codebase):
                 head = repo.head
                 head_commit = repo.get(head.target)
                 print(f"Repository has a HEAD commit: {head_commit.id}")
-                print(f"HEAD commit author: {head_commit.author.name} <{head_commit.author.email}>")
-                print(f"HEAD commit message (first 5 lines only): {'\n'.join(head_commit.message.strip().split('\n')[:5])}")
+                print(
+                    f"HEAD commit author: {head_commit.author.name} <{head_commit.author.email}>"
+                )
+                print(
+                    f"HEAD commit message (first 5 lines only): {'\n'.join(head_commit.message.strip().split('\n')[:5])}"
+                )
                 print("...")
                 # Check if it's a shallow clone
                 if os.path.exists(os.path.join(repo_path, ".git", "shallow")):
-                    print("⚠️ This appears to be a shallow clone, which may have limited history.")
+                    print(
+                        "⚠️ This appears to be a shallow clone, which may have limited history."
+                    )
 
                 # Try to count commits
                 commit_count = 0
@@ -82,7 +91,12 @@ def run(codebase: Codebase):
     diagnose_repository(codebase)
 
     # Default AI authors to track (and ci bots)
-    ai_authors = ["renovate[bot]", "dependabot[bot]", "github-actions[bot]", "devin-ai-integration[bot]"]
+    ai_authors = [
+        "renovate[bot]",
+        "dependabot[bot]",
+        "github-actions[bot]",
+        "devin-ai-integration[bot]",
+    ]
 
     # Run the analysis
     results = analyze_ai_impact(codebase, ai_authors)
@@ -109,13 +123,19 @@ def run(codebase: Codebase):
         ai_file_percentage = stats["ai_file_count"] / stats["total_file_count"] * 100
     else:
         ai_file_percentage = 0.0
-    print(f"Files with >50% AI contribution: {stats['ai_file_count']} of {stats['total_file_count']} ({ai_file_percentage:.1f}%)")
+    print(
+        f"Files with >50% AI contribution: {stats['ai_file_count']} of {stats['total_file_count']} ({ai_file_percentage:.1f}%)"
+    )
 
     if results["total_symbol_count"] > 0:
-        ai_symbol_percentage = results["ai_symbol_count"] / results["total_symbol_count"] * 100
+        ai_symbol_percentage = (
+            results["ai_symbol_count"] / results["total_symbol_count"] * 100
+        )
     else:
         ai_symbol_percentage = 0.0
-    print(f"AI-touched symbols: {results['ai_symbol_count']} of {results['total_symbol_count']} ({ai_symbol_percentage:.1f}%)")
+    print(
+        f"AI-touched symbols: {results['ai_symbol_count']} of {results['total_symbol_count']} ({ai_symbol_percentage:.1f}%)"
+    )
 
     # Print high-impact AI symbols
     print("\n🔍 High-Impact AI-Written Code:")

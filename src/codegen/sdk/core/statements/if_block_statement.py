@@ -29,7 +29,9 @@ TCodeBlock = TypeVar("TCodeBlock", bound="CodeBlock")
 
 
 @apidoc
-class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlock, TIfBlockStatement]):
+class IfBlockStatement(
+    ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlock, TIfBlockStatement]
+):
     """Abstract representation of the if/elif/else if/else statement block.
 
     For example, if there is a code block like:
@@ -49,7 +51,9 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
     statement_type = StatementType.IF_BLOCK_STATEMENT
     condition: Expression[Self] | None
     consequence_block: TCodeBlock
-    _alternative_blocks: list[TIfBlockStatement] | None  # None if it is an elif or else block
+    _alternative_blocks: (
+        list[TIfBlockStatement] | None
+    )  # None if it is an elif or else block
     _main_if_block: TIfBlockStatement
 
     @abstractmethod
@@ -64,7 +68,9 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
 
     @commiter
     @noapidoc
-    def _compute_dependencies(self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None
+    ) -> None:
         # Compute dependencies for all statements in the nested code blocks
         if self.condition:
             self.condition._compute_dependencies(usage_type, dest)
@@ -121,7 +127,9 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
         Returns:
             list[TCodeBlock]: A list of CodeBlock objects representing all nested code blocks within the statement.
         """
-        return [self.consequence_block] + [x.consequence_block for x in self.alternative_blocks]
+        return [self.consequence_block] + [
+            x.consequence_block for x in self.alternative_blocks
+        ]
 
     @property
     @abstractmethod
@@ -178,7 +186,11 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
             return self._alternative_blocks
         if self.is_else_statement:
             return []
-        return [x for x in self._main_if_block.alternative_blocks if x.start_byte > self.start_byte]
+        return [
+            x
+            for x in self._main_if_block.alternative_blocks
+            if x.start_byte > self.start_byte
+        ]
 
     @proxy_property
     @reader
@@ -205,14 +217,18 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
         Returns:
             TIfBlockStatement | None: The else block statement if it exists, None otherwise.
         """
-        return next((alt for alt in self.alternative_blocks if alt.is_else_statement), None)
+        return next(
+            (alt for alt in self.alternative_blocks if alt.is_else_statement), None
+        )
 
     @abstractmethod
     def _else_if_to_if(self) -> None:
         """Converts an elif block to an if block."""
 
     @writer
-    def reduce_condition(self, bool_condition: bool, node: Editable | None = None) -> None:
+    def reduce_condition(
+        self, bool_condition: bool, node: Editable | None = None
+    ) -> None:
         """Simplifies a conditional block by reducing its condition to a boolean value.
 
         This method modifies the if/elif/else block structure based on the provided boolean value.
@@ -251,14 +267,20 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
 
             # If the last statement in the consequence block is a return statement, remove all the lines after it.
             if isinstance(self.parent, Function):
-                last_statement = self.consequence_block.get_statements(max_level=self.consequence_block.level)[-1]
+                last_statement = self.consequence_block.get_statements(
+                    max_level=self.consequence_block.level
+                )[-1]
                 if last_statement.statement_type == StatementType.RETURN_STATEMENT:
-                    self.consequence_block.remove_byte_range(last_statement.end_byte, self.parent.end_byte)
+                    self.consequence_block.remove_byte_range(
+                        last_statement.end_byte, self.parent.end_byte
+                    )
 
         # ==== [ Reduce condition to False ] ====
         elif self.is_elif_statement:
             # If the current block is an elif block, remove the elif block and nothing else.
-            remove_end_byte = first_elif.start_byte if first_elif else self.ts_node.end_byte
+            remove_end_byte = (
+                first_elif.start_byte if first_elif else self.ts_node.end_byte
+            )
             self.remove_byte_range(self.ts_node.start_byte, remove_end_byte)
         else:
             # ==== [ Main block ] ====
@@ -270,7 +292,9 @@ class IfBlockStatement(ConditionalBlock, Statement[TCodeBlock], Generic[TCodeBlo
                 first_elif._else_if_to_if()
             elif (else_block := self.else_statement) is not None:
                 else_block.consequence_block.unwrap()
-                remove_end = else_block.consequence_block._get_line_starts()[0].start_byte
+                remove_end = else_block.consequence_block._get_line_starts()[
+                    0
+                ].start_byte
                 self.remove_byte_range(self.ts_node.start_byte, remove_end)
             else:
                 self.remove()

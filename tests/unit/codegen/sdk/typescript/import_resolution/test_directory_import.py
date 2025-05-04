@@ -13,7 +13,13 @@ def test_directory_imports(tmpdir) -> None:
     import defaultExport from './module';
     """
     with get_codebase_session(
-        tmpdir=tmpdir, files={"dir1/file1.ts": content1, "dir1/file2.ts": content2, "dir2/file3.ts": "import { d } from '../shared';"}, programming_language=ProgrammingLanguage.TYPESCRIPT
+        tmpdir=tmpdir,
+        files={
+            "dir1/file1.ts": content1,
+            "dir1/file2.ts": content2,
+            "dir2/file3.ts": "import { d } from '../shared';",
+        },
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         dir1 = codebase.get_directory("dir1")
         dir2 = codebase.get_directory("dir2")
@@ -45,7 +51,13 @@ def test_directory_nested_imports(tmpdir) -> None:
     import { c } from '../../module3';
     """
     with get_codebase_session(
-        tmpdir=tmpdir, files={"dir1/file1.ts": content1, "dir1/subdir/file2.ts": content2, "dir1/subdir/deepdir/file3.ts": content3}, programming_language=ProgrammingLanguage.TYPESCRIPT
+        tmpdir=tmpdir,
+        files={
+            "dir1/file1.ts": content1,
+            "dir1/subdir/file2.ts": content2,
+            "dir1/subdir/deepdir/file3.ts": content3,
+        },
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         dir1 = codebase.get_directory("dir1")
         subdir = codebase.get_directory("dir1/subdir")

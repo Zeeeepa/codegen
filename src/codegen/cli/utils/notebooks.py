@@ -208,7 +208,13 @@ def create_notebook(jupyter_dir: Path, demo: bool = False) -> Path:
         cells = create_cells(DEMO_CELLS if demo else DEFAULT_CELLS)
         notebook_content = {
             "cells": cells,
-            "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}},
+            "metadata": {
+                "kernelspec": {
+                    "display_name": "Python 3",
+                    "language": "python",
+                    "name": "python3",
+                }
+            },
             "nbformat": 4,
             "nbformat_minor": 4,
         }

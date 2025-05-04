@@ -23,7 +23,9 @@ def greet(name: str):
     print(f"Hi {name}!")
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"greetings.py": content1, "hello.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"greetings.py": content1, "hello.py": content2}
+    ) as codebase:
         # Test construction and initial indexing
         index = FileIndex(codebase)
         index.create()
@@ -57,7 +59,9 @@ def greet(name: str):
         # Test updating after file changes
         # Add a new function to greetings.py
         greetings_file = codebase.get_file("greetings.py")
-        new_content = greetings_file.content + "\n\ndef welcome():\n    print('Welcome!')\n"
+        new_content = (
+            greetings_file.content + "\n\ndef welcome():\n    print('Welcome!')\n"
+        )
         greetings_file.edit(new_content)
 
         # Update the index
@@ -86,7 +90,9 @@ def test_file_index_large_file(tmpdir) -> None:
     # Create a large file by repeating a simple function many times
     large_content = "def f():\n    print('test')\n\n" * 10000
 
-    with get_codebase_session(tmpdir=tmpdir, files={"large.py": large_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"large.py": large_content}
+    ) as codebase:
         index = FileIndex(codebase)
         index.create()
 
@@ -101,7 +107,9 @@ def test_file_index_large_file(tmpdir) -> None:
 
 def test_file_index_invalid_operations(tmpdir) -> None:
     """Test that the file index properly handles invalid operations."""
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": "print('test')"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": "print('test')"}
+    ) as codebase:
         index = FileIndex(codebase)
 
         # Test searching before creating index
@@ -124,11 +132,15 @@ def test_file_index_invalid_operations(tmpdir) -> None:
 def test_file_index_binary_files(tmpdir) -> None:
     """Test that the file index properly handles binary files."""
     # Create a binary file
-    binary_content = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])  # PNG header
+    binary_content = bytes(
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+    )  # PNG header
     binary_path = Path(tmpdir) / "test.png"
     binary_path.write_bytes(binary_content)
 
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": "print('test')", "test.png": binary_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": "print('test')", "test.png": binary_content}
+    ) as codebase:
         index = FileIndex(codebase)
         index.create()
 

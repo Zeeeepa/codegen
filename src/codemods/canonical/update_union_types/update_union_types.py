@@ -28,7 +28,11 @@ class UpdateUnionTypes(Codemod, Skill):
                 # Search for Union type annotations in the file
                 for editable in file.find("Union["):
                     if editable.ts_node_type == "generic_type":
-                        new_type = editable.source.replace("Union[", "").replace("]", "", 1).replace(", ", " | ")
+                        new_type = (
+                            editable.source.replace("Union[", "")
+                            .replace("]", "", 1)
+                            .replace(", ", " | ")
+                        )
                         editable.replace(editable.source, new_type)
                     elif editable.ts_node_type == "subscript":
                         # Handle subscript case (like TypeAlias = Union[...])

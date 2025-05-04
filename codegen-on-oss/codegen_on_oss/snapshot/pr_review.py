@@ -2,13 +2,14 @@ import logging
 from logging import getLogger
 
 import modal
+from fastapi import Request
+from helpers import pr_review_agent, remove_bot_comments
+
 from codegen.extensions.events.app import CodegenApp
 from codegen.extensions.github.types.events.pull_request import (
     PullRequestLabeledEvent,
     PullRequestUnlabeledEvent,
 )
-from fastapi import Request
-from helpers import pr_review_agent, remove_bot_comments
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -7,8 +7,12 @@ def format_comparison(comparison: Comparison, show_commits: bool = True) -> str:
     for file in comparison.files:
         # Header for each file
         diff_str_list.append(f"File: {file.filename}, Status: {file.status}")
-        diff_str_list.append(f"+++ {file.filename if file.status != 'removed' else '/dev/null'}")
-        diff_str_list.append(f"--- {file.filename if file.status != 'added' else '/dev/null'}")
+        diff_str_list.append(
+            f"+++ {file.filename if file.status != 'removed' else '/dev/null'}"
+        )
+        diff_str_list.append(
+            f"--- {file.filename if file.status != 'added' else '/dev/null'}"
+        )
 
         # Parsing the patch for each file
         if file.patch:
@@ -19,6 +23,8 @@ def format_comparison(comparison: Comparison, show_commits: bool = True) -> str:
     if show_commits:
         for commit in comparison.commits:
             # Commit information
-            diff_str_list.append(f"Commit: {commit.sha}, Author: {commit.commit.author.name}, Message: {commit.commit.message}")
+            diff_str_list.append(
+                f"Commit: {commit.sha}, Author: {commit.commit.author.name}, Message: {commit.commit.message}"
+            )
 
     return "\n".join(diff_str_list)

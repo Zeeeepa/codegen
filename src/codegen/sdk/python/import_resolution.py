@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING
 
 from codegen.sdk.core.autocommit import reader
 from codegen.sdk.core.expressions import Name
-from codegen.sdk.core.import_resolution import ExternalImportResolver, Import, ImportResolution
+from codegen.sdk.core.import_resolution import (
+    ExternalImportResolver,
+    Import,
+    ImportResolution,
+)
 from codegen.sdk.enums import ImportType, NodeType
 from codegen.shared.decorators.docs import noapidoc, py_apidoc
 from codegen.shared.logging.get_logger import get_logger
@@ -84,7 +88,9 @@ class PyImport(Import["PyFile"]):
 
     @noapidoc
     @reader
-    def resolve_import(self, base_path: str | None = None, *, add_module_name: str | None = None) -> ImportResolution[PyFile] | None:
+    def resolve_import(
+        self, base_path: str | None = None, *, add_module_name: str | None = None
+    ) -> ImportResolution[PyFile] | None:
         try:
             base_path = base_path or self.ctx.projects[0].base_path or ""
             module_source = self.module.source if self.module else ""
@@ -99,7 +105,9 @@ class PyImport(Import["PyFile"]):
             # =====[ Check if we are importing an entire file ]=====
             if self.is_module_import():
                 # covers `import a.b.c` case and `from a.b.c import *` case
-                filepath = os.path.join(base_path, module_source.replace(".", "/") + ".py")
+                filepath = os.path.join(
+                    base_path, module_source.replace(".", "/") + ".py"
+                )
             else:
                 # This is the case where you do:
                 # `from a.b.c import foo`
@@ -109,11 +117,18 @@ class PyImport(Import["PyFile"]):
                 )
 
             # =====[ Check if we are importing an entire file with custom resolve path or sys.path enabled ]=====
-            if len(self.ctx.config.import_resolution_paths) > 0 or self.ctx.config.py_resolve_syspath:
+            if (
+                len(self.ctx.config.import_resolution_paths) > 0
+                or self.ctx.config.py_resolve_syspath
+            ):
                 # Handle resolve overrides first if both is set
-                resolve_paths: list[str] = self.ctx.config.import_resolution_paths + (sys.path if self.ctx.config.py_resolve_syspath else [])
+                resolve_paths: list[str] = self.ctx.config.import_resolution_paths + (
+                    sys.path if self.ctx.config.py_resolve_syspath else []
+                )
                 if file := self._file_by_custom_resolve_paths(resolve_paths, filepath):
-                    return ImportResolution(from_file=file, symbol=None, imports_file=True)
+                    return ImportResolution(
+                        from_file=file, symbol=None, imports_file=True
+                    )
 
             # =====[ Default path ]=====
             if file := self.ctx.get_file(filepath):
@@ -127,9 +142,14 @@ class PyImport(Import["PyFile"]):
 
             # =====[ Check if `module.py` file exists in the graph with custom resolve path or sys.path enabled  ]=====
             filepath = module_source.replace(".", "/") + ".py"
-            if len(self.ctx.config.import_resolution_paths) > 0 or self.ctx.config.py_resolve_syspath:
+            if (
+                len(self.ctx.config.import_resolution_paths) > 0
+                or self.ctx.config.py_resolve_syspath
+            ):
                 # Handle resolve overrides first if both is set
-                resolve_paths: list[str] = self.ctx.config.import_resolution_paths + (sys.path if self.ctx.config.py_resolve_syspath else [])
+                resolve_paths: list[str] = self.ctx.config.import_resolution_paths + (
+                    sys.path if self.ctx.config.py_resolve_syspath else []
+                )
                 if file := self._file_by_custom_resolve_paths(resolve_paths, filepath):
                     symbol = file.get_node_by_name(symbol_name)
                     return ImportResolution(from_file=file, symbol=symbol)
@@ -140,7 +160,9 @@ class PyImport(Import["PyFile"]):
                 symbol = file.get_node_by_name(symbol_name)
                 if symbol is None:
                     if file.get_node_from_wildcard_chain(symbol_name):
-                        return ImportResolution(from_file=file, symbol=None, imports_file=True)
+                        return ImportResolution(
+                            from_file=file, symbol=None, imports_file=True
+                        )
                     else:
                         # This is most likely a broken import
                         return ImportResolution(from_file=file, symbol=None)
@@ -149,14 +171,23 @@ class PyImport(Import["PyFile"]):
 
             # =====[ Check if `module/__init__.py` file exists in the graph with custom resolve path or sys.path enabled ]=====
             filepath = filepath.replace(".py", "/__init__.py")
-            if len(self.ctx.config.import_resolution_paths) > 0 or self.ctx.config.py_resolve_syspath:
+            if (
+                len(self.ctx.config.import_resolution_paths) > 0
+                or self.ctx.config.py_resolve_syspath
+            ):
                 # Handle resolve overrides first if both is set
-                resolve_paths: list[str] = self.ctx.config.import_resolution_paths + (sys.path if self.ctx.config.py_resolve_syspath else [])
-                if from_file := self._file_by_custom_resolve_paths(resolve_paths, filepath):
+                resolve_paths: list[str] = self.ctx.config.import_resolution_paths + (
+                    sys.path if self.ctx.config.py_resolve_syspath else []
+                )
+                if from_file := self._file_by_custom_resolve_paths(
+                    resolve_paths, filepath
+                ):
                     symbol = from_file.get_node_by_name(symbol_name)
                     if symbol is None:
                         if from_file.get_node_from_wildcard_chain(symbol_name):
-                            return ImportResolution(from_file=from_file, symbol=None, imports_file=True)
+                            return ImportResolution(
+                                from_file=from_file, symbol=None, imports_file=True
+                            )
                         else:
                             # This is most likely a broken import
                             return ImportResolution(from_file=from_file, symbol=None)
@@ -169,7 +200,9 @@ class PyImport(Import["PyFile"]):
                 symbol = from_file.get_node_by_name(symbol_name)
                 if symbol is None:
                     if from_file.get_node_from_wildcard_chain(symbol_name):
-                        return ImportResolution(from_file=from_file, symbol=None, imports_file=True)
+                        return ImportResolution(
+                            from_file=from_file, symbol=None, imports_file=True
+                        )
                     else:
                         # This is most likely a broken import
                         return ImportResolution(from_file=from_file, symbol=None)
@@ -180,10 +213,14 @@ class PyImport(Import["PyFile"]):
             # =====[ Case: Can't resolve the import ]=====
             if base_path == "":
                 # Try to resolve with "src" as the base path
-                return self.resolve_import(base_path="src", add_module_name=add_module_name)
+                return self.resolve_import(
+                    base_path="src", add_module_name=add_module_name
+                )
             if base_path == "src":
                 # Try "test" next
-                return self.resolve_import(base_path="test", add_module_name=add_module_name)
+                return self.resolve_import(
+                    base_path="test", add_module_name=add_module_name
+                )
 
             # if not G_override:
             #     for resolver in ctx.import_resolvers:
@@ -204,7 +241,9 @@ class PyImport(Import["PyFile"]):
 
     @noapidoc
     @reader
-    def _file_by_custom_resolve_paths(self, resolve_paths: list[str], filepath: str) -> SourceFile | None:
+    def _file_by_custom_resolve_paths(
+        self, resolve_paths: list[str], filepath: str
+    ) -> SourceFile | None:
         """Check if a certain file import can be found within a set sys.path
 
         Returns either None or the SourceFile.
@@ -255,40 +294,112 @@ class PyImport(Import["PyFile"]):
 
     @classmethod
     @noapidoc
-    def from_import_statement(cls, import_statement: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: ImportStatement) -> list[PyImport]:
+    def from_import_statement(
+        cls,
+        import_statement: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: ImportStatement,
+    ) -> list[PyImport]:
         imports = []
         for module_node in import_statement.children_by_field_name("name"):
             if module_node.type == "dotted_name":
-                imports.append(cls(import_statement, file_node_id, ctx, parent, module_node=module_node, name_node=module_node, alias_node=module_node, import_type=ImportType.MODULE))
+                imports.append(
+                    cls(
+                        import_statement,
+                        file_node_id,
+                        ctx,
+                        parent,
+                        module_node=module_node,
+                        name_node=module_node,
+                        alias_node=module_node,
+                        import_type=ImportType.MODULE,
+                    )
+                )
             elif module_node.type == "aliased_import":
                 module = module_node.child_by_field_name("name")
                 symbol_name = module
                 alias = module_node.child_by_field_name("alias")
-                imports.append(cls(import_statement, file_node_id, ctx, parent, module_node=module, name_node=symbol_name, alias_node=alias, import_type=ImportType.MODULE))
+                imports.append(
+                    cls(
+                        import_statement,
+                        file_node_id,
+                        ctx,
+                        parent,
+                        module_node=module,
+                        name_node=symbol_name,
+                        alias_node=alias,
+                        import_type=ImportType.MODULE,
+                    )
+                )
             else:
-                logger.error(f"Unsupported import statement: {import_statement.text.decode('utf-8')}")
+                logger.error(
+                    f"Unsupported import statement: {import_statement.text.decode('utf-8')}"
+                )
         return imports
 
     @classmethod
     @noapidoc
-    def from_import_from_statement(cls, import_statement: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: ImportStatement) -> list[PyImport]:
+    def from_import_from_statement(
+        cls,
+        import_statement: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: ImportStatement,
+    ) -> list[PyImport]:
         module_node = import_statement.child_by_field_name("module_name")
         import_symbols = import_statement.children_by_field_name("name")
         if len(import_symbols) == 0:
-            wildcard_import = next((node for node in import_statement.children if node.type == "wildcard_import"), None)
+            wildcard_import = next(
+                (
+                    node
+                    for node in import_statement.children
+                    if node.type == "wildcard_import"
+                ),
+                None,
+            )
             if wildcard_import is None:
                 msg = f"Unsupported import statement: {import_statement.text.decode('utf-8')}"
                 raise ValueError(msg)
-            return [cls(import_statement, file_node_id, ctx, parent, module_node=module_node, name_node=module_node, alias_node=module_node, import_type=ImportType.WILDCARD)]
+            return [
+                cls(
+                    import_statement,
+                    file_node_id,
+                    ctx,
+                    parent,
+                    module_node=module_node,
+                    name_node=module_node,
+                    alias_node=module_node,
+                    import_type=ImportType.WILDCARD,
+                )
+            ]
 
         imports = []
         for import_symbol in import_symbols:
             if import_symbol.type == "dotted_name":
-                imp = cls(import_statement, file_node_id, ctx, parent, module_node=module_node, name_node=import_symbol, alias_node=import_symbol, import_type=ImportType.NAMED_EXPORT)
+                imp = cls(
+                    import_statement,
+                    file_node_id,
+                    ctx,
+                    parent,
+                    module_node=module_node,
+                    name_node=import_symbol,
+                    alias_node=import_symbol,
+                    import_type=ImportType.NAMED_EXPORT,
+                )
             elif import_symbol.type == "aliased_import":
                 symbol_name = import_symbol.child_by_field_name("name")
                 alias = import_symbol.child_by_field_name("alias")
-                imp = cls(import_statement, file_node_id, ctx, parent, module_node=module_node, name_node=symbol_name, alias_node=alias, import_type=ImportType.NAMED_EXPORT)
+                imp = cls(
+                    import_statement,
+                    file_node_id,
+                    ctx,
+                    parent,
+                    module_node=module_node,
+                    name_node=symbol_name,
+                    alias_node=alias,
+                    import_type=ImportType.NAMED_EXPORT,
+                )
             else:
                 msg = f"Unsupported import statement: {import_statement.text.decode('utf-8')}"
                 raise ValueError(msg)
@@ -297,10 +408,25 @@ class PyImport(Import["PyFile"]):
 
     @classmethod
     @noapidoc
-    def from_future_import_statement(cls, import_statement: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: ImportStatement) -> list[PyImport]:
+    def from_future_import_statement(
+        cls,
+        import_statement: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: ImportStatement,
+    ) -> list[PyImport]:
         imports = []
         for module_node in import_statement.children_by_field_name("name"):
-            imp = cls(import_statement, file_node_id, ctx, parent, module_node=module_node, name_node=module_node, alias_node=module_node, import_type=ImportType.SIDE_EFFECT)
+            imp = cls(
+                import_statement,
+                file_node_id,
+                ctx,
+                parent,
+                module_node=module_node,
+                name_node=module_node,
+                alias_node=module_node,
+                import_type=ImportType.SIDE_EFFECT,
+            )
             imports.append(imp)
         return imports
 
@@ -320,9 +446,13 @@ class PyImport(Import["PyFile"]):
         import_specifiers = self.ts_node.children_by_field_name("name")
         for import_specifier in import_specifiers:
             if import_specifier.type == "aliased_import":
-                is_match = self.alias.source == import_specifier.child_by_field_name("alias").text.decode("utf-8")
+                is_match = self.alias.source == import_specifier.child_by_field_name(
+                    "alias"
+                ).text.decode("utf-8")
             else:
-                is_match = self.symbol_name.source == import_specifier.text.decode("utf-8")
+                is_match = self.symbol_name.source == import_specifier.text.decode(
+                    "utf-8"
+                )
             if is_match:
                 return Name(import_specifier, self.file_node_id, self.ctx, self)
 

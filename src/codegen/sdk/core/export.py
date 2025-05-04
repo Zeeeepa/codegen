@@ -29,9 +29,17 @@ class Export(Exportable[Parent], Generic[Parent]):
 
     export_statement: ExportStatement
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+    ) -> None:
         self.to_file_id = file_node_id
-        super().__init__(ts_node=ts_node, file_node_id=file_node_id, ctx=ctx, parent=parent)
+        super().__init__(
+            ts_node=ts_node, file_node_id=file_node_id, ctx=ctx, parent=parent
+        )
 
     @noapidoc
     @abstractmethod

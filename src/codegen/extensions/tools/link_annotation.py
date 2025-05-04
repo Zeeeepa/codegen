@@ -50,7 +50,9 @@ def clean_github_url(url: str) -> str:
     return url
 
 
-def format_link(name: str, url: str | None, format: MessageChannel = MessageChannel.SLACK) -> str:
+def format_link(
+    name: str, url: str | None, format: MessageChannel = MessageChannel.SLACK
+) -> str:
     # Clean the URL if it's a GitHub URL
     if url is None:
         url = ""
@@ -80,7 +82,19 @@ def extract_code_snippets(message: str) -> list[str]:
 def is_likely_filepath(text: str) -> bool:
     """Check if a string looks like a filepath."""
     # Common file extensions we want to link
-    extensions = [".py", ".ts", ".tsx", ".jsx", ".js", ".json", ".mdx", ".md", ".yaml", ".yml", ".toml"]
+    extensions = [
+        ".py",
+        ".ts",
+        ".tsx",
+        ".jsx",
+        ".js",
+        ".json",
+        ".mdx",
+        ".md",
+        ".yaml",
+        ".yml",
+        ".toml",
+    ]
 
     # Check if it contains a slash (path separator)
     if "/" in text:
@@ -90,7 +104,9 @@ def is_likely_filepath(text: str) -> bool:
     return any(text.endswith(ext) for ext in extensions)
 
 
-def add_links_to_message(message: str, codebase: Codebase, channel: MessageChannel = MessageChannel.SLACK) -> str:
+def add_links_to_message(
+    message: str, codebase: Codebase, channel: MessageChannel = MessageChannel.SLACK
+) -> str:
     """Add links to symbols and files in a message.
 
     This function:
@@ -126,9 +142,13 @@ def add_links_to_message(message: str, codebase: Codebase, channel: MessageChann
                 if directory:
                     # TODO: implement `Directory.github_url`
                     github_url = codebase.ctx.base_url
-                    github_url = github_url or "https://github.com/your/repo/tree/develop/"  # Fallback URL
+                    github_url = (
+                        github_url or "https://github.com/your/repo/tree/develop/"
+                    )  # Fallback URL
                     if github_url.endswith(".git"):
-                        github_url = github_url.replace(".git", "/tree/develop/") + str(directory.dirpath)
+                        github_url = github_url.replace(".git", "/tree/develop/") + str(
+                            directory.dirpath
+                        )
                     else:
                         github_url = github_url + str(directory.dirpath)
                     print(github_url)

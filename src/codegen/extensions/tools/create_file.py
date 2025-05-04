@@ -23,7 +23,9 @@ class CreateFileObservation(Observation):
     str_template: ClassVar[str] = "Created file {filepath}"
 
 
-def create_file(codebase: Codebase, filepath: str, content: str, max_tokens: Optional[int] = None) -> CreateFileObservation:
+def create_file(
+    codebase: Codebase, filepath: str, content: str, max_tokens: Optional[int] = None
+) -> CreateFileObservation:
     """Create a new file.
 
     Args:
@@ -42,7 +44,14 @@ Create the file in chunks or break up the content into smaller files.
             status="error",
             error=error,
             filepath=filepath,
-            file_info=ViewFileObservation(status="error", error=error, filepath=filepath, content="", raw_content="", line_count=0),
+            file_info=ViewFileObservation(
+                status="error",
+                error=error,
+                filepath=filepath,
+                content="",
+                raw_content="",
+                line_count=0,
+            ),
         )
     if codebase.has_file(filepath):
         return CreateFileObservation(

@@ -27,16 +27,24 @@ class MoveEnumsCodemod(Codemod, Skill):
                     # check if the class inherits from the Enum class
                     if cls.is_subclass_of("Enum"):
                         # generate the new filename for the enums.py file
-                        new_filename = "/".join(file.filepath.split("/")[:-1]) + "/enums.py"
+                        new_filename = (
+                            "/".join(file.filepath.split("/")[:-1]) + "/enums.py"
+                        )
 
                         # check if the enums.py file exists
                         if not codebase.has_file(new_filename):
                             # if it doesn't exist, create a new file
-                            dst_file = codebase.create_file(new_filename, "from enum import Enum\n\n")
+                            dst_file = codebase.create_file(
+                                new_filename, "from enum import Enum\n\n"
+                            )
                         else:
                             # if it exists, get a reference to the existing file
                             dst_file = codebase.get_file(new_filename)
 
                         # move the enum class and its dependencies to the enums.py file
                         # add a "back edge" import to the original file
-                        cls.move_to_file(dst_file, include_dependencies=True, strategy="add_back_edge")
+                        cls.move_to_file(
+                            dst_file,
+                            include_dependencies=True,
+                            strategy="add_back_edge",
+                        )

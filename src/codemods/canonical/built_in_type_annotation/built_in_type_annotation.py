@@ -28,7 +28,12 @@ class BuiltInTypeAnnotation(Codemod, Skill):
 
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.PYTHON)
     def execute(self, codebase: Codebase) -> None:
-        import_replacements = {"List": "list", "Dict": "dict", "Set": "set", "Tuple": "tuple"}
+        import_replacements = {
+            "List": "list",
+            "Dict": "dict",
+            "Set": "set",
+            "Tuple": "tuple",
+        }
         # Iterate over all files in the codebase
         for file in codebase.files:
             # Iterate over all imports in the file

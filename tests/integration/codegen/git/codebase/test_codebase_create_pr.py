@@ -23,7 +23,9 @@ def test_codebase_create_pr_active_branch(codebase: Codebase):
 
 
 def test_codebase_create_pr_detached_head(codebase: Codebase):
-    codebase.checkout(commit=codebase._op.git_cli.head.commit)  # move to detached head state
+    codebase.checkout(
+        commit=codebase._op.git_cli.head.commit
+    )  # move to detached head state
     with pytest.raises(ValueError) as exc_info:
         codebase.create_pr(title="test-create-pr title", body="test-create-pr body")
     assert "Cannot make a PR from a detached HEAD" in str(exc_info.value)

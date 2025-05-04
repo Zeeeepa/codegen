@@ -26,7 +26,9 @@ Parent = TypeVar("Parent", bound="Expression")
 
 
 @apidoc
-class ChainedAttribute(Expression[Parent], Resolvable, Generic[Object, Attribute, Parent]):
+class ChainedAttribute(
+    Expression[Parent], Resolvable, Generic[Object, Attribute, Parent]
+):
     """An attribute of an object. (IE a method on a class, a function from a module, etc)
 
     Examples:
@@ -36,7 +38,15 @@ class ChainedAttribute(Expression[Parent], Resolvable, Generic[Object, Attribute
     _object: Object
     _attribute: Attribute
 
-    def __init__(self, ts_node, file_node_id, ctx, parent: Parent, object: TSNode, attribute: TSNode):
+    def __init__(
+        self,
+        ts_node,
+        file_node_id,
+        ctx,
+        parent: Parent,
+        object: TSNode,
+        attribute: TSNode,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent=parent)
         self._object = self._parse_expression(object, default=Name)
         if self.ctx.parser._should_log:
@@ -112,7 +122,9 @@ class ChainedAttribute(Expression[Parent], Resolvable, Generic[Object, Attribute
         while isinstance(curr, ChainedAttribute) or isinstance(curr, FunctionCall):
             if isinstance(curr, FunctionCall):
                 ret.append(curr)
-            elif isinstance(curr, ChainedAttribute) and not isinstance(curr.parent, FunctionCall):
+            elif isinstance(curr, ChainedAttribute) and not isinstance(
+                curr.parent, FunctionCall
+            ):
                 ret.append(curr.attribute)
 
             curr = curr.parent
@@ -146,22 +158,41 @@ class ChainedAttribute(Expression[Parent], Resolvable, Generic[Object, Attribute
 
             if not isinstance(top.node, HasAttribute):
                 generics: dict = resolved_type.generics.copy()
-                if top.node.source.lower() == "dict" and self.attribute.source in ("values", "get", "pop"):
+                if top.node.source.lower() == "dict" and self.attribute.source in (
+                    "values",
+                    "get",
+                    "pop",
+                ):
                     if len(generics) == 2:
                         generics.pop(next(iter(generics.keys())))
-                yield from self.with_resolution_frame(top.node, generics=generics, direct=resolved_type.is_direct_usage, chained=True)
-                self._log_parse("%r does not have attributes, passing %s generics", top.node, len(generics))
+                yield from self.with_resolution_frame(
+                    top.node,
+                    generics=generics,
+                    direct=resolved_type.is_direct_usage,
+                    chained=True,
+                )
+                self._log_parse(
+                    "%r does not have attributes, passing %s generics",
+                    top.node,
+                    len(generics),
+                )
                 continue
             name = self.attribute.source
             if attr := top.node.resolve_attribute(name):
-                yield from self.with_resolution_frame(attr, chained=True, generics=resolved_type.generics)
+                yield from self.with_resolution_frame(
+                    attr, chained=True, generics=resolved_type.generics
+                )
             else:
                 self._log_parse("Couldn't resolve attribute %s on %s", name, top.node)
-                yield from self.with_resolution_frame(top.node, direct=resolved_type.is_direct_usage, chained=True)
+                yield from self.with_resolution_frame(
+                    top.node, direct=resolved_type.is_direct_usage, chained=True
+                )
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind, dest: Optional["HasName | None"] = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: Optional["HasName | None"] = None
+    ) -> None:
         edges = []
         for used_frame in self.resolved_type_frames:
             edges.extend(used_frame.get_edges(self, usage_type, dest, self.ctx))

@@ -23,7 +23,11 @@ function TestComponent({ prop1 }: ComponentProps): React.ReactElement {
 
 export default TestComponent;
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         component = file.get_symbol("TestComponent")
         assert len(component.parameters) == 1
@@ -31,7 +35,9 @@ export default TestComponent;
         param = component.parameters[0]
         assert param.name == "prop1"
 
-        assert len(param.parent_function.code_block.get_variable_usages(param.name)) == 1
+        assert (
+            len(param.parent_function.code_block.get_variable_usages(param.name)) == 1
+        )
 
 
 def test_component_with_props_destructuring(tmpdir) -> None:
@@ -57,7 +63,11 @@ function TestComponent(props: {
     )
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, files={"test.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        files={"test.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         component = file.get_function("TestComponent")
         assert component.is_jsx
@@ -90,7 +100,9 @@ function TestComponent(props: {
 }
 """
     files = {ts_file_name: "", tsx_file_name: "", origin_file_name: origin_file_content}
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as ctx:
         ts_file = ctx.get_file(ts_file_name)
         tsx_file = ctx.get_file(tsx_file_name)
         origin_file = ctx.get_file(origin_file_name)
@@ -128,7 +140,11 @@ function TestComponent({ prop1, prop2 }: ComponentProps): React.ReactElement {
 }
 """
 
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         assert len(file.jsx_elements) == 3
 
@@ -187,7 +203,11 @@ const TestComponent: React.FC<ComponentProps> = ({ prop1, prop2, prop3 }) => {
 export default TestComponent;
 """
 
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         component = file.get_symbol("TestComponent")
         assert len(component.jsx_elements) == 7
@@ -212,19 +232,33 @@ export default TestComponent;
         assert conditional_element.props[0].value == "{prop3.toString()}"
         assert conditional_element.props[0].expression is not None
         assert conditional_element.props[0].expression.source == "{prop3.toString()}"
-        assert conditional_element.props[0].expression.statement.source == "prop3.toString()"
+        assert (
+            conditional_element.props[0].expression.statement.source
+            == "prop3.toString()"
+        )
         assert len(conditional_element.expressions) == 2
         assert conditional_element.expressions[0].source == "{prop3.toString()}"
-        assert conditional_element.expressions[1].source == "{prop3 ? 'Active' : 'Inactive'}"
+        assert (
+            conditional_element.expressions[1].source
+            == "{prop3 ? 'Active' : 'Inactive'}"
+        )
 
         template_element = root.jsx_elements[5]
         assert template_element.name == "div"
         assert len(template_element.props) == 1
         assert template_element.props[0].name == "className"
-        assert template_element.props[0].value == '{`${prop3} ... ${prop1 ? "a" : prop2}`}'
+        assert (
+            template_element.props[0].value == '{`${prop3} ... ${prop1 ? "a" : prop2}`}'
+        )
         assert template_element.props[0].expression is not None
-        assert template_element.props[0].expression.source == '{`${prop3} ... ${prop1 ? "a" : prop2}`}'
-        assert template_element.props[0].expression.statement.source == '`${prop3} ... ${prop1 ? "a" : prop2}`'
+        assert (
+            template_element.props[0].expression.source
+            == '{`${prop3} ... ${prop1 ? "a" : prop2}`}'
+        )
+        assert (
+            template_element.props[0].expression.statement.source
+            == '`${prop3} ... ${prop1 ? "a" : prop2}`'
+        )
         assert len(template_element.expressions) == 1
 
 
@@ -243,7 +277,11 @@ function TestComponent(): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         component = file.get_symbol("TestComponent")
 

@@ -22,20 +22,33 @@ def foo():
     else:
         return
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
         if_blocks = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
         assert len(if_blocks) == 1
         statement = if_blocks[0]
-        assert statement.is_if_statement and not statement.is_elif_statement and not statement.is_else_statement
+        assert (
+            statement.is_if_statement
+            and not statement.is_elif_statement
+            and not statement.is_else_statement
+        )
         assert statement.condition.source == "a + b"
         assert len(statement.consequence_block.statements) == 1
         assert statement.consequence_block.statements[0].source == "print(a)"
 
         else_ifs = statement.elif_statements
         assert len(else_ifs) == 2
-        assert all([x.is_elif_statement and not x.is_else_statement and not x.is_if_statement for x in else_ifs])
+        assert all(
+            [
+                x.is_elif_statement
+                and not x.is_else_statement
+                and not x.is_if_statement
+                for x in else_ifs
+            ]
+        )
         assert else_ifs[0].condition.source == "b and c"
         assert else_ifs[1].condition.source == "(c := a + b) and True"
         assert len(else_ifs[0].consequence_block.statements) == 1
@@ -48,7 +61,11 @@ def foo():
         assert else_block.condition is None
         assert len(else_block.consequence_block.statements) == 1
         assert else_block.consequence_block.statements[0].source == "return"
-        assert else_block.is_else_statement and not else_block.is_elif_statement and not else_block.is_if_statement
+        assert (
+            else_block.is_else_statement
+            and not else_block.is_elif_statement
+            and not else_block.is_if_statement
+        )
 
 
 def test_parse_nested_if_statements_from_codeblock(tmpdir) -> None:
@@ -65,21 +82,53 @@ def foo():
     else:
         return
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)) == 3
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level)) == 1
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level + 1)) == 3
+        assert (
+            len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT))
+            == 3
+        )
+        assert (
+            len(
+                function.code_block.get_statements(
+                    StatementType.IF_BLOCK_STATEMENT, function.code_block.level
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                function.code_block.get_statements(
+                    StatementType.IF_BLOCK_STATEMENT, function.code_block.level + 1
+                )
+            )
+            == 3
+        )
 
-        top_if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level)[0]
+        top_if_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT, function.code_block.level
+        )[0]
         assert len(top_if_block.elif_statements) == 0
         assert top_if_block.else_statement is not None
-        assert top_if_block.is_if_statement and not top_if_block.is_elif_statement and not top_if_block.is_else_statement
+        assert (
+            top_if_block.is_if_statement
+            and not top_if_block.is_elif_statement
+            and not top_if_block.is_else_statement
+        )
 
-        nested_if_blocks: list[PyIfBlockStatement] = top_if_block.consequence_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
+        nested_if_blocks: list[PyIfBlockStatement] = (
+            top_if_block.consequence_block.get_statements(
+                StatementType.IF_BLOCK_STATEMENT
+            )
+        )
         assert len(nested_if_blocks) == 2
-        assert all(x.is_if_statement and not x.is_elif_statement and not x.is_else_statement for x in nested_if_blocks)
+        assert all(
+            x.is_if_statement and not x.is_elif_statement and not x.is_else_statement
+            for x in nested_if_blocks
+        )
         assert nested_if_blocks[0].condition.source == "b"
         assert len(nested_if_blocks[0].elif_statements) == 0
         assert nested_if_blocks[0].else_statement is None
@@ -102,7 +151,9 @@ def foo():
     else:
         return
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
         if_blocks = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
@@ -111,7 +162,10 @@ def foo():
         assert len(alt_blocks) == 3
         assert len(if_blocks[0].alternative_blocks) == 3
         assert len(if_blocks[0].elif_statements) == 2
-        assert all(x.is_elif_statement and not x.is_else_statement and not x.is_if_statement for x in if_blocks[0].elif_statements)
+        assert all(
+            x.is_elif_statement and not x.is_else_statement and not x.is_if_statement
+            for x in if_blocks[0].elif_statements
+        )
         assert if_blocks[0].else_statement is not None
         assert if_blocks[0].else_statement.is_else_statement
 

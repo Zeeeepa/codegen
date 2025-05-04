@@ -64,7 +64,9 @@ class TSConfig:
         try:
             self.config = pyjson5.loads(config_file.content)
         except pyjson5.Json5Exception:
-            logger.exception(f"Failed to parse tsconfig.json file: {config_file.filepath}")
+            logger.exception(
+                f"Failed to parse tsconfig.json file: {config_file.filepath}"
+            )
             self.config = {}
 
         # Precompute the base config, base url, paths, and references
@@ -119,7 +121,9 @@ class TSConfig:
         if root_dirs := self.config.get("compilerOptions", {}).get("rootDirs", None):
             self._root_dirs = root_dirs
             self._self_root_dirs = root_dirs
-        elif root_dirs := [] if self.base_config is None else self.base_config.root_dirs:
+        elif root_dirs := (
+            [] if self.base_config is None else self.base_config.root_dirs
+        ):
             self._root_dirs = root_dirs
 
         # Precompute the paths
@@ -134,14 +138,22 @@ class TSConfig:
         if references is not None:
             for reference in references:
                 if ref_path := reference.get("path", None):
-                    abs_ref_path = str(self.config_file.ctx.to_relative(self._relative_to_absolute_directory_path(ref_path)))
-                    if directory := self.config_file.ctx.get_directory(self.config_file.ctx.to_absolute(abs_ref_path)):
+                    abs_ref_path = str(
+                        self.config_file.ctx.to_relative(
+                            self._relative_to_absolute_directory_path(ref_path)
+                        )
+                    )
+                    if directory := self.config_file.ctx.get_directory(
+                        self.config_file.ctx.to_absolute(abs_ref_path)
+                    ):
                         self_references.append((ref_path, directory))
                     elif ts_config := self.config_parser.get_config(abs_ref_path):
                         self_references.append((ref_path, ts_config.config_file))
                     elif file := self.config_file.ctx.get_file(abs_ref_path):
                         self_references.append((ref_path, file))
-        self._references = [*self_references]  # MAYBE add base references here? This breaks the reference chain though.
+        self._references = [
+            *self_references
+        ]  # MAYBE add base references here? This breaks the reference chain though.
         self._self_references = self_references
 
     def _precompute_import_aliases(self):
@@ -154,56 +166,86 @@ class TSConfig:
             self.base_config._precompute_import_aliases()
 
         # Precompute the formatted paths based on compilerOptions/paths
-        base_path_import_aliases = {} if self.base_config is None else self.base_config.path_import_aliases
+        base_path_import_aliases = (
+            {} if self.base_config is None else self.base_config.path_import_aliases
+        )
         self_path_import_aliases = {}
         for pattern, relative_paths in self._self_paths.items():
             formatted_pattern = pattern.replace("*", "").rstrip("/").replace("//", "/")
             formatted_relative_paths = []
             for relative_path in relative_paths:
-                cleaned_relative_path = relative_path.replace("*", "").rstrip("/").replace("//", "/")
+                cleaned_relative_path = (
+                    relative_path.replace("*", "").rstrip("/").replace("//", "/")
+                )
                 if self._self_base_url:
-                    cleaned_relative_path = os.path.join(self._self_base_url, cleaned_relative_path)
-                formatted_absolute_path = self._relative_to_absolute_directory_path(cleaned_relative_path)
-                formatted_relative_path = str(self.config_file.ctx.to_relative(formatted_absolute_path))
+                    cleaned_relative_path = os.path.join(
+                        self._self_base_url, cleaned_relative_path
+                    )
+                formatted_absolute_path = self._relative_to_absolute_directory_path(
+                    cleaned_relative_path
+                )
+                formatted_relative_path = str(
+                    self.config_file.ctx.to_relative(formatted_absolute_path)
+                )
                 # Fix absolute path if its base
                 if formatted_relative_path == ".":
                     formatted_relative_path = ""
                 formatted_relative_paths.append(formatted_relative_path)
             self_path_import_aliases[formatted_pattern] = formatted_relative_paths
-        self._path_import_aliases = {**base_path_import_aliases, **self_path_import_aliases}
+        self._path_import_aliases = {
+            **base_path_import_aliases,
+            **self_path_import_aliases,
+        }
 
         # Precompute the formatted paths based on references
-        base_reference_import_aliases = {} if self.base_config is None else self.base_config.reference_import_aliases
+        base_reference_import_aliases = (
+            {}
+            if self.base_config is None
+            else self.base_config.reference_import_aliases
+        )
         self_reference_import_aliases = {}
         # For each reference, try to grab its tsconfig.
         for ref_path, reference in self._self_references:
             # TODO: THIS ENTIRE PROCESS IS KINDA HACKY.
             # If the reference is a file, get its directory.
             if isinstance(reference, File):
-                reference_dir = self.config_file.ctx.get_directory(os.path.dirname(reference.filepath))
+                reference_dir = self.config_file.ctx.get_directory(
+                    os.path.dirname(reference.filepath)
+                )
             elif isinstance(reference, Directory):
                 reference_dir = reference
             else:
-                logger.warning(f"Unknown reference type during self_reference_import_aliases computation in _precompute_import_aliases: {type(reference)}")
+                logger.warning(
+                    f"Unknown reference type during self_reference_import_aliases computation in _precompute_import_aliases: {type(reference)}"
+                )
                 continue
 
             # With the directory, try to grab the next available file and get its tsconfig.
             if reference_dir and reference_dir.files(recursive=True):
                 next_file: TSFile = reference_dir.files(recursive=True)[0]
             else:
-                logger.warning(f"No next file found for reference during self_reference_import_aliases computation in _precompute_import_aliases: {reference.dirpath}")
+                logger.warning(
+                    f"No next file found for reference during self_reference_import_aliases computation in _precompute_import_aliases: {reference.dirpath}"
+                )
                 continue
             target_ts_config = next_file.ts_config
             if target_ts_config is None:
-                logger.warning(f"No tsconfig found for reference during self_reference_import_aliases computation in _precompute_import_aliases: {reference.dirpath}")
+                logger.warning(
+                    f"No tsconfig found for reference during self_reference_import_aliases computation in _precompute_import_aliases: {reference.dirpath}"
+                )
                 continue
 
             # With the tsconfig, grab its rootDirs and outDir
-            target_root_dirs = target_ts_config.root_dirs if target_ts_config.root_dirs else ["."]
+            target_root_dirs = (
+                target_ts_config.root_dirs if target_ts_config.root_dirs else ["."]
+            )
             target_out_dir = target_ts_config.out_dir
 
             # Calculate the formatted pattern and formatted relative paths
-            formatted_relative_paths = [os.path.normpath(os.path.join(reference_dir.path, root_dir)) for root_dir in target_root_dirs]
+            formatted_relative_paths = [
+                os.path.normpath(os.path.join(reference_dir.path, root_dir))
+                for root_dir in target_root_dirs
+            ]
 
             # Loop through each possible path part of the reference
             # For example, if the reference is "../../a/b/c" and the out dir is "dist"
@@ -212,17 +254,32 @@ class TSConfig:
             # - "b/c/dist"
             # - "c/dist"
             # (ignoring any .. segments)
-            path_parts = [p for p in ref_path.split(os.path.sep) if p and not p.startswith("..")]
+            path_parts = [
+                p for p in ref_path.split(os.path.sep) if p and not p.startswith("..")
+            ]
             for i in range(len(path_parts)):
                 target_path = os.path.sep.join(path_parts[i:])
                 if target_path:
-                    formatted_target_path = os.path.normpath(os.path.join(target_path, target_out_dir) if target_out_dir else target_path)
-                    self_reference_import_aliases[formatted_target_path] = formatted_relative_paths
+                    formatted_target_path = os.path.normpath(
+                        os.path.join(target_path, target_out_dir)
+                        if target_out_dir
+                        else target_path
+                    )
+                    self_reference_import_aliases[formatted_target_path] = (
+                        formatted_relative_paths
+                    )
 
-        self._reference_import_aliases = {**base_reference_import_aliases, **self_reference_import_aliases}
+        self._reference_import_aliases = {
+            **base_reference_import_aliases,
+            **self_reference_import_aliases,
+        }
 
         # Precompute _import_optimization_enabled
-        self._import_optimization_enabled = all(k.startswith("@") or k.startswith("~") for k in list(self.path_import_aliases.keys()) + list(self.reference_import_aliases.keys()))
+        self._import_optimization_enabled = all(
+            k.startswith("@") or k.startswith("~")
+            for k in list(self.path_import_aliases.keys())
+            + list(self.reference_import_aliases.keys())
+        )
 
         # Mark that we've precomputed the import aliases
         self._computed_path_import_aliases = True
@@ -258,13 +315,24 @@ class TSConfig:
             str: The translated absolute path. If no matching path alias is found, returns the original import path unchanged.
         """
         # Break out early if we can
-        if self._import_optimization_enabled and not import_path.startswith("@") and not import_path.startswith("~"):
+        if (
+            self._import_optimization_enabled
+            and not import_path.startswith("@")
+            and not import_path.startswith("~")
+        ):
             return import_path
 
         # Step 1: Try to resolve with import_resolution_overrides
         if self.config_file.ctx.config.import_resolution_overrides:
-            if path_check := TSConfig._find_matching_path(frozenset(self.config_file.ctx.config.import_resolution_overrides.keys()), import_path):
-                to_base = self.config_file.ctx.config.import_resolution_overrides[path_check]
+            if path_check := TSConfig._find_matching_path(
+                frozenset(
+                    self.config_file.ctx.config.import_resolution_overrides.keys()
+                ),
+                import_path,
+            ):
+                to_base = self.config_file.ctx.config.import_resolution_overrides[
+                    path_check
+                ]
 
                 # Get the remaining path after the matching prefix
                 remaining_path = import_path[len(path_check) :].lstrip("/")
@@ -275,7 +343,9 @@ class TSConfig:
                 return import_path
 
         # Step 2: Keep traveling down the parent config paths until we find a match a reference_import_aliases
-        if path_check := TSConfig._find_matching_path(frozenset(self.reference_import_aliases.keys()), import_path):
+        if path_check := TSConfig._find_matching_path(
+            frozenset(self.reference_import_aliases.keys()), import_path
+        ):
             # TODO: This assumes that there is only one to_base path for the given from_base path
             to_base = self.reference_import_aliases[path_check][0]
 
@@ -288,7 +358,9 @@ class TSConfig:
             return import_path
 
         # Step 3: Keep traveling down the parent config paths until we find a match a path_import_aliases
-        if path_check := TSConfig._find_matching_path(frozenset(self.path_import_aliases.keys()), import_path):
+        if path_check := TSConfig._find_matching_path(
+            frozenset(self.path_import_aliases.keys()), import_path
+        ):
             # TODO: This assumes that there is only one to_base path for the given from_base path
             to_base = self.path_import_aliases[path_check][0]
 
@@ -338,7 +410,9 @@ class TSConfig:
         if self._self_base_url:
             if not import_path.startswith(self._self_base_url):
                 import_path = os.path.join(self._self_base_url, import_path)
-                import_path = str(self._relative_to_absolute_directory_path(import_path))
+                import_path = str(
+                    self._relative_to_absolute_directory_path(import_path)
+                )
             return import_path
         # If there is a base config, try to resolve it with its base url
         elif self.base_config:
@@ -361,7 +435,9 @@ class TSConfig:
         elif f"{path_check}/" in path_import_aliases:
             return f"{path_check}/"
         else:
-            return TSConfig._find_matching_path(path_import_aliases, os.path.dirname(path_check))
+            return TSConfig._find_matching_path(
+                path_import_aliases, os.path.dirname(path_check)
+            )
 
     @property
     def base_config(self) -> "TSConfig | None":
@@ -482,4 +558,7 @@ class TSConfig:
             dict[str, list[str]]: A dictionary where keys are formatted reference paths (e.g. 'module/dist') and values
                 are lists of absolute target paths derived from the referenced tsconfig's rootDirs and outDir settings.
         """
-        return {k: [str(self.config_file.ctx.to_relative(v)) for v in vs] for k, vs in self._reference_import_aliases.items()}
+        return {
+            k: [str(self.config_file.ctx.to_relative(v)) for v in vs]
+            for k, vs in self._reference_import_aliases.items()
+        }

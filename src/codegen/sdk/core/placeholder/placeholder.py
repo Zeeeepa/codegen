@@ -52,7 +52,13 @@ class Placeholder(ABC, Generic[Parent]):
         pass
 
     @abstractmethod
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Replaces the content of a placeholder node with new source code.
 
         Modifies the parent node to include the new source code. Can optionally fix

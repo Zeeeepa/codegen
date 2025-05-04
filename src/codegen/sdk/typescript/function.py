@@ -12,7 +12,9 @@ from codegen.sdk.typescript.detached_symbols.parameter import TSParameter
 from codegen.sdk.typescript.enums import TSFunctionTypeNames
 from codegen.sdk.typescript.expressions.type import TSType
 from codegen.sdk.typescript.interfaces.has_block import TSHasBlock
-from codegen.sdk.typescript.placeholder.placeholder_return_type import TSReturnTypePlaceholder
+from codegen.sdk.typescript.placeholder.placeholder_return_type import (
+    TSReturnTypePlaceholder,
+)
 from codegen.sdk.typescript.symbol import TSSymbol
 from codegen.sdk.utils import find_all_descendants
 from codegen.shared.decorators.docs import noapidoc, ts_apidoc
@@ -37,7 +39,9 @@ logger = get_logger(__name__)
 
 
 @ts_apidoc
-class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHasBlock, TSSymbol):
+class TSFunction(
+    Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHasBlock, TSSymbol
+):
     """Representation of a Function in JavaScript/TypeScript"""
 
     @noapidoc
@@ -45,10 +49,18 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
     def parse(self, ctx: CodebaseContext) -> None:
         super().parse(ctx)
 
-        self.return_type = self.child_by_field_name("return_type", placeholder=TSReturnTypePlaceholder)
+        self.return_type = self.child_by_field_name(
+            "return_type", placeholder=TSReturnTypePlaceholder
+        )
         if parameters_node := self.ts_node.child_by_field_name("parameters"):
-            self._parameters = Collection(parameters_node, self.file_node_id, self.ctx, self)
-            params = [x for x in parameters_node.children if x.type in ("required_parameter", "optional_parameter")]
+            self._parameters = Collection(
+                parameters_node, self.file_node_id, self.ctx, self
+            )
+            params = [
+                x
+                for x in parameters_node.children
+                if x.type in ("required_parameter", "optional_parameter")
+            ]
             symbols = None
             # Deconstructed object parameters
             if len(params) == 1:
@@ -57,15 +69,33 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
                 if type_node := params[0].child_by_field_name("type"):
                     type_annotation = self._parse_type(type_node)
                 if pattern and pattern.type == "object_pattern":
-                    params = [x for x in pattern.children if x.type in ("shorthand_property_identifier_pattern", "object_assignment_pattern", "pair_pattern")]
-                    symbols = [TSParameter(x, i, self._parameters, type_annotation) for (i, x) in enumerate(params)]
+                    params = [
+                        x
+                        for x in pattern.children
+                        if x.type
+                        in (
+                            "shorthand_property_identifier_pattern",
+                            "object_assignment_pattern",
+                            "pair_pattern",
+                        )
+                    ]
+                    symbols = [
+                        TSParameter(x, i, self._parameters, type_annotation)
+                        for (i, x) in enumerate(params)
+                    ]
             # Default case - regular parameters
             if symbols is None:
-                symbols = [TSParameter(x, i, self._parameters) for (i, x) in enumerate(params)]
+                symbols = [
+                    TSParameter(x, i, self._parameters) for (i, x) in enumerate(params)
+                ]
             self._parameters._init_children(symbols)
         elif parameters_node := self.ts_node.child_by_field_name("parameter"):
-            self._parameters = Collection(parameters_node, self.file_node_id, self.ctx, self)
-            self._parameters._init_children([TSParameter(parameters_node, 0, self._parameters)])
+            self._parameters = Collection(
+                parameters_node, self.file_node_id, self.ctx, self
+            )
+            self._parameters._init_children(
+                [TSParameter(parameters_node, 0, self._parameters)]
+            )
         else:
             logger.warning(f"Couldn't find parameters for {self!r}")
             self._parameters = []
@@ -89,7 +119,9 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         # If a destination is provided, use it, otherwise use the default destination
         # This is used for cases where a non-symbol (eg. argument) value parses as a function
         dest = dest or self.self_dest
@@ -98,9 +130,18 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
         # Have to grab types from the parameters
         if self.parameters is not None:
             for param in self.parameters:
-                assignment_patterns = find_all_descendants(param.ts_node, {"object_pattern", "object_assignment_pattern", "assignment_pattern"})
+                assignment_patterns = find_all_descendants(
+                    param.ts_node,
+                    {
+                        "object_pattern",
+                        "object_assignment_pattern",
+                        "assignment_pattern",
+                    },
+                )
                 if assignment_patterns:
-                    dest.add_all_identifier_usages_for_child_node(UsageKind.GENERIC, assignment_patterns[0])
+                    dest.add_all_identifier_usages_for_child_node(
+                        UsageKind.GENERIC, assignment_patterns[0]
+                    )
         if self.type_parameters:
             self.type_parameters._compute_dependencies(UsageKind.GENERIC, dest)
         # =====[ Return type ]=====
@@ -113,13 +154,23 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
 
     @classmethod
     @noapidoc
-    def from_function_type(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: SymbolStatement | ExportStatement) -> TSFunction:
+    def from_function_type(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: SymbolStatement | ExportStatement,
+    ) -> TSFunction:
         """Creates a TSFunction object from a function declaration."""
-        if ts_node.type not in [function_type.value for function_type in TSFunctionTypeNames]:
+        if ts_node.type not in [
+            function_type.value for function_type in TSFunctionTypeNames
+        ]:
             msg = f"Node type={ts_node.type} is not a function declaration"
             raise ValueError(msg)
         file = ctx.get_node(file_node_id)
-        if canonical := file._range_index.get_canonical_for_range(ts_node.range, ts_node.kind_id):
+        if canonical := file._range_index.get_canonical_for_range(
+            ts_node.range, ts_node.kind_id
+        ):
             return canonical
         return cls(ts_node, file_node_id, ctx, parent=parent)
 
@@ -139,7 +190,10 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
             if ts_node.type == "pair":
                 return ts_node.child_by_field_name("key")
             elif ts_node.type == "return_statement":
-                func_expression = next((x for x in ts_node.children if x.type == ("function_expression")), None)
+                func_expression = next(
+                    (x for x in ts_node.children if x.type == ("function_expression")),
+                    None,
+                )
                 if func_expression:
                     return func_expression.child_by_field_name("name")
         return ts_node.child_by_field_name("name")
@@ -335,10 +389,18 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
         type_param_node = self.ts_node.child_by_field_name("type_parameters")
         if param_node := self.ts_node.child_by_field_name("parameters"):
             edit_end = param_node.start_byte
-            self._edit_byte_range(f"{async_prefix}function {name or self.name}{type_param_node.text.decode('utf-8') if type_param_node else ''}", edit_start, edit_end)
+            self._edit_byte_range(
+                f"{async_prefix}function {name or self.name}{type_param_node.text.decode('utf-8') if type_param_node else ''}",
+                edit_start,
+                edit_end,
+            )
         elif param_node := self.ts_node.child_by_field_name("parameter"):
             edit_end = param_node.start_byte
-            self._edit_byte_range(f"{async_prefix}function {name or self.name}{type_param_node.text.decode('utf-8') if type_param_node else ''}(", edit_start, edit_end)
+            self._edit_byte_range(
+                f"{async_prefix}function {name or self.name}{type_param_node.text.decode('utf-8') if type_param_node else ''}(",
+                edit_start,
+                edit_end,
+            )
             self.insert_at(param_node.end_byte, ")")
 
         # Remove the arrow =>
@@ -354,13 +416,17 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
             self.insert_at(node.end_byte, " }")
 
         # Move over variable type annotations as parameter type annotations
-        if (type_node := node.named_children[0].child_by_field_name("type")) and len(param_node.named_children) == 1:
+        if (type_node := node.named_children[0].child_by_field_name("type")) and len(
+            param_node.named_children
+        ) == 1:
             destructured_param = self.parameters.ts_node.named_children[0]
             self.insert_at(destructured_param.end_byte, type_node.text.decode("utf-8"))
 
     @noapidoc
     @reader
-    def resolve_name(self, name: str, start_byte: int | None = None, strict: bool = True) -> Generator[Symbol | Import | WildcardImport]:
+    def resolve_name(
+        self, name: str, start_byte: int | None = None, strict: bool = True
+    ) -> Generator[Symbol | Import | WildcardImport]:
         """Resolves the name of a symbol in the function.
 
         This method resolves the name of a symbol in the function. If the name is "this", it returns the parent class.
@@ -431,7 +497,9 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
                 if not self.parameters[0].is_destructured:
                     self.parameters[0].edit(interface_name)
                 else:
-                    self.insert_at(self.parameters.ts_node.end_byte - 1, f": {interface_name}")
+                    self.insert_at(
+                        self.parameters.ts_node.end_byte - 1, f": {interface_name}"
+                    )
 
     @property
     @reader
@@ -446,7 +514,10 @@ class TSFunction(Function[TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHa
         function_calls = self.function_calls
 
         for function_call in function_calls:
-            if function_call.name == "then" and function_call.base not in visited_base_functions:
+            if (
+                function_call.name == "then"
+                and function_call.base not in visited_base_functions
+            ):
                 promise_chains.append(function_call.promise_chain)
                 visited_base_functions.add(function_call.base)
 

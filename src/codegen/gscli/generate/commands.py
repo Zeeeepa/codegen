@@ -19,7 +19,9 @@ from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 
-AUTO_GENERATED_COMMENT = "THE CODE BELOW IS AUTO GENERATED. UPDATE THE SNIPPET BY UPDATING THE SKILL"
+AUTO_GENERATED_COMMENT = (
+    "THE CODE BELOW IS AUTO GENERATED. UPDATE THE SNIPPET BY UPDATING THE SKILL"
+)
 CODE_SNIPPETS_REGEX = r"(?:```python\n(?:(?!```)[\s\S])*?\n```|<CodeGroup>(?:(?!</CodeGroup>)[\s\S])*?</CodeGroup>)"
 
 
@@ -65,11 +67,20 @@ def _generate_codebase_typestubs() -> None:
 
     # right now this command expects you to run it from here
     if not initial_dir.endswith("codegen/codegen-backend"):
-        print(colored("Error: Must be in a directory ending with 'codegen/codegen-backend'", "red"))
+        print(
+            colored(
+                "Error: Must be in a directory ending with 'codegen/codegen-backend'",
+                "red",
+            )
+        )
         exit(1)
 
     out_dir = os.path.abspath(os.path.join(initial_dir, "typings"))
-    frontend_typestubs_dir = os.path.abspath(os.path.join(initial_dir, os.pardir, "codegen-frontend/assets/typestubs/graphsitter"))
+    frontend_typestubs_dir = os.path.abspath(
+        os.path.join(
+            initial_dir, os.pardir, "codegen-frontend/assets/typestubs/graphsitter"
+        )
+    )
     if os.path.isdir(out_dir):
         # remove typings dir if it exists
         shutil.rmtree(out_dir)
@@ -82,19 +93,34 @@ def _generate_codebase_typestubs() -> None:
     os.system("uv run pyright -p . --createstub networkx")
     # also generate for codemod context model and all its nested models
     os.system("uv run pyright -p . --createstub app.codemod.compilation.models.context")
-    os.system("uv run pyright -p . --createstub app.codemod.compilation.models.pr_options")
-    os.system("uv run pyright -p . --createstub app.codemod.compilation.models.github_named_user_context")
-    os.system("uv run pyright -p . --createstub app.codemod.compilation.models.pull_request_context")
-    os.system("uv run pyright -p . --createstub app.codemod.compilation.models.pr_part_context")
+    os.system(
+        "uv run pyright -p . --createstub app.codemod.compilation.models.pr_options"
+    )
+    os.system(
+        "uv run pyright -p . --createstub app.codemod.compilation.models.github_named_user_context"
+    )
+    os.system(
+        "uv run pyright -p . --createstub app.codemod.compilation.models.pull_request_context"
+    )
+    os.system(
+        "uv run pyright -p . --createstub app.codemod.compilation.models.pr_part_context"
+    )
 
     # TODO fix this, to remove noapidoc and hidden methods
     # right now it uses astor.to_source, which doesn't respect the generics, and breaks things
     # strip_internal_symbols(frontend_typestubs_dir)
 
     # Autogenerate the builtins file based on what has apidoc, we use the same logic here as we do to generate the runner imports
-    generate_builtins_file(frontend_typestubs_dir + "/__builtins__.pyi", LanguageType.BOTH)
-    generate_builtins_file(frontend_typestubs_dir + "/__builtins__python__.pyi", LanguageType.PYTHON)
-    generate_builtins_file(frontend_typestubs_dir + "/__builtins__typescript__.pyi", LanguageType.TYPESCRIPT)
+    generate_builtins_file(
+        frontend_typestubs_dir + "/__builtins__.pyi", LanguageType.BOTH
+    )
+    generate_builtins_file(
+        frontend_typestubs_dir + "/__builtins__python__.pyi", LanguageType.PYTHON
+    )
+    generate_builtins_file(
+        frontend_typestubs_dir + "/__builtins__typescript__.pyi",
+        LanguageType.TYPESCRIPT,
+    )
 
     if os.path.isdir(out_dir):
         # remove typings dir if it exists
@@ -111,7 +137,9 @@ def generate_docs(docs_dir: str) -> None:
 
 
 @generate.command()
-@click.argument("filepath", default=sdk.__path__[0] + "/system-prompt.txt", required=False)
+@click.argument(
+    "filepath", default=sdk.__path__[0] + "/system-prompt.txt", required=False
+)
 def system_prompt(filepath: str) -> None:
     print(f"Generating system prompt and writing to {filepath}...")
     new_system_prompt = get_system_prompt()
@@ -181,7 +209,9 @@ def generate_codegen_sdk_docs(docs_dir: str) -> None:
         mint_data = json.load(mint_file)
 
     # Find the "Codebase SDK" group where we want to add the pages
-    codebase_sdk_group = next(group for group in mint_data["navigation"] if group["group"] == "API Reference")
+    codebase_sdk_group = next(
+        group for group in mint_data["navigation"] if group["group"] == "API Reference"
+    )
 
     # Update the pages for each language group
     for group in codebase_sdk_group["pages"]:
@@ -202,7 +232,11 @@ def generate_codegen_sdk_docs(docs_dir: str) -> None:
 @generate.command()
 @click.option("--docs-dir", default="docs", required=False)
 @click.option("--openai-key", required=True)
-@click.option("--complete", is_flag=True, help="Generate a complete changelog for the codegen_sdk API")
+@click.option(
+    "--complete",
+    is_flag=True,
+    help="Generate a complete changelog for the codegen_sdk API",
+)
 def changelog(docs_dir: str, openai_key: str, complete: bool = False) -> None:
     """Generate the changelog for the codegen_sdk API and update the changelog.mdx file"""
     print(colored("Generating changelog", "green"))
@@ -226,11 +260,15 @@ iconType: "solid"
             # Remove header from existing changelog
             existing_changelog = existing_changelog.split(header)[1]
             # find the latest existing version
-            latest_existing_version = re.search(r'label="(v[\d.]+)"', existing_changelog)
+            latest_existing_version = re.search(
+                r'label="(v[\d.]+)"', existing_changelog
+            )
             # if there is a latest existing version, generate new releases
             if latest_existing_version:
                 # generate new releases
-                new_releases = generate_changelog(client, latest_existing_version.group(1))
+                new_releases = generate_changelog(
+                    client, latest_existing_version.group(1)
+                )
                 # append new releases to the existing changelog
                 new_changelog = header + new_releases + existing_changelog
             else:

@@ -22,13 +22,23 @@ class MockAIHelper(AbstractAIHelper):
     def llm_query_with_retry(self, **kwargs) -> None:
         pass
 
-    def llm_query_no_retry(self, messages: list = [], model: str = "gpt-4-32k", max_tokens: int = 3000) -> None:
+    def llm_query_no_retry(
+        self, messages: list = [], model: str = "gpt-4-32k", max_tokens: int = 3000
+    ) -> None:
         pass
 
-    def llm_query_functions_with_retry(self, model: str, messages: list, functions: list[dict], max_tokens: int) -> None:
+    def llm_query_functions_with_retry(
+        self, model: str, messages: list, functions: list[dict], max_tokens: int
+    ) -> None:
         pass
 
-    def llm_query_functions(self, model: str, messages: list, functions: list[dict], max_tokens: int | None = None) -> None:
+    def llm_query_functions(
+        self,
+        model: str,
+        messages: list,
+        functions: list[dict],
+        max_tokens: int | None = None,
+    ) -> None:
         pass
 
     def llm_response_to_json(response) -> str:

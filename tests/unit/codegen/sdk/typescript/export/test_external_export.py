@@ -53,7 +53,9 @@ def test_multiple_external_exports(tmpdir):
         programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         file: TSFile = codebase.get_file("index.ts")
-        assert len(file.exports) == 4  # One export for each symbol: React, useState, useEffect, ReactNode
+        assert (
+            len(file.exports) == 4
+        )  # One export for each symbol: React, useState, useEffect, ReactNode
         assert all(export.is_external_export for export in file.exports)
 
 

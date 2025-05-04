@@ -27,6 +27,9 @@ class MarkInternalToModule(Codemod, Skill):
                 # Check if the function is not internal
                 if not function.is_private and function.name is not None:
                     # Check if the function is not being imported anywhere
-                    if not any(usage.kind in (UsageKind.IMPORTED, UsageKind.IMPORTED_WILDCARD) for usage in function.usages):
+                    if not any(
+                        usage.kind in (UsageKind.IMPORTED, UsageKind.IMPORTED_WILDCARD)
+                        for usage in function.usages
+                    ):
                         # Rename the function to be internal
                         function.rename("_" + function.name)

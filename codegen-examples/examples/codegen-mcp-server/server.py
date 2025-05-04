@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional
 
 import requests
+from mcp.server.fastmcp import FastMCP
+
 from codegen import Codebase
 from codegen.cli.api.client import RestAPI
 from codegen.cli.api.endpoints import CODEGEN_SYSTEM_PROMPT_URL
@@ -14,7 +16,6 @@ from codegen.cli.auth.token_manager import get_current_token
 from codegen.cli.codemod.convert import convert_to_cli
 from codegen.cli.utils.default_code import DEFAULT_CODEMOD
 from codegen.extensions.tools.reveal_symbol import reveal_symbol
-from mcp.server.fastmcp import FastMCP
 
 logger = getLogger(__name__)
 
@@ -73,7 +74,9 @@ def requires_parsed_codebase(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         if state.parsed_codebase is None:
-            return {"error": "Codebase has not been parsed successfully. Please run parse_codebase first."}
+            return {
+                "error": "Codebase has not been parsed successfully. Please run parse_codebase first."
+            }
         return await func(*args, **kwargs)
 
     return wrapper
@@ -99,7 +102,9 @@ def requires_parsed_codebase(func):
 #     return {"message": f"Codebase is parsed. Found {len(state.parsed_codebase.files)} files.", "status": "parsed"}
 
 
-async def create_codemod_task(name: str, description: str, language: str = "python") -> Dict[str, Any]:
+async def create_codemod_task(
+    name: str, description: str, language: str = "python"
+) -> Dict[str, Any]:
     """Background task to create a codemod using the API."""
     try:
         # Convert name to snake case for filename
@@ -130,7 +135,12 @@ async def create_codemod_task(name: str, description: str, language: str = "pyth
             except Exception as e:
                 # Fall back to default implementation on API error
                 code = DEFAULT_CODEMOD.format(name=name)
-                return {"status": "error", "message": f"Error generating codemod via API, using default template: {str(e)}", "path": str(codemod_path), "code": code}
+                return {
+                    "status": "error",
+                    "message": f"Error generating codemod via API, using default template: {str(e)}",
+                    "path": str(codemod_path),
+                    "code": code,
+                }
         else:
             # Use default implementation
             code = DEFAULT_CODEMOD.format(name=name)
@@ -147,7 +157,13 @@ async def create_codemod_task(name: str, description: str, language: str = "pyth
             except Exception:
                 pass  # Ignore system prompt download failures
 
-        return {"status": "completed", "message": f"Created codemod '{name}'", "path": str(codemod_path), "docs_path": str(prompt_path), "code": code}
+        return {
+            "status": "completed",
+            "message": f"Created codemod '{name}'",
+            "path": str(codemod_path),
+            "docs_path": str(prompt_path),
+            "code": code,
+        }
     except Exception as e:
         return {"status": "error", "message": f"Error creating codemod: {str(e)}"}
 
@@ -265,11 +281,19 @@ def get_config() -> str:
 ################################################################################
 
 
-@mcp.tool(name="create_codemod", description="Initiate creation of a new codemod in the `.codegen/codemods/{name}` directory")
+@mcp.tool(
+    name="create_codemod",
+    description="Initiate creation of a new codemod in the `.codegen/codemods/{name}` directory",
+)
 async def create_codemod(
     name: Annotated[str, "Name of the codemod to create"],
-    description: Annotated[str, "Description of what the codemod does. Be specific, as this is passed to an expert LLM to generate the first draft"] = None,
-    language: Annotated[str, "Programming language for the codemod (default Python)"] = "python",
+    description: Annotated[
+        str,
+        "Description of what the codemod does. Be specific, as this is passed to an expert LLM to generate the first draft",
+    ] = None,
+    language: Annotated[
+        str, "Programming language for the codemod (default Python)"
+    ] = "python",
 ) -> Dict[str, Any]:
     # Check if a task with this name already exists
     if name in state.codemod_tasks:
@@ -280,7 +304,10 @@ async def create_codemod(
             del state.codemod_tasks[name]
             return result
         else:
-            return {"status": "in_progress", "message": f"Codemod '{name}' creation is already in progress. Use view_codemods to check status."}
+            return {
+                "status": "in_progress",
+                "message": f"Codemod '{name}' creation is already in progress. Use view_codemods to check status.",
+            }
 
     # Create a task that runs in a separate thread using run_in_executor
     loop = asyncio.get_event_loop()
@@ -291,13 +318,21 @@ async def create_codemod(
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
         # Run our async function to completion in this thread
-        return new_loop.run_until_complete(create_codemod_task(name, description, language))
+        return new_loop.run_until_complete(
+            create_codemod_task(name, description, language)
+        )
 
     # Run the wrapper in a thread pool
     task = loop.run_in_executor(None, sync_wrapper)
 
     # Store task info
-    state.codemod_tasks[name] = {"task": task, "name": name, "description": description, "language": language, "started_at": loop.time()}
+    state.codemod_tasks[name] = {
+        "task": task,
+        "name": name,
+        "description": description,
+        "language": language,
+        "started_at": loop.time(),
+    }
 
     # Return immediately
     return {
@@ -313,7 +348,10 @@ Next steps:
     }
 
 
-@mcp.tool(name="view_codemods", description="View all available codemods and their creation status")
+@mcp.tool(
+    name="view_codemods",
+    description="View all available codemods and their creation status",
+)
 async def view_codemods() -> Dict[str, Any]:
     result = {"active_tasks": {}, "available_codemods": []}
 
@@ -329,14 +367,26 @@ async def view_codemods() -> Dict[str, Any]:
                 task_result = task.result()
                 # Clean up completed task
                 del state.codemod_tasks[name]
-                result["active_tasks"][name] = {"status": task_result.get("status", "completed"), "message": task_result.get("message", "Completed"), "elapsed_seconds": round(elapsed, 1)}
+                result["active_tasks"][name] = {
+                    "status": task_result.get("status", "completed"),
+                    "message": task_result.get("message", "Completed"),
+                    "elapsed_seconds": round(elapsed, 1),
+                }
             except Exception as e:
-                result["active_tasks"][name] = {"status": "error", "message": f"Error: {str(e)}", "elapsed_seconds": round(elapsed, 1)}
+                result["active_tasks"][name] = {
+                    "status": "error",
+                    "message": f"Error: {str(e)}",
+                    "elapsed_seconds": round(elapsed, 1),
+                }
                 # Clean up failed task
                 del state.codemod_tasks[name]
         else:
             # Task still running
-            result["active_tasks"][name] = {"status": "in_progress", "message": "Creation in progress...", "elapsed_seconds": round(elapsed, 1)}
+            result["active_tasks"][name] = {
+                "status": "in_progress",
+                "message": "Creation in progress...",
+                "elapsed_seconds": round(elapsed, 1),
+            }
 
     # Find existing codemods
     try:
@@ -346,27 +396,40 @@ async def view_codemods() -> Dict[str, Any]:
                 if codemod_dir.is_dir():
                     codemod_file = codemod_dir / f"{codemod_dir.name}.py"
                     if codemod_file.exists():
-                        result["available_codemods"].append({"name": codemod_dir.name, "path": str(codemod_file), "run_with": f"run_codemod('{codemod_dir.name}')"})
+                        result["available_codemods"].append(
+                            {
+                                "name": codemod_dir.name,
+                                "path": str(codemod_file),
+                                "run_with": f"run_codemod('{codemod_dir.name}')",
+                            }
+                        )
     except Exception as e:
         result["error"] = f"Error listing codemods: {str(e)}"
 
     return result
 
 
-@mcp.tool(name="run_codemod", description="Runs a codemod from the `.codegen/codemods/{name}` directory and writes output to disk")
+@mcp.tool(
+    name="run_codemod",
+    description="Runs a codemod from the `.codegen/codemods/{name}` directory and writes output to disk",
+)
 async def run_codemod(
     name: Annotated[str, "Name of the codemod to run"],
     arguments: Annotated[str, "JSON string of arguments to pass to the codemod"] = None,
 ) -> Dict[str, Any]:
     if not state.parsed_codebase:
-        return {"error": "Codebase is not ready for codemod execution. Parse a codebase first."}
+        return {
+            "error": "Codebase is not ready for codemod execution. Parse a codebase first."
+        }
 
     try:
         # Get the codemod using CodemodManager
         try:
             from codegen.cli.utils.codemod_manager import CodemodManager
 
-            codemod = CodemodManager.get_codemod(name, start_path=state.parsed_codebase.repo_path)
+            codemod = CodemodManager.get_codemod(
+                name, start_path=state.parsed_codebase.repo_path
+            )
         except Exception as e:
             return {"error": f"Error loading codemod '{name}': {str(e)}"}
 
@@ -381,7 +444,9 @@ async def run_codemod(
                     from codegen.cli.utils.json_schema import validate_json
 
                     if not validate_json(codemod.arguments_type_schema, args_dict):
-                        return {"error": f"Invalid arguments format. Expected schema: {codemod.arguments_type_schema}"}
+                        return {
+                            "error": f"Invalid arguments format. Expected schema: {codemod.arguments_type_schema}"
+                        }
             except json.JSONDecodeError:
                 return {"error": "Invalid JSON in arguments parameter"}
 
@@ -404,22 +469,37 @@ async def run_codemod(
             state.parsed_codebase.get_diff()
             logs = "\n".join(state.log_buffer)
 
-            return {"message": f"Codemod '{name}' executed successfully", "logs": json.dumps(logs), "result": "Codemod applied successfully. Run `git diff` to view the changes!"}
+            return {
+                "message": f"Codemod '{name}' executed successfully",
+                "logs": json.dumps(logs),
+                "result": "Codemod applied successfully. Run `git diff` to view the changes!",
+            }
         finally:
             # Restore original print
             builtins.print = original_print
 
     except Exception as e:
-        return {"error": f"Error executing codemod: {str(e)}", "details": {"type": type(e).__name__, "message": str(e)}}
+        return {
+            "error": f"Error executing codemod: {str(e)}",
+            "details": {"type": type(e).__name__, "message": str(e)},
+        }
 
 
-@mcp.tool(name="reset", description="Reset git repository while preserving all files in .codegen directory")
+@mcp.tool(
+    name="reset",
+    description="Reset git repository while preserving all files in .codegen directory",
+)
 async def reset() -> Dict[str, Any]:
     try:
         # Import necessary functions from reset command
-        from codegen.cli.commands.reset.main import backup_codegen_files, remove_untracked_files, restore_codegen_files
-        from codegen.cli.git.repo import get_git_repo
         from pygit2.enums import ResetMode
+
+        from codegen.cli.commands.reset.main import (
+            backup_codegen_files,
+            remove_untracked_files,
+            restore_codegen_files,
+        )
+        from codegen.cli.git.repo import get_git_repo
 
         # Get the git repository
         repo = get_git_repo()
@@ -451,33 +531,52 @@ async def reset() -> Dict[str, Any]:
 ################################################################################
 
 
-@mcp.tool(name="reveal_symbol", description="Shows all usages + dependencies of the provided symbol, up to the specified max depth (e.g. show 2nd-level usages/dependencies)")
+@mcp.tool(
+    name="reveal_symbol",
+    description="Shows all usages + dependencies of the provided symbol, up to the specified max depth (e.g. show 2nd-level usages/dependencies)",
+)
 async def reveal_symbol_fn(
     symbol: Annotated[str, "symbol to show usages and dependencies for"],
     filepath: Annotated[str, "file path to the target file to split"] = None,
     max_depth: Annotated[int, "maximum depth to show dependencies"] = 1,
 ):
     codebase = state.parsed_codebase
-    output = reveal_symbol(codebase=codebase, symbol_name=symbol, filepath=filepath, max_depth=max_depth, max_tokens=10000)
+    output = reveal_symbol(
+        codebase=codebase,
+        symbol_name=symbol,
+        filepath=filepath,
+        max_depth=max_depth,
+        max_tokens=10000,
+    )
     return output
 
 
-@mcp.tool(name="split_out_functions", description="split out the functions in defined in the provided file into new files, re-importing them to the original")
+@mcp.tool(
+    name="split_out_functions",
+    description="split out the functions in defined in the provided file into new files, re-importing them to the original",
+)
 @requires_parsed_codebase
-async def split_out_functions(target_file: Annotated[str, "file path to the target file to split"]):
+async def split_out_functions(
+    target_file: Annotated[str, "file path to the target file to split"]
+):
     new_files = {}
     codebase = state.parsed_codebase
     file = codebase.get_file(target_file)
     # for each test_function in the file
     for function in file.functions:
         # Create a new file for each test function using its name
-        new_file = codebase.create_file(f"{file.directory.path}/{function.name}.py", sync=False)
+        new_file = codebase.create_file(
+            f"{file.directory.path}/{function.name}.py", sync=False
+        )
         # Move the test function to the newly created file
         function.move_to_file(new_file, strategy="add_back_edge")
         new_files[new_file.filepath] = [function.name]
 
     codebase.commit()
-    result = {"description": "the following new files have been created with each with containing the function specified", "new_files": new_files}
+    result = {
+        "description": "the following new files have been created with each with containing the function specified",
+        "new_files": new_files,
+    }
     return json.dumps(result, indent=2)
 
 

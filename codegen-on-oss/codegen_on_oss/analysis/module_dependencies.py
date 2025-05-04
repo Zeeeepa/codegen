@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING, Any, Dict
 
-import codegen
 import networkx as nx
+
+import codegen
 
 if TYPE_CHECKING:
     from codegen import Codebase

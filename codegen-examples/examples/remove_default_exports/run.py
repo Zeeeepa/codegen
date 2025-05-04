@@ -33,7 +33,9 @@ def run(codebase: Codebase):
                 # Handle default exports
                 if export.is_reexport() and export.is_default_export():
                     print(f"  🔄 Converting default export '{export.name}'")
-                    default_export = next((e for e in non_shared_file.default_exports), None)
+                    default_export = next(
+                        (e for e in non_shared_file.default_exports), None
+                    )
                     if default_export:
                         default_export.make_non_default()
 

@@ -255,7 +255,9 @@ def test_math_sqrt():
             # Move each test in the group
             for test_function in tests:
                 print(f"Moving function {test_function.name} to {new_filename}")
-                test_function.move_to_file(new_file, strategy="update_all_imports", include_dependencies=True)
+                test_function.move_to_file(
+                    new_file, strategy="update_all_imports", include_dependencies=True
+                )
                 original_file = codebase.get_file("test.py")
 
         # Force a commit to ensure all changes are applied
@@ -265,10 +267,14 @@ def test_math_sqrt():
         # Check that original test.py is empty of test functions
         original_file = codebase.get_file("test.py", optional=True)
         assert original_file is not None
-        assert len([f for f in original_file.functions if f.name.startswith("test_")]) == 0
+        assert (
+            len([f for f in original_file.functions if f.name.startswith("test_")]) == 0
+        )
 
         # Verify test_set_comparison was moved correctly
-        set_comparison_file = codebase.get_file("test_utils/test_set_comparison.py", optional=True)
+        set_comparison_file = codebase.get_file(
+            "test_utils/test_set_comparison.py", optional=True
+        )
         assert set_comparison_file is not None
         assert "test_set_comparison" in set_comparison_file.content
         assert 'set1 = set("1308")' in set_comparison_file.content
@@ -281,4 +287,6 @@ def test_math_sqrt():
 
         # Verify imports were preserved
         assert "from math import sqrt" in math_file.content
-        assert "from math import pi" not in math_file.content  # Unused import should be removed
+        assert (
+            "from math import pi" not in math_file.content
+        )  # Unused import should be removed

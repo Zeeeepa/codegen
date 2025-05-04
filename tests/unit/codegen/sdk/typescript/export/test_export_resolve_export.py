@@ -23,7 +23,11 @@ export type TypeName = {};
 export enum EnumName {}
 export namespace MyNamespace {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         exports = file.exports
         assert len(file.imports) == 0
@@ -43,16 +47,66 @@ export namespace MyNamespace {}
             "MyNamespace",
         }
         assert all(file.get_export(exp.name) == exp for exp in file.exports)
-        assert exports[0].declared_symbol == exports[0].exported_symbol == exports[0].resolved_symbol == file.get_global_var("a")
-        assert exports[1].declared_symbol == exports[1].exported_symbol == exports[1].resolved_symbol == file.get_global_var("b")
-        assert exports[2].declared_symbol == exports[2].exported_symbol == exports[2].resolved_symbol == file.get_global_var("c")
-        assert exports[3].declared_symbol == exports[3].exported_symbol == exports[3].resolved_symbol == file.get_function("functionName")
-        assert exports[4].declared_symbol == exports[4].exported_symbol == exports[4].resolved_symbol == file.get_function("namedGenerator")
-        assert exports[5].declared_symbol == exports[5].exported_symbol == exports[5].resolved_symbol == file.get_function("namedArrowFunction")
-        assert exports[6].declared_symbol == exports[6].exported_symbol == exports[6].resolved_symbol == file.get_class("ClassName")
-        assert exports[7].declared_symbol == exports[7].exported_symbol == exports[7].resolved_symbol == file.get_interface("InterfaceName")
-        assert exports[8].declared_symbol == exports[8].exported_symbol == exports[8].resolved_symbol == file.get_type("TypeName")
-        assert exports[10].declared_symbol == exports[10].exported_symbol == exports[10].resolved_symbol == file.get_namespace("MyNamespace")
+        assert (
+            exports[0].declared_symbol
+            == exports[0].exported_symbol
+            == exports[0].resolved_symbol
+            == file.get_global_var("a")
+        )
+        assert (
+            exports[1].declared_symbol
+            == exports[1].exported_symbol
+            == exports[1].resolved_symbol
+            == file.get_global_var("b")
+        )
+        assert (
+            exports[2].declared_symbol
+            == exports[2].exported_symbol
+            == exports[2].resolved_symbol
+            == file.get_global_var("c")
+        )
+        assert (
+            exports[3].declared_symbol
+            == exports[3].exported_symbol
+            == exports[3].resolved_symbol
+            == file.get_function("functionName")
+        )
+        assert (
+            exports[4].declared_symbol
+            == exports[4].exported_symbol
+            == exports[4].resolved_symbol
+            == file.get_function("namedGenerator")
+        )
+        assert (
+            exports[5].declared_symbol
+            == exports[5].exported_symbol
+            == exports[5].resolved_symbol
+            == file.get_function("namedArrowFunction")
+        )
+        assert (
+            exports[6].declared_symbol
+            == exports[6].exported_symbol
+            == exports[6].resolved_symbol
+            == file.get_class("ClassName")
+        )
+        assert (
+            exports[7].declared_symbol
+            == exports[7].exported_symbol
+            == exports[7].resolved_symbol
+            == file.get_interface("InterfaceName")
+        )
+        assert (
+            exports[8].declared_symbol
+            == exports[8].exported_symbol
+            == exports[8].resolved_symbol
+            == file.get_type("TypeName")
+        )
+        assert (
+            exports[10].declared_symbol
+            == exports[10].exported_symbol
+            == exports[10].resolved_symbol
+            == file.get_namespace("MyNamespace")
+        )
         assert all(not exp.is_default_export() for exp in exports)
         assert [exp.is_type_export() for exp in exports].count(True) == 1
         assert all(not exp.is_reexport() for exp in exports)
@@ -70,14 +124,30 @@ export default { myfunc1, myfunc2 } // object
 export default [1, 2, 3]            // array
 export default 42                   // number
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         exports = file.exports
         assert len(file.imports) == 0
         assert len(exports) == 8
         assert all(file.get_export(exp.name) == exp for exp in exports)
-        assert [exp.name for exp in file.exports] == ["function() {}", "function*() {}", "() => {}", "class {}", "myfunc1", "myfunc2", "[1, 2, 3]", "42"]
-        assert [exp.declared_symbol.source if exp.declared_symbol else None for exp in exports] == [
+        assert [exp.name for exp in file.exports] == [
+            "function() {}",
+            "function*() {}",
+            "() => {}",
+            "class {}",
+            "myfunc1",
+            "myfunc2",
+            "[1, 2, 3]",
+            "42",
+        ]
+        assert [
+            exp.declared_symbol.source if exp.declared_symbol else None
+            for exp in exports
+        ] == [
             "export default function() {}",
             "export default function*() {}",
             "export default () => {}",
@@ -105,13 +175,22 @@ class ClassName {}
 export { variable, functionName, ClassName };
 export { variable as aliasName };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         exports = file.exports
         assert len(file.imports) == 0
         assert len(exports) == 4
         assert all(file.get_export(exp.name) == exp for exp in exports)
-        assert [exp.name for exp in file.exports] == ["variable", "functionName", "ClassName", "aliasName"]
+        assert [exp.name for exp in file.exports] == [
+            "variable",
+            "functionName",
+            "ClassName",
+            "aliasName",
+        ]
         assert all(exp.declared_symbol is None for exp in exports)
         assert all(exp.exported_symbol == exp.resolved_symbol for exp in exports)
         assert exports[0].resolved_symbol == file.get_global_var("variable")
@@ -139,24 +218,53 @@ export const variable = value;
 export function functionName() {}
 export class ClassName {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"reexporter.ts": reexporter_content, "definer.ts": definer_content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"reexporter.ts": reexporter_content, "definer.ts": definer_content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         reexporter_file: TSFile = codebase.get_file("reexporter.ts")
         definer_file: TSFile = codebase.get_file("definer.ts")
         reexported_exports = reexporter_file.exports
         assert len(reexporter_file.imports) == 3
         assert len(reexported_exports) == 4
-        assert all(reexporter_file.get_export(exp.name) == exp for exp in reexported_exports)
-        assert [exp.name for exp in reexporter_file.exports] == ["variable", "functionName", "ClassName", "aliasName"]
+        assert all(
+            reexporter_file.get_export(exp.name) == exp for exp in reexported_exports
+        )
+        assert [exp.name for exp in reexporter_file.exports] == [
+            "variable",
+            "functionName",
+            "ClassName",
+            "aliasName",
+        ]
         assert all(exp.declared_symbol is None for exp in reexported_exports)
-        assert all(exp.exported_symbol != exp.resolved_symbol for exp in reexported_exports)
-        assert reexported_exports[0].exported_symbol == reexporter_file.get_import("variable")
-        assert reexported_exports[1].exported_symbol == reexporter_file.get_import("functionName")
-        assert reexported_exports[2].exported_symbol == reexporter_file.get_import("ClassName")
-        assert reexported_exports[3].exported_symbol == reexporter_file.get_import("variable")
-        assert reexported_exports[0].resolved_symbol == definer_file.get_global_var("variable")
-        assert reexported_exports[1].resolved_symbol == definer_file.get_function("functionName")
-        assert reexported_exports[2].resolved_symbol == definer_file.get_class("ClassName")
-        assert reexported_exports[3].resolved_symbol == definer_file.get_global_var("variable")
+        assert all(
+            exp.exported_symbol != exp.resolved_symbol for exp in reexported_exports
+        )
+        assert reexported_exports[0].exported_symbol == reexporter_file.get_import(
+            "variable"
+        )
+        assert reexported_exports[1].exported_symbol == reexporter_file.get_import(
+            "functionName"
+        )
+        assert reexported_exports[2].exported_symbol == reexporter_file.get_import(
+            "ClassName"
+        )
+        assert reexported_exports[3].exported_symbol == reexporter_file.get_import(
+            "variable"
+        )
+        assert reexported_exports[0].resolved_symbol == definer_file.get_global_var(
+            "variable"
+        )
+        assert reexported_exports[1].resolved_symbol == definer_file.get_function(
+            "functionName"
+        )
+        assert reexported_exports[2].resolved_symbol == definer_file.get_class(
+            "ClassName"
+        )
+        assert reexported_exports[3].resolved_symbol == definer_file.get_global_var(
+            "variable"
+        )
 
         assert all(not exp.is_default_export() for exp in reexported_exports)
         assert all(not exp.is_type_export() for exp in reexported_exports)
@@ -180,7 +288,11 @@ export const b = value;
 export function foo() {}
 export default class ClassName {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         imports = file.imports
@@ -188,7 +300,14 @@ export default class ClassName {}
         assert len(imports) == 6
         assert len(exports) == 6
         assert all(file.get_export(exp.name) == exp for exp in exports if exp.name)
-        assert [exp.name for exp in file.exports] == ["a", "b", "bar", "default", None, "myModule"]
+        assert [exp.name for exp in file.exports] == [
+            "a",
+            "b",
+            "bar",
+            "default",
+            None,
+            "myModule",
+        ]
         assert all(exp.declared_symbol == imports[i] for i, exp in enumerate(exports))
         assert all(exp.exported_symbol != exp.resolved_symbol for exp in exports)
         assert exports[0].resolved_symbol == m_file.get_global_var("a")
@@ -220,7 +339,11 @@ export type MyType = {};
     content2 = """
 export type SomeType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         imports = file.imports
@@ -257,7 +380,11 @@ export = function myfunc() {};
 export = function() {};
 export = { f1, f2 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         imports = file.imports
         exports = file.exports
@@ -265,7 +392,13 @@ export = { f1, f2 };
         assert len(exports) == 5
         assert len(file.functions) == 4
         assert all(file.get_export(exp.name) == exp for exp in exports)
-        assert [exp.name for exp in file.exports] == ["MyClass", "myfunc", "function() {}", "f1", "f2"]
+        assert [exp.name for exp in file.exports] == [
+            "MyClass",
+            "myfunc",
+            "function() {}",
+            "f1",
+            "f2",
+        ]
 
         assert exports[0].source == "export = MyClass;"
         assert exports[0].declared_symbol is None
@@ -331,7 +464,11 @@ function foo() {
     myfunc3()
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1: TSFile = codebase.get_file("file1.ts")
         file2: TSFile = codebase.get_file("file2.ts")
         f1 = file1.get_function("myfunc1")
@@ -339,7 +476,10 @@ function foo() {
         f3 = file1.get_function("myfunc3")
         assert f1.symbol_usages(UsageType.DIRECT) == [file1.get_export("myfunc1")]
         assert f2.symbol_usages(UsageType.DIRECT) == [file1.get_export("myfunc2")]
-        assert f3.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) == [file1.get_export("myfunc3"), file2.get_import("myfunc3")]
+        assert f3.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) == [
+            file1.get_export("myfunc3"),
+            file2.get_import("myfunc3"),
+        ]
 
 
 def test_resolve_namespace_object_export(tmpdir) -> None:
@@ -365,18 +505,31 @@ function foo() {
     DefaultUtils.DateUtils.someFunc()   // incorrect usage of exported name; should be DefaultUtils.Date.someFunc()
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1: TSFile = codebase.get_file("file1.ts")
         file2: TSFile = codebase.get_file("file2.ts")
         math_utils_imp = file1.get_import("MathUtils")
         string_utils_imp = file1.get_import("StringUtils")
         date_utils_imp = file1.get_import("DateUtils")
 
-        assert math_utils_imp.symbol_usages(UsageType.DIRECT) == [file1.get_export("Math")]
-        assert string_utils_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) == [file1.get_export("String")]
-        assert date_utils_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) == [file1.get_export("Date")]
+        assert math_utils_imp.symbol_usages(UsageType.DIRECT) == [
+            file1.get_export("Math")
+        ]
+        assert string_utils_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) == [
+            file1.get_export("String")
+        ]
+        assert date_utils_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) == [
+            file1.get_export("Date")
+        ]
 
-        assert set(math_utils_imp.symbol_usages) == {file1.get_export("Math"), file2.get_function("foo")}
+        assert set(math_utils_imp.symbol_usages) == {
+            file1.get_export("Math"),
+            file2.get_function("foo"),
+        }
         assert set(string_utils_imp.symbol_usages) == {file1.get_export("String")}
         assert set(date_utils_imp.symbol_usages) == {file1.get_export("Date")}
 
@@ -409,7 +562,14 @@ import { myFunction } from './dir';
 myFunction();
     """
     with get_codebase_session(
-        tmpdir=tmpdir, files={FILENAME_1: content1, FILENAME_2: content2, FILENAME_3: content3, FILENAME_4: content4}, programming_language=ProgrammingLanguage.TYPESCRIPT
+        tmpdir=tmpdir,
+        files={
+            FILENAME_1: content1,
+            FILENAME_2: content2,
+            FILENAME_3: content3,
+            FILENAME_4: content4,
+        },
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         file1: TSFile = codebase.get_file(FILENAME_1)
         dir1_index: TSFile = codebase.get_file(FILENAME_2)
@@ -452,7 +612,14 @@ import { myFunction } from './dir/index.ts';
 myFunction();
     """
     with get_codebase_session(
-        tmpdir=tmpdir, files={FILENAME_1: content1, FILENAME_2: content2, FILENAME_3: content3, FILENAME_4: content4}, programming_language=ProgrammingLanguage.TYPESCRIPT
+        tmpdir=tmpdir,
+        files={
+            FILENAME_1: content1,
+            FILENAME_2: content2,
+            FILENAME_3: content3,
+            FILENAME_4: content4,
+        },
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         file1: TSFile = codebase.get_file(FILENAME_1)
         dir1_index: TSFile = codebase.get_file(FILENAME_2)
@@ -482,7 +649,11 @@ import { myFunction } from './file2';
 
 myFunction();
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2, "file3.ts": content3}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2, "file3.ts": content3},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1: TSFile = codebase.get_file("file1.ts")
         file2: TSFile = codebase.get_file("file2.ts")
         file3: TSFile = codebase.get_file("file3.ts")

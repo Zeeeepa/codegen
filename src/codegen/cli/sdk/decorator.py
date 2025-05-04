@@ -30,7 +30,9 @@ class DecoratedFunction:
         self.params_type = None
         self.webhook_config = webhook_config
         self.lint_mode = lint_mode
-        self.lint_user_whitelist = list(lint_user_whitelist) if lint_user_whitelist else []
+        self.lint_user_whitelist = (
+            list(lint_user_whitelist) if lint_user_whitelist else []
+        )
 
     def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
         # Get the params type from the function signature
@@ -48,7 +50,11 @@ class DecoratedFunction:
         return wrapper
 
 
-def function(name: str, subdirectories: list[str] | None = None, language: ProgrammingLanguage | None = None) -> DecoratedFunction:
+def function(
+    name: str,
+    subdirectories: list[str] | None = None,
+    language: ProgrammingLanguage | None = None,
+) -> DecoratedFunction:
     """Decorator for codegen functions.
 
     Args:
@@ -60,7 +66,9 @@ def function(name: str, subdirectories: list[str] | None = None, language: Progr
             pass
 
     """
-    return DecoratedFunction(name=name, subdirectories=subdirectories, language=language)
+    return DecoratedFunction(
+        name=name, subdirectories=subdirectories, language=language
+    )
 
 
 def webhook(

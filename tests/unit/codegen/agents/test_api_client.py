@@ -31,14 +31,18 @@ class TestApiClient:
     def api_client(self):
         config = Configuration()
         # Mock the RESTClientObject to avoid making actual HTTP requests
-        with patch("codegen.agents.client.openapi_client.rest.RESTClientObject") as mock_rest:
+        with patch(
+            "codegen.agents.client.openapi_client.rest.RESTClientObject"
+        ) as mock_rest:
             client = ApiClient(configuration=config)
             # Return the client with mocked rest_client
             yield client
 
     def test_init_default_configuration(self):
         """Test initialization with default configuration"""
-        with patch("codegen.agents.client.openapi_client.configuration.Configuration.get_default") as mock_get_default:
+        with patch(
+            "codegen.agents.client.openapi_client.configuration.Configuration.get_default"
+        ) as mock_get_default:
             mock_config = MagicMock()
             mock_get_default.return_value = mock_config
             with patch("codegen.agents.client.openapi_client.rest.RESTClientObject"):
@@ -108,7 +112,10 @@ class TestApiClient:
     def test_sanitize_for_serialization_model(self, api_client):
         """Test sanitization of OpenAPI model"""
         model = TestModel("test", 123)
-        assert api_client.sanitize_for_serialization(model) == {"name": "test", "value": 123}
+        assert api_client.sanitize_for_serialization(model) == {
+            "name": "test",
+            "value": 123,
+        }
 
     def test_deserialize_primitive(self, api_client):
         """Test deserialization of primitive values"""
@@ -140,7 +147,10 @@ class TestApiClient:
 
     def test_deserialize_enum(self, api_client):
         """Test deserialization of enum values"""
-        assert api_client._ApiClient__deserialize_enum("value1", TestEnum) == TestEnum.VALUE1
+        assert (
+            api_client._ApiClient__deserialize_enum("value1", TestEnum)
+            == TestEnum.VALUE1
+        )
 
         # Test exception case
         with pytest.raises(ApiException):
@@ -168,7 +178,11 @@ class TestApiClient:
         params = {"param1": ["value1", "value2", "value3"]}
         collection_formats = {"param1": "multi"}
         result = api_client.parameters_to_tuples(params, collection_formats)
-        assert result == [("param1", "value1"), ("param1", "value2"), ("param1", "value3")]
+        assert result == [
+            ("param1", "value1"),
+            ("param1", "value2"),
+            ("param1", "value3"),
+        ]
 
     def test_parameters_to_url_query(self, api_client):
         """Test parameters_to_url_query method"""
@@ -218,7 +232,9 @@ class TestApiClient:
 
         # Test with JSON in content types
         content_types = ["application/xml", "application/json", "text/plain"]
-        assert api_client.select_header_content_type(content_types) == "application/json"
+        assert (
+            api_client.select_header_content_type(content_types) == "application/json"
+        )
 
         # Test without JSON in content types
         content_types = ["application/xml", "text/plain"]
@@ -229,9 +245,24 @@ class TestApiClient:
         # Setup mock configuration
         api_client.configuration = MagicMock()
         api_client.configuration.auth_settings.return_value = {
-            "api_key": {"in": "header", "key": "X-API-KEY", "value": "test-api-key", "type": "apiKey"},
-            "query_param": {"in": "query", "key": "api_key", "value": "test-query-key", "type": "apiKey"},
-            "cookie_auth": {"in": "cookie", "key": "session", "value": "test-cookie", "type": "apiKey"},
+            "api_key": {
+                "in": "header",
+                "key": "X-API-KEY",
+                "value": "test-api-key",
+                "type": "apiKey",
+            },
+            "query_param": {
+                "in": "query",
+                "key": "api_key",
+                "value": "test-query-key",
+                "type": "apiKey",
+            },
+            "cookie_auth": {
+                "in": "cookie",
+                "key": "session",
+                "value": "test-cookie",
+                "type": "apiKey",
+            },
         }
 
         # Test authentication in header
@@ -243,30 +274,49 @@ class TestApiClient:
         # Test authentication in query
         headers = {}
         queries = []
-        api_client.update_params_for_auth(headers, queries, ["query_param"], "", "", None)
+        api_client.update_params_for_auth(
+            headers, queries, ["query_param"], "", "", None
+        )
         assert queries == [("api_key", "test-query-key")]
 
         # Test authentication in cookie
         headers = {}
         queries = []
-        api_client.update_params_for_auth(headers, queries, ["cookie_auth"], "", "", None)
+        api_client.update_params_for_auth(
+            headers, queries, ["cookie_auth"], "", "", None
+        )
         assert headers == {"Cookie": "test-cookie"}
 
         # Test with request_auth override
         headers = {}
         queries = []
-        request_auth = {"in": "header", "key": "X-CUSTOM-KEY", "value": "custom-value", "type": "apiKey"}
-        api_client.update_params_for_auth(headers, queries, ["api_key"], "", "", None, request_auth)
+        request_auth = {
+            "in": "header",
+            "key": "X-CUSTOM-KEY",
+            "value": "custom-value",
+            "type": "apiKey",
+        }
+        api_client.update_params_for_auth(
+            headers, queries, ["api_key"], "", "", None, request_auth
+        )
         assert headers == {"X-CUSTOM-KEY": "custom-value"}
 
         # Test with invalid auth location
-        invalid_auth = {"in": "invalid", "key": "x-key", "value": "value", "type": "apiKey"}
+        invalid_auth = {
+            "in": "invalid",
+            "key": "x-key",
+            "value": "value",
+            "type": "apiKey",
+        }
         with pytest.raises(ApiValueError):
             api_client._apply_auth_params({}, [], "", "", None, invalid_auth)
 
     def test_param_serialize(self, api_client):
         """Test param_serialize method"""
-        with patch.object(api_client, "sanitize_for_serialization") as mock_sanitize, patch.object(api_client, "default_headers", {}):  # Empty the default headers
+        with (
+            patch.object(api_client, "sanitize_for_serialization") as mock_sanitize,
+            patch.object(api_client, "default_headers", {}),
+        ):  # Empty the default headers
             # Set return values for sanitize_for_serialization
             mock_sanitize.side_effect = lambda x: x
 
@@ -278,7 +328,19 @@ class TestApiClient:
             header_params = {"header": "value"}
             body = {"body": "content"}
 
-            result = api_client.param_serialize(method, resource_path, path_params, query_params, header_params, body, None, None, None, None, None)
+            result = api_client.param_serialize(
+                method,
+                resource_path,
+                path_params,
+                query_params,
+                header_params,
+                body,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
 
             # Verify result
             assert isinstance(result, tuple)
@@ -297,11 +359,23 @@ class TestApiClient:
         api_client.rest_client.request.return_value = mock_response
 
         # Call the method
-        response = api_client.call_api("GET", "https://api.example.com/test", {"header": "value"}, {"body": "content"}, [("param", "value")], 30)
+        response = api_client.call_api(
+            "GET",
+            "https://api.example.com/test",
+            {"header": "value"},
+            {"body": "content"},
+            [("param", "value")],
+            30,
+        )
 
         # Verify the call to rest_client.request
         api_client.rest_client.request.assert_called_once_with(
-            "GET", "https://api.example.com/test", headers={"header": "value"}, body={"body": "content"}, post_params=[("param", "value")], _request_timeout=30
+            "GET",
+            "https://api.example.com/test",
+            headers={"header": "value"},
+            body={"body": "content"},
+            post_params=[("param", "value")],
+            _request_timeout=30,
         )
 
         # Verify the result
@@ -327,7 +401,10 @@ class TestApiClient:
         # Mock deserialize method and ApiResponse constructor
         with (
             patch.object(api_client, "deserialize") as mock_deserialize,
-            patch("codegen.agents.client.openapi_client.api_client.ApiResponse", return_value=mock_api_response) as mock_api_response_class,
+            patch(
+                "codegen.agents.client.openapi_client.api_client.ApiResponse",
+                return_value=mock_api_response,
+            ) as mock_api_response_class,
         ):
             mock_deserialize.return_value = {"name": "test", "value": 123}
 
@@ -336,7 +413,12 @@ class TestApiClient:
             result = api_client.response_deserialize(response_data, response_types_map)
 
             # Verify ApiResponse was called with correct params
-            mock_api_response_class.assert_called_once_with(status_code=200, data={"name": "test", "value": 123}, headers={"Content-Type": "application/json"}, raw_data=response_data.data)
+            mock_api_response_class.assert_called_once_with(
+                status_code=200,
+                data={"name": "test", "value": 123},
+                headers={"Content-Type": "application/json"},
+                raw_data=response_data.data,
+            )
 
             # Verify the result
             assert result == mock_api_response
@@ -351,7 +433,12 @@ class TestApiClient:
         response_data.getheaders.return_value = {"Content-Type": "application/json"}
 
         # Mock methods
-        with patch.object(api_client, "deserialize") as mock_deserialize, patch("codegen.agents.client.openapi_client.exceptions.ApiException.from_response") as mock_exception:
+        with (
+            patch.object(api_client, "deserialize") as mock_deserialize,
+            patch(
+                "codegen.agents.client.openapi_client.exceptions.ApiException.from_response"
+            ) as mock_exception,
+        ):
             mock_deserialize.return_value = {"error": "Bad Request"}
             mock_exception.side_effect = ApiException(400)
 

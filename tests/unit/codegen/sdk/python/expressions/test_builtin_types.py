@@ -18,7 +18,11 @@ d = [1, 2, 3]
 e = {"a": 1, "b": 2}
 f = (1, 2, 3)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         # Test Number
         a = file.get_global_var("a")

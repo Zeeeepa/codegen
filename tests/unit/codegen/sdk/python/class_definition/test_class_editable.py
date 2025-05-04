@@ -77,7 +77,13 @@ class MyClass1:
         my_class = codebase.get_symbol("MyClass1")
         matches = my_class.search(five_char_pattern)
         assert len(matches) == 6
-        assert set([m.source for m in matches]) == {"class", "hello", "print", "world", "world!"}
+        assert set([m.source for m in matches]) == {
+            "class",
+            "hello",
+            "print",
+            "world",
+            "world!",
+        }
 
         world = my_class.get_method("world")
         matches = world.search(five_char_pattern)

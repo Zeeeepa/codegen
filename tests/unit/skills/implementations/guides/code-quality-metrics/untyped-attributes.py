@@ -5,7 +5,11 @@ from codegen.sdk.core.placeholder.placeholder_type import TypePlaceholder
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 CountUntypedAttributesInCodebasePyTest = SkillTestCase(
     [
@@ -118,8 +122,14 @@ class CountUntypedAttributesInCodebase(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CountUntypedAttributesInCodebasePyTest], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[CountUntypedAttributesInCodebaseTSTest], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[CountUntypedAttributesInCodebasePyTest],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[CountUntypedAttributesInCodebaseTSTest],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         untyped_attributes_count = 0
         typed_attributes_count = 0
@@ -127,8 +137,16 @@ class CountUntypedAttributesInCodebase(Skill, ABC):
         # Iterate through all classes in the file
         for cls in codebase.classes:
             # Count the number of attributes that are not typed
-            untyped_attributes_count += sum(1 for attr in cls.attributes if isinstance(attr.assignment.type, TypePlaceholder))
-            typed_attributes_count += sum(1 for attr in cls.attributes if not isinstance(attr.assignment.type, TypePlaceholder))
+            untyped_attributes_count += sum(
+                1
+                for attr in cls.attributes
+                if isinstance(attr.assignment.type, TypePlaceholder)
+            )
+            typed_attributes_count += sum(
+                1
+                for attr in cls.attributes
+                if not isinstance(attr.assignment.type, TypePlaceholder)
+            )
 
         print(f"# untyped: {untyped_attributes_count}")
         print(f"# typed: {typed_attributes_count}")

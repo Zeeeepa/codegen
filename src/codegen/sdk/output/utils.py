@@ -13,7 +13,9 @@ from tree_sitter import Point
 from codegen.sdk.output.constants import MAX_EDITABLE_LINES
 
 
-def style_editable(ts_node: TSNode, filepath: PathLike, file_node: TSNode) -> RenderResult:
+def style_editable(
+    ts_node: TSNode, filepath: PathLike, file_node: TSNode
+) -> RenderResult:
     start_line = ts_node.start_point[0] + 1  # 1 based
     start_col = ts_node.start_point[1]
     end_line = ts_node.end_point[0] + 1  # 1 based
@@ -25,21 +27,38 @@ def style_editable(ts_node: TSNode, filepath: PathLike, file_node: TSNode) -> Re
         for child in ts_node.children:
             if child.end_point[0] + 1 < truncated_len:
                 end_line = child.end_point[0] + 1
-    syntax = _stylize_range(end_col, end_line, file_node, filepath, start_col, start_line)
+    syntax = _stylize_range(
+        end_col, end_line, file_node, filepath, start_col, start_line
+    )
     yield syntax
     if truncated:
         yield Text(f"\nTruncated from {truncated} lines")
 
 
 def _stylize_range(end_col, end_line, file_node, filepath, start_col, start_line):
-    syntax = Syntax.from_path(filepath, line_numbers=True, line_range=(start_line, end_line))
-    syntax.stylize_range(style="dim", start=(start_line, 0), end=(start_line, start_col))
-    syntax.stylize_range(style="dim", start=(end_line, end_col), end=(file_node.end_point[0] + 1, file_node.end_point[1]))
+    syntax = Syntax.from_path(
+        filepath, line_numbers=True, line_range=(start_line, end_line)
+    )
+    syntax.stylize_range(
+        style="dim", start=(start_line, 0), end=(start_line, start_col)
+    )
+    syntax.stylize_range(
+        style="dim",
+        start=(end_line, end_col),
+        end=(file_node.end_point[0] + 1, file_node.end_point[1]),
+    )
     syntax.stylize_range(style="dim", start=(end_line, end_col), end=(end_line + 1, 0))
     return syntax
 
 
-def stylize_error(path: PathLike, start: tuple[int, int] | Point, end: tuple[int, int] | Point, file_node: TSNode, content: str, message: str):
+def stylize_error(
+    path: PathLike,
+    start: tuple[int, int] | Point,
+    end: tuple[int, int] | Point,
+    file_node: TSNode,
+    content: str,
+    message: str,
+):
     Path(path).write_text(content)
     source = _stylize_range(end[1], end[0] + 1, file_node, path, start[1], start[0] + 1)
     console = Console(file=sys.stderr)
@@ -74,7 +93,10 @@ def deterministic_json_dumps(data, **kwargs):
         elif isinstance(item, list):
             if len(item) > 0 and isinstance(item[0], dict):
                 # Sort list of dictionaries based on all keys
-                return sorted([sort_dict(i) for i in item], key=lambda x: json.dumps(x, sort_keys=True))
+                return sorted(
+                    [sort_dict(i) for i in item],
+                    key=lambda x: json.dumps(x, sort_keys=True),
+                )
             else:
                 return [sort_dict(i) for i in item]
         else:

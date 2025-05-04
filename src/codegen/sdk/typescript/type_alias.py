@@ -22,7 +22,9 @@ class TSTypeAlias(TypeAlias[TSCodeBlock, TSAttribute], TSSymbol, TSHasBlock):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         dest = dest or self.self_dest
         # =====[ Type Identifiers ]=====
         # Look for type references in the interface body

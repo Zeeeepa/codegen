@@ -27,12 +27,21 @@ class DependencyManager(ExternalProcess):
         pass
 
 
-def get_dependency_manager(language: ProgrammingLanguage, codebase_context: "CodebaseContext", enabled: bool = False) -> DependencyManager | None:
-    from codegen.sdk.typescript.external.dependency_manager import TypescriptDependencyManager
+def get_dependency_manager(
+    language: ProgrammingLanguage,
+    codebase_context: "CodebaseContext",
+    enabled: bool = False,
+) -> DependencyManager | None:
+    from codegen.sdk.typescript.external.dependency_manager import (
+        TypescriptDependencyManager,
+    )
 
     ts_enabled = enabled or codebase_context.config.ts_dependency_manager
     if language == ProgrammingLanguage.TYPESCRIPT:
         if ts_enabled:
-            return TypescriptDependencyManager(repo_path=codebase_context.repo_path, base_path=codebase_context.projects[0].base_path)
+            return TypescriptDependencyManager(
+                repo_path=codebase_context.repo_path,
+                base_path=codebase_context.projects[0].base_path,
+            )
 
     return None

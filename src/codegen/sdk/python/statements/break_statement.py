@@ -21,5 +21,7 @@ class PyBreakStatement(Statement["PyCodeBlock"]):
     @noapidoc
     @commiter
     @override
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         pass

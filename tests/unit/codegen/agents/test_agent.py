@@ -5,7 +5,9 @@ import pytest
 from codegen.agents.agent import Agent, AgentTask
 from codegen.agents.client.openapi_client.api.agents_api import AgentsApi
 from codegen.agents.client.openapi_client.configuration import Configuration
-from codegen.agents.client.openapi_client.models.agent_run_response import AgentRunResponse
+from codegen.agents.client.openapi_client.models.agent_run_response import (
+    AgentRunResponse,
+)
 from codegen.agents.constants import CODEGEN_BASE_API_URL
 
 
@@ -63,8 +65,13 @@ class TestAgentTask:
     def test_refresh_with_id(self, agent_task, mock_agents_api):
         """Test refresh method updates job status"""
         # Setup mock API response
-        mock_updated_response = {"status": "completed", "result": {"output": "Success!"}}
-        mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = mock_updated_response
+        mock_updated_response = {
+            "status": "completed",
+            "result": {"output": "Success!"},
+        }
+        mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = (
+            mock_updated_response
+        )
 
         # Call refresh
         agent_task.refresh()
@@ -83,8 +90,13 @@ class TestAgentTask:
     def test_refresh_with_dict_response(self, agent_task, mock_agents_api):
         """Test refresh method when API returns dict instead of object"""
         # Setup mock API response as dict
-        mock_updated_response = {"status": "failed", "result": {"error": "Something went wrong"}}
-        mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = mock_updated_response
+        mock_updated_response = {
+            "status": "failed",
+            "result": {"error": "Something went wrong"},
+        }
+        mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = (
+            mock_updated_response
+        )
 
         # Call refresh
         agent_task.refresh()
@@ -119,7 +131,9 @@ class TestAgent:
         with patch.object(Configuration, "__init__", return_value=None) as mock_config:
             agent = Agent(token="test-token", org_id=42)
             # Verify config initialization
-            mock_config.assert_called_once_with(host=CODEGEN_BASE_API_URL, access_token="test-token")
+            mock_config.assert_called_once_with(
+                host=CODEGEN_BASE_API_URL, access_token="test-token"
+            )
             return agent
 
     def test_init_with_explicit_org_id(self, mock_api_client, mock_agents_api):
@@ -144,7 +158,9 @@ class TestAgent:
         with patch.object(Configuration, "__init__", return_value=None) as mock_config:
             custom_url = "https://custom-api.example.com"
             agent = Agent(token="test-token", org_id=42, base_url=custom_url)
-            mock_config.assert_called_once_with(host=custom_url, access_token="test-token")
+            mock_config.assert_called_once_with(
+                host=custom_url, access_token="test-token"
+            )
 
     def test_run(self, agent, mock_agents_api):
         """Test run method creates and returns job"""
@@ -154,14 +170,18 @@ class TestAgent:
         mock_run_response.status = "running"
         mock_run_response.result = None
         mock_run_response.web_url = "https://example.com/run/123"
-        mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.return_value = mock_run_response
+        mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.return_value = (
+            mock_run_response
+        )
 
         # Call run
         job = agent.run("Test prompt")
 
         # Verify API call
         mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.assert_called_once()
-        call_args = mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.call_args
+        call_args = (
+            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.call_args
+        )
         assert call_args[1]["org_id"] == 42
         assert call_args[1]["authorization"] == "Bearer test-token"
         assert call_args[1]["_headers"] == {"Content-Type": "application/json"}
@@ -195,7 +215,12 @@ class TestAgent:
         mock_job.refresh.assert_called_once()
 
         # Verify status
-        assert status == {"id": "123", "status": "completed", "result": {"output": "Success!"}, "web_url": "https://example.com/run/123"}
+        assert status == {
+            "id": "123",
+            "status": "completed",
+            "result": {"output": "Success!"},
+            "web_url": "https://example.com/run/123",
+        }
 
 
 # Integration-like tests
@@ -213,7 +238,12 @@ class TestAgentIntegration:
     @pytest.fixture
     def mock_updated_response(self):
         """Create a mock updated response for API calls"""
-        mock_updated = {"id": 987, "status": "completed", "result": {"output": "Task completed successfully"}, "web_url": "https://example.com/run/987"}
+        mock_updated = {
+            "id": 987,
+            "status": "completed",
+            "result": {"output": "Task completed successfully"},
+            "web_url": "https://example.com/run/987",
+        }
 
         return mock_updated
 
@@ -226,18 +256,24 @@ class TestAgentIntegration:
         ):
             # Setup mocks
             mock_api_client = MagicMock()  # Remove spec to allow dynamic attributes
-            mock_api_client.configuration = MagicMock()  # Create configuration attribute
+            mock_api_client.configuration = (
+                MagicMock()
+            )  # Create configuration attribute
             mock_api_client.configuration.access_token = "test-token"
             mock_api_client_class.return_value = mock_api_client
 
             # Setup agents API mock
             mock_agents_api = MagicMock(spec=AgentsApi)
-            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.return_value = mock_response
+            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.return_value = (
+                mock_response
+            )
             mock_agents_api_class.return_value = mock_agents_api
 
             # We're patching the same class for both the Agent and AgentTask
             mock_inner_agents_api = mock_agents_api
-            mock_inner_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = mock_updated_response
+            mock_inner_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = (
+                mock_updated_response
+            )
 
             # Initialize agent
             agent = Agent(token="test-token", org_id=123)
@@ -254,7 +290,9 @@ class TestAgentIntegration:
             status = agent.get_status()
 
             # Verify API calls
-            mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.assert_called_once_with(agent_run_id=987, org_id=123, authorization="Bearer test-token")
+            mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.assert_called_once_with(
+                agent_run_id=987, org_id=123, authorization="Bearer test-token"
+            )
 
             # Verify status
             assert isinstance(status, dict)
@@ -265,10 +303,16 @@ class TestAgentIntegration:
 
     def test_exception_handling(self):
         """Test handling of API exceptions during agent run"""
-        with patch("codegen.agents.agent.ApiClient"), patch("codegen.agents.agent.AgentsApi") as mock_agents_api_class, patch.object(Configuration, "__init__", return_value=None):
+        with (
+            patch("codegen.agents.agent.ApiClient"),
+            patch("codegen.agents.agent.AgentsApi") as mock_agents_api_class,
+            patch.object(Configuration, "__init__", return_value=None),
+        ):
             # Setup API to raise exception
             mock_agents_api = MagicMock(spec=AgentsApi)
-            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.side_effect = Exception("API Error")
+            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.side_effect = Exception(
+                "API Error"
+            )
             mock_agents_api_class.return_value = mock_agents_api
 
             # Initialize agent

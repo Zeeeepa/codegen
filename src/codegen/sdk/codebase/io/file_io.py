@@ -19,7 +19,9 @@ class FileIO(IO):
 
     def _verify_path(self, path: Path) -> None:
         if self.allowed_paths is not None:
-            if not any(path.resolve().is_relative_to(p.resolve()) for p in self.allowed_paths):
+            if not any(
+                path.resolve().is_relative_to(p.resolve()) for p in self.allowed_paths
+            ):
                 msg = f"Path {path.resolve()} is not within allowed paths {self.allowed_paths}"
                 raise BadWriteError(msg)
 
@@ -35,7 +37,11 @@ class FileIO(IO):
             return path.read_bytes()
 
     def save_files(self, files: set[Path] | None = None) -> None:
-        to_save = set(filter(lambda f: f in files, self.files)) if files is not None else self.files.keys()
+        to_save = (
+            set(filter(lambda f: f in files, self.files))
+            if files is not None
+            else self.files.keys()
+        )
         for path in to_save:
             self._verify_path(path)
         with ThreadPoolExecutor() as exec:
@@ -48,7 +54,11 @@ class FileIO(IO):
 
     def check_changes(self) -> None:
         if self.files:
-            logger.error(BadWriteError("Directly called file write without calling commit_transactions"))
+            logger.error(
+                BadWriteError(
+                    "Directly called file write without calling commit_transactions"
+                )
+            )
         self.files.clear()
 
     def delete_file(self, path: Path) -> None:

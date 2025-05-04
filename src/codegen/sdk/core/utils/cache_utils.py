@@ -27,17 +27,24 @@ class LazyGeneratorCache(Generic[ItemType]):
             yield item
 
 
-def cached_generator(maxsize: int = 16, typed: bool = False) -> Callable[[Callable[GenParamSpec, Iterator[ItemType]]], Callable[GenParamSpec, Iterator[ItemType]]]:
+def cached_generator(maxsize: int = 16, typed: bool = False) -> Callable[
+    [Callable[GenParamSpec, Iterator[ItemType]]],
+    Callable[GenParamSpec, Iterator[ItemType]],
+]:
     """Decorator to cache the output of a generator function.
 
     The generator's output is fully consumed on the first call and stored as a list.
     Subsequent calls with the same arguments yield values from the cached list.
     """
 
-    def decorator(func: Callable[GenParamSpec, Iterator[ItemType]]) -> Callable[GenParamSpec, Iterator[ItemType]]:
+    def decorator(
+        func: Callable[GenParamSpec, Iterator[ItemType]]
+    ) -> Callable[GenParamSpec, Iterator[ItemType]]:
         @lru_cache(maxsize=maxsize, typed=typed)
         @functools.wraps(func)
-        def wrapper(*args: GenParamSpec.args, **kwargs: GenParamSpec.kwargs) -> Iterator[ItemType]:
+        def wrapper(
+            *args: GenParamSpec.args, **kwargs: GenParamSpec.kwargs
+        ) -> Iterator[ItemType]:
             return LazyGeneratorCache(func(*args, **kwargs))
 
         return wrapper

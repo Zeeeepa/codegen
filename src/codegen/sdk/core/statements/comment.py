@@ -63,7 +63,16 @@ class Comment(Statement[TCodeBlock], Generic[TCodeBlock]):
     @noapidoc
     @classmethod
     @reader
-    def from_expression_statement(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Statement, code_block: TCodeBlock, pos: int, comment_node: TSNode) -> Comment:
+    def from_expression_statement(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Statement,
+        code_block: TCodeBlock,
+        pos: int,
+        comment_node: TSNode,
+    ) -> Comment:
         return cls(ts_node, file_node_id, ctx, code_block, pos)
 
     @property
@@ -126,5 +135,7 @@ class Comment(Statement[TCodeBlock], Generic[TCodeBlock]):
 
     @commiter
     @noapidoc
-    def _compute_dependencies(self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None
+    ) -> None:
         pass

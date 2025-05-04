@@ -21,7 +21,9 @@ Parent = TypeVar("Parent", bound="Expression")
 
 
 @apidoc
-class SubscriptExpression(Expression[Parent], Resolvable[Parent], Generic[Object, Index, Parent]):
+class SubscriptExpression(
+    Expression[Parent], Resolvable[Parent], Generic[Object, Index, Parent]
+):
     """Indexing onto an object (Aka using brackets on an object)
 
     Examples:
@@ -50,7 +52,9 @@ class SubscriptExpression(Expression[Parent], Resolvable[Parent], Generic[Object
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind, dest: Optional["HasName | None"] = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: Optional["HasName | None"] = None
+    ) -> None:
         self.object._compute_dependencies(usage_type, dest)
         for index in self.indices:
             index._compute_dependencies(usage_type, dest)

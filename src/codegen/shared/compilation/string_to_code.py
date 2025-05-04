@@ -4,17 +4,27 @@ import traceback
 from collections.abc import Callable
 from typing import Any
 
-from codegen.shared.compilation.codeblock_validation import check_for_dangerous_operations
-from codegen.shared.compilation.exception_utils import get_local_frame, get_offset_traceback
+from codegen.shared.compilation.codeblock_validation import (
+    check_for_dangerous_operations,
+)
+from codegen.shared.compilation.exception_utils import (
+    get_local_frame,
+    get_offset_traceback,
+)
 from codegen.shared.compilation.function_compilation import safe_compile_function_string
-from codegen.shared.compilation.function_construction import create_function_str_from_codeblock, get_imports_string
+from codegen.shared.compilation.function_construction import (
+    create_function_str_from_codeblock,
+    get_imports_string,
+)
 from codegen.shared.exceptions.control_flow import StopCodemodException
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def create_execute_function_from_codeblock(codeblock: str, custom_scope: dict | None = None, func_name: str = "execute") -> Callable:
+def create_execute_function_from_codeblock(
+    codeblock: str, custom_scope: dict | None = None, func_name: str = "execute"
+) -> Callable:
     """Convert a user code string into a Callable that takes in a Codebase.
 
     Steps:
@@ -44,7 +54,9 @@ def create_execute_function_from_codeblock(codeblock: str, custom_scope: dict | 
     # =====[ Create function string from codeblock ]=====
     func_str = create_function_str_from_codeblock(codeblock, func_name)
     # =====[ Compile the function string into a function  ]=====
-    func = safe_compile_function_string(custom_scope=custom_scope, func_name=func_name, func_str=func_str)
+    func = safe_compile_function_string(
+        custom_scope=custom_scope, func_name=func_name, func_str=func_str
+    )
 
     # =====[ Compute line offset of func_str  ]=====
     # This is to generate the a traceback with the correct line window
@@ -62,7 +74,12 @@ def create_execute_function_from_codeblock(codeblock: str, custom_scope: dict | 
         def wrapped_func(*args, **kwargs):
             """Wraps the user code to capture and format exceptions + grab locals"""
             try:
-                linecache.cache["<string>"] = (len(_func_str), None, _func_str.splitlines(True), "<string>")
+                linecache.cache["<string>"] = (
+                    len(_func_str),
+                    None,
+                    _func_str.splitlines(True),
+                    "<string>",
+                )
                 func(*args, **kwargs)
 
             # =====[ Grab locals during `StopCodemodException` ]=====
@@ -73,7 +90,9 @@ def create_execute_function_from_codeblock(codeblock: str, custom_scope: dict | 
             except Exception as e:
                 # =====[ Get offset, filtered traceback message ]=====
                 tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
-                error_message = get_offset_traceback(tb_lines, _line_offset, filenameFilter="<string>")
+                error_message = get_offset_traceback(
+                    tb_lines, _line_offset, filenameFilter="<string>"
+                )
 
                 # =====[ Find frame in user's code ]=====
                 exc_type, exc_value, exc_traceback = sys.exc_info()

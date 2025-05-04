@@ -53,6 +53,9 @@ class TSDecorator(Decorator["TSClass", "TSFunction", "TSParameter"]):
         Returns:
             FunctionCall | None: A FunctionCall object representing the decorator's call expression if present, None otherwise.
         """
-        if call_node := next((x for x in self.ts_node.named_children if x.type == "call_expression"), None):
+        if call_node := next(
+            (x for x in self.ts_node.named_children if x.type == "call_expression"),
+            None,
+        ):
             return FunctionCall(call_node, self.file_node_id, self.ctx, self.parent)
         return None

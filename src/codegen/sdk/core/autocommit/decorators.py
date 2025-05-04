@@ -1,4 +1,3 @@
-from codegen.shared.logging.get_logger import get_logger
 import functools
 from collections.abc import Callable
 from typing import TYPE_CHECKING, ParamSpec, TypeVar, Union, overload
@@ -7,6 +6,7 @@ import wrapt
 
 from codegen.sdk.core.autocommit.constants import AutoCommitState, enabled
 from codegen.sdk.core.node_id_factory import NodeId
+from codegen.shared.logging.get_logger import get_logger
 
 if TYPE_CHECKING:
     from codegen.sdk.core.interfaces.editable import Editable

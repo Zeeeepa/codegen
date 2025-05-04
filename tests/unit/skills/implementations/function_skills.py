@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import PyCodebaseType, TSCodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 py_function_input = """
 def foo(a: int):
@@ -23,8 +27,16 @@ def foo(b: int):
     pass
 """
 py_test_cases = [
-    SkillTestCase(files=[SkillTestCasePyFile(input=py_function_input, output=py_function_output)]),
-    SkillTestCase(files=[SkillTestCasePyFile(input=py_function_empty_input, output=py_function_empty_output)]),
+    SkillTestCase(
+        files=[SkillTestCasePyFile(input=py_function_input, output=py_function_output)]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCasePyFile(
+                input=py_function_empty_input, output=py_function_empty_output
+            )
+        ]
+    ),
 ]
 
 ts_function_input = """
@@ -44,12 +56,24 @@ function foo(b: number): void {
 }
 """
 ts_test_cases = [
-    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_function_input, output=ts_function_output)]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_function_empty_input, output=ts_function_empty_output)]),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input=ts_function_input, output=ts_function_output)]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input=ts_function_empty_input, output=ts_function_empty_output
+            )
+        ]
+    ),
 ]
 
 
-@skill(eval_skill=False, prompt="Append a parameter to a function signature", uid="22cafc5b-c837-4f1a-836e-7fada2fe88d8")
+@skill(
+    eval_skill=False,
+    prompt="Append a parameter to a function signature",
+    uid="22cafc5b-c837-4f1a-836e-7fada2fe88d8",
+)
 class AppendParameterSkill(Skill, ABC):
     """Appends a parameter to the signature of a specified function in both Python and TypeScript codebases."""
 

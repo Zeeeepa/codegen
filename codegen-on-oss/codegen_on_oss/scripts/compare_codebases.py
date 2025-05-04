@@ -13,7 +13,7 @@ import os
 import sys
 import tempfile
 import traceback
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
@@ -95,7 +95,9 @@ def compare_codebases(args: argparse.Namespace) -> Dict[str, Any]:
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshots from repositories
-            logger.info(f"Creating base snapshot from {args.base_repo} ({args.base_branch})")
+            logger.info(
+                f"Creating base snapshot from {args.base_repo} ({args.base_branch})"
+            )
             base_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=args.base_repo,
                 branch=args.base_branch,
@@ -103,7 +105,9 @@ def compare_codebases(args: argparse.Namespace) -> Dict[str, Any]:
             )
             logger.info(f"Base snapshot created with {len(base_snapshot.files)} files")
 
-            logger.info(f"Creating head snapshot from {args.head_repo} ({args.head_branch})")
+            logger.info(
+                f"Creating head snapshot from {args.head_repo} ({args.head_branch})"
+            )
             head_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=args.head_repo,
                 branch=args.head_branch,
@@ -119,11 +123,11 @@ def compare_codebases(args: argparse.Namespace) -> Dict[str, Any]:
             logger.info("Analyzing file changes")
             file_changes = diff_analyzer.analyze_file_changes()
             logger.info(f"Found {len(file_changes)} file changes")
-            
+
             logger.info("Analyzing function changes")
             function_changes = diff_analyzer.analyze_function_changes()
             logger.info(f"Found {len(function_changes)} function changes")
-            
+
             logger.info("Analyzing complexity changes")
             complexity_changes = diff_analyzer.analyze_complexity_changes()
             logger.info(f"Found {len(complexity_changes)} complexity changes")
@@ -205,47 +209,49 @@ def format_markdown(results: Dict[str, Any]) -> str:
         return f"# Error Comparing Codebases\n\n{results['error']}"
 
     markdown = f"# Codebase Comparison Results\n\n"
-    markdown += f"**Base Repository:** {results['base_repo_url']} ({results['base_branch']})\n"
+    markdown += (
+        f"**Base Repository:** {results['base_repo_url']} ({results['base_branch']})\n"
+    )
     markdown += f"**Head Repository:** {results['head_repo_url']} ({results['head_branch']})\n\n"
-    
+
     markdown += "## Summary\n\n"
     markdown += results["summary"].replace("\n", "\n\n")
-    
+
     markdown += "\n\n## File Changes\n\n"
     for file, change_type in results["file_changes"].items():
         markdown += f"- **{file}**: {change_type}\n"
-    
+
     markdown += "\n## Function Changes\n\n"
     for func, change_type in results["function_changes"].items():
         markdown += f"- **{func}**: {change_type}\n"
-    
+
     markdown += "\n## Risk Assessment\n\n"
     for category, risk_level in results["risk_assessment"].items():
         markdown += f"- **{category}**: {risk_level}\n"
-    
+
     if "detailed_analysis" in results:
         markdown += "\n## Detailed Analysis\n\n"
-        
+
         markdown += "### Added Files\n\n"
         for file in results["detailed_analysis"]["added_files"]:
             markdown += f"- {file}\n"
-        
+
         markdown += "\n### Removed Files\n\n"
         for file in results["detailed_analysis"]["removed_files"]:
             markdown += f"- {file}\n"
-        
+
         markdown += "\n### Modified Files\n\n"
         for file in results["detailed_analysis"]["modified_files"]:
             markdown += f"- {file}\n"
-        
+
         markdown += "\n### Potential Issues\n\n"
         for issue in results["detailed_analysis"]["potential_issues"]:
             markdown += f"- **{issue['category']} ({issue['risk_level']})**: {issue['description']}\n"
-        
+
         markdown += "\n### Recommendations\n\n"
         for recommendation in results["detailed_analysis"]["recommendations"]:
             markdown += f"- {recommendation}\n"
-    
+
     return markdown
 
 
@@ -265,46 +271,48 @@ def format_text(results: Dict[str, Any]) -> str:
     text = f"Codebase Comparison Results\n"
     text += f"=========================\n\n"
     text += f"Base Repository: {results['base_repo_url']} ({results['base_branch']})\n"
-    text += f"Head Repository: {results['head_repo_url']} ({results['head_branch']})\n\n"
-    
+    text += (
+        f"Head Repository: {results['head_repo_url']} ({results['head_branch']})\n\n"
+    )
+
     text += "Summary\n-------\n\n"
     text += results["summary"]
-    
+
     text += "\n\nFile Changes\n-----------\n\n"
     for file, change_type in results["file_changes"].items():
         text += f"{file}: {change_type}\n"
-    
+
     text += "\nFunction Changes\n---------------\n\n"
     for func, change_type in results["function_changes"].items():
         text += f"{func}: {change_type}\n"
-    
+
     text += "\nRisk Assessment\n--------------\n\n"
     for category, risk_level in results["risk_assessment"].items():
         text += f"{category}: {risk_level}\n"
-    
+
     if "detailed_analysis" in results:
         text += "\nDetailed Analysis\n----------------\n\n"
-        
+
         text += "Added Files:\n"
         for file in results["detailed_analysis"]["added_files"]:
             text += f"- {file}\n"
-        
+
         text += "\nRemoved Files:\n"
         for file in results["detailed_analysis"]["removed_files"]:
             text += f"- {file}\n"
-        
+
         text += "\nModified Files:\n"
         for file in results["detailed_analysis"]["modified_files"]:
             text += f"- {file}\n"
-        
+
         text += "\nPotential Issues:\n"
         for issue in results["detailed_analysis"]["potential_issues"]:
             text += f"- {issue['category']} ({issue['risk_level']}): {issue['description']}\n"
-        
+
         text += "\nRecommendations:\n"
         for recommendation in results["detailed_analysis"]["recommendations"]:
             text += f"- {recommendation}\n"
-    
+
     return text
 
 
@@ -337,4 +345,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

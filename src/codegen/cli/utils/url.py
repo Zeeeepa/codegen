@@ -21,7 +21,9 @@ def get_domain() -> str:
             return DomainRegistry.LOCAL.value
 
 
-def generate_webapp_url(path: str = "", params: dict | None = None, protocol: str = "https") -> str:
+def generate_webapp_url(
+    path: str = "", params: dict | None = None, protocol: str = "https"
+) -> str:
     """Generate a complete URL for the web application.
 
     Args:

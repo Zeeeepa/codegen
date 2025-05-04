@@ -13,11 +13,18 @@ from file2 import bar
 def square(x):
     return x * x
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file0.py": file0_content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file0.py": file0_content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file0 = codebase.get_file("dir/file0.py")
         file0.write("aui")
         codebase.reset()
-        assert "Directly called file write without calling commit_transactions" in caplog.text
+        assert (
+            "Directly called file write without calling commit_transactions"
+            in caplog.text
+        )
 
 
 def test_codebase_reset_basic(tmpdir) -> None:
@@ -28,7 +35,11 @@ a = 1
 def square(x: a):
     return x * x
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file0.py": file0_content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file0.py": file0_content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file0 = codebase.get_file("dir/file0.py")
         codebase.symbols[-1].rename("test")
         codebase.commit(sync_graph=True)
@@ -43,7 +54,11 @@ def test_reset_exception(tmpdir) -> None:
     def square(x):
         return x * x
         """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file0.py": file0_content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file0.py": file0_content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
 
         class mockme:
             change_type: str = "ab"
@@ -81,7 +96,14 @@ def bar(x):
     return square(x)
     """.strip()
     with get_codebase_session(
-        tmpdir=tmpdir, files={"dir/file0.py": file0_content, "dir/file1.py": file1_content, "dir/file2.py": file2_content}, programming_language=ProgrammingLanguage.PYTHON, commit=True
+        tmpdir=tmpdir,
+        files={
+            "dir/file0.py": file0_content,
+            "dir/file1.py": file1_content,
+            "dir/file2.py": file2_content,
+        },
+        programming_language=ProgrammingLanguage.PYTHON,
+        commit=True,
     ) as codebase:
         file0 = codebase.get_file("dir/file0.py", optional=True)
         file2 = codebase.get_file("dir/file2.py", optional=True)

@@ -1,5 +1,8 @@
 from codegen.sdk.code_generation.codegen_sdk_codebase import get_codegen_sdk_codebase
-from codegen.sdk.code_generation.prompts.utils import get_api_classes_by_decorator, get_codegen_sdk_class_docstring
+from codegen.sdk.code_generation.prompts.utils import (
+    get_api_classes_by_decorator,
+    get_codegen_sdk_class_docstring,
+)
 from codegen.sdk.core.codebase import Codebase
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from codegen.shared.logging.get_logger import get_logger
@@ -13,10 +16,15 @@ logger = get_logger(__name__)
 ########################################################################################################################
 
 
-def get_docstrings_for_classes(codebase: Codebase, language: ProgrammingLanguage, classnames: list[str]) -> dict[str, str]:
+def get_docstrings_for_classes(
+    codebase: Codebase, language: ProgrammingLanguage, classnames: list[str]
+) -> dict[str, str]:
     """Returns map of ClassName -> Docstring"""
     classes = get_api_classes_by_decorator(codebase=codebase, language=language)
-    class_docstrings = {k: get_codegen_sdk_class_docstring(cls=v, codebase=codebase) for k, v in classes.items()}
+    class_docstrings = {
+        k: get_codegen_sdk_class_docstring(cls=v, codebase=codebase)
+        for k, v in classes.items()
+    }
     return {k: class_docstrings[k] for k in classnames}
 
 
@@ -112,7 +120,9 @@ Most codemods will begin by identifying the symbols in the codebase that need to
 ########################################################################################################################
 
 
-def get_language_specific_docstring(codebase: Codebase, language: ProgrammingLanguage) -> str:
+def get_language_specific_docstring(
+    codebase: Codebase, language: ProgrammingLanguage
+) -> str:
     # =====[ Get language prefix ]=====
     if language == ProgrammingLanguage.PYTHON:
         prefix = "Py"
@@ -121,7 +131,10 @@ def get_language_specific_docstring(codebase: Codebase, language: ProgrammingLan
 
     # =====[ Grab docstrings ]=====
     classes = get_api_classes_by_decorator(codebase=codebase, language=language)
-    class_docstrings = {k: get_codegen_sdk_class_docstring(cls=v, codebase=codebase) for k, v in classes.items()}
+    class_docstrings = {
+        k: get_codegen_sdk_class_docstring(cls=v, codebase=codebase)
+        for k, v in classes.items()
+    }
     docstrings = {k: v for k, v in class_docstrings.items() if k.startswith(prefix)}
 
     # =====[ Get mapping from e.g. File => PyFile and TFile => PyFile ]=====
@@ -146,7 +159,10 @@ For example, all `File` that you encounter will be of type {prefix}File, {prefix
 ########################################################################################################################
 
 
-def get_codegen_sdk_docs(language: ProgrammingLanguage = ProgrammingLanguage.PYTHON, codebase: Codebase | None = None) -> str:
+def get_codegen_sdk_docs(
+    language: ProgrammingLanguage = ProgrammingLanguage.PYTHON,
+    codebase: Codebase | None = None,
+) -> str:
     """Computes the GraphSitter docs from scratch"""
     codebase = codebase or get_codegen_sdk_codebase()
     with codebase.session(sync_graph=False, commit=False):

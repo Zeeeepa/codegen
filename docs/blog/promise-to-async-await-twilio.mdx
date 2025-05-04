@@ -71,7 +71,7 @@ for _class in codebase.classes:
 
     # loop through all methods
     for method in _class.methods:
-    
+
         # Skip certain methods
         if method.name in ["each", "setPromiseCallback"]:
             continue
@@ -107,12 +107,12 @@ Then we converted each chain and added proper error handling with try/catch:
 for chain_info in operation_promise_chains:
     promise_chain = chain_info["promise_chain"]
     promise_statement = chain_info["promise_statement"]
-    
+
     # Convert the chain
     async_code = promise_chain.convert_to_async_await(
         assignment_variable_name="operation"
     )
-    
+
     # Add try-catch with callback handling
     new_code = f"""
         try {{
@@ -132,9 +132,9 @@ for chain_info in operation_promise_chains:
 
     # Clean up old statements
     statements = promise_statement.parent.get_statements()
-    return_stmt = next((stmt for stmt in statements 
+    return_stmt = next((stmt for stmt in statements
         if stmt.statement_type == StatementType.RETURN_STATEMENT), None)
-    assign_stmt = next((stmt for stmt in reversed(statements) 
+    assign_stmt = next((stmt for stmt in reversed(statements)
         if stmt.statement_type == StatementType.ASSIGNMENT), None)
 
     if return_stmt:

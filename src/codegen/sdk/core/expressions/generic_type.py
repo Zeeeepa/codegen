@@ -31,7 +31,13 @@ class GenericType(NamedType[Parent], Generic[TType, Parent]):
 
     _parameters: Collection[TType, Self]
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
         self._parameters = self._get_parameters()
 
@@ -73,4 +79,6 @@ class GenericType(NamedType[Parent], Generic[TType, Parent]):
     @override
     def _resolved_types(self) -> Generator[ResolutionStack[Self], None, None]:
         if name := self.get_name():
-            yield from self.with_resolution_frame(name, generic_parameters=self.parameters)
+            yield from self.with_resolution_frame(
+                name, generic_parameters=self.parameters
+            )

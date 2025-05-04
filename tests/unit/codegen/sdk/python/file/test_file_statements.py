@@ -3,7 +3,9 @@ import pytest
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
 
 
-@pytest.mark.skip("TODO: @caroljung fix this once code block for file and symbols are unified")
+@pytest.mark.skip(
+    "TODO: @caroljung fix this once code block for file and symbols are unified"
+)
 def test_file_statements(tmpdir) -> None:
     # language=python
     content = """

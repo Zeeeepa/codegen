@@ -89,7 +89,9 @@ class LinearTeamsObservation(Observation):
         return {"team_count": len(self.teams)}
 
 
-def linear_get_issue_tool(client: LinearClient, issue_id: str) -> LinearIssueObservation:
+def linear_get_issue_tool(
+    client: LinearClient, issue_id: str
+) -> LinearIssueObservation:
     """Get an issue by its ID."""
     try:
         issue = client.get_issue(issue_id)
@@ -132,7 +134,9 @@ def linear_get_issue_tool(client: LinearClient, issue_id: str) -> LinearIssueObs
         )
 
 
-def linear_get_issue_comments_tool(client: LinearClient, issue_id: str) -> LinearCommentsObservation:
+def linear_get_issue_comments_tool(
+    client: LinearClient, issue_id: str
+) -> LinearCommentsObservation:
     """Get comments for a specific issue."""
     try:
         comments = client.get_issue_comments(issue_id)
@@ -175,7 +179,9 @@ def linear_get_issue_comments_tool(client: LinearClient, issue_id: str) -> Linea
         )
 
 
-def linear_comment_on_issue_tool(client: LinearClient, issue_id: str, body: str) -> LinearCommentObservation:
+def linear_comment_on_issue_tool(
+    client: LinearClient, issue_id: str, body: str
+) -> LinearCommentObservation:
     """Add a comment to an issue."""
     try:
         comment = client.comment_on_issue(issue_id, body)
@@ -228,7 +234,9 @@ def linear_register_webhook_tool(
 ) -> LinearWebhookObservation:
     """Register a webhook with Linear."""
     try:
-        response = client.register_webhook(webhook_url, team_id, secret, enabled, resource_types)
+        response = client.register_webhook(
+            webhook_url, team_id, secret, enabled, resource_types
+        )
         return LinearWebhookObservation(
             status="success",
             webhook_url=webhook_url,
@@ -273,7 +281,9 @@ def linear_register_webhook_tool(
         )
 
 
-def linear_search_issues_tool(client: LinearClient, query: str, limit: int = 10) -> LinearSearchObservation:
+def linear_search_issues_tool(
+    client: LinearClient, query: str, limit: int = 10
+) -> LinearSearchObservation:
     """Search for issues using a query string."""
     try:
         issues = client.search_issues(query, limit)
@@ -316,7 +326,12 @@ def linear_search_issues_tool(client: LinearClient, query: str, limit: int = 10)
         )
 
 
-def linear_create_issue_tool(client: LinearClient, title: str, description: str | None = None, team_id: str | None = None) -> LinearCreateIssueObservation:
+def linear_create_issue_tool(
+    client: LinearClient,
+    title: str,
+    description: str | None = None,
+    team_id: str | None = None,
+) -> LinearCreateIssueObservation:
     """Create a new issue."""
     try:
         issue = client.create_issue(title, description, team_id)

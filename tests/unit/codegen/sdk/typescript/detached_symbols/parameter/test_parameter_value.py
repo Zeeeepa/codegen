@@ -11,7 +11,11 @@ function foo(x: number = DEFAULT_VALUE): number {
     return x + 1;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         default_val_var = file.get_global_var("DEFAULT_VALUE")
         function_symbol = file.get_function("foo")
@@ -27,4 +31,7 @@ function foo(x: number = DEFAULT_VALUE): number {
 
         assert len(default_val_var.usages) == 2
         assert default_val_var.usages[1].match == param.value
-        assert default_val_var.usages[0].match.parent_statement == function_symbol.code_block.statements[0]
+        assert (
+            default_val_var.usages[0].match.parent_statement
+            == function_symbol.code_block.statements[0]
+        )

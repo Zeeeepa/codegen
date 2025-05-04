@@ -30,7 +30,14 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
 
     _symbols: list[Child]
 
-    def __init__(self, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, node: TSNode | None = None, children: list[Child] | None = None) -> None:
+    def __init__(
+        self,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        node: TSNode | None = None,
+        children: list[Child] | None = None,
+    ) -> None:
         self._symbols = children
         if node is None:
             # For backwards compatibility, assure that the first node is the main node
@@ -38,7 +45,11 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         super().__init__(node, file_node_id, ctx, parent)
 
     def __repr__(self) -> str:
-        return f"Collection({self.symbols})" if self.symbols is not None else super().__repr__()
+        return (
+            f"Collection({self.symbols})"
+            if self.symbols is not None
+            else super().__repr__()
+        )
 
     def _init_children(self): ...
 
@@ -120,7 +131,9 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         return self.symbols[-1].next_named_sibling
 
     @writer
-    def find_string_literals(self, strings_to_match: list[str], fuzzy_match: bool = False) -> list[Editable]:
+    def find_string_literals(
+        self, strings_to_match: list[str], fuzzy_match: bool = False
+    ) -> list[Editable]:
         """Search for string literals matching given strings in the SymbolGroup.
 
         Iterates through all symbols in the group and aggregates the results of
@@ -133,7 +146,11 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         Returns:
             list[Editable]: List of Editable nodes representing the matching string literals found within the symbols.
         """
-        return [node for symbol in self.symbols for node in symbol.find_string_literals(strings_to_match, fuzzy_match)]
+        return [
+            node
+            for symbol in self.symbols
+            for node in symbol.find_string_literals(strings_to_match, fuzzy_match)
+        ]
 
     @writer
     def replace(self, old: str, new: str, count: int = -1, priority: int = 0) -> int:
@@ -152,7 +169,9 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
             symbol.replace(old, new, count, priority)
 
     @reader
-    def find(self, strings_to_match: list[str] | str, *, exact: bool = False) -> list[Editable]:
+    def find(
+        self, strings_to_match: list[str] | str, *, exact: bool = False
+    ) -> list[Editable]:
         """Search for substrings in the given symbols that match `strings_to_match`.
 
         Args:
@@ -162,10 +181,19 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         Returns:
             list[Editable]: A list of Editable objects representing each match found.
         """
-        return [node for symbol in self.symbols for node in symbol.find(strings_to_match, exact)]
+        return [
+            node
+            for symbol in self.symbols
+            for node in symbol.find(strings_to_match, exact)
+        ]
 
     @reader
-    def search(self, regex_pattern: str, include_strings: bool = True, include_comments: bool = True) -> list[Editable]:
+    def search(
+        self,
+        regex_pattern: str,
+        include_strings: bool = True,
+        include_comments: bool = True,
+    ) -> list[Editable]:
         """Searches for regex matches in the codebase.
 
         Searches through the source code to find text matching a regex pattern, with options to exclude string literals and comments from the search.
@@ -178,10 +206,21 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         Returns:
             list[Editable]: A list of Editable objects representing matched text nodes in the codebase.
         """
-        return [node for symbol in self.symbols for node in symbol.search(regex_pattern, include_strings, include_comments)]
+        return [
+            node
+            for symbol in self.symbols
+            for node in symbol.search(regex_pattern, include_strings, include_comments)
+        ]
 
     @writer
-    def insert_before(self, new_src: str, fix_indentation: bool = False, newline: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def insert_before(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        newline: bool = True,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Inserts source code before this symbol group.
 
         Inserts the provided source code before the first symbol in the group, while maintaining proper code formatting.
@@ -199,7 +238,14 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         super().insert_before(new_src, fix_indentation, newline, priority, dedupe)
 
     @writer
-    def insert_after(self, new_src: str, fix_indentation: bool = False, newline: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def insert_after(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        newline: bool = True,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Inserts source code after this node in the codebase.
 
         Args:
@@ -215,10 +261,18 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
         if len(self.symbols) == 0 or self.ts_node != self.symbols[0].ts_node:
             super().insert_after(new_src, fix_indentation, newline, priority, dedupe)
         else:
-            self.symbols[-1].insert_after(new_src, fix_indentation, newline, priority, dedupe)
+            self.symbols[-1].insert_after(
+                new_src, fix_indentation, newline, priority, dedupe
+            )
 
     @writer
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Replace the source of this node with new text.
 
         Replaces the source of this SymbolGroup with new text by replacing the first symbol's source and removing all other symbols.
@@ -237,7 +291,9 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
             symbol.remove()
 
     @writer
-    def remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
         """Removes this node and its related extended nodes from the codebase.
 
         Args:
@@ -272,7 +328,9 @@ class SymbolGroup(Editable[Parent], Collection[Child], Generic[Child, Parent]):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         for symbol in self.symbols:
             symbol._compute_dependencies(usage_type, dest)
 

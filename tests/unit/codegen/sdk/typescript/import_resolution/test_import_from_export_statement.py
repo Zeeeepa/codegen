@@ -17,7 +17,11 @@ export { default } from './m';
     content2 = """
 export default function foo() {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -55,7 +59,11 @@ export { default as bar } from './m';
     content2 = """
 export default function foo() {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         assert len(file.imports) == 2
@@ -112,13 +120,19 @@ export { foo as someOtherName, bar } from './m';
 export function foo() {}
 export function bar() {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         assert len(file.imports) == 2
         assert len(file.exports) == 2
 
-        assert file.imports[1].source == "export { foo as someOtherName, bar } from './m';"
+        assert (
+            file.imports[1].source == "export { foo as someOtherName, bar } from './m';"
+        )
         assert file.imports[1].name == "bar"
         assert file.imports[1].module.source == "'./m'"
         assert file.imports[1].symbol_name.source == "bar"
@@ -129,7 +143,9 @@ export function bar() {}
         assert not file.imports[1].is_type_import()
         assert file.imports[1].resolved_symbol == m_file.get_function("bar")
 
-        assert file.exports[0].source == "export { foo as someOtherName, bar } from './m';"
+        assert (
+            file.exports[0].source == "export { foo as someOtherName, bar } from './m';"
+        )
         assert not file.exports[0].is_default_export()
         assert not file.exports[0].is_type_export()
         assert file.exports[0].is_reexport()
@@ -138,7 +154,9 @@ export function bar() {}
         assert file.exports[0].exported_symbol == file.imports[0]
         assert file.exports[0].resolved_symbol == m_file.get_function("foo")
 
-        assert file.exports[1].source == "export { foo as someOtherName, bar } from './m';"
+        assert (
+            file.exports[1].source == "export { foo as someOtherName, bar } from './m';"
+        )
         assert not file.exports[1].is_default_export()
         assert not file.exports[1].is_type_export()
         assert file.exports[1].is_reexport()
@@ -157,7 +175,11 @@ export type { SomeType } from './m';
     content2 = """
 export type SomeType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -193,7 +215,11 @@ export * from './m';
     content2 = """
 export type SomeType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -229,7 +255,11 @@ export * as AliasedName from './m';
     content2 = """
 export type SomeType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         m_file: TSFile = codebase.get_file("m.ts")
         assert len(file.imports) == 1

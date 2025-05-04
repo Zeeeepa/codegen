@@ -10,7 +10,9 @@ from codegen.sdk.core.expressions.comparison_expression import ComparisonExpress
 from codegen.sdk.core.expressions.name import Name
 from codegen.sdk.core.expressions.none_type import NoneType
 from codegen.sdk.core.expressions.number import Number
-from codegen.sdk.core.expressions.parenthesized_expression import ParenthesizedExpression
+from codegen.sdk.core.expressions.parenthesized_expression import (
+    ParenthesizedExpression,
+)
 from codegen.sdk.core.expressions.subscript_expression import SubscriptExpression
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.expressions.unpack import Unpack
@@ -29,7 +31,9 @@ from codegen.sdk.python import PyClass, PyFile, PyFunction, PyImport, PySymbol
 from codegen.sdk.python.detached_symbols.code_block import PyCodeBlock
 from codegen.sdk.python.detached_symbols.parameter import PyParameter
 from codegen.sdk.python.expressions.chained_attribute import PyChainedAttribute
-from codegen.sdk.python.expressions.conditional_expression import PyConditionalExpression
+from codegen.sdk.python.expressions.conditional_expression import (
+    PyConditionalExpression,
+)
 from codegen.sdk.python.expressions.generic_type import PyGenericType
 from codegen.sdk.python.expressions.named_type import PyNamedType
 from codegen.sdk.python.expressions.string import PyString
@@ -40,7 +44,10 @@ from codegen.sdk.python.statements.with_statement import WithStatement
 
 
 def parse_subscript(node: TSNode, file_node_id, ctx, parent):
-    if (node.prev_named_sibling and node.prev_named_sibling.text.decode("utf-8") == "TypeAlias") or isinstance(parent, Type):
+    if (
+        node.prev_named_sibling
+        and node.prev_named_sibling.text.decode("utf-8") == "TypeAlias"
+    ) or isinstance(parent, Type):
         return PyGenericType(node, file_node_id, ctx, parent)
     return SubscriptExpression(node, file_node_id, ctx, parent)
 

@@ -24,7 +24,9 @@ class CodemodContext(BaseModel):
     PULL_REQUEST: PullRequestContext | None = None
 
     @classmethod
-    def _render_template(cls, template_schema: dict[str, str], template_values: dict[str, Any]) -> dict[str, Any]:
+    def _render_template(
+        cls, template_schema: dict[str, str], template_values: dict[str, Any]
+    ) -> dict[str, Any]:
         template_data: dict[str, Any] = {}
         for var_name, var_value in template_values.items():
             var_type = template_schema.get(var_name)

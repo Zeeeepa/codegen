@@ -39,7 +39,14 @@ class ExternalModule(
     node_type: Literal[NodeType.EXTERNAL] = NodeType.EXTERNAL
     _import: Import | None = None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, import_name: Name, import_node: Import | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        import_name: Name,
+        import_node: Import | None = None,
+    ) -> None:
         self.node_id = ctx.add_node(self)
         super().__init__(ts_node, file_node_id, ctx, None)
         self._name_node = import_name
@@ -92,7 +99,13 @@ class ExternalModule(
         raise NotImplementedError(msg)
 
     @reader
-    def get_import_string(self, alias: str | None = None, module: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> str:
+    def get_import_string(
+        self,
+        alias: str | None = None,
+        module: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> str:
         """Returns the import string used to import this module.
 
         Gets the string representation needed to import this external module. This method is used to generate import statements.
@@ -135,7 +148,13 @@ class ExternalModule(
     @property
     @noapidoc
     def viz(self) -> VizNode:
-        return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+        return VizNode(
+            file_path=self.filepath,
+            start_point=self.start_point,
+            end_point=self.end_point,
+            name=self.name,
+            symbol_name=self.__class__.__name__,
+        )
 
     @noapidoc
     @reader
@@ -145,12 +164,16 @@ class ExternalModule(
     @noapidoc
     @commiter
     @override
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         pass
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash((self.filepath, self.range, self.ts_node.kind_id, self._idx_key))
+            self._hash = hash(
+                (self.filepath, self.range, self.ts_node.kind_id, self._idx_key)
+            )
         return self._hash
 
     @reader

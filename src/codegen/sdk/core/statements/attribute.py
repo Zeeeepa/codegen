@@ -29,7 +29,12 @@ TAssignment = TypeVar("TAssignment", bound="Assignment")
 
 
 @apidoc
-class Attribute(AssignmentStatement[TCodeBlock, TAssignment], Usable, Chainable, Generic[TCodeBlock, TAssignment]):
+class Attribute(
+    AssignmentStatement[TCodeBlock, TAssignment],
+    Usable,
+    Chainable,
+    Generic[TCodeBlock, TAssignment],
+):
     """Abstract representation of an attribute on a class definition.
 
     Attributes:
@@ -39,8 +44,18 @@ class Attribute(AssignmentStatement[TCodeBlock, TAssignment], Usable, Chainable,
     statement_type = StatementType.CLASS_ATTRIBUTE
     assignment: TAssignment
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TCodeBlock, pos: int, assignment_node: TSNode) -> None:
-        super().__init__(ts_node, file_node_id, ctx, parent, pos=pos, assignment_node=assignment_node)
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TCodeBlock,
+        pos: int,
+        assignment_node: TSNode,
+    ) -> None:
+        super().__init__(
+            ts_node, file_node_id, ctx, parent, pos=pos, assignment_node=assignment_node
+        )
         self.assignment = self.assignments[0]
         self._name_node = self.assignment.get_name()
 
@@ -89,7 +104,11 @@ class Attribute(AssignmentStatement[TCodeBlock, TAssignment], Usable, Chainable,
     @property
     @noapidoc
     def descendant_symbols(self) -> list[Importable]:
-        return list(itertools.chain.from_iterable(assignment.descendant_symbols for assignment in self.assignments))
+        return list(
+            itertools.chain.from_iterable(
+                assignment.descendant_symbols for assignment in self.assignments
+            )
+        )
 
     @reader
     @noapidoc

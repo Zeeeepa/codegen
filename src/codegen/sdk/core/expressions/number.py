@@ -20,7 +20,9 @@ class Number(Expression[Parent], Builtin, Generic[Parent]):
     @noapidoc
     @commiter
     @override
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         pass
 
     @property

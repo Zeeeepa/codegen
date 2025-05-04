@@ -14,7 +14,11 @@ def test_parameter_is_optional_should_return_true(tmpdir) -> None:
 def foo(a = 1):
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("foo")
         assert symbol is not None
@@ -29,7 +33,11 @@ def test_parameter_is_optional_should_return_false(tmpdir) -> None:
 def foo(a):
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("foo")
         assert symbol is not None
@@ -44,7 +52,11 @@ def test_parameter_typed_is_optional_should_return_true(tmpdir) -> None:
 def foo(a: int = 1):
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("foo")
         assert symbol is not None
@@ -59,7 +71,11 @@ def test_parameter_typed_is_optional_should_return_false(tmpdir) -> None:
 def foo(a: int):
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("foo")
         assert symbol is not None

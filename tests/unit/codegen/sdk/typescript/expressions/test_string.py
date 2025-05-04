@@ -13,7 +13,11 @@ function foo() {
     let symbol = "test_string"
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = codebase.get_symbol("foo")
         string = foo.code_block.statements[0].right
@@ -39,7 +43,11 @@ function foo() {
     let symbol = ""
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = codebase.get_symbol("foo")
         string = foo.code_block.statements[0].right
@@ -52,7 +60,11 @@ def test_string_escape_sequence(tmpdir) -> None:
     content = """
 const escaped = "test1\\test2"
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         f = codebase.files[0]
         escaped = f.code_block.statements[0].right
         assert isinstance(escaped, String)
@@ -68,7 +80,11 @@ function foo() {
     let symbol = ""
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = codebase.get_symbol("foo")
         string = foo.code_block.statements[0].right
@@ -91,7 +107,11 @@ def test_string_expressions(tmpdir) -> None:
     content = """
 const a = `${foo(x, y)} + ${bar()}`;
     """
-    with get_codebase_session(tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         f = codebase.get_file("test.ts")
         a = f.get_global_var("a")
         assert isinstance(a.value, String)

@@ -10,7 +10,11 @@ function foo(x: number, y: string): MyClass {
     const z = String(x) + y;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file_name: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file_name: content},
+    ) as codebase:
         file = codebase.get_file(file_name)
         func = file.get_function("foo")
 
@@ -31,7 +35,11 @@ function foo(x: number, y: string): MyClass {
     const obj = new MyClass();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file_name: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file_name: content},
+    ) as codebase:
         file = codebase.get_file(file_name)
         func = file.get_function("foo")
 

@@ -1,8 +1,13 @@
-import modal.running_app
-from codegen.extensions.events.app import CodegenApp
 import modal
+import modal.running_app
 
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=v0.22.2")
+from codegen.extensions.events.app import CodegenApp
+
+image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .apt_install("git")
+    .pip_install("fastapi[standard]", "codegen>=v0.22.2")
+)
 app = CodegenApp(name="test-linear", modal_api_key="", image=image)
 
 # Here is an example implementation of setting up an endpoint for receiving webhook events from Linear.

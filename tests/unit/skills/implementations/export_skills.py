@@ -51,13 +51,32 @@ ts_output3_file2 = """
 export { foo } from "./foo";
 """
 ts_test_cases = [
-    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input1, output=ts_output1, filepath="foo.ts"), SkillTestCaseTSFile(input=ts_input1_file2, output=ts_output1_file2)]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input2, output=ts_output2, filepath="foo.ts"), SkillTestCaseTSFile(input=ts_input2_file2, output=ts_output2_file2)]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input3, output=ts_output3, filepath="foo.ts"), SkillTestCaseTSFile(input=ts_input3_file2, output=ts_output3_file2)]),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(input=ts_input1, output=ts_output1, filepath="foo.ts"),
+            SkillTestCaseTSFile(input=ts_input1_file2, output=ts_output1_file2),
+        ]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(input=ts_input2, output=ts_output2, filepath="foo.ts"),
+            SkillTestCaseTSFile(input=ts_input2_file2, output=ts_output2_file2),
+        ]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(input=ts_input3, output=ts_output3, filepath="foo.ts"),
+            SkillTestCaseTSFile(input=ts_input3_file2, output=ts_output3_file2),
+        ]
+    ),
 ]
 
 
-@skill(eval_skill=False, prompt="Convert default exports to named exports in TypeScript", uid="3351e6bb-df30-4552-9768-d908f56e6ed4")
+@skill(
+    eval_skill=False,
+    prompt="Convert default exports to named exports in TypeScript",
+    uid="3351e6bb-df30-4552-9768-d908f56e6ed4",
+)
 class ExportSkills(Skill):
     """Convert default exports to named exports in TypeScript"""
 

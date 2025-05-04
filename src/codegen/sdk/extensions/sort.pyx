@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from _operator import attrgetter
 from collections.abc import Iterable, Sequence
 
+from _operator import attrgetter
 from tree_sitter import Node as TSNode
 from typing_extensions import TypeVar
 

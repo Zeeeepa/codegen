@@ -59,13 +59,29 @@ def test_file_get_config(tmpdir) -> None:
     with get_codebase_session(
         tmpdir=tmpdir,
         programming_language=ProgrammingLanguage.TYPESCRIPT,
-        files={parent_file_name: "", child_file_name: "", sibling_file_name: "", config_name: config_content, root_config_name: root_config_content, parent_config_name: parent_config_content},
+        files={
+            parent_file_name: "",
+            child_file_name: "",
+            sibling_file_name: "",
+            config_name: config_content,
+            root_config_name: root_config_content,
+            parent_config_name: parent_config_content,
+        },
         commit=True,
     ) as codebase:
         parent_file: TSFile = codebase.get_file(parent_file_name)
         child_file: TSFile = codebase.get_file(child_file_name)
         sibling_file: TSFile = codebase.get_file(sibling_file_name)
 
-        assert parent_file.get_config().config_file.name == codebase.get_file(root_config_name).name
-        assert child_file.get_config().config_file.name == codebase.get_file(config_name).name
-        assert sibling_file.get_config().config_file.name == codebase.get_file(root_config_name).name
+        assert (
+            parent_file.get_config().config_file.name
+            == codebase.get_file(root_config_name).name
+        )
+        assert (
+            child_file.get_config().config_file.name
+            == codebase.get_file(config_name).name
+        )
+        assert (
+            sibling_file.get_config().config_file.name
+            == codebase.get_file(root_config_name).name
+        )

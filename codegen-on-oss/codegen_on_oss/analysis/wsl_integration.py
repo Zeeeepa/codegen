@@ -69,7 +69,9 @@ class CtrlplaneIntegration:
             }
 
             # Write configuration to file
-            with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                suffix=".json", mode="w", delete=False
+            ) as f:
                 json.dump(config, f, indent=2)
                 config_path = f.name
 
@@ -171,7 +173,9 @@ class WeaveIntegration:
             )
 
             # Create temporary file for data
-            with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                suffix=".json", mode="w", delete=False
+            ) as f:
                 json.dump(data, f, indent=2)
                 data_path = f.name
 
@@ -270,7 +274,9 @@ class ProbotIntegration:
                 config["secret"] = secret
 
             # Write configuration to file
-            with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                suffix=".json", mode="w", delete=False
+            ) as f:
                 json.dump(config, f, indent=2)
                 config_path = f.name
 

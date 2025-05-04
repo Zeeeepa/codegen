@@ -82,7 +82,7 @@ for call in old_api.call_sites:
         f"data={call.get_arg_by_parameter_name('input').value}",
         f"timeout={call.get_arg_by_parameter_name('wait').value}"
     ]
-    
+
     # Replace the old call with the new API
     call.replace(f"new_process_data({', '.join(args)})")
 ```
@@ -96,10 +96,10 @@ When updating chained method calls, like database queries or builder patterns:
 for execute_call in codebase.function_calls:
     if execute_call.name != "execute":
         continue
-        
+
     # Get the full chain
     chain = execute_call.call_chain
-    
+
     # Example: Add .timeout() before .execute()
     if "timeout" not in {call.name for call in chain}:
         execute_call.insert_before("timeout(30)")
@@ -118,45 +118,45 @@ Here's a comprehensive example:
 ```python
 def migrate_api_v1_to_v2(codebase):
     old_api = codebase.get_function("create_user_v1")
-    
+
     # Document all existing call patterns
     call_patterns = {}
     for call in old_api.call_sites:
         args = [arg.source for arg in call.args]
         pattern = ", ".join(args)
         call_patterns[pattern] = call_patterns.get(pattern, 0) + 1
-    
+
     print("Found call patterns:")
     for pattern, count in call_patterns.items():
         print(f"  {pattern}: {count} occurrences")
-    
+
     # Create new API version
     new_api = old_api.copy()
     new_api.rename("create_user_v2")
-    
+
     # Update parameter types
     new_api.get_parameter("email").type = "EmailStr"
     new_api.get_parameter("role").type = "UserRole"
-    
+
     # Add new required parameters
     new_api.add_parameter("tenant_id: UUID")
-    
+
     # Update all call sites
     for call in old_api.call_sites:
         # Get current arguments
         email_arg = call.get_arg_by_parameter_name("email")
         role_arg = call.get_arg_by_parameter_name("role")
-        
+
         # Build new argument list with type conversions
         new_args = [
             f"email=EmailStr({email_arg.value})",
             f"role=UserRole({role_arg.value})",
             "tenant_id=get_current_tenant_id()"
         ]
-        
+
         # Replace old call with new version
         call.replace(f"create_user_v2({', '.join(new_args)})")
-    
+
     # Add deprecation notice to old version
     old_api.add_decorator('@deprecated("Use create_user_v2 instead")')
 
@@ -178,10 +178,10 @@ migrate_api_v1_to_v2(codebase)
    ```python
    # First update parameter names
    param.rename("new_name")
-   
+
    # Then update types
    param.type = "new_type"
-   
+
    # Finally update call sites
    for call in api.call_sites:
        # ... update calls
@@ -191,7 +191,7 @@ migrate_api_v1_to_v2(codebase)
    ```python
    # Add new parameter with default
    api.add_parameter("new_param: str = None")
-   
+
    # Later make it required
    api.get_parameter("new_param").remove_default()
    ```
@@ -206,4 +206,4 @@ migrate_api_v1_to_v2(codebase)
 
 <Note>
 Remember to test thoroughly after making bulk changes to APIs. While Codegen ensures syntactic correctness, you'll want to verify the semantic correctness of the changes.
-</Note> 
+</Note>

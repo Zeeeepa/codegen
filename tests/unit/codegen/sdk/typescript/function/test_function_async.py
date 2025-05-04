@@ -1,5 +1,7 @@
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
-from codegen.sdk.typescript.placeholder.placeholder_return_type import TSReturnTypePlaceholder
+from codegen.sdk.typescript.placeholder.placeholder_return_type import (
+    TSReturnTypePlaceholder,
+)
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 
@@ -24,7 +26,11 @@ class MyClass {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         bar = file.get_function("bar")
@@ -96,7 +102,11 @@ class MyClass {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         bar = file.get_function("bar")
@@ -178,7 +188,11 @@ async function barAsync<T>(arg: T): Promise<T> {
     return arg;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         foo_async = file.get_function("fooAsync")

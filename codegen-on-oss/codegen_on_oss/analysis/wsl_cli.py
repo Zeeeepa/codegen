@@ -348,7 +348,9 @@ def main():
     validate_parser.set_defaults(func=validate_command)
 
     # Compare command
-    compare_parser = subparsers.add_parser("compare", help="Compare two repositories or branches")
+    compare_parser = subparsers.add_parser(
+        "compare", help="Compare two repositories or branches"
+    )
     compare_parser.add_argument(
         "base_repo_url",
         help="URL of the base repository",
@@ -393,7 +395,9 @@ def main():
     compare_parser.set_defaults(func=compare_command)
 
     # Analyze PR command
-    analyze_pr_parser = subparsers.add_parser("analyze-pr", help="Analyze a pull request")
+    analyze_pr_parser = subparsers.add_parser(
+        "analyze-pr", help="Analyze a pull request"
+    )
     analyze_pr_parser.add_argument(
         "repo_url",
         help="URL of the repository",

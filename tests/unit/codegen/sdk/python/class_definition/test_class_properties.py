@@ -225,7 +225,10 @@ class MyClass:
         my_class = file.get_class("MyClass")
 
         assert len(my_class.comment.symbols) == 2
-        assert my_class.comment.source == "# This is a comment above decorators\n# This is a comment below decorators"
+        assert (
+            my_class.comment.source
+            == "# This is a comment above decorators\n# This is a comment below decorators"
+        )
 
 
 def test_class_decorators(tmpdir) -> None:
@@ -279,7 +282,9 @@ def test_class_comment(tmpdir) -> None:
 class Foo:
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_class("Foo")
 
@@ -299,7 +304,9 @@ def test_decorated_class_extended_source(tmpdir) -> None:
 class Foo:
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_class("Foo")
 

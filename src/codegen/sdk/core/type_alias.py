@@ -28,7 +28,13 @@ Parent = TypeVar("Parent", bound="HasBlock")
 
 
 @apidoc
-class TypeAlias(SupportsGenerics, HasValue, HasBlock, HasAttribute[TAttribute], Generic[TCodeBlock, TAttribute]):
+class TypeAlias(
+    SupportsGenerics,
+    HasValue,
+    HasBlock,
+    HasAttribute[TAttribute],
+    Generic[TCodeBlock, TAttribute],
+):
     """Abstract representation of a Type object.
 
     Only applicable for some programming languages like TypeScript.

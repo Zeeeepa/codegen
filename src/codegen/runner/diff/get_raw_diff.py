@@ -9,7 +9,9 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 
 
-def append_flag(file: PatchedFile, append_at: int, line_no: int, codebase: Codebase) -> None:
+def append_flag(
+    file: PatchedFile, append_at: int, line_no: int, codebase: Codebase
+) -> None:
     added_hunk = Hunk(
         src_start=line_no,
         src_len=1,
@@ -27,7 +29,12 @@ def patch_to_limited_diff_string(patch, codebase: Codebase, max_lines=10000):
 
     # Add flags that are not in the diff
     filenames = [patched_file.path for patched_file in patch]
-    flags_not_in_diff = list(filter(lambda flag: flag.symbol.filepath not in filenames, codebase.ctx.flags._flags))
+    flags_not_in_diff = list(
+        filter(
+            lambda flag: flag.symbol.filepath not in filenames,
+            codebase.ctx.flags._flags,
+        )
+    )
 
     for flag in flags_not_in_diff:
         filename = flag.symbol.filepath
@@ -39,15 +46,22 @@ def patch_to_limited_diff_string(patch, codebase: Codebase, max_lines=10000):
         patch.append(patched_file)
 
     for patched_file in patch:
-        filtered_flags = filter(lambda flag: flag.symbol.filepath == patched_file.path, codebase.ctx.flags._flags)
-        sorted_flags = list(map(lambda flag: flag.symbol.start_point.row + 1, filtered_flags))
+        filtered_flags = filter(
+            lambda flag: flag.symbol.filepath == patched_file.path,
+            codebase.ctx.flags._flags,
+        )
+        sorted_flags = list(
+            map(lambda flag: flag.symbol.start_point.row + 1, filtered_flags)
+        )
         sorted_flags.sort()
 
         for flag in sorted_flags:
             is_in_diff = False
 
             for i, hunk in enumerate(patched_file):
-                contains_flag = hunk.source_start <= flag <= hunk.source_start + hunk.source_length
+                contains_flag = (
+                    hunk.source_start <= flag <= hunk.source_start + hunk.source_length
+                )
 
                 if contains_flag:
                     is_in_diff = True
@@ -82,7 +96,9 @@ def get_raw_diff(codebase: Codebase, base: str = "HEAD", max_lines: int = 10000)
 
     raw_diff_length = len(raw_diff.split("\n"))
     logger.info(f"Truncating diff (total: {raw_diff_length}) to {max_lines} lines ...")
-    raw_diff_trunc = patch_to_limited_diff_string(patch=patch_set, max_lines=max_lines, codebase=codebase)
+    raw_diff_trunc = patch_to_limited_diff_string(
+        patch=patch_set, max_lines=max_lines, codebase=codebase
+    )
 
     return raw_diff_trunc
 

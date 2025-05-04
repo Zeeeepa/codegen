@@ -15,7 +15,13 @@ class TypePlaceholder(Placeholder[Parent], Generic[Parent]):
     Can be populated using the `edit` method.
     """
 
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Edits the type annotation of a placeholder node.
 
         Modifies the source code by adding or updating a type annotation after a node.

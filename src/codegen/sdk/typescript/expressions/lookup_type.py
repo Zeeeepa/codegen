@@ -35,7 +35,13 @@ class TSLookupType(Type[Parent], Generic[Parent]):
     type: "TSType[Self]"
     lookup: Expression
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.type = self._parse_type(ts_node.named_children[0])
         if literal_type := self.child_by_field_types("literal_type"):

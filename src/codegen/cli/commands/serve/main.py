@@ -95,7 +95,9 @@ def start_ngrok(port: int) -> Optional[str]:
         import requests
 
         # Start ngrok
-        process = subprocess.Popen(["ngrok", "http", str(port)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            ["ngrok", "http", str(port)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
         # Wait a moment for ngrok to start
         import time
@@ -121,7 +123,9 @@ def start_ngrok(port: int) -> Optional[str]:
             return None
 
     except FileNotFoundError:
-        logger.exception("ngrok not found. Please install it first: https://ngrok.com/download")
+        logger.exception(
+            "ngrok not found. Please install it first: https://ngrok.com/download"
+        )
         return None
 
 
@@ -146,7 +150,15 @@ def find_available_port(start_port: int = 8000, max_tries: int = 100) -> int:
 @click.option("--public", is_flag=True, help="Expose the server publicly using ngrok")
 @click.option("--workers", default=1, help="Number of worker processes")
 @click.option("--repos", multiple=True, help="GitHub repositories to analyze")
-def serve_command(file: Path, host: str = "127.0.0.1", port: int = 8000, debug: bool = False, public: bool = False, workers: int = 4, repos: list[str] = []):
+def serve_command(
+    file: Path,
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    debug: bool = False,
+    public: bool = False,
+    workers: int = 4,
+    repos: list[str] = [],
+):
     """Run a CodegenApp server from a Python file.
 
     FILE is the path to a Python file containing a CodegenApp instance

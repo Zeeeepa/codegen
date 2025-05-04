@@ -11,7 +11,9 @@ if TYPE_CHECKING:
     from codegen.sdk.core.codebase import Codebase, Editable, File
 
 
-def get_merge_base(git_repo_client: Repository, pull: PullRequest | PullRequestContext) -> str:
+def get_merge_base(
+    git_repo_client: Repository, pull: PullRequest | PullRequestContext
+) -> str:
     """Gets the merge base of a pull request using a remote GitHub API client.
 
     Args:
@@ -33,7 +35,9 @@ def get_file_to_changed_ranges(pull_patch_set: PatchSet) -> dict[str, list]:
             continue
         changed_ranges = []  # list of changed lines for the file
         for hunk in patched_file:
-            changed_ranges.append(range(hunk.target_start, hunk.target_start + hunk.target_length))
+            changed_ranges.append(
+                range(hunk.target_start, hunk.target_start + hunk.target_length)
+            )
         file_to_changed_ranges[patched_file.path] = changed_ranges
     return file_to_changed_ranges
 
@@ -122,7 +126,9 @@ class CodegenPR:
         filepath = editable.filepath
         changed_ranges = self._modified_file_ranges.get(filepath, [])
         symbol_range = to_1_indexed(editable.line_range)
-        if any(overlaps(symbol_range, changed_range) for changed_range in changed_ranges):
+        if any(
+            overlaps(symbol_range, changed_range) for changed_range in changed_ranges
+        ):
             return True
         return False
 
@@ -151,7 +157,9 @@ class CodegenPR:
             raise ValueError(msg)
 
         # Get the diff directly from the PR
-        status, _, res = self._op.remote_git_repo.repo._requester.requestJson("GET", self._gh_pr.url, headers={"Accept": "application/vnd.github.v3.diff"})
+        status, _, res = self._op.remote_git_repo.repo._requester.requestJson(
+            "GET", self._gh_pr.url, headers={"Accept": "application/vnd.github.v3.diff"}
+        )
         if status != 200:
             msg = f"Failed to get PR diff: {res}"
             raise Exception(msg)

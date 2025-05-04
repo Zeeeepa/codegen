@@ -36,7 +36,7 @@ if feature_flag_class:
     # Initialize usage count for all attributes
     for attr in feature_flag_class.attributes:
         feature_flag_usage[attr.name] = 0
-    
+
     # Get all usages of the FeatureFlag class
     for usage in feature_flag_class.usages:
         usage_source = usage.usage_symbol.source if hasattr(usage, 'usage_symbol') else str(usage)

@@ -33,7 +33,11 @@ const ComponentWithProps = ({ name, onClick }) => {
     );
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": content},
+    ) as codebase:
         regular = codebase.get_symbol("regularFunction")
         assert not regular.is_jsx
 
@@ -81,7 +85,13 @@ function useCustomHook() {
     return value;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": content},
+    ) as codebase:
         file = codebase.get_file("test.tsx")
-        jsx_functions = [func for func in file.functions if func.is_jsx and func.name is not None]
+        jsx_functions = [
+            func for func in file.functions if func.is_jsx and func.name is not None
+        ]
         assert len(jsx_functions) == 0

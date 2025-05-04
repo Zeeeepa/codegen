@@ -13,9 +13,6 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 import git
-from codegen import Codebase
-from sqlalchemy.orm import Session
-
 from codegen_on_oss.database.models import File, Snapshot
 from codegen_on_oss.database.repositories import (
     FileRepository,
@@ -23,6 +20,9 @@ from codegen_on_oss.database.repositories import (
     SnapshotRepository,
 )
 from codegen_on_oss.events.event_bus import Event, EventType, event_bus
+from sqlalchemy.orm import Session
+
+from codegen import Codebase
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,9 @@ class EnhancedSnapshotManager:
         # Get parent snapshot if incremental
         parent_snapshot = None
         if is_incremental and parent_snapshot_id:
-            parent_snapshot = self.snapshot_repository.get_by_snapshot_id(parent_snapshot_id)
+            parent_snapshot = self.snapshot_repository.get_by_snapshot_id(
+                parent_snapshot_id
+            )
             if not parent_snapshot:
                 raise ValueError(f"Parent snapshot not found: {parent_snapshot_id}")
 
@@ -178,7 +180,9 @@ class EnhancedSnapshotManager:
         # Get parent snapshot files if incremental
         parent_files = {}
         if parent_snapshot:
-            parent_files_db = self.file_repository.get_files_for_snapshot(parent_snapshot.id)
+            parent_files_db = self.file_repository.get_files_for_snapshot(
+                parent_snapshot.id
+            )
             for file in parent_files_db:
                 parent_files[file.filepath] = file
 
@@ -332,7 +336,9 @@ class EnhancedSnapshotManager:
 
         # If file is not in storage, it might be in a parent snapshot
         if snapshot.parent_snapshot_id:
-            parent_snapshot = self.snapshot_repository.get_by_id(snapshot.parent_snapshot_id)
+            parent_snapshot = self.snapshot_repository.get_by_id(
+                snapshot.parent_snapshot_id
+            )
             if parent_snapshot:
                 return self.get_file_content(parent_snapshot.snapshot_id, file_path)
 
@@ -377,7 +383,9 @@ class EnhancedSnapshotManager:
             # Clean up temporary directory
             shutil.rmtree(temp_dir)
 
-    def compare_snapshots(self, snapshot_id_1: str, snapshot_id_2: str) -> Dict[str, Any]:
+    def compare_snapshots(
+        self, snapshot_id_1: str, snapshot_id_2: str
+    ) -> Dict[str, Any]:
         """
         Compare two snapshots.
 
@@ -410,7 +418,8 @@ class EnhancedSnapshotManager:
         modified_files = [
             path
             for path in files_1
-            if path in files_2 and files_1[path].content_hash != files_2[path].content_hash
+            if path in files_2
+            and files_1[path].content_hash != files_2[path].content_hash
         ]
 
         # Get detailed diff for modified files
@@ -451,6 +460,8 @@ class EnhancedSnapshotManager:
                 "added": len(added_files),
                 "removed": len(removed_files),
                 "modified": len(modified_files),
-                "total_changes": len(added_files) + len(removed_files) + len(modified_files),
+                "total_changes": len(added_files)
+                + len(removed_files)
+                + len(modified_files),
             },
         }

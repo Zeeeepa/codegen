@@ -31,7 +31,11 @@ class SplitLargeFiles(Codemod, Skill):
             # Check if the file has more than the maximum file length
             if len(file.content.splitlines()) > MAX_FILE_LENGTH:
                 # Count the number of symbols with more than the maximum symbol length
-                long_symbols_count = sum(1 for symbol in file.symbols if len(symbol.source.splitlines()) > MAX_SYMBOL_LENGTH)
+                long_symbols_count = sum(
+                    1
+                    for symbol in file.symbols
+                    if len(symbol.source.splitlines()) > MAX_SYMBOL_LENGTH
+                )
                 # Proceed if there are more than 3 long symbols
                 if long_symbols_count > 3:
                     # Create a new directory for the file
@@ -42,7 +46,9 @@ class SplitLargeFiles(Codemod, Skill):
                         # Skip any symbol named 'Space'
                         if len(symbol.source.splitlines()) > MAX_SYMBOL_LENGTH:
                             # Create a new file for the symbol
-                            new_file = codebase.create_file(f"{dir_name}/{symbol.name}.ts", sync=False)
+                            new_file = codebase.create_file(
+                                f"{dir_name}/{symbol.name}.ts", sync=False
+                            )
                             # Move the symbol to the new file
                             symbol.move_to_file(new_file)
                             # Add a back edge to the original file

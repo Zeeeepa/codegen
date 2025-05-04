@@ -43,7 +43,12 @@ class BinaryExpression(Expression[Parent], Chainable, Generic[Parent]):
     def operator(self) -> ExpressionGroup[Expression[Self], Self]:
         """Returns the operator of the binary expression."""
         operator_nodes = self.ts_node.children[1:-1]
-        return ExpressionGroup(self.file_node_id, self.ctx, self, children=[self._parse_expression(node) for node in operator_nodes])
+        return ExpressionGroup(
+            self.file_node_id,
+            self.ctx,
+            self,
+            children=[self._parse_expression(node) for node in operator_nodes],
+        )
 
     @property
     def operators(self) -> list[ExpressionGroup[Expression[Self], Self]]:
@@ -98,11 +103,17 @@ class BinaryExpression(Expression[Parent], Chainable, Generic[Parent]):
     @property
     @noapidoc
     def descendant_symbols(self) -> list[Importable]:
-        return list(itertools.chain.from_iterable(elem.descendant_symbols for elem in self.elements))
+        return list(
+            itertools.chain.from_iterable(
+                elem.descendant_symbols for elem in self.elements
+            )
+        )
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self.left._compute_dependencies(usage_type, dest)
         self.right._compute_dependencies(usage_type, dest)
 

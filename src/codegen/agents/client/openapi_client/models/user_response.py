@@ -28,7 +28,14 @@ class UserResponse(BaseModel):
     github_username: StrictStr
     avatar_url: StrictStr | None
     full_name: StrictStr | None
-    __properties: ClassVar[list[str]] = ["id", "email", "github_user_id", "github_username", "avatar_url", "full_name"]
+    __properties: ClassVar[list[str]] = [
+        "id",
+        "email",
+        "github_user_id",
+        "github_username",
+        "avatar_url",
+        "full_name",
+    ]
 
     model_config = ConfigDict(
         populate_by_name=True,

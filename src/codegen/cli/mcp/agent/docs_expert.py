@@ -40,7 +40,12 @@ By following this instruction set, the agent will be well-equipped to assist use
 
 
 def create_sdk_expert_agent(
-    codebase: Codebase, model_name: str = "claude-3-5-sonnet-latest", model_provider: str = "anthropic", memory: bool = True, debug: bool = True, **kwargs
+    codebase: Codebase,
+    model_name: str = "claude-3-5-sonnet-latest",
+    model_provider: str = "anthropic",
+    memory: bool = True,
+    debug: bool = True,
+    **kwargs,
 ) -> RunnableWithMessageHistory:
     """Create an agent with all codebase tools.
 
@@ -60,6 +65,13 @@ def create_sdk_expert_agent(
     if memory:
         memory = MemorySaver()
 
-    agent = create_codebase_agent(codebase=codebase, model_provider=model_provider, model_name=model_name, memory=memory, system_message=system_message, debug=debug)
+    agent = create_codebase_agent(
+        codebase=codebase,
+        model_provider=model_provider,
+        model_name=model_name,
+        memory=memory,
+        system_message=system_message,
+        debug=debug,
+    )
 
     return agent

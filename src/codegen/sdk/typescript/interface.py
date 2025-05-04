@@ -27,7 +27,9 @@ Parent = TypeVar("Parent", bound="TSHasBlock")
 
 
 @ts_apidoc
-class TSInterface(Interface[TSCodeBlock, TSAttribute, TSFunction, TSType], TSSymbol, TSHasBlock):
+class TSInterface(
+    Interface[TSCodeBlock, TSAttribute, TSFunction, TSType], TSSymbol, TSHasBlock
+):
     """Representation of an Interface in TypeScript
 
     Attributes:
@@ -52,7 +54,12 @@ class TSInterface(Interface[TSCodeBlock, TSAttribute, TSFunction, TSType], TSSym
         while not hasattr(current_parent, "code_block"):
             current_parent = current_parent.parent
 
-        self.code_block = TSCodeBlock(body_node, current_parent.code_block.level + 1, current_parent.code_block, self)
+        self.code_block = TSCodeBlock(
+            body_node,
+            current_parent.code_block.level + 1,
+            current_parent.code_block,
+            self,
+        )
         self.code_block.parse()
 
     @commiter
@@ -61,12 +68,16 @@ class TSInterface(Interface[TSCodeBlock, TSAttribute, TSFunction, TSType], TSSym
         # =====[ Extends ]=====
         # Look for parent interfaces in the "extends" clause
         if extends_clause := self.child_by_field_types("extends_type_clause"):
-            self.parent_interfaces = Parents(extends_clause.ts_node, self.file_node_id, self.ctx, self)
+            self.parent_interfaces = Parents(
+                extends_clause.ts_node, self.file_node_id, self.ctx, self
+            )
         super().parse(ctx)
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         dest = dest or self.self_dest
 
         # =====[ Extends ]=====

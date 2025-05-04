@@ -18,7 +18,9 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
 from typing_extensions import Self
 
-from codegen.agents.client.openapi_client.models.organization_settings import OrganizationSettings
+from codegen.agents.client.openapi_client.models.organization_settings import (
+    OrganizationSettings,
+)
 
 
 class OrganizationResponse(BaseModel):
@@ -80,5 +82,15 @@ class OrganizationResponse(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({"id": obj.get("id"), "name": obj.get("name"), "settings": OrganizationSettings.from_dict(obj["settings"]) if obj.get("settings") is not None else None})
+        _obj = cls.model_validate(
+            {
+                "id": obj.get("id"),
+                "name": obj.get("name"),
+                "settings": (
+                    OrganizationSettings.from_dict(obj["settings"])
+                    if obj.get("settings") is not None
+                    else None
+                ),
+            }
+        )
         return _obj

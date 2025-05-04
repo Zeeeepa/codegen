@@ -14,7 +14,11 @@ def test_edit_parameter_in_function_definition(tmpdir) -> None:
 def addNumbers(a: int, b: int) -> int:
     return a + b
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("addNumbers")
         assert symbol is not None
@@ -32,7 +36,11 @@ def test_edit_multiple_parameters_in_function_definition(tmpdir) -> None:
 def addNumbers(a: int, b: int) -> int:
     return a + b
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("addNumbers")
         assert symbol is not None

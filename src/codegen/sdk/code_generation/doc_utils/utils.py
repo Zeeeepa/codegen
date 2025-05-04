@@ -90,7 +90,10 @@ def is_language_base_class(cls_obj: Class):
 
     sub_classes = cls_obj.subclasses(max_depth=1)
     base_name = cls_obj.name.lower()
-    return any(sub_class.name.lower() in [f"py{base_name}", f"ts{base_name}"] for sub_class in sub_classes)
+    return any(
+        sub_class.name.lower() in [f"py{base_name}", f"ts{base_name}"]
+        for sub_class in sub_classes
+    )
 
 
 def get_section(symbol: Symbol, parent_class: Class | None = None):
@@ -115,7 +118,9 @@ def get_language(symbol: Class | Function | PyAttribute) -> str:
         return ProgrammingLanguage.TYPESCRIPT.value
     elif isinstance(symbol, Class) and is_language_base_class(symbol):
         return "NONE"
-    elif isinstance(symbol.parent_class, Class) and is_language_base_class(symbol.parent_class):
+    elif isinstance(symbol.parent_class, Class) and is_language_base_class(
+        symbol.parent_class
+    ):
         return "NONE"
     else:
         return "ALL"
@@ -146,7 +151,9 @@ def is_settter(m: Function):
     return any([dec.name == f"{m.name}.setter" for dec in m.decorators])
 
 
-def create_path(symbol: Class | Function | PyAttribute, parent_class: Class | None = None) -> str:
+def create_path(
+    symbol: Class | Function | PyAttribute, parent_class: Class | None = None
+) -> str:
     """Creates a route path for `symbol` that will be used in the frontend
 
     Args:
@@ -187,10 +194,17 @@ def has_documentation(c: Class):
     Returns:
         bool: `True` if the class is meant to be documented, `False` otherwise
     """
-    return any([dec.name == "ts_apidoc" or dec.name == "py_apidoc" or dec.name == "apidoc" for dec in c.decorators])
+    return any(
+        [
+            dec.name == "ts_apidoc" or dec.name == "py_apidoc" or dec.name == "apidoc"
+            for dec in c.decorators
+        ]
+    )
 
 
-def safe_get_class(codebase: Codebase, class_name: str, language: str | None = None) -> Class | None:
+def safe_get_class(
+    codebase: Codebase, class_name: str, language: str | None = None
+) -> Class | None:
     """Find the class in the codebase.
 
     Args:
@@ -213,7 +227,9 @@ def safe_get_class(codebase: Codebase, class_name: str, language: str | None = N
 
     except Exception:
         symbols = codebase.get_symbols(class_name)
-        possible_classes = [s for s in symbols if isinstance(s, Class) and has_documentation(s)]
+        possible_classes = [
+            s for s in symbols if isinstance(s, Class) and has_documentation(s)
+        ]
         if not possible_classes:
             return None
         if len(possible_classes) > 1:
@@ -236,7 +252,14 @@ def safe_get_class(codebase: Codebase, class_name: str, language: str | None = N
     return class_obj
 
 
-def resolve_type_symbol(codebase: Codebase, symbol_name: str, resolved_types: list[Type], parent_class: Class, parent_symbol: Symbol, types_cache: dict):
+def resolve_type_symbol(
+    codebase: Codebase,
+    symbol_name: str,
+    resolved_types: list[Type],
+    parent_class: Class,
+    parent_symbol: Symbol,
+    types_cache: dict,
+):
     """Find the symbol in the codebase.
 
     Args:
@@ -248,7 +271,18 @@ def resolve_type_symbol(codebase: Codebase, symbol_name: str, resolved_types: li
     Returns:
         str: the route path of the symbol
     """
-    if symbol_name in ["list", "tuple", "int", "str", "dict", "set", "None", "bool", "optional", "Union"]:
+    if symbol_name in [
+        "list",
+        "tuple",
+        "int",
+        "str",
+        "dict",
+        "set",
+        "None",
+        "bool",
+        "optional",
+        "Union",
+    ]:
         return symbol_name
     if symbol_name.lower() == "self":
         return f"<{create_path(parent_class)}>"
@@ -258,17 +292,24 @@ def resolve_type_symbol(codebase: Codebase, symbol_name: str, resolved_types: li
         return types_cache[(symbol_name, language)]
 
     trgt_symbol = None
-    cls_obj = safe_get_class(codebase=codebase, class_name=symbol_name, language=language)
+    cls_obj = safe_get_class(
+        codebase=codebase, class_name=symbol_name, language=language
+    )
     if cls_obj:
         trgt_symbol = cls_obj
 
     if not trgt_symbol:
         if symbol := parent_symbol.file.get_symbol(symbol_name):
             for resolved_type in symbol.resolved_types:
-                if isinstance(resolved_type, FunctionCall) and len(resolved_type.args) >= 2:
+                if (
+                    isinstance(resolved_type, FunctionCall)
+                    and len(resolved_type.args) >= 2
+                ):
                     bound_arg = resolved_type.args[1]
                     bound_name = bound_arg.value.source
-                    if cls_obj := safe_get_class(codebase, bound_name, language=get_language(parent_class)):
+                    if cls_obj := safe_get_class(
+                        codebase, bound_name, language=get_language(parent_class)
+                    ):
                         trgt_symbol = cls_obj
                         break
 
@@ -276,7 +317,11 @@ def resolve_type_symbol(codebase: Codebase, symbol_name: str, resolved_types: li
             if len(symbol.resolved_types) == 1:
                 trgt_symbol = symbol.resolved_types[0]
 
-    if trgt_symbol and isinstance(trgt_symbol, Callable) and has_documentation(trgt_symbol):
+    if (
+        trgt_symbol
+        and isinstance(trgt_symbol, Callable)
+        and has_documentation(trgt_symbol)
+    ):
         trgt_path = f"<{create_path(trgt_symbol)}>"
         types_cache[(symbol_name, language)] = trgt_path
         return trgt_path
@@ -284,7 +329,14 @@ def resolve_type_symbol(codebase: Codebase, symbol_name: str, resolved_types: li
     return symbol_name
 
 
-def replace_multiple_types(codebase: Codebase, input_str: str, resolved_types: list[Type], parent_class: Class, parent_symbol: Symbol, types_cache: dict) -> str:
+def replace_multiple_types(
+    codebase: Codebase,
+    input_str: str,
+    resolved_types: list[Type],
+    parent_class: Class,
+    parent_symbol: Symbol,
+    types_cache: dict,
+) -> str:
     """Replace multiple types in a string.
 
     Args:
@@ -328,7 +380,9 @@ def replace_multiple_types(codebase: Codebase, input_str: str, resolved_types: l
                     if stack:
                         stack.pop()
                     current += char
-                elif (char in ",|") and not stack:  # Only split when not inside brackets
+                elif (
+                    char in ",|"
+                ) and not stack:  # Only split when not inside brackets
                     if current.strip():
                         parts.append(current.strip())
                         separators.append(char)
@@ -356,11 +410,23 @@ def replace_multiple_types(codebase: Codebase, input_str: str, resolved_types: l
                 bracket_content = part[part.index("[") :].strip("[]")
                 processed_bracket = process_parts(bracket_content)
                 replacement = resolve_type_symbol(
-                    codebase=codebase, symbol_name=base_type, resolved_types=resolved_types, parent_class=parent_class, parent_symbol=parent_symbol, types_cache=types_cache
+                    codebase=codebase,
+                    symbol_name=base_type,
+                    resolved_types=resolved_types,
+                    parent_class=parent_class,
+                    parent_symbol=parent_symbol,
+                    types_cache=types_cache,
                 )
                 processed_part = replacement + "[" + processed_bracket + "]"
             else:
-                replacement = resolve_type_symbol(codebase=codebase, symbol_name=part, resolved_types=resolved_types, parent_class=parent_class, parent_symbol=parent_symbol, types_cache=types_cache)
+                replacement = resolve_type_symbol(
+                    codebase=codebase,
+                    symbol_name=part,
+                    resolved_types=resolved_types,
+                    parent_class=parent_class,
+                    parent_symbol=parent_symbol,
+                    types_cache=types_cache,
+                )
                 processed_part = replacement
             processed_parts.append(processed_part)
 
@@ -379,11 +445,25 @@ def replace_multiple_types(codebase: Codebase, input_str: str, resolved_types: l
         base_type = input_str[: input_str.index("[")]
         bracket_content = input_str[input_str.index("[") :].strip("[]")
         processed_content = process_parts(bracket_content)
-        replacement = resolve_type_symbol(codebase=codebase, symbol_name=base_type, resolved_types=resolved_types, parent_class=parent_class, parent_symbol=parent_symbol, types_cache=types_cache)
+        replacement = resolve_type_symbol(
+            codebase=codebase,
+            symbol_name=base_type,
+            resolved_types=resolved_types,
+            parent_class=parent_class,
+            parent_symbol=parent_symbol,
+            types_cache=types_cache,
+        )
         return replacement + "[" + processed_content + "]"
     # Handle simple input
     else:
-        replacement = resolve_type_symbol(codebase=codebase, symbol_name=input_str, resolved_types=resolved_types, parent_class=parent_class, parent_symbol=parent_symbol, types_cache=types_cache)
+        replacement = resolve_type_symbol(
+            codebase=codebase,
+            symbol_name=input_str,
+            resolved_types=resolved_types,
+            parent_class=parent_class,
+            parent_symbol=parent_symbol,
+            types_cache=types_cache,
+        )
         return replacement
 
 

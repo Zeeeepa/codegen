@@ -33,18 +33,32 @@ class PyAssignment(Assignment["PyAssignmentStatement"], PySymbol):
 
     @noapidoc
     @classmethod
-    def from_assignment(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyAssignmentStatement) -> MultiExpression[PyAssignmentStatement, PyAssignment]:
+    def from_assignment(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyAssignmentStatement,
+    ) -> MultiExpression[PyAssignmentStatement, PyAssignment]:
         if ts_node.type not in ["assignment", "augmented_assignment"]:
             msg = f"Unknown assignment type: {ts_node.type}"
             raise ValueError(msg)
 
         left_node = ts_node.child_by_field_name("left")
         right_node = ts_node.child_by_field_name("right")
-        assignments = cls._from_left_and_right_nodes(ts_node, file_node_id, ctx, parent, left_node, right_node)
+        assignments = cls._from_left_and_right_nodes(
+            ts_node, file_node_id, ctx, parent, left_node, right_node
+        )
         return MultiExpression(ts_node, file_node_id, ctx, parent, assignments)
 
     @classmethod
-    def from_named_expression(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyAssignmentStatement) -> MultiExpression[PyAssignmentStatement, PyAssignment]:
+    def from_named_expression(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyAssignmentStatement,
+    ) -> MultiExpression[PyAssignmentStatement, PyAssignment]:
         """Creates a MultiExpression from a Python named expression.
 
         Creates assignments from a named expression node ('walrus operator' :=) by parsing its name and value fields.
@@ -67,7 +81,9 @@ class PyAssignment(Assignment["PyAssignmentStatement"], PySymbol):
 
         left_node = ts_node.child_by_field_name("name")
         right_node = ts_node.child_by_field_name("value")
-        assignments = cls._from_left_and_right_nodes(ts_node, file_node_id, ctx, parent, left_node, right_node)
+        assignments = cls._from_left_and_right_nodes(
+            ts_node, file_node_id, ctx, parent, left_node, right_node
+        )
         return MultiExpression(ts_node, file_node_id, ctx, parent, assignments)
 
     @property
@@ -105,31 +121,60 @@ class PyAssignment(Assignment["PyAssignmentStatement"], PySymbol):
         return PyCommentGroup.from_symbol_inline_comments(self, self.ts_node.parent)
 
     @noapidoc
-    def _partial_remove_when_tuple(self, name, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True):
+    def _partial_remove_when_tuple(
+        self,
+        name,
+        delete_formatting: bool = True,
+        priority: int = 0,
+        dedupe: bool = True,
+    ):
         idx = self.parent.left.index(name)
         value = self.value[idx]
         self.parent._values_scheduled_for_removal.append(value)
         # Special case for removing brackets of value
         if len(self.value) - len(self.parent._values_scheduled_for_removal) == 1:
-            remainder = str(next(x for x in self.value if x not in self.parent._values_scheduled_for_removal and x != value))
-            r_t = RemoveTransaction(self.value.start_byte, self.value.end_byte, self.file, priority=priority)
+            remainder = str(
+                next(
+                    x
+                    for x in self.value
+                    if x not in self.parent._values_scheduled_for_removal and x != value
+                )
+            )
+            r_t = RemoveTransaction(
+                self.value.start_byte, self.value.end_byte, self.file, priority=priority
+            )
             self.transaction_manager.add_transaction(r_t)
             self.value.insert_at(self.value.start_byte, remainder, priority=priority)
         else:
             # Normal just remove one value
-            value.remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+            value.remove(
+                delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+            )
         # Remove assignment name
-        name.remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+        name.remove(
+            delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+        )
 
     @noapidoc
-    def _active_transactions_on_assignment_names(self, transaction_order: TransactionPriority) -> int:
+    def _active_transactions_on_assignment_names(
+        self, transaction_order: TransactionPriority
+    ) -> int:
         return [
-            any(self.transaction_manager.get_transactions_at_range(self.file.path, start_byte=asgnmt.get_name().start_byte, end_byte=asgnmt.get_name().end_byte, transaction_order=transaction_order))
+            any(
+                self.transaction_manager.get_transactions_at_range(
+                    self.file.path,
+                    start_byte=asgnmt.get_name().start_byte,
+                    end_byte=asgnmt.get_name().end_byte,
+                    transaction_order=transaction_order,
+                )
+            )
             for asgnmt in self.parent.assignments
         ].count(True)
 
     @remover
-    def remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
         """Deletes this assignment and its related extended nodes (e.g. decorators, comments).
 
 
@@ -145,24 +190,40 @@ class PyAssignment(Assignment["PyAssignmentStatement"], PySymbol):
             None
         """
         if self.ctx.config.unpacking_assignment_partial_removal:
-            if isinstance(self.parent, AssignmentStatement) and len(self.parent.assignments) > 1:
+            if (
+                isinstance(self.parent, AssignmentStatement)
+                and len(self.parent.assignments) > 1
+            ):
                 # Unpacking assignments
                 name = self.get_name()
                 if isinstance(self.value, Collection):
-                    if len(self.parent._values_scheduled_for_removal) < len(self.parent.assignments) - 1:
-                        self._partial_remove_when_tuple(name, delete_formatting, priority, dedupe)
+                    if (
+                        len(self.parent._values_scheduled_for_removal)
+                        < len(self.parent.assignments) - 1
+                    ):
+                        self._partial_remove_when_tuple(
+                            name, delete_formatting, priority, dedupe
+                        )
                         return
                     else:
                         self.parent._values_scheduled_for_removal = []
                 else:
                     if name.source == "_":
-                        logger.warning("Attempting to remove '_' in unpacking, command will be ignored. If you wish to remove the statement, remove the other remaining variable(s)!")
+                        logger.warning(
+                            "Attempting to remove '_' in unpacking, command will be ignored. If you wish to remove the statement, remove the other remaining variable(s)!"
+                        )
                         return
-                    transaction_count = self._active_transactions_on_assignment_names(TransactionPriority.Edit)
-                    throwaway = [asgnmt.name == "_" for asgnmt in self.parent.assignments].count(True)
+                    transaction_count = self._active_transactions_on_assignment_names(
+                        TransactionPriority.Edit
+                    )
+                    throwaway = [
+                        asgnmt.name == "_" for asgnmt in self.parent.assignments
+                    ].count(True)
                     # Only edit if we didn't already omit all the other assignments, otherwise just remove the whole thing
                     if transaction_count + throwaway < len(self.parent.assignments) - 1:
                         name.edit("_", priority=priority, dedupe=dedupe)
                         return
 
-        super().remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+        super().remove(
+            delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+        )

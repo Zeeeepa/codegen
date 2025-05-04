@@ -27,7 +27,9 @@ class Inherits(SupportsGenerics, Generic[TType]):
         pass
 
     @reader
-    def _get_superclasses(self, max_depth: int | None = None) -> list[Class | ExternalModule | Interface]:
+    def _get_superclasses(
+        self, max_depth: int | None = None
+    ) -> list[Class | ExternalModule | Interface]:
         """Returns a list of all classes that this class extends, up to max_depth."""
         from codegen.sdk.core.class_definition import Class
         from codegen.sdk.core.interface import Interface
@@ -35,12 +37,16 @@ class Inherits(SupportsGenerics, Generic[TType]):
         # Implements the python MRO, IE: by level
         seen = set()
 
-        def traverse_classes(classes: list[Inherits], depth: int = 0) -> Generator[Class | Interface | ExternalModule, None, None]:
+        def traverse_classes(
+            classes: list[Inherits], depth: int = 0
+        ) -> Generator[Class | Interface | ExternalModule, None, None]:
             if max_depth is not None and depth >= max_depth:
                 return
             next_level = []
             for node in classes:
-                for result in self.ctx.successors(node.node_id, edge_type=EdgeType.SUBCLASS):
+                for result in self.ctx.successors(
+                    node.node_id, edge_type=EdgeType.SUBCLASS
+                ):
                     if result.node_id not in seen:
                         seen.add(result.node_id)
                         yield result
@@ -52,17 +58,23 @@ class Inherits(SupportsGenerics, Generic[TType]):
         return list(traverse_classes([self]))
 
     @reader
-    def _get_subclasses(self, max_depth: int | None = None) -> list[Class | ExternalModule | Interface]:
+    def _get_subclasses(
+        self, max_depth: int | None = None
+    ) -> list[Class | ExternalModule | Interface]:
         """Returns a list of all classes that subclass this class, up to max_depth."""
         # Implements the python MRO, IE: by level
         seen = set()
 
-        def traverse_classes(classes: list[Inherits], depth: int = 0) -> Generator[Class | Interface, None, None]:
+        def traverse_classes(
+            classes: list[Inherits], depth: int = 0
+        ) -> Generator[Class | Interface, None, None]:
             if max_depth and depth >= max_depth:
                 return
             next_level = []
             for node in classes:
-                for result in self.ctx.predecessors(node.node_id, edge_type=EdgeType.SUBCLASS):
+                for result in self.ctx.predecessors(
+                    node.node_id, edge_type=EdgeType.SUBCLASS
+                ):
                     if result.node_id not in seen:
                         seen.add(result.node_id)
                         yield result

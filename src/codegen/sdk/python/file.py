@@ -26,7 +26,17 @@ if TYPE_CHECKING:
 
 
 @py_apidoc
-class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[PyCodeBlock, PyAttribute, PyFunction, PyType], PyCodeBlock], PyHasBlock):
+class PyFile(
+    SourceFile[
+        PyImport,
+        PyFunction,
+        PyClass,
+        PyAssignment,
+        Interface[PyCodeBlock, PyAttribute, PyFunction, PyType],
+        PyCodeBlock,
+    ],
+    PyHasBlock,
+):
     """SourceFile representation for Python codebase
 
     Attributes:
@@ -64,7 +74,9 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
     ####################################################################################################################
 
     @noapidoc
-    def get_import_module_name_for_file(self, filepath: str, ctx: CodebaseContext) -> str:
+    def get_import_module_name_for_file(
+        self, filepath: str, ctx: CodebaseContext
+    ) -> str:
         """Returns the module name that this file gets imported as
 
         For example, `my/package/name.py` => `my.package.name`
@@ -83,7 +95,13 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
         return module
 
     @reader
-    def get_import_string(self, alias: str | None = None, module: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> str:
+    def get_import_string(
+        self,
+        alias: str | None = None,
+        module: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> str:
         """Generates an import string for a symbol.
 
         Constructs a Python import statement based on the provided parameters, handling different import types and module paths.
@@ -131,11 +149,15 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
             return None
 
         # Case: if the import is a future import, add to top of file
-        if "__future__" in import_string:  # TODO: parse this into an import module and import name
+        if (
+            "__future__" in import_string
+        ):  # TODO: parse this into an import module and import name
             return 0
 
         # Case: file already had future imports, add import after the last one
-        future_imp_idxs = [idx for idx, imp in enumerate(self.imports) if "__future__" in imp.source]
+        future_imp_idxs = [
+            idx for idx, imp in enumerate(self.imports) if "__future__" in imp.source
+        ]
         if future_imp_idxs:
             return future_imp_idxs[-1] + 1
 
@@ -147,7 +169,14 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
     ####################################################################################################################
 
     @writer
-    def add_import(self, imp: Symbol | str, *, alias: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> Import | None:
+    def add_import(
+        self,
+        imp: Symbol | str,
+        *,
+        alias: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> Import | None:
         """Adds an import to the file.
 
         This method adds an import statement to the file. It can handle both string imports and symbol imports.
@@ -171,7 +200,9 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
                 return match
 
             # Convert symbol to import string
-            import_string = imp.get_import_string(alias, import_type=import_type, is_type_import=is_type_import)
+            import_string = imp.get_import_string(
+                alias, import_type=import_type, is_type_import=is_type_import
+            )
         else:
             # Handle string imports
             import_string = str(imp)
@@ -184,13 +215,17 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
 
         # Add to pending imports
         self._pending_imports.add(import_string.strip())
-        self.transaction_manager.pending_undos.add(lambda: self._pending_imports.clear())
+        self.transaction_manager.pending_undos.add(
+            lambda: self._pending_imports.clear()
+        )
 
         # Insert at correct location
         if self.imports:
             import_insert_index = self.get_import_insert_index(import_string) or 0
             if import_insert_index < len(self.imports):
-                self.imports[import_insert_index].insert_before(import_string, priority=1)
+                self.imports[import_insert_index].insert_before(
+                    import_string, priority=1
+                )
             else:
                 self.imports[-1].insert_after(import_string, priority=1)
         else:
@@ -206,7 +241,9 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
     @cached_property
     @noapidoc
     @reader(cache=True)
-    def valid_import_names(self) -> dict[str, PySymbol | PyImport | WildcardImport[PyImport]]:
+    def valid_import_names(
+        self,
+    ) -> dict[str, PySymbol | PyImport | WildcardImport[PyImport]]:
         """Returns a dict mapping name => Symbol (or import) in this file that can be imported from
         another file.
         """
@@ -239,15 +276,21 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
         if node := self.get_node_by_name(symbol_name):
             return node
 
-        if wildcard_imports := {imp for imp in self.imports if imp.is_wildcard_import()}:
+        if wildcard_imports := {
+            imp for imp in self.imports if imp.is_wildcard_import()
+        }:
             for wildcard_import in wildcard_imports:
                 if imp_resolution := wildcard_import.resolve_import():
-                    node = imp_resolution.from_file.get_node_from_wildcard_chain(symbol_name=symbol_name)
+                    node = imp_resolution.from_file.get_node_from_wildcard_chain(
+                        symbol_name=symbol_name
+                    )
 
         return node
 
     @noapidoc
-    def get_node_wildcard_resolves_for(self, symbol_name: str) -> PyImport | PySymbol | None:
+    def get_node_wildcard_resolves_for(
+        self, symbol_name: str
+    ) -> PyImport | PySymbol | None:
         """Finds the wildcard import that resolves a given symbol name.
 
         Searches for a symbol by name, first in the current file, then through wildcard imports.
@@ -267,10 +310,14 @@ class PyFile(SourceFile[PyImport, PyFunction, PyClass, PyAssignment, Interface[P
         if node := self.get_node_by_name(symbol_name):
             return node
 
-        if wildcard_imports := {imp for imp in self.imports if imp.is_wildcard_import()}:
+        if wildcard_imports := {
+            imp for imp in self.imports if imp.is_wildcard_import()
+        }:
             for wildcard_import in wildcard_imports:
                 if imp_resolution := wildcard_import.resolve_import():
-                    if imp_resolution.from_file.get_node_from_wildcard_chain(symbol_name=symbol_name):
+                    if imp_resolution.from_file.get_node_from_wildcard_chain(
+                        symbol_name=symbol_name
+                    ):
                         node = wildcard_import
 
         return node

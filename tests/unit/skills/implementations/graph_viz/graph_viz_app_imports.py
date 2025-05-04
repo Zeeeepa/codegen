@@ -8,7 +8,10 @@ from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile
 
 FileAppImportGraphTest = SkillTestCase(
     [
-        SkillTestCasePyFile(input="from file1 import foo\nfrom file2 import bar", filepath="path/to/file.py"),
+        SkillTestCasePyFile(
+            input="from file1 import foo\nfrom file2 import bar",
+            filepath="path/to/file.py",
+        ),
         SkillTestCasePyFile("def foo():\n    pass", filepath="file1.py"),
         SkillTestCasePyFile("def bar():\n    pass", filepath="file2.py"),
     ],
@@ -16,7 +19,11 @@ FileAppImportGraphTest = SkillTestCase(
 )
 
 
-@skill(eval_skill=False, prompt="Show me all the apps imported by the file path/to/file.py", uid="fda3c38a-5cf8-46cf-93bd-80fd19ae04e2")
+@skill(
+    eval_skill=False,
+    prompt="Show me all the apps imported by the file path/to/file.py",
+    uid="fda3c38a-5cf8-46cf-93bd-80fd19ae04e2",
+)
 class FileAppImportGraph(Skill, ABC):
     """This skill visualizes the import relationships for a specific file in the codebase.
     It creates a directed graph where nodes represent the target file and its imported modules.
@@ -27,7 +34,9 @@ class FileAppImportGraph(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[FileAppImportGraphTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[FileAppImportGraphTest], language=ProgrammingLanguage.PYTHON
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
     def skill_func(codebase: CodebaseType):
         import networkx as nx

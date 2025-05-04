@@ -22,14 +22,26 @@ _default_host = "0.0.0.0"
 @click.option("--port", "-p", type=int, default=None, help="Port to run the server on")
 @click.option("--detached", "-d", is_flag=True, help="Run the server in detached mode")
 @click.option("--skip-build", is_flag=True, help="Skip building the Docker image")
-@click.option("--force", "-f", is_flag=True, help="Force start the server even if it is already running")
-def start_command(port: int | None, detached: bool = False, skip_build: bool = False, force: bool = False) -> None:
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force start the server even if it is already running",
+)
+def start_command(
+    port: int | None,
+    detached: bool = False,
+    skip_build: bool = False,
+    force: bool = False,
+) -> None:
     """Starts a local codegen server"""
     repo_path = Path.cwd().resolve()
     repo_config = RepoConfig.from_repo_path(str(repo_path))
     if (container := DockerContainer.get(repo_config.name)) is not None:
         if force:
-            rich.print(f"[yellow]Removing existing runner {repo_config.name} to force restart[/yellow]")
+            rich.print(
+                f"[yellow]Removing existing runner {repo_config.name} to force restart[/yellow]"
+            )
             container.remove()
         else:
             return _handle_existing_container(repo_config, container)
@@ -41,16 +53,26 @@ def start_command(port: int | None, detached: bool = False, skip_build: bool = F
         if not skip_build:
             codegen_root = Path(__file__).parent.parent.parent.parent.parent.parent
             codegen_version = version("codegen")
-            _build_docker_image(codegen_root=codegen_root, codegen_version=codegen_version)
+            _build_docker_image(
+                codegen_root=codegen_root, codegen_version=codegen_version
+            )
         _run_docker_container(repo_config, port, detached)
-        rich.print(Panel(f"[green]Server started successfully![/green]\nAccess the server at: [bold]http://{_default_host}:{port}[/bold]", box=ROUNDED, title="Codegen Server"))
+        rich.print(
+            Panel(
+                f"[green]Server started successfully![/green]\nAccess the server at: [bold]http://{_default_host}:{port}[/bold]",
+                box=ROUNDED,
+                title="Codegen Server",
+            )
+        )
         # TODO: memory snapshot here
     except Exception as e:
         rich.print(f"[bold red]Error:[/bold red] {e!s}")
         raise click.Abort()
 
 
-def _handle_existing_container(repo_config: RepoConfig, container: DockerContainer) -> None:
+def _handle_existing_container(
+    repo_config: RepoConfig, container: DockerContainer
+) -> None:
     if container.is_running():
         rich.print(
             Panel(
@@ -62,10 +84,22 @@ def _handle_existing_container(repo_config: RepoConfig, container: DockerContain
         return
 
     if container.start():
-        rich.print(Panel(f"[yellow]Docker container for {repo_config.name} is not running. Restarting...[/yellow]", box=ROUNDED, title="Docker Session"))
+        rich.print(
+            Panel(
+                f"[yellow]Docker container for {repo_config.name} is not running. Restarting...[/yellow]",
+                box=ROUNDED,
+                title="Docker Session",
+            )
+        )
         return
 
-    rich.print(Panel(f"[red]Failed to restart container for {repo_config.name}[/red]", box=ROUNDED, title="Docker Session"))
+    rich.print(
+        Panel(
+            f"[red]Failed to restart container for {repo_config.name}[/red]",
+            box=ROUNDED,
+            title="Docker Session",
+        )
+    )
     click.Abort()
 
 
@@ -118,7 +152,9 @@ def _get_platform() -> str:
     elif machine in ("arm64", "aarch64"):
         return "linux/arm64"
     else:
-        rich.print(f"[yellow]Warning: Unknown architecture {machine}, defaulting to linux/amd64[/yellow]")
+        rich.print(
+            f"[yellow]Warning: Unknown architecture {machine}, defaulting to linux/amd64[/yellow]"
+        )
         return "linux/amd64"
 
 
@@ -139,7 +175,18 @@ def _run_docker_container(repo_config: RepoConfig, port: int, detached: bool) ->
     entry_point = f"uv run --frozen uvicorn codegen.runner.servers.local_daemon:app --host {_default_host} --port {port}"
     port_args = ["-p", f"{port}:{port}"]
     detached_args = ["-d"] if detached else []
-    run_cmd = ["docker", "run", "--rm", *detached_args, *port_args, *name_args, *mount_args, *envvars_args, CODEGEN_RUNNER_IMAGE, entry_point]
+    run_cmd = [
+        "docker",
+        "run",
+        "--rm",
+        *detached_args,
+        *port_args,
+        *name_args,
+        *mount_args,
+        *envvars_args,
+        CODEGEN_RUNNER_IMAGE,
+        entry_point,
+    ]
 
     rich.print(
         Panel(
@@ -153,5 +200,7 @@ def _run_docker_container(repo_config: RepoConfig, port: int, detached: bool) ->
     subprocess.run(run_cmd, check=True)
 
     if detached:
-        rich.print("[yellow]Container started in detached mode. To view logs, run:[/yellow]")
+        rich.print(
+            "[yellow]Container started in detached mode. To view logs, run:[/yellow]"
+        )
         rich.print(f"[bold]docker logs -f {repo_config.name}[/bold]")

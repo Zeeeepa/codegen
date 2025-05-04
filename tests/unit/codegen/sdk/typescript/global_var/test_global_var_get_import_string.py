@@ -8,8 +8,14 @@ def test_global_var_get_import_string_import_type_star(tmpdir) -> None:
     src_file = """
 const foo = 1;
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"src.ts": src_file}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"src.ts": src_file},
+    ) as codebase:
         file = codebase.get_file("src.ts")
         foo_global_var = file.get_symbol("foo")
-        import_string = foo_global_var.get_import_string(import_type=ImportType.WILDCARD)
+        import_string = foo_global_var.get_import_string(
+            import_type=ImportType.WILDCARD
+        )
         assert import_string == "import * as src from 'src';"

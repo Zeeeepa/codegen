@@ -51,7 +51,10 @@ def func():
         func.set_docstring("this is a docstring\nthat spans multiple lines")
 
     # Check that the docstring was added
-    assert 'def func():\n    """this is a docstring\n    that spans multiple lines\n    """\n    pass\n' in file.source
+    assert (
+        'def func():\n    """this is a docstring\n    that spans multiple lines\n    """\n    pass\n'
+        in file.source
+    )
 
 
 def test_set_docstring_with_indentation(tmpdir) -> None:
@@ -68,7 +71,10 @@ def func():
         func.set_docstring("this is a docstring\n    with indentation")
 
     # Check that the docstring was added
-    assert 'def func():\n    """this is a docstring\n        with indentation\n    """\n    pass\n' in file.source
+    assert (
+        'def func():\n    """this is a docstring\n        with indentation\n    """\n    pass\n'
+        in file.source
+    )
 
 
 def test_set_docstring_empty_lines(tmpdir) -> None:
@@ -139,4 +145,7 @@ def func():
         func.set_docstring("this is an inserted docstring")
 
     # Check that the docstring was inserted
-    assert 'def func():\n    """this is an inserted docstring"""\n    pass\n' in file.source
+    assert (
+        'def func():\n    """this is an inserted docstring"""\n    pass\n'
+        in file.source
+    )

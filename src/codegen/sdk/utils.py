@@ -10,7 +10,11 @@ import dicttoxml
 import xmltodict
 from tree_sitter import Node as TSNode
 
-from codegen.sdk.extensions.utils import find_all_descendants, find_first_descendant, get_all_identifiers
+from codegen.sdk.extensions.utils import (
+    find_all_descendants,
+    find_first_descendant,
+    get_all_identifiers,
+)
 from codegen.sdk.typescript.enums import TSFunctionTypeNames
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
@@ -45,13 +49,18 @@ class XMLUtils:
 
         for pattern in patterns:
             replacement = r"\1<![CDATA[\2]]>\3"
-            updated_xml_string = re.sub(pattern, replacement, updated_xml_string, flags=re.DOTALL)
+            updated_xml_string = re.sub(
+                pattern, replacement, updated_xml_string, flags=re.DOTALL
+            )
 
         return updated_xml_string
 
     @staticmethod
     def xml_to_dict(xml_string: str, **kwargs) -> dict:
-        return xmltodict.parse(XMLUtils.add_cdata_to_tags(xml_string, ["function_body", "reasoning"]), **kwargs)
+        return xmltodict.parse(
+            XMLUtils.add_cdata_to_tags(xml_string, ["function_body", "reasoning"]),
+            **kwargs,
+        )
 
     @staticmethod
     def strip_after_tag(xml_string, tag):
@@ -73,7 +82,9 @@ class XMLUtils:
         return pattern.sub("", xml_string).strip()
 
     @staticmethod
-    def extract_elements(xml_string: str, tag: str, keep_tag: bool = False) -> list[str]:
+    def extract_elements(
+        xml_string: str, tag: str, keep_tag: bool = False
+    ) -> list[str]:
         pattern = re.compile(f"<{tag}.*?</{tag}>", re.DOTALL)
         matches = pattern.findall(xml_string)
         if keep_tag:
@@ -106,7 +117,9 @@ def find_import_node(node: TSNode) -> TSNode | None:
 
     if member_expression := find_first_descendant(node, ["member_expression"]):
         # there may be multiple call expressions (for cases such as import(a).then(module => module).then(module => module)
-        descendants = find_all_descendants(member_expression, ["call_expression"], stop_at_first="statement_block")
+        descendants = find_all_descendants(
+            member_expression, ["call_expression"], stop_at_first="statement_block"
+        )
         if descendants:
             import_node = descendants[-1]
         else:
@@ -118,7 +131,13 @@ def find_import_node(node: TSNode) -> TSNode | None:
     # thus we only consider the deepest one
     if import_node:
         function = import_node.child_by_field_name("function")
-        if function and (function.type == "import" or (function.type == "identifier" and function.text.decode("utf-8") == "require")):
+        if function and (
+            function.type == "import"
+            or (
+                function.type == "identifier"
+                and function.text.decode("utf-8") == "require"
+            )
+        ):
             return import_node
 
     return None
@@ -130,13 +149,17 @@ def find_index(target: TSNode, siblings: list[TSNode]) -> int:
         return siblings.index(target)
 
     for i, sibling in enumerate(siblings):
-        index = find_index(target, sibling.named_children if target.is_named else sibling.children)
+        index = find_index(
+            target, sibling.named_children if target.is_named else sibling.children
+        )
         if index != -1:
             return i
     return -1
 
 
-def find_first_ancestor(node: TSNode, type_names: list[str], max_depth: int | None = None) -> TSNode | None:
+def find_first_ancestor(
+    node: TSNode, type_names: list[str], max_depth: int | None = None
+) -> TSNode | None:
     depth = 0
     while node is not None and (max_depth is None or depth <= max_depth):
         if node.type in type_names:
@@ -177,7 +200,9 @@ def get_first_identifier(node: TSNode) -> TSNode | None:
     return None
 
 
-def descendant_for_byte_range(node: TSNode, start_byte: int, end_byte: int, allow_comment_boundaries: bool = True) -> TSNode | None:
+def descendant_for_byte_range(
+    node: TSNode, start_byte: int, end_byte: int, allow_comment_boundaries: bool = True
+) -> TSNode | None:
     """Proper implementation of descendant_for_byte_range, which returns the lowest node that contains the byte range."""
     ts_match = node.descendant_for_byte_range(start_byte, end_byte)
 
@@ -191,7 +216,11 @@ def descendant_for_byte_range(node: TSNode, start_byte: int, end_byte: int, allo
             return ts_match
         comments = find_all_descendants(ts_match, "comment")
         # see if any of these comments partially overlaps with the match
-        if any(comment.start_byte < start_byte < comment.end_byte or comment.start_byte < end_byte < comment.end_byte for comment in comments):
+        if any(
+            comment.start_byte < start_byte < comment.end_byte
+            or comment.start_byte < end_byte < comment.end_byte
+            for comment in comments
+        ):
             return None
         return ts_match
 
@@ -320,18 +349,28 @@ def is_minified_js(content):
         whitespace_ratio = whitespace_chars / total_chars if total_chars else 0
 
         # 4. Check for common minification patterns
-        has_common_patterns = bool(re.search(r"[\w\)]\{[\w:]+\}", content))  # Condensed object notation
+        has_common_patterns = bool(
+            re.search(r"[\w\)]\{[\w:]+\}", content)
+        )  # Condensed object notation
 
         # 5. Check for short variable names (common in minified code)
         variable_names = re.findall(r"var\s+(\w+)", content)
-        avg_var_length = statistics.mean([len(name) for name in variable_names]) if variable_names else 0
+        avg_var_length = (
+            statistics.mean([len(name) for name in variable_names])
+            if variable_names
+            else 0
+        )
 
         # Decision logic - tuned threshold values
         is_minified = (
             (avg_line_length > 250)  # Very long average line length
-            and (semicolon_ratio > 0.8 or has_common_patterns)  # High semicolon ratio or minification patterns
+            and (
+                semicolon_ratio > 0.8 or has_common_patterns
+            )  # High semicolon ratio or minification patterns
             and (whitespace_ratio < 0.08)  # Very low whitespace ratio
-            and (avg_var_length < 3 or not variable_names)  # Extremely short variable names or no vars
+            and (
+                avg_var_length < 3 or not variable_names
+            )  # Extremely short variable names or no vars
         )
 
         return is_minified

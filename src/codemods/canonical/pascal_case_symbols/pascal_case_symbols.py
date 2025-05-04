@@ -36,6 +36,9 @@ class PascalCaseSymbols(Codemod, Skill):
                 # Check if the name isn't capitalized
                 if not symbol.name[0].isupper():
                     # Generate the PascalCase name
-                    new_name = "".join(word.capitalize() for word in symbol.name.replace("_", " ").split())
+                    new_name = "".join(
+                        word.capitalize()
+                        for word in symbol.name.replace("_", " ").split()
+                    )
                     # Rename the symbol and update all references
                     symbol.rename(new_name)

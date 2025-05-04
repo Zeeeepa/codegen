@@ -82,7 +82,10 @@ class CountUnnamedKeywordArguments(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CountUnnamedKeywordArgumentsTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[CountUnnamedKeywordArgumentsTest],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         unnamed_kwargs_count = 0
 
@@ -91,6 +94,8 @@ class CountUnnamedKeywordArguments(Skill, ABC):
             # Iterate through all function calls in the file
             for call in file.function_calls:
                 # Check if the call has unnamed kwargs
-                unnamed_kwargs_count += sum(1 for arg in call.args if arg.is_named is False)
+                unnamed_kwargs_count += sum(
+                    1 for arg in call.args if arg.is_named is False
+                )
 
         print(f"Total number of unnamed kwargs: {unnamed_kwargs_count}")

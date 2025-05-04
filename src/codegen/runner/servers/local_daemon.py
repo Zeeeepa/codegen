@@ -41,16 +41,22 @@ async def lifespan(server: FastAPI):
         server_info = ServerInfo(repo_name=repo_config.full_name or repo_config.name)
 
         # Set the bot email and username
-        op = RepoOperator(repo_config=repo_config, setup_option=SetupOption.SKIP, bot_commit=True)
+        op = RepoOperator(
+            repo_config=repo_config, setup_option=SetupOption.SKIP, bot_commit=True
+        )
         runner = SandboxRunner(repo_config=repo_config, op=op)
-        logger.info(f"Configuring git user config to {CODEGEN_BOT_EMAIL} and {CODEGEN_BOT_NAME}")
+        logger.info(
+            f"Configuring git user config to {CODEGEN_BOT_EMAIL} and {CODEGEN_BOT_NAME}"
+        )
         runner.op.git_cli.git.config("user.email", CODEGEN_BOT_EMAIL)
         runner.op.git_cli.git.config("user.name", CODEGEN_BOT_NAME)
 
         # Parse the codebase with sync enabled
         logger.info(f"Starting up fastapi server for repo_name={repo_config.name}")
         server_info.warmup_state = WarmupState.PENDING
-        codebase_config = DefaultCodebaseConfig.model_copy(update={"sync_enabled": True})
+        codebase_config = DefaultCodebaseConfig.model_copy(
+            update={"sync_enabled": True}
+        )
         await runner.warmup(codebase_config=codebase_config)
         server_info.synced_commit = runner.op.head_commit.hexsha
         server_info.warmup_state = WarmupState.COMPLETED
@@ -78,13 +84,17 @@ async def run(request: RunFunctionRequest) -> CodemodRunResult:
     diff_req = GetDiffRequest(codemod=Codemod(user_code=request.codemod_source))
     diff_response = await runner.get_diff(request=diff_req)
     if request.commit:
-        if commit_sha := runner.codebase.git_commit(f"[Codegen] {request.function_name}", exclude_paths=[".codegen/*"]):
+        if commit_sha := runner.codebase.git_commit(
+            f"[Codegen] {request.function_name}", exclude_paths=[".codegen/*"]
+        ):
             logger.info(f"Committed changes to {commit_sha.hexsha}")
     return diff_response.result
 
 
 def _save_uncommitted_changes_and_sync() -> None:
-    if commit := runner.codebase.git_commit("[Codegen] Save uncommitted changes", exclude_paths=[".codegen/*"]):
+    if commit := runner.codebase.git_commit(
+        "[Codegen] Save uncommitted changes", exclude_paths=[".codegen/*"]
+    ):
         logger.info(f"Saved uncommitted changes to {commit.hexsha}")
 
     cur_commit = runner.op.head_commit

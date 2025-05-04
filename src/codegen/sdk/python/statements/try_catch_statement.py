@@ -33,14 +33,25 @@ class PyTryCatchStatement(TryCatchStatement["PyCodeBlock"], PyBlockStatement):
 
     except_clauses: list[PyCatchStatement[Self]]
 
-    def __init__(self, ts_node: PyNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: PyNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.except_clauses = []
         for node in self.ts_node.named_children:
             if node.type == "finally_clause":
-                self.finalizer = PyBlockStatement(node, file_node_id, ctx, self, self.index)
+                self.finalizer = PyBlockStatement(
+                    node, file_node_id, ctx, self, self.index
+                )
             elif node.type == "except_clause":
-                self.except_clauses.append(PyCatchStatement(node, file_node_id, ctx, self, self.index))
+                self.except_clauses.append(
+                    PyCatchStatement(node, file_node_id, ctx, self, self.index)
+                )
 
     @property
     @reader
@@ -61,7 +72,9 @@ class PyTryCatchStatement(TryCatchStatement["PyCodeBlock"], PyBlockStatement):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         super()._compute_dependencies(usage_type, dest)
         for clause in self.except_clauses:
             clause._compute_dependencies(usage_type, dest)
@@ -93,7 +106,11 @@ class PyTryCatchStatement(TryCatchStatement["PyCodeBlock"], PyBlockStatement):
                 - except clause blocks
                 - finally block (if present)
         """
-        nested_blocks = [self.code_block, *self.finalizer.nested_code_blocks] if self.finalizer else [self.code_block]
+        nested_blocks = (
+            [self.code_block, *self.finalizer.nested_code_blocks]
+            if self.finalizer
+            else [self.code_block]
+        )
         for except_clause in self.except_clauses:
             nested_blocks.append(except_clause.code_block)
         if self.finalizer:

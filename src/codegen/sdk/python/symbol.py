@@ -27,9 +27,13 @@ class PySymbol(Symbol["PyHasBlock", "PyCodeBlock"]):
 
     @classmethod
     @noapidoc
-    def from_decorated_definition(cls, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: HasBlock) -> Symbol:
+    def from_decorated_definition(
+        cls, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: HasBlock
+    ) -> Symbol:
         definition = ts_node.child_by_field_name("definition")
-        return ctx.parser.parse_expression(definition, file_id, ctx, parent, decorated_node=ts_node)
+        return ctx.parser.parse_expression(
+            definition, file_id, ctx, parent, decorated_node=ts_node
+        )
 
     @property
     @reader
@@ -105,7 +109,13 @@ class PySymbol(Symbol["PyHasBlock", "PyCodeBlock"]):
         return PyCommentGroup.from_symbol_inline_comments(self)
 
     @writer
-    def set_comment(self, comment: str, auto_format: bool = True, clean_format: bool = True, comment_type: PyCommentType = PyCommentType.SINGLE_LINE) -> None:
+    def set_comment(
+        self,
+        comment: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        comment_type: PyCommentType = PyCommentType.SINGLE_LINE,
+    ) -> None:
         """Sets a comment for the Python symbol.
 
         Adds or modifies a comment associated with the Python symbol. If a comment already exists,
@@ -138,7 +148,13 @@ class PySymbol(Symbol["PyHasBlock", "PyCodeBlock"]):
             self.insert_before(comment, fix_indentation=True)
 
     @writer
-    def add_comment(self, comment: str, auto_format: bool = True, clean_format: bool = True, comment_type: PyCommentType = PyCommentType.SINGLE_LINE) -> None:
+    def add_comment(
+        self,
+        comment: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        comment_type: PyCommentType = PyCommentType.SINGLE_LINE,
+    ) -> None:
         """Adds a new comment to the symbol.
 
         Appends a comment to the symbol either adding it to an existing comment group or creating a new one.
@@ -170,7 +186,9 @@ class PySymbol(Symbol["PyHasBlock", "PyCodeBlock"]):
             self.insert_before(comment, fix_indentation=True)
 
     @writer
-    def set_inline_comment(self, comment: str, auto_format: bool = True, clean_format: bool = True) -> None:
+    def set_inline_comment(
+        self, comment: str, auto_format: bool = True, clean_format: bool = True
+    ) -> None:
         """Sets an inline comment to the symbol.
 
         Adds or replaces an inline comment for a Python symbol. If an inline comment exists,
@@ -197,7 +215,9 @@ class PySymbol(Symbol["PyHasBlock", "PyCodeBlock"]):
                 self.comment.edit(comment)
         else:
             if auto_format:
-                comment = "  " + PyComment.generate_comment(comment, PyCommentType.SINGLE_LINE)
+                comment = "  " + PyComment.generate_comment(
+                    comment, PyCommentType.SINGLE_LINE
+                )
             self.insert_after(comment, fix_indentation=False, newline=False)
 
     @writer

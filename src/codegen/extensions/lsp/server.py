@@ -43,14 +43,20 @@ class CodegenLanguageServer(LanguageServer):
             return None
         return node.parent_of_type(Symbol)
 
-    def get_node_under_cursor(self, uri: str, position: Position, end_position: Position | None = None) -> Editable | None:
+    def get_node_under_cursor(
+        self, uri: str, position: Position, end_position: Position | None = None
+    ) -> Editable | None:
         file = self.get_file(uri)
         resolved_uri = file.path.absolute().as_uri()
         logger.info(f"Getting node under cursor for {resolved_uri} at {position}")
         document = self.workspace.get_text_document(resolved_uri)
         candidates = []
         target_byte = document.offset_at_position(position)
-        end_byte = document.offset_at_position(end_position) if end_position is not None else None
+        end_byte = (
+            document.offset_at_position(end_position)
+            if end_position is not None
+            else None
+        )
         for node in file._range_index.nodes:
             if node.start_byte <= target_byte and node.end_byte >= target_byte:
                 if end_position is not None:
@@ -69,21 +75,31 @@ class CodegenLanguageServer(LanguageServer):
             return node
         return None
 
-    def get_actions_for_range(self, params: types.CodeActionParams) -> list[types.CodeAction]:
+    def get_actions_for_range(
+        self, params: types.CodeActionParams
+    ) -> list[types.CodeAction]:
         if params.context.only is not None:
             only = [types.CodeActionKind(kind) for kind in params.context.only]
         else:
             only = None
         node = self.get_node_under_cursor(params.text_document.uri, params.range.start)
         if node is None:
-            logger.warning(f"No node found for range {params.range} in {params.text_document.uri}")
+            logger.warning(
+                f"No node found for range {params.range} in {params.text_document.uri}"
+            )
             return []
         actions = []
-        task = self.progress_manager.begin_with_token(f"Getting code actions for {params.text_document.uri}", params.work_done_token, count=len(self.actions))
+        task = self.progress_manager.begin_with_token(
+            f"Getting code actions for {params.text_document.uri}",
+            params.work_done_token,
+            count=len(self.actions),
+        )
         for idx, action in enumerate(self.actions.values()):
             task.update(f"Checking action {action.name}", idx)
             if only and action.kind not in only:
-                logger.warning(f"Skipping action {action.kind} because it is not in {only}")
+                logger.warning(
+                    f"Skipping action {action.kind} because it is not in {only}"
+                )
                 continue
             if action.is_applicable(self, node):
                 actions.append(action.to_lsp(params.text_document.uri, params.range))

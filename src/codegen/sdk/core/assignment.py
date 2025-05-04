@@ -58,9 +58,28 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
     _left: Expression[Self]
     symbol_type = SymbolType.GlobalVar
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, left: TSNode, value: TSNode, name_node: TSNode, type: Type | None = None) -> None:
-        self._unique_node = name_node  # HACK: This prevents deduplication of Assignments
-        super().__init__(ts_node, file_node_id, ctx, parent=parent, name_node=name_node, name_node_type=Name)
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        left: TSNode,
+        value: TSNode,
+        name_node: TSNode,
+        type: Type | None = None,
+    ) -> None:
+        self._unique_node = (
+            name_node  # HACK: This prevents deduplication of Assignments
+        )
+        super().__init__(
+            ts_node,
+            file_node_id,
+            ctx,
+            parent=parent,
+            name_node=name_node,
+            name_node_type=Name,
+        )
         self._left = self._parse_expression(left, default=Name)
         self._value_node = self._parse_expression(value)
         self.type = type
@@ -68,7 +87,15 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
             self._init_type()
 
     @classmethod
-    def _from_left_and_right_nodes(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, left_node: TSNode, right_node: TSNode) -> list[Assignment]:
+    def _from_left_and_right_nodes(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        left_node: TSNode,
+        right_node: TSNode,
+    ) -> list[Assignment]:
         left = ctx.parser.parse_expression(left_node, file_node_id, ctx, parent)
         value = ctx.parser.parse_expression(right_node, file_node_id, ctx, parent)
 
@@ -76,24 +103,55 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
             assignments = []
             for var in left.symbols:
                 # Make a deep copy of the value expression for each child
-                value = ctx.parser.parse_expression(right_node, file_node_id, ctx, parent)
-                assignments.extend(cls._from_value_expression(ts_node, file_node_id, ctx, parent, left, value, var.ts_node))
+                value = ctx.parser.parse_expression(
+                    right_node, file_node_id, ctx, parent
+                )
+                assignments.extend(
+                    cls._from_value_expression(
+                        ts_node, file_node_id, ctx, parent, left, value, var.ts_node
+                    )
+                )
             return sort_editables(assignments)
-        return cls._from_value_expression(ts_node, file_node_id, ctx, parent, left, value, left_node)
+        return cls._from_value_expression(
+            ts_node, file_node_id, ctx, parent, left, value, left_node
+        )
 
     @classmethod
     def _from_value_expression(
-        cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, left: Expression[Self], value: Expression[Self] | list[Expression], name_node: TSNode
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        left: Expression[Self],
+        value: Expression[Self] | list[Expression],
+        name_node: TSNode,
     ) -> list[Assignment]:
         assignments = [cls(ts_node, file_node_id, ctx, parent, left, value, name_node)]
-        if value and isinstance(value, MultiExpression) and isinstance(value.expressions[0], Assignment):
+        if (
+            value
+            and isinstance(value, MultiExpression)
+            and isinstance(value.expressions[0], Assignment)
+        ):
             for expr in value.expressions:
-                assignments.extend(cls._from_value_expression(expr.ts_node, file_node_id, ctx, parent, expr.left, expr.value, expr.get_name().ts_node))
+                assignments.extend(
+                    cls._from_value_expression(
+                        expr.ts_node,
+                        file_node_id,
+                        ctx,
+                        parent,
+                        expr.left,
+                        expr.value,
+                        expr.get_name().ts_node,
+                    )
+                )
         return sort_editables(assignments)
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         dest = self.self_dest
         if value := self.value:
             value._compute_dependencies(UsageKind.BODY, dest)
@@ -167,7 +225,10 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
             var_references = statement.get_variable_usages(self.name)
             for var_reference in var_references:
                 # Exclude the variable usage in the assignment itself
-                if self.ts_node.byte_range[0] <= var_reference.ts_node.start_byte and self.ts_node.byte_range[1] >= var_reference.ts_node.end_byte:
+                if (
+                    self.ts_node.byte_range[0] <= var_reference.ts_node.start_byte
+                    and self.ts_node.byte_range[1] >= var_reference.ts_node.end_byte
+                ):
                     continue
                 usages.append(var_reference)
         return sort_editables(usages)
@@ -222,9 +283,14 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
             yield from self.with_resolution_frame(self.type, direct=False)
         elif self.value:
             resolved = False
-            from codegen.sdk.core.statements.assignment_statement import AssignmentStatement
+            from codegen.sdk.core.statements.assignment_statement import (
+                AssignmentStatement,
+            )
 
-            if self.parent_of_type(AssignmentStatement) and len(self.parent_of_type(AssignmentStatement).assignments) > 0:
+            if (
+                self.parent_of_type(AssignmentStatement)
+                and len(self.parent_of_type(AssignmentStatement).assignments) > 0
+            ):
                 name_node = self._name_node.ts_node
                 if name_node and (val := self.value) and isinstance(val, Chainable):
                     for resolution in val.resolved_type_frames:
@@ -242,11 +308,15 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
                                         current = name_node
                             if current.type == "pair_pattern":
                                 key = current.child_by_field_name("key")
-                                if isinstance(type, TSObjectType) and (elem := type.get(key.text.decode("utf-8"))):
+                                if isinstance(type, TSObjectType) and (
+                                    elem := type.get(key.text.decode("utf-8"))
+                                ):
                                     type = elem
 
                         if type and type != resolution.top.node:
-                            yield from self.with_resolution_frame(type, direct=False, chained=True)
+                            yield from self.with_resolution_frame(
+                                type, direct=False, chained=True
+                            )
                             resolved = True
             if not resolved:
                 yield from self.with_resolution_frame(self.value, direct=False)
@@ -263,17 +333,29 @@ class Assignment(Symbol[Parent, ...], Typeable[Parent, ...], HasValue, Generic[P
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash((self.filepath, self.range, self.ts_node.kind_id, self._unique_node.range))
+            self._hash = hash(
+                (
+                    self.filepath,
+                    self.range,
+                    self.ts_node.kind_id,
+                    self._unique_node.range,
+                )
+            )
         return self._hash
 
     @reader
     def __eq__(self, other: object):
         if isinstance(other, Assignment):
-            return super().__eq__(other) and self._unique_node.range == other._unique_node.range
+            return (
+                super().__eq__(other)
+                and self._unique_node.range == other._unique_node.range
+            )
         return super().__eq__(other)
 
     @writer
-    def reduce_condition(self, bool_condition: bool, node: Editable | None = None) -> None:
+    def reduce_condition(
+        self, bool_condition: bool, node: Editable | None = None
+    ) -> None:
         """Simplifies an assignment expression by reducing it based on a boolean condition and updating all the usages.
 
 

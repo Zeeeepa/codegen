@@ -32,7 +32,10 @@ def run(codebase: Codebase):
                 if "filter_by(" in new_query:
                     model = call.args[0].value
                     conditions = chain.source.split("filter_by(")[1].split(")")[0]
-                    new_conditions = [f"{model}.{cond.strip().replace('=', ' == ')}" for cond in conditions.split(",")]
+                    new_conditions = [
+                        f"{model}.{cond.strip().replace('=', ' == ')}"
+                        for cond in conditions.split(",")
+                    ]
                     new_query = f".where({' & '.join(new_conditions)})"
                 if "execute" not in chain.parent.source:
                     new_query = f"execute({new_query}).scalars()"
@@ -51,7 +54,10 @@ def run(codebase: Codebase):
         # Step 2: Modernize ORM Relationships
         for cls in file.classes:
             for attr in cls.attributes:
-                if isinstance(attr.value, FunctionCall) and attr.value.name == "relationship":
+                if (
+                    isinstance(attr.value, FunctionCall)
+                    and attr.value.name == "relationship"
+                ):
                     if "lazy=" not in attr.value.source:
                         original_rel = attr.value.source
                         new_rel = original_rel + ', lazy="select"'

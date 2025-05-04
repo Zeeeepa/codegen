@@ -1,12 +1,6 @@
 import pytest
-from lsprotocol.types import (
-    Position,
-    RenameParams,
-    TextDocumentIdentifier,
-)
-from pytest_lsp import (
-    LanguageClient,
-)
+from lsprotocol.types import Position, RenameParams, TextDocumentIdentifier
+from pytest_lsp import LanguageClient
 
 from codegen.sdk.core.codebase import Codebase
 from tests.unit.codegen.extensions.lsp.utils import apply_edit
@@ -35,7 +29,9 @@ async def test_rename(client: LanguageClient, codebase: Codebase, assert_expecte
     result = await client.text_document_rename_async(
         params=RenameParams(
             position=Position(line=0, character=5),
-            text_document=TextDocumentIdentifier(uri=f"file://{codebase.repo_path}/test.py"),
+            text_document=TextDocumentIdentifier(
+                uri=f"file://{codebase.repo_path}/test.py"
+            ),
             new_name="world",
         )
     )

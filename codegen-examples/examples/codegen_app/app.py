@@ -1,6 +1,7 @@
 import logging
 
 import modal
+
 from codegen import CodeAgent, CodegenApp
 from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
 from codegen.extensions.linear.types import LinearEvent
@@ -35,7 +36,9 @@ async def handle_mention(event: SlackEvent):
     logger.info("[CODE_AGENT] Running code agent")
     response = agent.run(event.text)
 
-    cg.slack.client.chat_postMessage(channel=event.channel, text=response, thread_ts=event.ts)
+    cg.slack.client.chat_postMessage(
+        channel=event.channel, text=response, thread_ts=event.ts
+    )
     return {"message": "Mentioned", "received_text": event.text, "response": response}
 
 
@@ -54,16 +57,28 @@ def handle_pr(event: PullRequestLabeledEvent):
     file = codebase.get_file("README.md")
 
     # =====[ Create PR comment ]=====
-    create_pr_comment(codebase, event.pull_request.number, f"File content:\n```python\n{file.content}\n```")
+    create_pr_comment(
+        codebase,
+        event.pull_request.number,
+        f"File content:\n```python\n{file.content}\n```",
+    )
 
-    return {"message": "PR event handled", "num_files": len(codebase.files), "num_functions": len(codebase.functions)}
+    return {
+        "message": "PR event handled",
+        "num_files": len(codebase.files),
+        "num_functions": len(codebase.functions),
+    }
 
 
 @cg.linear.event("Issue")
 def handle_issue(event: LinearEvent):
     logger.info(f"Issue created: {event}")
     codebase = cg.get_codebase()
-    return {"message": "Linear Issue event", "num_files": len(codebase.files), "num_functions": len(codebase.functions)}
+    return {
+        "message": "Linear Issue event",
+        "num_files": len(codebase.files),
+        "num_functions": len(codebase.functions),
+    }
 
 
 ########################################################################################################################

@@ -11,7 +11,9 @@ from codegen.sdk.core.interfaces.importable import Importable
 from codegen.sdk.core.node_id_factory import NodeId
 from codegen.sdk.core.symbol_groups.collection import Collection
 from codegen.sdk.typescript.detached_symbols.parameter import TSParameter
-from codegen.sdk.typescript.placeholder.placeholder_return_type import TSReturnTypePlaceholder
+from codegen.sdk.typescript.placeholder.placeholder_return_type import (
+    TSReturnTypePlaceholder,
+)
 from codegen.shared.decorators.docs import noapidoc, ts_apidoc
 
 if TYPE_CHECKING:
@@ -38,12 +40,26 @@ class TSFunctionType(Type[Parent], Generic[Parent]):
     _parameters: Collection[TSParameter, Self]
     name: None = None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
-        self.return_type = self.child_by_field_name("return_type", placeholder=TSReturnTypePlaceholder)
+        self.return_type = self.child_by_field_name(
+            "return_type", placeholder=TSReturnTypePlaceholder
+        )
         params_node = self.ts_node.child_by_field_name("parameters")
-        params = [TSParameter(child, idx, self) for idx, child in enumerate(params_node.named_children) if child.type != "comment"]
-        self._parameters = Collection(params_node, file_node_id, ctx, self, children=params)
+        params = [
+            TSParameter(child, idx, self)
+            for idx, child in enumerate(params_node.named_children)
+            if child.type != "comment"
+        ]
+        self._parameters = Collection(
+            params_node, file_node_id, ctx, self, children=params
+        )
 
     @property
     @reader
@@ -75,7 +91,9 @@ class TSFunctionType(Type[Parent], Generic[Parent]):
             self.return_type.insert_before("Promise<", newline=False)
             self.return_type.insert_after(">", newline=False)
 
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: Importable | None = None):
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: Importable | None = None
+    ):
         if self.return_type:
             self.return_type._compute_dependencies(UsageKind.GENERIC, dest)
 

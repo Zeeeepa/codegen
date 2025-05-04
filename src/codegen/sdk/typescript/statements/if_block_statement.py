@@ -23,7 +23,9 @@ Parent = TypeVar("Parent", bound="TSCodeBlock")
 
 
 @apidoc
-class TSIfBlockStatement(IfBlockStatement[Parent, "TSIfBlockStatement"], Generic[Parent]):
+class TSIfBlockStatement(
+    IfBlockStatement[Parent, "TSIfBlockStatement"], Generic[Parent]
+):
     """Typescript implementation of the if/elif/else statement block.
     For example, if there is a code block like:
     if (condition1) {
@@ -56,7 +58,9 @@ class TSIfBlockStatement(IfBlockStatement[Parent, "TSIfBlockStatement"], Generic
         condition = self.child_by_field_name("condition")
         self.condition = condition.value if condition else None
         self.consequence_block = self._parse_consequence_block()
-        self._alternative_blocks = self._parse_alternative_blocks() if self.is_if_statement else None
+        self._alternative_blocks = (
+            self._parse_alternative_blocks() if self.is_if_statement else None
+        )
         self.consequence_block.parse()
 
     @reader
@@ -79,10 +83,25 @@ class TSIfBlockStatement(IfBlockStatement[Parent, "TSIfBlockStatement"], Generic
         while alt_node := alt_block.ts_node.child_by_field_name("alternative"):
             if (if_node := alt_node.named_children[0]).type == "if_statement":
                 # Elif statements are represented as if statements with an else clause as the parent node
-                alt_block = TSIfBlockStatement(if_node, self.file_node_id, self.ctx, self.parent, self.index, else_clause_node=alt_node, main_if_block=self._main_if_block or self)
+                alt_block = TSIfBlockStatement(
+                    if_node,
+                    self.file_node_id,
+                    self.ctx,
+                    self.parent,
+                    self.index,
+                    else_clause_node=alt_node,
+                    main_if_block=self._main_if_block or self,
+                )
             else:
                 # Else clause
-                alt_block = TSIfBlockStatement(alt_node, self.file_node_id, self.ctx, self.parent, self.index, main_if_block=self._main_if_block or self)
+                alt_block = TSIfBlockStatement(
+                    alt_node,
+                    self.file_node_id,
+                    self.ctx,
+                    self.parent,
+                    self.index,
+                    main_if_block=self._main_if_block or self,
+                )
             if_blocks.append(alt_block)
         return if_blocks
 
@@ -121,7 +140,9 @@ class TSIfBlockStatement(IfBlockStatement[Parent, "TSIfBlockStatement"], Generic
         Returns:
             bool: True if the current block is an elif block, False otherwise.
         """
-        return self.ts_node.type == "if_statement" and self._else_clause_node is not None
+        return (
+            self.ts_node.type == "if_statement" and self._else_clause_node is not None
+        )
 
     @writer
     def _else_if_to_if(self) -> None:
@@ -136,4 +157,6 @@ class TSIfBlockStatement(IfBlockStatement[Parent, "TSIfBlockStatement"], Generic
         if not self.is_elif_statement:
             return
 
-        self.remove_byte_range(self.ts_node.start_byte - len("else "), self.ts_node.start_byte)
+        self.remove_byte_range(
+            self.ts_node.start_byte - len("else "), self.ts_node.start_byte
+        )

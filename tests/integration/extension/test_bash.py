@@ -74,7 +74,9 @@ def test_command_validation() -> None:
     for cmd, pattern in zip(dangerous_commands, expected_patterns):
         result = run_bash_command(cmd)
         assert result["status"] == "error", f"Command should be blocked: {cmd}"
-        assert f"dangerous pattern: {pattern}" in result["error"], f"Expected '{pattern}' in error for command: {cmd}"
+        assert (
+            f"dangerous pattern: {pattern}" in result["error"]
+        ), f"Expected '{pattern}' in error for command: {cmd}"
 
 
 def test_background_command() -> None:

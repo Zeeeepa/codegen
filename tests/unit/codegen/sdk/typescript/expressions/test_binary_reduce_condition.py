@@ -16,7 +16,11 @@ function foo(): void {
     console.log(result);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         foo = file.get_function("foo")
         assign = foo.code_block.assignments[0]
@@ -43,7 +47,11 @@ function foo(): void {
     };
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         foo = file.get_function("foo")
         assign = foo.code_block.assignments[0]
@@ -72,7 +80,11 @@ function bar(): void {
     console.log(result);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file2.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file2.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file2.ts")
         bar = file.get_function("bar")
         assign_x = bar.code_block.assignments[0]
@@ -101,7 +113,11 @@ function baz(): void {
     console.log(result);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file3.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file3.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file3.ts")
         baz = file.get_function("baz")
         assign_notA = baz.code_block.assignments[1]
@@ -132,7 +148,11 @@ const MyComponent: React.FC = () => {
     );
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file4.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file4.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file4.tsx")
         my_component = file.get_symbol("MyComponent")
         assign_isVisible = my_component.code_block.assignments[0]
@@ -166,7 +186,11 @@ const MyComponent: React.FC = () => {
     );
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file4.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file4.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file4.tsx")
         my_component = file.get_symbol("MyComponent")
         assign_isVisible = my_component.code_block.assignments[0]
@@ -202,7 +226,11 @@ const AnotherComponent: React.FC = () => {
     );
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file5.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file5.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file5.tsx")
         another_component = file.get_symbol("AnotherComponent")
         assign_isActive = another_component.code_block.assignments[0]

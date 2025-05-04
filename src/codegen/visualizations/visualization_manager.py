@@ -32,7 +32,9 @@ class VisualizationManager:
         if self.op.folder_exists(self.viz_path):
             self.op.emptydir(self.viz_path)
 
-    def write_graphviz_data(self, G: Graph | go.Figure, root: Editable | str | int | None = None) -> None:
+    def write_graphviz_data(
+        self, G: Graph | go.Figure, root: Editable | str | int | None = None
+    ) -> None:
         """Writes the graph data to a file.
 
         Args:

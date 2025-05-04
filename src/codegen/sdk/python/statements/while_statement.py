@@ -31,11 +31,25 @@ class PyWhileStatement(WhileStatement["PyCodeBlock"], PyHasBlock):
 
     else_statement: PyIfBlockStatement[PyCodeBlock[PyWhileStatement]] | None = None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.condition = self.child_by_field_name("condition")
         if else_block := ts_node.child_by_field_name("alternative"):
-            self.else_statement = PyIfBlockStatement(else_block, file_node_id, ctx, self.code_block, self.index, main_if_block=self)
+            self.else_statement = PyIfBlockStatement(
+                else_block,
+                file_node_id,
+                ctx,
+                self.code_block,
+                self.index,
+                main_if_block=self,
+            )
         else:
             self.else_statement = None
 
@@ -74,7 +88,9 @@ class PyWhileStatement(WhileStatement["PyCodeBlock"], PyHasBlock):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         super()._compute_dependencies(usage_type, dest)
         if self.else_statement:
             self.else_statement._compute_dependencies(usage_type, dest)

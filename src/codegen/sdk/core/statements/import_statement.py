@@ -35,12 +35,21 @@ class ImportStatement(Statement[TCodeBlock], Generic[TSourceFile, TImport, TCode
 
     imports: Collection[TImport, Self]
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TCodeBlock, pos: int) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TCodeBlock,
+        pos: int,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None
+    ) -> None:
         # Skip computing dependencies for import statements, since it is done during import resolution step
         pass
 

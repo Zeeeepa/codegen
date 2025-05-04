@@ -35,20 +35,32 @@ class EventRouterMixin:
         msg = "Subclasses must implement this method"
         raise NotImplementedError(msg)
 
-    async def handle_event(self, org: str, repo: str, provider: Literal["slack", "github", "linear"], request: Request):
+    async def handle_event(
+        self,
+        org: str,
+        repo: str,
+        provider: Literal["slack", "github", "linear"],
+        request: Request,
+    ):
         repo_config = RepoConfig(
             name=repo,
             full_name=f"{org}/{repo}",
         )
 
-        repo_snapshotdict = modal.Dict.from_name(self.snapshot_index_id, {}, create_if_missing=True)
+        repo_snapshotdict = modal.Dict.from_name(
+            self.snapshot_index_id, {}, create_if_missing=True
+        )
 
         last_snapshot_commit = repo_snapshotdict.get(f"{org}/{repo}", None)
 
         if last_snapshot_commit is None:
-            git_client = GitRepoClient(repo_config=repo_config, access_token=os.environ["GITHUB_ACCESS_TOKEN"])
+            git_client = GitRepoClient(
+                repo_config=repo_config, access_token=os.environ["GITHUB_ACCESS_TOKEN"]
+            )
             branch = git_client.get_branch_safe(git_client.default_branch)
-            last_snapshot_commit = branch.commit.sha if branch and branch.commit else None
+            last_snapshot_commit = (
+                branch.commit.sha if branch and branch.commit else None
+            )
 
         Klass = self.get_event_handler_cls()
         klass = Klass(repo_org=org, repo_name=repo, commit=last_snapshot_commit)
@@ -58,11 +70,23 @@ class EventRouterMixin:
         request_headers.pop("host", None)  # Remove host header if present
 
         if provider == "slack":
-            return klass.proxy_event.remote(f"{org}/{repo}/slack/events", payload=request_payload, headers=request_headers)
+            return klass.proxy_event.remote(
+                f"{org}/{repo}/slack/events",
+                payload=request_payload,
+                headers=request_headers,
+            )
         elif provider == "github":
-            return klass.proxy_event.remote(f"{org}/{repo}/github/events", payload=request_payload, headers=request_headers)
+            return klass.proxy_event.remote(
+                f"{org}/{repo}/github/events",
+                payload=request_payload,
+                headers=request_headers,
+            )
         elif provider == "linear":
-            return klass.proxy_event.remote(f"{org}/{repo}/linear/events", payload=request_payload, headers=request_headers)
+            return klass.proxy_event.remote(
+                f"{org}/{repo}/linear/events",
+                payload=request_payload,
+                headers=request_headers,
+            )
         else:
             msg = f"Invalid provider: {provider}"
             raise ValueError(msg)
@@ -84,7 +108,10 @@ class EventRouterMixin:
                 )
 
                 # Initialize the GitRepoClient to fetch the latest commit
-                git_client = GitRepoClient(repo_config=repo_config, access_token=os.environ["GITHUB_ACCESS_TOKEN"])
+                git_client = GitRepoClient(
+                    repo_config=repo_config,
+                    access_token=os.environ["GITHUB_ACCESS_TOKEN"],
+                )
 
                 # Get the default branch and its latest commit
                 branch = git_client.get_branch_safe(git_client.default_branch)
@@ -99,12 +126,18 @@ class EventRouterMixin:
                     # Ping the function to refresh the snapshot
                     result = klass.ping.remote()
 
-                    logging.info(f"Refreshed snapshot for {repo_full_name} with commit {commit}: {result}")
+                    logging.info(
+                        f"Refreshed snapshot for {repo_full_name} with commit {commit}: {result}"
+                    )
                 else:
-                    logging.warning(f"Could not fetch latest commit for {repo_full_name}")
+                    logging.warning(
+                        f"Could not fetch latest commit for {repo_full_name}"
+                    )
 
             except Exception as e:
-                logging.exception(f"Error refreshing snapshot for {repo_full_name}: {e!s}")
+                logging.exception(
+                    f"Error refreshing snapshot for {repo_full_name}: {e!s}"
+                )
 
 
 class CodebaseEventsApp:
@@ -125,7 +158,9 @@ class CodebaseEventsApp:
 
     def get_codegen_app(self) -> CodegenApp:
         full_repo_name = f"{self.repo_org}/{self.repo_name}"
-        return CodegenApp(name=f"{full_repo_name}-events", repo=full_repo_name, commit=self.commit)
+        return CodegenApp(
+            name=f"{full_repo_name}-events", repo=full_repo_name, commit=self.commit
+        )
 
     @modal.enter(snap=True)
     def load(self):
@@ -134,7 +169,9 @@ class CodebaseEventsApp:
         self.setup_handlers(self.cg)
 
         # TODO: if multiple snapshots are taken for the same commit, we will need to compare commit timestamps
-        snapshot_dict = modal.Dict.from_name(self.snapshot_index_id, {}, create_if_missing=True)
+        snapshot_dict = modal.Dict.from_name(
+            self.snapshot_index_id, {}, create_if_missing=True
+        )
         snapshot_dict.put(f"{self.repo_org}/{self.repo_name}", self.commit)
 
     def setup_handlers(self, cg: CodegenApp):
@@ -144,7 +181,9 @@ class CodebaseEventsApp:
     @modal.method()
     async def proxy_event(self, route: str, payload: dict, headers: dict):
         logger.info(f"Handling event: {route}")
-        request = await fastapi_request_adapter(payload=payload, headers=headers, route=route)
+        request = await fastapi_request_adapter(
+            payload=payload, headers=headers, route=route
+        )
 
         if "slack/events" in route:
             response_data = await self.cg.handle_slack_event(request)
@@ -160,7 +199,9 @@ class CodebaseEventsApp:
 
     @modal.method()
     def ping(self):
-        logger.info(f"Pinging function with repo: {self.repo_org}/{self.repo_name} commit: {self.commit}")
+        logger.info(
+            f"Pinging function with repo: {self.repo_org}/{self.repo_name} commit: {self.commit}"
+        )
         return {"status": "ok"}
 
     @modal.asgi_app()

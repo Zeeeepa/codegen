@@ -32,7 +32,13 @@ class TSQueryType(Type[Parent], Generic[Parent]):
 
     query: "TSType[Self]"
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.query = self._parse_type(ts_node.named_children[0])
 

@@ -10,7 +10,8 @@ from typing import Dict, List, Optional, Tuple, Union
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.comparison_expression import \
+    ComparisonExpression
 from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
@@ -23,6 +24,7 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 
 from functools import lru_cache
+
 
 @lru_cache(maxsize=1024)
 def calculate_cyclomatic_complexity(func: Function) -> int:
@@ -172,12 +174,12 @@ def analyze_codebase_complexity(
     }
 
     metrics = {
-        "files": {},
-        "overall_complexity": 0,
-        "average_complexity": 0,
-        "function_count": 0,
-        "class_count": 0,
-        "total_lines": 0,
+        'files': {},
+        'function_count': 0,
+        'class_count': 0,
+        'total_lines': 0,
+        'overall_complexity': 0,
+        'average_complexity': 0,
         'complexity_distribution': {
             "A": 0,  # 1-5
             "B": 0,  # 6-10

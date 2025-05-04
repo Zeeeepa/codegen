@@ -1,14 +1,8 @@
 import sys
 
 import pytest_lsp
-from lsprotocol.types import (
-    InitializeParams,
-)
-from pytest_lsp import (
-    ClientServerConfig,
-    LanguageClient,
-    client_capabilities,
-)
+from lsprotocol.types import InitializeParams
+from pytest_lsp import ClientServerConfig, LanguageClient, client_capabilities
 
 from codegen.sdk.core.codebase import Codebase
 

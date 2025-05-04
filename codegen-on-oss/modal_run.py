@@ -3,13 +3,12 @@ import sys
 from pathlib import Path
 
 import modal
-from loguru import logger
-
 from codegen_on_oss.bucket_store import BucketStore
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource
+from loguru import logger
 
 parse_app = modal.App("codegen-oss-parse")
 

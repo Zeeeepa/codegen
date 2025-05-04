@@ -32,7 +32,12 @@ class Function:
         api_client = RestAPI(get_current_token())
         response = api_client.lookup(name)
 
-        return cls(name=name, codemod_id=response.codemod_id, version_id=response.version_id, _api_client=api_client)
+        return cls(
+            name=name,
+            codemod_id=response.codemod_id,
+            version_id=response.version_id,
+            _api_client=api_client,
+        )
 
     def run(self, pr: bool = False, **kwargs) -> RunCodemodOutput:
         """Run the function with the given arguments.
@@ -69,4 +74,9 @@ class Function:
         )
 
         # Don't include source code since we want to use the deployed version
-        return self._api_client.run(codemod, include_source=False, run_type=CodemodRunType.PR if pr else CodemodRunType.DIFF, template_context=kwargs)
+        return self._api_client.run(
+            codemod,
+            include_source=False,
+            run_type=CodemodRunType.PR if pr else CodemodRunType.DIFF,
+            template_context=kwargs,
+        )

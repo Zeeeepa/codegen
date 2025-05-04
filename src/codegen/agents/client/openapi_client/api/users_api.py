@@ -14,7 +14,9 @@ from pydantic import Field, StrictFloat, StrictInt, StrictStr, validate_call
 
 from codegen.agents.client.openapi_client.api_client import ApiClient, RequestSerialized
 from codegen.agents.client.openapi_client.api_response import ApiResponse
-from codegen.agents.client.openapi_client.models.page_user_response import PageUserResponse
+from codegen.agents.client.openapi_client.models.page_user_response import (
+    PageUserResponse,
+)
 from codegen.agents.client.openapi_client.models.user_response import UserResponse
 from codegen.agents.client.openapi_client.rest import RESTResponseType
 
@@ -37,7 +39,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -75,14 +83,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -95,7 +111,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -133,14 +155,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -153,7 +183,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -191,14 +227,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_user_v1_organizations_org_id_users_user_id_get_serialize(
@@ -219,7 +263,9 @@ class UsersApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -236,7 +282,9 @@ class UsersApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -262,7 +310,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -300,14 +354,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_0_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -320,7 +382,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -358,14 +426,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_0_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -378,7 +454,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -416,14 +498,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_0_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_user_v1_organizations_org_id_users_user_id_get_0_serialize(
@@ -444,7 +534,9 @@ class UsersApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -461,7 +553,9 @@ class UsersApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -487,7 +581,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -525,14 +625,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_1_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -545,7 +653,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -583,14 +697,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_1_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -603,7 +725,13 @@ class UsersApi:
         org_id: StrictStr,
         user_id: StrictStr,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -641,14 +769,22 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_user_v1_organizations_org_id_users_user_id_get_1_serialize(
-            org_id=org_id, user_id=user_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            user_id=user_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "UserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_user_v1_organizations_org_id_users_user_id_get_1_serialize(
@@ -669,7 +805,9 @@ class UsersApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -686,7 +824,9 @@ class UsersApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -713,7 +853,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -753,14 +899,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -774,7 +929,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -814,14 +975,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -835,7 +1005,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -875,14 +1051,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_users_v1_organizations_org_id_users_get_serialize(
@@ -904,7 +1089,9 @@ class UsersApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -925,7 +1112,9 @@ class UsersApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -952,7 +1141,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -992,14 +1187,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_0_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1013,7 +1217,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1053,14 +1263,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_0_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1074,7 +1293,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1114,14 +1339,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_0_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_users_v1_organizations_org_id_users_get_0_serialize(
@@ -1143,7 +1377,9 @@ class UsersApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -1164,7 +1400,9 @@ class UsersApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -1191,7 +1429,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1231,14 +1475,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_1_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1252,7 +1505,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1292,14 +1551,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_1_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1313,7 +1581,13 @@ class UsersApi:
         skip: Optional[Annotated[int, Field(strict=True, ge=0)]] = None,
         limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = None,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1353,14 +1627,23 @@ class UsersApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_users_v1_organizations_org_id_users_get_1_serialize(
-            org_id=org_id, skip=skip, limit=limit, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            org_id=org_id,
+            skip=skip,
+            limit=limit,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "PageUserResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_users_v1_organizations_org_id_users_get_1_serialize(
@@ -1382,7 +1665,9 @@ class UsersApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -1403,7 +1688,9 @@ class UsersApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []

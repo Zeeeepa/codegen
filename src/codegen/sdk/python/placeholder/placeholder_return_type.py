@@ -15,7 +15,13 @@ class PyReturnTypePlaceholder(Placeholder[Parent], Generic[Parent]):
     Can be populated using the `edit` method.
     """
 
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Edits or creates a return type annotation for a method or function.
 
         Used to modify or create a return type annotation in Python functions and methods. If the new source is not empty,
@@ -33,6 +39,8 @@ class PyReturnTypePlaceholder(Placeholder[Parent], Generic[Parent]):
         new_src = new_src.removeprefix(" -> ")
         # Case: return type node DOES NOT exist and new_return_type is not empty, append return type
         if new_src:
-            new_return_type = " -> " + new_src  # Add -> prefix b/c it will be missing if return type node does not exist
+            new_return_type = (
+                " -> " + new_src
+            )  # Add -> prefix b/c it will be missing if return type node does not exist
             param_node = self._parent_node.child_by_field_name("parameters")
             param_node.insert_after(new_return_type, newline=False)

@@ -18,7 +18,9 @@ Parent = TypeVar("Parent", bound="PyCodeBlock")
 
 
 @apidoc
-class PyIfBlockStatement(IfBlockStatement[Parent, "PyIfBlockStatement"], Generic[Parent]):
+class PyIfBlockStatement(
+    IfBlockStatement[Parent, "PyIfBlockStatement"], Generic[Parent]
+):
     """Pythons implementation of the if/elif/else statement block.
 
     For example, if there is a code block like:
@@ -33,19 +35,33 @@ class PyIfBlockStatement(IfBlockStatement[Parent, "PyIfBlockStatement"], Generic
 
     statement_type = StatementType.IF_BLOCK_STATEMENT
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, pos: int, main_if_block: PyIfBlockStatement | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        pos: int,
+        main_if_block: PyIfBlockStatement | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self._main_if_block = main_if_block
         self.condition = self.child_by_field_name("condition")
         self.consequence_block = self._parse_consequence_block()
-        self._alternative_blocks = self._parse_alternative_blocks() if self.is_if_statement else None
+        self._alternative_blocks = (
+            self._parse_alternative_blocks() if self.is_if_statement else None
+        )
         self.consequence_block.parse()
 
     @reader
     def _parse_consequence_block(self) -> PyCodeBlock:
         from codegen.sdk.python.detached_symbols.code_block import PyCodeBlock
 
-        body_node = self.ts_node.child_by_field_name("body") if self.is_else_statement else self.ts_node.child_by_field_name("consequence")
+        body_node = (
+            self.ts_node.child_by_field_name("body")
+            if self.is_else_statement
+            else self.ts_node.child_by_field_name("consequence")
+        )
         return PyCodeBlock(body_node, self.parent.level + 1, self.parent, self)
 
     @reader
@@ -54,7 +70,14 @@ class PyIfBlockStatement(IfBlockStatement[Parent, "PyIfBlockStatement"], Generic
         alt_blocks = []
         if self.is_if_statement:
             for alt_node in self.ts_node.children_by_field_name("alternative"):
-                alt_block = PyIfBlockStatement(alt_node, self.file_node_id, self.ctx, self.parent, self.index, main_if_block=self._main_if_block or self)
+                alt_block = PyIfBlockStatement(
+                    alt_node,
+                    self.file_node_id,
+                    self.ctx,
+                    self.parent,
+                    self.index,
+                    main_if_block=self._main_if_block or self,
+                )
                 alt_blocks.append(alt_block)
         return alt_blocks
 
@@ -103,4 +126,6 @@ class PyIfBlockStatement(IfBlockStatement[Parent, "PyIfBlockStatement"], Generic
         if not self.is_elif_statement:
             return
 
-        self.remove_byte_range(self.ts_node.start_byte, self.ts_node.start_byte + len("el"))
+        self.remove_byte_range(
+            self.ts_node.start_byte, self.ts_node.start_byte + len("el")
+        )

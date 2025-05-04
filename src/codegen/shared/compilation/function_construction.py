@@ -27,7 +27,9 @@ def wrap_codeblock_in_function(codeblock: str, func_name: str) -> str:
         Skip wrapping if a function with the specified name already exists in the codeblock.
     """
     if re.search(rf"\bdef\s+{func_name}\s*\(", codeblock):
-        logger.info(f"Codeblock already has a function named {func_name}. Skipping wrap.")
+        logger.info(
+            f"Codeblock already has a function named {func_name}. Skipping wrap."
+        )
         return codeblock
 
     # If not function func_name does not already exist, create a new function with the codeblock inside

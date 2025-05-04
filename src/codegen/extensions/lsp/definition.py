@@ -12,11 +12,17 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 
 
-def go_to_definition(node: Editable | None, uri: str, position: Position) -> Editable | None:
+def go_to_definition(
+    node: Editable | None, uri: str, position: Position
+) -> Editable | None:
     if node is None or not isinstance(node, (Expression)):
         logger.warning(f"No node found at {uri}:{position}")
         return None
-    if isinstance(node, Name) and isinstance(node.parent, ChainedAttribute) and node.parent.attribute == node:
+    if (
+        isinstance(node, Name)
+        and isinstance(node.parent, ChainedAttribute)
+        and node.parent.attribute == node
+    ):
         node = node.parent
     if isinstance(node.parent, FunctionCall) and node.parent.get_name() == node:
         node = node.parent

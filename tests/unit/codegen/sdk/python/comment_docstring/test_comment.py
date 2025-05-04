@@ -38,8 +38,13 @@ symbol = 1
         file = codebase.get_file("test.py")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "# this is a test comment\n# that spans multiple lines"
-        assert symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        assert (
+            symbol.comment.source
+            == "# this is a test comment\n# that spans multiple lines"
+        )
+        assert (
+            symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        )
 
 
 def test_comment_weird_spacing(tmpdir) -> None:
@@ -53,7 +58,9 @@ symbol = 1
         file = codebase.get_file("test.py")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "# this is a test comment\n#that has weird spacing"
+        assert (
+            symbol.comment.source == "# this is a test comment\n#that has weird spacing"
+        )
         assert symbol.comment.text == "this is a test comment\nthat has weird spacing"
 
 
@@ -68,7 +75,9 @@ def test_comment_with_indentation(tmpdir) -> None:
         file = codebase.get_file("test.py")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "# this is a test comment\n# that has indentation"
+        assert (
+            symbol.comment.source == "# this is a test comment\n# that has indentation"
+        )
         assert symbol.comment.text == "this is a test comment\nthat has indentation"
 
 
@@ -86,7 +95,9 @@ class A:
 
         A = file.get_symbol("A")
         symbol = A.get_method("symbol")
-        assert symbol.comment.source == "# this is a test comment\n# that has indentation"
+        assert (
+            symbol.comment.source == "# this is a test comment\n# that has indentation"
+        )
         assert symbol.comment.text == "this is a test comment\nthat has indentation"
 
 
@@ -101,5 +112,10 @@ symbol = 1
         file = codebase.get_file("test.py")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "#       this is a test comment\n#     that has spacing"
-        assert symbol.comment.text == "      this is a test comment\n    that has spacing"
+        assert (
+            symbol.comment.source
+            == "#       this is a test comment\n#     that has spacing"
+        )
+        assert (
+            symbol.comment.text == "      this is a test comment\n    that has spacing"
+        )

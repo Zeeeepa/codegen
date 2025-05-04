@@ -52,7 +52,13 @@ TType = TypeVar("TType", bound="Type", default="Type")
 
 
 @apidoc
-class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParameter, TType], HasAttribute[TFunction | Attribute], Generic[TFunction, TDecorator, TCodeBlock, TParameter, TType]):
+class Class(
+    Inherits[TType],
+    HasBlock[TCodeBlock, TDecorator],
+    Callable[TParameter, TType],
+    HasAttribute[TFunction | Attribute],
+    Generic[TFunction, TDecorator, TCodeBlock, TParameter, TType],
+):
     """Abstract representation of a Class definition.
 
     Attributes:
@@ -66,7 +72,13 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
     parent_classes: Parents[TType, Self] | None = None
     _methods: MultiLineCollection[TFunction, Self] | None = None
 
-    def __init__(self, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: SymbolStatement) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_id: NodeId,
+        ctx: CodebaseContext,
+        parent: SymbolStatement,
+    ) -> None:
         super().__init__(ts_node, file_id, ctx, parent)
         self._methods = self._parse_methods()
         self._parameters = []
@@ -76,7 +88,9 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
     ####################################################################################################################
     @proxy_property
     @reader
-    def superclasses(self, max_depth: int | None = None) -> list[Class | ExternalModule | Interface]:
+    def superclasses(
+        self, max_depth: int | None = None
+    ) -> list[Class | ExternalModule | Interface]:
         """Returns a list of all classes that this class extends, up to max_depth.
 
         Gets all classes that this class extends, traversing up the inheritance tree up to max_depth.
@@ -122,7 +136,9 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
         Returns:
             Editable | None: The matching parent class node, or None if no match is found.
         """
-        return next((p for p in self.parent_class_names if p.source == parent_class_name), None)
+        return next(
+            (p for p in self.parent_class_names if p.source == parent_class_name), None
+        )
 
     @property
     @reader
@@ -137,7 +153,9 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
         return len(self.parent_class_names) > 0
 
     @reader
-    def is_subclass_of(self, parent_class: str | Class, max_depth: int | None = None) -> bool:
+    def is_subclass_of(
+        self, parent_class: str | Class, max_depth: int | None = None
+    ) -> bool:
         """Checks if the class inherits from a specified parent class.
 
         Determines whether this class is a subclass (direct or indirect) of the specified parent class. The search can be limited to a certain depth in the inheritance tree.
@@ -193,16 +211,30 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
         """Parses the methods of the class into a multi line collection."""
 
     @overload
-    def methods(self, *, max_depth: Literal[0] = ..., private: Literal[True] = ..., magic: Literal[True] = ...) -> MultiLineCollection[TFunction, Self]: ...
+    def methods(
+        self,
+        *,
+        max_depth: Literal[0] = ...,
+        private: Literal[True] = ...,
+        magic: Literal[True] = ...,
+    ) -> MultiLineCollection[TFunction, Self]: ...
     @overload
-    def methods(self, *, max_depth: int | None = ..., private: bool = ..., magic: Literal[False]) -> list[TFunction]: ...
+    def methods(
+        self, *, max_depth: int | None = ..., private: bool = ..., magic: Literal[False]
+    ) -> list[TFunction]: ...
     @overload
-    def methods(self, *, max_depth: int | None = ..., private: Literal[False], magic: bool = ...) -> list[TFunction]: ...
+    def methods(
+        self, *, max_depth: int | None = ..., private: Literal[False], magic: bool = ...
+    ) -> list[TFunction]: ...
     @overload
-    def methods(self, *, max_depth: int | None, private: bool = ..., magic: bool = ...) -> list[TFunction]: ...
+    def methods(
+        self, *, max_depth: int | None, private: bool = ..., magic: bool = ...
+    ) -> list[TFunction]: ...
     @proxy_property
     @reader
-    def methods(self, *, max_depth: int | None = 0, private: bool = True, magic: bool = True) -> list[TFunction] | MultiLineCollection[TFunction, Self]:
+    def methods(
+        self, *, max_depth: int | None = 0, private: bool = True, magic: bool = True
+    ) -> list[TFunction] | MultiLineCollection[TFunction, Self]:
         """Retrieves all methods that exist on this Class, including methods from superclasses, with
         filtering options.
 
@@ -271,7 +303,9 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
 
     @proxy_property
     @reader
-    def attributes(self, *, max_depth: int | None = 0, private: bool = True) -> list[Attribute]:
+    def attributes(
+        self, *, max_depth: int | None = 0, private: bool = True
+    ) -> list[Attribute]:
         """Retrieves all attributes from this Class including those from its superclasses up to a
         specified depth.
 
@@ -357,7 +391,9 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
             self.code_block.insert_after(source, fix_indentation=True)
 
     @writer
-    def add_attribute(self, attribute: Attribute, include_dependencies: bool = False) -> None:
+    def add_attribute(
+        self, attribute: Attribute, include_dependencies: bool = False
+    ) -> None:
         """Adds an attribute to a class from another class.
 
         This method adds an attribute to a class, optionally including its dependencies. If dependencies are included, it will add any necessary imports to the class's file.
@@ -385,7 +421,13 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
     @property
     @noapidoc
     def viz(self) -> VizNode:
-        return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+        return VizNode(
+            file_path=self.filepath,
+            start_point=self.start_point,
+            end_point=self.end_point,
+            name=self.name,
+            symbol_name=self.__class__.__name__,
+        )
 
     @noapidoc
     @reader

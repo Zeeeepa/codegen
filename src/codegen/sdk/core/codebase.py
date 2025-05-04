@@ -109,8 +109,12 @@ TCodeBlock = TypeVar("TCodeBlock", bound="CodeBlock", default=CodeBlock)
 TExport = TypeVar("TExport", bound="Export", default=Export)
 TSGlobalVar = TypeVar("TSGlobalVar", bound="Assignment", default=Assignment)
 PyGlobalVar = TypeVar("PyGlobalVar", bound="Assignment", default=Assignment)
-TSDirectory = Directory[TSFile, TSSymbol, TSImportStatement, TSGlobalVar, TSClass, TSFunction, TSImport]
-PyDirectory = Directory[PyFile, PySymbol, PyImportStatement, PyGlobalVar, PyClass, PyFunction, PyImport]
+TSDirectory = Directory[
+    TSFile, TSSymbol, TSImportStatement, TSGlobalVar, TSClass, TSFunction, TSImport
+]
+PyDirectory = Directory[
+    PyFile, PySymbol, PyImportStatement, PyGlobalVar, PyClass, PyFunction, PyImport
+]
 
 
 @apidoc
@@ -200,7 +204,9 @@ class Codebase(
         if repo_path is not None:
             main_project = ProjectConfig.from_path(
                 repo_path,
-                programming_language=ProgrammingLanguage(language.upper()) if language else None,
+                programming_language=(
+                    ProgrammingLanguage(language.upper()) if language else None
+                ),
             )
             projects = [main_project]
         else:
@@ -210,7 +216,9 @@ class Codebase(
         self._op = main_project.repo_operator
         self.viz = VisualizationManager(op=self._op)
         self.repo_path = Path(self._op.repo_path)
-        self.ctx = CodebaseContext(projects, config=config, secrets=secrets, io=io, progress=progress)
+        self.ctx = CodebaseContext(
+            projects, config=config, secrets=secrets, io=io, progress=progress
+        )
         self.console = Console(record=True, soft_wrap=True)
         if self.ctx.config.use_pink != PinkMode.OFF:
             import codegen_sdk_pink
@@ -271,9 +279,15 @@ class Codebase(
     ####################################################################################################################
 
     @noapidoc
-    def _symbols(self, symbol_type: SymbolType | None = None) -> list[TSymbol | TClass | TFunction | TGlobalVar]:
+    def _symbols(
+        self, symbol_type: SymbolType | None = None
+    ) -> list[TSymbol | TClass | TFunction | TGlobalVar]:
         matches: list[Symbol] = self.ctx.get_nodes(NodeType.SYMBOL)
-        return [x for x in matches if x.is_top_level and (symbol_type is None or x.symbol_type == symbol_type)]
+        return [
+            x
+            for x in matches
+            if x.is_top_level and (symbol_type is None or x.symbol_type == symbol_type)
+        ]
 
     # =====[ Node Types ]=====
     @overload
@@ -283,7 +297,9 @@ class Codebase(
     @overload
     def files(self, *, extensions: None = ...) -> list[TSourceFile]: ...
     @proxy_property
-    def files(self, *, extensions: list[str] | Literal["*"] | None = None) -> list[TSourceFile] | list[File]:
+    def files(
+        self, *, extensions: list[str] | Literal["*"] | None = None
+    ) -> list[TSourceFile] | list[File]:
         """A list property that returns all files in the codebase.
 
         By default, this only returns source files. Setting `extensions='*'` will return all files in the codebase, and
@@ -427,7 +443,9 @@ class Codebase(
         Returns:
             list[TFunction]: A list of Function objects representing all functions in the codebase, sorted alphabetically.
         """
-        return sort_editables(self._symbols(symbol_type=SymbolType.Function), dedupe=False)
+        return sort_editables(
+            self._symbols(symbol_type=SymbolType.Function), dedupe=False
+        )
 
     @property
     def global_vars(self) -> list[TGlobalVar]:
@@ -473,7 +491,9 @@ class Codebase(
     # EXTERNAL API
     ####################################################################################################################
 
-    def create_file(self, filepath: str, content: str = "", sync: bool = True) -> TSourceFile:
+    def create_file(
+        self, filepath: str, content: str = "", sync: bool = True
+    ) -> TSourceFile:
         """Creates a new file in the codebase with specified content.
 
         Args:
@@ -490,11 +510,16 @@ class Codebase(
         # Check if file already exists
         # NOTE: This check is also important to ensure the filepath is valid within the repo!
         if self.has_file(filepath):
-            logger.warning(f"File {filepath} already exists in codebase. Overwriting...")
+            logger.warning(
+                f"File {filepath} already exists in codebase. Overwriting..."
+            )
 
         file_exts = self.ctx.extensions
         # Create file as source file if it has a registered extension
-        if any(filepath.endswith(ext) for ext in file_exts) and not self.ctx.config.disable_file_parse:
+        if (
+            any(filepath.endswith(ext) for ext in file_exts)
+            and not self.ctx.config.disable_file_parse
+        ):
             file_cls = self.ctx.node_classes.file_cls
             file = file_cls.from_content(filepath, content, self.ctx, sync=sync)
             if file is None:
@@ -508,7 +533,9 @@ class Codebase(
         uncache_all()
         return file
 
-    def create_directory(self, dir_path: str, exist_ok: bool = False, parents: bool = False) -> None:
+    def create_directory(
+        self, dir_path: str, exist_ok: bool = False, parents: bool = False
+    ) -> None:
         """Creates a directory at the specified path.
 
         Args:
@@ -522,7 +549,9 @@ class Codebase(
         # Check if directory already exists
         # NOTE: This check is also important to ensure the filepath is valid within the repo!
         if self.has_directory(dir_path):
-            logger.warning(f"Directory {dir_path} already exists in codebase. Overwriting...")
+            logger.warning(
+                f"Directory {dir_path} already exists in codebase. Overwriting..."
+            )
 
         self.ctx.to_absolute(dir_path).mkdir(parents=parents, exist_ok=exist_ok)
 
@@ -542,13 +571,21 @@ class Codebase(
         if self.ctx.config.use_pink == PinkMode.NON_SOURCE_FILES:
             if self._pink_codebase.has_file(filepath):
                 return True
-        return self.get_file(filepath, optional=True, ignore_case=ignore_case) is not None
+        return (
+            self.get_file(filepath, optional=True, ignore_case=ignore_case) is not None
+        )
 
     @overload
-    def get_file(self, filepath: str, *, optional: Literal[False] = ..., ignore_case: bool = ...) -> TSourceFile: ...
+    def get_file(
+        self, filepath: str, *, optional: Literal[False] = ..., ignore_case: bool = ...
+    ) -> TSourceFile: ...
     @overload
-    def get_file(self, filepath: str, *, optional: Literal[True], ignore_case: bool = ...) -> TSourceFile | None: ...
-    def get_file(self, filepath: str, *, optional: bool = False, ignore_case: bool = False) -> TSourceFile | None:
+    def get_file(
+        self, filepath: str, *, optional: Literal[True], ignore_case: bool = ...
+    ) -> TSourceFile | None: ...
+    def get_file(
+        self, filepath: str, *, optional: bool = False, ignore_case: bool = False
+    ) -> TSourceFile | None:
         """Retrieves a file from the codebase by its filepath.
 
         This method first attempts to find the file in the graph, then checks the filesystem if not found. Files can be either source files (e.g. .py, .ts) or binary files.
@@ -604,9 +641,14 @@ class Codebase(
         Returns:
             bool: True if the directory exists in the codebase, False otherwise.
         """
-        return self.get_directory(dir_path, optional=True, ignore_case=ignore_case) is not None
+        return (
+            self.get_directory(dir_path, optional=True, ignore_case=ignore_case)
+            is not None
+        )
 
-    def get_directory(self, dir_path: str, optional: bool = False, ignore_case: bool = False) -> TDirectory | None:
+    def get_directory(
+        self, dir_path: str, optional: bool = False, ignore_case: bool = False
+    ) -> TDirectory | None:
         """Returns Directory by `dir_path`, or full path to the directory from codebase root.
 
         Args:
@@ -622,7 +664,9 @@ class Codebase(
         # Sanitize the path
         dir_path = os.path.normpath(dir_path)
         dir_path = "" if dir_path == "." else dir_path
-        directory = self.ctx.get_directory(self.ctx.to_absolute(dir_path), ignore_case=ignore_case)
+        directory = self.ctx.get_directory(
+            self.ctx.to_absolute(dir_path), ignore_case=ignore_case
+        )
         if directory is None and not optional:
             msg = f"Directory {dir_path} not found in codebase. Use optional=True to return None instead."
             raise ValueError(msg)
@@ -704,11 +748,15 @@ class Codebase(
                 raise ValueError(msg)
             return None
         if len(matches) > 1:
-            msg = f"Class {class_name} is ambiguous in codebase - more than one instance"
+            msg = (
+                f"Class {class_name} is ambiguous in codebase - more than one instance"
+            )
             raise ValueError(msg)
         return matches[0]
 
-    def get_function(self, function_name: str, optional: bool = False) -> TFunction | None:
+    def get_function(
+        self, function_name: str, optional: bool = False
+    ) -> TFunction | None:
         """Retrieves a function from the codebase by its name.
 
         This method searches through all functions in the codebase to find one matching the given name.
@@ -767,7 +815,11 @@ class Codebase(
 
         # Find common prefix
         i = 0
-        while i < len(from_parts) - 1 and i < len(to_parts) and from_parts[i] == to_parts[i]:
+        while (
+            i < len(from_parts) - 1
+            and i < len(to_parts)
+            and from_parts[i] == to_parts[i]
+        ):
             i += 1
 
         # Number of '../' we need
@@ -782,7 +834,13 @@ class Codebase(
     # State/Git
     ####################################################################################################################
 
-    def git_commit(self, message: str, *, verify: bool = False, exclude_paths: list[str] | None = None) -> GitCommit | None:
+    def git_commit(
+        self,
+        message: str,
+        *,
+        verify: bool = False,
+        exclude_paths: list[str] | None = None,
+    ) -> GitCommit | None:
         """Stages + commits all changes to the codebase and git.
 
         Args:
@@ -794,7 +852,9 @@ class Codebase(
         """
         self.ctx.commit_transactions(sync_graph=False)
         if self._op.stage_and_commit_all_changes(message, verify, exclude_paths):
-            logger.info(f"Commited repository to {self._op.head_commit} on {self._op.get_active_branch_or_commit()}")
+            logger.info(
+                f"Commited repository to {self._op.head_commit} on {self._op.get_active_branch_or_commit()}"
+            )
             return self._op.head_commit
         else:
             logger.info("No changes to commit")
@@ -812,7 +872,9 @@ class Codebase(
         Returns:
             None
         """
-        self.ctx.commit_transactions(sync_graph=sync_graph and self.ctx.config.sync_enabled)
+        self.ctx.commit_transactions(
+            sync_graph=sync_graph and self.ctx.config.sync_enabled
+        )
 
     @noapidoc
     def git_push(self, *args, **kwargs) -> PushInfoList:
@@ -891,7 +953,9 @@ class Codebase(
         if commit is None:
             assert branch is not None, "Commit or branch must be specified"
             logger.info(f"Checking out branch {branch}")
-            result = self._op.checkout_branch(branch, create_if_missing=create_if_missing, remote=remote)
+            result = self._op.checkout_branch(
+                branch, create_if_missing=create_if_missing, remote=remote
+            )
         else:
             assert branch is None, "Cannot specify branch and commit"
             logger.info(f"Checking out commit {commit}")
@@ -913,10 +977,14 @@ class Codebase(
         """Updates the current base to a new commit."""
         origin_commit = self.ctx.synced_commit
         if origin_commit.hexsha == target_commit.hexsha:
-            logger.info(f"Codebase is already synced to {target_commit.hexsha}. Skipping sync_to_commit.")
+            logger.info(
+                f"Codebase is already synced to {target_commit.hexsha}. Skipping sync_to_commit."
+            )
             return
         if not self.ctx.config.sync_enabled:
-            logger.info(f"Syncing codebase is disabled for repo {self._op.repo_name}. Skipping sync_to_commit.")
+            logger.info(
+                f"Syncing codebase is disabled for repo {self._op.repo_name}. Skipping sync_to_commit."
+            )
             return
 
         logger.info(f"Syncing {self._op.repo_name} to {target_commit.hexsha}")
@@ -938,7 +1006,9 @@ class Codebase(
     def get_diff(self, base: str | None = None, stage_files: bool = False) -> str:
         """Produce a single git diff for all files."""
         if stage_files:
-            self._op.git_cli.git.add(A=True)  # add all changes to the index so untracked files are included in the diff
+            self._op.git_cli.git.add(
+                A=True
+            )  # add all changes to the index so untracked files are included in the diff
         if base is None:
             diff = self._op.git_cli.git.diff("HEAD", patch=True, full_index=True)
             return diff
@@ -1009,7 +1079,9 @@ class Codebase(
     # GRAPH VISUALIZATION
     ####################################################################################################################
 
-    def visualize(self, G: Graph | go.Figure, root: Editable | str | int | None = None) -> None:
+    def visualize(
+        self, G: Graph | go.Figure, root: Editable | str | int | None = None
+    ) -> None:
         """Visualizes a NetworkX graph or Plotly figure.
 
         Creates a visualization of the provided graph using GraphViz. This is useful for visualizing dependency graphs, call graphs,
@@ -1103,11 +1175,21 @@ class Codebase(
             return  # if max lines has been reached, skip logging
         for arg in args:
             if self.__is_markup_loggable__(arg):
-                fullName = arg.get_name() if isinstance(arg, HasName) and arg.get_name() else ""
+                fullName = (
+                    arg.get_name()
+                    if isinstance(arg, HasName) and arg.get_name()
+                    else ""
+                )
                 doc_lang = arg._api_doc_lang if hasattr(arg, "_api_doc_lang") else None
                 class_name = arg.__class__.__name__
-                link = f"::docs/codebase-sdk/{doc_lang}/{class_name}" if doc_lang is not None else ""
-                self.console.print(f"{class_name}::{fullName}{link}", markup=True, soft_wrap=True)
+                link = (
+                    f"::docs/codebase-sdk/{doc_lang}/{class_name}"
+                    if doc_lang is not None
+                    else ""
+                )
+                self.console.print(
+                    f"{class_name}::{fullName}{link}", markup=True, soft_wrap=True
+                )
         args = [arg for arg in args if not self.__is_markup_loggable__(arg)]
         if args:
             self.console.print(*args, markup=True, soft_wrap=True)
@@ -1134,7 +1216,9 @@ class Codebase(
         commit: bool = True,
         session_options: SessionOptions = SessionOptions(),
     ) -> Generator[None, None, None]:
-        with self.ctx.session(sync_graph=sync_graph, commit=commit, session_options=session_options):
+        with self.ctx.session(
+            sync_graph=sync_graph, commit=commit, session_options=session_options
+        ):
             yield None
 
     @noapidoc
@@ -1152,7 +1236,9 @@ class Codebase(
 
             logger.info("Cold installing dependencies...")
             logger.info("This may take a while for large repos...")
-            self.ctx.dependency_manager = get_dependency_manager(self.ctx.projects[0].programming_language, self.ctx, enabled=True)
+            self.ctx.dependency_manager = get_dependency_manager(
+                self.ctx.projects[0].programming_language, self.ctx, enabled=True
+            )
             self.ctx.dependency_manager.start(async_start=False)
             # Wait for the dependency manager to be ready
             self.ctx.dependency_manager.wait_until_ready(ignore_error=False)
@@ -1197,7 +1283,9 @@ class Codebase(
         self,
         prompt: str,
         target: Editable | None = None,
-        context: Editable | list[Editable] | dict[str, Editable | list[Editable]] | None = None,
+        context: (
+            Editable | list[Editable] | dict[str, Editable | list[Editable]] | None
+        ) = None,
         model: str = "gpt-4o",
     ) -> str:
         """Generates a response from the AI based on the provided prompt, target, and context.
@@ -1220,10 +1308,17 @@ class Codebase(
         # Check max transactions
         logger.info("Creating call to OpenAI...")
         self._num_ai_requests += 1
-        if self.ctx.session_options.max_ai_requests is not None and self._num_ai_requests > self.ctx.session_options.max_ai_requests:
-            logger.info(f"Max AI requests reached: {self.ctx.session_options.max_ai_requests}. Stopping codemod.")
+        if (
+            self.ctx.session_options.max_ai_requests is not None
+            and self._num_ai_requests > self.ctx.session_options.max_ai_requests
+        ):
+            logger.info(
+                f"Max AI requests reached: {self.ctx.session_options.max_ai_requests}. Stopping codemod."
+            )
             msg = f"Maximum number of AI requests reached: {self.ctx.session_options.max_ai_requests}"
-            raise MaxAIRequestsError(msg, threshold=self.ctx.session_options.max_ai_requests)
+            raise MaxAIRequestsError(
+                msg, threshold=self.ctx.session_options.max_ai_requests
+            )
 
         params = {
             "messages": [
@@ -1251,7 +1346,11 @@ class Codebase(
         if response.choices:
             # Check response reason
             choice = response.choices[0]
-            if choice.finish_reason == "tool_calls" or choice.finish_reason == "function_call" or choice.finish_reason == "stop":
+            if (
+                choice.finish_reason == "tool_calls"
+                or choice.finish_reason == "function_call"
+                or choice.finish_reason == "stop"
+            ):
                 # Check if there is a tool call
                 if choice.message.tool_calls:
                     tool_call = choice.message.tool_calls[0]
@@ -1324,8 +1423,12 @@ class Codebase(
               allowed in a session.
         """
         self.ctx.session_options = self.ctx.session_options.model_copy(update=kwargs)
-        self.ctx.transaction_manager.set_max_transactions(self.ctx.session_options.max_transactions)
-        self.ctx.transaction_manager.reset_stopwatch(self.ctx.session_options.max_seconds)
+        self.ctx.transaction_manager.set_max_transactions(
+            self.ctx.session_options.max_transactions
+        )
+        self.ctx.transaction_manager.reset_stopwatch(
+            self.ctx.session_options.max_seconds
+        )
 
     @classmethod
     def from_repo(
@@ -1377,10 +1480,21 @@ class Codebase(
             if commit is None:
                 repo_config = RepoConfig.from_repo_path(repo_path)
                 repo_config.full_name = repo_full_name
-                repo_operator = RepoOperator.create_from_repo(repo_path=repo_path, url=repo_url, access_token=access_token, full_history=full_history)
+                repo_operator = RepoOperator.create_from_repo(
+                    repo_path=repo_path,
+                    url=repo_url,
+                    access_token=access_token,
+                    full_history=full_history,
+                )
             else:
                 # Ensure the operator can handle remote operations
-                repo_operator = RepoOperator.create_from_commit(repo_path=repo_path, commit=commit, url=repo_url, full_name=repo_full_name, access_token=access_token)
+                repo_operator = RepoOperator.create_from_commit(
+                    repo_path=repo_path,
+                    commit=commit,
+                    url=repo_url,
+                    full_name=repo_full_name,
+                    access_token=access_token,
+                )
 
             if repo_operator is None:
                 logger.error("Failed to clone repository")
@@ -1392,7 +1506,9 @@ class Codebase(
             logger.info("Initializing Codebase...")
             project = ProjectConfig.from_repo_operator(
                 repo_operator=repo_operator,
-                programming_language=ProgrammingLanguage(language.upper()) if language else None,
+                programming_language=(
+                    ProgrammingLanguage(language.upper()) if language else None
+                ),
             )
             codebase = Codebase(projects=[project], config=config, secrets=secrets)
             logger.info("Codebase initialization complete")
@@ -1433,8 +1549,14 @@ class Codebase(
         logger.info("Creating codebase from string")
 
         # Determine language and filename
-        prog_lang = ProgrammingLanguage(language.upper()) if isinstance(language, str) else language
-        filename = "test.ts" if prog_lang == ProgrammingLanguage.TYPESCRIPT else "test.py"
+        prog_lang = (
+            ProgrammingLanguage(language.upper())
+            if isinstance(language, str)
+            else language
+        )
+        filename = (
+            "test.ts" if prog_lang == ProgrammingLanguage.TYPESCRIPT else "test.py"
+        )
 
         # Create codebase using factory
         from codegen.sdk.codebase.factory.codebase_factory import CodebaseFactory
@@ -1444,7 +1566,9 @@ class Codebase(
         with tempfile.TemporaryDirectory(prefix="codegen_") as tmp_dir:
             logger.info(f"Using directory: {tmp_dir}")
 
-            codebase = CodebaseFactory.get_codebase_from_files(repo_path=tmp_dir, files=files, programming_language=prog_lang)
+            codebase = CodebaseFactory.get_codebase_from_files(
+                repo_path=tmp_dir, files=files, programming_language=prog_lang
+            )
             logger.info("Codebase initialization complete")
             return codebase
 
@@ -1507,7 +1631,11 @@ class Codebase(
                 raise ValueError(msg)
 
             if language is not None:
-                explicit_lang = ProgrammingLanguage(language.upper()) if isinstance(language, str) else language
+                explicit_lang = (
+                    ProgrammingLanguage(language.upper())
+                    if isinstance(language, str)
+                    else language
+                )
                 if explicit_lang != inferred_lang:
                     msg = f"Provided language {explicit_lang} doesn't match inferred language {inferred_lang} from file extensions"
                     raise ValueError(msg)
@@ -1515,7 +1643,15 @@ class Codebase(
             prog_lang = inferred_lang
         else:
             # Default to Python if no files provided
-            prog_lang = ProgrammingLanguage.PYTHON if language is None else (ProgrammingLanguage(language.upper()) if isinstance(language, str) else language)
+            prog_lang = (
+                ProgrammingLanguage.PYTHON
+                if language is None
+                else (
+                    ProgrammingLanguage(language.upper())
+                    if isinstance(language, str)
+                    else language
+                )
+            )
 
         logger.info(f"Using language: {prog_lang}")
 
@@ -1525,13 +1661,19 @@ class Codebase(
             # Initialize git repo to avoid "not in a git repository" error
             import subprocess
 
-            subprocess.run(["git", "init"], cwd=tmp_dir, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "init"], cwd=tmp_dir, check=True, capture_output=True
+            )
 
-            codebase = CodebaseFactory.get_codebase_from_files(repo_path=tmp_dir, files=files, programming_language=prog_lang)
+            codebase = CodebaseFactory.get_codebase_from_files(
+                repo_path=tmp_dir, files=files, programming_language=prog_lang
+            )
             logger.info("Codebase initialization complete")
             return codebase
 
-    def get_modified_symbols_in_pr(self, pr_id: int) -> tuple[str, dict[str, str], list[str], str]:
+    def get_modified_symbols_in_pr(
+        self, pr_id: int
+    ) -> tuple[str, dict[str, str], list[str], str]:
         """Get all modified symbols in a pull request"""
         pr = self._op.get_pull_request(pr_id)
         cg_pr = CodegenPR(self._op, self, pr)
@@ -1567,7 +1709,9 @@ class Codebase(
         Returns:
             None
         """
-        return self._op.create_pr_review_comment(pr_number, body, commit_sha, path, line, side, start_line)
+        return self._op.create_pr_review_comment(
+            pr_number, body, commit_sha, path, line, side, start_line
+        )
 
 
 # The last 2 lines of code are added to the runner. See codegen-backend/cli/generate/utils.py

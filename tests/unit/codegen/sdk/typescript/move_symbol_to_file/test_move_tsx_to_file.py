@@ -40,16 +40,30 @@ const ComponentE = () => {
     return (<ComponentA />);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_content, dst_filename: dst_content, adj_filename: adj_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={
+            src_filename: src_content,
+            dst_filename: dst_content,
+            adj_filename: adj_content,
+        },
+    ) as codebase:
         component_a = codebase.get_symbol("ComponentA")
         component_b = codebase.get_symbol("ComponentB")
         component_d = codebase.get_symbol("ComponentD")
         dst_file = codebase.get_file(dst_filename)
 
         # Move components with different strategies
-        component_a.move_to_file(dst_file, include_dependencies=True, strategy="update_all_imports")
-        component_b.move_to_file(dst_file, include_dependencies=True, strategy="add_back_edge")
-        component_d.move_to_file(dst_file, include_dependencies=True, strategy="add_back_edge")
+        component_a.move_to_file(
+            dst_file, include_dependencies=True, strategy="update_all_imports"
+        )
+        component_b.move_to_file(
+            dst_file, include_dependencies=True, strategy="add_back_edge"
+        )
+        component_d.move_to_file(
+            dst_file, include_dependencies=True, strategy="add_back_edge"
+        )
         codebase.commit()
 
         dst_file = codebase.get_file(dst_filename)
@@ -74,7 +88,9 @@ const ComponentE = () => {
         assert "export { ComponentD } from 'dst'" in src_file.content
 
 
-@pytest.mark.skip(reason="This test is failing because of the way we handle re-exports. Address in CG-10686")
+@pytest.mark.skip(
+    reason="This test is failing because of the way we handle re-exports. Address in CG-10686"
+)
 def test_remove_unused_exports(tmpdir) -> None:
     """Tests removing unused exports when moving components between files"""
     # ========== [ BEFORE ] ==========
@@ -196,9 +212,16 @@ function Container(props: ContainerProps) {
 function Helper({ props }: HelperProps) {}
 """
 
-    files = {"Component.tsx": SRC_CONTENT, "adjacent.tsx": ADJ_CONTENT, "misc.tsx": MISC_CONTENT, "import.tsx": IMPORT_CONTENT}
+    files = {
+        "Component.tsx": SRC_CONTENT,
+        "adjacent.tsx": ADJ_CONTENT,
+        "misc.tsx": MISC_CONTENT,
+        "import.tsx": IMPORT_CONTENT,
+    }
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as codebase:
         src_file = codebase.get_file("Component.tsx")
         adj_file = codebase.get_file("adjacent.tsx")
         misc_file = codebase.get_file("misc.tsx")

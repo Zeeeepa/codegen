@@ -8,9 +8,8 @@ import json
 import logging
 from typing import Dict, List, Set
 
-from fastapi import WebSocket, WebSocketDisconnect
-
 from codegen_on_oss.events.event_bus import Event, EventType, event_bus
+from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 

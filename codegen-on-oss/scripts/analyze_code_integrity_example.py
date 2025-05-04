@@ -12,15 +12,19 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from codegen import Codebase
-
 from codegen_on_oss.analysis import CodeAnalyzer
+
+from codegen import Codebase
 
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Analyze code integrity for a repository")
-    parser.add_argument("--repo", required=True, help="Path to the repository to analyze")
+    parser = argparse.ArgumentParser(
+        description="Analyze code integrity for a repository"
+    )
+    parser.add_argument(
+        "--repo", required=True, help="Path to the repository to analyze"
+    )
     parser.add_argument("--output", help="Path to output JSON file")
     parser.add_argument("--html", help="Path to output HTML report")
     parser.add_argument("--config", help="Path to configuration file (JSON or YAML)")
@@ -30,8 +34,12 @@ def parse_args():
         default="single",
         help="Analysis mode: single (default), compare branches, or analyze PR",
     )
-    parser.add_argument("--main-branch", help="Main branch for comparison or PR analysis")
-    parser.add_argument("--feature-branch", help="Feature branch for comparison or PR analysis")
+    parser.add_argument(
+        "--main-branch", help="Main branch for comparison or PR analysis"
+    )
+    parser.add_argument(
+        "--feature-branch", help="Feature branch for comparison or PR analysis"
+    )
 
     return parser.parse_args()
 
@@ -64,7 +72,9 @@ def load_config(config_path: Optional[str]) -> Dict[str, Any]:
             with open(config_path, "r") as f:
                 return yaml.safe_load(f)
         except ImportError:
-            print("PyYAML not installed. Please install it to use YAML configuration files.")
+            print(
+                "PyYAML not installed. Please install it to use YAML configuration files."
+            )
             return {}
     else:
         print(f"Unsupported configuration file format: {config_path.suffix}")

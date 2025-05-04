@@ -23,7 +23,9 @@ class TSCodeBlock(CodeBlock[Parent, "TSAssignment"], Generic[Parent]):
     @noapidoc
     @reader
     def _parse_statements(self) -> MultiLineCollection[Statement, Self]:
-        statements: list[Statement] = self.ctx.parser.parse_ts_statements(self.ts_node, self.file_node_id, self.ctx, self)
+        statements: list[Statement] = self.ctx.parser.parse_ts_statements(
+            self.ts_node, self.file_node_id, self.ctx, self
+        )
         line_nodes = find_line_start_and_end_nodes(self.ts_node)
         start_node = line_nodes[1][0] if len(line_nodes) > 1 else line_nodes[0][0]
         end_node = line_nodes[-2][1] if len(line_nodes) > 1 else line_nodes[-1][1]
@@ -46,7 +48,11 @@ class TSCodeBlock(CodeBlock[Parent, "TSAssignment"], Generic[Parent]):
     def _get_line_starts(self) -> list[Editable]:
         """Returns an ordered list of first Editable for each non-empty line within the code block"""
         line_start_nodes = super()._get_line_starts()
-        if len(line_start_nodes) >= 3 and line_start_nodes[0].source == "{" and line_start_nodes[-1].source == "}":
+        if (
+            len(line_start_nodes) >= 3
+            and line_start_nodes[0].source == "{"
+            and line_start_nodes[-1].source == "}"
+        ):
             # Remove the first and last line of the code block as they are opening and closing braces.
             return line_start_nodes[1:-1]
         return line_start_nodes
@@ -77,4 +83,6 @@ class TSCodeBlock(CodeBlock[Parent, "TSAssignment"], Generic[Parent]):
             self.remove_byte_range(self.ts_node.end_byte - 1, next_sibling.start_byte)
         else:
             # If there is no next sibling, remove up to the closing brace of the last line
-            self.remove_byte_range(self._get_line_ends()[-1].end_byte, self.ts_node.end_byte)
+            self.remove_byte_range(
+                self._get_line_ends()[-1].end_byte, self.ts_node.end_byte
+            )

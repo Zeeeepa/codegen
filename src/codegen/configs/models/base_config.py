@@ -16,7 +16,9 @@ class BaseConfig(BaseSettings, ABC):
 
     model_config = SettingsConfigDict(extra="ignore", case_sensitive=False)
 
-    def __init__(self, prefix: str, env_filepath: Path | None = None, *args, **kwargs) -> None:
+    def __init__(
+        self, prefix: str, env_filepath: Path | None = None, *args, **kwargs
+    ) -> None:
         if env_filepath is None:
             root_path = get_git_root_path()
             if root_path is not None:
@@ -29,7 +31,9 @@ class BaseConfig(BaseSettings, ABC):
         if env_filepath and env_filepath.exists() and env_filepath != GLOBAL_ENV_FILE:
             load_dotenv(env_filepath, override=True)
 
-        self.model_config["env_prefix"] = f"{prefix.upper()}_" if len(prefix) > 0 else ""
+        self.model_config["env_prefix"] = (
+            f"{prefix.upper()}_" if len(prefix) > 0 else ""
+        )
         super().__init__(*args, **kwargs)
 
     @property
@@ -40,7 +44,11 @@ class BaseConfig(BaseSettings, ABC):
         """Update configuration values"""
         if key.lower() in self.model_fields:
             setattr(self, key.lower(), value)
-            set_key(env_filepath, f"{self.model_config['env_prefix']}{key.upper()}", str(value))
+            set_key(
+                env_filepath,
+                f"{self.model_config['env_prefix']}{key.upper()}",
+                str(value),
+            )
 
     def write_to_file(self, env_filepath: Path) -> None:
         """Dump environment variables to a file"""
@@ -54,4 +62,8 @@ class BaseConfig(BaseSettings, ABC):
         for key, value in self.model_dump().items():
             if value is None:
                 continue
-            set_key(env_filepath, f"{self.model_config['env_prefix']}{key.upper()}", str(value))
+            set_key(
+                env_filepath,
+                f"{self.model_config['env_prefix']}{key.upper()}",
+                str(value),
+            )

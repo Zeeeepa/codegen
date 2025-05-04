@@ -29,7 +29,9 @@ class BangBangToBoolean(Codemod, Skill):
             # Check if the file is a TypeScript file
             if file.extension == ".ts":
                 # Search for the pattern in the file's source code using the string pattern
-                matches = file.search(pattern, include_strings=False, include_comments=False)
+                matches = file.search(
+                    pattern, include_strings=False, include_comments=False
+                )
                 for match in matches:
                     # Replace the '!!' with 'Boolean('
                     match.replace("!!", "Boolean(", count=1)

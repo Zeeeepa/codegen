@@ -27,7 +27,9 @@ TParameter = TypeVar("TParameter", bound="Parameter", default="Parameter")
 
 
 @apidoc
-class Decorator(Expression[TClass | TFunction], HasName, Generic[TClass, TFunction, TParameter]):
+class Decorator(
+    Expression[TClass | TFunction], HasName, Generic[TClass, TFunction, TParameter]
+):
     """Abstract representation of a Decorator."""
 
     def __init__(self, ts_node: TSNode, parent: TClass | TFunction) -> None:
@@ -53,5 +55,9 @@ class Decorator(Expression[TClass | TFunction], HasName, Generic[TClass, TFuncti
                 None if the decorator does not make a function call.
         """
 
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
-        self._add_all_identifier_usages(UsageKind.DECORATOR, dest or self.parent.self_dest)
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
+        self._add_all_identifier_usages(
+            UsageKind.DECORATOR, dest or self.parent.self_dest
+        )

@@ -49,7 +49,10 @@ class CountUntypedReturnStatements(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CountUntypedReturnStatementsTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[CountUntypedReturnStatementsTest],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         untitled_return_count = 0
 

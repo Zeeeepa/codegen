@@ -18,7 +18,9 @@ def foo():
 def bar():
     return 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -60,7 +62,10 @@ def foo():
 
     file_lines = file.content.split("\n")
     assert "from sqlalchemy.orm import Session" in file_lines
-    assert file_lines.index("from sqlalchemy.orm import Session") == file_lines.index("from typing import List") - 1
+    assert (
+        file_lines.index("from sqlalchemy.orm import Session")
+        == file_lines.index("from typing import List") - 1
+    )
 
 
 @pytest.mark.parametrize("sync", [True, False])
@@ -71,7 +76,9 @@ def test_file_add_import_string_adds_remove(tmpdir, sync) -> None:
 def foo():
     print("this is foo")
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content.strip()}, sync_graph=sync) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": content.strip()}, sync_graph=sync
+    ) as codebase:
         file = codebase.get_file("test.py")
 
         file.add_import("import antigravity")
@@ -92,14 +99,20 @@ function bar(): number {
     return 1;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         file.add_import("import { NewThing } from 'elsewhere'")
 
     file_lines = file.content.split("\n")
     assert "import { NewThing } from 'elsewhere'" in file_lines
-    assert file_lines.index("import { NewThing } from 'elsewhere'") < file_lines.index("import { Something } from 'somewhere'")
+    assert file_lines.index("import { NewThing } from 'elsewhere'") < file_lines.index(
+        "import { Something } from 'somewhere'"
+    )
 
 
 def test_file_add_import_typescript_string_no_imports_adds_to_top(tmpdir) -> None:
@@ -109,7 +122,11 @@ def test_file_add_import_typescript_string_no_imports_adds_to_top(tmpdir) -> Non
         return 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         file.add_import("import { Something } from 'somewhere';")
@@ -139,7 +156,11 @@ def test_file_add_import_typescript_multiple_symbols(tmpdir) -> None:
         return 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE1_FILENAME: FILE1_CONTENT, FILE2_FILENAME: FILE2_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE1_FILENAME: FILE1_CONTENT, FILE2_FILENAME: FILE2_CONTENT},
+    ) as codebase:
         file1 = codebase.get_file(FILE1_FILENAME)
         file2 = codebase.get_file(FILE2_FILENAME)
 
@@ -159,7 +180,11 @@ def test_file_add_import_typescript_default_import(tmpdir) -> None:
         return 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         file.add_import("import React from 'react';")
@@ -189,7 +214,11 @@ def test_file_add_import_typescript_duplicate_prevention(tmpdir) -> None:
         return foo();
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE1_FILENAME: FILE1_CONTENT, FILE2_FILENAME: FILE2_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE1_FILENAME: FILE1_CONTENT, FILE2_FILENAME: FILE2_CONTENT},
+    ) as codebase:
         file1 = codebase.get_file(FILE1_FILENAME)
         file2 = codebase.get_file(FILE2_FILENAME)
 

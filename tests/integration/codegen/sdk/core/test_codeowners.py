@@ -16,7 +16,9 @@ def test_codebase_codeowners(codebase, example_codeowners_file_contents):
 
     assert isinstance(codebase.codeowners, list)
     assert len(codebase.codeowners) == 2
-    codeowners_by_name = {codeowner.name: codeowner for codeowner in codebase.codeowners}
+    codeowners_by_name = {
+        codeowner.name: codeowner for codeowner in codebase.codeowners
+    }
     assert codeowners_by_name["@user-a"].owner_type == "USERNAME"
     assert codeowners_by_name["@org/team1"].owner_type == "TEAM"
 

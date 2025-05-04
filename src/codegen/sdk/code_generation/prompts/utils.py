@@ -51,7 +51,11 @@ def get_codegen_sdk_class_docstring(cls: PyClass, codebase: Codebase) -> str:
     """Get the documentation for a single GraphSitter class and its methods."""
     # =====[ Parent classes ]=====
     parent_classes = cls.parent_class_names
-    parent_class_names = [parent.source for parent in parent_classes if parent.source not in ("Generic", "ABC", "Expression")]
+    parent_class_names = [
+        parent.source
+        for parent in parent_classes
+        if parent.source not in ("Generic", "ABC", "Expression")
+    ]
     superclasses = ", ".join([name for name in parent_class_names])
     if len(superclasses) > 0:
         superclasses = f"({superclasses})"
@@ -93,8 +97,12 @@ def get_codegen_sdk_class_docstring(cls: PyClass, codebase: Codebase) -> str:
     # =====[ Get methods to be documented ]=====
     doc_methods = cls.methods
     doc_methods = [m for m in doc_methods if not m.name.startswith("_")]
-    doc_methods = [m for m in doc_methods if not any("noapidoc" in d.name for d in m.decorators)]
-    doc_methods = [m for m in doc_methods if get_inherited_method(superclasses, m) is None]
+    doc_methods = [
+        m for m in doc_methods if not any("noapidoc" in d.name for d in m.decorators)
+    ]
+    doc_methods = [
+        m for m in doc_methods if get_inherited_method(superclasses, m) is None
+    ]
 
     # =====[ Methods ]=====
     for method in doc_methods:

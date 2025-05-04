@@ -21,7 +21,9 @@ class WSLClient:
     Client for interacting with the WSL2 server for code validation.
     """
 
-    def __init__(self, base_url: str = "http://localhost:8000", api_key: Optional[str] = None):
+    def __init__(
+        self, base_url: str = "http://localhost:8000", api_key: Optional[str] = None
+    ):
         """
         Initialize a new WSLClient.
 
@@ -240,7 +242,9 @@ class WSLClient:
         """
         markdown = f"# Pull Request Analysis: #{results['pr_number']}\n\n"
         markdown += f"**Repository**: {results['repo_url']}\n"
-        markdown += f"**Code Quality Score**: {results['code_quality_score']:.2f}/10\n\n"
+        markdown += (
+            f"**Code Quality Score**: {results['code_quality_score']:.2f}/10\n\n"
+        )
         markdown += f"**Summary**: {results['summary']}\n\n"
 
         if results["issues_found"]:

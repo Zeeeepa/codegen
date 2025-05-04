@@ -19,7 +19,9 @@ Child = TypeVar("Child", bound="Editable")
 Parent = TypeVar("Parent")
 
 
-class Collection(SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Child, Parent]):
+class Collection(
+    SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Child, Parent]
+):
     """Ordered collection of nodes
     Attributes:
         _bracket_size: Number of characters wrapping the collection
@@ -36,7 +38,17 @@ class Collection(SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Chi
     _container_start_byte: int
     _container_end_byte: int
 
-    def __init__(self, node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent, delimiter: str = ",", children: list[Child] | None = None, *, bracket_size: int = 1) -> None:
+    def __init__(
+        self,
+        node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+        delimiter: str = ",",
+        children: list[Child] | None = None,
+        *,
+        bracket_size: int = 1,
+    ) -> None:
         super().__init__(file_node_id, ctx, parent, node)
         self._delimiter = delimiter
         self._reversed = set()
@@ -63,10 +75,14 @@ class Collection(SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Chi
     def __setitem__(self, key: int, value: str | Child) -> None: ...
 
     @overload
-    def __setitem__(self, key: slice, value: Iterable[Child] | Iterable[str]) -> None: ...
+    def __setitem__(
+        self, key: slice, value: Iterable[Child] | Iterable[str]
+    ) -> None: ...
 
     @writer
-    def __setitem__(self, key: int | slice, value: str | Child | Iterable[Child] | Iterable[str]) -> None:
+    def __setitem__(
+        self, key: int | slice, value: str | Child | Iterable[Child] | Iterable[str]
+    ) -> None:
         if isinstance(key, slice):
             assert isinstance(value, Iterable)
             for idx, item in zip(range(key.start, key.stop, key.step), value):
@@ -118,7 +134,11 @@ class Collection(SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Chi
 
     def _inserts_till(self, max_idx: int | None = None) -> int:
         """Find the number of pending inserts until max_idx."""
-        return sum(inserts for idx, inserts in self._inserts.items() if (max_idx is None or idx < max_idx))
+        return sum(
+            inserts
+            for idx, inserts in self._inserts.items()
+            if (max_idx is None or idx < max_idx)
+        )
 
     @writer
     def insert(self, index: int, value: str | Child) -> None:
@@ -155,8 +175,24 @@ class Collection(SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Chi
             elif insert_number == 1:
                 if (relative_byte := remaining.rfind(self._delimiter)) != -1:
                     delim_byte = relative_byte + self.start_byte + len(self._delimiter)
-                    element_deleted = self.transaction_manager.get_transactions_at_range(self.file.path, delim_byte, self.start_byte + len(remaining), TransactionPriority.Remove, combined=True)
-                    delimeter_deleted = self.transaction_manager.get_transactions_at_range(self.file.path, delim_byte - len(self._delimiter), delim_byte, TransactionPriority.Remove, combined=True)
+                    element_deleted = (
+                        self.transaction_manager.get_transactions_at_range(
+                            self.file.path,
+                            delim_byte,
+                            self.start_byte + len(remaining),
+                            TransactionPriority.Remove,
+                            combined=True,
+                        )
+                    )
+                    delimeter_deleted = (
+                        self.transaction_manager.get_transactions_at_range(
+                            self.file.path,
+                            delim_byte - len(self._delimiter),
+                            delim_byte,
+                            TransactionPriority.Remove,
+                            combined=True,
+                        )
+                    )
                     if element_deleted and not delimeter_deleted:
                         # Adjust the insert to insert at the correct location
                         insert_byte = delim_byte
@@ -172,7 +208,12 @@ class Collection(SymbolGroup[Child, Parent], MutableSequence[Child], Generic[Chi
 
         # We want right -> left ordering
         # Therefore, we go by highest index then insert the lowest insert number on the same index
-        super().insert_at(insert_byte, get_source, priority=(-index, +insert_number), exec_func=incr_elements)
+        super().insert_at(
+            insert_byte,
+            get_source,
+            priority=(-index, +insert_number),
+            exec_func=incr_elements,
+        )
 
     def _get_insert_byte_from_next_sibling(self, sibling_index: int) -> int:
         return self.symbols[sibling_index].start_byte

@@ -35,7 +35,15 @@ class PyAssignmentStatement(AssignmentStatement["PyCodeBlock", PyAssignment]):
         self._values_scheduled_for_removal = []
 
     @classmethod
-    def from_assignment(cls, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: PyCodeBlock, pos: int, assignment_node: TSNode) -> PyAssignmentStatement:
+    def from_assignment(
+        cls,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyCodeBlock,
+        pos: int,
+        assignment_node: TSNode,
+    ) -> PyAssignmentStatement:
         """Creates a PyAssignmentStatement instance from a TreeSitter assignment node.
 
         Factory method to create appropriate assignment statement objects based on the node type and parent context.
@@ -65,27 +73,65 @@ class PyAssignmentStatement(AssignmentStatement["PyCodeBlock", PyAssignment]):
         if isinstance(parent, PyClass):
             from codegen.sdk.python.statements.attribute import PyAttribute
 
-            return PyAttribute(ts_node, file_node_id, ctx, parent, pos, assignment_node=assignment_node)
-        return cls(ts_node, file_node_id, ctx, parent, pos, assignment_node=assignment_node)
+            return PyAttribute(
+                ts_node, file_node_id, ctx, parent, pos, assignment_node=assignment_node
+            )
+        return cls(
+            ts_node, file_node_id, ctx, parent, pos, assignment_node=assignment_node
+        )
 
-    def _parse_assignments(self, assignment_node: TSNode) -> MultiExpression[PyHasBlock, PyAssignment]:
+    def _parse_assignments(
+        self, assignment_node: TSNode
+    ) -> MultiExpression[PyHasBlock, PyAssignment]:
         if assignment_node.type in ["assignment", "augmented_assignment"]:
-            return PyAssignment.from_assignment(assignment_node, self.file_node_id, self.ctx, self.parent)
+            return PyAssignment.from_assignment(
+                assignment_node, self.file_node_id, self.ctx, self.parent
+            )
         elif assignment_node.type == "named_expression":
-            return PyAssignment.from_named_expression(assignment_node, self.file_node_id, self.ctx, self.parent)
+            return PyAssignment.from_named_expression(
+                assignment_node, self.file_node_id, self.ctx, self.parent
+            )
 
         logger.info(f"Unknown assignment type: {assignment_node.type}")
-        return MultiExpression(assignment_node, self.file_node_id, self.ctx, self.parent, [self.parent._parse_expression(assignment_node)])
+        return MultiExpression(
+            assignment_node,
+            self.file_node_id,
+            self.ctx,
+            self.parent,
+            [self.parent._parse_expression(assignment_node)],
+        )
 
-    def _DEPRECATED_parse_assignments(self) -> MultiExpression[PyHasBlock, PyAssignment]:
+    def _DEPRECATED_parse_assignments(
+        self,
+    ) -> MultiExpression[PyHasBlock, PyAssignment]:
         assignments = []
-        for assignment in find_all_descendants(self.ts_node, {"assignment", "augmented_assignment"}, max_depth=5):
+        for assignment in find_all_descendants(
+            self.ts_node, {"assignment", "augmented_assignment"}, max_depth=5
+        ):
             left = assignment.child_by_field_name("left")
             right = assignment.child_by_field_name("right")
             if left.type == "pattern_list":
-                for identifier in find_all_descendants(left, {"identifier", "attribute"}):
-                    assignments.append(PyAssignment(assignment, self.file_node_id, self.ctx, self, left, right, identifier))
+                for identifier in find_all_descendants(
+                    left, {"identifier", "attribute"}
+                ):
+                    assignments.append(
+                        PyAssignment(
+                            assignment,
+                            self.file_node_id,
+                            self.ctx,
+                            self,
+                            left,
+                            right,
+                            identifier,
+                        )
+                    )
             else:
-                assignments.append(PyAssignment(assignment, self.file_node_id, self.ctx, self, left, right, left))
+                assignments.append(
+                    PyAssignment(
+                        assignment, self.file_node_id, self.ctx, self, left, right, left
+                    )
+                )
 
-        return MultiExpression(self.ts_node, self.file_node_id, self.ctx, self.parent, assignments)
+        return MultiExpression(
+            self.ts_node, self.file_node_id, self.ctx, self.parent, assignments
+        )

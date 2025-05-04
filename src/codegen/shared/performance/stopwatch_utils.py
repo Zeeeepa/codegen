@@ -17,7 +17,9 @@ def stopwatch(func):
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        logger.info(f"Function '{func.__name__}' took {humanize_duration(execution_time)} to execute.")
+        logger.info(
+            f"Function '{func.__name__}' took {humanize_duration(execution_time)} to execute."
+        )
         return result
 
     return wrapper
@@ -32,7 +34,9 @@ def stopwatch_with_sentry(name: str):
                 res = func(*args, **kwargs)
                 end_time = time.perf_counter()
                 execution_time = end_time - start_time
-                logger.info(f"Function '{func.__name__}' took {humanize_duration(execution_time)} to execute.")
+                logger.info(
+                    f"Function '{func.__name__}' took {humanize_duration(execution_time)} to execute."
+                )
                 return res
 
         return wrapper
@@ -40,9 +44,13 @@ def stopwatch_with_sentry(name: str):
     return decorator
 
 
-def subprocess_with_stopwatch(command, command_desc: str | None = None, *args, **kwargs) -> subprocess.CompletedProcess[str]:
+def subprocess_with_stopwatch(
+    command, command_desc: str | None = None, *args, **kwargs
+) -> subprocess.CompletedProcess[str]:
     start_time = time.time()
     result = subprocess.run(command, *args, **kwargs)
     end_time = time.time()
-    logger.info(f"Command '{command_desc or command}' took {end_time - start_time} seconds to execute.")
+    logger.info(
+        f"Command '{command_desc or command}' took {end_time - start_time} seconds to execute."
+    )
     return result

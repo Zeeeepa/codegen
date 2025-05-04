@@ -45,4 +45,8 @@ class Type(Expression[Parent], Chainable, ABC, Generic[Parent]):
     @noapidoc
     def descendant_symbols(self) -> list["Importable"]:
         """Returns the nested symbols of the importable object, including itself."""
-        return list(itertools.chain.from_iterable(child.descendant_symbols for child in self.children))
+        return list(
+            itertools.chain.from_iterable(
+                child.descendant_symbols for child in self.children
+            )
+        )

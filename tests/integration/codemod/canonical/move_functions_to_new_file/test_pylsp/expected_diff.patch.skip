@@ -4,7 +4,7 @@ index 41508be..e7f3f1f 100644
 +++ b/pylsp/hookspecs.py
 @@ -2,134 +2,3 @@
  # Copyright 2021- Python Language Server Contributors.
- 
+
  from pylsp import hookspec
 -
 -
@@ -144,14 +144,14 @@ index 2b3491d..69aba5c 100644
 @@ -1,6 +1,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import _format
  import logging
- 
+
  import pycodestyle
 @@ -9,87 +11,3 @@ from autopep8 import fix_code
- 
+
  from pylsp import hookimpl
  from pylsp._utils import get_eol_chars
 -
@@ -245,15 +245,15 @@ index 67abfb7..266dbe0 100644
 @@ -2,6 +2,8 @@
  # Copyright 2021- Python Language Server Contributors.
  from __future__ import annotations
- 
+
 +from pylsp.pylsp_shared import _resolve_definition
 +from pylsp.pylsp_shared import _not_internal_definition
  import logging
  from typing import TYPE_CHECKING, Any, Dict, List
- 
+
 @@ -17,68 +19,3 @@ if TYPE_CHECKING:
      from pylsp.workspace import Document
- 
+
  log = logging.getLogger(__name__)
 -
 -
@@ -325,9 +325,9 @@ index 74e2664..c118d10 100644
 --- a/pylsp/plugins/flake8_lint.py
 +++ b/pylsp/plugins/flake8_lint.py
 @@ -3,6 +3,11 @@
- 
+
  """Linter pluging for flake8"""
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import run_flake8
 +from pylsp.pylsp_shared import build_args
@@ -338,7 +338,7 @@ index 74e2664..c118d10 100644
  import re
 @@ -13,231 +18,3 @@ from subprocess import PIPE, Popen
  from flake8.plugins.pyflakes import FLAKE8_PYFLAKES_CODES
- 
+
  from pylsp import hookimpl, lsp
 -from pylsp.plugins.pyflakes_lint import PYFLAKES_ERROR_MESSAGES
 -
@@ -575,13 +575,13 @@ index 123ba4a..71ddcef 100644
 @@ -1,210 +1,10 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import __compute_folding_ranges
  import re
- 
+
  import parso
  import parso.python.tree as tree_nodes
- 
+
  from pylsp import hookimpl
 -
 -SKIP_NODES = (tree_nodes.Module, tree_nodes.IfStmt, tree_nodes.TryStmt)
@@ -790,7 +790,7 @@ index c4c1240..4bdbe18 100644
 +++ b/pylsp/plugins/highlight.py
 @@ -6,31 +6,3 @@ import logging
  from pylsp import _utils, hookimpl, lsp
- 
+
  log = logging.getLogger(__name__)
 -
 -
@@ -826,7 +826,7 @@ index ca69d1b..fe8d9c5 100644
 +++ b/pylsp/plugins/hover.py
 @@ -6,45 +6,3 @@ import logging
  from pylsp import _utils, hookimpl
- 
+
  log = logging.getLogger(__name__)
 -
 -
@@ -877,16 +877,16 @@ index 2796a09..e2fc847 100644
 @@ -1,6 +1,9 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import use_snippets
 +from pylsp.pylsp_shared import _resolve_completion
 +from pylsp.pylsp_shared import _format_completion
  import logging
  import os
- 
+
 @@ -10,290 +13,3 @@ from pylsp import _utils, hookimpl, lsp
  from pylsp.plugins._resolvers import LABEL_RESOLVER, SNIPPET_RESOLVER
- 
+
  log = logging.getLogger(__name__)
 -
 -# Map to the LSP type
@@ -1182,11 +1182,11 @@ index b35e321..7f34f19 100644
 @@ -1,56 +1,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import _num_lines
  import logging
- 
+
  from pylsp import _utils, hookimpl, uris
 -
 -log = logging.getLogger(__name__)
@@ -1245,15 +1245,15 @@ index 0e2cba2..d0df911 100644
 @@ -1,56 +1,12 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import THRESHOLD
 +from pylsp.pylsp_shared import DEFAULT_THRESHOLD
  import ast
  import logging
- 
+
  import mccabe
- 
+
  from pylsp import hookimpl, lsp
 -
 -log = logging.getLogger(__name__)
@@ -1309,11 +1309,11 @@ index ebcd9ad..6601e71 100644
 @@ -1,79 +1,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import MODULES
 +from pylsp.pylsp_shared import log
  import logging
- 
+
  from pylsp import hookimpl
 -
 -log = logging.getLogger(__name__)
@@ -1395,12 +1395,12 @@ index 7a514ad..9d06708 100644
 @@ -1,6 +1,9 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import _get_severity
 +from pylsp.pylsp_shared import PyCodeStyleDiagnosticReport
  import logging
- 
+
  import pycodestyle
 @@ -19,95 +22,3 @@ else:
      if autopep8_c_i in pycodestyle._checks["logical_line"]:
@@ -1505,7 +1505,7 @@ index a310ac8..e000d4a 100644
 @@ -1,6 +1,11 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import DEFAULT_MATCH_RE
 +from pylsp.pylsp_shared import DEFAULT_MATCH_DIR_RE
@@ -1515,9 +1515,9 @@ index a310ac8..e000d4a 100644
  import logging
  import os
 @@ -11,117 +16,6 @@ import pydocstyle
- 
+
  from pylsp import hookimpl, lsp
- 
+
 -log = logging.getLogger(__name__)
 -
  # PyDocstyle is a little verbose in debug message
@@ -1639,12 +1639,12 @@ index 8a04276..f0332ba 100644
 @@ -1,97 +1,9 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import PYFLAKES_ERROR_MESSAGES
 +from pylsp.pylsp_shared import PyflakesDiagnosticReport
  from pyflakes import api as pyflakes_api
  from pyflakes import messages
- 
+
  from pylsp import hookimpl, lsp
 -
 -# Pyflakes messages that should be reported as Errors instead of Warns
@@ -1741,9 +1741,9 @@ index beffe6f..5ff622a 100644
 --- a/pylsp/plugins/pylint_lint.py
 +++ b/pylsp/plugins/pylint_lint.py
 @@ -4,6 +4,13 @@
- 
+
  """Linter plugin for pylint."""
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import DEPRECATION_CODES
 +from pylsp.pylsp_shared import UNNECESSITY_CODES
@@ -1757,7 +1757,7 @@ index beffe6f..5ff622a 100644
 @@ -19,8 +26,6 @@ try:
  except Exception:
      import json
- 
+
 -log = logging.getLogger(__name__)
 -
  # Pylint fails to suppress STDOUT when importing whitelisted C
@@ -2096,7 +2096,7 @@ index a4c61b5..514f60e 100644
 +++ b/pylsp/plugins/references.py
 @@ -6,28 +6,3 @@ import logging
  from pylsp import _utils, hookimpl, uris
- 
+
  log = logging.getLogger(__name__)
 -
 -
@@ -2129,7 +2129,7 @@ index 12f5d80..5447f5b 100644
 +++ b/pylsp/plugins/rope_autoimport.py
 @@ -1,5 +1,16 @@
  # Copyright 2022- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import MAX_RESULTS_COMPLETIONS
 +from pylsp.pylsp_shared import _should_insert
@@ -2146,7 +2146,7 @@ index 12f5d80..5447f5b 100644
  from typing import Any, Dict, Generator, List, Optional, Set, Union
 @@ -17,391 +28,3 @@ from pylsp.config.config import Config
  from pylsp.workspace import Document, Workspace
- 
+
  from ._rope_task_handle import PylspTaskHandle
 -
 -log = logging.getLogger(__name__)
@@ -2543,15 +2543,15 @@ index b3a1f06..7317474 100644
 @@ -1,161 +1,12 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import _resolve_completion
 +from pylsp.pylsp_shared import _sort_text
 +from pylsp.pylsp_shared import _kind
  import logging
- 
+
  from rope.contrib.codeassist import code_assist, sorted_proposals
- 
+
  from pylsp import _utils, hookimpl, lsp
 -
 -log = logging.getLogger(__name__)
@@ -2713,13 +2713,13 @@ index 7ad5b20..58d3417 100644
 @@ -1,81 +1,10 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import _param_docs
  import logging
  import re
- 
+
  from pylsp import _utils, hookimpl
- 
+
  log = logging.getLogger(__name__)
 -
 -SPHINX = re.compile(r"\s*:param\s+(?P<param>\w+):\s*(?P<doc>[^\n]+)")
@@ -2800,7 +2800,7 @@ index 4e1890c..24344a0 100644
 @@ -1,6 +1,12 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import _include_def
 +from pylsp.pylsp_shared import _container
 +from pylsp.pylsp_shared import _range
@@ -2809,10 +2809,10 @@ index 4e1890c..24344a0 100644
 +from pylsp.pylsp_shared import _kind
  import logging
  from pathlib import Path
- 
+
 @@ -8,207 +14,3 @@ from pylsp import hookimpl
  from pylsp.lsp import SymbolKind
- 
+
  log = logging.getLogger(__name__)
 -
 -
@@ -3025,14 +3025,14 @@ index 72aa740..363f2ab 100644
 @@ -1,6 +1,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import _format
  import logging
  import os
- 
+
 @@ -10,190 +12,3 @@ from yapf.yapflib.yapf_api import FormatCode
- 
+
  from pylsp import hookimpl
  from pylsp._utils import get_eol_chars
 -
@@ -6858,7 +6858,7 @@ index ba41d6a..cad1046 100644
 @@ -1,6 +1,15 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import log
 +from pylsp.pylsp_shared import LINT_DEBOUNCE_S
 +from pylsp.pylsp_shared import PARENT_PROCESS_WATCH_INTERVAL
@@ -6874,7 +6874,7 @@ index ba41d6a..cad1046 100644
 @@ -23,15 +32,6 @@ from ._version import __version__
  from .config import config
  from .workspace import Cell, Document, Notebook, Workspace
- 
+
 -log = logging.getLogger(__name__)
 -
 -
@@ -6884,12 +6884,12 @@ index ba41d6a..cad1046 100644
 -PYTHON_FILE_EXTENSIONS = (".py", ".pyi")
 -CONFIG_FILEs = ("pycodestyle.cfg", "setup.cfg", "tox.ini", ".flake8")
 -
- 
+
  class _StreamHandlerWrapper(socketserver.StreamRequestHandler):
      """A wrapper class that is used to construct a custom handler class."""
 @@ -156,742 +156,3 @@ def start_ws_lang_server(port, check_parent_process, handler_class) -> None:
                  await asyncio.Future()
- 
+
          asyncio.run(run_server())
 -
 -
@@ -7637,7 +7637,7 @@ index dd10140..094d550 100644
 @@ -1,6 +1,10 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import PythonLSPServer
 +from pylsp.pylsp_shared import FakeEditorMethodsMixin
 +from pylsp.pylsp_shared import FakePythonLSPServer
@@ -7646,17 +7646,17 @@ index dd10140..094d550 100644
  from io import StringIO
  from unittest.mock import MagicMock
 @@ -12,7 +16,6 @@ from pylsp_jsonrpc.exceptions import JsonRpcException
- 
+
  from pylsp import uris
  from pylsp.config.config import Config
 -from pylsp.python_lsp import PythonLSPServer
  from pylsp.workspace import Document, Workspace
  from test.test_utils import CALL_TIMEOUT_IN_SECONDS, ClientServerPair
- 
+
 @@ -24,46 +27,6 @@ def main():
  """
- 
- 
+
+
 -class FakeEditorMethodsMixin:
 -    """
 -    Represents the methods to be added to a dispatcher class when faking an editor.
@@ -7702,8 +7702,8 @@ index dd10140..094d550 100644
      """Return an initialized python LS"""
 @@ -76,28 +39,6 @@ def pylsp(tmpdir):
      return ls
- 
- 
+
+
 -@pytest.fixture
 -def pylsp_w_workspace_folders(tmpdir):
 -    """Return an initialized python LS"""
@@ -7735,7 +7735,7 @@ index dbad8d0..b27a0d5 100644
 +++ b/test/plugins/test_autoimport.py
 @@ -1,5 +1,11 @@
  # Copyright 2022- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import _should_insert
 +from pylsp.pylsp_shared import _get_score
 +from pylsp.pylsp_shared import get_names
@@ -7744,9 +7744,9 @@ index dbad8d0..b27a0d5 100644
 +from pylsp.pylsp_shared import get_name_or_module
  from typing import Any, Dict, List
  from unittest.mock import Mock, patch
- 
+
 @@ -9,16 +15,6 @@ import pytest
- 
+
  from pylsp import IS_WIN, lsp, uris
  from pylsp.config.config import Config
 -from pylsp.plugins.rope_autoimport import (
@@ -7769,15 +7769,15 @@ index 4966b89..e689bbc 100644
 @@ -1,10 +1,11 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_format_document
 +from pylsp.pylsp_shared import pylsp_format_range
  import pytest
- 
+
  from pylsp import uris
 -from pylsp.plugins.autopep8_format import pylsp_format_document, pylsp_format_range
  from pylsp.workspace import Document
- 
+
  DOC_URI = uris.from_fs_path(__file__)
 diff --git a/test/plugins/test_completion.py b/test/plugins/test_completion.py
 index d1ca5ef..48c6af7 100644
@@ -7786,14 +7786,14 @@ index d1ca5ef..48c6af7 100644
 @@ -1,6 +1,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_completions
 +from pylsp.pylsp_shared import pylsp_completion_item_resolve
  import math
  import os
  import sys
 @@ -11,11 +13,6 @@ import pytest
- 
+
  from pylsp import lsp, uris
  from pylsp._utils import JEDI_VERSION
 -from pylsp.plugins.jedi_completion import (
@@ -7802,7 +7802,7 @@ index d1ca5ef..48c6af7 100644
 -from pylsp.plugins.jedi_completion import pylsp_completions as pylsp_jedi_completions
 -from pylsp.plugins.rope_completion import pylsp_completions as pylsp_rope_completions
  from pylsp.workspace import Document
- 
+
  PY2 = sys.version[0] == "2"
 diff --git a/test/plugins/test_definitions.py b/test/plugins/test_definitions.py
 index 7923524..efdf5e1 100644
@@ -7811,14 +7811,14 @@ index 7923524..efdf5e1 100644
 @@ -1,10 +1,10 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_definitions
  import os
- 
+
  from pylsp import uris
 -from pylsp.plugins.definition import pylsp_definitions
  from pylsp.workspace import Document
- 
+
  DOC_URI = uris.from_fs_path(__file__)
 diff --git a/test/plugins/test_flake8_lint.py b/test/plugins/test_flake8_lint.py
 index e7b6b00..046a7b5 100644
@@ -7827,20 +7827,20 @@ index e7b6b00..046a7b5 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_lint
  import os
  import tempfile
  from textwrap import dedent
 @@ -32,7 +33,7 @@ def temp_document(doc_text, workspace):
- 
+
  def test_flake8_unsaved(workspace) -> None:
      doc = Document("", workspace, DOC)
 -    diags = flake8_lint.pylsp_lint(workspace, doc)
 +    diags = pylsp_lint(workspace, doc)
      msg = "F841 local variable 'a' is assigned to but never used"
      unused_var = [d for d in diags if d["message"] == msg][0]
- 
+
 @@ -47,7 +48,7 @@ def test_flake8_unsaved(workspace) -> None:
  def test_flake8_lint(workspace) -> None:
      name, doc = temp_document(DOC, workspace)
@@ -7849,11 +7849,11 @@ index e7b6b00..046a7b5 100644
 +        diags = pylsp_lint(workspace, doc)
          msg = "F841 local variable 'a' is assigned to but never used"
          unused_var = [d for d in diags if d["message"] == msg][0]
- 
+
 @@ -91,7 +92,7 @@ def test_flake8_respecting_configuration(workspace) -> None:
          workspace.put_document(made[rel]["uri"], contents)
          made[rel]["document"] = workspace._docs[made[rel]["uri"]]
- 
+
 -    diags = flake8_lint.pylsp_lint(workspace, made["src/a.py"]["document"])
 +    diags = pylsp_lint(workspace, made["src/a.py"]["document"])
      assert diags == [
@@ -7862,7 +7862,7 @@ index e7b6b00..046a7b5 100644
 @@ -106,7 +107,7 @@ def test_flake8_respecting_configuration(workspace) -> None:
          },
      ]
- 
+
 -    diags = flake8_lint.pylsp_lint(workspace, made["src/b.py"]["document"])
 +    diags = pylsp_lint(workspace, made["src/b.py"]["document"])
      assert diags == [
@@ -7879,39 +7879,39 @@ index e7b6b00..046a7b5 100644
          assert "--config={}".format(flake8_conf) in call_args
 @@ -146,7 +147,7 @@ def test_flake8_executable_param(workspace) -> None:
          )
- 
+
          _name, doc = temp_document(DOC, workspace)
 -        flake8_lint.pylsp_lint(workspace, doc)
 +        pylsp_lint(workspace, doc)
- 
+
          (call_args,) = popen_mock.call_args[0]
          assert flake8_executable in call_args
 @@ -190,7 +191,7 @@ exclude =
          mock_instance.communicate.return_value = [bytes(), bytes()]
- 
+
          doc = workspace.get_document(doc_uri)
 -        flake8_lint.pylsp_lint(workspace, doc)
 +        pylsp_lint(workspace, doc)
- 
+
      call_args = popen_mock.call_args[0][0]
- 
+
 @@ -230,7 +231,7 @@ exclude =
      assert len(flake8_settings["exclude"]) == 2
- 
+
      doc = workspace.get_document(doc_uri)
 -    res = flake8_lint.pylsp_lint(workspace, doc)
 +    res = pylsp_lint(workspace, doc)
      assert not res
- 
+
      os.unlink(os.path.join(workspace.root_path, "setup.cfg"))
 @@ -252,7 +253,7 @@ per-file-ignores = **/__init__.py:F401,E402
      assert len(flake8_settings["perFileIgnores"]) == 2
- 
+
      doc = workspace.get_document(doc_uri)
 -    res = flake8_lint.pylsp_lint(workspace, doc)
 +    res = pylsp_lint(workspace, doc)
      assert not res
- 
+
      os.unlink(os.path.join(workspace.root_path, "setup.cfg"))
 diff --git a/test/plugins/test_folding.py b/test/plugins/test_folding.py
 index 1f0d34c..8adcd12 100644
@@ -7920,15 +7920,15 @@ index 1f0d34c..8adcd12 100644
 @@ -1,11 +1,11 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_folding_range
  import sys
  from textwrap import dedent
- 
+
  from pylsp import uris
 -from pylsp.plugins.folding import pylsp_folding_range
  from pylsp.workspace import Document
- 
+
  DOC_URI = uris.from_fs_path(__file__)
 diff --git a/test/plugins/test_highlight.py b/test/plugins/test_highlight.py
 index eb5485b..0846a55 100644
@@ -7937,12 +7937,12 @@ index eb5485b..0846a55 100644
 @@ -1,8 +1,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_document_highlight
  from pylsp import lsp, uris
 -from pylsp.plugins.highlight import pylsp_document_highlight
  from pylsp.workspace import Document
- 
+
  DOC_URI = uris.from_fs_path(__file__)
 diff --git a/test/plugins/test_hover.py b/test/plugins/test_hover.py
 index 9674b87..c3dc92b 100644
@@ -7951,14 +7951,14 @@ index 9674b87..c3dc92b 100644
 @@ -1,10 +1,10 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_hover
  import os
- 
+
  from pylsp import uris
 -from pylsp.plugins.hover import pylsp_hover
  from pylsp.workspace import Document
- 
+
  DOC_URI = uris.from_fs_path(__file__)
 diff --git a/test/plugins/test_jedi_rename.py b/test/plugins/test_jedi_rename.py
 index 349274b..1ef8969 100644
@@ -7967,16 +7967,16 @@ index 349274b..1ef8969 100644
 @@ -1,12 +1,12 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_rename
  import os
- 
+
  import pytest
- 
+
  from pylsp import uris
 -from pylsp.plugins.jedi_rename import pylsp_rename
  from pylsp.workspace import Document
- 
+
  DOC_NAME = "test1.py"
 diff --git a/test/plugins/test_mccabe_lint.py b/test/plugins/test_mccabe_lint.py
 index f4df0c2..64df075 100644
@@ -7985,7 +7985,7 @@ index f4df0c2..64df075 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_lint
  from pylsp import lsp, uris
  from pylsp.plugins import mccabe_lint
@@ -7996,11 +7996,11 @@ index f4df0c2..64df075 100644
          doc = Document(DOC_URI, workspace, DOC)
 -        diags = mccabe_lint.pylsp_lint(config, workspace, doc)
 +        diags = pylsp_lint(config, workspace, doc)
- 
+
          assert all(d["source"] == "mccabe" for d in diags)
- 
+
 @@ -36,4 +37,4 @@ def test_mccabe(config, workspace) -> None:
- 
+
  def test_mccabe_syntax_error(config, workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC_SYNTAX_ERR)
 -    assert mccabe_lint.pylsp_lint(config, workspace, doc) is None
@@ -8012,32 +8012,32 @@ index eea0b7d..9e32e7f 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_lint
  import os
- 
+
  import pytest
 @@ -26,7 +27,7 @@ import json
- 
+
  def test_pycodestyle(workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC)
 -    diags = pycodestyle_lint.pylsp_lint(workspace, doc)
 +    diags = pylsp_lint(workspace, doc)
- 
+
      assert all(d["source"] == "pycodestyle" for d in diags)
- 
+
 @@ -84,7 +85,7 @@ def test_pycodestyle_config(workspace) -> None:
      doc = workspace.get_document(doc_uri)
- 
+
      # Make sure we get a warning for 'indentation contains tabs'
 -    diags = pycodestyle_lint.pylsp_lint(workspace, doc)
 +    diags = pylsp_lint(workspace, doc)
      assert [d for d in diags if d["code"] == "W191"]
- 
+
      content = {
 @@ -101,7 +102,7 @@ def test_pycodestyle_config(workspace) -> None:
          workspace._config.settings.cache_clear()
- 
+
          # And make sure we don't get any warnings
 -        diags = pycodestyle_lint.pylsp_lint(workspace, doc)
 +        diags = pylsp_lint(workspace, doc)
@@ -8055,11 +8055,11 @@ index eea0b7d..9e32e7f 100644
      assert [d for d in diags if d["code"] == "W391"]
 @@ -130,7 +131,7 @@ def test_line_endings(workspace, newline) -> None:
      doc = Document(DOC_URI, workspace, source)
- 
+
      # Get diagnostics
 -    diags = pycodestyle_lint.pylsp_lint(workspace, doc)
 +    diags = pylsp_lint(workspace, doc)
- 
+
      # Assert no diagnostics were given
      assert len(diags) == 0
 diff --git a/test/plugins/test_pydocstyle_lint.py b/test/plugins/test_pydocstyle_lint.py
@@ -8069,20 +8069,20 @@ index 383aaf1..3efcf68 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_lint
  import os
- 
+
  from pylsp import lsp, uris
 @@ -21,7 +22,7 @@ import json
- 
+
  def test_pydocstyle(config, workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC)
 -    diags = pydocstyle_lint.pylsp_lint(config, workspace, doc)
 +    diags = pylsp_lint(config, workspace, doc)
- 
+
      assert all(d["source"] == "pydocstyle" for d in diags)
- 
+
 @@ -41,19 +42,19 @@ def test_pydocstyle(config, workspace) -> None:
  def test_pydocstyle_test_document(config, workspace) -> None:
      # The default --match argument excludes test_* documents.
@@ -8090,16 +8090,16 @@ index 383aaf1..3efcf68 100644
 -    diags = pydocstyle_lint.pylsp_lint(config, workspace, doc)
 +    diags = pylsp_lint(config, workspace, doc)
      assert not diags
- 
- 
+
+
  def test_pydocstyle_empty_source(config, workspace) -> None:
      doc = Document(DOC_URI, workspace, "")
 -    diags = pydocstyle_lint.pylsp_lint(config, workspace, doc)
 +    diags = pylsp_lint(config, workspace, doc)
      assert diags[0]["message"] == "D100: Missing docstring in public module"
      assert len(diags) == 1
- 
- 
+
+
  def test_pydocstyle_invalid_source(config, workspace) -> None:
      doc = Document(DOC_URI, workspace, "bad syntax")
 -    diags = pydocstyle_lint.pylsp_lint(config, workspace, doc)
@@ -8113,45 +8113,45 @@ index 8ab3632..4034a74 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_lint
  import sys
- 
+
  from pylsp import lsp, uris
 @@ -30,7 +31,7 @@ import sys
- 
+
  def test_pyflakes(workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC)
 -    diags = pyflakes_lint.pylsp_lint(workspace, doc)
 +    diags = pylsp_lint(workspace, doc)
- 
+
      # One we're expecting is:
      msg = "'sys' imported but unused"
 @@ -42,7 +43,7 @@ def test_pyflakes(workspace) -> None:
- 
+
  def test_syntax_error_pyflakes(workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC_SYNTAX_ERR)
 -    diag = pyflakes_lint.pylsp_lint(workspace, doc)[0]
 +    diag = pylsp_lint(workspace, doc)[0]
- 
+
      if sys.version_info[:2] >= (3, 10):
          assert diag["message"] == "expected ':'"
 @@ -54,7 +55,7 @@ def test_syntax_error_pyflakes(workspace) -> None:
- 
+
  def test_undefined_name_pyflakes(workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC_UNDEFINED_NAME_ERR)
 -    diag = pyflakes_lint.pylsp_lint(workspace, doc)[0]
 +    diag = pylsp_lint(workspace, doc)[0]
- 
+
      assert diag["message"] == "undefined name 'b'"
      assert diag["range"]["start"] == {"line": 0, "character": 4}
 @@ -63,7 +64,7 @@ def test_undefined_name_pyflakes(workspace) -> None:
- 
+
  def test_unicode_encoding(workspace) -> None:
      doc = Document(DOC_URI, workspace, DOC_ENCODING)
 -    diags = pyflakes_lint.pylsp_lint(workspace, doc)
 +    diags = pylsp_lint(workspace, doc)
- 
+
      assert len(diags) == 1
      assert diags[0]["message"] == "'sys' imported but unused"
 diff --git a/test/plugins/test_pylint_lint.py b/test/plugins/test_pylint_lint.py
@@ -8161,46 +8161,46 @@ index b4d511d..c38794c 100644
 @@ -2,6 +2,8 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import PylintLinter
 +from pylsp.pylsp_shared import pylsp_lint
  import contextlib
  import os
  import tempfile
 @@ -43,7 +45,7 @@ def write_temp_doc(document, contents) -> None:
- 
+
  def test_pylint(config, workspace) -> None:
      with temp_document(DOC, workspace) as doc:
 -        diags = pylint_lint.pylsp_lint(config, workspace, doc, True)
 +        diags = pylsp_lint(config, workspace, doc, True)
- 
+
          msg = "[unused-import] Unused import sys"
          unused_import = [d for d in diags if d["message"] == msg][0]
 @@ -54,7 +56,7 @@ def test_pylint(config, workspace) -> None:
- 
+
          # test running pylint in stdin
          config.plugin_settings("pylint")["executable"] = "pylint"
 -        diags = pylint_lint.pylsp_lint(config, workspace, doc, True)
 +        diags = pylsp_lint(config, workspace, doc, True)
- 
+
          msg = "Unused import sys (unused-import)"
          unused_import = [d for d in diags if d["message"] == msg][0]
 @@ -68,7 +70,7 @@ def test_pylint(config, workspace) -> None:
- 
+
  def test_syntax_error_pylint(config, workspace) -> None:
      with temp_document(DOC_SYNTAX_ERR, workspace) as doc:
 -        diag = pylint_lint.pylsp_lint(config, workspace, doc, True)[0]
 +        diag = pylsp_lint(config, workspace, doc, True)[0]
- 
+
          assert diag["message"].startswith("[syntax-error]")
          assert diag["message"].count("expected ':'") or diag["message"].count(
 @@ -81,7 +83,7 @@ def test_syntax_error_pylint(config, workspace) -> None:
- 
+
          # test running pylint in stdin
          config.plugin_settings("pylint")["executable"] = "pylint"
 -        diag = pylint_lint.pylsp_lint(config, workspace, doc, True)[0]
 +        diag = pylsp_lint(config, workspace, doc, True)[0]
- 
+
          assert diag["message"].count("expected ':'") or diag["message"].count(
              "invalid syntax"
 @@ -96,7 +98,7 @@ def test_lint_free_pylint(config, workspace) -> None:
@@ -8211,7 +8211,7 @@ index b4d511d..c38794c 100644
 +    assert not pylsp_lint(
          config, ws, Document(uris.from_fs_path(__file__), ws), True
      )
- 
+
 @@ -114,26 +116,26 @@ def test_lint_caching(workspace) -> None:
      flags = "--disable=invalid-name"
      with temp_document(DOC, workspace) as doc:
@@ -8219,28 +8219,28 @@ index b4d511d..c38794c 100644
 -        diags = pylint_lint.PylintLinter.lint(doc, True, flags)
 +        diags = PylintLinter.lint(doc, True, flags)
          assert diags
- 
+
          # Fix lint errors and write the changes to disk. Run the linter in the
          # in-memory mode to check the cached diagnostic behavior.
          write_temp_doc(doc, "")
 -        assert pylint_lint.PylintLinter.lint(doc, False, flags) == diags
 +        assert PylintLinter.lint(doc, False, flags) == diags
- 
+
          # Now check the on-disk behavior.
 -        assert not pylint_lint.PylintLinter.lint(doc, True, flags)
 +        assert not PylintLinter.lint(doc, True, flags)
- 
+
          # Make sure the cache was properly cleared.
 -        assert not pylint_lint.PylintLinter.lint(doc, False, flags)
 +        assert not PylintLinter.lint(doc, False, flags)
- 
- 
+
+
  def test_per_file_caching(config, workspace) -> None:
      # Ensure that diagnostics are cached per-file.
      with temp_document(DOC, workspace) as doc:
 -        assert pylint_lint.pylsp_lint(config, workspace, doc, True)
 +        assert pylsp_lint(config, workspace, doc, True)
- 
+
 -    assert not pylint_lint.pylsp_lint(
 +    assert not pylsp_lint(
          config, workspace, Document(uris.from_fs_path(__file__), workspace), False
@@ -8252,16 +8252,16 @@ index f512169..3283612 100644
 @@ -1,12 +1,12 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_references
  import os
- 
+
  import pytest
- 
+
  from pylsp import uris
 -from pylsp.plugins.references import pylsp_references
  from pylsp.workspace import Document
- 
+
  DOC1_NAME = "test1.py"
 diff --git a/test/plugins/test_signature.py b/test/plugins/test_signature.py
 index 4a0a84e..74ead16 100644
@@ -8270,39 +8270,39 @@ index 4a0a84e..74ead16 100644
 @@ -1,6 +1,10 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import SPHINX
 +from pylsp.pylsp_shared import EPYDOC
 +from pylsp.pylsp_shared import GOOGLE
 +from pylsp.pylsp_shared import pylsp_signature_help
  import pytest
- 
+
  from pylsp import uris
 @@ -47,7 +51,7 @@ def test_no_signature(workspace) -> None:
      sig_position = {"line": 9, "character": 0}
      doc = Document(DOC_URI, workspace, DOC)
- 
+
 -    sigs = signature.pylsp_signature_help(doc._config, doc, sig_position)["signatures"]
 +    sigs = pylsp_signature_help(doc._config, doc, sig_position)["signatures"]
      assert not sigs
- 
- 
+
+
 @@ -56,7 +60,7 @@ def test_signature(workspace) -> None:
      sig_position = {"line": 10, "character": 5}
      doc = Document(DOC_URI, workspace, DOC)
- 
+
 -    sig_info = signature.pylsp_signature_help(doc._config, doc, sig_position)
 +    sig_info = pylsp_signature_help(doc._config, doc, sig_position)
- 
+
      sigs = sig_info["signatures"]
      assert len(sigs) == 1
 @@ -75,7 +79,7 @@ def test_multi_line_signature(workspace) -> None:
      sig_position = {"line": 17, "character": 5}
      doc = Document(DOC_URI, workspace, MULTI_LINE_DOC)
- 
+
 -    sig_info = signature.pylsp_signature_help(doc._config, doc, sig_position)
 +    sig_info = pylsp_signature_help(doc._config, doc, sig_position)
- 
+
      sigs = sig_info["signatures"]
      assert len(sigs) == 1
 @@ -95,9 +99,9 @@ def test_multi_line_signature(workspace) -> None:
@@ -8325,18 +8325,18 @@ index c00ab93..0ab1cc0 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_document_symbols
  import os
  import sys
- 
+
 @@ -8,7 +9,6 @@ import pytest
- 
+
  from pylsp import uris
  from pylsp.lsp import SymbolKind
 -from pylsp.plugins.symbols import pylsp_document_symbols
  from pylsp.workspace import Document
- 
+
  PY2 = sys.version[0] == "2"
 diff --git a/test/plugins/test_yapf_format.py b/test/plugins/test_yapf_format.py
 index f69541a..1886d18 100644
@@ -8345,16 +8345,16 @@ index f69541a..1886d18 100644
 @@ -1,10 +1,11 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import pylsp_format_document
 +from pylsp.pylsp_shared import pylsp_format_range
  import pytest
- 
+
  from pylsp import uris
 -from pylsp.plugins.yapf_format import pylsp_format_document, pylsp_format_range
  from pylsp.text_edit import apply_text_edits
  from pylsp.workspace import Document
- 
+
 diff --git a/test/test_utils.py b/test/test_utils.py
 index 07d04e3..f4f1f64 100644
 --- a/test/test_utils.py
@@ -8362,17 +8362,16 @@ index 07d04e3..f4f1f64 100644
 @@ -1,6 +1,7 @@
  # Copyright 2017-2020 Palantir Technologies, Inc.
  # Copyright 2021- Python Language Server Contributors.
- 
+
 +from pylsp.pylsp_shared import PythonLSPServer
  import multiprocessing
  import os
  import sys
 @@ -14,7 +15,7 @@ from flaky import flaky
- 
+
  from pylsp import _utils
  from pylsp.lsp import NotebookCellKind
 -from pylsp.python_lsp import PythonLSPServer, start_io_lang_server
 +from pylsp.python_lsp import start_io_lang_server
- 
+
  CALL_TIMEOUT_IN_SECONDS = 30
- 

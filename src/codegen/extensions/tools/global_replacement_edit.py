@@ -36,7 +36,9 @@ class GlobalReplacementEditObservation(Observation):
         description="Regex pattern that failed to compile",
     )
 
-    str_template: ClassVar[str] = "{message}" if "{message}" else "Edited file {filepath}"
+    str_template: ClassVar[str] = (
+        "{message}" if "{message}" else "Edited file {filepath}"
+    )
 
 
 def generate_diff(original: str, modified: str, path: str) -> str:
@@ -88,7 +90,9 @@ def replacement_edit_global(
         FileNotFoundError: If file not found
         ValueError: If invalid regex pattern
     """
-    logger.info(f"Replacing text in files matching {file_pattern} using regex pattern {pattern}")
+    logger.info(
+        f"Replacing text in files matching {file_pattern} using regex pattern {pattern}"
+    )
 
     if count == 0:
         count = None
@@ -104,7 +108,9 @@ def replacement_edit_global(
         )
 
     diffs = []
-    for file in search_files_by_name(codebase, file_pattern, page=1, files_per_page=math.inf).files:
+    for file in search_files_by_name(
+        codebase, file_pattern, page=1, files_per_page=math.inf
+    ).files:
         if count is not None and count <= 0:
             break
         try:

@@ -27,7 +27,13 @@ class UnaryExpression(Expression[Parent], Chainable, Generic[Parent]):
 
     argument: Expression[Self]
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.argument = self._parse_expression(ts_node.child_by_field_name("argument"))
 
@@ -40,11 +46,15 @@ class UnaryExpression(Expression[Parent], Chainable, Generic[Parent]):
 
     @commiter
     @noapidoc
-    def _compute_dependencies(self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None
+    ) -> None:
         self.argument._compute_dependencies(usage_type, dest)
 
     @writer
-    def reduce_condition(self, bool_condition: bool, node: Editable | None = None) -> None:
+    def reduce_condition(
+        self, bool_condition: bool, node: Editable | None = None
+    ) -> None:
         """Simplifies a unary expression by reducing it based on a boolean condition.
 
 

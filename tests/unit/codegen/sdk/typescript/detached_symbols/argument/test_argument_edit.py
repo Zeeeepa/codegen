@@ -20,7 +20,11 @@ function func1(a: number, b: number): number {
     return func2(a, b);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         test_file: SourceFile = codebase.get_file("test_arg.ts")
         test_func_1: Function = test_file.get_symbol("func1")
         test_func_1_call = test_func_1.function_calls[0]
@@ -41,7 +45,11 @@ function func1(a: number, b: number): number {
     return func2(a, b);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         test_file: SourceFile = codebase.get_file("test_arg_sequence.ts")
         test_func_1: Function = test_file.get_symbol("func1")
         test_func_1_call = test_func_1.function_calls[0]
@@ -66,7 +74,11 @@ export function recursive(a: string, b: string): string | undefined {
 }
 
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file("test_arg.ts")
         symbol = file.get_symbol("recursive")
         assert symbol is not None

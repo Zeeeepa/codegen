@@ -92,7 +92,11 @@ class Windsurf:
 
             else:  # Linux and others
                 # Check in common locations
-                paths = [Path("/usr/bin/codeium"), Path("/usr/local/bin/codeium"), Path(os.path.expanduser("~/.local/bin/codeium"))]
+                paths = [
+                    Path("/usr/bin/codeium"),
+                    Path("/usr/local/bin/codeium"),
+                    Path(os.path.expanduser("~/.local/bin/codeium")),
+                ]
 
                 for path in paths:
                     if path.exists():
@@ -146,7 +150,10 @@ class Windsurf:
             return None
 
         try:
-            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            }
 
             response = requests.get(f"{self.api_base_url}/user/info", headers=headers)
             if response.status_code == 200:

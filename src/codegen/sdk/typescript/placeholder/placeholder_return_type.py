@@ -18,7 +18,13 @@ class TSReturnTypePlaceholder(Placeholder[Parent], Generic[Parent]):
     add or modify return type annotations with proper formatting.
     """
 
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Modifies the return type annotation of a function.
 
         Adds or modifies the return type annotation of a function after its parameter list.

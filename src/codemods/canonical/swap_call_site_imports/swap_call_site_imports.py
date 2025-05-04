@@ -48,7 +48,14 @@ class SwapCallSiteImports(Codemod, Skill):
         # Find all call sites of the legacy function
         for call_site in legacy_function.call_sites:
             # Get the import of the legacy function in the call site file
-            legacy_import = next((x for x in call_site.file.imports if x.resolved_symbol == legacy_function), None)
+            legacy_import = next(
+                (
+                    x
+                    for x in call_site.file.imports
+                    if x.resolved_symbol == legacy_function
+                ),
+                None,
+            )
 
             # Update the import module of the old function import to the new module
             if legacy_import:
@@ -60,4 +67,6 @@ class SwapCallSiteImports(Codemod, Skill):
                 legacy_function.remove()
 
                 # Add import of the new function
-                call_site.file.add_import(f"from settings.collections import {legacy_function.name}")
+                call_site.file.add_import(
+                    f"from settings.collections import {legacy_function.name}"
+                )

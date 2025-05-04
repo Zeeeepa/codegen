@@ -41,4 +41,6 @@ class WrapWithStatement(Codemod, Skill):
             for function in file.functions:
                 # Find any internally marked function
                 if function.name.startswith("_"):
-                    function.code_block.wrap(before_src="with before_execute() as before:")
+                    function.code_block.wrap(
+                        before_src="with before_execute() as before:"
+                    )

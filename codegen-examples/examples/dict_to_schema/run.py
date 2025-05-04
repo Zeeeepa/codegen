@@ -80,7 +80,9 @@ def run(codebase: Codebase):
                         models_created += 1
                         file_modified = True
                 except Exception as e:
-                    print(f"Error processing attribute {attr.name} in class {cls.name}: {str(e)}")
+                    print(
+                        f"Error processing attribute {attr.name} in class {cls.name}: {str(e)}"
+                    )
 
         # Add imports if needed
         if needs_imports:
@@ -96,7 +98,11 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Initializing codebase...")
-    codebase = Codebase.from_repo("modal-labs/modal-client", commit="81941c24897889a2ff2f627c693fa734967e693c", language="python")
+    codebase = Codebase.from_repo(
+        "modal-labs/modal-client",
+        commit="81941c24897889a2ff2f627c693fa734967e693c",
+        language="python",
+    )
 
     print("Running codemod...")
     run(codebase)

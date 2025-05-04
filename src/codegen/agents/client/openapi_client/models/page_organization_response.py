@@ -18,7 +18,9 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ConfigDict, StrictInt
 from typing_extensions import Self
 
-from codegen.agents.client.openapi_client.models.organization_response import OrganizationResponse
+from codegen.agents.client.openapi_client.models.organization_response import (
+    OrganizationResponse,
+)
 
 
 class PageOrganizationResponse(BaseModel):
@@ -88,7 +90,11 @@ class PageOrganizationResponse(BaseModel):
 
         _obj = cls.model_validate(
             {
-                "items": [OrganizationResponse.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None,
+                "items": (
+                    [OrganizationResponse.from_dict(_item) for _item in obj["items"]]
+                    if obj.get("items") is not None
+                    else None
+                ),
                 "total": obj.get("total"),
                 "page": obj.get("page"),
                 "size": obj.get("size"),

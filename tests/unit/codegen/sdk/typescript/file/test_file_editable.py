@@ -9,7 +9,11 @@ const Component: React.FC = () => {
   return <div>Component Content</div>;
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"file.tsx": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"file.tsx": content},
+    ) as codebase:
         file = codebase.get_file("file.tsx")
         new_file = codebase.create_file("new_file.tsx", "")
         new_file.add_symbol(file.get_function("Component"))
@@ -40,24 +44,36 @@ const test = () => {
     const templateStringVar = `TEMPLATE_STRING_TEXT`;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"file.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"file.ts": content},
+    ) as codebase:
         file = codebase.get_file("file.ts")
         regex_pattern = r"\b[A-Z_]+\b"
 
         # =====[ Test with neither ]=====
-        matches = file.search(regex_pattern, include_strings=False, include_comments=False)
+        matches = file.search(
+            regex_pattern, include_strings=False, include_comments=False
+        )
         assert len(matches) == 1
 
         # =====[ Test with include_comments=True ]=====
-        matches = file.search(regex_pattern, include_strings=False, include_comments=True)
+        matches = file.search(
+            regex_pattern, include_strings=False, include_comments=True
+        )
         assert len(matches) == 3
 
         # =====[ Test with include_strings=True ]=====
-        matches = file.search(regex_pattern, include_strings=True, include_comments=False)
+        matches = file.search(
+            regex_pattern, include_strings=True, include_comments=False
+        )
         assert len(matches) == 3
 
         # =====[ Test with both include_strings=True and include_comments=True ]=====
-        matches = file.search(regex_pattern, include_strings=True, include_comments=True)
+        matches = file.search(
+            regex_pattern, include_strings=True, include_comments=True
+        )
         assert len(matches) == 5
 
 
@@ -89,10 +105,16 @@ function processData({
     } as const satisfies NumericEntry
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"file.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"file.ts": content},
+    ) as codebase:
         file = codebase.get_file("file.ts")
         regex_pattern = r"!!\s*(\w+|\([^\)]*\))"
 
         # =====[ Test with neither ]=====
-        matches = file.search(regex_pattern, include_strings=False, include_comments=False)
+        matches = file.search(
+            regex_pattern, include_strings=False, include_comments=False
+        )
         assert len(matches) == 0

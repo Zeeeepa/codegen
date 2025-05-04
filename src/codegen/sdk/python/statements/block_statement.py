@@ -21,6 +21,8 @@ class PyBlockStatement(BlockStatement[Parent], PyHasBlock, Generic[Parent]):
     def _parse_code_block(self) -> PyCodeBlock | None:
         body_node = self.ts_node.child_by_field_name("body")
         if body_node is None:
-            body_node = next(filter(lambda node: node.type == "block", self.ts_node.named_children))
+            body_node = next(
+                filter(lambda node: node.type == "block", self.ts_node.named_children)
+            )
         if body_node:
             return super()._parse_code_block(body_node)

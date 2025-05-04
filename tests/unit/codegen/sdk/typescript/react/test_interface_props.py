@@ -28,7 +28,11 @@ Component.propTypes = {
     ])
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.convert_props_to_interface()
@@ -76,7 +80,11 @@ Component.propTypes = {
     ])
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.classes[0]
         component.convert_props_to_interface()
@@ -118,7 +126,11 @@ Component.propTypes = {
     disabled: PropTypes.bool
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.convert_props_to_interface()
@@ -173,7 +185,11 @@ Component.propTypes = {
     onPageChange: PropTypes.func.isRequired
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.convert_props_to_interface()
@@ -228,7 +244,11 @@ Component.propTypes = {
     size: PropTypes.oneOf(['small', 'medium', 'large'])
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.classes[0]
         component.convert_props_to_interface()
@@ -282,7 +302,11 @@ Component.propTypes = {
     onValidate: PropTypes.func
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[-1]
         component.convert_props_to_interface()
@@ -345,7 +369,11 @@ Component.propTypes = {
     value: PropTypes.string.isRequired
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.classes[0]
         component.convert_props_to_interface()
@@ -398,7 +426,11 @@ Component.propTypes = {
     onProcess: PropTypes.func
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.convert_props_to_interface()
@@ -438,7 +470,11 @@ Component.propTypes = {
     onComplete: PropTypes.func.isRequired
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.classes[0]
         component.convert_props_to_interface()
@@ -503,7 +539,11 @@ Component.propTypes = {
     customComponents: PropTypes.objectOf(PropTypes.func)
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.classes[0]
         component.convert_props_to_interface()
@@ -589,7 +629,11 @@ OtherComponent.propTypes = {
     foo: PropTypes.string
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.convert_props_to_interface()
@@ -682,7 +726,11 @@ OtherComponent.propTypes = {
     foo: PropTypes.string
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.classes[0]
         component.convert_props_to_interface()
@@ -762,7 +810,11 @@ ClassComponent.propTypes = {
     element: PropTypes.element.isRequired
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
 
         # Convert function component

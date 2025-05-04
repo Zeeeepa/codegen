@@ -14,5 +14,11 @@ def foo(tmpdir):
     with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
         file = codebase.get_file("test.py")
 
-        assert set(dep.name for dep in file.get_symbol("GLOBAL_VAR_1").dependencies) == set()
-        assert set(dep.name for dep in file.get_symbol("GLOBAL_VAR_2").dependencies) == set()
+        assert (
+            set(dep.name for dep in file.get_symbol("GLOBAL_VAR_1").dependencies)
+            == set()
+        )
+        assert (
+            set(dep.name for dep in file.get_symbol("GLOBAL_VAR_2").dependencies)
+            == set()
+        )

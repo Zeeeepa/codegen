@@ -18,7 +18,11 @@ def test_ts_import_is_dynamic_in_function_declaration(tmpdir):
         });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -43,7 +47,11 @@ def test_ts_import_is_dynamic_in_method_definition(tmpdir):
 
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -67,7 +75,11 @@ def test_ts_import_is_dynamic_in_arrow_function(tmpdir):
         return <button onClick={loadModule} />;
     };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -90,7 +102,11 @@ def test_ts_import_is_dynamic_in_if_statement(tmpdir):
         });
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -112,7 +128,11 @@ def test_ts_import_is_dynamic_in_try_statement(tmpdir):
         const cleanup = "hello"
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -132,7 +152,11 @@ def test_ts_import_is_dynamic_in_catch_clause(tmpdir):
         errorHandler.handle(error);
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -154,7 +178,11 @@ def test_ts_import_is_dynamic_in_finally_clause(tmpdir):
         cleanup.perform();
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -172,7 +200,11 @@ def test_ts_import_is_dynamic_in_while_statement(tmpdir):
         processor.process();
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -190,7 +222,11 @@ def test_ts_import_is_dynamic_in_for_statement(tmpdir):
         processor.process(items[i]);
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imports = file.imports
 
@@ -241,7 +277,9 @@ def test_parent_of_types_multiple():
     # Should find both Function and IfBlockStatement parents
     assert import_stmt.parent_of_types({Function, IfBlockStatement}) is not None
     # Should find closest parent first (IfBlockStatement)
-    assert isinstance(import_stmt.parent_of_types({Function, IfBlockStatement}), IfBlockStatement)
+    assert isinstance(
+        import_stmt.parent_of_types({Function, IfBlockStatement}), IfBlockStatement
+    )
 
 
 def test_parent_of_types_try_catch():

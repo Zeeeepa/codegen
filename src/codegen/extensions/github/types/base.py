@@ -53,8 +53,12 @@ class GitHubWebhookHeaders(BaseModel):
     event_type: str = Field(..., alias="x-github-event")
     delivery_id: str = Field(..., alias="x-github-delivery")
     hook_id: str = Field(..., alias="x-github-hook-id")
-    installation_target_id: str = Field(..., alias="x-github-hook-installation-target-id")
-    installation_target_type: str = Field(..., alias="x-github-hook-installation-target-type")
+    installation_target_id: str = Field(
+        ..., alias="x-github-hook-installation-target-id"
+    )
+    installation_target_type: str = Field(
+        ..., alias="x-github-hook-installation-target-type"
+    )
 
 
 class GitHubWebhookPayload(BaseModel):

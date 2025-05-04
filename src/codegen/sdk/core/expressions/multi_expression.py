@@ -29,13 +29,22 @@ class MultiExpression(Expression[Parent], Generic[Parent, TExpression]):
 
     expressions: list[TExpression]
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, expressions: list[TExpression]) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        expressions: list[TExpression],
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.expressions = expressions
 
     @noapidoc
     @commiter
     @override
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         for exp in self.expressions:
             exp._compute_dependencies(usage_type, dest)

@@ -50,19 +50,34 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
 
     _arg_list: Collection[Argument, Self]
 
-    def __init__(self, node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent) -> None:
+    def __init__(
+        self, node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent
+    ) -> None:
         super().__init__(node, file_node_id, ctx, parent)
         # =====[ Grab the function name ]=====
-        self._name_node = self.child_by_field_name("function", default=Name) or self.child_by_field_name("constructor", default=Name)
-        if self._name_node is not None and self._name_node.ts_node.type in ("unary_expression", "await_expression"):
-            self._name_node = self._parse_expression(self._name_node.ts_node.children[-1], default=Name)
+        self._name_node = self.child_by_field_name(
+            "function", default=Name
+        ) or self.child_by_field_name("constructor", default=Name)
+        if self._name_node is not None and self._name_node.ts_node.type in (
+            "unary_expression",
+            "await_expression",
+        ):
+            self._name_node = self._parse_expression(
+                self._name_node.ts_node.children[-1], default=Name
+            )
         # =====[ Grab the arg list ]=====
         arg_list_node = node.child_by_field_name("arguments")
         if arg_list_node is None:
             msg = f"Failed to parse function call. Child 'argument_list' node does not exist. Source: {self.source}"
             raise ValueError(msg)
-        args = [Argument(x, i, self) for i, x in enumerate(arg_list_node.named_children) if x.type != "comment"]
-        self._arg_list = Collection(arg_list_node, self.file_node_id, self.ctx, self, children=args)
+        args = [
+            Argument(x, i, self)
+            for i, x in enumerate(arg_list_node.named_children)
+            if x.type != "comment"
+        ]
+        self._arg_list = Collection(
+            arg_list_node, self.file_node_id, self.ctx, self, children=args
+        )
 
     def __repr__(self) -> str:
         """Custom string representation showing the function call chain structure.
@@ -87,7 +102,9 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         return f"FunctionCall({', '.join(parts)})"
 
     @classmethod
-    def from_usage(cls, node: Editable[Parent], parent: Parent | None = None) -> Self | None:
+    def from_usage(
+        cls, node: Editable[Parent], parent: Parent | None = None
+    ) -> Self | None:
         """Creates a FunctionCall object from an Editable instance that represents a function call.
 
         Takes an Editable node that potentially represents a function call and creates a FunctionCall object from it.
@@ -117,13 +134,20 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         """
         # HACK: This is temporary until we establish a full parent path
         if self.file.programming_language == ProgrammingLanguage.TYPESCRIPT:
-            if func := find_first_ancestor(self.ts_node, [function_type.value for function_type in TSFunctionTypeNames]):
+            if func := find_first_ancestor(
+                self.ts_node,
+                [function_type.value for function_type in TSFunctionTypeNames],
+            ):
                 from codegen.sdk.typescript.function import TSFunction
 
-                return TSFunction.from_function_type(func, self.file_node_id, self.ctx, self.parent)
+                return TSFunction.from_function_type(
+                    func, self.file_node_id, self.ctx, self.parent
+                )
         elif self.file.programming_language == ProgrammingLanguage.PYTHON:
             if func := find_first_ancestor(self.ts_node, ["function_definition"]):
-                return self.ctx.node_classes.function_cls(func, self.file_node_id, self.ctx, self.parent)
+                return self.ctx.node_classes.function_cls(
+                    func, self.file_node_id, self.ctx, self.parent
+                )
 
         return None
 
@@ -273,9 +297,21 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
 
         if isinstance(func, Function) and func.is_method:
             name = f"{func.parent_class.name}.{self.name}"
-            return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=name, symbol_name=self.__class__.__name__)
+            return VizNode(
+                file_path=self.filepath,
+                start_point=self.start_point,
+                end_point=self.end_point,
+                name=name,
+                symbol_name=self.__class__.__name__,
+            )
         else:
-            return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+            return VizNode(
+                file_path=self.filepath,
+                start_point=self.start_point,
+                end_point=self.end_point,
+                name=self.name,
+                symbol_name=self.__class__.__name__,
+            )
 
     @property
     @reader
@@ -295,7 +331,11 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         if self.predecessor:
             # TODO: breaks edit logic b/c start/end bytes no longer match up
             # Remove the parent function call from the source
-            return self.extended_source.replace(self.predecessor.extended_source, "").strip()[1:].strip()
+            return (
+                self.extended_source.replace(self.predecessor.extended_source, "")
+                .strip()[1:]
+                .strip()
+            )
         else:
             return self.extended_source
 
@@ -315,7 +355,14 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         # TODO - this may be language-specific
         return self._arg_list
 
-    def set_kwarg(self, name: str, value: str, *, create_on_missing: bool = True, override_existing: bool = True) -> None:
+    def set_kwarg(
+        self,
+        name: str,
+        value: str,
+        *,
+        create_on_missing: bool = True,
+        override_existing: bool = True,
+    ) -> None:
         """Set a keyword argument in a function call.
 
         Sets or modifies a keyword argument in the function call. Can create new arguments or modify existing ones based on configuration.
@@ -354,10 +401,16 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         from codegen.sdk.python import PyFunction
 
         for function_definition in self.function_definitions:
-            if function_definition.node_type == NodeType.EXTERNAL or function_definition.parameters is None:
+            if (
+                function_definition.node_type == NodeType.EXTERNAL
+                or function_definition.parameters is None
+            ):
                 continue
 
-            if isinstance(function_definition, PyFunction) and (function_definition.is_method and not function_definition.is_static_method):
+            if isinstance(function_definition, PyFunction) and (
+                function_definition.is_method
+                and not function_definition.is_static_method
+            ):
                 index += 1
             for param in function_definition.parameters:
                 if index == param.index:
@@ -367,7 +420,10 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
     @reader
     def find_parameter_by_name(self, name: str) -> Parameter | None:
         for function_definition in self.function_definitions:
-            if function_definition.node_type == NodeType.EXTERNAL or function_definition.parameters is None:
+            if (
+                function_definition.node_type == NodeType.EXTERNAL
+                or function_definition.parameters is None
+            ):
                 continue
             for param in function_definition.parameters:
                 if param.name == name:
@@ -444,7 +500,11 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         definition = self.function_definition
         from codegen.sdk.core.interfaces.callable import Callable
 
-        if definition is None or definition.parameters is None or not isinstance(definition, Callable):
+        if (
+            definition is None
+            or definition.parameters is None
+            or not isinstance(definition, Callable)
+        ):
             return
 
         for arg in reversed(self.args):
@@ -478,7 +538,9 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
                 if isinstance(top_node, Callable):
                     if isinstance(top_node, Class):
                         if constructor := top_node.constructor:
-                            result.append(resolution.with_new_base(constructor, direct=True))
+                            result.append(
+                                resolution.with_new_base(constructor, direct=True)
+                            )
                             continue
                     result.append(resolution)
         return result
@@ -514,7 +576,9 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         return next(iter(self.function_definitions), None)
 
     @remover
-    def remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
         """Removes a node and optionally its related extended nodes.
 
         This method removes a FunctionCall node from the codebase. If the node is part of an expression statement,
@@ -529,9 +593,13 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
             None
         """
         if self.ts_node.parent.type == "expression_statement":
-            Value(self.ts_node.parent, self.file_node_id, self.ctx, self.parent).remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+            Value(self.ts_node.parent, self.file_node_id, self.ctx, self.parent).remove(
+                delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+            )
         else:
-            super().remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+            super().remove(
+                delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+            )
 
     @reader
     @noapidoc
@@ -550,38 +618,58 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
             resolved = False
             for resolution in self.get_name().resolved_type_frames:
                 if len(resolution.generics) == 1:
-                    yield from self.with_resolution_frame(next(iter(resolution.generics.values())), direct=resolution.direct)
+                    yield from self.with_resolution_frame(
+                        next(iter(resolution.generics.values())),
+                        direct=resolution.direct,
+                    )
                     resolved = True
                 elif len(resolution.generics) > 1:
                     yield from self.with_resolution(resolution)
                     resolved = True
             if not resolved:
-                yield ResolutionStack(self)  # This let's us still calculate dependencies even if we can't resolve a function call's definition
+                yield ResolutionStack(
+                    self
+                )  # This let's us still calculate dependencies even if we can't resolve a function call's definition
         for function_def_frame in self.function_definition_frames:
             function_def = function_def_frame.top.node
             if isinstance(function_def, Function):
                 if function_def.is_constructor:
-                    yield from self.with_resolution_frame(function_def.parent_class, direct=function_def_frame.direct)
+                    yield from self.with_resolution_frame(
+                        function_def.parent_class, direct=function_def_frame.direct
+                    )
                 elif return_type := function_def.return_type:
                     if function_def_frame.generics:
-                        if generic := function_def_frame.generics.get(return_type.source, None):
-                            yield from self.with_resolution_frame(generic, direct=function_def_frame.direct)
+                        if generic := function_def_frame.generics.get(
+                            return_type.source, None
+                        ):
+                            yield from self.with_resolution_frame(
+                                generic, direct=function_def_frame.direct
+                            )
                             return
                     if self.ctx.config.generics:
                         for arg in self.args:
                             if arg.parameter and (type := arg.parameter.type):
                                 if type.source == return_type.source:
-                                    yield from self.with_resolution_frame(arg.value, direct=function_def_frame.direct)
+                                    yield from self.with_resolution_frame(
+                                        arg.value, direct=function_def_frame.direct
+                                    )
                                     return
                                 if isinstance(type, GenericType):
                                     for param in type.parameters:
                                         if param.source == return_type.source:
-                                            yield from self.with_resolution_frame(arg.value, direct=function_def_frame.direct)
+                                            yield from self.with_resolution_frame(
+                                                arg.value,
+                                                direct=function_def_frame.direct,
+                                            )
                                             return
 
                     yield from self.with_resolution_frame(return_type, direct=False)
             elif isinstance(function_def, Class):
-                yield from self.with_resolution_frame(function_def, direct=function_def_frame.direct, aliased=function_def_frame.aliased)
+                yield from self.with_resolution_frame(
+                    function_def,
+                    direct=function_def_frame.direct,
+                    aliased=function_def_frame.aliased,
+                )
             #     else:
 
             #         yield from self.with_resolution_frame(function_def, direct=False)  # Untyped functions
@@ -589,7 +677,9 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
             #     yield from self.with_resolution_frame(function_def, direct=False)  # External Modules
 
     @noapidoc
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         for arg in self.args:
             arg._compute_dependencies(usage_type, dest)
         if desc := self.child_by_field_name("type_arguments"):
@@ -640,7 +730,9 @@ class FunctionCall(Expression[Parent], HasName, Resolvable, Generic[Parent]):
         Returns:
             list[FunctionCall | Name]: List of Name nodes (property access) and FunctionCall nodes (method calls)
         """
-        if isinstance(self.get_name(), ChainedAttribute):  # child is chainedAttribute. MEANING that this is likely in the middle or the last function call of a chained function call chain.
+        if isinstance(
+            self.get_name(), ChainedAttribute
+        ):  # child is chainedAttribute. MEANING that this is likely in the middle or the last function call of a chained function call chain.
             return self.get_name().attribute_chain
         elif isinstance(
             self.parent, ChainedAttribute

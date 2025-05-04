@@ -1,8 +1,13 @@
 import click
 import modal
+
 from codegen import CodeAgent, Codebase
 
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("codegen")
+image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .apt_install("git")
+    .pip_install("codegen")
+)
 
 app = modal.App(
     name="codegen-examples",

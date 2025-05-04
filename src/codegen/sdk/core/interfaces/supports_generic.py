@@ -27,5 +27,9 @@ class SupportsGenerics(Symbol, Generic[TType]):
     @noapidoc
     def generics(self) -> dict[str, TType]:
         if self.type_parameters:
-            return {param.name: param for param in self.type_parameters if isinstance(param, NamedType)}
+            return {
+                param.name: param
+                for param in self.type_parameters
+                if isinstance(param, NamedType)
+            }
         return {}

@@ -10,7 +10,10 @@ logger = getLogger(__name__)
 
 
 def is_flask_route(decorator):
-    return (decorator.call and decorator.call.name in ["route", "get", "post", "put", "delete"]) or (decorator.call and "route" in decorator.call.name)
+    return (
+        decorator.call
+        and decorator.call.name in ["route", "get", "post", "put", "delete"]
+    ) or (decorator.call and "route" in decorator.call.name)
 
 
 def extract_route(decorator):

@@ -25,6 +25,8 @@ class MegaRacer(MiniRacer):
 
     def __init__(self) -> None:
         # Set the max old space size to 64GB
-        dll = init_mini_racer(ignore_duplicate_init=True, flags=["--max-old-space-size=65536"])
+        dll = init_mini_racer(
+            ignore_duplicate_init=True, flags=["--max-old-space-size=65536"]
+        )
         self._ctx = Context(dll)
         self.eval(INSTALL_SET_TIMEOUT)

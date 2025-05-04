@@ -124,21 +124,21 @@ def research(repo_name: Optional[str] = None, query: Optional[str] = None):
     """Start a code research session."""
     # Initialize codebase
     codebase = initialize_codebase(repo_name)
-    
+
     # Create and run the agent
     agent = create_research_agent(codebase)
-    
+
     # Main research loop
     while True:
         if not query:
             query = Prompt.ask("[bold cyan]Research query[/bold cyan]")
-            
+
         result = agent.invoke(
             {"input": query},
             config={"configurable": {"thread_id": 1}}
         )
         console.print(Markdown(result["messages"][-1].content))
-        
+
         query = None  # Clear for next iteration
 ```
 
@@ -186,7 +186,7 @@ class CustomAnalysisTool(BaseTool):
     """Custom tool for specialized code analysis."""
     name = "custom_analysis"
     description = "Performs specialized code analysis"
-    
+
     def _run(self, query: str) -> str:
         # Custom analysis logic
         return results

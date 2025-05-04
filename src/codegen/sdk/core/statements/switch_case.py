@@ -31,7 +31,9 @@ class SwitchCase(ConditionalBlock, BlockStatement[Parent], Generic[Parent]):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.condition:
             self.condition._compute_dependencies(usage_type, dest)
         super()._compute_dependencies(usage_type, dest)

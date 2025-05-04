@@ -66,7 +66,9 @@ def main():
     utility_function()
                 """.strip(),
             },
-            Position(line=3, character=4),  # Position of utility_function call in test.py
+            Position(
+                line=3, character=4
+            ),  # Position of utility_function call in test.py
             Location(
                 uri="file://{workspaceFolder}/module/utils.py",
                 range=Range(
@@ -114,7 +116,9 @@ def main():
     timeout = DEFAULT_TIMEOUT
                 """.strip(),
             },
-            Position(line=3, character=14),  # Position of DEFAULT_TIMEOUT reference in test.py
+            Position(
+                line=3, character=14
+            ),  # Position of DEFAULT_TIMEOUT reference in test.py
             Location(
                 uri="file://{workspaceFolder}/module/constants.py",
                 range=Range(
@@ -134,11 +138,15 @@ async def test_go_to_definition(
 ):
     result = await client.text_document_definition_async(
         params=DefinitionParams(
-            text_document=TextDocumentIdentifier(uri=f"file://{codebase.repo_path}/test.py"),
+            text_document=TextDocumentIdentifier(
+                uri=f"file://{codebase.repo_path}/test.py"
+            ),
             position=position,
         )
     )
 
     assert isinstance(result, Location)
-    assert result.uri == expected_location.uri.format(workspaceFolder=str(codebase.repo_path))
+    assert result.uri == expected_location.uri.format(
+        workspaceFolder=str(codebase.repo_path)
+    )
     assert result.range == expected_location.range

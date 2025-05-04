@@ -47,7 +47,12 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, include_dependencies=True, strategy="add_back_edge", cleanup_unused_imports=False)
+        bar.move_to_file(
+            file3,
+            include_dependencies=True,
+            strategy="add_back_edge",
+            cleanup_unused_imports=False,
+        )
 
     assert file1.content == content1
     # language=typescript
@@ -116,7 +121,9 @@ function mainFunc(inputId: string): string {
         programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         for function in codebase.functions:
-            local_vars = function.code_block.get_local_var_assignments("var", fuzzy_match=True)
+            local_vars = function.code_block.get_local_var_assignments(
+                "var", fuzzy_match=True
+            )
             for local_var in local_vars:
                 local_var.rename(local_var.name.replace("var", "renamedVar"))
 

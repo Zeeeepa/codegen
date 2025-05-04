@@ -29,7 +29,9 @@ TAssignment = TypeVar("TAssignment", bound="Assignment")
 
 
 @apidoc
-class AssignmentStatement(Statement[TCodeBlock], HasValue, Generic[TCodeBlock, TAssignment]):
+class AssignmentStatement(
+    Statement[TCodeBlock], HasValue, Generic[TCodeBlock, TAssignment]
+):
     """A class that represents an assignment statement in a codebase, such as `x = 1`, `a, b = 1, 2`, `const {a: b} = myFunc(),`, etc.
 
     This includes potentially multiple Assignments via `statement.assignments`, which represent each assignment of a value to a variable within this statement.
@@ -47,7 +49,15 @@ class AssignmentStatement(Statement[TCodeBlock], HasValue, Generic[TCodeBlock, T
     left: Expression[TAssignment]
     right: Expression[TAssignment] | None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TCodeBlock, pos: int, assignment_node: TSNode) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TCodeBlock,
+        pos: int,
+        assignment_node: TSNode,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos=pos)
         self.assignments = self._DEPRECATED_parse_assignments().expressions
         if len(self.assignments) == 0:
@@ -55,20 +65,28 @@ class AssignmentStatement(Statement[TCodeBlock], HasValue, Generic[TCodeBlock, T
             raise ValueError(msg)
 
         first_assignment: TAssignment = self.assignments[0]
-        self._name_node = self.ctx.parser.parse_expression(first_assignment.ts_node, self.file_node_id, self.ctx, parent, default=Name)
+        self._name_node = self.ctx.parser.parse_expression(
+            first_assignment.ts_node, self.file_node_id, self.ctx, parent, default=Name
+        )
         self.left = first_assignment.left
         self.right = first_assignment.value
         self._value_node = self.right
 
     @abstractmethod
-    def _parse_assignments(self, ts_node: TSNode) -> MultiExpression[HasBlock, TAssignment]: ...
+    def _parse_assignments(
+        self, ts_node: TSNode
+    ) -> MultiExpression[HasBlock, TAssignment]: ...
 
     @abstractmethod
-    def _DEPRECATED_parse_assignments(self) -> MultiExpression[HasBlock, TAssignment]: ...
+    def _DEPRECATED_parse_assignments(
+        self,
+    ) -> MultiExpression[HasBlock, TAssignment]: ...
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None
+    ) -> None:
         # We compute assignment dependencies separately
         pass
 

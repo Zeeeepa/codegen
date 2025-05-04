@@ -6,7 +6,11 @@ from codegen.sdk.codebase.transaction_manager import (
     TransactionError,
     TransactionManager,
 )
-from codegen.sdk.codebase.transactions import EditTransaction, InsertTransaction, RemoveTransaction
+from codegen.sdk.codebase.transactions import (
+    EditTransaction,
+    InsertTransaction,
+    RemoveTransaction,
+)
 
 
 class MockFile:
@@ -23,7 +27,9 @@ def test_edit_base_case(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create simple transaction
-    t1 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
     transaction_manager.add_transaction(t1)
 
     # Verify
@@ -68,9 +74,15 @@ def test_edit_ordering(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
-    t2 = EditTransaction(start_byte=5, end_byte=10, file=MockFile(FILENAME), new_content="")
-    t3 = EditTransaction(start_byte=10, end_byte=15, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
+    t2 = EditTransaction(
+        start_byte=5, end_byte=10, file=MockFile(FILENAME), new_content=""
+    )
+    t3 = EditTransaction(
+        start_byte=10, end_byte=15, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -85,8 +97,12 @@ def test_edit_ordering(tmpdir) -> None:
     assert transaction_manager.queued_transactions[FILENAME][2] is t1
 
     # Create more transactions
-    t4 = EditTransaction(start_byte=20, end_byte=25, file=MockFile(FILENAME), new_content="")
-    t5 = EditTransaction(start_byte=15, end_byte=20, file=MockFile(FILENAME), new_content="")
+    t4 = EditTransaction(
+        start_byte=20, end_byte=25, file=MockFile(FILENAME), new_content=""
+    )
+    t5 = EditTransaction(
+        start_byte=15, end_byte=20, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t4)
@@ -211,8 +227,12 @@ def test_edit_conflict(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="a")
-    t2 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="b")
+    t1 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="a"
+    )
+    t2 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="b"
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -253,8 +273,12 @@ def test_edit_conflict_subset(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content="")
-    t2 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content=""
+    )
+    t2 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -295,7 +319,9 @@ def test_edit_remove_conflict_subset(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content=""
+    )
     t2 = RemoveTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME))
 
     # Add transactions to TransactionManager
@@ -318,7 +344,9 @@ def test_remove_edit_conflict_subset(tmpdir) -> None:
 
     # Create transactions
     t1 = RemoveTransaction(start_byte=1, end_byte=4, file=MockFile(FILENAME))
-    t2 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
+    t2 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -360,7 +388,9 @@ def test_insert_edit_conflict_subset(tmpdir) -> None:
 
     # Create transactions
     t1 = InsertTransaction(insert_byte=1, file=MockFile(FILENAME), new_content="")
-    t2 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
+    t2 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -379,8 +409,12 @@ def test_edit_conflict_superset(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
-    t2 = EditTransaction(start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
+    t2 = EditTransaction(
+        start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -421,7 +455,9 @@ def test_edit_remove_conflict_superset(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
     t2 = RemoveTransaction(start_byte=1, end_byte=4, file=MockFile(FILENAME))
 
     # Add transactions to TransactionManager
@@ -442,7 +478,9 @@ def test_remove_edit_conflict_superset(tmpdir) -> None:
 
     # Create transactions
     t1 = RemoveTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME))
-    t2 = EditTransaction(start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content="")
+    t2 = EditTransaction(
+        start_byte=1, end_byte=4, file=MockFile(FILENAME), new_content=""
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -463,7 +501,9 @@ def test_edit_insert_conflict_superset(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = EditTransaction(start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content="")
+    t1 = EditTransaction(
+        start_byte=0, end_byte=5, file=MockFile(FILENAME), new_content=""
+    )
     t2 = InsertTransaction(insert_byte=1, file=MockFile(FILENAME), new_content="")
 
     # Add transactions to TransactionManager
@@ -507,7 +547,9 @@ def test_remove_multi_conflict(tmpdir) -> None:
     # Create transactions
     t1 = RemoveTransaction(start_byte=0, end_byte=4, file=MockFile(FILENAME))
     t2 = InsertTransaction(insert_byte=4, file=MockFile(FILENAME), new_content="")
-    t3 = EditTransaction(start_byte=4, end_byte=8, file=MockFile(FILENAME), new_content="")
+    t3 = EditTransaction(
+        start_byte=4, end_byte=8, file=MockFile(FILENAME), new_content=""
+    )
     t4 = InsertTransaction(insert_byte=8, file=MockFile(FILENAME), new_content="")
     t5 = RemoveTransaction(start_byte=8, end_byte=12, file=MockFile(FILENAME))
 
@@ -543,9 +585,15 @@ def test_priority(tmpdir) -> None:
     transaction_manager = TransactionManager()
 
     # Create transactions
-    t1 = InsertTransaction(insert_byte=0, file=MockFile(FILENAME), new_content="a", priority=3)
-    t2 = InsertTransaction(insert_byte=0, file=MockFile(FILENAME), new_content="b", priority=2)
-    t3 = InsertTransaction(insert_byte=0, file=MockFile(FILENAME), new_content="c", priority=1)
+    t1 = InsertTransaction(
+        insert_byte=0, file=MockFile(FILENAME), new_content="a", priority=3
+    )
+    t2 = InsertTransaction(
+        insert_byte=0, file=MockFile(FILENAME), new_content="b", priority=2
+    )
+    t3 = InsertTransaction(
+        insert_byte=0, file=MockFile(FILENAME), new_content="c", priority=1
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t1)
@@ -560,8 +608,12 @@ def test_priority(tmpdir) -> None:
     assert transaction_manager.queued_transactions[FILENAME][2] is t1
 
     # Create more transactions
-    t4 = InsertTransaction(insert_byte=0, file=MockFile(FILENAME), new_content="d", priority=4)
-    t5 = InsertTransaction(insert_byte=0, file=MockFile(FILENAME), new_content="e", priority=5)
+    t4 = InsertTransaction(
+        insert_byte=0, file=MockFile(FILENAME), new_content="d", priority=4
+    )
+    t5 = InsertTransaction(
+        insert_byte=0, file=MockFile(FILENAME), new_content="e", priority=5
+    )
 
     # Add transactions to TransactionManager
     transaction_manager.add_transaction(t4)

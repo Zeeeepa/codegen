@@ -50,13 +50,19 @@ def g(tmpdir):
         # =====[ A ]=====
         edges = A.dependencies
         assert any((isinstance(edge, Symbol) and edge.name == "B") for edge in edges)
-        assert any((isinstance(edge, Import) and edge.alias.source == "c") for edge in edges)
-        assert any((isinstance(edge, Import) and edge.alias.source == "E") for edge in edges)
+        assert any(
+            (isinstance(edge, Import) and edge.alias.source == "c") for edge in edges
+        )
+        assert any(
+            (isinstance(edge, Import) and edge.alias.source == "E") for edge in edges
+        )
 
         # =====[ f ]=====
         edges = f.dependencies
         assert any((isinstance(edge, Symbol) and edge.name == "A") for edge in edges)
-        assert any((isinstance(edge, Import) and edge.alias.source == "time") for edge in edges)
+        assert any(
+            (isinstance(edge, Import) and edge.alias.source == "time") for edge in edges
+        )
         assert len(edges) == 4
 
         # =====[ Edge Test ] =====
@@ -89,8 +95,13 @@ class A:
         file = codebase.get_file("test.py")
 
         A_deps = file.get_class("A").dependencies
-        assert any((isinstance(dep, Import) and dep.alias.source == "MyType") for dep in A_deps)
-        assert any((isinstance(dep, Import) and dep.alias.source == "dataclass") for dep in A_deps)
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "MyType") for dep in A_deps
+        )
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "dataclass")
+            for dep in A_deps
+        )
 
 
 def test_class_dependencies_in_attribute(tmpdir) -> None:
@@ -153,7 +164,9 @@ def decorator_a(cls):
 def decorator_b(cls):
     return cls
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         my_class = file1.get_class("MyClass")
         assert len(my_class.dependencies) == 2
@@ -181,7 +194,9 @@ def decorator_a(cls):
 def decorator_b(cls):
     return cls
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         my_class = file1.get_class("MyClass")
         assert set(my_class.dependencies) == {file1.imports[0]}
@@ -244,7 +259,9 @@ class ClassA:
 class ClassB:
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         local_class = file1.get_class("LocalClass")
         method = local_class.get_method("method")
@@ -283,7 +300,9 @@ class BaseClass:
 class HelperClass:
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         my_class = file1.get_class("MyClass")
 
@@ -316,7 +335,9 @@ class AnotherClass(MyClass):  # DIRECT usage of MyClass (same file)
 class BaseClass:
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         another_class = file1.get_class("AnotherClass")
         my_class = file1.get_class("MyClass")

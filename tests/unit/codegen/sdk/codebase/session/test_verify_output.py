@@ -6,7 +6,10 @@ def test_verify_output_python(tmpdir) -> None:
     try:
         with get_codebase_session(
             tmpdir=tmpdir,
-            files={"invalid.py": "print('Hello, world!'", "valid.py": "print('Hello, world!')"},
+            files={
+                "invalid.py": "print('Hello, world!'",
+                "valid.py": "print('Hello, world!')",
+            },
             programming_language=ProgrammingLanguage.PYTHON,
             verify_output=True,
         ) as codebase:

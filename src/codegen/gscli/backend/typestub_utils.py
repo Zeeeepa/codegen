@@ -29,7 +29,10 @@ class MethodRemover(ast.NodeTransformer):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef | None:
         body = []
         for child in node.body:
-            if not (isinstance(child, ast.FunctionDef) and any(cond(child) for cond in self.conditions)):
+            if not (
+                isinstance(child, ast.FunctionDef)
+                and any(cond(child) for cond in self.conditions)
+            ):
                 body.append(child)
             else:
                 logger.debug("removing", child.name)
@@ -72,14 +75,18 @@ class FieldRemover(ast.NodeTransformer):
         return False
 
 
-def _remove_methods(source: str, conditions: list[Callable[[ast.FunctionDef], bool]]) -> str:
+def _remove_methods(
+    source: str, conditions: list[Callable[[ast.FunctionDef], bool]]
+) -> str:
     tree = ast.parse(source)
     transformer = MethodRemover(conditions)
     modified_tree = transformer.visit(tree)
     return astor.to_source(modified_tree)
 
 
-def _remove_fields(source: str, conditions: list[Callable[[ast.FunctionDef], bool]]) -> str:
+def _remove_fields(
+    source: str, conditions: list[Callable[[ast.FunctionDef], bool]]
+) -> str:
     tree = ast.parse(source)
     transformer = FieldRemover(conditions)
     modified_tree = transformer.visit(tree)
@@ -88,7 +95,9 @@ def _remove_fields(source: str, conditions: list[Callable[[ast.FunctionDef], boo
 
 def _starts_with_underscore(node: ast.FunctionDef | ast.AnnAssign | ast.Assign) -> bool:
     if isinstance(node, ast.FunctionDef):
-        return node.name.startswith("_") and (not node.name.startswith("__") and not node.name.endswith("__"))
+        return node.name.startswith("_") and (
+            not node.name.startswith("__") and not node.name.endswith("__")
+        )
     elif isinstance(node, ast.Assign):
         return node.targets[0].id.startswith("_")
     elif isinstance(node, ast.AnnAssign):
@@ -98,7 +107,10 @@ def _starts_with_underscore(node: ast.FunctionDef | ast.AnnAssign | ast.Assign) 
 
 def _has_decorator(decorator_name: str) -> Callable[[ast.FunctionDef], bool]:
     def test(node):
-        has = any(isinstance(d, ast.Name) and d.id == decorator_name for d in node.decorator_list)
+        has = any(
+            isinstance(d, ast.Name) and d.id == decorator_name
+            for d in node.decorator_list
+        )
         # if (has):
         # logger.debug(node.name, 'has decorator', [d.id for d in node.decorator_list])
         return has

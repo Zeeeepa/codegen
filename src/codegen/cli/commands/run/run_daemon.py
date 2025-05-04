@@ -27,12 +27,24 @@ def run_daemon(session: CodegenSession, function, diff_preview: int | None = Non
 
             if run_output.logs:
                 rich.print("")
-                panel = Panel(run_output.logs, title="[bold]Logs[/bold]", border_style="blue", padding=(1, 2), expand=False)
+                panel = Panel(
+                    run_output.logs,
+                    title="[bold]Logs[/bold]",
+                    border_style="blue",
+                    padding=(1, 2),
+                    expand=False,
+                )
                 rich.print(panel)
 
             if run_output.error:
                 rich.print("")
-                panel = Panel(run_output.error, title="[bold]Error[/bold]", border_style="red", padding=(1, 2), expand=False)
+                panel = Panel(
+                    run_output.error,
+                    title="[bold]Error[/bold]",
+                    border_style="red",
+                    padding=(1, 2),
+                    expand=False,
+                )
                 rich.print(panel)
 
             if run_output.observation:
@@ -48,14 +60,22 @@ def run_daemon(session: CodegenSession, function, diff_preview: int | None = Non
                     if truncated:
                         limited_diff += f"\n\n...\n\n[yellow]diff truncated to {diff_preview} lines[/yellow]"
 
-                    panel = Panel(limited_diff, title="[bold]Diff Preview[/bold]", border_style="blue", padding=(1, 2), expand=False)
+                    panel = Panel(
+                        limited_diff,
+                        title="[bold]Diff Preview[/bold]",
+                        border_style="blue",
+                        padding=(1, 2),
+                        expand=False,
+                    )
                     rich.print(panel)
             else:
                 rich.print("")
                 rich.print("[yellow] No changes were produced by this codemod[/yellow]")
 
             if diff_preview:
-                rich.print("[green]✓ Changes have been applied to your local filesystem[/green]")
+                rich.print(
+                    "[green]✓ Changes have been applied to your local filesystem[/green]"
+                )
                 rich.print("[yellow]→ Don't forget to commit your changes:[/yellow]")
                 rich.print(format_command("git add ."))
                 rich.print(format_command("git commit -m 'Applied codemod changes'"))

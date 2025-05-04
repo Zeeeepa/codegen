@@ -24,7 +24,15 @@ class OpenAPINoReferenceRequest(Codemod, Skill):
 
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.PYTHON)
     def execute(self, codebase: Codebase) -> None:
-        request_accesses = ["request_get_json", "request.json", "request.args", "request.form", "request.files", "request", "self.request"]
+        request_accesses = [
+            "request_get_json",
+            "request.json",
+            "request.args",
+            "request.form",
+            "request.files",
+            "request",
+            "self.request",
+        ]
 
         def get_namespace_decorator(symbol: Symbol) -> Decorator | None:
             matches = [d for d in symbol.decorators if "_ns.route" in d.source]
@@ -37,13 +45,28 @@ class OpenAPINoReferenceRequest(Codemod, Skill):
                 for method in cls.methods:
                     if method.name in ("get", "post", "put", "patch", "delete"):
                         # Check if it has any request accesses
-                        if not any([access in method.source for access in request_accesses]):
+                        if not any(
+                            [access in method.source for access in request_accesses]
+                        ):
                             # Check if it has an existing `expect`
                             decorators = method.decorators
-                            if not any([x in decorator.source for decorator in decorators for x in ["load_with", "expect", "use_args", "use_kwargs"]]):
+                            if not any(
+                                [
+                                    x in decorator.source
+                                    for decorator in decorators
+                                    for x in [
+                                        "load_with",
+                                        "expect",
+                                        "use_args",
+                                        "use_kwargs",
+                                    ]
+                                ]
+                            ):
                                 # Make sure it has `@xys_ns.route` on the class
                                 ns_decorator = get_namespace_decorator(cls)
                                 if ns_decorator is not None:
-                                    ns_name = ns_decorator.source.split("@")[1].split(".")[0]
+                                    ns_name = ns_decorator.source.split("@")[1].split(
+                                        "."
+                                    )[0]
                                     # Add the decorator
                                     method.add_decorator(f"@{ns_name}.expect(None)")

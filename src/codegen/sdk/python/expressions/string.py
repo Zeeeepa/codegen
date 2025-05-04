@@ -17,7 +17,16 @@ Parent = TypeVar("Parent", bound="Expression")
 class PyString(String, Generic[Parent]):
     """An abstract representation of a python string."""
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent=parent)
         substitutions = [x for x in ts_node.named_children if x.type == "interpolation"]
-        self.expressions = [self._parse_expression(x.child_by_field_name("expression")) for x in substitutions]
+        self.expressions = [
+            self._parse_expression(x.child_by_field_name("expression"))
+            for x in substitutions
+        ]

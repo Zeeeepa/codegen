@@ -58,7 +58,15 @@ class Transaction:
         return f"<Transaction at bytes [{self.start_byte}:{self.end_byte}] on {self.file_path}>"
 
     def __hash__(self):
-        return hash((self.start_byte, self.end_byte, self.file_path, self.priority, self.new_content))
+        return hash(
+            (
+                self.start_byte,
+                self.end_byte,
+                self.file_path,
+                self.priority,
+                self.new_content,
+            )
+        )
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):
@@ -97,13 +105,26 @@ class Transaction:
         # 2. Ascending transaction type
         # 3. Ascending priority
         # 4. Descending time of transaction=
-        priority = (transaction.priority,) if isinstance(transaction.priority, int) else transaction.priority
+        priority = (
+            (transaction.priority,)
+            if isinstance(transaction.priority, int)
+            else transaction.priority
+        )
 
-        return -transaction.start_byte, transaction.transaction_order.value, priority, -transaction.transaction_id
+        return (
+            -transaction.start_byte,
+            transaction.transaction_order.value,
+            priority,
+            -transaction.transaction_id,
+        )
 
     @cached_property
     def new_content(self) -> str | None:
-        return self._new_content() if isinstance(self._new_content, ContentFunc) else self._new_content
+        return (
+            self._new_content()
+            if isinstance(self._new_content, ContentFunc)
+            else self._new_content
+        )
 
 
 class RemoveTransaction(Transaction):
@@ -111,14 +132,23 @@ class RemoveTransaction(Transaction):
 
     exec_func: Callable[[], None] | None = None
 
-    def __init__(self, start_byte: int, end_byte: int, file: "File", priority: int = 0, exec_func: Callable[[], None] | None = None) -> None:
+    def __init__(
+        self,
+        start_byte: int,
+        end_byte: int,
+        file: "File",
+        priority: int = 0,
+        exec_func: Callable[[], None] | None = None,
+    ) -> None:
         super().__init__(start_byte, end_byte, file.path, priority=priority)
         self.file = file
         self.exec_func = exec_func
 
     def _generate_new_content_bytes(self) -> bytes:
         content_bytes = self.file.content_bytes
-        new_content_bytes = content_bytes[: self.start_byte] + content_bytes[self.end_byte :]
+        new_content_bytes = (
+            content_bytes[: self.start_byte] + content_bytes[self.end_byte :]
+        )
         return new_content_bytes
 
     def execute(self) -> None:
@@ -129,11 +159,18 @@ class RemoveTransaction(Transaction):
 
     def get_diff(self) -> DiffLite:
         """Gets the diff produced by this transaction"""
-        return DiffLite(ChangeType.Modified, self.file_path, old_content=self.file.content_bytes)
+        return DiffLite(
+            ChangeType.Modified, self.file_path, old_content=self.file.content_bytes
+        )
 
     def diff_str(self) -> str:
         """Human-readable string representation of the change"""
-        diff = "".join(unified_diff(self.file.content.splitlines(True), self._generate_new_content_bytes().decode("utf-8").splitlines(True)))
+        diff = "".join(
+            unified_diff(
+                self.file.content.splitlines(True),
+                self._generate_new_content_bytes().decode("utf-8").splitlines(True),
+            )
+        )
         return f"Remove {self.length} bytes at bytes ({self.start_byte}, {self.end_byte})\n{diff}"
 
 
@@ -151,7 +188,13 @@ class InsertTransaction(Transaction):
         priority: int | tuple = 0,
         exec_func: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__(insert_byte, insert_byte, file.path, priority=priority, new_content=new_content)
+        super().__init__(
+            insert_byte,
+            insert_byte,
+            file.path,
+            priority=priority,
+            new_content=new_content,
+        )
         self.insert_byte = insert_byte
         self.file = file
         self.exec_func = exec_func
@@ -172,11 +215,18 @@ class InsertTransaction(Transaction):
 
     def get_diff(self) -> DiffLite:
         """Gets the diff produced by this transaction"""
-        return DiffLite(ChangeType.Modified, self.file_path, old_content=self.file.content_bytes)
+        return DiffLite(
+            ChangeType.Modified, self.file_path, old_content=self.file.content_bytes
+        )
 
     def diff_str(self) -> str:
         """Human-readable string representation of the change"""
-        diff = "".join(unified_diff(self.file.content.splitlines(True), self._generate_new_content_bytes().decode("utf-8").splitlines(True)))
+        diff = "".join(
+            unified_diff(
+                self.file.content.splitlines(True),
+                self._generate_new_content_bytes().decode("utf-8").splitlines(True),
+            )
+        )
         return f"Insert {len(self.new_content)} bytes at bytes ({self.start_byte}, {self.end_byte})\n{diff}"
 
 
@@ -192,13 +242,19 @@ class EditTransaction(Transaction):
         new_content: str,
         priority: int = 0,
     ) -> None:
-        super().__init__(start_byte, end_byte, file.path, priority=priority, new_content=new_content)
+        super().__init__(
+            start_byte, end_byte, file.path, priority=priority, new_content=new_content
+        )
         self.file = file
 
     def _generate_new_content_bytes(self) -> bytes:
         new_bytes = bytes(self.new_content, "utf-8")
         content_bytes = self.file.content_bytes
-        new_content_bytes = content_bytes[: self.start_byte] + new_bytes + content_bytes[self.end_byte :]
+        new_content_bytes = (
+            content_bytes[: self.start_byte]
+            + new_bytes
+            + content_bytes[self.end_byte :]
+        )
         return new_content_bytes
 
     def execute(self) -> None:
@@ -207,11 +263,18 @@ class EditTransaction(Transaction):
 
     def get_diff(self) -> DiffLite:
         """Gets the diff produced by this transaction"""
-        return DiffLite(ChangeType.Modified, self.file_path, old_content=self.file.content_bytes)
+        return DiffLite(
+            ChangeType.Modified, self.file_path, old_content=self.file.content_bytes
+        )
 
     def diff_str(self) -> str:
         """Human-readable string representation of the change"""
-        diff = "".join(unified_diff(self.file.content.splitlines(True), self._generate_new_content_bytes().decode("utf-8").splitlines(True)))
+        diff = "".join(
+            unified_diff(
+                self.file.content.splitlines(True),
+                self._generate_new_content_bytes().decode("utf-8").splitlines(True),
+            )
+        )
         return f"Edit {self.length} bytes at bytes ({self.start_byte}, {self.end_byte}), src: ({self.new_content[:50]})\n{diff}"
 
     def break_down(self) -> list[InsertTransaction] | None:
@@ -221,9 +284,23 @@ class EditTransaction(Transaction):
             prefix, suffix = new.split(old, maxsplit=1)
             ret = []
             if suffix:
-                ret.append(InsertTransaction(self.end_byte, self.file, suffix.decode("utf-8"), priority=self.priority))
+                ret.append(
+                    InsertTransaction(
+                        self.end_byte,
+                        self.file,
+                        suffix.decode("utf-8"),
+                        priority=self.priority,
+                    )
+                )
             if prefix:
-                ret.append(InsertTransaction(self.start_byte, self.file, prefix.decode("utf-8"), priority=self.priority))
+                ret.append(
+                    InsertTransaction(
+                        self.start_byte,
+                        self.file,
+                        prefix.decode("utf-8"),
+                        priority=self.priority,
+                    )
+                )
             return ret
         return None
 
@@ -271,7 +348,13 @@ class FileRenameTransaction(Transaction):
 
     def get_diff(self) -> DiffLite:
         """Gets the diff produced by this transaction"""
-        return DiffLite(ChangeType.Renamed, self.file_path, self.file_path, self.new_file_path, old_content=self.file.content_bytes)
+        return DiffLite(
+            ChangeType.Renamed,
+            self.file_path,
+            self.file_path,
+            self.new_file_path,
+            old_content=self.file.content_bytes,
+        )
 
     def diff_str(self) -> str:
         """Human-readable string representation of the change"""
@@ -295,7 +378,9 @@ class FileRemoveTransaction(Transaction):
 
     def get_diff(self) -> DiffLite:
         """Gets the diff produced by this transaction"""
-        return DiffLite(ChangeType.Removed, self.file_path, old_content=self.file.content_bytes)
+        return DiffLite(
+            ChangeType.Removed, self.file_path, old_content=self.file.content_bytes
+        )
 
     def diff_str(self) -> str:
         """Human-readable string representation of the change"""

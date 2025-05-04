@@ -16,7 +16,12 @@ NUM_FILES = 1000
 
 def setup_codebase(num_files: int, extension: str, tmp_path: Path):
     files = generate_files(num_files, extension)
-    with get_codebase_session(files=files, programming_language=ProgrammingLanguage.PYTHON, tmpdir=Path(tmp_path), sync_graph=False) as codebase:
+    with get_codebase_session(
+        files=files,
+        programming_language=ProgrammingLanguage.PYTHON,
+        tmpdir=Path(tmp_path),
+        sync_graph=False,
+    ) as codebase:
         for file in files:
             codebase.get_file(file).edit(f"# comment2 {file}")
     return codebase, files
@@ -38,7 +43,9 @@ def test_codebase_reset_stress_test(extension: str, tmp_path, benchmark):
 
 @pytest.mark.skip("Skipping this test for now")
 @pytest.mark.timeout(5, func_only=True)
-@pytest.mark.skip(reason="Test is timing out and needs investigation")  # Skip this test for now
+@pytest.mark.skip(
+    reason="Test is timing out and needs investigation"
+)  # Skip this test for now
 @pytest.mark.parametrize("extension", ["txt", "py"])
 def test_codebase_reset_correctness(extension: str, tmp_path):
     codebase, files = setup_codebase(NUM_FILES, extension, tmp_path)

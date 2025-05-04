@@ -52,9 +52,7 @@ class CodebaseSnapshot:
             self.snapshot_id = snapshot_id
         else:
             # Create a unique ID based on repo name, commit SHA, and timestamp
-            id_string = (
-                f"{codebase.repo_path}:{commit_sha or 'unknown'}:{self.timestamp.isoformat()}"
-            )
+            id_string = f"{codebase.repo_path}:{commit_sha or 'unknown'}:{self.timestamp.isoformat()}"
             self.snapshot_id = hashlib.md5(id_string.encode()).hexdigest()
 
         # Capture key metrics and metadata
@@ -212,7 +210,9 @@ class CodebaseSnapshot:
             # Count early returns which create additional paths
             complexity += func.source.count("return ") - 1
             if complexity < 1:
-                complexity = 1  # Ensure at least one return is not counted as complexity
+                complexity = (
+                    1  # Ensure at least one return is not counted as complexity
+                )
 
         return complexity
 

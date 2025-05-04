@@ -7,9 +7,9 @@ with the main CodeAnalyzer class, using a composition pattern instead of monkey 
 
 from typing import Any, Dict, Optional
 
-from codegen import Codebase
-
 from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer
+
+from codegen import Codebase
 
 
 class CodeIntegrityIntegration:

@@ -31,7 +31,9 @@ class SwapClassAttributeUsages(Codemod, Skill):
             parameters = function.parameters
             if any(p.type == class_a_symb for p in parameters):
                 # Rename existing instances of `cache_config`=> `cache_config_` (prevents mypy issue)
-                name_conflict_vars = function.code_block.get_local_var_assignments("cache_config")
+                name_conflict_vars = function.code_block.get_local_var_assignments(
+                    "cache_config"
+                )
                 for name_conflict_var in name_conflict_vars:
                     name_conflict_var.rename("cache_config_")
 

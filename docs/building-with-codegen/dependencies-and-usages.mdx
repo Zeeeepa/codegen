@@ -43,9 +43,9 @@ If `A` depends on `B`, then `B` is used by `A`. This relationship is tracked in 
 
 flowchart LR
     B(BaseClass)
-    
-    
-    
+
+
+
     A(MyClass)
     B ---| used by |A
     A ---|depends on |B
@@ -214,7 +214,7 @@ class A:
     def method_a(self): pass
 
 class B(A):
-    def method_b(self): 
+    def method_b(self):
         self.method_a()
 
 class C(B):

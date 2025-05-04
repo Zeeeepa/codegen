@@ -46,7 +46,13 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
     """
 
     @reader
-    def get_import_string(self, alias: str | None = None, module: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> str:
+    def get_import_string(
+        self,
+        alias: str | None = None,
+        module: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> str:
         """Generates the appropriate import string for a symbol.
 
         Constructs and returns an import statement string based on the provided parameters, formatting it according
@@ -92,10 +98,21 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
 
         # Check if the symbol is wrapped by another node like 'export_statement'
         new_ts_node = self.ts_node
-        while (parent := new_ts_node.parent).type in ("export_statement", "lexical_declaration", "variable_declarator"):
+        while (parent := new_ts_node.parent).type in (
+            "export_statement",
+            "lexical_declaration",
+            "variable_declarator",
+        ):
             new_ts_node = parent
 
-        return [Value(new_ts_node, self.file_node_id, self.ctx, self.parent) if node.ts_node == self.ts_node else node for node in nodes]
+        return [
+            (
+                Value(new_ts_node, self.file_node_id, self.ctx, self.parent)
+                if node.ts_node == self.ts_node
+                else node
+            )
+            for node in nodes
+        ]
 
     @property
     @reader
@@ -125,7 +142,13 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         return TSCommentGroup.from_symbol_inline_comments(self)
 
     @writer
-    def set_comment(self, comment: str, auto_format: bool = True, clean_format: bool = True, comment_type: TSCommentType = TSCommentType.DOUBLE_SLASH) -> None:
+    def set_comment(
+        self,
+        comment: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        comment_type: TSCommentType = TSCommentType.DOUBLE_SLASH,
+    ) -> None:
         """Sets a comment to the symbol.
 
         Adds or updates a comment for a code symbol. If a comment already exists, it will be edited. If no
@@ -161,7 +184,13 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
             self.insert_before(comment, fix_indentation=True)
 
     @writer
-    def add_comment(self, comment: str, auto_format: bool = True, clean_format: bool = True, comment_type: TSCommentType = TSCommentType.DOUBLE_SLASH) -> None:
+    def add_comment(
+        self,
+        comment: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        comment_type: TSCommentType = TSCommentType.DOUBLE_SLASH,
+    ) -> None:
         """Adds a new comment to the symbol.
 
         Appends a comment to an existing comment group or creates a new comment group if none exists.
@@ -190,7 +219,13 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
             self.insert_before(comment, fix_indentation=True)
 
     @writer
-    def set_inline_comment(self, comment: str, auto_format: bool = True, clean_format: bool = True, node: TSNode | None = None) -> None:
+    def set_inline_comment(
+        self,
+        comment: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        node: TSNode | None = None,
+    ) -> None:
         """Sets an inline comment to the symbol.
 
         Sets or replaces an inline comment for a symbol at its current position. If an inline comment
@@ -222,9 +257,13 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
                 self.inline_comment.edit(comment)
         else:
             if auto_format:
-                comment = "  " + TSComment.generate_comment(comment, TSCommentType.DOUBLE_SLASH)
+                comment = "  " + TSComment.generate_comment(
+                    comment, TSCommentType.DOUBLE_SLASH
+                )
             node = node or self.ts_node
-            Value(node, self.file_node_id, self.ctx, self).insert_after(comment, fix_indentation=False, newline=False)
+            Value(node, self.file_node_id, self.ctx, self).insert_after(
+                comment, fix_indentation=False, newline=False
+            )
 
     @property
     @reader
@@ -260,7 +299,9 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         file: SourceFile,
         encountered_symbols: set[Symbol | Import],
         include_dependencies: bool = True,
-        strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"] = "update_all_imports",
+        strategy: Literal[
+            "add_back_edge", "update_all_imports", "duplicate_dependencies"
+        ] = "update_all_imports",
         cleanup_unused_imports: bool = True,
     ) -> tuple[NodeId, NodeId]:
         # TODO: Prevent creation of import loops (!) - raise a ValueError and make the agent fix it
@@ -283,12 +324,21 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
                     elif isinstance(dep, TSSymbol):
                         if dep.is_top_level:
                             encountered_symbols.add(dep)
-                            dep._move_to_file(file, encountered_symbols=encountered_symbols, include_dependencies=True, strategy=strategy)
+                            dep._move_to_file(
+                                file,
+                                encountered_symbols=encountered_symbols,
+                                include_dependencies=True,
+                                strategy=strategy,
+                            )
 
                     # =====[ Imports - copy over ]=====
                     elif isinstance(dep, TSImport):
                         if dep.imported_symbol:
-                            file.add_import(dep.imported_symbol, alias=dep.alias.source, import_type=dep.import_type)
+                            file.add_import(
+                                dep.imported_symbol,
+                                alias=dep.alias.source,
+                                import_type=dep.import_type,
+                            )
                         else:
                             file.add_import(dep.source)
 
@@ -306,7 +356,12 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
 
                     # =====[ Symbols - move over ]=====
                     elif isinstance(dep, Symbol) and dep.is_top_level:
-                        file.add_import(imp=dep, alias=dep.name, import_type=ImportType.NAMED_EXPORT, is_type_import=isinstance(dep, TypeAlias))
+                        file.add_import(
+                            imp=dep,
+                            alias=dep.name,
+                            import_type=ImportType.NAMED_EXPORT,
+                            is_type_import=isinstance(dep, TypeAlias),
+                        )
 
                         if not dep.is_exported:
                             dep.file.add_export_to_symbol(dep)
@@ -315,7 +370,12 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
                     # =====[ Imports - copy over ]=====
                     elif isinstance(dep, TSImport):
                         if dep.imported_symbol:
-                            file.add_import(dep.imported_symbol, alias=dep.alias.source, import_type=dep.import_type, is_type_import=dep.is_type_import())
+                            file.add_import(
+                                dep.imported_symbol,
+                                alias=dep.alias.source,
+                                import_type=dep.import_type,
+                                is_type_import=dep.is_type_import(),
+                            )
                         else:
                             file.add_import(dep.source)
 
@@ -326,7 +386,12 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         # This will update all edges etc.
         should_export = False
 
-        if self.is_exported or [usage for usage in self.usages if usage.usage_symbol not in encountered_symbols and not usage.usage_symbol.get_transaction_if_pending_removal()]:
+        if self.is_exported or [
+            usage
+            for usage in self.usages
+            if usage.usage_symbol not in encountered_symbols
+            and not usage.usage_symbol.get_transaction_if_pending_removal()
+        ]:
             should_export = True
 
         file.add_symbol(self, should_export=should_export)
@@ -334,13 +399,25 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
 
         # =====[ Checks if symbol is used in original file ]=====
         # Takes into account that it's dependencies will be moved
-        is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL and usage not in encountered_symbols for usage in self.symbol_usages)
+        is_used_in_file = any(
+            usage.file == self.file
+            and usage.node_type == NodeType.SYMBOL
+            and usage not in encountered_symbols
+            for usage in self.symbol_usages
+        )
 
         # ======[ Strategy: Duplicate Dependencies ]=====
         if strategy == "duplicate_dependencies":
             # If not used in the original file. or if not imported from elsewhere, we can just remove the original symbol
-            is_used_in_file = any(usage.file == self.file and usage.node_type == NodeType.SYMBOL for usage in self.symbol_usages)
-            if not is_used_in_file and not any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
+            is_used_in_file = any(
+                usage.file == self.file and usage.node_type == NodeType.SYMBOL
+                for usage in self.symbol_usages
+            )
+            if not is_used_in_file and not any(
+                usage.kind is UsageKind.IMPORTED
+                and usage.usage_symbol not in encountered_symbols
+                for usage in self.usages
+            ):
                 self.remove()
 
         # ======[ Strategy: Add Back Edge ]=====
@@ -361,14 +438,20 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         # Update the imports in all the files which use this symbol to get it from the new file now
         elif strategy == "update_all_imports":
             for usage in self.usages:
-                if isinstance(usage.usage_symbol, TSImport) and usage.usage_symbol.file != file:
+                if (
+                    isinstance(usage.usage_symbol, TSImport)
+                    and usage.usage_symbol.file != file
+                ):
                     # Add updated import
                     usage.usage_symbol.file.add_import(import_line)
                     usage.usage_symbol.remove()
                 elif usage.usage_type == UsageType.CHAINED:
                     # Update all previous usages of import * to the new import name
                     if usage.match and "." + self.name in usage.match:
-                        if isinstance(usage.match, FunctionCall) and self.name in usage.match.get_name():
+                        if (
+                            isinstance(usage.match, FunctionCall)
+                            and self.name in usage.match.get_name()
+                        ):
                             usage.match.get_name().edit(self.name)
                         if isinstance(usage.match, ChainedAttribute):
                             usage.match.edit(self.name)
@@ -382,10 +465,19 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         if cleanup_unused_imports:
             self._post_move_import_cleanup(encountered_symbols, strategy)
 
-    def _convert_proptype_to_typescript(self, prop_type: Editable, param: Parameter | None, level: int) -> str:
+    def _convert_proptype_to_typescript(
+        self, prop_type: Editable, param: Parameter | None, level: int
+    ) -> str:
         """Converts a PropType definition to its TypeScript equivalent."""
         # Handle basic types
-        type_map = {"string": "string", "number": "number", "bool": "boolean", "object": "object", "array": "any[]", "func": "CallableFunction"}
+        type_map = {
+            "string": "string",
+            "number": "number",
+            "bool": "boolean",
+            "object": "object",
+            "array": "any[]",
+            "func": "CallableFunction",
+        }
         if prop_type.source in type_map:
             return type_map[prop_type.source]
         if isinstance(prop_type, ChainedAttribute):
@@ -414,13 +506,19 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
                 # return f"({",".join(params)}) => void"
                 return "Function"
             if prop_type.attribute.source == "isRequired":
-                return self._convert_proptype_to_typescript(prop_type.object, param, level)
+                return self._convert_proptype_to_typescript(
+                    prop_type.object, param, level
+                )
         if isinstance(prop_type, FunctionCall):
             if prop_type.name == "isRequired":
-                return self._convert_proptype_to_typescript(prop_type.args[0].value, param, level)
+                return self._convert_proptype_to_typescript(
+                    prop_type.args[0].value, param, level
+                )
             # Handle arrays
             if prop_type.name == "arrayOf":
-                item = self._convert_proptype_to_typescript(prop_type.args[0].value, param, level)
+                item = self._convert_proptype_to_typescript(
+                    prop_type.args[0].value, param, level
+                )
                 # needs_parens = isinstance(prop_type.args[0].value, FunctionCall)
                 needs_parens = False
                 return f"({item})[]" if needs_parens else f"{item}[]"
@@ -438,7 +536,10 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
 
             # Handle oneOfType
             if prop_type.name == "oneOfType":
-                types = [self._convert_proptype_to_typescript(arg, param, level) for arg in prop_type.args[0].value]
+                types = [
+                    self._convert_proptype_to_typescript(arg, param, level)
+                    for arg in prop_type.args[0].value
+                ]
                 # Only add parentheses if one of the types is a function
                 return " | ".join(f"({t})" if "() => void" == t else t for t in types)
 
@@ -453,10 +554,17 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
         """Converts a dictionary of PropTypes to a TypeScript interface string."""
         result = "{\n"
         for key, value in value.items():
-            is_required = isinstance(value, ChainedAttribute) and value.attribute.source == "isRequired"
+            is_required = (
+                isinstance(value, ChainedAttribute)
+                and value.attribute.source == "isRequired"
+            )
             optional = "" if is_required else "?"
             indent = "    " * level
-            param = next((p for p in self.parameters if p.name == key), None) if self.parameters else None
+            param = (
+                next((p for p in self.parameters if p.name == key), None)
+                if self.parameters
+                else None
+            )
             result += f"{indent}{key}{optional}: {self._convert_proptype_to_typescript(value, param, level + 1)};\n"
         indent = "    " * (level - 1)
 
@@ -473,8 +581,13 @@ class TSSymbol(Symbol["TSHasBlock", "TSCodeBlock"], Exportable):
     def _get_static_prop_types(self) -> Type | None:
         """Returns a dictionary of prop types for a React component."""
         for usage in self.usages:
-            if isinstance(usage.usage_symbol, Assignment) and usage.usage_symbol.name == "propTypes":
-                assert isinstance(usage.usage_symbol.value, Type), usage.usage_symbol.value.__class__
+            if (
+                isinstance(usage.usage_symbol, Assignment)
+                and usage.usage_symbol.name == "propTypes"
+            ):
+                assert isinstance(
+                    usage.usage_symbol.value, Type
+                ), usage.usage_symbol.value.__class__
                 return usage.usage_symbol.value
         return None
 

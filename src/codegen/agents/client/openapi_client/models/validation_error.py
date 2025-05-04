@@ -18,7 +18,9 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing_extensions import Self
 
-from codegen.agents.client.openapi_client.models.validation_error_loc_inner import ValidationErrorLocInner
+from codegen.agents.client.openapi_client.models.validation_error_loc_inner import (
+    ValidationErrorLocInner,
+)
 
 
 class ValidationError(BaseModel):
@@ -84,5 +86,15 @@ class ValidationError(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({"loc": [ValidationErrorLocInner.from_dict(_item) for _item in obj["loc"]] if obj.get("loc") is not None else None, "msg": obj.get("msg"), "type": obj.get("type")})
+        _obj = cls.model_validate(
+            {
+                "loc": (
+                    [ValidationErrorLocInner.from_dict(_item) for _item in obj["loc"]]
+                    if obj.get("loc") is not None
+                    else None
+                ),
+                "msg": obj.get("msg"),
+                "type": obj.get("type"),
+            }
+        )
         return _obj

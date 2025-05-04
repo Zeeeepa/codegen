@@ -42,7 +42,9 @@ class UpdateOptionalTypeAnnotations(Codemod, Skill):
         # Iterate over all files in the codebase
         for file in codebase.files:
             # Process standalone functions and methods within classes
-            for function in file.functions + [method for cls in file.classes for method in cls.methods]:
+            for function in file.functions + [
+                method for cls in file.classes for method in cls.methods
+            ]:
                 # Iterate over all parameters in the function
                 if function.parameters:
                     for parameter in function.parameters:

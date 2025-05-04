@@ -109,7 +109,7 @@ def calculate_maintainability_index(
 
 ## Line Metrics
 
-Line metrics provide insights into the size, complexity, and maintainability of a codebase. These measurements help determine the scale of a project, identify areas that may need refactoring, and track the growth of the codebase over time. 
+Line metrics provide insights into the size, complexity, and maintainability of a codebase. These measurements help determine the scale of a project, identify areas that may need refactoring, and track the growth of the codebase over time.
 
 ### Lines of Code
 Lines of Code refers to the total number of lines in the source code, including blank lines and comments. This is accomplished with a simple count of all lines in the source file.
@@ -154,4 +154,3 @@ The tool is implemented as a FastAPI application wrapped in a Modal deployment. 
 This is the only endpoint in the FastAPI server, as it takes care of the entire analysis process. To run the FastAPI server locally, install all dependencies and run the server with `modal serve modal_main.py`.
 
 The server can be connected to the frontend dashboard. This web component is implemented as a Next.js application with appropriate comments and visualizations for the raw server data. To run the frontend locally, install all dependencies and run the server with `npm run dev`. This can be connected to the FastAPI server by setting the URL in the request to the `/analyze_repo` endpoint.
-

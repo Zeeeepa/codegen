@@ -38,7 +38,13 @@ Parent = TypeVar("Parent", bound="Collection[Parameter, Function]")
 
 
 @apidoc
-class Parameter(Usable[Parent], Typeable[TType, Parent], HasValue, Expression[Parent], Generic[TType, Parent]):
+class Parameter(
+    Usable[Parent],
+    Typeable[TType, Parent],
+    HasValue,
+    Expression[Parent],
+    Generic[TType, Parent],
+):
     """Abstract representation of a parameter in a Function definition."""
 
     _pos: int
@@ -58,10 +64,15 @@ class Parameter(Usable[Parent], Typeable[TType, Parent], HasValue, Expression[Pa
         if ts_node.type == "identifier":
             return ts_node
         else:
-            name_node = find_first_descendant(ts_node, ["identifier", "shorthand_property_identifier_pattern", "this"])
+            name_node = find_first_descendant(
+                ts_node, ["identifier", "shorthand_property_identifier_pattern", "this"]
+            )
             if name_node is None:
                 # Some parameters don't have names, e.g. the {} in `async run({}, arg2, arg3) {..}`
-                self._log_parse("Unable to find name node in parameter: %s", ts_node.text.decode("utf-8"))
+                self._log_parse(
+                    "Unable to find name node in parameter: %s",
+                    ts_node.text.decode("utf-8"),
+                )
             return name_node
 
     @reader
@@ -145,7 +156,9 @@ class Parameter(Usable[Parent], Typeable[TType, Parent], HasValue, Expression[Pa
         raise NotImplementedError(msg)
 
     @writer
-    def remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
         """Removes the parameter from the function definition and all its call sites.
 
         Removes the parameter from a function's definition and also removes the corresponding argument
@@ -167,12 +180,18 @@ class Parameter(Usable[Parent], Typeable[TType, Parent], HasValue, Expression[Pa
             if arg is None:
                 arg = call_site.get_arg_by_index(self.index)
             if arg is None:
-                logger.info(f"Unable to find argument with parameter name {self.name} at call site {call_site}")
+                logger.info(
+                    f"Unable to find argument with parameter name {self.name} at call site {call_site}"
+                )
                 continue
-            arg.remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+            arg.remove(
+                delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+            )
 
         # Step 2: Actually remove the parameter from the function header
-        super().remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+        super().remove(
+            delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+        )
 
     @writer
     def rename(self, new_name: str, priority: int = 0) -> None:
@@ -199,7 +218,9 @@ class Parameter(Usable[Parent], Typeable[TType, Parent], HasValue, Expression[Pa
         parent_function = self.parent_function
         call_sites = parent_function.call_sites
         for call_site in call_sites:
-            arg_to_rename = [arg for arg in call_site.args if arg.is_named and arg.name == self.name]
+            arg_to_rename = [
+                arg for arg in call_site.args if arg.is_named and arg.name == self.name
+            ]
             for arg in arg_to_rename:
                 arg.rename(new_name)
 
@@ -215,11 +236,17 @@ class Parameter(Usable[Parent], Typeable[TType, Parent], HasValue, Expression[Pa
     @noapidoc
     @commiter
     @override
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.type:
-            self.type._compute_dependencies(UsageKind.TYPE_ANNOTATION, self.parent.self_dest)
+            self.type._compute_dependencies(
+                UsageKind.TYPE_ANNOTATION, self.parent.self_dest
+            )
         if self.value:
-            self.value._compute_dependencies(UsageKind.DEFAULT_VALUE, self.parent.self_dest)
+            self.value._compute_dependencies(
+                UsageKind.DEFAULT_VALUE, self.parent.self_dest
+            )
 
     @property
     @noapidoc

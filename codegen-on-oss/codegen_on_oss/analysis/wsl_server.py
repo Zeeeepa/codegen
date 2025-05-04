@@ -13,16 +13,15 @@ import traceback
 from typing import Any, Dict, List, Optional, Union
 
 import uvicorn
+from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer
+from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
-
-from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer
-from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
-from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 
 # Configure logging
 logging.basicConfig(
@@ -62,13 +61,17 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_id = str(uuid.uuid4())  # Generate unique error ID
     logger.error(f"Error ID {error_id}: {str(exc)}")
     logger.error(traceback.format_exc())
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal Server Error",
             "error_id": error_id,
-            "message": str(exc) if os.getenv("DEBUG", "false").lower() == "true" else "An unexpected error occurred",
+            "message": (
+                str(exc)
+                if os.getenv("DEBUG", "false").lower() == "true"
+                else "An unexpected error occurred"
+            ),
         },
     )
 
@@ -102,7 +105,9 @@ class PRAnalysisRequest(BaseModel):
     github_token: Optional[str] = None
     detailed: bool = True
     post_comment: bool = False
-    include_file_content: bool = False  # New field to include file content in the response
+    include_file_content: bool = (
+        False  # New field to include file content in the response
+    )
 
 
 # Response Models
@@ -136,7 +141,9 @@ class RepoComparisonResponse(BaseModel):
     complexity_changes: Dict[str, float]
     risk_assessment: Dict[str, Any]
     summary: str
-    detailed_analysis: Optional[Dict[str, Any]] = None  # New field for detailed analysis
+    detailed_analysis: Optional[Dict[str, Any]] = (
+        None  # New field for detailed analysis
+    )
     error: Optional[str] = None  # New field for error messages
 
 
@@ -212,7 +219,9 @@ async def validate_code(
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshot from repository
-            logger.info(f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})")
+            logger.info(
+                f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})"
+            )
             snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.repo_url,
                 branch=request.branch,
@@ -225,7 +234,11 @@ async def validate_code(
             analyzer = CodeIntegrityAnalyzer(snapshot)
 
             # Perform analysis
-            categories = request.categories or ["code_quality", "security", "maintainability"]
+            categories = request.categories or [
+                "code_quality",
+                "security",
+                "maintainability",
+            ]
             logger.info(f"Analyzing categories: {categories}")
             results = []
 
@@ -253,10 +266,14 @@ async def validate_code(
                         recommendations=result.get("recommendations", []),
                     )
                 )
-                logger.info(f"Category {category} analyzed with score: {result.get('score', 0.0)}")
+                logger.info(
+                    f"Category {category} analyzed with score: {result.get('score', 0.0)}"
+                )
 
             # Calculate overall score
-            overall_score = sum(r.score for r in results) / len(results) if results else 0.0
+            overall_score = (
+                sum(r.score for r in results) / len(results) if results else 0.0
+            )
             logger.info(f"Overall score: {overall_score:.2f}/10")
 
             # Generate summary
@@ -277,7 +294,7 @@ async def validate_code(
     except Exception as e:
         logger.error(f"Error validating code: {str(e)}")
         logger.error(traceback.format_exc())
-        
+
         # Return a response with error information
         return CodeValidationResponse(
             repo_url=request.repo_url,
@@ -309,7 +326,9 @@ async def compare_repositories(
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshots from repositories
-            logger.info(f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})")
+            logger.info(
+                f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})"
+            )
             base_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.base_repo_url,
                 branch=request.base_branch,
@@ -317,7 +336,9 @@ async def compare_repositories(
             )
             logger.info(f"Base snapshot created with {len(base_snapshot.files)} files")
 
-            logger.info(f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})")
+            logger.info(
+                f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})"
+            )
             head_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.head_repo_url,
                 branch=request.head_branch,
@@ -333,11 +354,11 @@ async def compare_repositories(
             logger.info("Analyzing file changes")
             file_changes = diff_analyzer.analyze_file_changes()
             logger.info(f"Found {len(file_changes)} file changes")
-            
+
             logger.info("Analyzing function changes")
             function_changes = diff_analyzer.analyze_function_changes()
             logger.info(f"Found {len(function_changes)} function changes")
-            
+
             logger.info("Analyzing complexity changes")
             complexity_changes = diff_analyzer.analyze_complexity_changes()
             logger.info(f"Found {len(complexity_changes)} complexity changes")
@@ -373,7 +394,7 @@ async def compare_repositories(
     except Exception as e:
         logger.error(f"Error comparing repositories: {str(e)}")
         logger.error(traceback.format_exc())
-        
+
         # Return a response with error information
         return RepoComparisonResponse(
             base_repo_url=request.base_repo_url,
@@ -401,11 +422,15 @@ async def analyze_pull_request(
     """
     try:
         # Initialize SWE harness agent
-        logger.info(f"Initializing SWE harness agent for PR analysis: {request.repo_url}#{request.pr_number}")
+        logger.info(
+            f"Initializing SWE harness agent for PR analysis: {request.repo_url}#{request.pr_number}"
+        )
         agent = SWEHarnessAgent(github_token=request.github_token)
 
         # Analyze pull request
-        logger.info(f"Analyzing pull request: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})")
+        logger.info(
+            f"Analyzing pull request: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})"
+        )
         analysis_results = agent.analyze_pr(
             repo=request.repo_url,
             pr_number=request.pr_number,
@@ -415,7 +440,9 @@ async def analyze_pull_request(
 
         # Post comment if requested
         if request.post_comment:
-            logger.info(f"Posting comment to PR: {request.repo_url}#{request.pr_number}")
+            logger.info(
+                f"Posting comment to PR: {request.repo_url}#{request.pr_number}"
+            )
             agent.post_pr_comment(
                 repo=request.repo_url,
                 pr_number=request.pr_number,
@@ -428,16 +455,20 @@ async def analyze_pull_request(
         issues_found = analysis_results.get("issues", [])
         recommendations = analysis_results.get("recommendations", [])
         summary = analysis_results.get("summary", "")
-        
+
         # Get file content if requested
         file_content = None
         if request.include_file_content:
-            logger.info(f"Retrieving file content for PR: {request.repo_url}#{request.pr_number}")
+            logger.info(
+                f"Retrieving file content for PR: {request.repo_url}#{request.pr_number}"
+            )
             file_content = agent.get_pr_file_content(
                 repo=request.repo_url,
                 pr_number=request.pr_number,
             )
-            logger.info(f"Retrieved content for {len(file_content) if file_content else 0} files")
+            logger.info(
+                f"Retrieved content for {len(file_content) if file_content else 0} files"
+            )
 
         return PRAnalysisResponse(
             repo_url=request.repo_url,
@@ -453,7 +484,7 @@ async def analyze_pull_request(
     except Exception as e:
         logger.error(f"Error analyzing pull request: {str(e)}")
         logger.error(traceback.format_exc())
-        
+
         # Return a response with error information
         return PRAnalysisResponse(
             repo_url=request.repo_url,

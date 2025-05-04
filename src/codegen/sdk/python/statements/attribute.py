@@ -24,13 +24,17 @@ class PyAttribute(Attribute["PyCodeBlock", "PyAssignment"], PyAssignmentStatemen
     def _parse_assignment(self, assignment_node: TSNode | None = None) -> PyAssignment:
         """Parses the assignment in the expression"""
         if not assignment_node:
-            assignment_node = next(x for x in self.ts_node.named_children if x.type == "assignment")
+            assignment_node = next(
+                x for x in self.ts_node.named_children if x.type == "assignment"
+            )
         return self._parse_expression(assignment_node)
 
     @reader
     def _get_name_node(self) -> TSNode:
         """Returns the ID node from the root node of the symbol"""
-        assignment_node = next(x for x in self.ts_node.named_children if x.type == "assignment")
+        assignment_node = next(
+            x for x in self.ts_node.named_children if x.type == "assignment"
+        )
         return assignment_node.child_by_field_name("left")
 
     @property
@@ -64,7 +68,10 @@ class PyAttribute(Attribute["PyCodeBlock", "PyAssignment"], PyAssignmentStatemen
             var_references = statement.find(f"self.{self.name}", exact=True)
             for var_reference in var_references:
                 # Exclude the variable usage in the assignment itself
-                if self.ts_node.byte_range[0] <= var_reference.ts_node.start_byte and self.ts_node.byte_range[1] >= var_reference.ts_node.end_byte:
+                if (
+                    self.ts_node.byte_range[0] <= var_reference.ts_node.start_byte
+                    and self.ts_node.byte_range[1] >= var_reference.ts_node.end_byte
+                ):
                     continue
                 usages.append(var_reference)
         return sorted(dict.fromkeys(usages), key=lambda x: x.ts_node.start_byte)

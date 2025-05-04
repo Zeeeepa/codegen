@@ -82,15 +82,21 @@ Always explain what you're planning to do before taking actions."""
     # Get initial query if not provided via command line
     if not query:
         console.print("[bold]Welcome to the Codegen CLI Agent![/bold]")
-        console.print("I'm an AI assistant that can help you explore and modify code in this repository.")
-        console.print("I can help with tasks like viewing files, searching code, making edits, and more.")
+        console.print(
+            "I'm an AI assistant that can help you explore and modify code in this repository."
+        )
+        console.print(
+            "I can help with tasks like viewing files, searching code, making edits, and more."
+        )
         console.print()
         console.print("What would you like help with today?")
         console.print()
         query = Prompt.ask("[bold]>[/bold]")  # Simple arrow prompt
 
     # Create the agent
-    agent = create_agent_with_tools(codebase=codebase, tools=tools, system_message=system_message)
+    agent = create_agent_with_tools(
+        codebase=codebase, tools=tools, system_message=system_message
+    )
 
     # Main chat loop
     while True:

@@ -39,10 +39,27 @@ def buzz(x, y):
     content4 = """
 from dir.file3 import file1 as indirect_file1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3, "dir/file4.py": content4}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+            "dir/file4.py": content4,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
 
         assert len(file1.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
-        assert {u.source for u in file1.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)} == {"from dir import file1"}
+        assert {
+            u.source for u in file1.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        } == {"from dir import file1"}
         assert len(file1.symbol_usages) == 4
-        assert {u.name if isinstance(u, Symbol) else u.source for u in file1.symbol_usages} == {"fuzz", "buzz", "from dir import file1", "from dir.file3 import file1 as indirect_file1"}
+        assert {
+            u.name if isinstance(u, Symbol) else u.source for u in file1.symbol_usages
+        } == {
+            "fuzz",
+            "buzz",
+            "from dir import file1",
+            "from dir.file3 import file1 as indirect_file1",
+        }

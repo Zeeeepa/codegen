@@ -15,7 +15,15 @@ class CodegenPullRequest:
     codegen_pr_id: int
     patch_set: PatchSet | None = None
 
-    def __init__(self, url: str, number: int, title: str, github_pr_number: int, codegen_pr_id: int, patch_set: PatchSet | None = None):
+    def __init__(
+        self,
+        url: str,
+        number: int,
+        title: str,
+        github_pr_number: int,
+        codegen_pr_id: int,
+        patch_set: PatchSet | None = None,
+    ):
         self.url = url
         self.number = number
         self.title = title
@@ -36,7 +44,9 @@ class CodegenPullRequest:
         """
         session = CodegenSession.from_active_session()
         api_client = RestAPI(get_current_token())
-        response = api_client.lookup_pr(repo_full_name=session.config.repository.full_name, github_pr_number=number)
+        response = api_client.lookup_pr(
+            repo_full_name=session.config.repository.full_name, github_pr_number=number
+        )
         pr = response.pr
 
         return cls(

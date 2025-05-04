@@ -141,11 +141,21 @@ class Function(
 
     @noapidoc
     @reader
-    def resolve_name(self, name: str, start_byte: int | None = None, strict: bool = True) -> Generator[Symbol | Import | WildcardImport]:
+    def resolve_name(
+        self, name: str, start_byte: int | None = None, strict: bool = True
+    ) -> Generator[Symbol | Import | WildcardImport]:
         from codegen.sdk.core.class_definition import Class
 
         for symbol in self.valid_symbol_names:
-            if symbol.name == name and (start_byte is None or (symbol.start_byte if isinstance(symbol, Class | Function) else symbol.end_byte) <= start_byte):
+            if symbol.name == name and (
+                start_byte is None
+                or (
+                    symbol.start_byte
+                    if isinstance(symbol, Class | Function)
+                    else symbol.end_byte
+                )
+                <= start_byte
+            ):
                 yield symbol
                 return
         yield from super().resolve_name(name, start_byte, strict=strict)
@@ -153,7 +163,9 @@ class Function(
     @cached_property
     @noapidoc
     def valid_symbol_names(self) -> list[Importable]:
-        return sort_editables(self.parameters.symbols + self.descendant_symbols, reverse=True)
+        return sort_editables(
+            self.parameters.symbols + self.descendant_symbols, reverse=True
+        )
 
     # Faster implementation which uses more memory
     # @noapidoc
@@ -207,7 +219,9 @@ class Function(
         Returns:
             list[ReturnStatement]: A list of all return statements found within the function's body.
         """
-        return self.code_block.get_statements(statement_type=StatementType.RETURN_STATEMENT)
+        return self.code_block.get_statements(
+            statement_type=StatementType.RETURN_STATEMENT
+        )
 
     @property
     @reader
@@ -219,7 +233,11 @@ class Function(
         Returns:
             list[Self]: A list of Function objects representing nested functions within this function's body, sorted by position in the file.
         """
-        functions = [m.symbol for m in self.code_block.symbol_statements if isinstance(m.symbol, self.__class__)]
+        functions = [
+            m.symbol
+            for m in self.code_block.symbol_statements
+            if isinstance(m.symbol, self.__class__)
+        ]
         return functions
 
     ####################################################################################################################
@@ -263,7 +281,9 @@ class Function(
         self.add_keyword("async")
 
     @writer
-    def rename_local_variable(self, old_var_name: str, new_var_name: str, fuzzy_match: bool = False) -> None:
+    def rename_local_variable(
+        self, old_var_name: str, new_var_name: str, fuzzy_match: bool = False
+    ) -> None:
         """Renames a local variable and all its usages within a function body.
 
         The method searches for matches of the old variable name within the function's code block and replaces them with the new variable name. It excludes parameter names from being renamed.
@@ -276,7 +296,9 @@ class Function(
         Returns:
             None: The method modifies the AST in place.
         """
-        matches = self.code_block.get_assignments(old_var_name, fuzzy=fuzzy_match, parameters=False)
+        matches = self.code_block.get_assignments(
+            old_var_name, fuzzy=fuzzy_match, parameters=False
+        )
         for match in matches:
             new_name = new_var_name
             if fuzzy_match:
@@ -353,7 +375,13 @@ class Function(
     @property
     @noapidoc
     def viz(self) -> VizNode:
-        return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+        return VizNode(
+            file_path=self.filepath,
+            start_point=self.start_point,
+            end_point=self.end_point,
+            name=self.name,
+            symbol_name=self.__class__.__name__,
+        )
 
     @property
     @noapidoc

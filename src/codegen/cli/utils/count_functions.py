@@ -41,5 +41,7 @@ def run(codebase, pr_options, arguments: CountFunctionsArgs):
     # Print the results
     print(f"🔢 Total Functions: {total_functions}")
     print("\n📂 Functions by Directory:")
-    for directory, count in sorted(functions_by_directory.items(), key=lambda x: x[1], reverse=True):
+    for directory, count in sorted(
+        functions_by_directory.items(), key=lambda x: x[1], reverse=True
+    ):
         print(f"  {directory}: {count} functions")

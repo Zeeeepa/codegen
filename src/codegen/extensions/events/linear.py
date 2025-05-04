@@ -39,7 +39,9 @@ class Linear(EventHandlerManagerProtocol):
                 # Get event type from payload
                 event_type = raw_event.get("type")
                 if event_type != event_name:
-                    logger.info(f"[HANDLER] Event type mismatch: expected {event_name}, got {event_type}")
+                    logger.info(
+                        f"[HANDLER] Event type mismatch: expected {event_name}, got {event_type}"
+                    )
                     return None
 
                 # Parse event into LinearEvent type

@@ -30,7 +30,13 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
 
     _name_node: Name | None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         open_tag = self.ts_node.child_by_field_name("open_tag") or self.ts_node
         name_node = open_tag.child_by_field_name("name")
@@ -53,8 +59,16 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
         """
         jsx_elements = []
         for node in self.extended_nodes:
-            jsx_element_nodes = find_all_descendants(node.ts_node, {"jsx_element", "jsx_self_closing_element"})
-            jsx_elements.extend([self._parse_expression(x) for x in jsx_element_nodes if x != self.ts_node])
+            jsx_element_nodes = find_all_descendants(
+                node.ts_node, {"jsx_element", "jsx_self_closing_element"}
+            )
+            jsx_elements.extend(
+                [
+                    self._parse_expression(x)
+                    for x in jsx_element_nodes
+                    if x != self.ts_node
+                ]
+            )
         return jsx_elements
 
     @cached_property
@@ -69,8 +83,16 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
         """
         jsx_expressions = []
         for node in self.extended_nodes:
-            jsx_expressions_nodes = find_all_descendants(node.ts_node, {"jsx_expression"})
-            jsx_expressions.extend([self._parse_expression(x) for x in jsx_expressions_nodes if x != self.ts_node])
+            jsx_expressions_nodes = find_all_descendants(
+                node.ts_node, {"jsx_expression"}
+            )
+            jsx_expressions.extend(
+                [
+                    self._parse_expression(x)
+                    for x in jsx_expressions_nodes
+                    if x != self.ts_node
+                ]
+            )
         return jsx_expressions
 
     @property
@@ -95,7 +117,10 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
         Returns:
             list[JSXProp]: A list of JSXProp objects representing each attribute on the element.
         """
-        return [self._parse_expression(x.ts_node, default=JSXProp) for x in self._attribute_nodes]
+        return [
+            self._parse_expression(x.ts_node, default=JSXProp)
+            for x in self._attribute_nodes
+        ]
 
     @reader
     def get_prop(self, name: str) -> JSXProp | None:
@@ -124,7 +149,10 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
         Returns:
             list[JSXProp]: A list of JSXProp objects representing each attribute/prop on the JSXElement.
         """
-        return [self._parse_expression(x.ts_node, default=JSXProp) for x in self._attribute_nodes]
+        return [
+            self._parse_expression(x.ts_node, default=JSXProp)
+            for x in self._attribute_nodes
+        ]
 
     @writer
     def set_name(self, name: str) -> None:
@@ -140,10 +168,14 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
         """
         # This should correctly set the name of both the opening and closing tags
         if open_tag := self.ts_node.child_by_field_name("open_tag"):
-            name_node = self._parse_expression(open_tag.child_by_field_name("name"), default=Name)
+            name_node = self._parse_expression(
+                open_tag.child_by_field_name("name"), default=Name
+            )
             name_node.edit(name)
             if close_tag := self.ts_node.child_by_field_name("close_tag"):
-                name_node = self._parse_expression(close_tag.child_by_field_name("name"), default=Name)
+                name_node = self._parse_expression(
+                    close_tag.child_by_field_name("name"), default=Name
+                )
                 name_node.edit(name)
         else:
             # If the element is self-closing, we only need to edit the name of the element
@@ -187,13 +219,17 @@ class JSXElement(Expression[Parent], HasName, Generic[Parent]):
             closing_tag (str): The closing JSX tag to wrap around the current element (e.g. `</div>`)
         """
         current_source = self.source
-        indented_source = "\n".join(f"  {line.rstrip()}" for line in current_source.split("\n"))
+        indented_source = "\n".join(
+            f"  {line.rstrip()}" for line in current_source.split("\n")
+        )
         new_source = f"{opening_tag}\n{indented_source}\n{closing_tag}"
         self.edit(new_source, fix_indentation=True)
 
     @commiter
     @noapidoc
     @override
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         for node in self.children:
             node._compute_dependencies(usage_type, dest=dest)

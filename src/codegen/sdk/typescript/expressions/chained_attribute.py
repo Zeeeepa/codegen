@@ -22,7 +22,14 @@ class TSChainedAttribute(ChainedAttribute[Expression, Name, Parent], Generic[Par
     """
 
     def __init__(self, ts_node, file_node_id, ctx, parent: Parent):
-        super().__init__(ts_node, file_node_id, ctx, parent=parent, object=ts_node.child_by_field_name("object"), attribute=ts_node.child_by_field_name("property"))
+        super().__init__(
+            ts_node,
+            file_node_id,
+            ctx,
+            parent=parent,
+            object=ts_node.child_by_field_name("object"),
+            attribute=ts_node.child_by_field_name("property"),
+        )
 
     @property
     @reader

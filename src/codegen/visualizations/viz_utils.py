@@ -65,6 +65,14 @@ def graph_to_json(G1: Graph, root: Editable | str | int | None = None):
 
     if root:
         root = get_node_id(root)
-        return json.dumps(asdict(GraphJson(type=GraphType.TREE.value, data=nx.tree_data(G2, root))), cls=DeterministicJSONEncoder, indent=2)
+        return json.dumps(
+            asdict(GraphJson(type=GraphType.TREE.value, data=nx.tree_data(G2, root))),
+            cls=DeterministicJSONEncoder,
+            indent=2,
+        )
     else:
-        return json.dumps(asdict(GraphJson(type=GraphType.GRAPH.value, data=nx.node_link_data(G2))), cls=DeterministicJSONEncoder, indent=2)
+        return json.dumps(
+            asdict(GraphJson(type=GraphType.GRAPH.value, data=nx.node_link_data(G2))),
+            cls=DeterministicJSONEncoder,
+            indent=2,
+        )

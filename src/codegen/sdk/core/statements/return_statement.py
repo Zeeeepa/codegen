@@ -37,7 +37,14 @@ class ReturnStatement(Statement, HasValue, Generic[Parent, TCodeBlock]):
 
     statement_type = StatementType.RETURN_STATEMENT
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         value_node = self._get_value_node()
         self._value_node = self._parse_expression(value_node) if value_node else None
@@ -63,6 +70,8 @@ class ReturnStatement(Statement, HasValue, Generic[Parent, TCodeBlock]):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.value:
             self.value._compute_dependencies(usage_type, dest)

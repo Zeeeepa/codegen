@@ -42,7 +42,15 @@ class MultiLineCollection(Collection[Child, Parent], Generic[Child, Parent]):
         start_byte: int | None = None,
         end_byte: int | None = None,
     ) -> None:
-        super().__init__(node, file_node_id, ctx, parent, trailing_delimiter, children=children, bracket_size=0)
+        super().__init__(
+            node,
+            file_node_id,
+            ctx,
+            parent,
+            trailing_delimiter,
+            children=children,
+            bracket_size=0,
+        )
         self._inserts_max_size = defaultdict(lambda: 0)
         self._leading_delimiter = leading_delimiter
         self._trailing_delimiter = trailing_delimiter
@@ -71,11 +79,16 @@ class MultiLineCollection(Collection[Child, Parent], Generic[Child, Parent]):
         if isinstance(src, Child.__bound__):
             indent_size = src.start_point[1]
             src_lines = str(src.source).split("\n")
-            src_lines = [f"{indent}{line}" for line in src_lines[:1]] + [line if line.strip() == "" else f"{indent}{line[indent_size:]}" for line in src_lines[1:]]
+            src_lines = [f"{indent}{line}" for line in src_lines[:1]] + [
+                line if line.strip() == "" else f"{indent}{line[indent_size:]}"
+                for line in src_lines[1:]
+            ]
         elif isinstance(src, str):
             src = src.strip()
             src_lines = src.split("\n")
-            src_lines = [line if line == "" else f"{indent}{line}" for line in src_lines]
+            src_lines = [
+                line if line == "" else f"{indent}{line}" for line in src_lines
+            ]
         else:
             msg = f"Invalid source type: {type(src)}"
             raise ValueError(msg)
@@ -88,11 +101,16 @@ class MultiLineCollection(Collection[Child, Parent], Generic[Child, Parent]):
             src = f"{src}{self._trailing_delimiter}"
 
         # If this is the last element to insert before an existing element, add a delimiter
-        if insert_idx == len(self.symbols) - 1 and self._inserts[insert_idx] == self._inserts_max_size[insert_idx]:
+        if (
+            insert_idx == len(self.symbols) - 1
+            and self._inserts[insert_idx] == self._inserts_max_size[insert_idx]
+        ):
             src = f"{src}{self._leading_delimiter}"
         return src
 
     @noapidoc
     def _incr_insert_size(self, index: int) -> None:
         super()._incr_insert_size(index)
-        self._inserts_max_size[index] = max(self._inserts[index], self._inserts_max_size[index])
+        self._inserts_max_size[index] = max(
+            self._inserts[index], self._inserts_max_size[index]
+        )

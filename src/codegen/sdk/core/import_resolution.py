@@ -48,16 +48,24 @@ class ImportResolution(Generic[TSourceFile]):
     - imports_file: bool. True when we import the entire file (e.g. `from a.b.c import foo`)
     """
 
-    from_file: TSourceFile | None = None  # SourceFile object. None when import resolves to an external module
-    symbol: Symbol | ExternalModule | None = None  # None when we import the entire file (e.g. `from a.b.c import foo`)
-    imports_file: bool = False  # True when we import the entire file (e.g. `from a.b.c import foo`)
+    from_file: TSourceFile | None = (
+        None  # SourceFile object. None when import resolves to an external module
+    )
+    symbol: Symbol | ExternalModule | None = (
+        None  # None when we import the entire file (e.g. `from a.b.c import foo`)
+    )
+    imports_file: bool = (
+        False  # True when we import the entire file (e.g. `from a.b.c import foo`)
+    )
 
 
 TSourceFile = TypeVar("TSourceFile", bound="SourceFile")
 
 
 @apidoc
-class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttribute[TSourceFile]):
+class Import(
+    Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttribute[TSourceFile]
+):
     """Represents a single symbol being imported.
 
     Attributes:
@@ -92,9 +100,27 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
     ) -> None:
         self.to_file_id = file_node_id
         super().__init__(ts_node, file_node_id, ctx, parent)
-        self.module = self.ctx.parser.parse_expression(module_node, self.file_node_id, ctx, self, default=Name) if module_node else None
-        self.alias = self.ctx.parser.parse_expression(alias_node, self.file_node_id, ctx, self, default=Name) if alias_node else None
-        self.symbol_name = self.ctx.parser.parse_expression(name_node, self.file_node_id, ctx, self, default=Name) if name_node else None
+        self.module = (
+            self.ctx.parser.parse_expression(
+                module_node, self.file_node_id, ctx, self, default=Name
+            )
+            if module_node
+            else None
+        )
+        self.alias = (
+            self.ctx.parser.parse_expression(
+                alias_node, self.file_node_id, ctx, self, default=Name
+            )
+            if alias_node
+            else None
+        )
+        self.symbol_name = (
+            self.ctx.parser.parse_expression(
+                name_node, self.file_node_id, ctx, self, default=Name
+            )
+            if name_node
+            else None
+        )
         self._name_node = self._parse_expression(name_node, default=Name)
         self.import_type = import_type
 
@@ -112,7 +138,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
 
     @noapidoc
     @abstractmethod
-    def resolve_import(self, base_path: str | None = None, *, add_module_name: str | None = None) -> ImportResolution[TSourceFile] | None:
+    def resolve_import(
+        self, base_path: str | None = None, *, add_module_name: str | None = None
+    ) -> ImportResolution[TSourceFile] | None:
         """Resolves the import to a symbol defined outside the file.
 
         Returns an ImportResolution object.
@@ -135,7 +163,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             ext = self.ctx.get_external_module(self.source, self._unique_node.source)
             if ext is None:
                 ext = ExternalModule.from_import(self)
-            self.ctx.add_edge(self.node_id, ext.node_id, type=EdgeType.IMPORT_SYMBOL_RESOLUTION)
+            self.ctx.add_edge(
+                self.node_id, ext.node_id, type=EdgeType.IMPORT_SYMBOL_RESOLUTION
+            )
         # =====[ Case: Can resolve the filepath ]=====
         elif resolution.symbol:
             if resolution.symbol.node_id == self.node_id:
@@ -147,7 +177,11 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             )
 
         elif resolution.imports_file:
-            self.ctx.add_edge(self.node_id, resolution.from_file.node_id, type=EdgeType.IMPORT_SYMBOL_RESOLUTION)
+            self.ctx.add_edge(
+                self.node_id,
+                resolution.from_file.node_id,
+                type=EdgeType.IMPORT_SYMBOL_RESOLUTION,
+            )
             # for symbol in resolution.from_file.symbols:
             #     usage = SymbolUsage(parent_symbol_name=self.name, child_symbol_name=self.name, type=SymbolUsageType.IMPORTED, match=self, usage_type=UsageType.DIRECT)
             #     self.ctx.add_edge(self.node_id, symbol.node_id, type=EdgeType.SYMBOL_USAGE, usage=usage)
@@ -290,7 +324,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             return None
         elif imported.node_type == NodeType.EXTERNAL:
             return None
-        elif imported.__class__.__name__.endswith("SourceFile"):  # TODO - this is a hack for when you import a full file/module
+        elif imported.__class__.__name__.endswith(
+            "SourceFile"
+        ):  # TODO - this is a hack for when you import a full file/module
             return imported
         else:
             return imported.file
@@ -330,7 +366,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
         imports_seen = set()
         resolved_symbol = self.imported_symbol
 
-        while resolved_symbol is not None and resolved_symbol.node_type == NodeType.IMPORT:
+        while (
+            resolved_symbol is not None and resolved_symbol.node_type == NodeType.IMPORT
+        ):
             if resolved_symbol in imports_seen:
                 return resolved_symbol
 
@@ -340,14 +378,25 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
         return resolved_symbol
 
     @reader
-    def _imported_symbol(self, resolve_exports: bool = False) -> Symbol | ExternalModule | TSourceFile | Import | None:
+    def _imported_symbol(
+        self, resolve_exports: bool = False
+    ) -> Symbol | ExternalModule | TSourceFile | Import | None:
         """Returns the symbol directly being imported, including an indirect import and an External
         Module.
         """
         from codegen.sdk.python.file import PyFile
         from codegen.sdk.typescript.file import TSFile
 
-        symbol = next(iter(self.ctx.successors(self.node_id, edge_type=EdgeType.IMPORT_SYMBOL_RESOLUTION, sort=False)), None)
+        symbol = next(
+            iter(
+                self.ctx.successors(
+                    self.node_id,
+                    edge_type=EdgeType.IMPORT_SYMBOL_RESOLUTION,
+                    sort=False,
+                )
+            ),
+            None,
+        )
         if symbol is None:
             # Unresolve import - could occur during unparse()
             return None
@@ -448,7 +497,10 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             bool: True if the import is dynamic (within a control flow or scope block),
             False if it's a top-level import.
         """
-        return self.parent_of_types(self.ctx.node_classes.dynamic_import_parent_types) is not None
+        return (
+            self.parent_of_types(self.ctx.node_classes.dynamic_import_parent_types)
+            is not None
+        )
 
     ####################################################################################################################
     # MANIPULATIONS
@@ -521,7 +573,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             super().rename(new_name, priority)
 
     @remover
-    def remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
         """Remove this import from the import statement.
 
         If this import belongs to an import statement with multiple imports, removes just this single import from it.
@@ -541,7 +595,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
             super().remove(delete_formatting=delete_formatting, priority=priority)
         else:
             # If the import belongs in a multi-import statement, remove the import specifier
-            self.import_specifier.remove(delete_formatting=delete_formatting, priority=priority)
+            self.import_specifier.remove(
+                delete_formatting=delete_formatting, priority=priority
+            )
 
     @property
     @reader
@@ -594,7 +650,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
 
         aliased = self.is_aliased_import()
         if imported := self._imported_symbol(resolve_exports=True):
-            yield from self.with_resolution_frame(imported, direct=False, aliased=aliased)
+            yield from self.with_resolution_frame(
+                imported, direct=False, aliased=aliased
+            )
         else:
             yield ResolutionStack(self, aliased=aliased)
 
@@ -635,7 +693,13 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
     @property
     @noapidoc
     def viz(self) -> VizNode:
-        return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+        return VizNode(
+            file_path=self.filepath,
+            start_point=self.start_point,
+            end_point=self.end_point,
+            name=self.name,
+            symbol_name=self.__class__.__name__,
+        )
 
     @property
     @noapidoc
@@ -660,7 +724,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
 
         for used_frame in self.resolved_type_frames:
             if used_frame.parent_frame:
-                used_frame.parent_frame.add_usage(self._unique_node, UsageKind.IMPORTED, self, self.ctx)
+                used_frame.parent_frame.add_usage(
+                    self._unique_node, UsageKind.IMPORTED, self, self.ctx
+                )
 
     @property
     def _unique_node(self):
@@ -670,13 +736,23 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash((self.filepath, self.range, self.ts_node.kind_id, self._unique_node.range))
+            self._hash = hash(
+                (
+                    self.filepath,
+                    self.range,
+                    self.ts_node.kind_id,
+                    self._unique_node.range,
+                )
+            )
         return self._hash
 
     @reader
     def __eq__(self, other: object):
         if isinstance(other, Import):
-            return super().__eq__(other) and self._unique_node.range == other._unique_node.range
+            return (
+                super().__eq__(other)
+                and self._unique_node.range == other._unique_node.range
+            )
         return super().__eq__(other)
 
     @noapidoc
@@ -690,7 +766,9 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
         Returns:
             bool: True if removed, False if not
         """
-        if all(usage.match.get_transaction_if_pending_removal() for usage in self.usages):
+        if all(
+            usage.match.get_transaction_if_pending_removal() for usage in self.usages
+        ):
             if not force and not self.usage_is_ascertainable():
                 return False
             self.remove()
@@ -704,7 +782,10 @@ class Import(Usable[ImportStatement], Chainable, Generic[TSourceFile], HasAttrib
         if not isinstance(self._imported_symbol(), ExternalModule):
             return None
         resolved = self.resolve_import(add_module_name=attribute)
-        if resolved and (isinstance(resolved.symbol, Editable) or isinstance(resolved.from_file, Editable)):
+        if resolved and (
+            isinstance(resolved.symbol, Editable)
+            or isinstance(resolved.from_file, Editable)
+        ):
             return resolved.symbol or resolved.from_file
         return None
 
@@ -732,7 +813,9 @@ class WildcardImport(Chainable, Generic[TImport]):
 
     @noapidoc
     @reader
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         pass
 
     @property

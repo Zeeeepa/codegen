@@ -27,12 +27,20 @@ class ConvertArrayTypeToSquareBracket(Codemod, Skill):
             # Iterate over all functions in the file
             for func in file.functions:
                 # Check if the return type is of the form Array<T>
-                if (return_type := func.return_type) and isinstance(return_type, GenericType) and return_type.name == "Array":
+                if (
+                    (return_type := func.return_type)
+                    and isinstance(return_type, GenericType)
+                    and return_type.name == "Array"
+                ):
                     # Array<..> syntax only allows one type argument
                     func.set_return_type(f"({return_type.parameters[0].source})[]")
 
                 # Process each parameter in the function
                 for param in func.parameters:
-                    if (param_type := param.type) and isinstance(param_type, GenericType) and param_type.name == "Array":
+                    if (
+                        (param_type := param.type)
+                        and isinstance(param_type, GenericType)
+                        and param_type.name == "Array"
+                    ):
                         # Array<..> syntax only allows one type argument
                         param_type.edit(f"({param_type.parameters[0].source})[]")

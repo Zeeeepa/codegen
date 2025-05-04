@@ -3,7 +3,9 @@ import json
 from fastapi import Request as FastAPIRequest
 
 
-async def fastapi_request_adapter(payload: dict, headers: dict, route: str) -> FastAPIRequest:
+async def fastapi_request_adapter(
+    payload: dict, headers: dict, route: str
+) -> FastAPIRequest:
     # Create a FastAPI Request object from the payload and headers
     # 1. Create the scope dictionary
     scope = {

@@ -25,7 +25,11 @@ def list_command():
             table.add_row(
                 func.name,
                 func_type,
-                str(func.filepath.relative_to(Path.cwd())) if func.filepath else "<unknown>",
+                (
+                    str(func.filepath.relative_to(Path.cwd()))
+                    if func.filepath
+                    else "<unknown>"
+                ),
                 ", ".join(func.subdirectories) if func.subdirectories else "",
                 func.language or "",
             )

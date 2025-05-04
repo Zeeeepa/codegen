@@ -13,10 +13,20 @@ from codegen.cli.workspace.venv_manager import VenvManager
 @click.command(name="run")
 @requires_init
 @click.argument("label", required=True)
-@click.option("--web", is_flag=True, help="Run the function on the web service instead of locally")
-@click.option("--daemon", "-d", is_flag=True, help="Run the function against a running daemon")
-@click.option("--diff-preview", type=int, help="Show a preview of the first N lines of the diff")
-@click.option("--arguments", type=str, help="Arguments as a json string to pass as the function's 'arguments' parameter")
+@click.option(
+    "--web", is_flag=True, help="Run the function on the web service instead of locally"
+)
+@click.option(
+    "--daemon", "-d", is_flag=True, help="Run the function against a running daemon"
+)
+@click.option(
+    "--diff-preview", type=int, help="Show a preview of the first N lines of the diff"
+)
+@click.option(
+    "--arguments",
+    type=str,
+    help="Arguments as a json string to pass as the function's 'arguments' parameter",
+)
 def run_command(
     session: CodegenSession,
     label: str,

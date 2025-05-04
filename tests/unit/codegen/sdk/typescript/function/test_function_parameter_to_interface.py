@@ -18,7 +18,11 @@ function Button(props: {
     return <button>{props.text}</button>;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.parameters[0].convert_to_interface()
@@ -52,7 +56,11 @@ function DataGrid(props: {
     return <div>{/* implementation */}</div>;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.parameters[0].convert_to_interface()
@@ -87,7 +95,11 @@ function List<T>(props: {
     return <div>{/* implementation */}</div>;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         assert component.type_parameters
@@ -122,7 +134,11 @@ function CustomButton(props: {
     return <button {...props}>{/* implementation */}</button>;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.functions[0]
         component.parameters[0].convert_to_interface()

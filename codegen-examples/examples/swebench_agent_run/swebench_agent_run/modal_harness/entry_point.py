@@ -14,10 +14,7 @@ from unittest.mock import patch
 
 import modal as modal_lib
 import tenacity
-from swebench.harness.constants import (
-    APPLY_PATCH_FAIL,
-    APPLY_PATCH_PASS,
-)
+from swebench.harness.constants import APPLY_PATCH_FAIL, APPLY_PATCH_PASS
 from swebench.harness.docker_build import setup_logger
 from swebench.harness.grading import get_eval_report
 from swebench.harness.modal_eval.run_evaluation_modal import (
@@ -122,7 +119,8 @@ async def run_agent_modal(entry: "SweBenchExample", run_id: str, model: str):
     image=swebench_image.add_local_file(
         LOCAL_SANDBOX_ENTRYPOINT_PATH, REMOTE_SANDBOX_ENTRYPOINT_PATH, copy=True
     ).add_local_python_source("eval_cli", "swebench_agent_run", copy=True),
-    timeout=120 * 60,  # Much larger than default timeout to account for image build time
+    timeout=120
+    * 60,  # Much larger than default timeout to account for image build time
 )
 def run_instance_modal(
     test_spec: TestSpec,

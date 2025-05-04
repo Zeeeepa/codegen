@@ -164,7 +164,9 @@ class FeatureAnalyzer:
         for func in self.codebase.functions:
             if hasattr(func, "calls"):
                 for call in func.calls:
-                    if hasattr(call, "target") and hasattr(call.target, "qualified_name"):
+                    if hasattr(call, "target") and hasattr(
+                        call.target, "qualified_name"
+                    ):
                         if call.target.qualified_name == function_name:
                             callers.append(func.qualified_name)
 
@@ -296,7 +298,10 @@ class FeatureAnalyzer:
         for c in self.codebase.classes:
             if hasattr(c, "parent_classes"):
                 for parent in c.parent_classes:
-                    if hasattr(parent, "qualified_name") and parent.qualified_name == class_name:
+                    if (
+                        hasattr(parent, "qualified_name")
+                        and parent.qualified_name == class_name
+                    ):
                         child_classes.append(c.qualified_name)
 
         # Calculate class complexity (average of method complexities)
@@ -314,7 +319,9 @@ class FeatureAnalyzer:
                         )
 
         avg_complexity = (
-            sum(method_complexities) / len(method_complexities) if method_complexities else 0
+            sum(method_complexities) / len(method_complexities)
+            if method_complexities
+            else 0
         )
 
         # Check if the class is tested
@@ -325,7 +332,10 @@ class FeatureAnalyzer:
         class_short_name = class_name_parts[-1]
 
         for file in self.codebase.files:
-            if "test" in file.filepath.lower() and class_short_name.lower() in file.content.lower():
+            if (
+                "test" in file.filepath.lower()
+                and class_short_name.lower() in file.content.lower()
+            ):
                 is_tested = True
                 break
 
@@ -418,7 +428,9 @@ class FeatureAnalyzer:
             if hasattr(func, "filepath"):
                 func_path = os.path.normpath(func.filepath)
 
-                if func_path == feature_path or func_path.startswith(feature_path + os.sep):
+                if func_path == feature_path or func_path.startswith(
+                    feature_path + os.sep
+                ):
                     feature_functions.append(func)
 
         # Find all classes in the feature
@@ -428,7 +440,9 @@ class FeatureAnalyzer:
             if hasattr(cls, "filepath"):
                 cls_path = os.path.normpath(cls.filepath)
 
-                if cls_path == feature_path or cls_path.startswith(feature_path + os.sep):
+                if cls_path == feature_path or cls_path.startswith(
+                    feature_path + os.sep
+                ):
                     feature_classes.append(cls)
 
         # Analyze each function
@@ -440,7 +454,9 @@ class FeatureAnalyzer:
                     analysis = self.analyze_function(func.qualified_name)
                     function_analyses.append(analysis.to_dict())
                 except Exception as e:
-                    logger.warning(f"Error analyzing function {func.qualified_name}: {e}")
+                    logger.warning(
+                        f"Error analyzing function {func.qualified_name}: {e}"
+                    )
 
         # Analyze each class
         class_analyses = []
@@ -455,7 +471,9 @@ class FeatureAnalyzer:
 
         # Calculate overall complexity metrics
         total_complexity = sum(analysis["complexity"] for analysis in function_analyses)
-        avg_complexity = total_complexity / len(function_analyses) if function_analyses else 0
+        avg_complexity = (
+            total_complexity / len(function_analyses) if function_analyses else 0
+        )
 
         complexity_metrics = {
             "total_complexity": total_complexity,
@@ -511,7 +529,9 @@ class FeatureAnalyzer:
 
         # Check for untested functions
         untested_functions = [
-            analysis["function_name"] for analysis in function_analyses if not analysis["is_tested"]
+            analysis["function_name"]
+            for analysis in function_analyses
+            if not analysis["is_tested"]
         ]
 
         if untested_functions:
@@ -520,7 +540,9 @@ class FeatureAnalyzer:
                     "issue_type": "untested_functions",
                     "severity": "info",
                     "message": f"{len(untested_functions)} functions appear to be untested",
-                    "details": untested_functions[:5],  # Show up to 5 untested functions
+                    "details": untested_functions[
+                        :5
+                    ],  # Show up to 5 untested functions
                 }
             )
 

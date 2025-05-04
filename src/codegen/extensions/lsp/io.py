@@ -4,7 +4,15 @@ from pathlib import Path
 
 from attr import asdict
 from lsprotocol import types
-from lsprotocol.types import CreateFile, CreateFileOptions, DeleteFile, Position, Range, RenameFile, TextEdit
+from lsprotocol.types import (
+    CreateFile,
+    CreateFileOptions,
+    DeleteFile,
+    Position,
+    Range,
+    RenameFile,
+    TextEdit,
+)
 from pygls.workspace import TextDocument, Workspace
 
 from codegen.sdk.codebase.io.file_io import FileIO
@@ -32,7 +40,9 @@ class File:
 
     @property
     def identifier(self) -> types.OptionalVersionedTextDocumentIdentifier:
-        return types.OptionalVersionedTextDocumentIdentifier(uri=self.path.as_uri(), version=self.version)
+        return types.OptionalVersionedTextDocumentIdentifier(
+            uri=self.path.as_uri(), version=self.version
+        )
 
 
 class LSPIO(IO):
@@ -92,10 +102,16 @@ class LSPIO(IO):
                 end = Position(line=0, character=0)
             else:
                 end = Position(line=len(lines) - 1, character=len(lines[-1]))
-            file.change = TextEdit(range=Range(start=start, end=end), new_text=content.decode("utf-8"))
+            file.change = TextEdit(
+                range=Range(start=start, end=end), new_text=content.decode("utf-8")
+            )
         else:
-            file.other_change = CreateFile(uri=path.as_uri(), options=CreateFileOptions())
-            file.change = TextEdit(range=Range(start=start, end=start), new_text=content.decode("utf-8"))
+            file.other_change = CreateFile(
+                uri=path.as_uri(), options=CreateFileOptions()
+            )
+            file.change = TextEdit(
+                range=Range(start=start, end=start), new_text=content.decode("utf-8")
+            )
 
     def save_files(self, files: set[Path] | None = None) -> None:
         logger.info(f"Saving files {files}")
@@ -135,10 +151,14 @@ class LSPIO(IO):
                 document_changes.append(file.other_change)
                 file.other_change = None
             if file.change:
-                document_changes.append(types.TextDocumentEdit(text_document=id, edits=[file.change]))
+                document_changes.append(
+                    types.TextDocumentEdit(text_document=id, edits=[file.change])
+                )
                 file.version += 1
                 file.change = None
-        logger.info(f"Workspace edit: {pprint.pformat(list(map(asdict, document_changes)))}")
+        logger.info(
+            f"Workspace edit: {pprint.pformat(list(map(asdict, document_changes)))}"
+        )
         return types.WorkspaceEdit(document_changes=document_changes)
 
     def update_file(self, path: Path, version: int | None = None) -> None:

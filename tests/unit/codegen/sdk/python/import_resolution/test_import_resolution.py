@@ -104,7 +104,16 @@ import a as A
         file = codebase.get_file("test.py")
 
         z = file.imports
-        assert set(i.alias.source for i in file.imports) == {"a", "g", "e", "d", "E", "F", "A", "f"}
+        assert set(i.alias.source for i in file.imports) == {
+            "a",
+            "g",
+            "e",
+            "d",
+            "E",
+            "F",
+            "A",
+            "f",
+        }
         assert len(z) > 0
 
         # =====[ "import a" ]=====
@@ -346,7 +355,9 @@ def func():
         assert src_import_resolution.imports_file is True
 
 
-def test_import_resolution_file_custom_resolve_and_syspath_precedence(tmpdir: str, monkeypatch) -> None:
+def test_import_resolution_file_custom_resolve_and_syspath_precedence(
+    tmpdir: str, monkeypatch
+) -> None:
     """Tests function.usages returns usages from file imports"""
     # language=python
     with get_codebase_session(
@@ -459,7 +470,14 @@ def test_import_resolution_init_wildcard(tmpdir: str) -> None:
     test=TEST_CONST"""
     content3 = """from testdir import TEST_CONST
     test3=TEST_CONST"""
-    with get_codebase_session(tmpdir=tmpdir, files={"testdir/test1.py": content1, "testdir/__init__.py": content2, "test3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "testdir/test1.py": content1,
+            "testdir/__init__.py": content2,
+            "test3.py": content3,
+        },
+    ) as codebase:
         file1: SourceFile = codebase.get_file("testdir/test1.py")
         file2: SourceFile = codebase.get_file("testdir/__init__.py")
         file3: SourceFile = codebase.get_file("test3.py")
@@ -488,7 +506,9 @@ def test_import_resolution_wildcard_func(tmpdir: str) -> None:
     foo()
     """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"testa.py": content1, "testb.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"testa.py": content1, "testb.py": content2}
+    ) as codebase:
         testa: SourceFile = codebase.get_file("testa.py")
         testb: SourceFile = codebase.get_file("testb.py")
 
@@ -513,7 +533,14 @@ def test_import_resolution_chaining_wildcards(tmpdir: str) -> None:
     test=TEST_CONST"""
     content3 = """from testdir import *
     test3=TEST_CONST"""
-    with get_codebase_session(tmpdir=tmpdir, files={"testdir/test1.py": content1, "testdir/__init__.py": content2, "test3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "testdir/test1.py": content1,
+            "testdir/__init__.py": content2,
+            "test3.py": content3,
+        },
+    ) as codebase:
         file1: SourceFile = codebase.get_file("testdir/test1.py")
         file2: SourceFile = codebase.get_file("testdir/__init__.py")
         file3: SourceFile = codebase.get_file("test3.py")
@@ -816,7 +843,15 @@ def test_import_resolution_init_wildcard_no_dupe(tmpdir: str) -> None:
     test3=TEST_CONST"""
     content4 = """from testdir import  foo
     test4=foo"""
-    with get_codebase_session(tmpdir=tmpdir, files={"testdir/test1.py": content1, "testdir/__init__.py": content2, "test3.py": content3, "test4.py": content4}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "testdir/test1.py": content1,
+            "testdir/__init__.py": content2,
+            "test3.py": content3,
+            "test4.py": content4,
+        },
+    ) as codebase:
         file1: SourceFile = codebase.get_file("testdir/test1.py")
         file2: SourceFile = codebase.get_file("testdir/__init__.py")
         file3: SourceFile = codebase.get_file("test3.py")

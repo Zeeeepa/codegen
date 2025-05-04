@@ -4,7 +4,11 @@ from codegen.extensions.attribution.git_history import GitAttributionTracker
 from codegen.sdk.core.codebase import Codebase
 
 
-def analyze_ai_impact(codebase: Codebase, ai_authors: Optional[list[str]] = None, max_commits: Optional[int] = None) -> dict:
+def analyze_ai_impact(
+    codebase: Codebase,
+    ai_authors: Optional[list[str]] = None,
+    max_commits: Optional[int] = None,
+) -> dict:
     """Analyze the impact of AI on a codebase.
 
     Args:
@@ -30,14 +34,23 @@ def analyze_ai_impact(codebase: Codebase, ai_authors: Optional[list[str]] = None
     high_impact_symbols = []
     for symbol in ai_symbols:
         if hasattr(symbol, "usages") and len(symbol.usages) > 5:
-            high_impact_symbols.append({"name": symbol.name, "filepath": symbol.filepath, "usage_count": len(symbol.usages), "last_editor": tracker.get_symbol_last_editor(symbol)})
+            high_impact_symbols.append(
+                {
+                    "name": symbol.name,
+                    "filepath": symbol.filepath,
+                    "usage_count": len(symbol.usages),
+                    "last_editor": tracker.get_symbol_last_editor(symbol),
+                }
+            )
 
     # Sort by usage count
     high_impact_symbols.sort(key=lambda x: x["usage_count"], reverse=True)
 
     # Get timeline data
     timeline = tracker.get_ai_contribution_timeline()
-    timeline_data = [{"date": dt.strftime("%Y-%m"), "count": count} for dt, count in timeline]
+    timeline_data = [
+        {"date": dt.strftime("%Y-%m"), "count": count} for dt, count in timeline
+    ]
 
     # Get list of all contributors with commit counts
     contributors = []
@@ -57,7 +70,9 @@ def analyze_ai_impact(codebase: Codebase, ai_authors: Optional[list[str]] = None
     }
 
 
-def add_attribution_to_symbols(codebase: Codebase, ai_authors: Optional[list[str]] = None) -> None:
+def add_attribution_to_symbols(
+    codebase: Codebase, ai_authors: Optional[list[str]] = None
+) -> None:
     """Add attribution information to symbols in the codebase.
 
     This adds the following attributes to each symbol:
@@ -86,4 +101,6 @@ def add_attribution_to_symbols(codebase: Codebase, ai_authors: Optional[list[str
             symbol.editor_history = list(editors)
 
             # Add is_ai_authored flag
-            symbol.is_ai_authored = any(editor in tracker.ai_authors for editor in symbol.editor_history)
+            symbol.is_ai_authored = any(
+                editor in tracker.ai_authors for editor in symbol.editor_history
+            )

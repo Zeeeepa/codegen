@@ -39,9 +39,17 @@ class TypescriptDependencyManager(DependencyManager):
 
     """Handles dependency management for Typescript projects. Uses npm, yarn, or pnpm if applicable."""
 
-    def __init__(self, repo_path: str, base_path: str | None = None, should_install_dependencies: bool = True, force_installer: str | None = None):
+    def __init__(
+        self,
+        repo_path: str,
+        base_path: str | None = None,
+        should_install_dependencies: bool = True,
+        force_installer: str | None = None,
+    ):
         super().__init__(repo_path, base_path)
-        logger.info(f"Initializing TypescriptDependencyManager with should_install_dependencies={should_install_dependencies}")
+        logger.info(
+            f"Initializing TypescriptDependencyManager with should_install_dependencies={should_install_dependencies}"
+        )
         # Ensure that node, npm, yarn, and pnpm are installed
         if not shutil.which("node"):
             msg = "NodeJS is not installed"
@@ -95,14 +103,19 @@ class TypescriptDependencyManager(DependencyManager):
             return False
 
     @classmethod
-    def _validate_dependencies(cls, deps: dict[str, str]) -> tuple[dict[str, str], dict[str, str]]:
+    def _validate_dependencies(
+        cls, deps: dict[str, str]
+    ) -> tuple[dict[str, str], dict[str, str]]:
         """Validate a dictionary of dependencies against npm registry."""
         valid_deps = {}
         invalid_deps = {}
 
         # Use ThreadPoolExecutor for concurrent validation
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            future_to_package = {executor.submit(cls._check_package_exists, package): (package, version) for package, version in deps.items()}
+            future_to_package = {
+                executor.submit(cls._check_package_exists, package): (package, version)
+                for package, version in deps.items()
+            }
 
             for future in concurrent.futures.as_completed(future_to_package):
                 package, version = future_to_package[future]
@@ -145,18 +158,26 @@ class TypescriptDependencyManager(DependencyManager):
                     dependencies = package_data.get("dependencies", {})
                     dev_dependencies = package_data.get("devDependencies", {})
 
-                    self.package_json_data[package_json_path] = PackageJsonData(dependencies, dev_dependencies, package_data)
+                    self.package_json_data[package_json_path] = PackageJsonData(
+                        dependencies, dev_dependencies, package_data
+                    )
 
                 except FileNotFoundError:
-                    logger.exception(f"Could not find package.json at {package_json_path}")
+                    logger.exception(
+                        f"Could not find package.json at {package_json_path}"
+                    )
                 except ValueError:
-                    logger.exception(f"Invalid json in package.json at {package_json_path}")
+                    logger.exception(
+                        f"Invalid json in package.json at {package_json_path}"
+                    )
                 except Exception as e:
                     raise e
 
         # Set the base package.json data
         base_package_json_path = os.path.join(self.full_path, "package.json")
-        self.base_package_json_data = self.package_json_data.get(base_package_json_path, None)
+        self.base_package_json_data = self.package_json_data.get(
+            base_package_json_path, None
+        )
 
     def _install_dependencies_npm(self):
         logger.info("Installing dependencies with NPM")
@@ -173,17 +194,29 @@ class TypescriptDependencyManager(DependencyManager):
                 os.remove(file_path)
 
             # Print the node version
-            logger.info(f"Node version: {subprocess.check_output(['node', '--version'], cwd=self.full_path, text=True).strip()}")
+            logger.info(
+                f"Node version: {subprocess.check_output(['node', '--version'], cwd=self.full_path, text=True).strip()}"
+            )
 
             # Print the npm version
-            logger.info(f"NPM version: {subprocess.check_output(['npm', '--version'], cwd=self.full_path, text=True).strip()}")
+            logger.info(
+                f"NPM version: {subprocess.check_output(['npm', '--version'], cwd=self.full_path, text=True).strip()}"
+            )
 
             # NPM Install
             try:
                 logger.info(f"Running npm install with cwd {self.full_path}")
-                subprocess.run(["npm", "install"], cwd=self.full_path, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["npm", "install"],
+                    cwd=self.full_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
             except subprocess.CalledProcessError as e:
-                logger.exception(f"NPM FAIL: npm install failed with exit code {e.returncode}")
+                logger.exception(
+                    f"NPM FAIL: npm install failed with exit code {e.returncode}"
+                )
                 logger.exception(f"NPM FAIL stdout: {e.stdout}")
                 logger.exception(f"NPM FAIL stderr: {e.stderr}")
                 raise
@@ -225,10 +258,14 @@ class TypescriptDependencyManager(DependencyManager):
                         f.write(f"yarnPath: {yarn_path}\n")
 
                 # Print the node version
-                logger.info(f"Node version: {subprocess.check_output(['node', '--version'], cwd=self.full_path, text=True).strip()}")
+                logger.info(
+                    f"Node version: {subprocess.check_output(['node', '--version'], cwd=self.full_path, text=True).strip()}"
+                )
 
                 # Print the yarn version
-                logger.info(f"Yarn version: {subprocess.check_output(['yarn', '--version'], cwd=self.full_path, text=True).strip()}")
+                logger.info(
+                    f"Yarn version: {subprocess.check_output(['yarn', '--version'], cwd=self.full_path, text=True).strip()}"
+                )
 
                 # This fixes a bug where swapping yarn versions corrups the metadata and package caches,
                 # causing all sorts of nasty issues
@@ -249,12 +286,35 @@ class TypescriptDependencyManager(DependencyManager):
                         }
 
                         # Set up yarn
-                        logger.info(f"Running yarn install with cwd {self.full_path} and yarn_custom_flags {yarn_custom_flags}")
-                        subprocess.run(["corepack", "enable"], cwd=self.full_path, check=True, capture_output=True, text=True)
-                        subprocess.run(["corepack", "prepare", "--activate"], cwd=self.full_path, check=True, capture_output=True, text=True)
-                        subprocess.run(["yarn", "install"], cwd=self.full_path, check=True, capture_output=True, text=True, env=yarn_environ)
+                        logger.info(
+                            f"Running yarn install with cwd {self.full_path} and yarn_custom_flags {yarn_custom_flags}"
+                        )
+                        subprocess.run(
+                            ["corepack", "enable"],
+                            cwd=self.full_path,
+                            check=True,
+                            capture_output=True,
+                            text=True,
+                        )
+                        subprocess.run(
+                            ["corepack", "prepare", "--activate"],
+                            cwd=self.full_path,
+                            check=True,
+                            capture_output=True,
+                            text=True,
+                        )
+                        subprocess.run(
+                            ["yarn", "install"],
+                            cwd=self.full_path,
+                            check=True,
+                            capture_output=True,
+                            text=True,
+                            env=yarn_environ,
+                        )
                     except subprocess.CalledProcessError as e:
-                        logger.exception(f"Yarn FAIL: yarn install failed with exit code {e.returncode}")
+                        logger.exception(
+                            f"Yarn FAIL: yarn install failed with exit code {e.returncode}"
+                        )
                         logger.exception(f"Yarn FAIL stdout: {e.stdout}")
                         logger.exception(f"Yarn FAIL stderr: {e.stderr}")
                         raise
@@ -282,17 +342,29 @@ class TypescriptDependencyManager(DependencyManager):
                 os.remove(file_path)
 
             # Print the node version
-            logger.info(f"Node version: {subprocess.check_output(['node', '--version'], cwd=self.full_path, text=True).strip()}")
+            logger.info(
+                f"Node version: {subprocess.check_output(['node', '--version'], cwd=self.full_path, text=True).strip()}"
+            )
 
             # Print the pnpm version
-            logger.info(f"PNPM version: {subprocess.check_output(['pnpm', '--version'], cwd=self.full_path, text=True).strip()}")
+            logger.info(
+                f"PNPM version: {subprocess.check_output(['pnpm', '--version'], cwd=self.full_path, text=True).strip()}"
+            )
 
             # PNPM Install
             try:
                 logger.info(f"Running pnpm install with cwd {self.full_path}")
-                subprocess.run(["pnpm", "install"], cwd=self.full_path, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["pnpm", "install"],
+                    cwd=self.full_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
             except subprocess.CalledProcessError as e:
-                logger.exception(f"PNPM FAIL: pnpm install failed with exit code {e.returncode}")
+                logger.exception(
+                    f"PNPM FAIL: pnpm install failed with exit code {e.returncode}"
+                )
                 logger.exception(f"PNPM FAIL stdout: {e.stdout}")
                 logger.exception(f"PNPM FAIL stderr: {e.stderr}")
                 raise
@@ -328,9 +400,13 @@ class TypescriptDependencyManager(DependencyManager):
     def install_dependencies(self, validate_dependencies: bool = True):
         if validate_dependencies:
             with shadow_files(list(self.package_json_data.keys())):
-                logger.info(f"Cleaning package.json files: {list(self.package_json_data.keys())}")
+                logger.info(
+                    f"Cleaning package.json files: {list(self.package_json_data.keys())}"
+                )
                 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-                    executor.map(self._clean_package_json, self.package_json_data.keys())
+                    executor.map(
+                        self._clean_package_json, self.package_json_data.keys()
+                    )
 
                 # Install dependencies, now that we have a valid package.json
                 return self.install_dependencies(validate_dependencies=False)
@@ -352,7 +428,9 @@ class TypescriptDependencyManager(DependencyManager):
 
     def _start(self):
         try:
-            logger.info(f"Starting TypescriptDependencyManager with should_install_dependencies={self.should_install_dependencies}")
+            logger.info(
+                f"Starting TypescriptDependencyManager with should_install_dependencies={self.should_install_dependencies}"
+            )
             super()._start()
             # Remove dependencies if we are installing them
             if self.should_install_dependencies:
@@ -373,4 +451,6 @@ class TypescriptDependencyManager(DependencyManager):
             self.is_ready = True
         except Exception as e:
             self._error = e
-            logger.error(f"Error starting TypescriptDependencyManager: {e}", exc_info=True)
+            logger.error(
+                f"Error starting TypescriptDependencyManager: {e}", exc_info=True
+            )

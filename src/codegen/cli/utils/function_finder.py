@@ -117,13 +117,19 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
 
         # Get the line numbers (1-based in source lines)
         start_line = first_stmt.lineno - 1  # Convert to 0-based
-        end_line = last_stmt.end_lineno if hasattr(last_stmt, "end_lineno") else last_stmt.lineno
+        end_line = (
+            last_stmt.end_lineno
+            if hasattr(last_stmt, "end_lineno")
+            else last_stmt.lineno
+        )
 
         # Get the raw source lines for the entire body
         source_lines = self.source.splitlines()[start_line:end_line]
 
         # Find the minimum indentation of non-empty lines
-        indents = [len(line) - len(line.lstrip()) for line in source_lines if line.strip()]
+        indents = [
+            len(line) - len(line.lstrip()) for line in source_lines if line.strip()
+        ]
         if not indents:
             return ""
 
@@ -160,7 +166,9 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
         else:
             return "Any"
 
-    def get_function_parameters(self, node: ast.FunctionDef) -> list[tuple[str, str | None]]:
+    def get_function_parameters(
+        self, node: ast.FunctionDef
+    ) -> list[tuple[str, str | None]]:
         """Extracts the parameters and their types from an AST FunctionDef node.
 
         Args:
@@ -175,7 +183,11 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
         for arg in node.args.args:
             param_name = arg.arg
             if arg.annotation:
-                param_type = ast.unparse(arg.annotation) if hasattr(ast, "unparse") else self._get_annotation(arg.annotation)
+                param_type = (
+                    ast.unparse(arg.annotation)
+                    if hasattr(ast, "unparse")
+                    else self._get_annotation(arg.annotation)
+                )
             else:
                 param_type = None
             parameters.append((param_name, param_type))
@@ -184,7 +196,11 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
         if node.args.vararg:
             param_name = f"*{node.args.vararg.arg}"
             if node.args.vararg.annotation:
-                param_type = ast.unparse(node.args.vararg.annotation) if hasattr(ast, "unparse") else self._get_annotation(node.args.vararg)
+                param_type = (
+                    ast.unparse(node.args.vararg.annotation)
+                    if hasattr(ast, "unparse")
+                    else self._get_annotation(node.args.vararg)
+                )
             else:
                 param_type = None
             parameters.append((param_name, param_type))
@@ -193,7 +209,11 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
         if node.args.kwarg:
             param_name = f"**{node.args.kwarg.arg}"
             if node.args.kwarg.annotation:
-                param_type = ast.unparse(node.args.kwarg.annotation) if hasattr(ast, "unparse") else self._get_annotation(node.args.kwarg)
+                param_type = (
+                    ast.unparse(node.args.kwarg.annotation)
+                    if hasattr(ast, "unparse")
+                    else self._get_annotation(node.args.kwarg)
+                )
             else:
                 param_type = None
             parameters.append((param_name, param_type))
@@ -207,10 +227,18 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
                 and (len(decorator.args) > 0 or len(decorator.keywords) > 0)
                 and (
                     # Check if it's a direct codegen.X call
-                    (isinstance(decorator.func, ast.Attribute) and isinstance(decorator.func.value, ast.Name) and decorator.func.value.id == "codegen")
+                    (
+                        isinstance(decorator.func, ast.Attribute)
+                        and isinstance(decorator.func.value, ast.Name)
+                        and decorator.func.value.id == "codegen"
+                    )
                     or
                     # Check if it starts with codegen.anything.anything...
-                    (isinstance(decorator.func, ast.Attribute) and isinstance(decorator.func.value, ast.Attribute) and self._has_codegen_root(decorator.func.value))
+                    (
+                        isinstance(decorator.func, ast.Attribute)
+                        and isinstance(decorator.func.value, ast.Attribute)
+                        and self._has_codegen_root(decorator.func.value)
+                    )
                 )
             ):
                 # Get additional metadata for webhook
@@ -218,8 +246,13 @@ class CodegenFunctionVisitor(ast.NodeVisitor):
                 lint_user_whitelist = []
                 if lint_mode and len(decorator.keywords) > 0:
                     for keyword in decorator.keywords:
-                        if keyword.arg == "users" and isinstance(keyword.value, ast.List):
-                            lint_user_whitelist = [ast.literal_eval(elt).lstrip("@") for elt in keyword.value.elts]
+                        if keyword.arg == "users" and isinstance(
+                            keyword.value, ast.List
+                        ):
+                            lint_user_whitelist = [
+                                ast.literal_eval(elt).lstrip("@")
+                                for elt in keyword.value.elts
+                            ]
 
                 self.functions.append(
                     DecoratedFunction(
@@ -273,7 +306,9 @@ def _extract_arguments_type_schema(func: DecoratedFunction) -> dict | None:
             return schema
         return None
     except Exception as e:
-        print(f"Error parsing {func.filepath}, could not introspect for arguments parameter")
+        print(
+            f"Error parsing {func.filepath}, could not introspect for arguments parameter"
+        )
         print(e)
         return None
 

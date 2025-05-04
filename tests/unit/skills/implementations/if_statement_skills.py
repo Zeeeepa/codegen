@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import PyCodebaseType, TSCodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 py_if_input = """
 def foo():
@@ -38,7 +42,12 @@ def foo():
         print("some_condition is True")
     print("condition_to_set is True")
 """
-py_test_cases = [SkillTestCase(files=[SkillTestCasePyFile(input=py_if_input, output=py_if_output)]), SkillTestCase(files=[SkillTestCasePyFile(input=py_elif_input, output=py_elif_output)])]
+py_test_cases = [
+    SkillTestCase(files=[SkillTestCasePyFile(input=py_if_input, output=py_if_output)]),
+    SkillTestCase(
+        files=[SkillTestCasePyFile(input=py_elif_input, output=py_elif_output)]
+    ),
+]
 
 
 ts_input1 = """
@@ -82,10 +91,17 @@ function foo(): void {
 }
 """
 
-ts_test_cases = [SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input1, output=ts_output1)]), SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input2, output=ts_output2)])]
+ts_test_cases = [
+    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input1, output=ts_output1)]),
+    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input2, output=ts_output2)]),
+]
 
 
-@skill(eval_skill=False, prompt="Simplify if/else control flow by reducing specific conditions to True", uid="4df2f328-ab40-4298-9141-496293260d88")
+@skill(
+    eval_skill=False,
+    prompt="Simplify if/else control flow by reducing specific conditions to True",
+    uid="4df2f328-ab40-4298-9141-496293260d88",
+)
 class ReduceIfStatementConditionSkill(Skill, ABC):
     """Simplifies the if/else control flow by reducing conditions that are set to a specific value to True.
     This skill works for both Python and TypeScript codebases, with slight variations in the condition naming.

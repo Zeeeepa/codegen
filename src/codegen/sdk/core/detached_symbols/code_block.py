@@ -55,7 +55,13 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
     parent_block: CodeBlock | None
     _statements: MultiLineCollection[Statement, Self]
 
-    def __init__(self, ts_node: TSNode, level: int, parent_block: CodeBlock | None, parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        level: int,
+        parent_block: CodeBlock | None,
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, parent.file_node_id, parent.ctx, parent)
         self.parent_block = parent_block
         self.level = level
@@ -84,7 +90,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         return self._statements
 
     @reader
-    def _get_statements(self, statement_type: StatementType | None = None, max_level: int | None = None) -> Generator[Statement[Self]]:
+    def _get_statements(
+        self, statement_type: StatementType | None = None, max_level: int | None = None
+    ) -> Generator[Statement[Self]]:
         """Private implementation of get_statements that returns a generator of statements."""
         queue = deque([(self._statements, self.level)])
         while queue:
@@ -100,7 +108,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
                         queue.append((nested_statements.symbols, level + 1))
 
     @reader
-    def get_statements(self, statement_type: StatementType | None = None, max_level: int | None = None) -> list[Statement[Self]]:
+    def get_statements(
+        self, statement_type: StatementType | None = None, max_level: int | None = None
+    ) -> list[Statement[Self]]:
         """Returns all statements of a given type up to the specified block level.
 
         This method retrieves statements from the code block and its nested blocks. Statements can be filtered by type and depth.
@@ -125,7 +135,11 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         Returns:
             list[SymbolStatement]: A list of all the symbol statements at the top level of this code block.
         """
-        return [x for x in self.statements if x.statement_type == StatementType.SYMBOL_STATEMENT]
+        return [
+            x
+            for x in self.statements
+            if x.statement_type == StatementType.SYMBOL_STATEMENT
+        ]
 
     @property
     @reader
@@ -153,7 +167,14 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
             Comment[Parent, Self] | None: The first comment statement containing the search text,
                 or None if no matching comment is found.
         """
-        return next((x for x in self._get_statements(StatementType.COMMENT) if comment_src in x.source), None)
+        return next(
+            (
+                x
+                for x in self._get_statements(StatementType.COMMENT)
+                if comment_src in x.source
+            ),
+            None,
+        )
 
     @property
     @reader
@@ -166,7 +187,11 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         Returns:
             list[IfBlockStatement[Parent, Self]]: A list of top-level if statement objects in the code block.
         """
-        return [x for x in self.statements if x.statement_type == StatementType.IF_BLOCK_STATEMENT]
+        return [
+            x
+            for x in self.statements
+            if x.statement_type == StatementType.IF_BLOCK_STATEMENT
+        ]
 
     @property
     @reader
@@ -180,7 +205,11 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
             list[Attribute[Parent, Self]]: A list of Attribute objects representing the class-level attributes,
                 ordered by their appearance in the code block.
         """
-        return [x for x in self.statements if x.statement_type == StatementType.CLASS_ATTRIBUTE]
+        return [
+            x
+            for x in self.statements
+            if x.statement_type == StatementType.CLASS_ATTRIBUTE
+        ]
 
     @reader
     def get_attributes(self, private: bool) -> list[Attribute[Parent, Self]]:
@@ -211,7 +240,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         Returns:
             A list of assignment statements found at the top level of the code block.
         """
-        return [x for x in self.statements if x.statement_type == StatementType.ASSIGNMENT]
+        return [
+            x for x in self.statements if x.statement_type == StatementType.ASSIGNMENT
+        ]
 
     @property
     @reader
@@ -224,7 +255,11 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         Returns:
             list[ReturnStatement[Parent, Self]]: A list of return statements that appear at the top level of the code block. Does not include return statements in nested blocks.
         """
-        return [x for x in self.statements if x.statement_type == StatementType.RETURN_STATEMENT]
+        return [
+            x
+            for x in self.statements
+            if x.statement_type == StatementType.RETURN_STATEMENT
+        ]
 
     @property
     @reader
@@ -242,7 +277,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         return variables
 
     @reader
-    def get_assignments(self, var_name: str, *, fuzzy: bool = False, parameters: bool = False) -> list[Assignment[Parent, Self]]:
+    def get_assignments(
+        self, var_name: str, *, fuzzy: bool = False, parameters: bool = False
+    ) -> list[Assignment[Parent, Self]]:
         """Returns a list of assignments with the specified variable name.
 
         Returns all assignments in the code block that match the given variable name.
@@ -253,9 +290,17 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         Returns:
             list[Assignment[Parent, Self]]: A list of Assignment objects that match the variable name.
         """
-        assignments = list(self.parent.parameters) + self.assignments if parameters else self.assignments
+        assignments = (
+            list(self.parent.parameters) + self.assignments
+            if parameters
+            else self.assignments
+        )
 
-        return [x for x in assignments if (var_name in x.name if fuzzy else x.name == var_name)]
+        return [
+            x
+            for x in assignments
+            if (var_name in x.name if fuzzy else x.name == var_name)
+        ]
 
     @property
     @reader
@@ -271,7 +316,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         return [x for x in self.assignments if x.is_local_variable]
 
     @reader
-    def get_local_var_assignment(self, var_name: str) -> Assignment[Parent, Self] | None:
+    def get_local_var_assignment(
+        self, var_name: str
+    ) -> Assignment[Parent, Self] | None:
         """Returns the first code statement that assigns a local variable with the specified name.
 
         Searches through all local variable assignments in the code block and returns the first one that matches
@@ -286,7 +333,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         return next((x for x in self.local_var_assignments if x.name == var_name), None)
 
     @reader
-    def get_local_var_assignments(self, var_name: str, fuzzy_match: bool = False) -> list[Assignment[Parent, Self]]:
+    def get_local_var_assignments(
+        self, var_name: str, fuzzy_match: bool = False
+    ) -> list[Assignment[Parent, Self]]:
         """Returns all instances of local variable assignments that match the specified variable
         name.
 
@@ -302,10 +351,16 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
             list[Assignment[Parent, Self]]: List of Assignment objects representing local variable assignments
                 that match the specified name criteria.
         """
-        return [x for x in self.local_var_assignments if (var_name in x.name if fuzzy_match else var_name == x.name)]
+        return [
+            x
+            for x in self.local_var_assignments
+            if (var_name in x.name if fuzzy_match else var_name == x.name)
+        ]
 
     @reader
-    def get_variable_usages(self, var_name: str, fuzzy_match: bool = False) -> list[Editable[Self]]:
+    def get_variable_usages(
+        self, var_name: str, fuzzy_match: bool = False
+    ) -> list[Editable[Self]]:
         """Returns all instances of variable usages in a code block.
 
         This method searches through all statements in the code block to find variable usages that match the specified variable name.
@@ -319,12 +374,19 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
             list[Editable[Self]]: A sorted list of variable usage instances as Editable objects.
         """
         usages = list()
-        for assignment in self.get_assignments(var_name, fuzzy=fuzzy_match, parameters=True):
-            usages.extend(usage.match for usage in assignment.usages(UsageType.DIRECT | UsageType.CHAINED))
+        for assignment in self.get_assignments(
+            var_name, fuzzy=fuzzy_match, parameters=True
+        ):
+            usages.extend(
+                usage.match
+                for usage in assignment.usages(UsageType.DIRECT | UsageType.CHAINED)
+            )
         return sort_editables(usages)
 
     @writer
-    def rename_variable_usages(self, old_var_name: str, new_var_name: str, fuzzy_match: bool = False) -> None:
+    def rename_variable_usages(
+        self, old_var_name: str, new_var_name: str, fuzzy_match: bool = False
+    ) -> None:
         """Renames all instances of variable usages in the code block.
 
         This method modifies variable usages in the code block by replacing occurrences of the old variable name with a new one.
@@ -338,7 +400,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         Returns:
             None: This method mutates the code block in place.
         """
-        for assignment in self.get_assignments(old_var_name, fuzzy=fuzzy_match, parameters=True):
+        for assignment in self.get_assignments(
+            old_var_name, fuzzy=fuzzy_match, parameters=True
+        ):
             assignment.rename(assignment.name.replace(old_var_name, new_var_name))
 
     @deprecated("Use `self.statements.insert(0, ...)` instead.")
@@ -374,7 +438,9 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
             None
         """
         if fix_indentation is False:
-            super().insert_after(new_src, fix_indentation=fix_indentation, newline=newline)
+            super().insert_after(
+                new_src, fix_indentation=fix_indentation, newline=newline
+            )
         end_lines = self._get_line_ends()
         end_line = end_lines[-1]
         end_line.insert_after(new_src, fix_indentation=fix_indentation, newline=newline)
@@ -396,14 +462,18 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
             return
 
         start_lines = self._get_line_starts()
-        indent_size = int(start_lines[0].start_point[1] / self.level) if self.level > 0 else 4
+        indent_size = (
+            int(start_lines[0].start_point[1] / self.level) if self.level > 0 else 4
+        )
         total_indent_size = indent_size * abs(level)
         for start_node in start_lines:
             if level < 0:
                 (_, column) = start_node.start_point
                 new_column = max(0, column - total_indent_size)
                 offset = column - new_column
-                start_node.remove_byte_range(start_node.start_byte - offset, start_node.start_byte)
+                start_node.remove_byte_range(
+                    start_node.start_byte - offset, start_node.start_byte
+                )
             else:
                 start_node.insert_before(" " * total_indent_size, newline=False)
 
@@ -460,19 +530,30 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
 
         # If the wrapper doesn't start at the beginning of the line, only remove up to the end of the wrapper
         wrapper_row = self.ts_node.parent.start_point[0]
-        if (prev_sibling := self.ts_node.parent.prev_sibling) is not None and prev_sibling.start_point[0] == wrapper_row:
-            while prev_sibling.prev_sibling and prev_sibling.prev_sibling.start_point[0] == wrapper_row:
+        if (
+            prev_sibling := self.ts_node.parent.prev_sibling
+        ) is not None and prev_sibling.start_point[0] == wrapper_row:
+            while (
+                prev_sibling.prev_sibling
+                and prev_sibling.prev_sibling.start_point[0] == wrapper_row
+            ):
                 prev_sibling = prev_sibling.prev_sibling
 
             remove_start_byte = prev_sibling.start_byte - 1
             wrapper_line_nodes = find_line_start_and_end_nodes(self.ts_node.parent)
             wrapper_end_row = self.statements[0].start_point[0] - 1
-            wrapper_end_node = next(x[1] for x in wrapper_line_nodes if x[1].start_point[0] == wrapper_end_row)
+            wrapper_end_node = next(
+                x[1]
+                for x in wrapper_line_nodes
+                if x[1].start_point[0] == wrapper_end_row
+            )
             self.remove_byte_range(remove_start_byte, wrapper_end_node.end_byte)
 
         # Else, remove the entire top wrapper up to the start of the block
         else:
-            self.remove_byte_range(self.ts_node.parent.start_byte, self.statements[0].start_byte)
+            self.remove_byte_range(
+                self.ts_node.parent.start_byte, self.statements[0].start_byte
+            )
 
     @reader
     @noapidoc
@@ -489,10 +570,17 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         returns [Node(def foo():), Node(x), Node(y)]
         """
         starts = []
-        for comment in self.get_statements(statement_type=StatementType.COMMENT, max_level=self.level):
+        for comment in self.get_statements(
+            statement_type=StatementType.COMMENT, max_level=self.level
+        ):
             if comment.start_byte < self.start_byte:
                 starts.append(comment)
-        starts.extend([Value(x[0], self.file_node_id, self.ctx, self) for x in find_line_start_and_end_nodes(self.ts_node)])
+        starts.extend(
+            [
+                Value(x[0], self.file_node_id, self.ctx, self)
+                for x in find_line_start_and_end_nodes(self.ts_node)
+            ]
+        )
         return starts
 
     @reader
@@ -510,13 +598,22 @@ class CodeBlock(Expression[Parent], Generic[Parent, TAssignment]):
         returns [Node(def foo():), Node(1), Node(2)]
         """
         ends = []
-        for comment in self.get_statements(statement_type=StatementType.COMMENT, max_level=self.level):
+        for comment in self.get_statements(
+            statement_type=StatementType.COMMENT, max_level=self.level
+        ):
             if comment.start_byte < self.start_byte:
                 ends.append(comment)
-        ends.extend([Value(x[1], self.file_node_id, self.ctx, self) for x in find_line_start_and_end_nodes(self.ts_node)])
+        ends.extend(
+            [
+                Value(x[1], self.file_node_id, self.ctx, self)
+                for x in find_line_start_and_end_nodes(self.ts_node)
+            ]
+        )
         return ends
 
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         dest = dest or self.parent.self_dest
         for statement in self.statements:
             statement._compute_dependencies(UsageKind.BODY, dest)

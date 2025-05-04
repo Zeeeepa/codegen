@@ -29,7 +29,12 @@ class TSCommentGroup(CommentGroup):
         # Locate the body that contains the comment nodes
         current_node = symbol.ts_node
         parent_node = symbol.ts_node.parent
-        while parent_node and parent_node.type not in ["program", "class_body", "block", "statement_block"]:
+        while parent_node and parent_node.type not in [
+            "program",
+            "class_body",
+            "block",
+            "statement_block",
+        ]:
             current_node = parent_node
             parent_node = parent_node.parent
 
@@ -50,7 +55,10 @@ class TSCommentGroup(CommentGroup):
         for i in range(function_index - 1, -1, -1):
             if parent_node.children[i].type == "comment":
                 # Check if the comment is directly above each other
-                if parent_node.children[i].end_point[0] == parent_node.children[i + 1].start_point[0] - 1:
+                if (
+                    parent_node.children[i].end_point[0]
+                    == parent_node.children[i + 1].start_point[0] - 1
+                ):
                     comment = TSComment.from_code_block(parent_node.children[i], symbol)
                     comment_nodes.insert(0, comment)
                 else:
@@ -74,7 +82,12 @@ class TSCommentGroup(CommentGroup):
         # Locate the body that contains the comment nodes
         current_node = symbol.ts_node
         parent_node = symbol.ts_node.parent
-        while parent_node and parent_node.type not in ["program", "class_body", "block", "statement_block"]:
+        while parent_node and parent_node.type not in [
+            "program",
+            "class_body",
+            "block",
+            "statement_block",
+        ]:
             current_node = parent_node
             parent_node = parent_node.parent
 
@@ -92,8 +105,13 @@ class TSCommentGroup(CommentGroup):
         if function_index + 1 < len(parent_node.children):
             if parent_node.children[function_index + 1].type == "comment":
                 # Check if the comment is on the same line
-                if parent_node.children[function_index].end_point[0] == parent_node.children[function_index + 1].start_point[0]:
-                    comment = TSComment.from_code_block(parent_node.children[function_index + 1], symbol)
+                if (
+                    parent_node.children[function_index].end_point[0]
+                    == parent_node.children[function_index + 1].start_point[0]
+                ):
+                    comment = TSComment.from_code_block(
+                        parent_node.children[function_index + 1], symbol
+                    )
                     comment_nodes.append(comment)
 
         if not comment_nodes:
@@ -109,7 +127,11 @@ class TSCommentGroup(CommentGroup):
         if not comment_nodes:
             return None
         # Docstring comments are filtered by SLASH_STAR comments
-        docstring_nodes = [comment for comment in comment_nodes if comment.comment_type == TSCommentType.SLASH_STAR]
+        docstring_nodes = [
+            comment
+            for comment in comment_nodes
+            if comment.comment_type == TSCommentType.SLASH_STAR
+        ]
         if not docstring_nodes:
             return None
         return cls(docstring_nodes, symbol.file_node_id, symbol.ctx, symbol)
@@ -121,7 +143,11 @@ class TSCommentGroup(CommentGroup):
             return None
 
         # Docstring comments are filtered by SLASH_STAR comments
-        docstring_nodes = [comment for comment in comment_nodes if comment.comment_type == TSCommentType.SLASH_STAR]
+        docstring_nodes = [
+            comment
+            for comment in comment_nodes
+            if comment.comment_type == TSCommentType.SLASH_STAR
+        ]
         if not docstring_nodes:
             return None
         return cls(docstring_nodes, symbol.file_node_id, symbol.ctx, symbol)

@@ -46,7 +46,9 @@ def run(codebase: Codebase):
 
             # Replace freeze_time with travel
             if "." in new_source:
-                new_source = new_source.replace("freeze_time", "travel").replace("freezegun", "time_machine")
+                new_source = new_source.replace("freeze_time", "travel").replace(
+                    "freezegun", "time_machine"
+                )
             else:
                 new_source = "travel" + new_source[len("freeze_time") :]
 
@@ -58,5 +60,9 @@ def run(codebase: Codebase):
 
 
 if __name__ == "__main__":
-    codebase = Codebase.from_repo("getmoto/moto", commit="786a8ada7ed0c7f9d8b04d49f24596865e4b7901", language="python")
+    codebase = Codebase.from_repo(
+        "getmoto/moto",
+        commit="786a8ada7ed0c7f9d8b04d49f24596865e4b7901",
+        language="python",
+    )
     run(codebase)

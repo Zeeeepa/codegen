@@ -70,7 +70,9 @@ def _setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
 
 def _setup_exception_logging(logger: logging.Logger) -> None:
     def log_exception(exc_type, exc_value, exc_traceback):
-        logger.exception("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+        logger.exception(
+            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
+        )
 
     # Set the log_exception function as the exception hook
     sys.excepthook = log_exception

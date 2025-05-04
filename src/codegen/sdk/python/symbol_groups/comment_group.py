@@ -113,7 +113,9 @@ class PyCommentGroup(CommentGroup):
         NAME_OF_ARGS_SECTION = "Args:"
         NAME_OF_RETURNS_SECTION = "Returns:"
 
-        def parse_google_block(section_header: str, first_line: str, docstring_iter) -> str:
+        def parse_google_block(
+            section_header: str, first_line: str, docstring_iter
+        ) -> str:
             """Parse the parameters section of the docstring"""
             unrelated_strings = []
             parameters = {}
@@ -162,11 +164,17 @@ class PyCommentGroup(CommentGroup):
         while (line := next(docstring_iter, None)) is not None:
             # Check if the line is a section header
             if line.strip().lower().startswith(NAME_OF_PARAMETERS_SECTION.lower()):
-                parsed_parameters_unrelated_strings, parsed_parameters = parse_google_block(NAME_OF_PARAMETERS_SECTION, line, docstring_iter)
+                parsed_parameters_unrelated_strings, parsed_parameters = (
+                    parse_google_block(NAME_OF_PARAMETERS_SECTION, line, docstring_iter)
+                )
             elif line.strip().lower().startswith(NAME_OF_ARGS_SECTION.lower()):
-                parsed_args_unrelated_strings, parsed_args = parse_google_block(NAME_OF_ARGS_SECTION, line, docstring_iter)
+                parsed_args_unrelated_strings, parsed_args = parse_google_block(
+                    NAME_OF_ARGS_SECTION, line, docstring_iter
+                )
             elif line.strip().lower().startswith(NAME_OF_RETURNS_SECTION.lower()):
-                parsed_returns_unrelated_strings, parsed_returns = parse_google_block(NAME_OF_RETURNS_SECTION, line, docstring_iter)
+                parsed_returns_unrelated_strings, parsed_returns = parse_google_block(
+                    NAME_OF_RETURNS_SECTION, line, docstring_iter
+                )
             else:
                 # Add the line to the new docstring
                 new_docstring += line + "\n"
@@ -179,7 +187,11 @@ class PyCommentGroup(CommentGroup):
         parsed_args.update(parsed_parameters)
 
         # Create args section
-        if (args := [param for param in function.parameters if param.name != "self"]) or parsed_args_unrelated_strings or parsed_args:
+        if (
+            (args := [param for param in function.parameters if param.name != "self"])
+            or parsed_args_unrelated_strings
+            or parsed_args
+        ):
             args_doc = {param.name: (param.type, None) for param in args}
             # Merge codebase args with parsed parameters
             args_doc = merge_codebase_docstring(args_doc, parsed_args)
@@ -208,7 +220,11 @@ class PyCommentGroup(CommentGroup):
                     new_docstring += f"    {unrelated_string}\n"
 
         # Create returns section
-        if ((return_type := function.return_type) and return_type.source != "None") or parsed_returns_unrelated_strings or parsed_returns:
+        if (
+            ((return_type := function.return_type) and return_type.source != "None")
+            or parsed_returns_unrelated_strings
+            or parsed_returns
+        ):
             new_docstring += f"\n{NAME_OF_RETURNS_SECTION}\n"
 
             # Merge codebase return type with parsed return type

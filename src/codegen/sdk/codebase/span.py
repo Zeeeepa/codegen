@@ -39,7 +39,10 @@ def range_json_schema() -> JsonSchemaValue:
             },
             "end_point": {
                 "type": "object",
-                "properties": {"row": {"type": "integer"}, "column": {"type": "integer"}},
+                "properties": {
+                    "row": {"type": "integer"},
+                    "column": {"type": "integer"},
+                },
             },
         },
     }

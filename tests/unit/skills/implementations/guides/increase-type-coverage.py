@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 CountTypedParametersPyTestCase = SkillTestCase(
     [
@@ -74,8 +78,13 @@ class CountTypedParametersSkill(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CountTypedParametersPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[CountTypedParametersTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[CountTypedParametersPyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[CountTypedParametersTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Initialize counters for total parameters and typed parameters
         total_parameters = 0
@@ -86,7 +95,9 @@ class CountTypedParametersSkill(Skill, ABC):
             # Count the total number of parameters
             total_parameters += len(function.parameters)
             # Count the number of parameters that have type hints
-            typed_parameters += sum(1 for param in function.parameters if param.is_typed)
+            typed_parameters += sum(
+                1 for param in function.parameters if param.is_typed
+            )
 
         # Calculate the percentage of parameters with type hints
         if total_parameters > 0:
@@ -95,7 +106,9 @@ class CountTypedParametersSkill(Skill, ABC):
             percentage_typed = 0
 
         # Print the result
-        print(f"Percentage of function arguments with type hints: {percentage_typed:.2f}%")
+        print(
+            f"Percentage of function arguments with type hints: {percentage_typed:.2f}%"
+        )
 
 
 SetReturnTypeToNoneForFunctionsWithoutReturnsPyTestCase = SkillTestCase(
@@ -199,7 +212,10 @@ class SetReturnTypeToNoneForFunctionsWithoutReturns(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[SetReturnTypeToNoneForFunctionsWithoutReturnsPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[SetReturnTypeToNoneForFunctionsWithoutReturnsPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Iterate through all files in the codebase
         for file in codebase.files:
@@ -213,7 +229,10 @@ class SetReturnTypeToNoneForFunctionsWithoutReturns(Skill, ABC):
                         function.set_return_type("None")
 
     @staticmethod
-    @skill_impl(test_cases=[SetReturnTypeToNoneForFunctionsWithoutReturnsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[SetReturnTypeToNoneForFunctionsWithoutReturnsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Iterate through all files in the codebase
         for file in codebase.files:
@@ -309,7 +328,10 @@ class ModifyReturnTypeSkill(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[ModifyReturnTypeSkillPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[ModifyReturnTypeSkillPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         target_file = codebase.get_file("path/to/file.py")
@@ -324,7 +346,10 @@ class ModifyReturnTypeSkill(Skill, ABC):
         function.return_type.append("c")
 
     @staticmethod
-    @skill_impl(test_cases=[ModifyReturnTypeSkillTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[ModifyReturnTypeSkillTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         target_file = codebase.get_file("path/to/file.ts")
@@ -377,7 +402,10 @@ class ModifyReturnTypeWithNewParameter(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[ModifyReturnTypeWithNewParameterTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[ModifyReturnTypeWithNewParameterTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         function = codebase.get_file("path/to/file.py").get_function("function_name")
@@ -418,7 +446,10 @@ class InspectFunctionReturnType(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[InspectFunctionReturnTypePyTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[InspectFunctionReturnTypePyTest],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         # Find the symbol to inspect
         function = codebase.get_file("path/to/file.py").get_function("function_name")
@@ -532,7 +563,10 @@ class InspectResolveFunctionReturnType(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[InspectResolveFunctionReturnTypePySanityTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[InspectResolveFunctionReturnTypePySanityTest],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Find the symbol to inspect
         function = codebase.get_file("path/to/file.py").get_function("function_name")
@@ -543,7 +577,10 @@ class InspectResolveFunctionReturnType(Skill, ABC):
             print(parameter.resolved_types)  # Resolves to a and b
 
     @staticmethod
-    @skill_impl(test_cases=[InspectResolveFunctionReturnTypeTSSanityTest], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[InspectResolveFunctionReturnTypeTSSanityTest],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Find the symbol to inspect
         function = codebase.get_file("path/to/file.ts").get_function("functionName")
@@ -594,9 +631,14 @@ class ResolveAndRenameGlobalVariableType(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[ResolveAndRenameGlobalVariableTypeTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[ResolveAndRenameGlobalVariableTypeTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         a = codebase.get_file("path/to/file.py").get_global_var("a")
         # a: MyType = ...
         print(a.type)  # Resolves to MyType
-        a.type.rename("MyNewType")  # Renames the symbol `MyType` to `MyNewType` throughout the codebase
+        a.type.rename(
+            "MyNewType"
+        )  # Renames the symbol `MyType` to `MyNewType` throughout the codebase

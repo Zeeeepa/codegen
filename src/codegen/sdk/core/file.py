@@ -31,7 +31,10 @@ from codegen.sdk.core.symbol import Symbol
 from codegen.sdk.enums import EdgeType, ImportType, NodeType, SymbolType
 from codegen.sdk.extensions.sort import sort_editables
 from codegen.sdk.topological_sort import pseudo_topological_sort
-from codegen.sdk.tree_sitter_parser import get_parser_by_filepath_or_extension, parse_file
+from codegen.sdk.tree_sitter_parser import (
+    get_parser_by_filepath_or_extension,
+    parse_file,
+)
 from codegen.sdk.typescript.function import TSFunction
 from codegen.sdk.utils import is_minified_js
 from codegen.shared.decorators.docs import apidoc, noapidoc
@@ -68,7 +71,13 @@ class File(Editable[None]):
     _binary: bool = False
     _range_index: RangeIndex
 
-    def __init__(self, filepath: PathLike, ctx: CodebaseContext, ts_node: TSNode | None = None, binary: bool = False) -> None:
+    def __init__(
+        self,
+        filepath: PathLike,
+        ctx: CodebaseContext,
+        ts_node: TSNode | None = None,
+        binary: bool = False,
+    ) -> None:
         if ts_node is None:
             # TODO: this is a temp hack to deal with all symbols needing a TSNode.
             parser = get_parser_by_filepath_or_extension(".py")
@@ -104,10 +113,19 @@ class File(Editable[None]):
 
     @classmethod
     @noapidoc
-    def from_content(cls, filepath: str | Path, content: str | bytes, ctx: CodebaseContext, sync: bool = False, binary: bool = False) -> Self | None:
+    def from_content(
+        cls,
+        filepath: str | Path,
+        content: str | bytes,
+        ctx: CodebaseContext,
+        sync: bool = False,
+        binary: bool = False,
+    ) -> Self | None:
         """Creates a new file from content."""
         if sync:
-            logger.warn("Creating & Syncing non-source files are not supported. Ignoring sync...")
+            logger.warn(
+                "Creating & Syncing non-source files are not supported. Ignoring sync..."
+            )
         path = ctx.to_absolute(filepath)
         if not path.exists():
             update_graph = True
@@ -219,7 +237,9 @@ class File(Editable[None]):
     def github_url(self) -> str | None:
         if self.ctx.base_url:
             if self.ctx.base_url.endswith(".git"):
-                return self.ctx.base_url.replace(".git", "/blob/develop/") + self.file_path
+                return (
+                    self.ctx.base_url.replace(".git", "/blob/develop/") + self.file_path
+                )
             else:
                 return self.ctx.base_url + "/" + self.file_path
 
@@ -327,7 +347,13 @@ class File(Editable[None]):
         pass
 
     @writer
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Replace the source of this file with new_src.
 
         For non-source files, replaces the entire content. For source files, delegates to the parent
@@ -357,7 +383,14 @@ class File(Editable[None]):
             super().edit(new_src, fix_indentation, priority, dedupe)
 
     @writer
-    def replace(self, old: str, new: str, count: int = -1, is_regex: bool = False, priority: int = 0) -> int:
+    def replace(
+        self,
+        old: str,
+        new: str,
+        count: int = -1,
+        is_regex: bool = False,
+        priority: int = 0,
+    ) -> int:
         """Replace occurrences of text in the file.
 
         For non-source files, performs a direct string replacement. For source files, delegates to the
@@ -388,7 +421,9 @@ class File(Editable[None]):
             if old not in self.content:
                 return 0
 
-            self._edit_byte_range(self.content.replace(old, new), 0, len(self.content_bytes), priority)
+            self._edit_byte_range(
+                self.content.replace(old, new), 0, len(self.content_bytes), priority
+            )
             return 1
         else:
             return super().replace(old, new, count, is_regex, priority)
@@ -428,7 +463,9 @@ class SourceFile(
     code_block: TCodeBlock
     _nodes: list[Importable]
 
-    def __init__(self, ts_node: TSNode, filepath: PathLike, ctx: CodebaseContext) -> None:
+    def __init__(
+        self, ts_node: TSNode, filepath: PathLike, ctx: CodebaseContext
+    ) -> None:
         self.node_id = ctx.add_node(self)
         self._nodes = []
         super().__init__(filepath, ctx, ts_node=ts_node)
@@ -438,7 +475,9 @@ class SourceFile(
         try:
             self.parse(ctx)
         except RecursionError as e:
-            logger.exception(f"RecursionError parsing file {filepath}: {e} at depth {sys.getrecursionlimit()} and {resource.getrlimit(resource.RLIMIT_STACK)}")
+            logger.exception(
+                f"RecursionError parsing file {filepath}: {e} at depth {sys.getrecursionlimit()} and {resource.getrlimit(resource.RLIMIT_STACK)}"
+            )
             raise e
         except Exception as e:
             logger.exception(f"Failed to parse file {filepath}: {e}")
@@ -512,7 +551,12 @@ class SourceFile(
         if not reparse:
             self.ctx.filepath_idx.pop(self.file_path, None)
         self._nodes.clear()
-        return list(filter(lambda node: self.ctx.has_node(node.node_id) and node is not None, external_edges_to_resolve))
+        return list(
+            filter(
+                lambda node: self.ctx.has_node(node.node_id) and node is not None,
+                external_edges_to_resolve,
+            )
+        )
 
     @noapidoc
     @commiter
@@ -563,13 +607,23 @@ class SourceFile(
 
     @classmethod
     @noapidoc
-    def from_content(cls, filepath: str | PathLike | Path, content: str, ctx: CodebaseContext, sync: bool = True, verify_syntax: bool = True) -> Self | None:
+    def from_content(
+        cls,
+        filepath: str | PathLike | Path,
+        content: str,
+        ctx: CodebaseContext,
+        sync: bool = True,
+        verify_syntax: bool = True,
+    ) -> Self | None:
         """Creates a new file from content and adds it to the graph."""
         path = ctx.to_absolute(filepath)
 
         # Sanity check to ensure file is not a minified file
         if is_minified_js(content):
-            logger.info(f"File {filepath} is a minified file. Skipping...", extra={"filepath": filepath})
+            logger.info(
+                f"File {filepath} is a minified file. Skipping...",
+                extra={"filepath": filepath},
+            )
             return None
 
         ts_node = parse_file(path, content)
@@ -623,11 +677,23 @@ class SourceFile(
         """
         inbound_imports = set()
         for s in self.symbols:
-            inbound_imports.update(i for i in s.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) if isinstance(i, Import))
+            inbound_imports.update(
+                i
+                for i in s.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+                if isinstance(i, Import)
+            )
         for imp in self.imports:
-            inbound_imports.update(i for i in imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) if isinstance(i, Import))
+            inbound_imports.update(
+                i
+                for i in imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+                if isinstance(i, Import)
+            )
 
-        inbound_imports.update(i for i in self.symbol_usages(UsageType.DIRECT | UsageType.CHAINED) if isinstance(i, Import))
+        inbound_imports.update(
+            i
+            for i in self.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+            if isinstance(i, Import)
+        )
         return list(inbound_imports)
 
     @property
@@ -663,8 +729,14 @@ class SourceFile(
             list[TImport]: List of Import objects that import this file as a module,
                 sorted by file location.
         """
-        imps = [x for x in self.ctx.in_edges(self.node_id) if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION]
-        return sort_editables((self.ctx.get_node(x[0]) for x in imps), by_file=True, dedupe=False)
+        imps = [
+            x
+            for x in self.ctx.in_edges(self.node_id)
+            if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION
+        ]
+        return sort_editables(
+            (self.ctx.get_node(x[0]) for x in imps), by_file=True, dedupe=False
+        )
 
     @property
     @reader(cache=False)
@@ -676,7 +748,11 @@ class SourceFile(
         Returns:
             list[TImport]: A list of Import instances contained in this file, ordered by their position.
         """
-        return list(filter(lambda node: isinstance(node, Import), self.get_nodes(sort_by_id=True)))
+        return list(
+            filter(
+                lambda node: isinstance(node, Import), self.get_nodes(sort_by_id=True)
+            )
+        )
 
     @reader
     def has_import(self, symbol_alias: str) -> bool:
@@ -703,10 +779,19 @@ class SourceFile(
         Returns:
             TImport | None: The import statement with the matching alias if found, None otherwise.
         """
-        return next((x for x in self.imports if x.alias is not None and x.alias.source == symbol_alias), None)
+        return next(
+            (
+                x
+                for x in self.imports
+                if x.alias is not None and x.alias.source == symbol_alias
+            ),
+            None,
+        )
 
     @proxy_property
-    def symbols(self, nested: bool = False) -> list[Symbol | TClass | TFunction | TGlobalVar | TInterface]:
+    def symbols(
+        self, nested: bool = False
+    ) -> list[Symbol | TClass | TFunction | TGlobalVar | TInterface]:
         """Returns all Symbols in the file, sorted by position in the file.
 
         Args:
@@ -720,11 +805,20 @@ class SourceFile(
                 - TGlobalVar: Global variable assignment
                 - TInterface: Interface definition
         """
-        return sort_editables([x for x in self.get_nodes(sort=False) if isinstance(x, Symbol) and (nested or x.is_top_level)], dedupe=False)
+        return sort_editables(
+            [
+                x
+                for x in self.get_nodes(sort=False)
+                if isinstance(x, Symbol) and (nested or x.is_top_level)
+            ],
+            dedupe=False,
+        )
 
     @reader(cache=False)
     @noapidoc
-    def get_nodes(self, *, sort_by_id: bool = False, sort: bool = True) -> Sequence[Importable]:
+    def get_nodes(
+        self, *, sort_by_id: bool = False, sort: bool = True
+    ) -> Sequence[Importable]:
         """Returns all nodes in the file, sorted by position in the file."""
         ret = self._nodes
         if sort:
@@ -868,7 +962,9 @@ class SourceFile(
     @cached_property
     @noapidoc
     @reader(cache=True)
-    def valid_symbol_names(self) -> dict[str, Symbol | TImport | WildcardImport[TImport]]:
+    def valid_symbol_names(
+        self,
+    ) -> dict[str, Symbol | TImport | WildcardImport[TImport]]:
         """Returns a dict mapping name => Symbol (or import) in this file."""
         valid_symbol_names = {}
         for s in self.symbols:
@@ -880,7 +976,9 @@ class SourceFile(
 
     @noapidoc
     @reader
-    def resolve_name(self, name: str, start_byte: int | None = None, strict: bool = True) -> Generator[Symbol | Import | WildcardImport]:
+    def resolve_name(
+        self, name: str, start_byte: int | None = None, strict: bool = True
+    ) -> Generator[Symbol | Import | WildcardImport]:
         """Resolves a name to a symbol, import, or wildcard import within the file's scope.
 
         Performs name resolution by first checking the file's valid symbols and imports. When a start_byte
@@ -931,7 +1029,9 @@ class SourceFile(
     @classmethod
     @abstractmethod
     @noapidoc
-    def get_import_module_name_for_file(cls, filepath: str, ctx: CodebaseContext) -> str: ...
+    def get_import_module_name_for_file(
+        cls, filepath: str, ctx: CodebaseContext
+    ) -> str: ...
 
     @abstractmethod
     def remove_unused_exports(self) -> None:
@@ -970,7 +1070,9 @@ class SourceFile(
             None
         """
         # =====[ Add the new filepath as a new file node in the graph ]=====
-        new_file = self.ctx.node_classes.file_cls.from_content(new_filepath, self.content, self.ctx)
+        new_file = self.ctx.node_classes.file_cls.from_content(
+            new_filepath, self.content, self.ctx
+        )
         # =====[ Change the file on disk ]=====
         super().update_filepath(new_filepath)
         # =====[ Update all the inbound imports to point to the new module ]=====
@@ -979,7 +1081,14 @@ class SourceFile(
             imp.set_import_module(new_module_name)
 
     @writer
-    def add_import(self, imp: Symbol | str, *, alias: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> Import | None:
+    def add_import(
+        self,
+        imp: Symbol | str,
+        *,
+        alias: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> Import | None:
         """Adds an import to the file.
 
         This method adds an import statement to the file. It can handle both string imports and symbol imports.
@@ -1011,7 +1120,9 @@ class SourceFile(
                 return match
 
             # Convert symbol to import string
-            import_string = imp.get_import_string(alias, import_type=import_type, is_type_import=is_type_import)
+            import_string = imp.get_import_string(
+                alias, import_type=import_type, is_type_import=is_type_import
+            )
 
         if import_string.strip() in self._pending_imports:
             # Don't add the import string if it will already be added by another symbol
@@ -1019,7 +1130,9 @@ class SourceFile(
 
         # Add to pending imports and setup undo
         self._pending_imports.add(import_string.strip())
-        self.transaction_manager.pending_undos.add(lambda: self._pending_imports.clear())
+        self.transaction_manager.pending_undos.add(
+            lambda: self._pending_imports.clear()
+        )
 
         # Insert the import at the appropriate location
         if self.imports:
@@ -1078,7 +1191,11 @@ class SourceFile(
             raw_source = symbol._named_arrow_function.text.decode("utf-8")
         else:
             raw_source = symbol.ts_node.text.decode("utf-8")
-        if should_export and hasattr(symbol, "export") and (not symbol.is_exported or raw_source not in symbol.export.source):
+        if (
+            should_export
+            and hasattr(symbol, "export")
+            and (not symbol.is_exported or raw_source not in symbol.export.source)
+        ):
             source = source.replace(raw_source, f"export {raw_source}")
 
         self.add_symbol_from_source(source)
@@ -1108,7 +1225,9 @@ class SourceFile(
 
             # Handle regular require statements
             elif "require(" in line:
-                line = re.sub(r"const (\w+) = require\('(.+?)'\);", r"import \1 from '\2';", line)
+                line = re.sub(
+                    r"const (\w+) = require\('(.+?)'\);", r"import \1 from '\2';", line
+                )
                 last_import_index = i
                 import_fixed = True
 
@@ -1136,7 +1255,13 @@ class SourceFile(
     @property
     @noapidoc
     def viz(self) -> VizNode:
-        return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+        return VizNode(
+            file_path=self.filepath,
+            start_point=self.start_point,
+            end_point=self.end_point,
+            name=self.name,
+            symbol_name=self.__class__.__name__,
+        )
 
     ####################################################################################################################
     # AST-GREP
@@ -1153,7 +1278,9 @@ class SourceFile(
     @property
     @noapidoc
     @reader(cache=True)
-    def valid_import_names(self) -> dict[str, Symbol | TImport | WildcardImport[TImport]]:
+    def valid_import_names(
+        self,
+    ) -> dict[str, Symbol | TImport | WildcardImport[TImport]]:
         """Returns a dict mapping name => Symbol (or import) in this file that can be imported from
         another file.
         """

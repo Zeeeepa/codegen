@@ -31,7 +31,13 @@ if __name__ == "__main__":
         file = codebase.get_file("test.py")
         fcalls = file.function_calls
 
-        assert set(f.name for f in fcalls) == {"foo", "bar", "random", "randint", "print"}
+        assert set(f.name for f in fcalls) == {
+            "foo",
+            "bar",
+            "random",
+            "randint",
+            "print",
+        }
         assert len(fcalls) == 7
         fcall_parents = [(f.name, type(f.parent)) for f in file.function_calls]
         assert fcall_parents == [
@@ -105,7 +111,12 @@ class A:
         class_fcalls = file.get_class("A").function_calls
 
         assert set(f.name for f in func_fcalls) == {"bar", "parametrize"}
-        assert set(f.name for f in class_fcalls) == {"foo", "my_decorator", "my_decorator2", "d"}
+        assert set(f.name for f in class_fcalls) == {
+            "foo",
+            "my_decorator",
+            "my_decorator2",
+            "d",
+        }
         assert len(func_fcalls) == 2
         assert len(class_fcalls) == 4
 
@@ -148,9 +159,21 @@ subset = my_list[start_index():end_index()]
         file = codebase.get_file("test.py")
         fcalls = file.function_calls
 
-        assert set(f.name for f in fcalls) == {"get_max_retries", "calculate_timeout", "get_x", "get_y", "get_z", "transform", "map", "start_index", "end_index"}
+        assert set(f.name for f in fcalls) == {
+            "get_max_retries",
+            "calculate_timeout",
+            "get_x",
+            "get_y",
+            "get_z",
+            "transform",
+            "map",
+            "start_index",
+            "end_index",
+        }
         assert len(fcalls) == 9
-        fcall_parents = [(f.parent.parent.level, f.name, f.parent.statement_type) for f in fcalls]
+        fcall_parents = [
+            (f.parent.parent.level, f.name, f.parent.statement_type) for f in fcalls
+        ]
         assert fcall_parents == [
             # dictionary
             (1, "get_max_retries", StatementType.ASSIGNMENT),
@@ -202,7 +225,10 @@ while has_next_item():
 
         assert set(f.name for f in fcalls) == {"has_next_item", "process_item"}
         assert len(fcalls) == 2
-        fcall_parents = [(f.parent.parent.level, f.name, f.parent.statement_type) for f in file.function_calls]
+        fcall_parents = [
+            (f.parent.parent.level, f.name, f.parent.statement_type)
+            for f in file.function_calls
+        ]
         assert fcall_parents == [
             (0, "has_next_item", StatementType.WHILE_STATEMENT),
             (1, "process_item", StatementType.EXPRESSION_STATEMENT),
@@ -222,7 +248,12 @@ elif is_invalid(user_input):
         file = codebase.get_file("test.py")
         fcalls = file.function_calls
 
-        assert set(f.name for f in fcalls) == {"is_valid", "process_data", "is_invalid", "handle_error"}
+        assert set(f.name for f in fcalls) == {
+            "is_valid",
+            "process_data",
+            "is_invalid",
+            "handle_error",
+        }
         assert len(fcalls) == 4
         fcall_parents = [(f.name, type(f.parent)) for f in file.function_calls]
         assert fcall_parents == [

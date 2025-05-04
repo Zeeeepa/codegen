@@ -1,7 +1,8 @@
 import random
 from dataclasses import dataclass
-from typing import List, Dict
 from datetime import datetime
+from typing import Dict, List
+
 
 @dataclass
 class Kevin:
@@ -10,15 +11,46 @@ class Kevin:
     desk_location: str
     famous_quote: str
 
+
 class KevinSecretSanta:
     def __init__(self):
         self.kevins: List[Kevin] = [
-            Kevin("Kevin Malone", "Famous Chili", "Accounting Corner", "Why waste time say lot word when few word do trick"),
-            Kevin("Kevin McCallister", "Microwave Mac & Chili", "Home Alone", "This is my house, I have to defend it"),
-            Kevin("Kevin Hart", "Comedy Chili", "Stage Left", "Everybody wants to be famous, but nobody wants to do the work"),
-            Kevin("Kevin Bacon", "Six Degrees of Chili", "Hollywood", "Everything is connected by six degrees of separation"),
-            Kevin("Kevin Durant", "Championship Chili", "Basketball Court", "Hard work beats talent when talent fails to work hard"),
-            Kevin("Kevin James", "Mall Cop Chili", "Segway Station", "Safety never takes a holiday"),
+            Kevin(
+                "Kevin Malone",
+                "Famous Chili",
+                "Accounting Corner",
+                "Why waste time say lot word when few word do trick",
+            ),
+            Kevin(
+                "Kevin McCallister",
+                "Microwave Mac & Chili",
+                "Home Alone",
+                "This is my house, I have to defend it",
+            ),
+            Kevin(
+                "Kevin Hart",
+                "Comedy Chili",
+                "Stage Left",
+                "Everybody wants to be famous, but nobody wants to do the work",
+            ),
+            Kevin(
+                "Kevin Bacon",
+                "Six Degrees of Chili",
+                "Hollywood",
+                "Everything is connected by six degrees of separation",
+            ),
+            Kevin(
+                "Kevin Durant",
+                "Championship Chili",
+                "Basketball Court",
+                "Hard work beats talent when talent fails to work hard",
+            ),
+            Kevin(
+                "Kevin James",
+                "Mall Cop Chili",
+                "Segway Station",
+                "Safety never takes a holiday",
+            ),
         ]
         self.assignments: Dict[Kevin, Kevin] = {}
 
@@ -50,10 +82,10 @@ class KevinSecretSanta:
         ⠀⠀⠀⠀⠀⠀⠀  \\___________ /
         """
 
+
 if __name__ == "__main__":
     santa = KevinSecretSanta()
     santa.assign_secret_santas()
     santa.print_assignments()
     print(santa.spill_chili())
     print("\nThe trick is to undercook the onions...")
-

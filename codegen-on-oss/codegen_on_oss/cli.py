@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Optional
 
 import click
-from loguru import logger
-
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.csv_output import CSVOutput
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource, all_sources
+from loguru import logger
 
 logger.remove(0)
 
@@ -73,7 +72,7 @@ def run_one(
 
     parser = CodegenParser(Path(cache_dir) / "repositories", metrics_profiler)
     success, metrics, error = parser.parse(url, language, commit_hash)
-    
+
     if success:
         logger.info(f"Successfully parsed repository: {url}")
         if metrics:
@@ -82,7 +81,7 @@ def run_one(
         logger.error(f"Failed to parse repository: {url}")
         if error:
             logger.error(f"Error: {error}")
-    
+
     return success
 
 
@@ -131,7 +130,9 @@ def run(
     """
     Run codegen parsing pipeline on repositories from a given repository source.
     """
-    logger.add(error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR")
+    logger.add(
+        error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR"
+    )
     logger.add(
         sys.stdout,
         format="{time: HH:mm:ss} {level} {message}",
@@ -142,14 +143,16 @@ def run(
     output = CSVOutput(MetricsProfiler.fields(), output_path)
     metrics_profiler = MetricsProfiler(output)
     parser = CodegenParser(Path(cache_dir) / "repositories", metrics_profiler)
-    
+
     success_count = 0
     failure_count = 0
-    
+
     for repo_url, commit_hash in repo_source:
-        logger.info(f"Processing repository: {repo_url} (commit: {commit_hash or 'latest'})")
+        logger.info(
+            f"Processing repository: {repo_url} (commit: {commit_hash or 'latest'})"
+        )
         success, metrics, error = parser.parse(repo_url, language, commit_hash)
-        
+
         if success:
             success_count += 1
             logger.info(f"Successfully parsed repository: {repo_url}")
@@ -158,8 +161,10 @@ def run(
             logger.error(f"Failed to parse repository: {repo_url}")
             if error:
                 logger.error(f"Error: {error}")
-    
-    logger.info(f"Processing complete. Successes: {success_count}, Failures: {failure_count}")
+
+    logger.info(
+        f"Processing complete. Successes: {success_count}, Failures: {failure_count}"
+    )
 
 
 if __name__ == "__main__":

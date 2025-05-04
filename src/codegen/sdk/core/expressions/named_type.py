@@ -26,7 +26,13 @@ Parent = TypeVar("Parent", bound="Editable")
 class NamedType(Resolvable, Type[Parent], HasName, Generic[Parent]):
     """An abstract representation of a named type."""
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
         self._name_node = self._parse_expression(self._get_name_node(), default=Name)
 

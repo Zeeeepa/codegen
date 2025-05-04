@@ -41,7 +41,11 @@ class SplitFileAndRenameSymbols(Codemod, Skill):
             if "Configuration" in cls.name:
                 # Move the function to the filters file and rename it
                 # move_to_file should also take care of updating the imports of the functions, and bringing over any imports or local references the function needs
-                cls.move_to_file(configuration_file, include_dependencies=True, strategy="update_all_imports")
+                cls.move_to_file(
+                    configuration_file,
+                    include_dependencies=True,
+                    strategy="update_all_imports",
+                )
 
         # Commit is NECESSARY for the codebase graph to be aware of the new classes moved into configuration file
         codebase.commit()

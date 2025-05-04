@@ -24,6 +24,12 @@ class TSExpressionType(TSNamedType, Generic[Parent]):
 
     expression: Expression["TSExpressionType[Parent]"]
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent):
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ):
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.expression = self._parse_expression(ts_node)

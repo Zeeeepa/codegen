@@ -20,7 +20,9 @@ def create_jupyter_dir(codegen_dir: Path) -> Path:
 
 @click.command(name="notebook")
 @click.option("--background", is_flag=True, help="Run Jupyter Lab in the background")
-@click.option("--demo", is_flag=True, help="Create a demo notebook with FastAPI example code")
+@click.option(
+    "--demo", is_flag=True, help="Create a demo notebook with FastAPI example code"
+)
 @requires_init
 def notebook_command(session: CodegenSession, background: bool, demo: bool):
     """Launch Jupyter Lab with a pre-configured notebook for exploring your codebase."""
@@ -36,7 +38,11 @@ def notebook_command(session: CodegenSession, background: bool, demo: bool):
         status.update("Running Jupyter Lab...")
 
         # Prepare the environment with the virtual environment activated
-        env = {**os.environ, "VIRTUAL_ENV": str(venv.venv_dir), "PATH": f"{venv.venv_dir}/bin:{os.environ['PATH']}"}
+        env = {
+            **os.environ,
+            "VIRTUAL_ENV": str(venv.venv_dir),
+            "PATH": f"{venv.venv_dir}/bin:{os.environ['PATH']}",
+        }
 
         # Run Jupyter Lab
         subprocess.run(["jupyter", "lab", str(notebook_path)], env=env, check=True)

@@ -52,14 +52,23 @@ class TSNamespace(TSSymbol, TSHasBlock, HasName, HasAttribute):
     symbol_type = SymbolType.Namespace
     code_block: TSCodeBlock
 
-    def __init__(self, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: Statement, namespace_node: TSNode | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Statement,
+        namespace_node: TSNode | None = None,
+    ) -> None:
         ts_node = namespace_node or ts_node
         name_node = ts_node.child_by_field_name("name")
         super().__init__(ts_node, file_id, ctx, parent, name_node=name_node)
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         """Computes dependencies for the namespace by analyzing its code block.
 
         Args:
@@ -85,7 +94,9 @@ class TSNamespace(TSSymbol, TSHasBlock, HasName, HasAttribute):
                 all_symbols.append(stmt)
         return all_symbols
 
-    def get_symbol(self, name: str, recursive: bool = True, get_private: bool = False) -> Symbol | None:
+    def get_symbol(
+        self, name: str, recursive: bool = True, get_private: bool = False
+    ) -> Symbol | None:
         """Get an exported or private symbol by name from this namespace. Returns only exported symbols by default.
 
         Args:
@@ -117,14 +128,18 @@ class TSNamespace(TSSymbol, TSHasBlock, HasName, HasAttribute):
 
             # If recursive and this is a namespace, check its symbols
             if recursive and isinstance(symbol, TSNamespace):
-                nested_symbol = symbol.get_symbol(name, recursive=True, get_private=get_private)
+                nested_symbol = symbol.get_symbol(
+                    name, recursive=True, get_private=get_private
+                )
                 return nested_symbol
 
         return None
 
     @reader(cache=False)
     @noapidoc
-    def get_nodes(self, *, sort_by_id: bool = False, sort: bool = True) -> Sequence[Importable]:
+    def get_nodes(
+        self, *, sort_by_id: bool = False, sort: bool = True
+    ) -> Sequence[Importable]:
         """Returns all nodes in the namespace, sorted by position in the namespace."""
         file_nodes = self.file.get_nodes(sort_by_id=sort_by_id, sort=sort)
         start_limit = self.start_byte
@@ -149,7 +164,10 @@ class TSNamespace(TSSymbol, TSHasBlock, HasName, HasAttribute):
             list[TSExport]: A list of TSExport objects representing all top-level export declarations in the namespace.
         """
         # Filter to only get exports that are direct children of the namespace's code block
-        return sort_editables(filter(lambda node: isinstance(node, Export), self.get_nodes(sort=False)), by_id=True)
+        return sort_editables(
+            filter(lambda node: isinstance(node, Export), self.get_nodes(sort=False)),
+            by_id=True,
+        )
 
     @cached_property
     def functions(self) -> list[TSFunction]:
@@ -275,7 +293,9 @@ class TSNamespace(TSSymbol, TSHasBlock, HasName, HasAttribute):
             self.insert_after("\n" + source)
 
     @commiter
-    def add_symbol(self, symbol: TSSymbol, should_export: bool = True) -> TSSymbol | None:
+    def add_symbol(
+        self, symbol: TSSymbol, should_export: bool = True
+    ) -> TSSymbol | None:
         """Adds a new symbol to the namespace, optionally exporting it if applicable. If the symbol already exists in the namespace, returns the existing symbol.
 
         Args:
@@ -298,7 +318,11 @@ class TSNamespace(TSSymbol, TSHasBlock, HasName, HasAttribute):
             raw_source = symbol._named_arrow_function.text.decode("utf-8")
         else:
             raw_source = symbol.ts_node.text.decode("utf-8")
-        if should_export and hasattr(symbol, "export") and (not symbol.is_exported or raw_source not in symbol.export.source):
+        if (
+            should_export
+            and hasattr(symbol, "export")
+            and (not symbol.is_exported or raw_source not in symbol.export.source)
+        ):
             source = source.replace(source, f"export {source}")
         self.add_symbol_from_source(source)
 

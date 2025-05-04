@@ -28,7 +28,9 @@ class CodemodManager:
         return name.lower().replace(" ", "_").replace("-", "_")
 
     @classmethod
-    def get_codemod(cls, name: str, start_path: Path | None = None) -> DecoratedFunction:
+    def get_codemod(
+        cls, name: str, start_path: Path | None = None
+    ) -> DecoratedFunction:
         """Get and validate a codemod by name.
 
         Args:
@@ -47,7 +49,10 @@ class CodemodManager:
             # If not found, check if any codemods exist
             all_codemods = cls.list(start_path)
             if not all_codemods:
-                raise click.ClickException("No codemods found. Create one with:\n" + "  codegen create my-codemod")
+                raise click.ClickException(
+                    "No codemods found. Create one with:\n"
+                    + "  codegen create my-codemod"
+                )
             else:
                 available = "\n  ".join(f"- {c.name}" for c in all_codemods)
                 msg = f"Codemod '{name}' not found. Available codemods:\n  {available}"
@@ -105,7 +110,9 @@ class CodemodManager:
         return cls.get(name, start_path) is not None
 
     @classmethod
-    def get_decorated(cls, start_path: Path | None = None) -> builtins.list[DecoratedFunction]:
+    def get_decorated(
+        cls, start_path: Path | None = None
+    ) -> builtins.list[DecoratedFunction]:
         """Find all codegen decorated functions in Python files under the given path.
 
         Args:

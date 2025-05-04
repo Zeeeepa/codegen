@@ -18,7 +18,9 @@ def foo():
     else:
         print(c)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
         function.code_block.unwrap()
@@ -50,10 +52,14 @@ def foo():
     else:
         return
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        nested_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[1]
+        nested_if = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[1]
         nested_if.consequence_block.unwrap()
     # language=python
     assert (
@@ -86,7 +92,12 @@ def foo():
     else:
         print(d)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, verify_output=False, sync_graph=False) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        verify_output=False,
+        sync_graph=False,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
         if_block = function.code_block.if_blocks[0]
@@ -145,10 +156,14 @@ def foo():
         # Code to execute while the conditions are true
         pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        block_statements = function.code_block.get_statements(max_level=function.code_block.level)
+        block_statements = function.code_block.get_statements(
+            max_level=function.code_block.level
+        )
         for block_statement in block_statements:
             for code_block in block_statement.nested_code_blocks:
                 code_block.unwrap()

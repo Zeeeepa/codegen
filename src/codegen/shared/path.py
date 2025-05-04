@@ -9,7 +9,12 @@ def get_git_root_path(path: Path | None = None) -> Path | None:
         path = path or Path.cwd()
         path = path.resolve()
         os.chdir(path)
-        output = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, check=True, text=True)
+        output = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            check=True,
+            text=True,
+        )
         return Path(output.stdout.strip())
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None

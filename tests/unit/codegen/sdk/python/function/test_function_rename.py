@@ -43,7 +43,9 @@ def main():
     print(introduction)
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         symbol_for_rename = codebase.get_symbol("greet")
         symbol_for_rename.rename("offender")
 
@@ -101,7 +103,14 @@ from dir.file2 import file1
 def buz():
     return file1.foo('John')
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
@@ -185,7 +194,14 @@ from dir.file2 import file1
 def buz():
     return file1.foo('John')
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
@@ -256,7 +272,14 @@ from dir.file2 import file1
 def buz():
     return file1.foo('John')
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")

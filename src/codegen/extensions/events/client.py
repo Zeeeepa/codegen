@@ -25,7 +25,9 @@ class CodegenClient:
         self.base_url = base_url.rstrip("/")
         self.client = httpx.AsyncClient(timeout=timeout)
 
-    async def send_slack_message(self, text: str, channel: str = "C123456", event_type: str = "message", **kwargs) -> dict[str, Any]:
+    async def send_slack_message(
+        self, text: str, channel: str = "C123456", event_type: str = "message", **kwargs
+    ) -> dict[str, Any]:
         """Send a test Slack message event
 
         Args:
@@ -49,7 +51,9 @@ class CodegenClient:
         response = await self.client.post(f"{self.base_url}/slack/events", json=payload)
         return response.json()
 
-    async def send_github_event(self, event_type: str, action: str | None = None, payload: dict | None = None) -> dict[str, Any]:
+    async def send_github_event(
+        self, event_type: str, action: str | None = None, payload: dict | None = None
+    ) -> dict[str, Any]:
         """Send a test GitHub webhook event
 
         Args:
@@ -79,7 +83,9 @@ class CodegenClient:
         Args:
             payload: The event payload
         """
-        response = await self.client.post(f"{self.base_url}/linear/events", json=payload)
+        response = await self.client.post(
+            f"{self.base_url}/linear/events", json=payload
+        )
         return response.json()
 
     async def close(self):

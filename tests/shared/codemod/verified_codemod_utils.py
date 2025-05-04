@@ -9,7 +9,10 @@ import requests
 from pydantic import BaseModel
 
 from codegen.shared.enums.programming_language import ProgrammingLanguage
-from tests.shared.codemod.constants import GET_CODEMODS_URL_SUFFIX, UPDATE_CODEMOD_DIFF_URL_SUFFIX
+from tests.shared.codemod.constants import (
+    GET_CODEMODS_URL_SUFFIX,
+    UPDATE_CODEMOD_DIFF_URL_SUFFIX,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +53,9 @@ class RepoCodemodMetadata(BaseModel):
             data = json.load(f)
         return cls.model_validate(data)
 
-    def filter(self, base_commit: str | None = None, codemod_id: int | None = None) -> None:
+    def filter(
+        self, base_commit: str | None = None, codemod_id: int | None = None
+    ) -> None:
         """Filters the contents of this RepoCodemodMetadata instance in-place
 
         Args:
@@ -69,13 +74,26 @@ class RepoCodemodMetadata(BaseModel):
         """
         # Filter by commit if specified
         if base_commit is not None:
-            self.codemods_by_base_commit = {commit: codemods for commit, codemods in self.codemods_by_base_commit.items() if commit == base_commit}
+            self.codemods_by_base_commit = {
+                commit: codemods
+                for commit, codemods in self.codemods_by_base_commit.items()
+                if commit == base_commit
+            }
 
         # Filter by codemod_id if specified
         if codemod_id is not None:
-            self.codemods_by_base_commit = {commit: [codemod for codemod in codemods if codemod.codemod_id == codemod_id] for commit, codemods in self.codemods_by_base_commit.items()}
+            self.codemods_by_base_commit = {
+                commit: [
+                    codemod for codemod in codemods if codemod.codemod_id == codemod_id
+                ]
+                for commit, codemods in self.codemods_by_base_commit.items()
+            }
             # Remove empty commits
-            self.codemods_by_base_commit = {commit: codemods for commit, codemods in self.codemods_by_base_commit.items() if codemods}
+            self.codemods_by_base_commit = {
+                commit: codemods
+                for commit, codemods in self.codemods_by_base_commit.items()
+                if codemods
+            }
 
     @property
     def anonymized_name(self) -> str:
@@ -83,7 +101,9 @@ class RepoCodemodMetadata(BaseModel):
 
 
 class CodemodAPI:
-    def __init__(self, api_key: str | None = None, modal_prefix: str = "https://codegen-sh"):
+    def __init__(
+        self, api_key: str | None = None, modal_prefix: str = "https://codegen-sh"
+    ):
         self.api_key = api_key
         self.modal_prefix = modal_prefix
         self.get_codemods_url = f"{self.modal_prefix}--{GET_CODEMODS_URL_SUFFIX}"
@@ -104,7 +124,9 @@ class CodemodAPI:
                 headers=self._get_headers(),
             )
             if response.status_code != 200:
-                logger.error(f"Error making request: {response.status_code} {response.text}")
+                logger.error(
+                    f"Error making request: {response.status_code} {response.text}"
+                )
                 msg = f"Error making request: {response.status_code} {response.text}"
                 raise Exception(msg)
             return response
@@ -112,7 +134,12 @@ class CodemodAPI:
             logger.exception(f"Error making request: {e}")
             raise e
 
-    def get_verified_codemods(self, repo_id: int, codemod_id: int | None = None, base_commit: str | None = None) -> RepoCodemodMetadata:
+    def get_verified_codemods(
+        self,
+        repo_id: int,
+        codemod_id: int | None = None,
+        base_commit: str | None = None,
+    ) -> RepoCodemodMetadata:
         """Get verified codemods for a given repo"""
         input_data = {"repo_id": repo_id}
         if codemod_id:
@@ -128,7 +155,9 @@ class CodemodAPI:
         Returns True if successful, False otherwise
         """
         try:
-            self._make_request(self.update_diff_url, {"repo_app_id": repo_app_id, "new_diff": diff})
+            self._make_request(
+                self.update_diff_url, {"repo_app_id": repo_app_id, "new_diff": diff}
+            )
             return True
         except Exception:
             return False

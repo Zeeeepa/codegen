@@ -2,7 +2,16 @@ from codegen.sdk.core.file import File
 from codegen.sdk.core.interfaces.editable import Editable
 
 
-def generate_system_prompt(target: Editable | None = None, context: None | str | Editable | list[Editable] | dict[str, str | Editable | list[Editable]] = None) -> str:
+def generate_system_prompt(
+    target: Editable | None = None,
+    context: (
+        None
+        | str
+        | Editable
+        | list[Editable]
+        | dict[str, str | Editable | list[Editable]]
+    ) = None,
+) -> str:
     prompt = """Hey CodegenBot!
 You are an incredibly precise and thoughtful AI who helps developers accomplish complex transformations on their codebase.
 You always provide clear, concise, and accurate responses.
@@ -103,7 +112,16 @@ REMEMBER: When giving the final answer, you must use the set_answer tool to prov
     return prompt
 
 
-def generate_flag_system_prompt(target: Editable, context: None | str | Editable | list[Editable] | dict[str, str | Editable | list[Editable]] = None) -> str:
+def generate_flag_system_prompt(
+    target: Editable,
+    context: (
+        None
+        | str
+        | Editable
+        | list[Editable]
+        | dict[str, str | Editable | list[Editable]]
+    ) = None,
+) -> str:
     prompt = f"""Hey CodegenBot!
 You are an incredibly precise and thoughtful AI who helps developers accomplish complex transformations on their codebase.
 
@@ -137,7 +155,16 @@ as a chunk of code that should be modified, edited, or changed in a later step.
     return prompt
 
 
-def generate_context(context: None | str | Editable | list[Editable | File] | dict[str, str | Editable | list[Editable] | File] | File = None) -> str:
+def generate_context(
+    context: (
+        None
+        | str
+        | Editable
+        | list[Editable | File]
+        | dict[str, str | Editable | list[Editable] | File]
+        | File
+    ) = None
+) -> str:
     output = ""
     if not context:
         return output

@@ -45,12 +45,18 @@ async def test_slack_events():
         try:
             # Test sending a simple message
             logger.info("Sending test message...")
-            response = await client.send_slack_message(text="Hello codegen!", channel="C123TEST", event_type="message")
+            response = await client.send_slack_message(
+                text="Hello codegen!", channel="C123TEST", event_type="message"
+            )
             logger.info(f"Response from simple message: {response}")
 
             # Test sending an app mention
             logger.info("Sending test app mention...")
-            response = await client.send_slack_message(text="<@U123BOT> help me with this code", channel="C123TEST", event_type="app_mention")
+            response = await client.send_slack_message(
+                text="<@U123BOT> help me with this code",
+                channel="C123TEST",
+                event_type="app_mention",
+            )
             logger.info(f"Response from app mention: {response}")
 
         finally:

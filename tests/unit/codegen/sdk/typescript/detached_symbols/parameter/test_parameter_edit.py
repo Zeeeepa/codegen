@@ -15,7 +15,11 @@ function addNumbers(a: number, b: number): number {
     return a + b;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("addNumbers")
         assert symbol is not None
@@ -34,7 +38,11 @@ function addNumbers(a: number, b: number): number {
     return a + b;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("addNumbers")
         assert symbol is not None

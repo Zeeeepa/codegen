@@ -19,7 +19,15 @@ export function foo(arg1: string, arg2: number): string[] {
     return ["val1", "val2"]
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"file1.ts": content, "file2.ts": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"file1.ts": content, "file2.ts": content2},
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
-        assert set(file1.get_function("bar").dependencies) == {file1.get_import("foo"), file1.get_import("myVar1"), file1.get_import("myVar2")}
+        assert set(file1.get_function("bar").dependencies) == {
+            file1.get_import("foo"),
+            file1.get_import("myVar1"),
+            file1.get_import("myVar2"),
+        }
         assert len(file1.get_function("bar").dependencies) == 3

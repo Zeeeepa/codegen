@@ -10,7 +10,13 @@ from rich.markup import escape
 from rich.pretty import Pretty
 
 from codegen.sdk.codebase.span import Span
-from codegen.sdk.codebase.transactions import EditTransaction, InsertTransaction, RemoveTransaction, Transaction, TransactionPriority
+from codegen.sdk.codebase.transactions import (
+    EditTransaction,
+    InsertTransaction,
+    RemoveTransaction,
+    Transaction,
+    TransactionPriority,
+)
 from codegen.sdk.core.autocommit import commiter, reader, remover, repr_func, writer
 from codegen.sdk.core.placeholder.placeholder import Placeholder
 from codegen.sdk.extensions.utils import get_all_identifiers
@@ -18,7 +24,13 @@ from codegen.sdk.output.ast import AST
 from codegen.sdk.output.constants import ANGULAR_STYLE, MAX_STRING_LENGTH
 from codegen.sdk.output.jsonable import JSONable
 from codegen.sdk.output.utils import style_editable
-from codegen.sdk.utils import descendant_for_byte_range, find_all_descendants, find_first_ancestor, find_index, truncate_line
+from codegen.sdk.utils import (
+    descendant_for_byte_range,
+    find_all_descendants,
+    find_first_ancestor,
+    find_index,
+    truncate_line,
+)
 from codegen.shared.decorators.docs import apidoc, noapidoc
 
 if TYPE_CHECKING:
@@ -119,7 +131,13 @@ class Editable(JSONable, Generic[Parent]):
     _file: File | None = None
     _hash: int | None = None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: Parent,
+    ) -> None:
         self.ts_node = ts_node
         self.file_node_id = file_node_id
         self.ctx = ctx
@@ -155,7 +173,13 @@ class Editable(JSONable, Generic[Parent]):
             keys[0] = "source"
         elif "source" in keys:
             keys.remove("source")
-        kws = [f"{k}={truncate_line(repr(getattr(self, k, None)), MAX_REPR_LEN)}" for k in dict.fromkeys(keys) if k not in _EXCLUDE_FROM_REPR and not k.startswith("_") and hasattr(self, k)]
+        kws = [
+            f"{k}={truncate_line(repr(getattr(self, k, None)), MAX_REPR_LEN)}"
+            for k in dict.fromkeys(keys)
+            if k not in _EXCLUDE_FROM_REPR
+            and not k.startswith("_")
+            and hasattr(self, k)
+        ]
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     def __rich_repr__(self) -> rich.repr.Result:
@@ -163,7 +187,9 @@ class Editable(JSONable, Generic[Parent]):
 
     __rich_repr__.angular = ANGULAR_STYLE  # type: ignore
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
         yield Pretty(self, max_string=MAX_STRING_LENGTH)
         if self.file:
             yield from style_editable(self.ts_node, self.file.path, self.file.ts_node)
@@ -173,7 +199,11 @@ class Editable(JSONable, Generic[Parent]):
         if other is None:
             return False
         if isinstance(other, Editable):
-            return self.filepath == other.filepath and self.ts_node.kind_id == other.ts_node.kind_id and self.range == other.range
+            return (
+                self.filepath == other.filepath
+                and self.ts_node.kind_id == other.ts_node.kind_id
+                and self.range == other.range
+            )
         if isinstance(other, str):
             return self.source == other
         return False
@@ -225,7 +255,9 @@ class Editable(JSONable, Generic[Parent]):
     @reader
     def line_range(self) -> range:
         """The 0-indexed line/row range that the Editable instance spans in the file."""
-        return range(self.start_point[0], self.end_point[0] + 1)  # +1 b/c end_point[0] is inclusive
+        return range(
+            self.start_point[0], self.end_point[0] + 1
+        )  # +1 b/c end_point[0] is inclusive
 
     @property
     @noapidoc
@@ -287,7 +319,9 @@ class Editable(JSONable, Generic[Parent]):
         """
         from codegen.sdk.core.symbol_group import SymbolGroup
 
-        return SymbolGroup(self.file_node_id, self.ctx, self.parent, children=self.extended_nodes)
+        return SymbolGroup(
+            self.file_node_id, self.ctx, self.parent, children=self.extended_nodes
+        )
 
     @property
     @reader
@@ -328,7 +362,11 @@ class Editable(JSONable, Generic[Parent]):
     @noapidoc
     def _anonymous_children(self) -> list[Editable[Self]]:
         """All anonymous children of an editable."""
-        return [self._parse_expression(child) for child in self.ts_node.children if not child.is_named]
+        return [
+            self._parse_expression(child)
+            for child in self.ts_node.children
+            if not child.is_named
+        ]
 
     @property
     @reader
@@ -395,7 +433,9 @@ class Editable(JSONable, Generic[Parent]):
         return self.file.file_path
 
     @reader
-    def find_string_literals(self, strings_to_match: list[str], fuzzy_match: bool = False) -> list[Editable[Self]]:
+    def find_string_literals(
+        self, strings_to_match: list[str], fuzzy_match: bool = False
+    ) -> list[Editable[Self]]:
         """Returns a list of string literals within this node's source that match any of the given
         strings.
 
@@ -413,23 +453,42 @@ class Editable(JSONable, Generic[Parent]):
 
     @noapidoc
     @reader
-    def _find_string_literals(self, strings_to_match: list[str], fuzzy_match: bool = False) -> Sequence[Editable[Self]]:
+    def _find_string_literals(
+        self, strings_to_match: list[str], fuzzy_match: bool = False
+    ) -> Sequence[Editable[Self]]:
         all_string_nodes = find_all_descendants(self.ts_node, type_names={"string"})
         editables = []
         for string_node in all_string_nodes:
             assert string_node.text is not None
             full_string = string_node.text.strip(b'"').strip(b"'")
             if fuzzy_match:
-                if not any([str_to_match.encode("utf-8") in full_string for str_to_match in strings_to_match]):
+                if not any(
+                    [
+                        str_to_match.encode("utf-8") in full_string
+                        for str_to_match in strings_to_match
+                    ]
+                ):
                     continue
             else:
-                if not any([str_to_match.encode("utf-8") == full_string for str_to_match in strings_to_match]):
+                if not any(
+                    [
+                        str_to_match.encode("utf-8") == full_string
+                        for str_to_match in strings_to_match
+                    ]
+                ):
                     continue
             editables.append(self._parse_expression(string_node))
         return editables
 
     @writer
-    def replace(self, old: str, new: str, count: int = -1, is_regex: bool = False, priority: int = 0) -> int:
+    def replace(
+        self,
+        old: str,
+        new: str,
+        count: int = -1,
+        is_regex: bool = False,
+        priority: int = 0,
+    ) -> int:
         """Search and replace occurrences of text within this node's source and its extended nodes.
 
         This method performs string replacement similar to Python's string.replace(), with support for regex patterns.
@@ -450,14 +509,23 @@ class Editable(JSONable, Generic[Parent]):
         """
         total_count = 0
         for node in self.extended_nodes:
-            total_count += node._replace(old, new, count - total_count, is_regex, priority)
+            total_count += node._replace(
+                old, new, count - total_count, is_regex, priority
+            )
             if 0 < count <= total_count:
                 break
         return total_count
 
     @noapidoc
     @writer
-    def _replace(self, old: str, new: str, count: int = -1, is_regex: bool = False, priority: int = 0) -> int:
+    def _replace(
+        self,
+        old: str,
+        new: str,
+        count: int = -1,
+        is_regex: bool = False,
+        priority: int = 0,
+    ) -> int:
         """Search and replace an instance of `substring` within this node's source.
 
         Only replaces up to the `count` specified, and returns the total instances replaced.
@@ -484,7 +552,9 @@ class Editable(JSONable, Generic[Parent]):
         return total_count
 
     @reader
-    def find(self, strings_to_match: list[str] | str, *, exact: bool = False) -> list[Editable]:
+    def find(
+        self, strings_to_match: list[str] | str, *, exact: bool = False
+    ) -> list[Editable]:
         """Find and return matching nodes or substrings within an Editable instance.
 
         This method searches through the extended_nodes of the Editable instance and returns all nodes or substrings that match the given search criteria.
@@ -505,19 +575,30 @@ class Editable(JSONable, Generic[Parent]):
 
     @noapidoc
     @reader
-    def _find(self, strings_to_match: list[str] | str, exact: bool = False) -> list[Editable]:
+    def _find(
+        self, strings_to_match: list[str] | str, exact: bool = False
+    ) -> list[Editable]:
         if isinstance(strings_to_match, str):
             strings_to_match = [strings_to_match]
         # Use search to find string
-        search_results = itertools.chain.from_iterable(map(self._search, map(re.escape, strings_to_match)))
+        search_results = itertools.chain.from_iterable(
+            map(self._search, map(re.escape, strings_to_match))
+        )
         if exact:
-            search_results = filter(lambda result: result.source in strings_to_match, search_results)
+            search_results = filter(
+                lambda result: result.source in strings_to_match, search_results
+            )
 
         # Combine and deduplicate results
         return list(search_results)
 
     @reader
-    def search(self, regex_pattern: str, include_strings: bool = True, include_comments: bool = True) -> list[Editable]:
+    def search(
+        self,
+        regex_pattern: str,
+        include_strings: bool = True,
+        include_comments: bool = True,
+    ) -> list[Editable]:
         """Returns a list of all regex match of `regex_pattern`, similar to python's re.search().
 
         Searches for matches of a regular expression pattern within the text of this node and its extended nodes.
@@ -532,32 +613,62 @@ class Editable(JSONable, Generic[Parent]):
         """
         matches = []
         for node in self.extended_nodes:
-            matches.extend(node._search(regex_pattern, include_strings=include_strings, include_comments=include_comments))
+            matches.extend(
+                node._search(
+                    regex_pattern,
+                    include_strings=include_strings,
+                    include_comments=include_comments,
+                )
+            )
         return matches
 
     @noapidoc
     @reader
-    def _search(self, regex_pattern: str, include_strings: bool = True, include_comments: bool = True) -> list[Editable]:
+    def _search(
+        self,
+        regex_pattern: str,
+        include_strings: bool = True,
+        include_comments: bool = True,
+    ) -> list[Editable]:
         matching_byte_ranges: list[tuple[int, int]] = []
         string = self.ts_node.text
 
         pattern = re.compile(regex_pattern.encode("utf-8"))
         start_byte_offset = self.ts_node.byte_range[0]
         for match in pattern.finditer(string):  # type: ignore
-            matching_byte_ranges.append((match.start() + start_byte_offset, match.end() + start_byte_offset))
+            matching_byte_ranges.append(
+                (match.start() + start_byte_offset, match.end() + start_byte_offset)
+            )
 
         matches: list[Editable] = []
         for byte_range in matching_byte_ranges:
-            ts_match = descendant_for_byte_range(self.ts_node, byte_range[0], byte_range[1], allow_comment_boundaries=include_comments)
+            ts_match = descendant_for_byte_range(
+                self.ts_node,
+                byte_range[0],
+                byte_range[1],
+                allow_comment_boundaries=include_comments,
+            )
             if ts_match is not None:
                 # Check for inclusion of comments and/or strings
-                if (include_strings or ts_match.type not in ("string", "string_content", "string_fragment")) and (include_comments or ts_match.type != "comment"):
+                if (
+                    include_strings
+                    or ts_match.type
+                    not in ("string", "string_content", "string_fragment")
+                ) and (include_comments or ts_match.type != "comment"):
                     matches.append(self._parse_expression(ts_match))
         return list(matches)
 
     @writer(commit=False)
     @noapidoc
-    def insert_at(self, byte: int, new_src: str | Callable[[], str], *, priority: int | tuple = 0, dedupe: bool = True, exec_func: Callable[[], None] | None = None) -> None:
+    def insert_at(
+        self,
+        byte: int,
+        new_src: str | Callable[[], str],
+        *,
+        priority: int | tuple = 0,
+        dedupe: bool = True,
+        exec_func: Callable[[], None] | None = None,
+    ) -> None:
         # Insert the new_src
         t = InsertTransaction(
             byte,
@@ -572,7 +683,14 @@ class Editable(JSONable, Generic[Parent]):
         return self.ts_node.start_point[1]
 
     @writer(commit=False)
-    def insert_before(self, new_src: str, fix_indentation: bool = False, newline: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def insert_before(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        newline: bool = True,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Inserts text before this node's source with optional indentation and newline handling.
 
         This method inserts the provided text before the current node's source code. It can automatically handle indentation and newline placement.
@@ -593,7 +711,9 @@ class Editable(JSONable, Generic[Parent]):
         indentation = " " * min(node._get_indent() for node in self.extended_nodes)
         if fix_indentation:
             src_lines = new_src.split("\n")
-            src_lines = src_lines[:1] + [line if line == "" else indentation + line for line in src_lines[1:]]
+            src_lines = src_lines[:1] + [
+                line if line == "" else indentation + line for line in src_lines[1:]
+            ]
             new_src = "\n".join(src_lines)
 
         # Add a newline before the new_src
@@ -605,7 +725,14 @@ class Editable(JSONable, Generic[Parent]):
         self.insert_at(self.start_byte, new_src, priority=priority, dedupe=dedupe)
 
     @writer(commit=False)
-    def insert_after(self, new_src: str, fix_indentation: bool = False, newline: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def insert_after(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        newline: bool = True,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Inserts code after this node.
 
         Args:
@@ -624,7 +751,9 @@ class Editable(JSONable, Generic[Parent]):
         if fix_indentation:
             indentation = " " * min(node._get_indent() for node in self.extended_nodes)
             src_lines = new_src.split("\n")
-            src_lines = [line if line == "" else indentation + line for line in src_lines]
+            src_lines = [
+                line if line == "" else indentation + line for line in src_lines
+            ]
             new_src = "\n".join(src_lines)
 
         # Add a newline before the new_src
@@ -634,7 +763,13 @@ class Editable(JSONable, Generic[Parent]):
         self.insert_at(self.ts_node.end_byte, new_src, priority=priority, dedupe=dedupe)
 
     @writer
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Replace the source of this `Editable` with `new_src`.
 
         Replaces the text representation of this Editable instance with new text content. The method handles indentation adjustments and transaction management.
@@ -652,7 +787,9 @@ class Editable(JSONable, Generic[Parent]):
             line = self.file.content.split("\n")[self.ts_node.start_point[0]]
             indentation = line[: len(line) - len(line.strip())]
             src_lines = new_src.split("\n")
-            src_lines = src_lines[:1] + [line if line == "" else indentation + line for line in src_lines[1:]]
+            src_lines = src_lines[:1] + [
+                line if line == "" else indentation + line for line in src_lines[1:]
+            ]
             new_src = "\n".join(src_lines)
 
         t = EditTransaction(
@@ -665,7 +802,14 @@ class Editable(JSONable, Generic[Parent]):
         self.transaction_manager.add_transaction(t, dedupe=dedupe)
 
     @writer
-    def _edit_byte_range(self, new_src: str, start_byte: int, end_byte: int, priority: int = 0, dedupe: bool = True) -> None:
+    def _edit_byte_range(
+        self,
+        new_src: str,
+        start_byte: int,
+        end_byte: int,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         t = EditTransaction(
             start_byte,
             end_byte,
@@ -684,7 +828,9 @@ class Editable(JSONable, Generic[Parent]):
         self.transaction_manager.add_transaction(t)
 
     @remover
-    def remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
+    def remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
         """Deletes this Node and its related extended nodes (e.g. decorators, comments).
 
         Removes the current node and its extended nodes (e.g. decorators, comments) from the codebase.
@@ -699,24 +845,39 @@ class Editable(JSONable, Generic[Parent]):
             None
         """
         for node in self.extended_nodes:
-            node._remove(delete_formatting=delete_formatting, priority=priority, dedupe=dedupe)
+            node._remove(
+                delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+            )
 
     @remover
     @noapidoc
-    def _remove(self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True) -> None:
-        if self.parent._smart_remove(self, delete_formatting=delete_formatting, priority=priority, dedupe=dedupe):
+    def _remove(
+        self, delete_formatting: bool = True, priority: int = 0, dedupe: bool = True
+    ) -> None:
+        if self.parent._smart_remove(
+            self, delete_formatting=delete_formatting, priority=priority, dedupe=dedupe
+        ):
             return
         # If the node deleted is the only node, delete the entire node
         parent = self.ts_node.parent
         removed_start_byte = self.start_byte
         removed_end_byte = self.end_byte
-        if parent is not None and parent.type in ("parenthesized_expression", "jsx_expression") and self.ts_node.is_named:
+        if (
+            parent is not None
+            and parent.type in ("parenthesized_expression", "jsx_expression")
+            and self.ts_node.is_named
+        ):
             removed_start_byte = min(parent.start_byte, removed_start_byte)
             removed_end_byte = max(parent.end_byte, removed_end_byte)
             parent = parent.parent
         while parent is not None and parent.byte_range == self.ts_node.byte_range:
             parent = parent.parent
-        if parent is not None and parent.type in ("named_imports", "export_statement") and len(parent.named_children) == 1 and self.ts_node.is_named:
+        if (
+            parent is not None
+            and parent.type in ("named_imports", "export_statement")
+            and len(parent.named_children) == 1
+            and self.ts_node.is_named
+        ):
             removed_start_byte = min(parent.start_byte, removed_start_byte)
             removed_end_byte = max(parent.end_byte, removed_end_byte)
             parent = parent.parent
@@ -724,15 +885,32 @@ class Editable(JSONable, Generic[Parent]):
         def should_keep(node: TSNode):
             if node.type == "comment":
                 # Remove comments on the same rows as the deleted node
-                if node.end_point[0] <= self.end_point[0] and node.start_byte > removed_start_byte:
+                if (
+                    node.end_point[0] <= self.end_point[0]
+                    and node.start_byte > removed_start_byte
+                ):
                     return False
             return True
 
-        siblings = None if parent is None else list(filter(should_keep, parent.named_children if self.ts_node.is_named else parent.children))
+        siblings = (
+            None
+            if parent is None
+            else list(
+                filter(
+                    should_keep,
+                    parent.named_children if self.ts_node.is_named else parent.children,
+                )
+            )
+        )
         # same line
 
         # In the case this is an import_from_statement, the first sibling is the module_name, and the rest are the imports
-        if parent is not None and parent.type == "import_from_statement" and siblings and len(siblings) > 0:
+        if (
+            parent is not None
+            and parent.type == "import_from_statement"
+            and siblings
+            and len(siblings) > 0
+        ):
             siblings = siblings[1:]
 
         if isinstance(self.parent, Editable):
@@ -741,7 +919,13 @@ class Editable(JSONable, Generic[Parent]):
             exec_func = None
 
         # Delete the node
-        t = RemoveTransaction(removed_start_byte, removed_end_byte, self.file, priority=priority, exec_func=exec_func)
+        t = RemoveTransaction(
+            removed_start_byte,
+            removed_end_byte,
+            self.file,
+            priority=priority,
+            exec_func=exec_func,
+        )
         if self.transaction_manager.add_transaction(t, dedupe=dedupe):
             if exec_func is not None:
                 self.parent._removed_child()
@@ -752,13 +936,20 @@ class Editable(JSONable, Generic[Parent]):
 
             # Check if all previous siblings are being deleted
             all_previous_deleted = all(
-                self.transaction_manager.get_transactions_at_range(self.file.path, start_byte=siblings[i].start_byte, end_byte=siblings[i].end_byte, transaction_order=TransactionPriority.Remove)
+                self.transaction_manager.get_transactions_at_range(
+                    self.file.path,
+                    start_byte=siblings[i].start_byte,
+                    end_byte=siblings[i].end_byte,
+                    transaction_order=TransactionPriority.Remove,
+                )
                 for i in range(index)
             )
 
             if all_previous_deleted:
                 if index != 0:
-                    self.remove_byte_range(siblings[index - 1].end_byte, removed_start_byte)
+                    self.remove_byte_range(
+                        siblings[index - 1].end_byte, removed_start_byte
+                    )
                 # If it's the first import or all previous imports are being deleted,
                 # remove the comma after
                 start_byte = removed_end_byte
@@ -766,7 +957,11 @@ class Editable(JSONable, Generic[Parent]):
                     end_byte = siblings[index + 1].start_byte
                 else:
                     return  # Do not delete if it's the last node
-            elif _contains_container_chars(self.file.content_bytes[siblings[index - 1].end_byte : removed_start_byte]):
+            elif _contains_container_chars(
+                self.file.content_bytes[
+                    siblings[index - 1].end_byte : removed_start_byte
+                ]
+            ):
                 if index + 1 < len(siblings):
                     start_byte = removed_end_byte
                     end_byte = siblings[index + 1].start_byte
@@ -793,14 +988,28 @@ class Editable(JSONable, Generic[Parent]):
     # ==================================================================================================================
     # TODO: not sure if these functions should be here tbh
     @overload
-    def child_by_field_name(self, field_name: str, *, placeholder: type[P], default: type[Expression] | None = None) -> Expression[Self] | P: ...
+    def child_by_field_name(
+        self,
+        field_name: str,
+        *,
+        placeholder: type[P],
+        default: type[Expression] | None = None,
+    ) -> Expression[Self] | P: ...
 
     @overload
-    def child_by_field_name(self, field_name: str, *, placeholder: None = ..., default: type[Expression] | None = None) -> Expression[Self] | None: ...
+    def child_by_field_name(
+        self,
+        field_name: str,
+        *,
+        placeholder: None = ...,
+        default: type[Expression] | None = None,
+    ) -> Expression[Self] | None: ...
 
     @reader
     @noapidoc
-    def child_by_field_name(self, field_name: str, *, placeholder: type[P] | None = None, **kwargs) -> Expression[Self] | P | None:
+    def child_by_field_name(
+        self, field_name: str, *, placeholder: type[P] | None = None, **kwargs
+    ) -> Expression[Self] | P | None:
         """Get child by field name."""
         node = self.ts_node.child_by_field_name(field_name)
         if node is None:
@@ -811,7 +1020,9 @@ class Editable(JSONable, Generic[Parent]):
 
     @reader
     @noapidoc
-    def children_by_field_types(self, field_types: str | Iterable[str]) -> Generator[Expression[Self], None, None]:
+    def children_by_field_types(
+        self, field_types: str | Iterable[str]
+    ) -> Generator[Expression[Self], None, None]:
         """Get child by field types."""
         if isinstance(field_types, str):
             field_types = [field_types]
@@ -822,7 +1033,9 @@ class Editable(JSONable, Generic[Parent]):
 
     @reader
     @noapidoc
-    def child_by_field_types(self, field_types: str | Iterable[str]) -> Expression[Self] | None:
+    def child_by_field_types(
+        self, field_types: str | Iterable[str]
+    ) -> Expression[Self] | None:
         """Get child by fiexld types."""
         return next(self.children_by_field_types(field_types), None)
 
@@ -888,17 +1101,26 @@ class Editable(JSONable, Generic[Parent]):
             if parent.type in ["call", "call_expression"]:
                 continue
             # Excludes local import statements
-            if parent.parent is not None and parent.parent.type in ["import_statement", "import_from_statement"]:
+            if parent.parent is not None and parent.parent.type in [
+                "import_statement",
+                "import_from_statement",
+            ]:
                 continue
             # Excludes property identifiers
             if parent.type == "attribute" and parent.children.index(identifier) != 0:
                 continue
             # Excludes arg keyword (Python specific)
-            if parent.type == "keyword_argument" and identifier == parent.child_by_field_name("name"):
+            if (
+                parent.type == "keyword_argument"
+                and identifier == parent.child_by_field_name("name")
+            ):
                 continue
             # Excludes arg keyword (Typescript specific)
             arguments = find_first_ancestor(parent, ["arguments"])
-            if arguments is not None and any(identifier == arg.child_by_field_name("left") for arg in arguments.named_children):
+            if arguments is not None and any(
+                identifier == arg.child_by_field_name("left")
+                for arg in arguments.named_children
+            ):
                 continue
 
             usages.append(self._parse_expression(identifier))
@@ -906,7 +1128,9 @@ class Editable(JSONable, Generic[Parent]):
         return usages
 
     @reader
-    def get_variable_usages(self, var_name: str, fuzzy_match: bool = False) -> Sequence[Editable[Self]]:
+    def get_variable_usages(
+        self, var_name: str, fuzzy_match: bool = False
+    ) -> Sequence[Editable[Self]]:
         """Returns Editables for all TreeSitter nodes corresponding to instances of variable usage
         that matches the given variable name.
 
@@ -928,10 +1152,16 @@ class Editable(JSONable, Generic[Parent]):
     def _parse_expression(self, node: TSNode, **kwargs) -> Expression[Self]: ...
 
     @overload
-    def _parse_expression(self, node: TSNode | None, **kwargs) -> Expression[Self] | None: ...
+    def _parse_expression(
+        self, node: TSNode | None, **kwargs
+    ) -> Expression[Self] | None: ...
 
-    def _parse_expression(self, node: TSNode | None, **kwargs) -> Expression[Self] | None:
-        return self.ctx.parser.parse_expression(node, self.file_node_id, self.ctx, self, **kwargs)
+    def _parse_expression(
+        self, node: TSNode | None, **kwargs
+    ) -> Expression[Self] | None:
+        return self.ctx.parser.parse_expression(
+            node, self.file_node_id, self.ctx, self, **kwargs
+        )
 
     def _parse_type(self, node: TSNode) -> Type[Self] | None:
         return self.ctx.parser.parse_type(node, self.file_node_id, self.ctx, self)
@@ -952,13 +1182,20 @@ class Editable(JSONable, Generic[Parent]):
     @noapidoc
     @abstractmethod
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         """Compute the dependencies of the export object."""
         pass
 
     @commiter
     @noapidoc
-    def _add_symbol_usages(self: HasName, identifiers: list[TSNode], usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _add_symbol_usages(
+        self: HasName,
+        identifiers: list[TSNode],
+        usage_type: UsageKind,
+        dest: HasName | None = None,
+    ) -> None:
         from codegen.sdk.core.expressions import Name
         from codegen.sdk.core.interfaces.resolvable import Resolvable
 
@@ -971,7 +1208,9 @@ class Editable(JSONable, Generic[Parent]):
 
     @commiter
     @noapidoc
-    def _add_all_identifier_usages(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _add_all_identifier_usages(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         id_types = self.ctx.node_classes.resolvables
         # Skip identifiers that are part of a property
         identifiers = find_all_descendants(self.ts_node, id_types, nested=False)
@@ -979,7 +1218,9 @@ class Editable(JSONable, Generic[Parent]):
 
     @commiter
     @noapidoc
-    def add_all_identifier_usages_for_child_node(self, usage_type: UsageKind, child: TSNode, dest=None) -> None:
+    def add_all_identifier_usages_for_child_node(
+        self, usage_type: UsageKind, child: TSNode, dest=None
+    ) -> None:
         # Interim hack. Don't use
         id_types = self.ctx.node_classes.resolvables
         # Skip identifiers that are part of a property
@@ -997,23 +1238,43 @@ class Editable(JSONable, Generic[Parent]):
         from codegen.visualizations.enums import VizNode
 
         if isinstance(self, HasName):
-            return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, name=self.name, symbol_name=self.__class__.__name__)
+            return VizNode(
+                file_path=self.filepath,
+                start_point=self.start_point,
+                end_point=self.end_point,
+                name=self.name,
+                symbol_name=self.__class__.__name__,
+            )
         else:
-            return VizNode(file_path=self.filepath, start_point=self.start_point, end_point=self.end_point, symbol_name=self.__class__.__name__)
+            return VizNode(
+                file_path=self.filepath,
+                start_point=self.start_point,
+                end_point=self.end_point,
+                symbol_name=self.__class__.__name__,
+            )
 
     @noapidoc
     @reader
-    def resolve_name(self, name: str, start_byte: int | None = None, strict: bool = True) -> Generator[Symbol | Import | WildcardImport]:
+    def resolve_name(
+        self, name: str, start_byte: int | None = None, strict: bool = True
+    ) -> Generator[Symbol | Import | WildcardImport]:
         if self.parent is not None:
-            yield from self.parent.resolve_name(name, start_byte or self.start_byte, strict=strict)
+            yield from self.parent.resolve_name(
+                name, start_byte or self.start_byte, strict=strict
+            )
         else:
-            yield from self.file.resolve_name(name, start_byte or self.start_byte, strict=strict)
+            yield from self.file.resolve_name(
+                name, start_byte or self.start_byte, strict=strict
+            )
 
     @cached_property
     @noapidoc
     def github_url(self) -> str | None:
         if self.file.github_url:
-            return self.file.github_url + f"#L{self.start_point[0] + 1}-L{self.end_point[0] + 1}"
+            return (
+                self.file.github_url
+                + f"#L{self.start_point[0] + 1}-L{self.end_point[0] + 1}"
+            )
 
     @property
     @noapidoc
@@ -1041,7 +1302,9 @@ class Editable(JSONable, Generic[Parent]):
         # return list(itertools.chain.from_iterable(child.descendant_symbols for child in self.children))
 
     @writer
-    def reduce_condition(self, bool_condition: bool, node: Editable | None = None) -> None:
+    def reduce_condition(
+        self, bool_condition: bool, node: Editable | None = None
+    ) -> None:
         """Reduces an editable to the following condition"""
         if node is not None:
             node.edit(self.ctx.node_classes.bool_conversion[bool_condition])
@@ -1163,7 +1426,9 @@ class Editable(JSONable, Generic[Parent]):
         Returns:
             Transaction|None: The transaction removing the editable
         """
-        return self.transaction_manager.get_transaction_containing_range(self.file.path, self.start_byte, self.end_byte, TransactionPriority.Remove)
+        return self.transaction_manager.get_transaction_containing_range(
+            self.file.path, self.start_byte, self.end_byte, TransactionPriority.Remove
+        )
 
     def _get_ast_children(self) -> list[tuple[str | None, AST]]:
         children = []
@@ -1183,4 +1448,9 @@ class Editable(JSONable, Generic[Parent]):
     @final
     def ast(self) -> AST:
         children = self._get_ast_children()
-        return AST(codegen_sdk_type=self.__class__.__name__, span=self.span, tree_sitter_type=self.ts_node_type, children=children)
+        return AST(
+            codegen_sdk_type=self.__class__.__name__,
+            span=self.span,
+            tree_sitter_type=self.ts_node_type,
+            children=children,
+        )

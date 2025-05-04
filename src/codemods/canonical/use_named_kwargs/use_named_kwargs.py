@@ -48,7 +48,10 @@ class UseNamedKwargs(Codemod, Skill):
                         continue
 
                     # Skip if function_def is a class and the class has no constructor
-                    if isinstance(function_def, PyClass) and not function_def.constructor:
+                    if (
+                        isinstance(function_def, PyClass)
+                        and not function_def.constructor
+                    ):
                         continue
 
                     if isinstance(function_def, ExternalModule):

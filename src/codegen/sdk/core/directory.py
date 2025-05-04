@@ -30,7 +30,9 @@ if TYPE_CHECKING:
 
 @apidoc
 class Directory(
-    HasSymbols[TFile, TSymbol, TImportStatement, TGlobalVar, TClass, TFunction, TImport],
+    HasSymbols[
+        TFile, TSymbol, TImportStatement, TGlobalVar, TClass, TFunction, TImport
+    ],
     Generic[TFile, TSymbol, TImportStatement, TGlobalVar, TClass, TFunction, TImport],
 ):
     """Directory representation for codebase.
@@ -114,7 +116,12 @@ class Directory(
         return os.path.basename(self.dirpath)
 
     @proxy_property
-    def files(self, *, extensions: list[str] | Literal["*"] | None = None, recursive: bool = False) -> list[TFile]:
+    def files(
+        self,
+        *,
+        extensions: list[str] | Literal["*"] | None = None,
+        recursive: bool = False,
+    ) -> list[TFile]:
         """Gets a list of all top level files in the directory.
 
         Set `recursive=True` to get all files recursively.
@@ -183,7 +190,9 @@ class Directory(
         Returns:
             list[Self | TFile]: A sorted list of files and subdirectories in the directory.
         """
-        return self.files(extensions="*", recursive=recursive) + self.subdirectories(recursive=recursive)
+        return self.files(extensions="*", recursive=recursive) + self.subdirectories(
+            recursive=recursive
+        )
 
     @property
     def item_names(self, recursive: bool = False) -> list[str]:
@@ -217,7 +226,9 @@ class Directory(
 
     @noapidoc
     @cached_generator()
-    def files_generator(self, *args: FilesParam.args, **kwargs: FilesParam.kwargs) -> Iterator[TFile]:
+    def files_generator(
+        self, *args: FilesParam.args, **kwargs: FilesParam.kwargs
+    ) -> Iterator[TFile]:
         """Yield files recursively from the directory."""
         yield from self.files(*args, extensions="*", **kwargs, recursive=True)
 
@@ -246,7 +257,9 @@ class Directory(
         old_path = self.dirpath
         new_path = new_filepath
         for file in self.files(recursive=True):
-            new_file_path = os.path.join(new_path, os.path.relpath(file.file_path, old_path))
+            new_file_path = os.path.join(
+                new_path, os.path.relpath(file.file_path, old_path)
+            )
             file.update_filepath(new_file_path)
 
     def remove(self) -> None:

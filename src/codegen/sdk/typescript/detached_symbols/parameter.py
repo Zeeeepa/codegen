@@ -34,7 +34,13 @@ class TSParameter(Parameter[TSType, Collection["TSParameter", "TSFunction"]]):
         type (TSType): The TypeScript type annotation of the parameter.
     """
 
-    def __init__(self, ts_node: TSNode, index: int, parent: TSFunction, type: TSType | Placeholder | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        index: int,
+        parent: TSFunction,
+        type: TSType | Placeholder | None = None,
+    ) -> None:
         super().__init__(ts_node, index, parent)
         if not self.type and type is not None:
             self.type = type  # Destructured types
@@ -50,7 +56,10 @@ class TSParameter(Parameter[TSType, Collection["TSParameter", "TSFunction"]]):
         Returns:
             bool: True if the parameter is destructured, False otherwise.
         """
-        return self.ts_node.type in ("shorthand_property_identifier_pattern", "object_assignment_pattern")
+        return self.ts_node.type in (
+            "shorthand_property_identifier_pattern",
+            "object_assignment_pattern",
+        )
 
     @property
     @reader
@@ -113,12 +122,18 @@ class TSParameter(Parameter[TSType, Collection["TSParameter", "TSFunction"]]):
     @noapidoc
     @commiter
     @override
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.type:
             if not (self.is_destructured and self.index > 0):
-                self.type._compute_dependencies(UsageKind.TYPE_ANNOTATION, dest or self.parent.self_dest)
+                self.type._compute_dependencies(
+                    UsageKind.TYPE_ANNOTATION, dest or self.parent.self_dest
+                )
         if self.value:
-            self.value._compute_dependencies(UsageKind.DEFAULT_VALUE, dest or self.parent.self_dest)
+            self.value._compute_dependencies(
+                UsageKind.DEFAULT_VALUE, dest or self.parent.self_dest
+            )
 
     @writer
     def convert_to_interface(self) -> None:
@@ -146,7 +161,11 @@ class TSParameter(Parameter[TSType, Collection["TSParameter", "TSFunction"]]):
             }
             ```
         """
-        if not self.type or not self.parent_function.is_jsx or not isinstance(self.type, TSObjectType | UnionType):
+        if (
+            not self.type
+            or not self.parent_function.is_jsx
+            or not isinstance(self.type, TSObjectType | UnionType)
+        ):
             return
 
         # # Get the type definition and component name

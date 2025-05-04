@@ -32,7 +32,9 @@ class TernaryExpression(Expression[Parent], Chainable, Generic[Parent]):
     alternative: Expression[Self] | None
 
     @writer
-    def reduce_condition(self, bool_condition: bool, node: Editable | None = None) -> None:
+    def reduce_condition(
+        self, bool_condition: bool, node: Editable | None = None
+    ) -> None:
         """Simplifies a ternary expression based on a boolean condition.
 
         Args:
@@ -51,7 +53,10 @@ class TernaryExpression(Expression[Parent], Chainable, Generic[Parent]):
             self.alternative.remove()
         else:
             self.consequence.remove()
-            self.remove_byte_range(self.alternative.ts_node.prev_sibling.end_byte, self.alternative.start_byte)
+            self.remove_byte_range(
+                self.alternative.ts_node.prev_sibling.end_byte,
+                self.alternative.start_byte,
+            )
         if isinstance(to_keep, Unwrappable):
             to_keep.unwrap()
         if isinstance(self.parent, Unwrappable):
@@ -68,11 +73,17 @@ class TernaryExpression(Expression[Parent], Chainable, Generic[Parent]):
     @noapidoc
     def descendant_symbols(self) -> list[Importable]:
         elems = [self.condition, self.consequence, self.alternative]
-        return list(itertools.chain.from_iterable(elem.descendant_symbols for elem in elems if elem))
+        return list(
+            itertools.chain.from_iterable(
+                elem.descendant_symbols for elem in elems if elem
+            )
+        )
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self.condition._compute_dependencies(usage_type, dest)
         self.consequence._compute_dependencies(usage_type, dest)
         self.alternative._compute_dependencies(usage_type, dest)

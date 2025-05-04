@@ -34,14 +34,14 @@ import json
 import time
 from typing import Any, Dict, Optional
 
-from codegen import Codebase
-
 from codegen_on_oss.analysis.code_integrity_analyzer import (
     CodeIntegrityAnalyzer,
     analyze_pr,
     compare_branches,
 )
 from codegen_on_oss.outputs.html_report_generator import generate_html_report
+
+from codegen import Codebase
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -117,7 +117,10 @@ def analyze_single_branch(
 
 
 def analyze_branch_comparison(
-    repo_path: str, main_branch: str, feature_branch: str, config: Optional[Dict[str, Any]] = None
+    repo_path: str,
+    main_branch: str,
+    feature_branch: str,
+    config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Compare two branches for code integrity issues.
@@ -156,7 +159,10 @@ def analyze_branch_comparison(
 
 
 def analyze_pull_request(
-    repo_path: str, main_branch: str, pr_branch: str, config: Optional[Dict[str, Any]] = None
+    repo_path: str,
+    main_branch: str,
+    pr_branch: str,
+    config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Analyze a pull request for code integrity issues.
@@ -198,7 +204,9 @@ def main():
     """
     Main entry point for the script.
     """
-    parser = argparse.ArgumentParser(description="Analyze code integrity in a repository")
+    parser = argparse.ArgumentParser(
+        description="Analyze code integrity in a repository"
+    )
 
     parser.add_argument("--repo", required=True, help="Path to the repository")
     parser.add_argument("--config", help="Path to configuration file")
@@ -211,9 +219,13 @@ def main():
         help="Analysis mode: single branch, branch comparison, or PR analysis",
     )
     parser.add_argument(
-        "--main-branch", default="main", help="Main branch name (for compare and pr modes)"
+        "--main-branch",
+        default="main",
+        help="Main branch name (for compare and pr modes)",
     )
-    parser.add_argument("--feature-branch", help="Feature branch name (for compare and pr modes)")
+    parser.add_argument(
+        "--feature-branch", help="Feature branch name (for compare and pr modes)"
+    )
 
     args = parser.parse_args()
 
@@ -234,7 +246,9 @@ def main():
     elif args.mode == "pr":
         if not args.feature_branch:
             parser.error("--feature-branch is required for pr mode")
-        results = analyze_pull_request(args.repo, args.main_branch, args.feature_branch, config)
+        results = analyze_pull_request(
+            args.repo, args.main_branch, args.feature_branch, config
+        )
 
     # Save results if output path is provided
     if args.output:

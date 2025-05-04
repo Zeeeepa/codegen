@@ -2,7 +2,15 @@ from tqdm import tqdm
 
 from codegen.sdk.code_generation.doc_utils.parse_docstring import parse_docstring
 from codegen.sdk.code_generation.doc_utils.schemas import ClassDoc, GSDocs, MethodDoc
-from codegen.sdk.code_generation.doc_utils.utils import create_path, extract_class_description, get_type, get_type_str, has_documentation, is_settter, replace_multiple_types
+from codegen.sdk.code_generation.doc_utils.utils import (
+    create_path,
+    extract_class_description,
+    get_type,
+    get_type_str,
+    has_documentation,
+    is_settter,
+    replace_multiple_types,
+)
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.placeholder.placeholder_type import TypePlaceholder
@@ -24,7 +32,9 @@ ATTRIBUTES_TO_IGNORE = [
 ]
 
 
-def generate_docs_json(codebase: Codebase, head_commit: str, raise_on_missing_docstring: bool = False) -> GSDocs:
+def generate_docs_json(
+    codebase: Codebase, head_commit: str, raise_on_missing_docstring: bool = False
+) -> GSDocs:
     """Update documentation table for classes, methods and attributes in the codebase.
 
     Args:
@@ -39,7 +49,11 @@ def generate_docs_json(codebase: Codebase, head_commit: str, raise_on_missing_do
     def process_class_doc(cls):
         """Update or create documentation for a class."""
         description = cls.docstring.source.strip('"""') if cls.docstring else None
-        parent_classes = [f"<{create_path(parent)}>" for parent in cls.superclasses if isinstance(parent, Class) and has_documentation(parent)]
+        parent_classes = [
+            f"<{create_path(parent)}>"
+            for parent in cls.superclasses
+            if isinstance(parent, Class) and has_documentation(parent)
+        ]
 
         cls_doc = ClassDoc(
             title=cls.name,
@@ -82,7 +96,12 @@ def generate_docs_json(codebase: Codebase, head_commit: str, raise_on_missing_do
                     resolved_types = param.type.resolved_types
 
                 parsed_param.type = replace_multiple_types(
-                    codebase=codebase, input_str=parsed_param.type, resolved_types=resolved_types, parent_class=cls, parent_symbol=method, types_cache=types_cache
+                    codebase=codebase,
+                    input_str=parsed_param.type,
+                    resolved_types=resolved_types,
+                    parent_class=cls,
+                    parent_symbol=method,
+                    types_cache=types_cache,
                 )
                 if param.default:
                     parsed_param.default = param.default
@@ -92,13 +111,21 @@ def generate_docs_json(codebase: Codebase, head_commit: str, raise_on_missing_do
 
         if not isinstance(method.return_type, TypePlaceholder):
             return_type = replace_multiple_types(
-                codebase=codebase, input_str=method.return_type.source, resolved_types=method.return_type.resolved_types, parent_class=cls, parent_symbol=method, types_cache=types_cache
+                codebase=codebase,
+                input_str=method.return_type.source,
+                resolved_types=method.return_type.resolved_types,
+                parent_class=cls,
+                parent_symbol=method,
+                types_cache=types_cache,
             )
         else:
             return_type = None
         parsed["return_types"] = [return_type]
 
-        meta_data = {"parent": create_path(method.parent_class), "path": method.file.filepath}
+        meta_data = {
+            "parent": create_path(method.parent_class),
+            "path": method.file.filepath,
+        }
         return MethodDoc(
             name=method.name,
             description=parsed["description"],
@@ -131,12 +158,22 @@ def generate_docs_json(codebase: Codebase, head_commit: str, raise_on_missing_do
                 resolved_types = []
             else:
                 resolved_types = r_type.resolved_types
-            r_type_source = replace_multiple_types(codebase=codebase, input_str=r_type.source, resolved_types=resolved_types, parent_class=cls, parent_symbol=attr, types_cache=types_cache)
+            r_type_source = replace_multiple_types(
+                codebase=codebase,
+                input_str=r_type.source,
+                resolved_types=resolved_types,
+                parent_class=cls,
+                parent_symbol=attr,
+                types_cache=types_cache,
+            )
             attr_return_type.append(r_type_source)
 
         attr_info = {"description": description, "attr_return_type": attr_return_type}
 
-        meta_data = {"parent": create_path(attr.parent_class), "path": attr.file.filepath}
+        meta_data = {
+            "parent": create_path(attr.parent_class),
+            "path": attr.file.filepath,
+        }
 
         return MethodDoc(
             name=attr.name,

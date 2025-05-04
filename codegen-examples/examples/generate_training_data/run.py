@@ -81,8 +81,12 @@ def run(codebase: Codebase):
     # Update metadata
     training_data["metadata"]["total_processed"] = len(training_data["functions"])
     if training_data["functions"]:
-        training_data["metadata"]["avg_dependencies"] = sum(len(f["dependencies"]) for f in training_data["functions"]) / len(training_data["functions"])
-        training_data["metadata"]["avg_usages"] = sum(len(f["usages"]) for f in training_data["functions"]) / len(training_data["functions"])
+        training_data["metadata"]["avg_dependencies"] = sum(
+            len(f["dependencies"]) for f in training_data["functions"]
+        ) / len(training_data["functions"])
+        training_data["metadata"]["avg_usages"] = sum(
+            len(f["usages"]) for f in training_data["functions"]
+        ) / len(training_data["functions"])
 
     # Print stats
     print(f"Processed {training_data['metadata']['total_processed']} functions")
@@ -94,7 +98,11 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Initializing codebase...")
-    codebase = Codebase.from_repo("fastapi/fastapi", commit="887270ff8a54bb58c406b0651678a27589793d2f", language="python")
+    codebase = Codebase.from_repo(
+        "fastapi/fastapi",
+        commit="887270ff8a54bb58c406b0651678a27589793d2f",
+        language="python",
+    )
 
     print("Generating training data...")
     training_data = run(codebase)

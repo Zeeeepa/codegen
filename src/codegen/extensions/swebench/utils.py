@@ -94,10 +94,14 @@ def get_swe_bench_examples(
         if instance_ids:
             msg = "instance_ids is not supported for lite subsets. Please pass a list of instance IDs instead."
             raise ValueError(msg)
-        swe_bench_dataset = load_dataset(SWEBenchDataset.LITE.value, download_mode="reuse_dataset_if_exists")
+        swe_bench_dataset = load_dataset(
+            SWEBenchDataset.LITE.value, download_mode="reuse_dataset_if_exists"
+        )
         instance_ids = LITE_SUBSETS[dataset]
     else:
-        swe_bench_dataset = load_dataset(dataset.value, download_mode="reuse_dataset_if_exists")
+        swe_bench_dataset = load_dataset(
+            dataset.value, download_mode="reuse_dataset_if_exists"
+        )
 
     # Get the requested split
     split_data = swe_bench_dataset[split]

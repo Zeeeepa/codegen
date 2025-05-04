@@ -36,7 +36,9 @@ def view_pr(codebase: Codebase, pr_id: int) -> ViewPRObservation:
         pr_id: Number of the PR to get the contents for
     """
     try:
-        patch, file_commit_sha, moddified_symbols = codebase.get_modified_symbols_in_pr(pr_id)
+        patch, file_commit_sha, moddified_symbols = codebase.get_modified_symbols_in_pr(
+            pr_id
+        )
 
         return ViewPRObservation(
             status="success",

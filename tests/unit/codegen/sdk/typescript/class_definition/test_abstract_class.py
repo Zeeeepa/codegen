@@ -11,7 +11,11 @@ abstract class OtherClass {
 abstract class MyClass extends OtherClass {
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         symbol = codebase.get_symbol("MyClass")
         assert "OtherClass" in [x.name for x in symbol.dependencies]
 
@@ -25,6 +29,10 @@ abstract class MyClass {
     private readonly originalConfig: TestType;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         symbol = codebase.get_symbol("MyClass")
         assert "TestType" in [x.name for x in symbol.dependencies]

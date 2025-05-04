@@ -76,8 +76,16 @@ class OrganizationSettings(BaseModel):
 
         _obj = cls.model_validate(
             {
-                "enable_pr_creation": obj.get("enable_pr_creation") if obj.get("enable_pr_creation") is not None else True,
-                "enable_rules_detection": obj.get("enable_rules_detection") if obj.get("enable_rules_detection") is not None else True,
+                "enable_pr_creation": (
+                    obj.get("enable_pr_creation")
+                    if obj.get("enable_pr_creation") is not None
+                    else True
+                ),
+                "enable_rules_detection": (
+                    obj.get("enable_rules_detection")
+                    if obj.get("enable_rules_detection") is not None
+                    else True
+                ),
             }
         )
         return _obj

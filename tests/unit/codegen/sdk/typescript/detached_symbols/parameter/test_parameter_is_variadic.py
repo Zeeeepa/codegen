@@ -15,7 +15,11 @@ function funcWithVariadicParams(...numbers: number[]): number {
     return numbers.reduce((acc, curr) => acc + curr, 0);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file(filename)
         symbol: Function = file.get_symbol("funcWithVariadicParams")
         assert symbol is not None

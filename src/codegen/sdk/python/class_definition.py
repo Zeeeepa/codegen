@@ -24,7 +24,11 @@ from codegen.shared.decorators.docs import noapidoc, py_apidoc
 
 
 @py_apidoc
-class PyClass(Class[PyFunction, PyDecorator, PyCodeBlock, PyParameter, PyType], PyHasBlock, PySymbol):
+class PyClass(
+    Class[PyFunction, PyDecorator, PyCodeBlock, PyParameter, PyType],
+    PyHasBlock,
+    PySymbol,
+):
     """Extends Class for Python codebases
 
     Attributes:
@@ -34,19 +38,35 @@ class PyClass(Class[PyFunction, PyDecorator, PyCodeBlock, PyParameter, PyType], 
     _decorated_node: TSNode | None
     constructor_keyword = "__init__"
 
-    def __init__(self, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: PyHasBlock, decorated_node: TSNode | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_id: NodeId,
+        ctx: CodebaseContext,
+        parent: PyHasBlock,
+        decorated_node: TSNode | None = None,
+    ) -> None:
         super().__init__(ts_node, file_id, ctx, parent)
         self._decorated_node = decorated_node
 
         if superclasses_node := self.ts_node.child_by_field_name("superclasses"):
-            self.parent_classes = Parents(superclasses_node, self.file_node_id, self.ctx, self)
+            self.parent_classes = Parents(
+                superclasses_node, self.file_node_id, self.ctx, self
+            )
         if self.constructor is not None and len(self.constructor.parameters) > 1:
-            self._parameters = SymbolGroup(self.file_node_id, self.ctx, self, children=self.constructor.parameters[1:])
+            self._parameters = SymbolGroup(
+                self.file_node_id,
+                self.ctx,
+                self,
+                children=self.constructor.parameters[1:],
+            )
         self.type_parameters = self.child_by_field_name("type_parameters")
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         dest = dest or self.self_dest
         # =====[ Decorated functions ]=====
         for decorator in self.decorators:
@@ -63,7 +83,11 @@ class PyClass(Class[PyFunction, PyDecorator, PyCodeBlock, PyParameter, PyType], 
 
     @reader
     def _parse_methods(self) -> MultiLineCollection[PyFunction, Self]:
-        methods = [m.symbol for m in self.code_block.symbol_statements if isinstance(m.symbol, PyFunction) and not m.symbol.is_overload]
+        methods = [
+            m.symbol
+            for m in self.code_block.symbol_statements
+            if isinstance(m.symbol, PyFunction) and not m.symbol.is_overload
+        ]
         block_node = self.code_block.ts_node
         indent_size = block_node.named_children[0].start_point[1]
         if len(methods) > 0:
@@ -76,7 +100,15 @@ class PyClass(Class[PyFunction, PyDecorator, PyCodeBlock, PyParameter, PyType], 
         else:
             # Set start byte at column=0 of start of the code block
             start_byte = block_node.start_byte - block_node.start_point[1]
-        return MultiLineCollection(children=methods, file_node_id=self.file_node_id, ctx=self.ctx, parent=self, node=self.code_block.ts_node, indent_size=indent_size, start_byte=start_byte)
+        return MultiLineCollection(
+            children=methods,
+            file_node_id=self.file_node_id,
+            ctx=self.ctx,
+            parent=self,
+            node=self.code_block.ts_node,
+            indent_size=indent_size,
+            start_byte=start_byte,
+        )
 
     ####################################################################################################################
     # MANIPULATIONS

@@ -27,7 +27,9 @@ from codegen.extensions.langchain.utils.custom_tool_node import CustomToolNode
 from codegen.extensions.langchain.utils.utils import get_max_model_input_tokens
 
 
-def manage_messages(existing: list[AnyMessage], updates: Union[list[AnyMessage], dict]) -> list[AnyMessage]:
+def manage_messages(
+    existing: list[AnyMessage], updates: Union[list[AnyMessage], dict]
+) -> list[AnyMessage]:
     """Custom reducer for managing message history with summarization.
 
     Args:
@@ -66,7 +68,9 @@ def manage_messages(existing: list[AnyMessage], updates: Union[list[AnyMessage],
             summary_msg = AIMessage(
                 content=f"""Here is a summary of the conversation
             from a previous timestep to aid for the continuing conversation: \n{updates["summary"]}\n\n""",
-                additional_kwargs={"is_summary": True},  # Use additional_kwargs for custom metadata
+                additional_kwargs={
+                    "is_summary": True
+                },  # Use additional_kwargs for custom metadata
             )
             summary_msg.id = str(uuid.uuid4())
             updates["tail"][-1].additional_kwargs["just_summarized"] = True
@@ -87,7 +91,13 @@ class GraphState(dict[str, Any]):
 class AgentGraph:
     """Main graph class for the agent."""
 
-    def __init__(self, model: "LLM", tools: list[BaseTool], system_message: SystemMessage, config: AgentConfig | None = None):
+    def __init__(
+        self,
+        model: "LLM",
+        tools: list[BaseTool],
+        system_message: SystemMessage,
+        config: AgentConfig | None = None,
+    ):
         self.model = model.bind_tools(tools)
         self.tools = tools
         self.system_message = system_message
@@ -100,7 +110,9 @@ class AgentGraph:
 
     # Reasoner node
     def reasoner(self, state: GraphState) -> dict[str, Any]:
-        new_turn = len(state["messages"]) == 0 or isinstance(state["messages"][-1], AIMessage)
+        new_turn = len(state["messages"]) == 0 or isinstance(
+            state["messages"][-1], AIMessage
+        )
         messages = state["messages"]
 
         if new_turn:
@@ -138,7 +150,13 @@ class AgentGraph:
 
         # Define constants
         HEADER_WIDTH = 40
-        HEADER_TYPES = {"human": "HUMAN", "ai": "AI", "summary": "SUMMARY FROM PREVIOUS TIMESTEP", "tool_call": "TOOL CALL", "tool_response": "TOOL RESPONSE"}
+        HEADER_TYPES = {
+            "human": "HUMAN",
+            "ai": "AI",
+            "summary": "SUMMARY FROM PREVIOUS TIMESTEP",
+            "tool_call": "TOOL CALL",
+            "tool_response": "TOOL RESPONSE",
+        }
 
         def format_header(header_type: str) -> str:
             """Format message header with consistent padding.
@@ -164,22 +182,35 @@ class AgentGraph:
                     if item.get("type") == "text":
                         text_content = item.get("text", "")
                         if text_content:
-                            formatted_messages.append(format_header("human") + text_content)
+                            formatted_messages.append(
+                                format_header("human") + text_content
+                            )
                     elif item.get("type") == "image_url":
                         image_url = item.get("image_url", {}).get("url")
                         if image_url:
                             # We are not including any string data in the summary for image. The image will be present itself!
-                            image_urls.append({"type": "image_url", "image_url": {"url": image_url}})
+                            image_urls.append(
+                                {"type": "image_url", "image_url": {"url": image_url}}
+                            )
             elif isinstance(msg, AIMessage):
                 # Check for summary message using additional_kwargs
                 if msg.additional_kwargs.get("is_summary"):
                     formatted_messages.append(format_header("summary") + msg.content)
-                elif isinstance(msg.content, list) and len(msg.content) > 0 and isinstance(msg.content[0], dict):
+                elif (
+                    isinstance(msg.content, list)
+                    and len(msg.content) > 0
+                    and isinstance(msg.content[0], dict)
+                ):
                     for item in msg.content:
                         if item.get("type") == "text":
-                            formatted_messages.append(format_header("ai") + item["text"])
+                            formatted_messages.append(
+                                format_header("ai") + item["text"]
+                            )
                         elif item.get("type") == "tool_use":
-                            formatted_messages.append(format_header("tool_call") + f"Tool: {item['name']}\nInput: {item['input']}")
+                            formatted_messages.append(
+                                format_header("tool_call")
+                                + f"Tool: {item['name']}\nInput: {item['input']}"
+                            )
                 else:
                     formatted_messages.append(format_header("ai") + msg.content)
             elif isinstance(msg, ToolMessage):
@@ -205,10 +236,19 @@ class AgentGraph:
             }
         ).content
 
-        return {"messages": {"type": "summarize", "summary": new_summary, "tail": tail, "head": head}}
+        return {
+            "messages": {
+                "type": "summarize",
+                "summary": new_summary,
+                "tail": tail,
+                "head": head,
+            }
+        }
 
     # =================================== EDGE CONDITIONS ====================================
-    def should_continue(self, state: GraphState) -> Literal["tools", "summarize_conversation", END]:
+    def should_continue(
+        self, state: GraphState
+    ) -> Literal["tools", "summarize_conversation", END]:
         messages = state["messages"]
         last_message = messages[-1]
         just_summarized = last_message.additional_kwargs.get("just_summarized")
@@ -220,7 +260,11 @@ class AgentGraph:
             return "summarize_conversation"
 
         # Summarize if the last message exceeds the max input tokens of the model - 10000 tokens
-        elif isinstance(last_message, AIMessage) and not just_summarized and curr_input_tokens > (max_input_tokens - 30000):
+        elif (
+            isinstance(last_message, AIMessage)
+            and not just_summarized
+            and curr_input_tokens > (max_input_tokens - 30000)
+        ):
             return "summarize_conversation"
 
         elif hasattr(last_message, "tool_calls") and last_message.tool_calls:
@@ -229,14 +273,21 @@ class AgentGraph:
         return END
 
     # =================================== COMPILE GRAPH ====================================
-    def create(self, checkpointer: Optional[MemorySaver] = None, debug: bool = False) -> CompiledGraph:
+    def create(
+        self, checkpointer: Optional[MemorySaver] = None, debug: bool = False
+    ) -> CompiledGraph:
         """Create and compile the graph."""
         builder = StateGraph(GraphState)
 
         # the retry policy has an initial interval, a backoff factor, and a max interval of controlling the
         # amount of time between retries
         retry_policy = RetryPolicy(
-            retry_on=[anthropic.RateLimitError, openai.RateLimitError, anthropic.InternalServerError, anthropic.BadRequestError],
+            retry_on=[
+                anthropic.RateLimitError,
+                openai.RateLimitError,
+                anthropic.InternalServerError,
+                anthropic.BadRequestError,
+            ],
             max_attempts=10,
             initial_interval=30.0,  # Start with 30 second wait
             backoff_factor=2,  # Double the wait time each retry
@@ -265,16 +316,24 @@ class AgentGraph:
                     # Handle Pydantic v2
                     if hasattr(schema_cls, "model_fields"):
                         for field_name, field in schema_cls.model_fields.items():
-                            field_descriptions[field_name] = field.description or f"Required parameter for {tool_obj.name}"
+                            field_descriptions[field_name] = (
+                                field.description
+                                or f"Required parameter for {tool_obj.name}"
+                            )
 
                     # Handle Pydantic v1 with warning suppression
                     elif hasattr(schema_cls, "__fields__"):
                         import warnings
 
                         with warnings.catch_warnings():
-                            warnings.filterwarnings("ignore", category=DeprecationWarning)
+                            warnings.filterwarnings(
+                                "ignore", category=DeprecationWarning
+                            )
                             for field_name, field in schema_cls.__fields__.items():
-                                field_descriptions[field_name] = field.field_info.description or f"Required parameter for {tool_obj.name}"
+                                field_descriptions[field_name] = (
+                                    field.field_info.description
+                                    or f"Required parameter for {tool_obj.name}"
+                                )
                 except Exception:
                     pass
 
@@ -323,7 +382,10 @@ class AgentGraph:
                     # If still not found, check if any tool's schema name matches
                     if tool is None:
                         for t in self.tools:
-                            if hasattr(t, "args_schema") and t.args_schema.__name__.lower() in error_msg.lower():
+                            if (
+                                hasattr(t, "args_schema")
+                                and t.args_schema.__name__.lower() in error_msg.lower()
+                            ):
                                 tool = t
                                 tool_name = t.name
                                 break
@@ -334,10 +396,14 @@ class AgentGraph:
                     import re
 
                     # Try to extract type error information
-                    type_error_matches = re.findall(r"'(\w+)'.*?type_error\.(.*?)(?:;|$)", error_msg, re.IGNORECASE)
+                    type_error_matches = re.findall(
+                        r"'(\w+)'.*?type_error\.(.*?)(?:;|$)", error_msg, re.IGNORECASE
+                    )
                     for field_name, error_type in type_error_matches:
                         if "json" in error_type:
-                            type_errors.append(f"'{field_name}' must be a string, not a JSON object or dictionary")
+                            type_errors.append(
+                                f"'{field_name}' must be a string, not a JSON object or dictionary"
+                            )
                         elif "str_type" in error_type:
                             type_errors.append(f"'{field_name}' must be a string")
                         elif "int_type" in error_type:
@@ -370,7 +436,9 @@ class AgentGraph:
                             import warnings
 
                             with warnings.catch_warnings():
-                                warnings.filterwarnings("ignore", category=DeprecationWarning)
+                                warnings.filterwarnings(
+                                    "ignore", category=DeprecationWarning
+                                )
                                 for field_name, field in schema_cls.__fields__.items():
                                     # Check if field is required and missing from input
                                     if field.required and field_name not in tool_input:
@@ -384,7 +452,9 @@ class AgentGraph:
                     # Extract the missing field name if possible using regex
                     import re
 
-                    field_matches = re.findall(r"'(\w+)'(?:\s+|.*?)field required", error_msg, re.IGNORECASE)
+                    field_matches = re.findall(
+                        r"'(\w+)'(?:\s+|.*?)field required", error_msg, re.IGNORECASE
+                    )
                     if field_matches:
                         missing_fields = field_matches
                     else:
@@ -412,17 +482,28 @@ class AgentGraph:
                             # Add descriptions for missing fields
                             for field_name in missing_fields:
                                 if field_name in field_descriptions:
-                                    param_docs.append(f"- {field_name}: {field_descriptions[field_name]}")
+                                    param_docs.append(
+                                        f"- {field_name}: {field_descriptions[field_name]}"
+                                    )
                                 else:
-                                    param_docs.append(f"- {field_name}: Required parameter")
+                                    param_docs.append(
+                                        f"- {field_name}: Required parameter"
+                                    )
 
                             if param_docs:
-                                tool_docs += "\nParameter descriptions:\n" + "\n".join(param_docs)
+                                tool_docs += "\nParameter descriptions:\n" + "\n".join(
+                                    param_docs
+                                )
                         except Exception:
                             # Fallback to simple parameter list
-                            param_docs = [f"- {field}: Required parameter" for field in missing_fields]
+                            param_docs = [
+                                f"- {field}: Required parameter"
+                                for field in missing_fields
+                            ]
                             if param_docs:
-                                tool_docs += "\nMissing parameters:\n" + "\n".join(param_docs)
+                                tool_docs += "\nMissing parameters:\n" + "\n".join(
+                                    param_docs
+                                )
 
                     # Add usage examples for common tools
                     example = ""
@@ -435,9 +516,7 @@ class AgentGraph:
                     elif tool_name == "search":
                         example = "\nExample: search(query='function_name', file_extensions=['.py'])"
 
-                    return (
-                        f"Error using {tool_name} tool: Missing required parameter(s): {fields_str}\n\nYou provided: {tool_input}\n{tool_docs}{example}\nPlease try again with all required parameters."
-                    )
+                    return f"Error using {tool_name} tool: Missing required parameter(s): {fields_str}\n\nYou provided: {tool_input}\n{tool_docs}{example}\nPlease try again with all required parameters."
 
                 # Common error patterns for specific tools (as fallback)
                 if tool_name == "create_file":
@@ -488,8 +567,14 @@ class AgentGraph:
 
         # Add nodes
         builder.add_node("reasoner", self.reasoner, retry=retry_policy)
-        builder.add_node("tools", CustomToolNode(self.tools, handle_tool_errors=handle_tool_errors), retry=retry_policy)
-        builder.add_node("summarize_conversation", self.summarize_conversation, retry=retry_policy)
+        builder.add_node(
+            "tools",
+            CustomToolNode(self.tools, handle_tool_errors=handle_tool_errors),
+            retry=retry_policy,
+        )
+        builder.add_node(
+            "summarize_conversation", self.summarize_conversation, retry=retry_policy
+        )
 
         # Add edges
         builder.add_edge(START, "reasoner")

@@ -37,7 +37,11 @@ console.log(`Subtraction: ${MathOperations.subtract(a, b)}`);
 console.log(`Multiplication: ${MathOperations.multiply(a, b)}`);
 console.log(`Division: ${MathOperations.divide(a, b)}`);
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME_1: FILE_CONTENT_1, FILE_NAME_2: FILE_CONTENT_2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME_1: FILE_CONTENT_1, FILE_NAME_2: FILE_CONTENT_2},
+    ) as codebase:
         file = codebase.get_file(FILE_NAME_2)
         namespace: TSNamespace = codebase.get_symbol("MathOperations")
         assert namespace is not None
@@ -99,7 +103,11 @@ def test_namespace_validators(tmpdir) -> None:
     validators["Letters only"] = new Validation.LettersOnlyValidator();
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace: TSNamespace = codebase.get_symbol("Validation")
         assert namespace is not None
         assert namespace.name == "Validation"
@@ -158,7 +166,11 @@ def test_namespace_wildcard_import(tmpdir) -> None:
     }
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME_1: FILE_CONTENT_1, FILE_NAME_2: FILE_CONTENT_2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME_1: FILE_CONTENT_1, FILE_NAME_2: FILE_CONTENT_2},
+    ) as codebase:
         utils_file = codebase.get_file(FILE_NAME_1)
         app_file = codebase.get_file(FILE_NAME_2)
 

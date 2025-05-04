@@ -1,5 +1,4 @@
 import modal
-
 from codegen_on_oss.sources import GithubSettings, GithubSource
 
 app = modal.App("codegen-oss-parse")
@@ -17,7 +16,9 @@ def main(
     parse_repo_on_modal_fn = modal.Function.from_name("codegen-oss-parse", "parse_repo")
     for language in languages.split(","):
         repo_source = GithubSource(
-            GithubSettings(language=language.strip(), heuristic=heuristic, num_repos=num_repos)
+            GithubSettings(
+                language=language.strip(), heuristic=heuristic, num_repos=num_repos
+            )
         )
         for repo_url, commit_hash in repo_source:
             parse_repo_on_modal_fn.spawn(

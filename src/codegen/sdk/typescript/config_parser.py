@@ -19,7 +19,11 @@ class TSConfigParser(ConfigParser):
     config_files: dict[Path, TSConfig]
     ctx: "CodebaseContext"
 
-    def __init__(self, codebase_context: "CodebaseContext", default_config_name: str = "tsconfig.json"):
+    def __init__(
+        self,
+        codebase_context: "CodebaseContext",
+        default_config_name: str = "tsconfig.json",
+    ):
         super().__init__()
         self.config_files = dict()
         self.ctx = codebase_context
@@ -30,7 +34,10 @@ class TSConfigParser(ConfigParser):
         if path in self.config_files:
             return self.config_files[path]
         if path.exists():
-            self.config_files[path] = TSConfig(File.from_content(config_path, path.read_text(), self.ctx, sync=False), self)
+            self.config_files[path] = TSConfig(
+                File.from_content(config_path, path.read_text(), self.ctx, sync=False),
+                self,
+            )
             return self.config_files.get(path)
         return None
 

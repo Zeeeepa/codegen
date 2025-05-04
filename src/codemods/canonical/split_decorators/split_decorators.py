@@ -41,7 +41,11 @@ class SplitDecorators(Codemod, Skill):
         # Iterate over all classes in the codebase
         for cls in codebase.classes:
             # Find all decorators of the function that match the pattern for `@allow_update` - this is a list of Decorator instances with '{' in the source
-            target_decorators = [decorator for decorator in cls.decorators if "@generic_repr" in decorator.source]
+            target_decorators = [
+                decorator
+                for decorator in cls.decorators
+                if "@generic_repr" in decorator.source
+            ]
             for decorator in target_decorators:
                 new_decorators = []
                 for arg in decorator.call.args:

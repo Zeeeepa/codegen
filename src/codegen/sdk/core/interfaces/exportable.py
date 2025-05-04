@@ -81,10 +81,19 @@ class Exportable(Usable[Parent], Generic[Parent]):
             bool: True if the symbol is re-exported from a different file than where
             it was defined, False otherwise.
         """
-        return any(x.node_type == NodeType.EXPORT and x.file != self.file for x in self.symbol_usages + self.file.symbol_usages)
+        return any(
+            x.node_type == NodeType.EXPORT and x.file != self.file
+            for x in self.symbol_usages + self.file.symbol_usages
+        )
 
     @reader
-    def get_import_string(self, alias: str | None = None, module: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> str:
+    def get_import_string(
+        self,
+        alias: str | None = None,
+        module: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> str:
         """Returns the import string for a symbol.
 
         Generates the import statement needed to import a symbol from its module.

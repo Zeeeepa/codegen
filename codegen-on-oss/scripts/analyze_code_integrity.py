@@ -21,6 +21,7 @@ import sys
 from typing import Any, Dict, Optional
 
 import yaml
+
 from codegen import Codebase
 from codegen.sdk.core.codebase import Codebase
 
@@ -495,7 +496,9 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
 
     # Add error items
     for error in results.get("errors", []):
-        severity_class = "warning" if error.get("severity", "error") == "warning" else ""
+        severity_class = (
+            "warning" if error.get("severity", "error") == "warning" else ""
+        )
         severity_text = f"<span class='severity-{error.get('severity', 'error')}'>{error.get('severity', 'error').upper()}</span>"
 
         html += f"""
@@ -588,7 +591,9 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
 
 def main():
     """Main entry point for the script."""
-    parser = argparse.ArgumentParser(description="Analyze code integrity in a repository")
+    parser = argparse.ArgumentParser(
+        description="Analyze code integrity in a repository"
+    )
 
     parser.add_argument("--repo", required=True, help="Path to the repository")
     parser.add_argument(
@@ -597,12 +602,18 @@ def main():
         default="analyze",
         help="Mode of operation: analyze a single codebase, compare branches, or analyze a PR",
     )
-    parser.add_argument("--main-branch", help="Main branch name (for compare and pr modes)")
-    parser.add_argument("--feature-branch", help="Feature branch name (for compare and pr modes)")
+    parser.add_argument(
+        "--main-branch", help="Main branch name (for compare and pr modes)"
+    )
+    parser.add_argument(
+        "--feature-branch", help="Feature branch name (for compare and pr modes)"
+    )
     parser.add_argument("--output", help="Output file for results (JSON)")
     parser.add_argument("--html", help="Output file for HTML report")
     parser.add_argument("--config", help="Configuration file (JSON or YAML)")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose logging"
+    )
 
     args = parser.parse_args()
 
@@ -626,7 +637,9 @@ def main():
     elif args.mode == "compare":
         # Compare branches
         if not args.main_branch or not args.feature_branch:
-            logger.error("Both --main-branch and --feature-branch are required for compare mode")
+            logger.error(
+                "Both --main-branch and --feature-branch are required for compare mode"
+            )
             sys.exit(1)
 
         # Load codebases
@@ -634,7 +647,9 @@ def main():
         feature_codebase = load_codebase(args.repo, args.feature_branch)
 
         # Compare codebases
-        comparison = compare_codebases(main_codebase, feature_codebase, config, args.output)
+        comparison = compare_codebases(
+            main_codebase, feature_codebase, config, args.output
+        )
 
         # Generate HTML report if requested
         if args.html:
@@ -643,7 +658,9 @@ def main():
     elif args.mode == "pr":
         # Analyze a PR
         if not args.main_branch or not args.feature_branch:
-            logger.error("Both --main-branch and --feature-branch are required for PR mode")
+            logger.error(
+                "Both --main-branch and --feature-branch are required for PR mode"
+            )
             sys.exit(1)
 
         # Load codebases
@@ -651,7 +668,9 @@ def main():
         pr_codebase = load_codebase(args.repo, args.feature_branch)
 
         # Analyze PR
-        pr_analysis = analyze_pull_request(main_codebase, pr_codebase, config, args.output)
+        pr_analysis = analyze_pull_request(
+            main_codebase, pr_codebase, config, args.output
+        )
 
         # Generate HTML report if requested
         if args.html:

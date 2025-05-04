@@ -1,12 +1,17 @@
 import re
 
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
-from tests.unit.codegen.sdk.python.utils.test_file_contents import file1_content, file2_content
+from tests.unit.codegen.sdk.python.utils.test_file_contents import (
+    file1_content,
+    file2_content,
+)
 
 
 def test_function_parameter_edit(tmpdir) -> None:
     # language=python
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
 
         top_level_function = file1.get_function("top_level_function1")
@@ -17,7 +22,9 @@ def test_function_parameter_edit(tmpdir) -> None:
         )
 
         first_param = top_level_function.get_parameter("y")
-        new_func_source = re.sub(rf"\b{first_param.source}\b", "foo", top_level_function.source)
+        new_func_source = re.sub(
+            rf"\b{first_param.source}\b", "foo", top_level_function.source
+        )
         top_level_function.edit(new_func_source)
 
     top_level_function = file1.get_function("top_level_function1")
@@ -30,7 +37,9 @@ def test_function_parameter_edit(tmpdir) -> None:
 
 
 def test_parameter_type_edit(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
 
         top_level_function = file1.get_function("top_level_function1")

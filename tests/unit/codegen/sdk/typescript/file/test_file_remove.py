@@ -13,7 +13,11 @@ function foo(bar: number): number {
     return bar;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.remove()
 
@@ -31,7 +35,11 @@ def test_remove_unused_imports_complete_removal(tmpdir):
     const x = 5;
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.remove_unused_imports()
     assert file.content.strip() == expected.strip()
@@ -49,7 +57,11 @@ def test_remove_unused_imports_partial_removal(tmpdir):
     console.log(used);
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.remove_unused_imports()
     assert file.content.strip() == expected.strip()
@@ -68,7 +80,11 @@ def test_remove_unused_imports_with_side_effects(tmpdir):
     const x = 5;
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.remove_unused_imports()
     assert file.content.strip() == expected.strip()
@@ -91,7 +107,11 @@ def test_remove_unused_imports_with_moved_symbols(tmpdir):
     }
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"main.ts": content1, "utils.ts": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"main.ts": content1, "utils.ts": content2},
+    ) as codebase:
         main_file = codebase.get_file("main.ts")
         foo = main_file.get_function("foo")
 
@@ -123,7 +143,11 @@ export function usedFunction() { return true; }
 const x = usedFunction();
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.remove_unused_exports()
     assert file.content.strip() == expected.strip()
@@ -148,7 +172,11 @@ export function usedFunction() { return true; }
 const x = usedFunction();
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.remove_unused_exports()
     assert file.content.strip() == expected.strip()
@@ -170,7 +198,11 @@ export { helper } from './utils';
 export function localFunction() { return true; }
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"main.ts": content1, "other.ts": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"main.ts": content1, "other.ts": content2},
+    ) as codebase:
         main_file = codebase.get_file("main.ts")
         main_file.remove_unused_exports()
     assert main_file.content.strip() == expected1.strip()
@@ -196,7 +228,11 @@ function useHelper() {
 }
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"utils.ts": content1, "main.ts": content2, "consumer.ts": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"utils.ts": content1, "main.ts": content2, "consumer.ts": content3},
+    ) as codebase:
         utils_file = codebase.get_file("utils.ts")
         main_file = codebase.get_file("main.ts")
         consumer_file = codebase.get_file("consumer.ts")

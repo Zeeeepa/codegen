@@ -52,7 +52,9 @@ class SwitchStatement(Statement[Parent], Generic[Parent, TCodeBlock, TSwitchCase
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self.value._compute_dependencies(usage_type, dest)
         for case in self.cases:
             case._compute_dependencies(usage_type, dest)

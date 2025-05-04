@@ -88,7 +88,11 @@ class PageUserResponse(BaseModel):
 
         _obj = cls.model_validate(
             {
-                "items": [UserResponse.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None,
+                "items": (
+                    [UserResponse.from_dict(_item) for _item in obj["items"]]
+                    if obj.get("items") is not None
+                    else None
+                ),
                 "total": obj.get("total"),
                 "page": obj.get("page"),
                 "size": obj.get("size"),

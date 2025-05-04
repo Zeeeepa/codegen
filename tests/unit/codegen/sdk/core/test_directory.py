@@ -80,14 +80,18 @@ def test_get_file(tmpdir) -> None:
 
 
 def test_get_file_not_found(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": ""}
+    ) as codebase:
         # Get the directory and check that the file is not found
         directory = codebase.get_directory("mock_dir")
         assert directory.get_file("nonexistent.py", ignore_case=True) is None
 
 
 def test_add_subdirectory(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": ""}
+    ) as codebase:
         # Get the directory and add a file in a subdirectory
         directory = codebase.get_directory("mock_dir")
         codebase.create_file("mock_dir/subdir/example.py", "print('Hello, world!')")
@@ -103,7 +107,9 @@ def test_add_subdirectory(tmpdir) -> None:
 
 
 def test_remove_subdirectory(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/subdir/empty.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/subdir/empty.py": ""}
+    ) as codebase:
         # Get the directory and remove the subdirectory
         directory = codebase.get_directory("mock_dir")
         subdir = codebase.get_directory("mock_dir/subdir")
@@ -115,7 +121,9 @@ def test_remove_subdirectory(tmpdir) -> None:
 
 
 def test_get_subdirectory(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/subdir/empty.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/subdir/empty.py": ""}
+    ) as codebase:
         # Get the directory and get the subdirectory
         directory = codebase.get_directory("mock_dir")
         sub_dir = codebase.get_directory("mock_dir/subdir")
@@ -124,7 +132,9 @@ def test_get_subdirectory(tmpdir) -> None:
 
 
 def test_update_filepath(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": ""}
+    ) as codebase:
         # Get the directory and update the filepath
         directory = codebase.get_directory("mock_dir")
         directory.update_filepath("new_mock_dir/new_mock_subdir")
@@ -148,7 +158,9 @@ def test_update_filepath(tmpdir) -> None:
 
 
 def test_remove(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": ""}
+    ) as codebase:
         # Get the directory and remove it
         directory = codebase.get_directory("mock_dir")
         directory.remove()
@@ -160,7 +172,9 @@ def test_remove(tmpdir) -> None:
 
 
 def test_rename(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": ""}
+    ) as codebase:
         # Get the directory and rename it
         directory = codebase.get_directory("mock_dir")
         directory.rename("renamed_dir")
@@ -183,7 +197,9 @@ def test_rename(tmpdir) -> None:
 
 
 def test_contains(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": "", "mock_dir/subdir/empty.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": "", "mock_dir/subdir/empty.py": ""}
+    ) as codebase:
         # Get the directory and check the contains
         directory = codebase.get_directory("mock_dir")
         assert "subdir" in directory
@@ -191,7 +207,9 @@ def test_contains(tmpdir) -> None:
 
 
 def test_len(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"mock_dir/example.py": "", "mock_dir/subdir/empty.py": ""}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"mock_dir/example.py": "", "mock_dir/subdir/empty.py": ""}
+    ) as codebase:
         # Get the directory and check the length
         directory = codebase.get_directory("mock_dir")
         assert len(directory) == 2
@@ -200,7 +218,10 @@ def test_len(tmpdir) -> None:
 def test_unicode_in_filename(tmpdir) -> None:
     with get_codebase_session(
         tmpdir=tmpdir,
-        files={"ascii.py": "print('Hello, world!')", "test/我很喜欢冰激淋/test-file 12'3_🍦.py": "print('Hello, world!')"},
+        files={
+            "ascii.py": "print('Hello, world!')",
+            "test/我很喜欢冰激淋/test-file 12'3_🍦.py": "print('Hello, world!')",
+        },
         programming_language=ProgrammingLanguage.PYTHON,
         verify_output=True,
     ) as codebase:

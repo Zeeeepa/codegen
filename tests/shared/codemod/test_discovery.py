@@ -13,8 +13,24 @@ from codegen.gscli.generate.runner_imports import get_runner_imports
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from codemods.codemod import Codemod
 from tests.shared.codemod.constants import DIFF_FILEPATH
-from tests.shared.codemod.models import BASE_PATH, CODEMOD_PATH, REPO_ID_TO_URL, TEST_DIR, VERIFIED_CODEMOD_DATA_DIR, VERIFIED_CODEMOD_DIFFS, ClonedRepoTestCase, CodemodMetadata, Repo, Size
-from tests.shared.codemod.verified_codemod_utils import CodemodAPI, RepoCodemodMetadata, SkillTestConfig, anonymize_id
+from tests.shared.codemod.models import (
+    BASE_PATH,
+    CODEMOD_PATH,
+    REPO_ID_TO_URL,
+    TEST_DIR,
+    VERIFIED_CODEMOD_DATA_DIR,
+    VERIFIED_CODEMOD_DIFFS,
+    ClonedRepoTestCase,
+    CodemodMetadata,
+    Repo,
+    Size,
+)
+from tests.shared.codemod.verified_codemod_utils import (
+    CodemodAPI,
+    RepoCodemodMetadata,
+    SkillTestConfig,
+    anonymize_id,
+)
 
 
 def find_repos(
@@ -50,7 +66,14 @@ def find_verified_codemod_repos() -> dict[str, Repo]:
             language = commit_metadata["language"]
             url = commit_metadata["url"]
             unique_name = f"{repo_name}_{commit}"
-            repo = Repo(commit=commit, url=url, language=language, size=Size.Large, extra_repo=True, name=unique_name)
+            repo = Repo(
+                commit=commit,
+                url=url,
+                language=language,
+                size=Size.Large,
+                extra_repo=True,
+                name=unique_name,
+            )
             repos[unique_name] = repo
     return repos
 
@@ -62,16 +85,27 @@ def codemods_from_dir(codemod_dir: Path) -> Iterator[CodemodMetadata]:
         mod = importlib.import_module(import_path)
         for name, value in inspect.getmembers(mod, inspect.isclass):
             if issubclass(value, Codemod) and name != "Codemod":
-                yield CodemodMetadata(codemod=value, category=codemod_dir.parent.name, directory=codemod_dir)
+                yield CodemodMetadata(
+                    codemod=value,
+                    category=codemod_dir.parent.name,
+                    directory=codemod_dir,
+                )
 
 
-def find_test_cases(codemod_dir: Path, repos: dict[str, Repo], codemod: CodemodMetadata) -> Generator[ClonedRepoTestCase, None, None]:
+def find_test_cases(
+    codemod_dir: Path, repos: dict[str, Repo], codemod: CodemodMetadata
+) -> Generator[ClonedRepoTestCase, None, None]:
     for dir in codemod_dir.iterdir():
         if dir.is_dir() and "__pycache__" != dir.name:
             repo_name = dir.name.removeprefix("test_")
             if repo_name in repos:
                 repo = repos[repo_name]
-                yield ClonedRepoTestCase(test_dir=dir, repo=repo, codemod_metadata=codemod, diff_path=dir / DIFF_FILEPATH)
+                yield ClonedRepoTestCase(
+                    test_dir=dir,
+                    repo=repo,
+                    codemod_metadata=codemod,
+                    diff_path=dir / DIFF_FILEPATH,
+                )
 
 
 def find_codemods() -> Generator[CodemodMetadata, None, None]:
@@ -82,15 +116,21 @@ def find_codemods() -> Generator[CodemodMetadata, None, None]:
             yield from codemods_from_dir(codemod_dir)
 
 
-def find_codemod_test_cases(repos: dict[str, Repo]) -> Generator[ClonedRepoTestCase, None, None]:
+def find_codemod_test_cases(
+    repos: dict[str, Repo]
+) -> Generator[ClonedRepoTestCase, None, None]:
     for codemod in find_codemods():
         test_dir = codemod.test_dir
         if not test_dir.exists() and codemod.category == "canonical":
             logger.warning(f"No tests exist for {codemod.name}")
         if test_dir.exists():
-            tests = list(find_test_cases(codemod_dir=test_dir, repos=repos, codemod=codemod))
+            tests = list(
+                find_test_cases(codemod_dir=test_dir, repos=repos, codemod=codemod)
+            )
             if all(test.repo.extra_repo for test in tests):
-                logger.warning(f"All tests for {codemod.name} are against extra repositories")
+                logger.warning(
+                    f"All tests for {codemod.name} are against extra repositories"
+                )
             elif len(tests) == 0:
                 logger.warning(f"No tests exist for {codemod.name}")
             yield from tests
@@ -100,7 +140,11 @@ def filter_repos(repos: dict):
     if total_nodes := os.getenv("CIRCLE_NODE_TOTAL", None):
         total_nodes = int(total_nodes)
         index = int(os.getenv("CIRCLE_NODE_INDEX"))
-        res = {k: repos[k] for idx, k in enumerate(sorted(repos.keys())) if idx % total_nodes == index}
+        res = {
+            k: repos[k]
+            for idx, k in enumerate(sorted(repos.keys()))
+            if idx % total_nodes == index
+        }
         return res
     return repos
 
@@ -114,8 +158,12 @@ def find_verified_codemod_cases(metafunc):
         if config.repo_id and repo_id != config.repo_id:
             continue
 
-        codemods_data = RepoCodemodMetadata.from_json_file(VERIFIED_CODEMOD_DATA_DIR / f"{anonymize_id(repo_id)}.json")
-        codemods_data.filter(base_commit=config.base_commit, codemod_id=config.codemod_id)
+        codemods_data = RepoCodemodMetadata.from_json_file(
+            VERIFIED_CODEMOD_DATA_DIR / f"{anonymize_id(repo_id)}.json"
+        )
+        codemods_data.filter(
+            base_commit=config.base_commit, codemod_id=config.codemod_id
+        )
 
         repo_name = codemods_data.repo_name
         programming_language = codemods_data.language
@@ -132,7 +180,9 @@ def find_verified_codemod_cases(metafunc):
                     name=repo_dir_name,
                 )
                 repos[repo_dir_name] = repo
-            yield from generate_codemod_test_cases(repos[repo_dir_name], codemods, codemod_api)
+            yield from generate_codemod_test_cases(
+                repos[repo_dir_name], codemods, codemod_api
+            )
 
 
 def escape_codemod_name(name: str) -> str:
@@ -151,14 +201,18 @@ def escape_codemod_name(name: str) -> str:
     return name
 
 
-def generate_codemod_test_cases(repo: Repo, codemods: list[CodemodMetadata], codemod_api: CodemodAPI) -> Generator[ClonedRepoTestCase, None, None]:
+def generate_codemod_test_cases(
+    repo: Repo, codemods: list[CodemodMetadata], codemod_api: CodemodAPI
+) -> Generator[ClonedRepoTestCase, None, None]:
     """Generate test cases for a list of codemods"""
     for codemod_data in codemods:
         test_dir = VERIFIED_CODEMOD_DIFFS / codemod_data.anonymized_name
         diff_path = test_dir / DIFF_FILEPATH
         # add the execute method to the codemod
         execute_func = create_function_from_string("execute", codemod_data)
-        name = escape_codemod_name(codemod_data.name) + "-" + str(codemod_data.codemod_id)
+        name = (
+            escape_codemod_name(codemod_data.name) + "-" + str(codemod_data.codemod_id)
+        )
         codemod = Codemod(name=name, execute=execute_func)
 
         codemod_metadata = CodemodMetadata(
@@ -194,11 +248,20 @@ def create_function_from_string(function_name, codemod):
     code_string = codemod.source
 
     namespace = {}
-    import_str = get_runner_imports(include_private_imports=False, include_codegen=False)
+    import_str = get_runner_imports(
+        include_private_imports=False, include_codegen=False
+    )
     # Prepare the code string by ensuring proper indentation
     code_string = code_string.strip()
     # logger.info(f"Adding function: \n{code_string}\n")
-    code_string = import_str + "\n\n" + "def " + function_name + "(codebase):\n" + textwrap.indent(code_string, "    ")
+    code_string = (
+        import_str
+        + "\n\n"
+        + "def "
+        + function_name
+        + "(codebase):\n"
+        + textwrap.indent(code_string, "    ")
+    )
 
     try:
         # Execute the code string in our namespace
@@ -209,5 +272,7 @@ def create_function_from_string(function_name, codemod):
 
         return function
     except Exception as e:
-        logger.error(f"Error adding function for codemod: {codemod.codemod_id}, codemod: {codemod.codemod_url}, error: {e!s}")
+        logger.error(
+            f"Error adding function for codemod: {codemod.codemod_id}, codemod: {codemod.codemod_url}, error: {e!s}"
+        )
         raise e

@@ -28,7 +28,9 @@ def op(repo_config: RepoConfig) -> Generator[RepoOperator, None, None]:
 
 
 @pytest.fixture
-def git_repo_client(op: RepoOperator, repo_config: RepoConfig) -> Generator[GitRepoClient, None, None]:
+def git_repo_client(
+    op: RepoOperator, repo_config: RepoConfig
+) -> Generator[GitRepoClient, None, None]:
     yield GitRepoClient(repo_config=repo_config, access_token=op.access_token)
 
 

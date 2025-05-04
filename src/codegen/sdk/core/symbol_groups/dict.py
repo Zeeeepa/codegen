@@ -35,7 +35,13 @@ class Pair(Editable[Parent], HasValue, Generic[TExpression, Parent]):
 
     key: TExpression
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.key, self._value_node = self._get_key_value()
         if self.key is None:
@@ -66,7 +72,9 @@ class Pair(Editable[Parent], HasValue, Generic[TExpression, Parent]):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.key:
             self.key._compute_dependencies(usage_type, dest)
         if self.value and self.value is not self.key:
@@ -78,7 +86,12 @@ Parent = TypeVar("Parent", bound="Editable")
 
 
 @apidoc
-class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generic[TExpression, Parent]):
+class Dict(
+    Expression[Parent],
+    Builtin,
+    MutableMapping[str, TExpression],
+    Generic[TExpression, Parent],
+):
     """Represents a dict (object) literal the source code.
 
     Attributes:
@@ -88,10 +101,23 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
     _underlying: Collection[Pair[TExpression, Self] | Unpack[Self], Parent]
     unpack: Unpack[Self] | None = None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent, delimiter: str = ",", pair_type: type[Pair] = Pair) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+        delimiter: str = ",",
+        pair_type: type[Pair] = Pair,
+    ) -> None:
         # TODO: handle spread_element
         super().__init__(ts_node, file_node_id, ctx, parent)
-        children = [pair_type(child, file_node_id, ctx, self) for child in ts_node.named_children if child.type not in (None, "comment", "spread_element", "dictionary_splat") and not child.is_error]
+        children = [
+            pair_type(child, file_node_id, ctx, self)
+            for child in ts_node.named_children
+            if child.type not in (None, "comment", "spread_element", "dictionary_splat")
+            and not child.is_error
+        ]
         if unpack := self.child_by_field_types({"spread_element", "dictionary_splat"}):
             children.append(unpack)
             self.unpack = unpack
@@ -99,7 +125,9 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
             first_child = children[0].ts_node.end_byte - ts_node.start_byte
             second_child = children[1].ts_node.start_byte - ts_node.start_byte
             delimiter = ts_node.text[first_child:second_child].decode("utf-8").rstrip()
-        self._underlying = Collection(ts_node, file_node_id, ctx, parent, delimiter=delimiter, children=children)
+        self._underlying = Collection(
+            ts_node, file_node_id, ctx, parent, delimiter=delimiter, children=children
+        )
 
     def __bool__(self) -> bool:
         return True
@@ -163,7 +191,9 @@ class Dict(Expression[Parent], Builtin, MutableMapping[str, TExpression], Generi
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self._underlying._compute_dependencies(usage_type, dest)
 
     @property

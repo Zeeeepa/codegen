@@ -120,7 +120,13 @@ class MyClass1:
 
         matches = file.search(five_char_pattern)
         assert len(matches) == 6
-        assert set([m.source for m in matches]) == {"class", "hello", "print", "world", "world!"}
+        assert set([m.source for m in matches]) == {
+            "class",
+            "hello",
+            "print",
+            "world",
+            "world!",
+        }
 
 
 def test_file_search_exclude_comments(tmpdir) -> None:
@@ -139,17 +145,25 @@ def test():
         regex_pattern = r"\b[A-Z_]+\b"
 
         # =====[ Test with neither ]=====
-        matches = file.search(regex_pattern, include_strings=False, include_comments=False)
+        matches = file.search(
+            regex_pattern, include_strings=False, include_comments=False
+        )
         assert len(matches) == 1
 
         # =====[ Test with include_comments=True ]=====
-        matches = file.search(regex_pattern, include_strings=False, include_comments=True)
+        matches = file.search(
+            regex_pattern, include_strings=False, include_comments=True
+        )
         assert len(matches) == 2
 
         # =====[ Test with include_strings=True ]=====
-        matches = file.search(regex_pattern, include_strings=True, include_comments=False)
+        matches = file.search(
+            regex_pattern, include_strings=True, include_comments=False
+        )
         assert len(matches) == 3
 
         # =====[ Test with both include_strings=True and include_comments=True ]=====
-        matches = file.search(regex_pattern, include_strings=True, include_comments=True)
+        matches = file.search(
+            regex_pattern, include_strings=True, include_comments=True
+        )
         assert len(matches) == 4

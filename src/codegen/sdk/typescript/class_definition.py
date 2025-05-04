@@ -31,7 +31,11 @@ if TYPE_CHECKING:
 
 
 @ts_apidoc
-class TSClass(Class[TSFunction, TSDecorator, "TSCodeBlock", TSParameter, TSType], TSHasBlock, TSSymbol):
+class TSClass(
+    Class[TSFunction, TSDecorator, "TSCodeBlock", TSParameter, TSType],
+    TSHasBlock,
+    TSSymbol,
+):
     """A class representing a TypeScript/JavaScript class with enhanced functionality for class manipulation.
 
     The TSClass provides comprehensive functionality for working with TypeScript/JavaScript classes,
@@ -49,18 +53,32 @@ class TSClass(Class[TSFunction, TSDecorator, "TSCodeBlock", TSParameter, TSType]
     Representation of a Class in JavaScript/TypeScript
     """
 
-    def __init__(self, ts_node: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: SymbolStatement) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_id: NodeId,
+        ctx: CodebaseContext,
+        parent: SymbolStatement,
+    ) -> None:
         super().__init__(ts_node, file_id, ctx, parent)
         if superclasses_node := self.child_by_field_types("class_heritage"):
-            if extends_clause := superclasses_node.child_by_field_types(["extends_clause", "implements_clause"]):
-                self.parent_classes = Parents(extends_clause.ts_node, self.file_node_id, self.ctx, self)
+            if extends_clause := superclasses_node.child_by_field_types(
+                ["extends_clause", "implements_clause"]
+            ):
+                self.parent_classes = Parents(
+                    extends_clause.ts_node, self.file_node_id, self.ctx, self
+                )
         if self.constructor is not None and len(self.constructor.parameters) > 0:
-            self._parameters = SymbolGroup(self.file_node_id, self.ctx, self, children=self.constructor.parameters)
+            self._parameters = SymbolGroup(
+                self.file_node_id, self.ctx, self, children=self.constructor.parameters
+            )
         self.type_parameters = self.child_by_field_name("type_parameters")
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         """Adds an internal edge from itself to used symbol references within itself."""
         dest = dest or self.self_dest
         # =====[ SUBCLASSING ]=====
@@ -83,7 +101,11 @@ class TSClass(Class[TSFunction, TSDecorator, "TSCodeBlock", TSParameter, TSType]
 
     @reader
     def _parse_methods(self) -> MultiLineCollection[TSFunction, Self]:
-        methods = [m.symbol for m in self.code_block.symbol_statements if isinstance(m.symbol, TSFunction)]
+        methods = [
+            m.symbol
+            for m in self.code_block.symbol_statements
+            if isinstance(m.symbol, TSFunction)
+        ]
         block_node = self.code_block.ts_node
         if len(block_node.children) == 2:
             # If the class definition is an empty class, there is no indent
@@ -98,7 +120,14 @@ class TSClass(Class[TSFunction, TSDecorator, "TSCodeBlock", TSParameter, TSType]
         else:
             start_byte = block_node.start_byte - block_node.start_point[1]
         return MultiLineCollection(
-            children=methods, file_node_id=self.file_node_id, ctx=self.ctx, parent=self, node=self.code_block.ts_node, indent_size=indent_size, start_byte=start_byte, end_byte=block_node.end_byte - 1
+            children=methods,
+            file_node_id=self.file_node_id,
+            ctx=self.ctx,
+            parent=self,
+            node=self.code_block.ts_node,
+            indent_size=indent_size,
+            start_byte=start_byte,
+            end_byte=block_node.end_byte - 1,
         )
 
     @property
@@ -225,4 +254,6 @@ class TSClass(Class[TSFunction, TSDecorator, "TSCodeBlock", TSParameter, TSType]
     @writer
     def class_component_to_function_component(self) -> None:
         """Converts a class component to a function component."""
-        return self.ctx.ts_declassify.declassify(self.source, filename=os.path.basename(self.file.file_path))
+        return self.ctx.ts_declassify.declassify(
+            self.source, filename=os.path.basename(self.file.file_path)
+        )

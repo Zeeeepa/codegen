@@ -42,7 +42,9 @@ class RenameLocalVariables(Codemod, Skill):
         for file in codebase.files:
             for function in file.functions:
                 # Check if any local variable names contain "position"
-                position_usages = function.code_block.get_variable_usages("position", fuzzy_match=True)
+                position_usages = function.code_block.get_variable_usages(
+                    "position", fuzzy_match=True
+                )
                 if len(position_usages) > 0:
                     # Rename
                     function.rename_local_variable("position", "pos", fuzzy_match=True)

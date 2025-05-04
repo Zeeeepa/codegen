@@ -28,6 +28,10 @@ it('should support CommonJS globals in ESM context', () => {
   expect(__dirname).toBe(MOCK_DIR_PATH)
   expect(__filename).toBe(MOCK_FILE_PATH)
 })    """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         assert len(file.imports) == 1

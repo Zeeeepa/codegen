@@ -11,7 +11,11 @@ if (a):
 c()
 await d()
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={"test.py": file}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={"test.py": file},
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert len(file.function_calls) == 3
 
@@ -30,7 +34,11 @@ c()
 (d())
 await (((e())))
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.PYTHON, files={"test.py": file}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.PYTHON,
+        files={"test.py": file},
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert len(file.function_calls) == 4
 

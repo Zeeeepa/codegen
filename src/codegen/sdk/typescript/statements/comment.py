@@ -101,11 +101,24 @@ class TSComment(Comment):
     @reader
     def _unparse_comment(self, new_src: str):
         """Unparses cleaned text content into a comment block"""
-        should_add_leading_star = any([line.lstrip().startswith("*") for line in self.source.split("\n")[:-1]]) if len(self.source.split("\n")) > 1 else True
-        return self.generate_comment(new_src, self.comment_type, leading_star=should_add_leading_star)
+        should_add_leading_star = (
+            any(
+                [line.lstrip().startswith("*") for line in self.source.split("\n")[:-1]]
+            )
+            if len(self.source.split("\n")) > 1
+            else True
+        )
+        return self.generate_comment(
+            new_src, self.comment_type, leading_star=should_add_leading_star
+        )
 
     @staticmethod
-    def generate_comment(new_src: str, comment_type: TSCommentType, leading_star: bool = True, force_multiline: bool = False) -> str:
+    def generate_comment(
+        new_src: str,
+        comment_type: TSCommentType,
+        leading_star: bool = True,
+        force_multiline: bool = False,
+    ) -> str:
         """Generates a TypeScript comment block from the given text content.
 
         Creates a comment block in either single-line (//) or multi-line (/* */) format based on the specified comment type.
@@ -128,7 +141,9 @@ class TSComment(Comment):
             if "\n" in new_src or force_multiline:
                 # Check if we should add leading "* " to each line
                 if leading_star:
-                    new_src = "\n".join([(" * " + x).rstrip() for x in new_src.split("\n")])
+                    new_src = "\n".join(
+                        [(" * " + x).rstrip() for x in new_src.split("\n")]
+                    )
                     new_src = "/**\n" + new_src + "\n */"
                 else:
                     new_src = "/*\n" + new_src + "\n*/"

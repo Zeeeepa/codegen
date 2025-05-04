@@ -13,7 +13,9 @@ from codegen.cli.utils.codemod_manager import CodemodManager
 from codegen.cli.utils.function_finder import DecoratedFunction
 
 
-def deploy_functions(functions: list[DecoratedFunction], message: str | None = None) -> None:
+def deploy_functions(
+    functions: list[DecoratedFunction], message: str | None = None
+) -> None:
     """Deploy a list of functions."""
     if not functions:
         rich.print("\n[yellow]No @codegen.function decorators found.[/yellow]\n")
@@ -45,9 +47,16 @@ def deploy_functions(functions: list[DecoratedFunction], message: str | None = N
 @click.command(name="deploy")
 @requires_auth
 @click.argument("name", required=False)
-@click.option("-d", "--directory", type=click.Path(exists=True, path_type=Path), help="Directory to search for functions")
+@click.option(
+    "-d",
+    "--directory",
+    type=click.Path(exists=True, path_type=Path),
+    help="Directory to search for functions",
+)
 @click.option("-m", "--message", help="Optional message to include with the deploy")
-def deploy_command(name: str | None = None, directory: Path | None = None, message: str | None = None):
+def deploy_command(
+    name: str | None = None, directory: Path | None = None, message: str | None = None
+):
     """Deploy codegen functions.
 
     If NAME is provided, deploys a specific function by that name.
@@ -65,7 +74,9 @@ def deploy_command(name: str | None = None, directory: Path | None = None, messa
                 raise click.ClickException(msg)
             if len(matching) > 1:
                 # If multiple matches, show their locations
-                rich.print(f"[yellow]Multiple functions found with name '{name}':[/yellow]")
+                rich.print(
+                    f"[yellow]Multiple functions found with name '{name}':[/yellow]"
+                )
                 for func in matching:
                     rich.print(f"  • {func.filepath}")
                 msg = "Please specify the exact directory with --directory"

@@ -15,15 +15,21 @@ def run(codebase: Codebase):
         # Count decision points
         for statement in code_block.statements:
             if isinstance(statement, IfBlockStatement):
-                complexity += 1 + len(statement.elif_statements)  # +1 for if, each elif adds another path
+                complexity += 1 + len(
+                    statement.elif_statements
+                )  # +1 for if, each elif adds another path
                 if statement.else_statement:
                     complexity += 1
-            elif isinstance(statement, WhileStatement) or isinstance(statement, ForLoopStatement):
+            elif isinstance(statement, WhileStatement) or isinstance(
+                statement, ForLoopStatement
+            ):
                 complexity += 1  # Loops introduce a new path
             elif isinstance(statement, TryCatchStatement):
                 complexity += 1  # try-catch introduces a new path
                 # Count except blocks by counting nested code blocks after the first one (try block)
-                complexity += len(statement.nested_code_blocks) - 1  # -1 to exclude the try block itself
+                complexity += (
+                    len(statement.nested_code_blocks) - 1
+                )  # -1 to exclude the try block itself
 
         return complexity
 
@@ -73,7 +79,9 @@ def run(codebase: Codebase):
 
         print("\n📉 Complexity Distribution:")
         print(f"  • Low (1-5): {low} functions ({low / total_functions * 100:.1f}%)")
-        print(f"  • Medium (6-10): {medium} functions ({medium / total_functions * 100:.1f}%)")
+        print(
+            f"  • Medium (6-10): {medium} functions ({medium / total_functions * 100:.1f}%)"
+        )
         print(f"  • High (>10): {high} functions ({high / total_functions * 100:.1f}%)")
     else:
         print("❌ No functions found in the codebase to analyze.")
@@ -81,7 +89,11 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("🔍 Analyzing codebase...")
-    codebase = Codebase.from_repo("fastapi/fastapi", commit="887270ff8a54bb58c406b0651678a27589793d2f", language="python")
+    codebase = Codebase.from_repo(
+        "fastapi/fastapi",
+        commit="887270ff8a54bb58c406b0651678a27589793d2f",
+        language="python",
+    )
 
     print("Running analysis...")
     run(codebase)

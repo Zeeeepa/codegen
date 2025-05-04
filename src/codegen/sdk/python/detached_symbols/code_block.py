@@ -26,7 +26,9 @@ class PyCodeBlock(CodeBlock[Parent, "PyAssignment"], Generic[Parent]):
     @noapidoc
     @reader
     def _parse_statements(self) -> MultiLineCollection[Statement, Self]:
-        statements: list[Statement] = self.ctx.parser.parse_py_statements(self.ts_node, self.file_node_id, self.ctx, self)
+        statements: list[Statement] = self.ctx.parser.parse_py_statements(
+            self.ts_node, self.file_node_id, self.ctx, self
+        )
         collection = MultiLineCollection(
             children=statements,
             file_node_id=self.file_node_id,
@@ -49,7 +51,11 @@ class PyCodeBlock(CodeBlock[Parent, "PyAssignment"], Generic[Parent]):
         Returns:
             A list of with statement objects found within this code block.
         """
-        return [x for x in self.statements if x.statement_type == StatementType.WITH_STATEMENT]
+        return [
+            x
+            for x in self.statements
+            if x.statement_type == StatementType.WITH_STATEMENT
+        ]
 
     @reader
     def get_with_statements(self, level: int) -> list[WithStatement]:

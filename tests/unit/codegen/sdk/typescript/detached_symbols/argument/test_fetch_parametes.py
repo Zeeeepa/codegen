@@ -10,7 +10,11 @@ export function GenericComponent({ param1, param2 }: Props) {
   const value = getValue()
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file("test_arg.ts")
         symbol = file.get_function("GenericComponent")
         assert symbol is not None
@@ -38,7 +42,11 @@ export function GenericComponent({ param1, param2 }: Props) {
   const value = getValue()
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file = codebase.get_file("test_arg.ts")
         symbol = file.get_symbol("GenericComponent")
         assert symbol is not None

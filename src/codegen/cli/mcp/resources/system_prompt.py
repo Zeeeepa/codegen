@@ -8494,7 +8494,7 @@ for function in codebase.functions:
     return_type = function.return_type.source if function.return_type else "None"
 
     # Create Google-style docstring
-    docstring = f\'\'\"""
+    docstring = f\'\'"""
     Description of {function.name}.
 
     Args:

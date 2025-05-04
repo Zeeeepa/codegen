@@ -5,26 +5,63 @@ from codegen.sdk.core.expressions.union_type import UnionType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 if TYPE_CHECKING:
     from codegen.sdk.python.assignment import PyAssignment
     from codegen.sdk.typescript.assignment import TSAssignment
 
 test_cases_append_py = [
-    SkillTestCase(files=[SkillTestCasePyFile(input="a: int | None", output="a: int | None | str")]),
-    SkillTestCase(files=[SkillTestCasePyFile(input="a: str | None", output="a: str | None")]),
-    SkillTestCase(files=[SkillTestCasePyFile(input="a: int | str | None", output="a: int | str | None")]),
+    SkillTestCase(
+        files=[SkillTestCasePyFile(input="a: int | None", output="a: int | None | str")]
+    ),
+    SkillTestCase(
+        files=[SkillTestCasePyFile(input="a: str | None", output="a: str | None")]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCasePyFile(
+                input="a: int | str | None", output="a: int | str | None"
+            )
+        ]
+    ),
 ]
 
 test_cases_append_ts = [
-    SkillTestCase(files=[SkillTestCaseTSFile(input="let a: number | null", output="let a: number | null | string")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="let a: string | null", output="let a: string | null")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="let a: number | string | null", output="let a: number | string | null")]),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input="let a: number | null", output="let a: number | null | string"
+            )
+        ]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input="let a: string | null", output="let a: string | null"
+            )
+        ]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input="let a: number | string | null",
+                output="let a: number | string | null",
+            )
+        ]
+    ),
 ]
 
 
-@skill(eval_skill=False, prompt="Add an additional type to a union type", uid="ffa7a5ac-ef6c-4801-9865-bb302449ac2a")
+@skill(
+    eval_skill=False,
+    prompt="Add an additional type to a union type",
+    uid="ffa7a5ac-ef6c-4801-9865-bb302449ac2a",
+)
 class AppendTypeToUnionTypeSkill(Skill):
     """Appends an additional 'str' type to a piped union type in Python"""
 
@@ -60,7 +97,11 @@ def fn(a: list[list[tuple[int, set[int]]]]) -> dict[str, str]:
 """
 
 
-@skill(eval_skill=False, prompt="Convert typing.Type to built-in type in Python", uid="f3059b5b-4d0b-49e1-bb15-1581931534a4")
+@skill(
+    eval_skill=False,
+    prompt="Convert typing.Type to built-in type in Python",
+    uid="f3059b5b-4d0b-49e1-bb15-1581931534a4",
+)
 class ConvertToBuiltInTypeSkill(Skill):
     """Replaces type annotations using typing module with builtin types.
 
@@ -72,10 +113,26 @@ class ConvertToBuiltInTypeSkill(Skill):
     """
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCasePyFile(input=built_in_type_input, output=built_in_type_output)])], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCasePyFile(
+                        input=built_in_type_input, output=built_in_type_output
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Replaces type annotations using typing module with builtin types."""
-        import_replacements = {"List": "list", "Dict": "dict", "Set": "set", "Tuple": "tuple"}
+        import_replacements = {
+            "List": "list",
+            "Dict": "dict",
+            "Set": "set",
+            "Tuple": "tuple",
+        }
 
         # Iterate over all imports in the codebase
         for imported in codebase.imports:

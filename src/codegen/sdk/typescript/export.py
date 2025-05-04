@@ -43,7 +43,9 @@ if TYPE_CHECKING:
 
 
 @ts_apidoc
-class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasValue, Chainable):
+class TSExport(
+    Export["Collection[TSExport, ExportStatement[TSExport]]"], HasValue, Chainable
+):
     """Represents a single exported symbol.
 
     There is a 1:M relationship between an ExportStatement and an Export
@@ -69,7 +71,11 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
         value_node: TSNode | None = None,
     ) -> None:
         """Given an `export_statement` tree sitter node, parses all implicit export symbols."""
-        if declared_symbol and exported_symbol and declared_symbol.name != exported_symbol.text.decode("utf-8"):
+        if (
+            declared_symbol
+            and exported_symbol
+            and declared_symbol.name != exported_symbol.text.decode("utf-8")
+        ):
             msg = "The exported symbol name must match the declared symbol name"
             raise ValueError(msg)
 
@@ -98,22 +104,41 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
         declared_symbols = []
 
         # =====[ Symbol Definitions ]=====
-        if declaration.type in ["function_declaration", "generator_function_declaration"]:
+        if declaration.type in [
+            "function_declaration",
+            "generator_function_declaration",
+        ]:
             # e.g. export function* namedGenerator() {}
             declared_symbols.append(TSFunction(declaration, file_id, ctx, parent))
         elif declaration.type == "class_declaration":
             # e.g. export class NamedClass {}
             declared_symbols.append(TSClass(declaration, file_id, ctx, parent))
         elif declaration.type in ["variable_declaration", "lexical_declaration"]:
-            if len(arrow_functions := find_all_descendants(declaration, {"arrow_function"}, max_depth=2)) > 0:
+            if (
+                len(
+                    arrow_functions := find_all_descendants(
+                        declaration, {"arrow_function"}, max_depth=2
+                    )
+                )
+                > 0
+            ):
                 # e.g. export const arrowFunction = () => {}, but not export const a = { func: () => null }
                 for arrow_func in arrow_functions:
-                    declared_symbols.append(TSFunction.from_function_type(arrow_func, file_id, ctx, parent))
+                    declared_symbols.append(
+                        TSFunction.from_function_type(arrow_func, file_id, ctx, parent)
+                    )
             else:
                 # e.g. export const a = value;
                 for child in declaration.named_children:
                     if child.type in TSAssignmentStatement.assignment_types:
-                        s = TSAssignmentStatement.from_assignment(declaration, file_id, ctx, parent.parent, pos, assignment_node=child)
+                        s = TSAssignmentStatement.from_assignment(
+                            declaration,
+                            file_id,
+                            ctx,
+                            parent.parent,
+                            pos,
+                            assignment_node=child,
+                        )
                         declared_symbols.extend(s.assignments)
         elif declaration.type == "interface_declaration":
             # e.g. export interface MyInterface {}
@@ -132,16 +157,37 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
 
         exports = []
         for declared_symbol in declared_symbols:
-            name_node = declared_symbol._name_node.ts_node if declared_symbol and declared_symbol._name_node else declaration
-            export = cls(ts_node=declaration, file_node_id=file_id, ctx=ctx, name_node=name_node, declared_symbol=declared_symbol, parent=parent.exports)
+            name_node = (
+                declared_symbol._name_node.ts_node
+                if declared_symbol and declared_symbol._name_node
+                else declaration
+            )
+            export = cls(
+                ts_node=declaration,
+                file_node_id=file_id,
+                ctx=ctx,
+                name_node=name_node,
+                declared_symbol=declared_symbol,
+                parent=parent.exports,
+            )
             exports.append(export)
         return exports
 
     @classmethod
     @noapidoc
-    def from_export_statement_with_value(cls, export_statement: TSNode, value: TSNode, file_id: NodeId, ctx: CodebaseContext, parent: ExportStatement[TSExport], pos: int) -> list[TSExport]:
+    def from_export_statement_with_value(
+        cls,
+        export_statement: TSNode,
+        value: TSNode,
+        file_id: NodeId,
+        ctx: CodebaseContext,
+        parent: ExportStatement[TSExport],
+        pos: int,
+    ) -> list[TSExport]:
         declared_symbols = []
-        exported_name_and_symbol = []  # tuple of export name node and export symbol name
+        exported_name_and_symbol = (
+            []
+        )  # tuple of export name node and export symbol name
         detached_value_node = None
 
         # =====[ Symbol Definitions ]=====
@@ -160,10 +206,16 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
                 if child.type == "pair":
                     key_value = child.child_by_field_name("key")
                     pair_value = child.child_by_field_name("value")
-                    if pair_value.type in [function_type.value for function_type in TSFunctionTypeNames]:
-                        declared_symbols.append(TSFunction(pair_value, file_id, ctx, parent))
+                    if pair_value.type in [
+                        function_type.value for function_type in TSFunctionTypeNames
+                    ]:
+                        declared_symbols.append(
+                            TSFunction(pair_value, file_id, ctx, parent)
+                        )
                     elif pair_value.type == "class":
-                        declared_symbols.append(TSClass(pair_value, file_id, ctx, parent))
+                        declared_symbols.append(
+                            TSClass(pair_value, file_id, ctx, parent)
+                        )
                     else:
                         exported_name_and_symbol.append((key_value, pair_value))
                 elif child.type == "shorthand_property_identifier":
@@ -184,11 +236,33 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
             if declared_symbol is None:
                 name_node = value
             else:
-                name_node = declared_symbol._name_node.ts_node if declared_symbol._name_node else declared_symbol.ts_node
-            export = cls(ts_node=export_statement, file_node_id=file_id, ctx=ctx, name_node=name_node, declared_symbol=declared_symbol, value_node=detached_value_node, parent=parent.exports)
+                name_node = (
+                    declared_symbol._name_node.ts_node
+                    if declared_symbol._name_node
+                    else declared_symbol.ts_node
+                )
+            export = cls(
+                ts_node=export_statement,
+                file_node_id=file_id,
+                ctx=ctx,
+                name_node=name_node,
+                declared_symbol=declared_symbol,
+                value_node=detached_value_node,
+                parent=parent.exports,
+            )
             exports.append(export)
         for name_node, symbol_name_node in exported_name_and_symbol:
-            exports.append(cls(ts_node=export_statement, file_node_id=file_id, ctx=ctx, name_node=name_node, exported_symbol=symbol_name_node, value_node=detached_value_node, parent=parent.exports))
+            exports.append(
+                cls(
+                    ts_node=export_statement,
+                    file_node_id=file_id,
+                    ctx=ctx,
+                    name_node=name_node,
+                    exported_symbol=symbol_name_node,
+                    value_node=detached_value_node,
+                    parent=parent.exports,
+                )
+            )
         return exports
 
     @noapidoc
@@ -198,14 +272,23 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.exported_symbol:
             for frame in self.resolved_type_frames:
                 if frame.parent_frame:
-                    frame.parent_frame.add_usage(self._name_node or self, UsageKind.EXPORTED_SYMBOL, self, self.ctx)
+                    frame.parent_frame.add_usage(
+                        self._name_node or self,
+                        UsageKind.EXPORTED_SYMBOL,
+                        self,
+                        self.ctx,
+                    )
         elif self._exported_symbol:
             if not next(self.resolve_name(self._exported_symbol.source), None):
-                self._exported_symbol._compute_dependencies(UsageKind.BODY, dest=dest or self)
+                self._exported_symbol._compute_dependencies(
+                    UsageKind.BODY, dest=dest or self
+                )
         elif self.value:
             self.value._compute_dependencies(UsageKind.EXPORTED_SYMBOL, self)
 
@@ -215,16 +298,24 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
         """Create Export edges from this export to it's used symbols"""
         if self.declared_symbol is not None:
             assert self.ctx.has_node(self.declared_symbol.node_id)
-            self.ctx.add_edge(self.node_id, self.declared_symbol.node_id, type=EdgeType.EXPORT)
+            self.ctx.add_edge(
+                self.node_id, self.declared_symbol.node_id, type=EdgeType.EXPORT
+            )
         elif self._exported_symbol is not None:
             symbol_name = self._exported_symbol.source
-            if (used_node := next(self.resolve_name(symbol_name), None)) and isinstance(used_node, Importable) and self.ctx.has_node(used_node.node_id):
+            if (
+                (used_node := next(self.resolve_name(symbol_name), None))
+                and isinstance(used_node, Importable)
+                and self.ctx.has_node(used_node.node_id)
+            ):
                 self.ctx.add_edge(self.node_id, used_node.node_id, type=EdgeType.EXPORT)
         elif self.value is not None:
             if isinstance(self.value, Chainable):
                 for resolved in self.value.resolved_types:
                     if self.ctx.has_node(getattr(resolved, "node_id", None)):
-                        self.ctx.add_edge(self.node_id, resolved.node_id, type=EdgeType.EXPORT)
+                        self.ctx.add_edge(
+                            self.node_id, resolved.node_id, type=EdgeType.EXPORT
+                        )
         elif self.name is None:
             # This is the export *; case
             self.ctx.add_edge(self.node_id, self.file_node_id, type=EdgeType.EXPORT)
@@ -258,18 +349,28 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
             bool: True if this is a default export, False otherwise.
         """
         exported_symbol = self.exported_symbol
-        if exported_symbol and isinstance(exported_symbol, TSImport) and exported_symbol.is_default_import():
+        if (
+            exported_symbol
+            and isinstance(exported_symbol, TSImport)
+            and exported_symbol.is_default_import()
+        ):
             return True
 
         # ==== [ Case: Named re-export as default ] ====
         # e.g. export { foo as default } from './other-module';
         exported_symbol = self.exported_symbol
-        if exported_symbol is not None and exported_symbol.node_type == NodeType.IMPORT and exported_symbol.source == self.source:
+        if (
+            exported_symbol is not None
+            and exported_symbol.node_type == NodeType.IMPORT
+            and exported_symbol.source == self.source
+        ):
             return self.name == "default"
 
         # ==== [ Case: Default export ] ====
         # e.g. export default foo; export default { foo }; export = foo; export = { foo };
-        return self.parent.parent.source.startswith("export default ") or self.parent.parent.source.startswith("export = ")
+        return self.parent.parent.source.startswith(
+            "export default "
+        ) or self.parent.parent.source.startswith("export = ")
 
     @reader
     def is_default_symbol_export(self) -> bool:
@@ -289,11 +390,17 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
 
         # ==== [ Case: Default import re-export ] ====
         exported_symbol = self.exported_symbol
-        if exported_symbol is not None and exported_symbol.node_type == NodeType.IMPORT and exported_symbol.source == self.source:
+        if (
+            exported_symbol is not None
+            and exported_symbol.node_type == NodeType.IMPORT
+            and exported_symbol.source == self.source
+        ):
             return self.name == "default"
 
         # === [ Case: Default symbol export ] ====
-        export_object = next((x for x in self.ts_node.children if x.type == "object"), None)
+        export_object = next(
+            (x for x in self.ts_node.children if x.type == "object"), None
+        )
         return export_object is None
 
     @reader
@@ -322,7 +429,11 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
             bool: True if this export re-exports an imported/exported symbol or entire module, False otherwise.
         """
         if exported_symbol := self.exported_symbol:
-            return exported_symbol.node_type == NodeType.IMPORT or exported_symbol.node_type == NodeType.EXPORT or exported_symbol == self.file
+            return (
+                exported_symbol.node_type == NodeType.IMPORT
+                or exported_symbol.node_type == NodeType.EXPORT
+                or exported_symbol == self.file
+            )
         return False
 
     @reader
@@ -345,7 +456,9 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
         Returns:
             bool: True if the export represents a module export, False otherwise.
         """
-        return self.is_wildcard_export() or (self.is_default_export() and not self.is_default_symbol_export())
+        return self.is_wildcard_export() or (
+            self.is_default_export() and not self.is_default_symbol_export()
+        )
 
     @property
     @reader(cache=False)
@@ -376,7 +489,9 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
         Returns:
             Exportable | None: The exported symbol, file, or import, or None if no symbol is exported.
         """
-        return next(iter(self.ctx.successors(self.node_id, edge_type=EdgeType.EXPORT)), None)
+        return next(
+            iter(self.ctx.successors(self.node_id, edge_type=EdgeType.EXPORT)), None
+        )
 
     @property
     @reader
@@ -398,7 +513,10 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
         ix_seen = set()
         resolved_symbol = self.exported_symbol
 
-        while resolved_symbol is not None and (resolved_symbol.node_type == NodeType.IMPORT or resolved_symbol.node_type == NodeType.EXPORT):
+        while resolved_symbol is not None and (
+            resolved_symbol.node_type == NodeType.IMPORT
+            or resolved_symbol.node_type == NodeType.EXPORT
+        ):
             if resolved_symbol in ix_seen:
                 return resolved_symbol
 
@@ -445,14 +563,20 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
                     if usage.match is not None and usage.kind == UsageKind.IMPORTED:
                         # === [ Case: Exported Symbol ] ===
                         # Fixes Exports of the form `export { ... } from ...`
-                        if usage.usage_symbol.source.startswith("export") and usage.match.source == "default":
+                        if (
+                            usage.usage_symbol.source.startswith("export")
+                            and usage.match.source == "default"
+                        ):
                             # Export clause is:
                             # export { default as foo } from ...
                             #        ^^^^^^^^^^^^^^^^^^
                             export_clause = usage.usage_symbol.children[0]
                             for export_specifier in export_clause.children:
                                 # This is the case where `export { ... as ... }`
-                                if len(export_specifier.children) == 2 and export_specifier.children[0] == usage.match:
+                                if (
+                                    len(export_specifier.children) == 2
+                                    and export_specifier.children[0] == usage.match
+                                ):
                                     if export_specifier.children[1].source == self.name:
                                         # Converts `export { default as foo }` to `export { foo }`
                                         export_specifier.edit(self.name)
@@ -460,7 +584,10 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
                                         # Converts `export { default as renamed_foo }` to `export { foo as renamed_foo }`
                                         usage.match.edit(self.name)
                                 # This is the case where `export { ... } from ...`, (specifically `export { default }`)
-                                elif len(export_specifier.children) == 1 and export_specifier.children[0] == usage.match:
+                                elif (
+                                    len(export_specifier.children) == 1
+                                    and export_specifier.children[0] == usage.match
+                                ):
                                     # Converts `export { default }` to `export { foo }`
                                     export_specifier.edit(self.name)
 
@@ -473,7 +600,10 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
                             import_clause = usage.usage_symbol.children[0]
 
                             # Fixes imports of the form `import foo, { ... } from ...`
-                            if len(import_clause.children) > 1 and import_clause.children[0] == usage.match:
+                            if (
+                                len(import_clause.children) > 1
+                                and import_clause.children[0] == usage.match
+                            ):
                                 # This is a terrible hack :skull:
 
                                 # Named imports are:
@@ -483,7 +613,9 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
 
                                 # This converts `import foo, { bar, baz as waz }` to `import { foo, bar, baz as waz }`
                                 import_clause.children[0].remove()  # Remove `foo, `
-                                named_imports.children[0].insert_before(f"{self.name}, ", newline=False)  # Add the `foo, `
+                                named_imports.children[0].insert_before(
+                                    f"{self.name}, ", newline=False
+                                )  # Add the `foo, `
                             # Fixes imports of the form `import foo from ...`
                             else:
                                 # This converts `import foo` to `import { foo }`
@@ -507,9 +639,13 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
     def _resolved_types(self) -> Generator[ResolutionStack[Self], None, None]:
         aliased = self.is_aliased()
         if self.exported_symbol is not None:
-            yield from self.with_resolution_frame(self.exported_symbol, direct=True, aliased=aliased)
+            yield from self.with_resolution_frame(
+                self.exported_symbol, direct=True, aliased=aliased
+            )
         elif self.value is not None:
-            yield from self.with_resolution_frame(self.value, direct=True, aliased=aliased)
+            yield from self.with_resolution_frame(
+                self.value, direct=True, aliased=aliased
+            )
 
     @property
     @noapidoc
@@ -537,7 +673,9 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash((self.filepath, self.range, self.ts_node.kind_id, self.name))
+            self._hash = hash(
+                (self.filepath, self.range, self.ts_node.kind_id, self.name)
+            )
         return self._hash
 
     @reader
@@ -590,7 +728,11 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
             - For `export * from './bar'` -> `import * as _namespace from './bar'`
             - For `export { default as foo } from './bar'` -> `import foo from './bar'`
         """
-        module_path = self.exported_symbol.module.source.strip("'\"") if self.exported_symbol.module is not None else ""
+        module_path = (
+            self.exported_symbol.module.source.strip("'\"")
+            if self.exported_symbol.module is not None
+            else ""
+        )
         type_prefix = "type " if self.is_type_export() else ""
 
         if self.is_wildcard_export():
@@ -599,7 +741,11 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
 
         if self.is_default_export():
             if self.is_type_export() and self.is_aliased():
-                original_name = self.exported_symbol.symbol_name.source if self.exported_symbol.symbol_name is not None else self.exported_symbol.name
+                original_name = (
+                    self.exported_symbol.symbol_name.source
+                    if self.exported_symbol.symbol_name is not None
+                    else self.exported_symbol.name
+                )
                 print(original_name)
                 if original_name == "default":
                     return f"import {type_prefix}{{ default as {self.name} }} from '{module_path}';"
@@ -607,15 +753,32 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
                     return f"import {type_prefix}{{ {original_name} as default }} from '{module_path}';"
 
         # Handle mixed type and value exports
-        if "type" in self.source and "," in self.source and "{" in self.source and "}" in self.source:
-            content = self.source[self.source.index("{") + 1 : self.source.index("}")].strip()
+        if (
+            "type" in self.source
+            and "," in self.source
+            and "{" in self.source
+            and "}" in self.source
+        ):
+            content = self.source[
+                self.source.index("{") + 1 : self.source.index("}")
+            ].strip()
             return f"import {{ {content} }} from '{module_path}';"
 
-        original_name = self.exported_symbol.symbol_name.source if self.exported_symbol.symbol_name is not None else self.exported_symbol.name
+        original_name = (
+            self.exported_symbol.symbol_name.source
+            if self.exported_symbol.symbol_name is not None
+            else self.exported_symbol.name
+        )
         return f"import {{ {original_name} as {self.name} }} from '{module_path}';"
 
     @reader
-    def get_import_string(self, alias: str | None = None, module: str | None = None, import_type: ImportType = ImportType.UNKNOWN, is_type_import: bool = False) -> str:
+    def get_import_string(
+        self,
+        alias: str | None = None,
+        module: str | None = None,
+        import_type: ImportType = ImportType.UNKNOWN,
+        is_type_import: bool = False,
+    ) -> str:
         """Returns the import string for this export.
 
         Args:
@@ -673,7 +836,10 @@ class TSExport(Export["Collection[TSExport, ExportStatement[TSExport]]"], HasVal
             return self.declared_symbol
 
         # For local re-exports (import x; export { x }), use exported_symbol
-        if self.exported_symbol is not None and self.exported_symbol.node_type == NodeType.IMPORT:
+        if (
+            self.exported_symbol is not None
+            and self.exported_symbol.node_type == NodeType.IMPORT
+        ):
             return self.exported_symbol
 
         return None
@@ -701,5 +867,7 @@ class WildcardExport(Chainable, Generic[TExport]):
 
     @noapidoc
     @reader
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         pass

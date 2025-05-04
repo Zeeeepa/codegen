@@ -1,4 +1,5 @@
 import codebase
+
 from codegen import Codebase
 
 # Initialize codebase
@@ -40,7 +41,14 @@ def update_route_decorators(file):
                 route = decorator.source.split('"')[1]
                 method = "get"
                 if "methods=" in decorator.source:
-                    methods = decorator.source.split("methods=")[1].split("]")[0].strip().lower().replace("'", "").replace('"', "")
+                    methods = (
+                        decorator.source.split("methods=")[1]
+                        .split("]")[0]
+                        .strip()
+                        .lower()
+                        .replace("'", "")
+                        .replace('"', "")
+                    )
                     if "post" in methods:
                         method = "post"
                     elif "put" in methods:
@@ -49,7 +57,9 @@ def update_route_decorators(file):
                         method = "delete"
                 new_decorator = f'@app.{method}("{route}")'
                 decorator.edit(new_decorator)
-                print(f"🔄 Updated decorator for function '{function.name}': {new_decorator}")
+                print(
+                    f"🔄 Updated decorator for function '{function.name}': {new_decorator}"
+                )
 
 
 def setup_static_files(file):
@@ -61,7 +71,9 @@ def setup_static_files(file):
     print("✅ Added import: from fastapi.staticfiles import StaticFiles")
 
     # Add app.mount for static file handling
-    file.add_symbol_from_source('app.mount("/static", StaticFiles(directory="static"), name="static")')
+    file.add_symbol_from_source(
+        'app.mount("/static", StaticFiles(directory="static"), name="static")'
+    )
     print("✅ Added app.mount for static file handling")
 
 
@@ -91,9 +103,13 @@ def update_jinja2_syntax(file):
     # Update render_template calls
     for func_call in file.function_calls:
         if func_call.name == "render_template":
-            func_call.set_name("Jinja2Templates(directory='templates').TemplateResponse")
+            func_call.set_name(
+                "Jinja2Templates(directory='templates').TemplateResponse"
+            )
             if len(func_call.args) > 1:
-                context_arg = ", ".join(f"{arg.name}={arg.value}" for arg in func_call.args[1:])
+                context_arg = ", ".join(
+                    f"{arg.name}={arg.value}" for arg in func_call.args[1:]
+                )
                 func_call.set_kwarg("context", f"{'{'}{context_arg}{'}'}")
             func_call.set_kwarg("request", "request")
 

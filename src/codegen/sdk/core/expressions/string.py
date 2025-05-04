@@ -31,13 +31,34 @@ class String(Expression[Parent], Builtin, Generic[Parent]):
     """
 
     content: str
-    content_nodes: Collection[Expression[Editable], Self]  # string content is a collection of string_fragments and escape_sequences in TS and a single string_content in Python
-    expressions: list[Expression[Editable]]  # expressions in the string, only applicable for template strings
+    content_nodes: Collection[
+        Expression[Editable], Self
+    ]  # string content is a collection of string_fragments and escape_sequences in TS and a single string_content in Python
+    expressions: list[
+        Expression[Editable]
+    ]  # expressions in the string, only applicable for template strings
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent=parent)
-        content_children = list(self.children_by_field_types({"string_content", "string_fragment", "escape_sequence"}))
-        self.content_nodes = Collection(ts_node, self.file_node_id, self.ctx, self, delimiter="", children=content_children)
+        content_children = list(
+            self.children_by_field_types(
+                {"string_content", "string_fragment", "escape_sequence"}
+            )
+        )
+        self.content_nodes = Collection(
+            ts_node,
+            self.file_node_id,
+            self.ctx,
+            self,
+            delimiter="",
+            children=content_children,
+        )
         self.content = "".join(x.ts_node.text.decode("utf-8") for x in content_children)
 
     @reader
@@ -64,7 +85,9 @@ class String(Expression[Parent], Builtin, Generic[Parent]):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         # If the string is a template string, we need to compute the dependencies of the string content
         for expression in self.expressions:
             expression._compute_dependencies(usage_type, dest)

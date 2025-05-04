@@ -42,7 +42,13 @@ class TSPromiseChain:
             attribute_chain: A list of function calls or a Name object representing the Promise chain
         """
         # Parse the chain and assign all attributes
-        (self.base_chain, self.then_chain, self.catch_call, self.finally_call, self.after_promise_chain) = self._parse_chain(attribute_chain)
+        (
+            self.base_chain,
+            self.then_chain,
+            self.catch_call,
+            self.finally_call,
+            self.after_promise_chain,
+        ) = self._parse_chain(attribute_chain)
 
         self.base_attribute = self.base_chain[-1].parent.object
         self.parent_statement = self.base_chain[0].parent_statement
@@ -50,10 +56,20 @@ class TSPromiseChain:
         self.parent_class = self.parent_statement.parent_class
         self.declared_vars = set()
         self.base_indent = " " * self.parent_statement._get_indent()
-        self.name = self.base_chain[0].source if isinstance(self.base_chain[0], Name) else self.base_chain[0].name
+        self.name = (
+            self.base_chain[0].source
+            if isinstance(self.base_chain[0], Name)
+            else self.base_chain[0].name
+        )
 
     @reader
-    def _parse_chain(self, attribute_chain: list[FunctionCall | Name]) -> tuple[list[FunctionCall], list[FunctionCall], FunctionCall | None, FunctionCall | None, list[FunctionCall | Name]]:
+    def _parse_chain(self, attribute_chain: list[FunctionCall | Name]) -> tuple[
+        list[FunctionCall],
+        list[FunctionCall],
+        FunctionCall | None,
+        FunctionCall | None,
+        list[FunctionCall | Name],
+    ]:
         """Parse the Promise chain into its component parts.
 
         Args:
@@ -159,11 +175,17 @@ class TSPromiseChain:
             bool: True if an anonymous function wrapper is needed
         """
         statements = arrow_fn.code_block.get_statements()
-        return_count = sum(1 for stmt in statements if stmt.statement_type == StatementType.RETURN_STATEMENT)
+        return_count = sum(
+            1
+            for stmt in statements
+            if stmt.statement_type == StatementType.RETURN_STATEMENT
+        )
         return return_count > 1
 
     @reader
-    def format_param_assignment(self, params: list[str], base_expr: str, declare: bool = True) -> str:
+    def format_param_assignment(
+        self, params: list[str], base_expr: str, declare: bool = True
+    ) -> str:
         """Format parameter assignment with proper let declaration if needed.
 
         Args:
@@ -209,7 +231,9 @@ class TSPromiseChain:
         return new_handle
 
     @reader
-    def handle_then_block(self, call: FunctionCall, next_call: FunctionCall | None = None) -> str:
+    def handle_then_block(
+        self, call: FunctionCall, next_call: FunctionCall | None = None
+    ) -> str:
         from codegen.sdk.typescript.function import TSFunction
 
         """Format a then block in the promise chain.
@@ -241,7 +265,9 @@ class TSPromiseChain:
             formatted_statements.append(f"{self.base_indent}{anon_block}")
 
         elif self._is_implicit_return(arrow_fn):
-            implicit_block = self._handle_last_block_implicit_return(statements, is_catch=False)
+            implicit_block = self._handle_last_block_implicit_return(
+                statements, is_catch=False
+            )
             formatted_statements.append(f"{self.base_indent}{implicit_block}")
         else:
             for stmt in statements:
@@ -250,16 +276,24 @@ class TSPromiseChain:
                     next_params = self.get_next_call_params(next_call)
                     await_expression = f"await {return_value}"
                     if next_params:
-                        formatted_statements.append(f"{self.base_indent}{self.format_param_assignment(next_params, await_expression, declare=True)}")
+                        formatted_statements.append(
+                            f"{self.base_indent}{self.format_param_assignment(next_params, await_expression, declare=True)}"
+                        )
                     else:
-                        formatted_statements.append(f"{self.base_indent}{await_expression}")
+                        formatted_statements.append(
+                            f"{self.base_indent}{await_expression}"
+                        )
                 else:
-                    formatted_statements.append(f"{self.base_indent}{stmt.source.strip()}")
+                    formatted_statements.append(
+                        f"{self.base_indent}{stmt.source.strip()}"
+                    )
 
         return "\n".join(formatted_statements)
 
     @reader
-    def parse_last_then_block(self, call: FunctionCall, assignment_variable_name: str | None = None) -> str:
+    def parse_last_then_block(
+        self, call: FunctionCall, assignment_variable_name: str | None = None
+    ) -> str:
         from codegen.sdk.typescript.function import TSFunction
 
         """Parse the last .then() block in the chain.
@@ -280,22 +314,33 @@ class TSPromiseChain:
         statements = arrow_fn.code_block.statements
 
         if self._needs_anonymous_function(arrow_fn):
-            return self._format_anonymous_function(arrow_fn, assignment_variable_name=assignment_variable_name)
+            return self._format_anonymous_function(
+                arrow_fn, assignment_variable_name=assignment_variable_name
+            )
 
         if self._is_implicit_return(arrow_fn):
-            return self._handle_last_block_implicit_return(statements, assignment_variable_name=assignment_variable_name)
+            return self._handle_last_block_implicit_return(
+                statements, assignment_variable_name=assignment_variable_name
+            )
         else:
             formatted_statements = []
             for stmt in statements:
                 if stmt.statement_type == StatementType.RETURN_STATEMENT:
-                    return_value = self._handle_last_block_normal_return(stmt, assignment_variable_name=assignment_variable_name)
+                    return_value = self._handle_last_block_normal_return(
+                        stmt, assignment_variable_name=assignment_variable_name
+                    )
                     formatted_statements.append(return_value)
                 else:
                     formatted_statements.append(stmt.source.strip())
             return "\n".join(formatted_statements)
 
     @reader
-    def _handle_last_block_normal_return(self, stmt: Statement, is_catch: bool = False, assignment_variable_name: str | None = None) -> str:
+    def _handle_last_block_normal_return(
+        self,
+        stmt: Statement,
+        is_catch: bool = False,
+        assignment_variable_name: str | None = None,
+    ) -> str:
         """Handle a normal return statement in the last block of a Promise chain.
 
         Args:
@@ -308,7 +353,9 @@ class TSPromiseChain:
         """
         return_value = stmt.source[7:].strip()  # Remove 'return ' prefix
 
-        var_name = assignment_variable_name if assignment_variable_name else self.assigned_var
+        var_name = (
+            assignment_variable_name if assignment_variable_name else self.assigned_var
+        )
         if var_name:
             return self.format_param_assignment([var_name], return_value)
         elif self.is_return_statement:
@@ -323,7 +370,12 @@ class TSPromiseChain:
                 return f"await {return_value}"
 
     @reader
-    def _handle_last_block_implicit_return(self, statements: MultiLineCollection[Statement], is_catch: bool = False, assignment_variable_name: str | None = None) -> str:
+    def _handle_last_block_implicit_return(
+        self,
+        statements: MultiLineCollection[Statement],
+        is_catch: bool = False,
+        assignment_variable_name: str | None = None,
+    ) -> str:
         """Handle an implicit return in the last block of a Promise chain.
 
         Args:
@@ -335,9 +387,14 @@ class TSPromiseChain:
             str: Formatted implicit return code
         """
         stmt_source = statements[0].source.strip()
-        var_name = assignment_variable_name if assignment_variable_name else self.assigned_var
+        var_name = (
+            assignment_variable_name if assignment_variable_name else self.assigned_var
+        )
 
-        if any(stmt_source.startswith(console_method) for console_method in self.log_statements):
+        if any(
+            stmt_source.startswith(console_method)
+            for console_method in self.log_statements
+        ):
             return stmt_source + ";"
         elif is_catch:
             return "throw " + stmt_source + ";"
@@ -349,7 +406,9 @@ class TSPromiseChain:
             return "await " + stmt_source + ";"
 
     @reader
-    def handle_catch_block(self, call: FunctionCall, assignment_variable_name: str | None = None) -> str:
+    def handle_catch_block(
+        self, call: FunctionCall, assignment_variable_name: str | None = None
+    ) -> str:
         """Handle catch block in the promise chain.
 
         Args:
@@ -375,19 +434,31 @@ class TSPromiseChain:
 
         # adds annonymous function if catch block handler has ambiguous returns
         if self._needs_anonymous_function(arrow_fn):
-            anon_block = self._format_anonymous_function(arrow_fn, assignment_variable_name=assignment_variable_name)
+            anon_block = self._format_anonymous_function(
+                arrow_fn, assignment_variable_name=assignment_variable_name
+            )
             formatted_statements.append(f"{self.base_indent}{anon_block}")
 
         elif self._is_implicit_return(arrow_fn):
-            implicit_block = self._handle_last_block_implicit_return(statements, is_catch=True, assignment_variable_name=assignment_variable_name)
+            implicit_block = self._handle_last_block_implicit_return(
+                statements,
+                is_catch=True,
+                assignment_variable_name=assignment_variable_name,
+            )
             formatted_statements.append(f"{self.base_indent}{implicit_block}")
         else:
             for stmt in statements:
                 if stmt.statement_type == StatementType.RETURN_STATEMENT:
-                    return_block = self._handle_last_block_normal_return(stmt, is_catch=True, assignment_variable_name=assignment_variable_name)
+                    return_block = self._handle_last_block_normal_return(
+                        stmt,
+                        is_catch=True,
+                        assignment_variable_name=assignment_variable_name,
+                    )
                     formatted_statements.append(f"{self.base_indent}{return_block}")
                 else:
-                    formatted_statements.append(f"{self.base_indent}{stmt.source.strip()}")
+                    formatted_statements.append(
+                        f"{self.base_indent}{stmt.source.strip()}"
+                    )
 
         return "\n".join(formatted_statements)
 
@@ -416,7 +487,9 @@ class TSPromiseChain:
         return "\n".join(formatted_statements)
 
     @writer
-    def convert_to_async_await(self, assignment_variable_name: str | None = None, inplace_edit: bool = True) -> str | None:
+    def convert_to_async_await(
+        self, assignment_variable_name: str | None = None, inplace_edit: bool = True
+    ) -> str | None:
         """Convert the promise chain to async/await syntax.
 
         Args:
@@ -441,14 +514,20 @@ class TSPromiseChain:
 
             # if it's the last then block, then parse differently
             if is_last_then:
-                formatted_block = self.parse_last_then_block(then_call, assignment_variable_name=assignment_variable_name)
+                formatted_block = self.parse_last_then_block(
+                    then_call, assignment_variable_name=assignment_variable_name
+                )
             else:
-                next_call = self.then_chain[idx + 1] if idx + 1 < len(self.then_chain) else None
+                next_call = (
+                    self.then_chain[idx + 1] if idx + 1 < len(self.then_chain) else None
+                )
                 formatted_block = self.handle_then_block(then_call, next_call)
             formatted_blocks.append(f"{self.base_indent}{formatted_block}")
 
         if self.catch_call:
-            catch_block = self.handle_catch_block(self.catch_call, assignment_variable_name=assignment_variable_name)
+            catch_block = self.handle_catch_block(
+                self.catch_call, assignment_variable_name=assignment_variable_name
+            )
             formatted_blocks.append(catch_block)
 
         if self.finally_call:
@@ -487,10 +566,18 @@ class TSPromiseChain:
             return False
 
         stmt = statements[0]
-        return not stmt.statement_type == StatementType.COMMENT and not arrow_fn.code_block.source.strip().startswith("{")
+        return (
+            not stmt.statement_type == StatementType.COMMENT
+            and not arrow_fn.code_block.source.strip().startswith("{")
+        )
 
     @reader
-    def _format_anonymous_function(self, arrow_fn: TSFunction, next_call: FunctionCall | None = None, assignment_variable_name: str | None = None) -> str:
+    def _format_anonymous_function(
+        self,
+        arrow_fn: TSFunction,
+        next_call: FunctionCall | None = None,
+        assignment_variable_name: str | None = None,
+    ) -> str:
         """Format an arrow function as an anonymous async function.
 
         Args:
@@ -505,12 +592,16 @@ class TSPromiseChain:
         params_str = ", ".join(p.source for p in params) if params else ""
         lines = []
 
-        var_name = assignment_variable_name if assignment_variable_name else self.assigned_var
+        var_name = (
+            assignment_variable_name if assignment_variable_name else self.assigned_var
+        )
 
         if next_call and next_call.name == "then":
             next_params = self.get_next_call_params(next_call)
             if next_params:
-                lines.append(f"{self.base_indent}{self.format_param_assignment(next_params, f'await (async ({params_str}) => {{', declare=True)}")
+                lines.append(
+                    f"{self.base_indent}{self.format_param_assignment(next_params, f'await (async ({params_str}) => {{', declare=True)}"
+                )
         else:
             prefix = ""
             if self.is_return_statement:

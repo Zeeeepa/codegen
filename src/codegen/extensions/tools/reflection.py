@@ -27,9 +27,13 @@ class ReflectionObservation(Observation):
 
     context_summary: str = Field(description="Summary of the current context")
     findings: str = Field(description="Key information and insights gathered")
-    challenges: Optional[str] = Field(None, description="Current obstacles or questions")
+    challenges: Optional[str] = Field(
+        None, description="Current obstacles or questions"
+    )
     focus: Optional[str] = Field(None, description="Specific aspect focused on")
-    sections: list[ReflectionSection] = Field(description="Structured reflection sections")
+    sections: list[ReflectionSection] = Field(
+        description="Structured reflection sections"
+    )
 
     str_template: ClassVar[str] = "Reflection on: {focus}"
 
@@ -105,10 +109,17 @@ def parse_reflection_response(response: str) -> list[ReflectionSection]:
 
     for line in lines:
         # Check if this is a section header (starts with ## or #)
-        if line.startswith("## ") or (line.startswith("# ") and not line.startswith("# Reflection")):
+        if line.startswith("## ") or (
+            line.startswith("# ") and not line.startswith("# Reflection")
+        ):
             # If we have a current section, save it before starting a new one
             if current_section:
-                sections.append(ReflectionSection(title=current_section, content="\n".join(current_content).strip()))
+                sections.append(
+                    ReflectionSection(
+                        title=current_section,
+                        content="\n".join(current_content).strip(),
+                    )
+                )
                 current_content = []
 
             # Extract the new section title
@@ -119,7 +130,11 @@ def parse_reflection_response(response: str) -> list[ReflectionSection]:
 
     # Add the last section if there is one
     if current_section and current_content:
-        sections.append(ReflectionSection(title=current_section, content="\n".join(current_content).strip()))
+        sections.append(
+            ReflectionSection(
+                title=current_section, content="\n".join(current_content).strip()
+            )
+        )
 
     return sections
 

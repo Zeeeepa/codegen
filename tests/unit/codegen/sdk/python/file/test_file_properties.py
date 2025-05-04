@@ -27,19 +27,25 @@ class MySubClass(MyClass):
 
 
 def test_file_get_extensions(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_extensions() == [".py"]
 
 
 def test_file_extension(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.extension == ".py"
 
 
 def test_file_from_content(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         new_file = PyFile.from_content("test_new.py", default_content, codebase.ctx)
         assert new_file.name == "test_new"
         assert new_file.content == default_content
@@ -55,13 +61,17 @@ def calculate_average(numbers)
         total += num
     return total / len(numbers
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         new_file = PyFile.from_content("test_new.py", content, codebase.ctx)
         assert new_file is None
 
 
 def test_file_create_from_filepath(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         new_file = PyFile.create_from_filepath("test_new.py", codebase.ctx)
         assert new_file.name == "test_new"
         assert new_file.content == ""
@@ -69,19 +79,25 @@ def test_file_create_from_filepath(tmpdir) -> None:
 
 
 def test_file_content(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.content == default_content
 
 
 def test_file_content_bytes(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.content_bytes == default_content.encode()
 
 
 def test_file_write(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         new_content = "new content"
         file.write(new_content)
@@ -89,7 +105,9 @@ def test_file_write(tmpdir) -> None:
 
 
 def test_file_write_bytes(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         new_content = "new content"
         file.write_bytes(new_content.encode())
@@ -117,17 +135,32 @@ from dir1.file1 import MyClass, global_var_2
 def fizzle():
     return MyClass() + global_var_2
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir1/file1.py": default_content, "dir2/file2.py": content2, "dir3/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir1/file1.py": default_content,
+            "dir2/file2.py": content2,
+            "dir3/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir1/file1.py")
         file2 = codebase.get_file("dir2/file2.py")
 
         assert all(isinstance(imp, PyImport) for imp in file1.inbound_imports)
         assert len(file1.inbound_imports) == 4
-        assert set((imp.file.name, imp.name) for imp in file1.inbound_imports) == {("file2", "f"), ("file2", "b"), ("file3", "MyClass"), ("file3", "global_var_2")}
+        assert set((imp.file.name, imp.name) for imp in file1.inbound_imports) == {
+            ("file2", "f"),
+            ("file2", "b"),
+            ("file3", "MyClass"),
+            ("file3", "global_var_2"),
+        }
 
         assert all(isinstance(imp, PyImport) for imp in file2.inbound_imports)
         assert len(file2.inbound_imports) == 2
-        assert set((imp.file.name, imp.name) for imp in file2.inbound_imports) == {("file3", "buzz"), ("file3", "f")}
+        assert set((imp.file.name, imp.name) for imp in file2.inbound_imports) == {
+            ("file3", "buzz"),
+            ("file3", "f"),
+        }
 
 
 def test_file_inbound_indirect_imports(tmpdir) -> None:
@@ -144,11 +177,19 @@ def buzz():
 def fizz():
     return new_x()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir1/file1.py": default_content, "dir2/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir1/file1.py": default_content, "dir2/file2.py": content2},
+    ) as codebase:
         file1 = codebase.get_file("dir1/file1.py")
         assert all(isinstance(imp, PyImport) for imp in file1.inbound_imports)
         assert len(file1.inbound_imports) == 4
-        assert set(imp.name for imp in file1.inbound_imports) == {"np", "new_x", "y", "z"}
+        assert set(imp.name for imp in file1.inbound_imports) == {
+            "np",
+            "new_x",
+            "y",
+            "z",
+        }
 
 
 def test_file_inbound_module_imports(tmpdir) -> None:
@@ -178,17 +219,31 @@ from dir1 import file1
 def baz():
     return f2.fizzle() + file1.global_var_1
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir1/file1.py": default_content, "dir2/file2.py": content2, "dir3/file3.py": content3, "dir4/file4.py": content4}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir1/file1.py": default_content,
+            "dir2/file2.py": content2,
+            "dir3/file3.py": content3,
+            "dir4/file4.py": content4,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir1/file1.py")
         file2 = codebase.get_file("dir2/file2.py")
 
         assert all(isinstance(imp, PyImport) for imp in file1.inbound_imports)
         assert len(file1.inbound_imports) == 2
-        assert set((imp.file.name, imp.name) for imp in file1.inbound_imports) == {("file2", "file1"), ("file4", "file1")}
+        assert set((imp.file.name, imp.name) for imp in file1.inbound_imports) == {
+            ("file2", "file1"),
+            ("file4", "file1"),
+        }
 
         assert all(isinstance(imp, PyImport) for imp in file2.inbound_imports)
         assert len(file2.inbound_imports) == 2
-        assert set((imp.file.name, imp.name) for imp in file2.inbound_imports) == {("file3", "file1"), ("file4", "f2")}
+        assert set((imp.file.name, imp.name) for imp in file2.inbound_imports) == {
+            ("file3", "file1"),
+            ("file4", "f2"),
+        }
 
 
 def test_file_inbound_imports_wildcard_import(tmpdir) -> None:
@@ -203,7 +258,10 @@ def buzz():
 def fizz():
     return bar()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir1/file1.py": default_content, "dir2/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir1/file1.py": default_content, "dir2/file2.py": content2},
+    ) as codebase:
         file1 = codebase.get_file("dir1/file1.py")
         file2 = codebase.get_file("dir2/file2.py")
         assert all(isinstance(imp, PyImport) for imp in file1.inbound_imports)
@@ -241,15 +299,27 @@ from dir import file2
 def fizzle():
     return file1.foo() + file2.baz()
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
         assert all(isinstance(importer, PyImport) for importer in file1.importers)
         assert all(isinstance(importer, PyImport) for importer in file2.importers)
         assert all(isinstance(importer, PyImport) for importer in file3.importers)
-        assert [imp.source for imp in file1.importers] == [file2.get_import("file1").source, file3.get_import("file1").source]
-        assert [imp.source for imp in file2.importers] == [file3.get_import("file2").source]
+        assert [imp.source for imp in file1.importers] == [
+            file2.get_import("file1").source,
+            file3.get_import("file1").source,
+        ]
+        assert [imp.source for imp in file2.importers] == [
+            file3.get_import("file2").source
+        ]
         assert file3.importers == []
 
 
@@ -277,15 +347,27 @@ from dir import file2
 def fizzle():
     return file1.foo() + file2.baz()
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         file3 = codebase.get_file("dir/file3.py")
         assert all(isinstance(importer, PyImport) for importer in file1.importers)
         assert all(isinstance(importer, PyImport) for importer in file2.importers)
         assert all(isinstance(importer, PyImport) for importer in file3.importers)
-        assert [imp.source for imp in file1.importers] == [file2.get_import("dir.file1").source, file3.get_import("file1").source]
-        assert [imp.source for imp in file2.importers] == [file3.get_import("file2").source]
+        assert [imp.source for imp in file1.importers] == [
+            file2.get_import("dir.file1").source,
+            file3.get_import("file1").source,
+        ]
+        assert [imp.source for imp in file2.importers] == [
+            file3.get_import("file2").source
+        ]
         assert file3.importers == []
 
 
@@ -336,10 +418,19 @@ import numpy as np
 
 
 def test_file_symbols(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert len(file.symbols) == 6
-        assert [sym.name for sym in file.symbols] == ["global_var_1", "global_var_2", "foo", "bar", "MyClass", "MySubClass"]
+        assert [sym.name for sym in file.symbols] == [
+            "global_var_1",
+            "global_var_2",
+            "foo",
+            "bar",
+            "MyClass",
+            "MySubClass",
+        ]
 
 
 def test_file_symbol_ordering(tmpdir) -> None:
@@ -359,7 +450,9 @@ def baz():
     return foo() + bar()
 
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": python_code}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": python_code}
+    ) as codebase:
         file = codebase.get_file("test.py")
 
         # =====[ Start position sort ]=====
@@ -387,7 +480,9 @@ def baz():
 
 
 def test_file_get_symbol(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
 
         global_var = file.get_symbol("global_var_1")
@@ -408,34 +503,49 @@ def test_file_get_symbol(tmpdir) -> None:
 
 
 def test_file_get_symbol_not_found(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_symbol("__init__") is None
 
 
 def test_file_global_vars(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert len(file.global_vars) == 2
-        assert all(isinstance(global_var, PyAssignment) for global_var in file.global_vars)
-        assert [global_var.name for global_var in file.global_vars] == ["global_var_1", "global_var_2"]
+        assert all(
+            isinstance(global_var, PyAssignment) for global_var in file.global_vars
+        )
+        assert [global_var.name for global_var in file.global_vars] == [
+            "global_var_1",
+            "global_var_2",
+        ]
 
 
 def test_file_get_global_var(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_global_var("global_var_1").name == "global_var_1"
         assert file.get_global_var("global_var_2").name == "global_var_2"
 
 
 def test_file_get_global_var_not_found(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_global_var("not_found") is None
 
 
 def test_file_classes(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert len(file.classes) == 2
         assert all(isinstance(cls, PyClass) for cls in file.classes)
@@ -443,20 +553,26 @@ def test_file_classes(tmpdir) -> None:
 
 
 def test_file_get_class(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_class("MyClass").name == "MyClass"
         assert file.get_class("MySubClass").name == "MySubClass"
 
 
 def test_file_get_class_not_found(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_class("not_found") is None
 
 
 def test_file_functions(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert len(file.functions) == 2
         assert all(isinstance(func, PyFunction) for func in file.functions)
@@ -464,20 +580,26 @@ def test_file_functions(tmpdir) -> None:
 
 
 def test_file_get_function(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_function("foo").name == "foo"
         assert file.get_function("bar").name == "bar"
 
 
 def test_file_get_function_not_found(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_function("__init__") is None
 
 
 def test_file_get_node_by_name(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_node_by_name("x").name == "x"
         assert file.get_node_by_name("y").name == "y"
@@ -491,13 +613,17 @@ def test_file_get_node_by_name(tmpdir) -> None:
 
 
 def test_file_get_node_by_name_not_found(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.get_node_by_name("not_found") is None
 
 
 def test_file_valid_symbol_names(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": default_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": default_content}
+    ) as codebase:
         file = codebase.get_file("test.py")
         assert file.valid_symbol_names == {
             "x": file.get_import("x"),

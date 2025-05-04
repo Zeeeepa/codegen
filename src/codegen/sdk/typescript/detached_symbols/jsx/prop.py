@@ -26,7 +26,13 @@ class JSXProp(Expression["Function | JSXElement | JSXProp"], HasName, HasValue):
     _name_node: Name | None
     _expression_node: JSXExpression | None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: "Function | JSXElement | JSXProp") -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: "Function | JSXElement | JSXProp",
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         self._name_node = self._parse_expression(self.ts_node.children[0], default=Name)
         if len(self.ts_node.children) > 2:
@@ -111,6 +117,8 @@ class JSXProp(Expression["Function | JSXElement | JSXProp"], HasName, HasValue):
     @commiter
     @noapidoc
     @override
-    def _compute_dependencies(self, usage_type: UsageKind, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: HasName | None = None
+    ) -> None:
         for node in self.children:
             node._compute_dependencies(usage_type, dest=dest)

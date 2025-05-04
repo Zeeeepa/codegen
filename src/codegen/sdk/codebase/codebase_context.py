@@ -14,7 +14,10 @@ from rustworkx import PyDiGraph, WeightedEdgeList
 from codegen.configs.models.codebase import CodebaseConfig, PinkMode
 from codegen.configs.models.secrets import SecretsConfig
 from codegen.sdk.codebase.config import ProjectConfig, SessionOptions
-from codegen.sdk.codebase.config_parser import ConfigParser, get_config_parser_for_language
+from codegen.sdk.codebase.config_parser import (
+    ConfigParser,
+    get_config_parser_for_language,
+)
 from codegen.sdk.codebase.diff_lite import ChangeType, DiffLite
 from codegen.sdk.codebase.flagging.flags import Flags
 from codegen.sdk.codebase.io.file_io import FileIO
@@ -23,8 +26,14 @@ from codegen.sdk.codebase.transaction_manager import TransactionManager
 from codegen.sdk.codebase.validation import get_edges, post_reset_validation
 from codegen.sdk.core.autocommit import AutoCommit, commiter
 from codegen.sdk.core.directory import Directory
-from codegen.sdk.core.external.dependency_manager import DependencyManager, get_dependency_manager
-from codegen.sdk.core.external.language_engine import LanguageEngine, get_language_engine
+from codegen.sdk.core.external.dependency_manager import (
+    DependencyManager,
+    get_dependency_manager,
+)
+from codegen.sdk.core.external.language_engine import (
+    LanguageEngine,
+    get_language_engine,
+)
 from codegen.sdk.enums import Edge, EdgeType, NodeType
 from codegen.sdk.extensions.sort import sort_editables
 from codegen.sdk.extensions.utils import uncache_all
@@ -89,7 +98,9 @@ def get_node_classes(programming_language: ProgrammingLanguage) -> NodeClasses:
 
         return TSNodeClasses
     else:
-        from codegen.sdk.codebase.node_classes.generic_node_classes import GenericNodeClasses
+        from codegen.sdk.codebase.node_classes.generic_node_classes import (
+            GenericNodeClasses,
+        )
 
         return GenericNodeClasses
 
@@ -108,8 +119,12 @@ class CodebaseContext:
 
     # =====[ computed attributes ]=====
     transaction_manager: TransactionManager
-    pending_syncs: list[DiffLite]  # Diffs that have been applied to disk, but not the graph (to be used for sync graph)
-    all_syncs: list[DiffLite]  # All diffs that have been applied to the graph (to be used for graph reset)
+    pending_syncs: list[
+        DiffLite
+    ]  # Diffs that have been applied to disk, but not the graph (to be used for sync graph)
+    all_syncs: list[
+        DiffLite
+    ]  # All diffs that have been applied to the graph (to be used for graph reset)
     _autocommit: AutoCommit
     generation: int
     parser: Parser[Expression]
@@ -165,7 +180,11 @@ class CodebaseContext:
         self.secrets = secrets or SecretsConfig()
         self.repo_name = context.repo_operator.repo_name
         self.repo_path = str(Path(context.repo_operator.repo_path).resolve())
-        self.full_path = os.path.join(self.repo_path, context.base_path) if context.base_path else self.repo_path
+        self.full_path = (
+            os.path.join(self.repo_path, context.base_path)
+            if context.base_path
+            else self.repo_path
+        )
         self.codeowners_parser = context.repo_operator.codeowners_parser
         self.base_url = context.repo_operator.base_url
         if not self.config.allow_external:
@@ -179,18 +198,29 @@ class CodebaseContext:
         self.init_nodes = None
         self.init_edges = None
         self.directories = dict()
-        self.parser = Parser.from_node_classes(self.node_classes, log_parse_warnings=self.config.debug)
+        self.parser = Parser.from_node_classes(
+            self.node_classes, log_parse_warnings=self.config.debug
+        )
         self.extensions = self.node_classes.file_cls.get_extensions()
         # ORDER IS IMPORTANT HERE!
-        self.config_parser = get_config_parser_for_language(context.programming_language, self)
-        self.dependency_manager = get_dependency_manager(context.programming_language, self)
+        self.config_parser = get_config_parser_for_language(
+            context.programming_language, self
+        )
+        self.dependency_manager = get_dependency_manager(
+            context.programming_language, self
+        )
         self.language_engine = get_language_engine(context.programming_language, self)
         self.programming_language = context.programming_language
 
         # Raise warning if language is not supported
-        if self.programming_language is ProgrammingLanguage.UNSUPPORTED or self.programming_language is ProgrammingLanguage.OTHER:
+        if (
+            self.programming_language is ProgrammingLanguage.UNSUPPORTED
+            or self.programming_language is ProgrammingLanguage.OTHER
+        ):
             logger.warning("WARNING: The codebase is using an unsupported language!")
-            logger.warning("Some features may not work as expected. Advanced static analysis will be disabled but simple file IO will still work.")
+            logger.warning(
+                "Some features may not work as expected. Advanced static analysis will be disabled but simple file IO will still work."
+            )
 
         # Assert config assertions
         # External import resolution must be enabled if syspath is enabled
@@ -200,7 +230,10 @@ class CodebaseContext:
                 raise ValueError(msg)
 
         # Build the graph
-        if not self.config.exp_lazy_graph and self.config.use_pink != PinkMode.ALL_FILES:
+        if (
+            not self.config.exp_lazy_graph
+            and self.config.use_pink != PinkMode.ALL_FILES
+        ):
             self.build_graph(context.repo_operator)
         try:
             self.synced_commit = context.repo_operator.head_commit
@@ -238,9 +271,15 @@ class CodebaseContext:
         if self.config.disable_file_parse:
             logger.warning("WARNING: File parsing is disabled!")
         else:
-            for filepath, _ in repo_operator.iter_files(subdirs=self.projects[0].subdirectories, extensions=self.extensions, ignore_list=GLOBAL_FILE_IGNORE_LIST):
+            for filepath, _ in repo_operator.iter_files(
+                subdirs=self.projects[0].subdirectories,
+                extensions=self.extensions,
+                ignore_list=GLOBAL_FILE_IGNORE_LIST,
+            ):
                 syncs[SyncType.ADD].append(self.to_absolute(filepath))
-        logger.info(f"> Parsing {len(syncs[SyncType.ADD])} files in {self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions")
+        logger.info(
+            f"> Parsing {len(syncs[SyncType.ADD])} files in {self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions"
+        )
         self._process_diff_files(syncs, incremental=False)
         files: list[SourceFile] = self.get_nodes(NodeType.FILE)
         logger.info(f"> Found {len(files)} files")
@@ -253,7 +292,9 @@ class CodebaseContext:
     def apply_diffs(self, diff_list: list[DiffLite]) -> None:
         """Applies the given set of diffs to the graph in order to match the current file system content"""
         if self.session_options:
-            self.session_options = self.session_options.model_copy(update={"max_seconds": None})
+            self.session_options = self.session_options.model_copy(
+                update={"max_seconds": None}
+            )
         logger.info(f"Applying {len(diff_list)} diffs to graph")
         files_to_sync: dict[Path, SyncType] = {}
         # Gather list of deleted files, new files to add, and modified files to reparse
@@ -263,7 +304,10 @@ class CodebaseContext:
             filepath = Path(diff.path)
             if extensions is not None and filepath.suffix not in extensions:
                 continue
-            if self.projects[0].subdirectories is not None and not any(filepath.relative_to(subdir) for subdir in self.projects[0].subdirectories):
+            if self.projects[0].subdirectories is not None and not any(
+                filepath.relative_to(subdir)
+                for subdir in self.projects[0].subdirectories
+            ):
                 continue
 
             if diff.change_type == ChangeType.Added:
@@ -320,7 +364,9 @@ class CodebaseContext:
             elif sync.change_type == ChangeType.Added:
                 files_to_remove.append(sync.path)
                 modified_files.add(sync.path)
-        logger.info(f"Writing {len(files_to_write)} files to disk and removing {len(files_to_remove)} files")
+        logger.info(
+            f"Writing {len(files_to_write)} files to disk and removing {len(files_to_remove)} files"
+        )
         for file in files_to_remove:
             self.io.delete_file(file)
         to_save = set()
@@ -341,7 +387,9 @@ class CodebaseContext:
         self.io.check_changes()
         self.pending_syncs.clear()  # Discard pending changes
         if len(self.all_syncs) > 0:
-            logger.info(f"Unapplying {len(self.all_syncs)} diffs to graph. Current graph commit: {self.synced_commit}")
+            logger.info(
+                f"Unapplying {len(self.all_syncs)} diffs to graph. Current graph commit: {self.synced_commit}"
+            )
             self._revert_diffs(list(reversed(self.all_syncs)))
         self.all_syncs.clear()
 
@@ -349,13 +397,22 @@ class CodebaseContext:
     @commiter(reset=True)
     def _revert_diffs(self, diff_list: list[DiffLite]) -> None:
         """Resets the graph to its initial solve branch file state"""
-        reversed_diff_list = list(DiffLite.from_reverse_diff(diff) for diff in diff_list)
+        reversed_diff_list = list(
+            DiffLite.from_reverse_diff(diff) for diff in diff_list
+        )
         self._autocommit.reset()
         self.apply_diffs(reversed_diff_list)
         # ====== [ Re-resolve lost edges from previous syncs ] ======
         self.prune_graph()
         if self.config.verify_graph:
-            post_reset_validation(self.old_graph.nodes(), self._graph.nodes(), get_edges(self.old_graph), get_edges(self._graph), self.repo_name, self.projects[0].subdirectories)
+            post_reset_validation(
+                self.old_graph.nodes(),
+                self._graph.nodes(),
+                get_edges(self.old_graph),
+                get_edges(self._graph),
+                self.repo_name,
+                self.projects[0].subdirectories,
+            )
 
     def save_commit(self, commit: GitCommit) -> None:
         if commit is not None:
@@ -389,7 +446,12 @@ class CodebaseContext:
             directory = self.get_directory(file_path.parent, create_on_missing=True)
             directory._add_file(file_path.name)
 
-    def get_directory(self, directory_path: PathLike, create_on_missing: bool = False, ignore_case: bool = False) -> Directory | None:
+    def get_directory(
+        self,
+        directory_path: PathLike,
+        create_on_missing: bool = False,
+        ignore_case: bool = False,
+    ) -> Directory | None:
         """Returns the directory object for the given path, or None if the directory does not exist.
 
         If create_on_missing is set, use a recursive strategy to create the directory object and all subdirectories.
@@ -397,7 +459,9 @@ class CodebaseContext:
         # If not part of repo path, return None
         absolute_path = self.to_absolute(directory_path)
         if not self.is_subdir(absolute_path) and not self.config.allow_external:
-            assert False, f"Directory {absolute_path} is not part of repo path {self.repo_path}"
+            assert (
+                False
+            ), f"Directory {absolute_path} is not part of repo path {self.repo_path}"
             return None
 
         # Get the directory
@@ -414,7 +478,9 @@ class CodebaseContext:
             parent_path = absolute_path.parent
 
             # Base Case
-            if str(absolute_path) == str(self.repo_path) or str(absolute_path) == str(parent_path):
+            if str(absolute_path) == str(self.repo_path) or str(absolute_path) == str(
+                parent_path
+            ):
                 root_directory = Directory(ctx=self, path=absolute_path, dirpath="")
                 self.directories[absolute_path] = root_directory
                 return root_directory
@@ -422,7 +488,11 @@ class CodebaseContext:
             # Recursively create the parent directory
             parent = self.get_directory(parent_path, create_on_missing=True)
             # Create the directory
-            directory = Directory(ctx=self, path=absolute_path, dirpath=str(self.to_relative(absolute_path)))
+            directory = Directory(
+                ctx=self,
+                path=absolute_path,
+                dirpath=str(self.to_relative(absolute_path)),
+            )
             # Add the directory to the parent
             parent._add_subdirectory(directory.name)
             # Add the directory to the tree
@@ -430,17 +500,25 @@ class CodebaseContext:
             return directory
         return None
 
-    def _process_diff_files(self, files_to_sync: Mapping[SyncType, list[Path]], incremental: bool = True) -> None:
+    def _process_diff_files(
+        self, files_to_sync: Mapping[SyncType, list[Path]], incremental: bool = True
+    ) -> None:
         # If all the files are empty, don't uncache
         assert self._computing is False
-        skip_uncache = incremental and ((len(files_to_sync[SyncType.DELETE]) + len(files_to_sync[SyncType.REPARSE])) == 0)
+        skip_uncache = incremental and (
+            (len(files_to_sync[SyncType.DELETE]) + len(files_to_sync[SyncType.REPARSE]))
+            == 0
+        )
         if not skip_uncache:
             uncache_all()
         # Step 0: Start the dependency manager and language engine if they exist
         # Start the dependency manager. This may or may not run asynchronously, depending on the implementation
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
-            if not self.dependency_manager.ready() and not self.dependency_manager.error():
+            if (
+                not self.dependency_manager.ready()
+                and not self.dependency_manager.error()
+            ):
                 # TODO: We do not reparse dependencies during syncs as it is expensive. We should probably add a flag for this
                 logger.info("> Starting dependency manager")
                 self.dependency_manager.start(async_start=False)
@@ -457,9 +535,13 @@ class CodebaseContext:
 
         # Step 1: Wait for dependency manager and language engines to finish before graph construction
         if self.dependency_manager is not None:
-            self.dependency_manager.wait_until_ready(ignore_error=self.config.ignore_process_errors)
+            self.dependency_manager.wait_until_ready(
+                ignore_error=self.config.ignore_process_errors
+            )
         if self.language_engine is not None:
-            self.language_engine.wait_until_ready(ignore_error=self.config.ignore_process_errors)
+            self.language_engine.wait_until_ready(
+                ignore_error=self.config.ignore_process_errors
+            )
 
         # ====== [ Refresh the graph] ========
         # Step 2: For any files that no longer exist, remove them during the sync
@@ -468,19 +550,29 @@ class CodebaseContext:
             for file_path in files_to_sync[SyncType.ADD]:
                 if not self.io.file_exists(self.to_absolute(file_path)):
                     add_to_remove.append(file_path)
-                    logger.warning(f"SYNC: SourceFile {file_path} no longer exists! Removing from graph")
+                    logger.warning(
+                        f"SYNC: SourceFile {file_path} no longer exists! Removing from graph"
+                    )
             reparse_to_remove = []
             for file_path in files_to_sync[SyncType.REPARSE]:
                 if not self.io.file_exists(self.to_absolute(file_path)):
                     reparse_to_remove.append(file_path)
-                    logger.warning(f"SYNC: SourceFile {file_path} no longer exists! Removing from graph")
-            files_to_sync[SyncType.ADD] = [f for f in files_to_sync[SyncType.ADD] if f not in add_to_remove]
-            files_to_sync[SyncType.REPARSE] = [f for f in files_to_sync[SyncType.REPARSE] if f not in reparse_to_remove]
+                    logger.warning(
+                        f"SYNC: SourceFile {file_path} no longer exists! Removing from graph"
+                    )
+            files_to_sync[SyncType.ADD] = [
+                f for f in files_to_sync[SyncType.ADD] if f not in add_to_remove
+            ]
+            files_to_sync[SyncType.REPARSE] = [
+                f for f in files_to_sync[SyncType.REPARSE] if f not in reparse_to_remove
+            ]
             for file_path in add_to_remove + reparse_to_remove:
                 if self.get_file(file_path) is not None:
                     files_to_sync[SyncType.DELETE].append(file_path)
                 else:
-                    logger.warning(f"SYNC: SourceFile {file_path} does not exist and also not found on graph!")
+                    logger.warning(
+                        f"SYNC: SourceFile {file_path} does not exist and also not found on graph!"
+                    )
 
         # Step 3: Remove files to delete from graph
         to_resolve = []
@@ -488,35 +580,53 @@ class CodebaseContext:
             file = self.get_file(file_path)
             file.remove_internal_edges()
             to_resolve.extend(file.unparse())
-        to_resolve = list(filter(lambda node: self.has_node(node.node_id) and node is not None, to_resolve))
+        to_resolve = list(
+            filter(
+                lambda node: self.has_node(node.node_id) and node is not None,
+                to_resolve,
+            )
+        )
         for file_path in files_to_sync[SyncType.REPARSE]:
             file = self.get_file(file_path)
             file.remove_internal_edges()
 
-        task = self.progress.begin("Reparsing updated files", count=len(files_to_sync[SyncType.REPARSE]))
+        task = self.progress.begin(
+            "Reparsing updated files", count=len(files_to_sync[SyncType.REPARSE])
+        )
         files_to_resolve = []
         # Step 4: Reparse updated files
         for idx, file_path in enumerate(files_to_sync[SyncType.REPARSE]):
             task.update(f"Reparsing {self.to_relative(file_path)}", count=idx)
             file = self.get_file(file_path)
             to_resolve.extend(file.unparse(reparse=True))
-            to_resolve = list(filter(lambda node: self.has_node(node.node_id) and node is not None, to_resolve))
+            to_resolve = list(
+                filter(
+                    lambda node: self.has_node(node.node_id) and node is not None,
+                    to_resolve,
+                )
+            )
             file.sync_with_file_content()
             files_to_resolve.append(file)
         task.end()
         # Step 5: Add new files as nodes to graph (does not yet add edges)
-        task = self.progress.begin("Adding new files", count=len(files_to_sync[SyncType.ADD]))
+        task = self.progress.begin(
+            "Adding new files", count=len(files_to_sync[SyncType.ADD])
+        )
         for idx, filepath in enumerate(files_to_sync[SyncType.ADD]):
             task.update(f"Adding {self.to_relative(filepath)}", count=idx)
             try:
                 content = self.io.read_text(filepath)
             except UnicodeDecodeError as e:
-                logger.warning(f"Can't read file at:{filepath} since it contains non-unicode characters. File will be ignored!")
+                logger.warning(
+                    f"Can't read file at:{filepath} since it contains non-unicode characters. File will be ignored!"
+                )
                 continue
             # TODO: this is wrong with context changes
             if filepath.suffix in self.extensions:
                 file_cls = self.node_classes.file_cls
-                new_file = file_cls.from_content(filepath, content, self, sync=False, verify_syntax=False)
+                new_file = file_cls.from_content(
+                    filepath, content, self, sync=False, verify_syntax=False
+                )
                 if new_file is not None:
                     files_to_resolve.append(new_file)
         task.end()
@@ -524,7 +634,12 @@ class CodebaseContext:
             to_resolve.append(file)
             to_resolve.extend(file.get_nodes())
 
-        to_resolve = list(filter(lambda node: self.has_node(node.node_id) and node is not None, to_resolve))
+        to_resolve = list(
+            filter(
+                lambda node: self.has_node(node.node_id) and node is not None,
+                to_resolve,
+            )
+        )
         counter = Counter(node.node_type for node in to_resolve)
 
         # Step 6: Build directory tree
@@ -540,13 +655,19 @@ class CodebaseContext:
             uncache_all()
 
         if self.config.disable_graph:
-            logger.warning("Graph generation is disabled. Skipping import and symbol resolution")
+            logger.warning(
+                "Graph generation is disabled. Skipping import and symbol resolution"
+            )
             self._computing = False
         else:
             self._computing = True
             try:
-                logger.info(f"> Computing import resolution edges for {counter[NodeType.IMPORT]} imports")
-                task = self.progress.begin("Resolving imports", count=counter[NodeType.IMPORT])
+                logger.info(
+                    f"> Computing import resolution edges for {counter[NodeType.IMPORT]} imports"
+                )
+                task = self.progress.begin(
+                    "Resolving imports", count=counter[NodeType.IMPORT]
+                )
                 for node in to_resolve:
                     if node.node_type == NodeType.IMPORT:
                         task.update(f"Resolving imports in {node.filepath}", count=idx)
@@ -555,11 +676,18 @@ class CodebaseContext:
                         to_resolve.extend(node.symbol_usages)
                 task.end()
                 if counter[NodeType.EXPORT] > 0:
-                    logger.info(f"> Computing export dependencies for {counter[NodeType.EXPORT]} exports")
-                    task = self.progress.begin("Computing export dependencies", count=counter[NodeType.EXPORT])
+                    logger.info(
+                        f"> Computing export dependencies for {counter[NodeType.EXPORT]} exports"
+                    )
+                    task = self.progress.begin(
+                        "Computing export dependencies", count=counter[NodeType.EXPORT]
+                    )
                     for node in to_resolve:
                         if node.node_type == NodeType.EXPORT:
-                            task.update(f"Computing export dependencies for {node.filepath}", count=idx)
+                            task.update(
+                                f"Computing export dependencies for {node.filepath}",
+                                count=idx,
+                            )
                             node._remove_internal_edges(EdgeType.EXPORT)
                             node.compute_export_dependencies()
                             to_resolve.extend(node.symbol_usages)
@@ -568,10 +696,16 @@ class CodebaseContext:
                     from codegen.sdk.core.interfaces.inherits import Inherits
 
                     logger.info("> Computing superclass dependencies")
-                    task = self.progress.begin("Computing superclass dependencies", count=counter[NodeType.SYMBOL])
+                    task = self.progress.begin(
+                        "Computing superclass dependencies",
+                        count=counter[NodeType.SYMBOL],
+                    )
                     for symbol in to_resolve:
                         if isinstance(symbol, Inherits):
-                            task.update(f"Computing superclass dependencies for {symbol.filepath}", count=idx)
+                            task.update(
+                                f"Computing superclass dependencies for {symbol.filepath}",
+                                count=idx,
+                            )
                             symbol._remove_internal_edges(EdgeType.SUBCLASS)
                             symbol.compute_superclass_dependencies()
                     task.end()
@@ -610,20 +744,37 @@ class CodebaseContext:
     def get_node(self, node_id: int) -> Any:
         return self._graph.get_node_data(node_id)
 
-    def get_nodes(self, node_type: NodeType | None = None, exclude_type: NodeType | None = None) -> list[Importable]:
+    def get_nodes(
+        self, node_type: NodeType | None = None, exclude_type: NodeType | None = None
+    ) -> list[Importable]:
         if node_type is not None and exclude_type is not None:
             msg = "node_type and exclude_type cannot both be specified"
             raise ValueError(msg)
         if node_type is not None:
-            return [self.get_node(node_id) for node_id in self._graph.filter_nodes(lambda node: node.node_type == node_type)]
+            return [
+                self.get_node(node_id)
+                for node_id in self._graph.filter_nodes(
+                    lambda node: node.node_type == node_type
+                )
+            ]
         if exclude_type is not None:
-            return [self.get_node(node_id) for node_id in self._graph.filter_nodes(lambda node: node.node_type != node_type)]
+            return [
+                self.get_node(node_id)
+                for node_id in self._graph.filter_nodes(
+                    lambda node: node.node_type != node_type
+                )
+            ]
         return self._graph.nodes()
 
     def get_edges(self) -> list[tuple[NodeId, NodeId, EdgeType, Usage | None]]:
-        return [(x[0], x[1], x[2].type, x[2].usage) for x in self._graph.weighted_edge_list()]
+        return [
+            (x[0], x[1], x[2].type, x[2].usage)
+            for x in self._graph.weighted_edge_list()
+        ]
 
-    def get_file(self, file_path: os.PathLike, ignore_case: bool = False) -> SourceFile | None:
+    def get_file(
+        self, file_path: os.PathLike, ignore_case: bool = False
+    ) -> SourceFile | None:
         # If not part of repo path, return None
         absolute_path = self.to_absolute(file_path)
         if not self.is_subdir(absolute_path) and not self.config.allow_external:
@@ -635,7 +786,9 @@ class CodebaseContext:
             return self.get_node(node_id)
         if ignore_case:
             # Using `get_directory` so that the case insensitive lookup works
-            parent = self.get_directory(self.to_absolute(file_path).parent, ignore_case=ignore_case).path
+            parent = self.get_directory(
+                self.to_absolute(file_path).parent, ignore_case=ignore_case
+            ).path
             for file in parent.iterdir():
                 if str(file_path).lower() == str(self.to_relative(file)).lower():
                     return self.get_file(file, ignore_case=False)
@@ -647,9 +800,13 @@ class CodebaseContext:
             return File.from_content(path, self.io.read_text(path), self, sync=False)
         except UnicodeDecodeError:
             # Handle when file is a binary file
-            return File.from_content(path, self.io.read_bytes(path), self, sync=False, binary=True)
+            return File.from_content(
+                path, self.io.read_bytes(path), self, sync=False, binary=True
+            )
 
-    def get_external_module(self, module: str, import_name: str) -> ExternalModule | None:
+    def get_external_module(
+        self, module: str, import_name: str
+    ) -> ExternalModule | None:
         node_id = self._ext_module_idx.get(module + "::" + import_name, None)
         if node_id is not None:
             return self.get_node(node_id)
@@ -659,16 +816,30 @@ class CodebaseContext:
             if self._graph.find_node_by_weight(node.__eq__):
                 msg = "Node already exists"
                 raise Exception(msg)
-        if self.config.debug and self._computing and node.node_type != NodeType.EXTERNAL:
+        if (
+            self.config.debug
+            and self._computing
+            and node.node_type != NodeType.EXTERNAL
+        ):
             assert False, f"Adding node during compute dependencies: {node!r}"
         return self._graph.add_node(node)
 
-    def add_child(self, parent: NodeId, node: Importable, type: EdgeType, usage: Usage | None = None) -> int:
+    def add_child(
+        self,
+        parent: NodeId,
+        node: Importable,
+        type: EdgeType,
+        usage: Usage | None = None,
+    ) -> int:
         if self.config.debug:
             if self._graph.find_node_by_weight(node.__eq__):
                 msg = "Node already exists"
                 raise Exception(msg)
-        if self.config.debug and self._computing and node.node_type != NodeType.EXTERNAL:
+        if (
+            self.config.debug
+            and self._computing
+            and node.node_type != NodeType.EXTERNAL
+        ):
             assert False, f"Adding node during compute dependencies: {node!r}"
         return self._graph.add_child(parent, node, Edge(type, usage))
 
@@ -676,9 +847,13 @@ class CodebaseContext:
         return isinstance(node_id, int) and self._graph.has_node(node_id)
 
     def has_edge(self, u: NodeId, v: NodeId, edge: Edge):
-        return self._graph.has_edge(u, v) and edge in self._graph.get_all_edge_data(u, v)
+        return self._graph.has_edge(u, v) and edge in self._graph.get_all_edge_data(
+            u, v
+        )
 
-    def add_edge(self, u: NodeId, v: NodeId, type: EdgeType, usage: Usage | None = None) -> None:
+    def add_edge(
+        self, u: NodeId, v: NodeId, type: EdgeType, usage: Usage | None = None
+    ) -> None:
         edge = Edge(type, usage)
         if self.config.debug:
             assert self._graph.has_node(u)
@@ -691,7 +866,11 @@ class CodebaseContext:
             for u, v, edge in edges:
                 assert self._graph.has_node(u)
                 assert self._graph.has_node(v), v
-                assert not self.has_edge(u, v, edge), (self.get_node(u), self.get_node(v), edge)
+                assert not self.has_edge(u, v, edge), (
+                    self.get_node(u),
+                    self.get_node(v),
+                    edge,
+                )
         self._graph.add_edges_from(edges)
 
     @property
@@ -703,16 +882,29 @@ class CodebaseContext:
         return self._graph.weighted_edge_list()
 
     def predecessor(self, n: NodeId, *, edge_type: EdgeType | None) -> Importable:
-        return self._graph.find_predecessor_node_by_edge(n, lambda edge: edge.type == edge_type)
+        return self._graph.find_predecessor_node_by_edge(
+            n, lambda edge: edge.type == edge_type
+        )
 
-    def predecessors(self, n: NodeId, edge_type: EdgeType | None = None) -> Sequence[Importable]:
+    def predecessors(
+        self, n: NodeId, edge_type: EdgeType | None = None
+    ) -> Sequence[Importable]:
         if edge_type is not None:
-            return sort_editables(self._graph.find_predecessors_by_edge(n, lambda edge: edge.type == edge_type), by_id=True)
+            return sort_editables(
+                self._graph.find_predecessors_by_edge(
+                    n, lambda edge: edge.type == edge_type
+                ),
+                by_id=True,
+            )
         return self._graph.predecessors(n)
 
-    def successors(self, n: NodeId, *, edge_type: EdgeType | None = None, sort: bool = True) -> Sequence[Importable]:
+    def successors(
+        self, n: NodeId, *, edge_type: EdgeType | None = None, sort: bool = True
+    ) -> Sequence[Importable]:
         if edge_type is not None:
-            res = self._graph.find_successors_by_edge(n, lambda edge: edge.type == edge_type)
+            res = self._graph.find_successors_by_edge(
+                n, lambda edge: edge.type == edge_type
+            )
         else:
             res = self._graph.successors(n)
         if sort:
@@ -754,10 +946,19 @@ class CodebaseContext:
 
     def is_subdir(self, path: PathLike | str) -> bool:
         path = self.to_absolute(path)
-        return path == Path(self.repo_path) or path.is_relative_to(self.repo_path) or Path(self.repo_path) in path.parents
+        return (
+            path == Path(self.repo_path)
+            or path.is_relative_to(self.repo_path)
+            or Path(self.repo_path) in path.parents
+        )
 
     @commiter
-    def commit_transactions(self, sync_graph: bool = True, sync_file: bool = True, files: set[Path] | None = None) -> None:
+    def commit_transactions(
+        self,
+        sync_graph: bool = True,
+        sync_file: bool = True,
+        files: set[Path] | None = None,
+    ) -> None:
         """Commits all transactions to the codebase, and syncs the graph to match the latest file changes.
         Should be called at the end of `execute` for every codemod group run.
 
@@ -794,9 +995,16 @@ class CodebaseContext:
         self.transaction_manager.check_limits()
 
     @contextmanager
-    def session(self, sync_graph: bool = True, commit: bool = True, session_options: SessionOptions = SessionOptions()) -> Generator[None, None, None]:
+    def session(
+        self,
+        sync_graph: bool = True,
+        commit: bool = True,
+        session_options: SessionOptions = SessionOptions(),
+    ) -> Generator[None, None, None]:
         self.session_options = session_options
-        self.transaction_manager.set_max_transactions(self.session_options.max_transactions)
+        self.transaction_manager.set_max_transactions(
+            self.session_options.max_transactions
+        )
         self.transaction_manager.reset_stopwatch(self.session_options.max_seconds)
         try:
             yield None
@@ -807,7 +1015,9 @@ class CodebaseContext:
             if commit:
                 self.commit_transactions(sync_graph)
 
-    def remove_directory(self, directory_path: PathLike, force: bool = False, cleanup: bool = True) -> None:
+    def remove_directory(
+        self, directory_path: PathLike, force: bool = False, cleanup: bool = True
+    ) -> None:
         """Removes a directory from the graph"""
         # Get the directory
         directory = self.get_directory(directory_path)
@@ -840,6 +1050,8 @@ class CodebaseContext:
     @property
     def ts_declassify(self) -> TSDeclassify:
         if self._ts_declassify is None:
-            self._ts_declassify = TSDeclassify(self.repo_path, self.projects[0].base_path)
+            self._ts_declassify = TSDeclassify(
+                self.repo_path, self.projects[0].base_path
+            )
             self._ts_declassify.start()  # Install react-declassify
         return self._ts_declassify

@@ -15,10 +15,19 @@ if TYPE_CHECKING:
 
 
 @ts_apidoc
-class TSSwitchStatement(SwitchStatement["TSCodeBlock[Self]", "TSCodeBlock", TSSwitchCase]):
+class TSSwitchStatement(
+    SwitchStatement["TSCodeBlock[Self]", "TSCodeBlock", TSSwitchCase]
+):
     """Typescript switch statement"""
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TSCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TSCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.value = self.child_by_field_name("value")
         code_block = self.ts_node.child_by_field_name("body")

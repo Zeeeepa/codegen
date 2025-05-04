@@ -39,7 +39,9 @@ class ReplacementEditObservation(Observation):
         description="Regex pattern that failed to compile",
     )
 
-    str_template: ClassVar[str] = "{message}" if "{message}" else "Edited file {filepath}"
+    str_template: ClassVar[str] = (
+        "{message}" if "{message}" else "Edited file {filepath}"
+    )
 
 
 def generate_diff(original: str, modified: str) -> str:
@@ -66,7 +68,9 @@ def generate_diff(original: str, modified: str) -> str:
     return "".join(diff)
 
 
-def _merge_content(original_content: str, edited_content: str, start: int, end: int) -> str:
+def _merge_content(
+    original_content: str, edited_content: str, start: int, end: int
+) -> str:
     """Merge edited content with original content, preserving content outside the edit range.
 
     Args:
@@ -89,7 +93,9 @@ def _merge_content(original_content: str, edited_content: str, start: int, end: 
     end_idx = end - 1 if end != -1 else len(original_lines)
 
     # Merge the content
-    result_lines = original_lines[:start_idx] + edited_lines + original_lines[end_idx + 1 :]
+    result_lines = (
+        original_lines[:start_idx] + edited_lines + original_lines[end_idx + 1 :]
+    )
 
     return "\n".join(result_lines)
 

@@ -50,4 +50,6 @@ class RemoveIndirectImports(Codemod, Skill):
                     elif isinstance(imported_symbol, Symbol):
                         # Replace the module in the import with the final destination symbol's module
                         # e.g. `from abc import ABC` -> `from xyz import ABC` or equivalent in your language.
-                        original_import.set_import_module(imported_symbol.file.import_module_name)
+                        original_import.set_import_module(
+                            imported_symbol.file.import_module_name
+                        )

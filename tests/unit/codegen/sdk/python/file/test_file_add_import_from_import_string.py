@@ -41,7 +41,9 @@ def foo():
     assert "from sqlalchemy.orm import Session" in file_lines[3]
 
 
-def test_file_add_symbol_import_from_string_adds_after_future_before_non_future(tmpdir) -> None:
+def test_file_add_symbol_import_from_string_adds_after_future_before_non_future(
+    tmpdir,
+) -> None:
     # language=python
     content = """
 from __future__ import annotations
@@ -112,7 +114,10 @@ def foo():
 
     file_lines = file.content.split("\n")
     assert "from sqlalchemy.orm import Session" in file_lines
-    assert file_lines.index("from sqlalchemy.orm import Session") == file_lines.index("from typing import List") - 1
+    assert (
+        file_lines.index("from sqlalchemy.orm import Session")
+        == file_lines.index("from typing import List") - 1
+    )
 
 
 @pytest.mark.parametrize("sync", [True, False])
@@ -123,7 +128,9 @@ def test_file_add_symbol_import_from_string_adds_remove(tmpdir, sync) -> None:
 def foo():
     print("this is foo")
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content.strip()}, sync_graph=sync) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": content.strip()}, sync_graph=sync
+    ) as codebase:
         file = codebase.get_file("test.py")
 
         file.add_import("import antigravity")

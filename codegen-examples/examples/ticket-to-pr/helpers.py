@@ -1,10 +1,11 @@
-from codegen import Codebase, ProgrammingLanguage
-from typing import List, Dict, Any
-from codegen.configs.models.codebase import CodebaseConfig
-from data import LinearLabels, LinearIssueUpdateEvent
-import os
 import logging
+import os
+from typing import Any, Dict, List
 
+from data import LinearIssueUpdateEvent, LinearLabels
+
+from codegen import Codebase, ProgrammingLanguage
+from codegen.configs.models.codebase import CodebaseConfig
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,8 +62,14 @@ def has_codegen_label(*args, **kwargs):
         update_event = process_update_event(body)
 
     has_codegen_label = any(label.name == "Codegen" for label in update_event.labels)
-    codegen_label_id = next((label.id for label in update_event.labels if label.name == "Codegen"), None)
-    had_codegen_label = codegen_label_id in update_event.updated_from.get("labels", []) if codegen_label_id else False
+    codegen_label_id = next(
+        (label.id for label in update_event.labels if label.name == "Codegen"), None
+    )
+    had_codegen_label = (
+        codegen_label_id in update_event.updated_from.get("labels", [])
+        if codegen_label_id
+        else False
+    )
     previous_labels = update_event.updated_from.get("labelIds", None)
 
     if previous_labels is None or not has_codegen_label:
@@ -73,7 +80,9 @@ def has_codegen_label(*args, **kwargs):
         logger.info("Codegen label added, codegen bot will respond")
         return True
 
-    logger.info("Codegen label removed or already existed, codegen bot will not respond")
+    logger.info(
+        "Codegen label removed or already existed, codegen bot will not respond"
+    )
     return False
 
 
@@ -81,4 +90,6 @@ def create_codebase(repo_name: str, language: ProgrammingLanguage):
     config = CodebaseConfig()
     config.secrets.github_token = os.environ["GITHUB_TOKEN"]
 
-    return Codebase.from_repo(repo_name, language=language, tmp_dir="/root", config=config)
+    return Codebase.from_repo(
+        repo_name, language=language, tmp_dir="/root", config=config
+    )

@@ -53,7 +53,7 @@ This approach transformed the agent's capabilities. Rather than being constraine
    <img src="/images/voyager-retrieval.png" />
 </Frame>
 
-As the Voyager authors noted: 
+As the Voyager authors noted:
 
 <Tip>*"We opt to use code as the action space instead of low-level motor commands because programs can naturally represent temporally extended and compositional actions, which are essential for many long-horizon tasks in Minecraft."*</Tip>
 
@@ -68,8 +68,8 @@ In the act via code paradigm, all of these actions are expressed through writing
 ```python
 # Implement `grep` via for loops and if statements
 for function in codebase.functions:
-   if 'Page' in function.name:  
-      
+   if 'Page' in function.name:
+
       # Implement systematic actions, like moving things around, through an API
       function.move_to_file('/pages/' + function.name + '.tsx')
 ```

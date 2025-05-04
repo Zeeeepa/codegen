@@ -22,7 +22,11 @@ def import_skills_from(path: Path, module_prefix: str):
         relative_path = file.relative_to(path)
         if "evaluation" in relative_path.parts or "__init__" in file.name:
             continue
-        module = module_prefix + "." + str(relative_path).replace("/", ".").removesuffix(".py")
+        module = (
+            module_prefix
+            + "."
+            + str(relative_path).replace("/", ".").removesuffix(".py")
+        )
         importlib.import_module(module)
 
 

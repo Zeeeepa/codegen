@@ -146,10 +146,19 @@ class DeployInput(BaseModel):
         codemod_name: str = Field(..., description="Name of the codemod to deploy")
         codemod_source: str = Field(..., description="Source code of the codemod")
         repo_full_name: str = Field(..., description="Full name of the repository")
-        lint_mode: bool = Field(default=False, description="Whether this is a PR check/lint mode function")
-        lint_user_whitelist: list[str] = Field(default_factory=list, description="List of GitHub usernames to notify")
-        message: str | None = Field(default=None, description="Optional message describing the codemod being deployed.")
-        arguments_schema: dict | None = Field(default=None, description="Schema of the arguments parameter")
+        lint_mode: bool = Field(
+            default=False, description="Whether this is a PR check/lint mode function"
+        )
+        lint_user_whitelist: list[str] = Field(
+            default_factory=list, description="List of GitHub usernames to notify"
+        )
+        message: str | None = Field(
+            default=None,
+            description="Optional message describing the codemod being deployed.",
+        )
+        arguments_schema: dict | None = Field(
+            default=None, description="Schema of the arguments parameter"
+        )
 
     input: BaseDeployInput = Field(..., description="Input data for deployment")
 
@@ -222,7 +231,9 @@ class RunOnPRInput(BaseModel):
     class BaseRunOnPRInput(BaseModel):
         codemod_name: str = Field(..., description="Name of the codemod to test")
         repo_full_name: str = Field(..., description="Full name of the repository")
-        github_pr_number: int = Field(..., description="GitHub PR number to test against")
+        github_pr_number: int = Field(
+            ..., description="GitHub PR number to test against"
+        )
         language: str | None = Field(..., description="Language of the codemod")
 
     input: BaseRunOnPRInput = Field(..., description="Input data for webhook test")
@@ -244,12 +255,24 @@ class RunOnPRResponse(BaseModel):
 class ImproveCodemodInput(BaseModel):
     class BaseImproveCodemodInput(BaseModel):
         codemod: str = Field(..., description="Source code of the codemod to improve")
-        task: str = Field(..., description="Task to which the codemod should implement to solve")
-        concerns: list[str] = Field(..., description="A list of issues that were discovered with the current codemod that need to be considered in the next iteration")
-        context: dict[str, str] = Field(..., description="Additional context for the codemod this can be a list of files that are related, additional information about the task, etc.")
-        language: ProgrammingLanguage = Field(..., description="Language of the codemod")
+        task: str = Field(
+            ..., description="Task to which the codemod should implement to solve"
+        )
+        concerns: list[str] = Field(
+            ...,
+            description="A list of issues that were discovered with the current codemod that need to be considered in the next iteration",
+        )
+        context: dict[str, str] = Field(
+            ...,
+            description="Additional context for the codemod this can be a list of files that are related, additional information about the task, etc.",
+        )
+        language: ProgrammingLanguage = Field(
+            ..., description="Language of the codemod"
+        )
 
-    input: BaseImproveCodemodInput = Field(..., description="Input data for improvement")
+    input: BaseImproveCodemodInput = Field(
+        ..., description="Input data for improvement"
+    )
 
 
 class ImproveCodemodResponse(BaseModel):

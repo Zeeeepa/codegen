@@ -45,8 +45,12 @@ def analyze_pr(
     print("\n" + "=" * 80)
     print(f"PR Analysis Results for {repo_url} #{pr_number}")
     print("=" * 80)
-    print(f"Quality Score: {results['quality_score']}/10.0 - {results['overall_assessment']}")
-    print(f"Properly Implemented: {'Yes' if results['is_properly_implemented'] else 'No'}")
+    print(
+        f"Quality Score: {results['quality_score']}/10.0 - {results['overall_assessment']}"
+    )
+    print(
+        f"Properly Implemented: {'Yes' if results['is_properly_implemented'] else 'No'}"
+    )
 
     if "issues" in results and results["issues"]:
         print("\nIssues:")
@@ -91,8 +95,12 @@ def analyze_commit(
     print(f"Base: {base_commit}")
     print(f"Head: {head_commit}")
     print("=" * 80)
-    print(f"Quality Score: {results['quality_score']}/10.0 - {results['overall_assessment']}")
-    print(f"Properly Implemented: {'Yes' if results['is_properly_implemented'] else 'No'}")
+    print(
+        f"Quality Score: {results['quality_score']}/10.0 - {results['overall_assessment']}"
+    )
+    print(
+        f"Properly Implemented: {'Yes' if results['is_properly_implemented'] else 'No'}"
+    )
 
     if "issues" in results and results["issues"]:
         print("\nIssues:")
@@ -123,11 +131,15 @@ def create_snapshots_example(
 
     # Create snapshots for the base and head commits
     logger.info(f"Creating snapshot for base commit {base_commit}")
-    base_codebase = snapshot_manager.create_codebase_from_repo(repo_url, base_commit, github_token)
+    base_codebase = snapshot_manager.create_codebase_from_repo(
+        repo_url, base_commit, github_token
+    )
     base_snapshot = snapshot_manager.create_snapshot(base_codebase, base_commit)
 
     logger.info(f"Creating snapshot for head commit {head_commit}")
-    head_codebase = snapshot_manager.create_codebase_from_repo(repo_url, head_commit, github_token)
+    head_codebase = snapshot_manager.create_codebase_from_repo(
+        repo_url, head_commit, github_token
+    )
     head_snapshot = snapshot_manager.create_snapshot(head_codebase, head_commit)
 
     # Print snapshot summaries
@@ -160,7 +172,9 @@ def main():
 
     # PR analysis command
     pr_parser = subparsers.add_parser("pr", help="Analyze a pull request")
-    pr_parser.add_argument("--repo", required=True, help="Repository URL or owner/repo string")
+    pr_parser.add_argument(
+        "--repo", required=True, help="Repository URL or owner/repo string"
+    )
     pr_parser.add_argument("--pr", type=int, required=True, help="Pull request number")
     pr_parser.add_argument("--token", help="GitHub token for private repositories")
     pr_parser.add_argument(
@@ -171,9 +185,15 @@ def main():
 
     # Commit analysis command
     commit_parser = subparsers.add_parser("commit", help="Analyze a commit")
-    commit_parser.add_argument("--repo", required=True, help="Repository URL or owner/repo string")
-    commit_parser.add_argument("--base", required=True, help="Base commit SHA (before the changes)")
-    commit_parser.add_argument("--head", required=True, help="Head commit SHA (after the changes)")
+    commit_parser.add_argument(
+        "--repo", required=True, help="Repository URL or owner/repo string"
+    )
+    commit_parser.add_argument(
+        "--base", required=True, help="Base commit SHA (before the changes)"
+    )
+    commit_parser.add_argument(
+        "--head", required=True, help="Head commit SHA (after the changes)"
+    )
     commit_parser.add_argument("--token", help="GitHub token for private repositories")
 
     # Snapshot example command
@@ -185,7 +205,9 @@ def main():
     )
     snapshot_parser.add_argument("--base", required=True, help="Base commit SHA")
     snapshot_parser.add_argument("--head", required=True, help="Head commit SHA")
-    snapshot_parser.add_argument("--token", help="GitHub token for private repositories")
+    snapshot_parser.add_argument(
+        "--token", help="GitHub token for private repositories"
+    )
 
     args = parser.parse_args()
 

@@ -1,7 +1,14 @@
 import re
 
-from codegen.sdk.code_generation.doc_utils.schemas import ClassDoc, MethodDoc, ParameterDoc
-from codegen.sdk.code_generation.doc_utils.utils import sanitize_html_for_mdx, sanitize_mdx_mintlify_description
+from codegen.sdk.code_generation.doc_utils.schemas import (
+    ClassDoc,
+    MethodDoc,
+    ParameterDoc,
+)
+from codegen.sdk.code_generation.doc_utils.utils import (
+    sanitize_html_for_mdx,
+    sanitize_mdx_mintlify_description,
+)
 
 
 def render_mdx_page_for_class(cls_doc: ClassDoc) -> str:
@@ -48,10 +55,16 @@ def render_mdx_inheritence_section(cls_doc: ClassDoc) -> str:
 
 def render_mdx_attributes_section(cls_doc: ClassDoc) -> str:
     """Renders the MDX for the attributes section"""
-    sorted_attributes = sorted(cls_doc.attributes + [method for method in cls_doc.methods if method.method_type == "property"], key=lambda x: x.name)
+    sorted_attributes = sorted(
+        cls_doc.attributes
+        + [method for method in cls_doc.methods if method.method_type == "property"],
+        key=lambda x: x.name,
+    )
     if len(sorted_attributes) <= 0:
         return ""
-    attributes_mdx_string = "\n".join([render_mdx_for_attribute(attribute) for attribute in sorted_attributes])
+    attributes_mdx_string = "\n".join(
+        [render_mdx_for_attribute(attribute) for attribute in sorted_attributes]
+    )
 
     return f"""## Attributes
 <HorizontalDivider />
@@ -64,7 +77,13 @@ def render_mdx_methods_section(cls_doc: ClassDoc) -> str:
     sorted_methods = sorted(cls_doc.methods, key=lambda x: x.name)
     if len(sorted_methods) <= 0:
         return ""
-    methods_mdx_string = "\n".join([render_mdx_for_method(method) for method in sorted_methods if method.method_type == "method"])
+    methods_mdx_string = "\n".join(
+        [
+            render_mdx_for_method(method)
+            for method in sorted_methods
+            if method.method_type == "method"
+        ]
+    )
 
     return f"""## Methods
 <HorizontalDivider />
@@ -109,7 +128,9 @@ def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
 
 
 def format_return_for_mdx(return_type: list[str], return_description: str) -> str:
-    description = sanitize_html_for_mdx(return_description) if return_description else ""
+    description = (
+        sanitize_html_for_mdx(return_description) if return_description else ""
+    )
     return_type = resolve_type_string(return_type[0])
 
     return f"""
@@ -175,7 +196,9 @@ def format_builtin_type_string(type_string: str) -> str:
 def span_type_string_by_pipe(type_string: str) -> str:
     if "|" in type_string:
         type_strings = type_string.split("|")
-        return " | ".join([f"<span>{type_str.strip()}</span>" for type_str in type_strings])
+        return " | ".join(
+            [f"<span>{type_str.strip()}</span>" for type_str in type_strings]
+        )
     return type_string
 
 
@@ -192,7 +215,11 @@ def parse_link(type_string: str, href: bool = False) -> str:
             symbol = path.split("/")[-1]
 
             # Create a Link object
-            link = f'<a href="/{path}" style={{ {{fontWeight: "inherit", fontSize: "inherit"}} }}>{symbol}</a>' if href else f"[{symbol}](/{path})"
+            link = (
+                f'<a href="/{path}" style={{ {{fontWeight: "inherit", fontSize: "inherit"}} }}>{symbol}</a>'
+                if href
+                else f"[{symbol}](/{path})"
+            )
             result.append(link)
         else:
             part = format_builtin_type_string(part)

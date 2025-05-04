@@ -20,7 +20,9 @@ class CodeAction(ABC):
     def execute(self, server: "CodegenLanguageServer", node: Editable) -> None: ...
 
     @abstractmethod
-    def is_applicable(self, server: "CodegenLanguageServer", node: Editable) -> bool: ...
+    def is_applicable(
+        self, server: "CodegenLanguageServer", node: Editable
+    ) -> bool: ...
 
     def to_command(self, uri: str, range: types.Range) -> types.Command:
         return types.Command(

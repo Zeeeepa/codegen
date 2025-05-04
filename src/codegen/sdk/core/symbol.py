@@ -72,7 +72,9 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
             self.code_block.parse()
 
     def __rich_repr__(self) -> rich.repr.Result:
-        yield escape(self.filepath) + "::" + (self.full_name if self.full_name else "<no name>")
+        yield escape(self.filepath) + "::" + (
+            self.full_name if self.full_name else "<no name>"
+        )
 
     __rich_repr__.angular = ANGULAR_STYLE
 
@@ -111,18 +113,33 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
         from codegen.sdk.core.interfaces.has_block import HasBlock
 
         comment_nodes = self.comment.symbols if self.comment else []
-        inline_comment_nodes = self.inline_comment.symbols if self.inline_comment else []
+        inline_comment_nodes = (
+            self.inline_comment.symbols if self.inline_comment else []
+        )
         nodes = [self, *comment_nodes, *inline_comment_nodes]
         new_ts_node = self.ts_node
 
         if isinstance(self, HasBlock) and self.is_decorated:
             new_ts_node = self.ts_node.parent
 
-        extended_nodes = [(Value(new_ts_node, self.file_node_id, self.ctx, self.parent) if node.ts_node == self.ts_node else node) for node in nodes]
+        extended_nodes = [
+            (
+                Value(new_ts_node, self.file_node_id, self.ctx, self.parent)
+                if node.ts_node == self.ts_node
+                else node
+            )
+            for node in nodes
+        ]
         return sort_editables(extended_nodes)
 
     @writer
-    def edit(self, new_src: str, fix_indentation: bool = False, priority: int = 0, dedupe: bool = True) -> None:
+    def edit(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        priority: int = 0,
+        dedupe: bool = True,
+    ) -> None:
         """Replace the source of this node with new_src.
 
         Edits the source code of this node by replacing it with the provided new source code. If specified, the indentation of
@@ -137,7 +154,9 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
         Returns:
             None
         """
-        self.extended.edit(new_src, fix_indentation=fix_indentation, priority=priority, dedupe=dedupe)
+        self.extended.edit(
+            new_src, fix_indentation=fix_indentation, priority=priority, dedupe=dedupe
+        )
 
     @property
     @reader
@@ -241,7 +260,15 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
     # MANIPULATIONS
     ####################################################################################################################
     @writer
-    def insert_before(self, new_src: str, fix_indentation: bool = False, newline: bool = True, priority: int = 0, dedupe: bool = True, extended: bool = True) -> None:
+    def insert_before(
+        self,
+        new_src: str,
+        fix_indentation: bool = False,
+        newline: bool = True,
+        priority: int = 0,
+        dedupe: bool = True,
+        extended: bool = True,
+    ) -> None:
         """Inserts text before the current symbol node in the Abstract Syntax Tree.
 
         Handles insertion of new source code before a symbol, with special handling for extended nodes like comments and decorators.
@@ -262,10 +289,16 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
             first_node = self.extended_nodes[0]
             # Skip extension for the child node
             if isinstance(first_node, Symbol):
-                return first_node.insert_before(new_src, fix_indentation, newline, priority, dedupe, extended=False)
+                return first_node.insert_before(
+                    new_src, fix_indentation, newline, priority, dedupe, extended=False
+                )
             else:
-                return first_node.insert_before(new_src, fix_indentation, newline, priority, dedupe)
-        return super().insert_before(new_src, fix_indentation, newline, priority, dedupe)
+                return first_node.insert_before(
+                    new_src, fix_indentation, newline, priority, dedupe
+                )
+        return super().insert_before(
+            new_src, fix_indentation, newline, priority, dedupe
+        )
 
     def _post_move_import_cleanup(self, encountered_symbols, strategy):
         # =====[ Remove any imports that are no longer used ]=====
@@ -273,31 +306,54 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
 
         for dep in self.dependencies:
             if strategy != "duplicate_dependencies":
-                other_usages = [usage.usage_symbol for usage in dep.usages if usage.usage_symbol not in encountered_symbols]
+                other_usages = [
+                    usage.usage_symbol
+                    for usage in dep.usages
+                    if usage.usage_symbol not in encountered_symbols
+                ]
             else:
                 other_usages = [usage.usage_symbol for usage in dep.usages]
             if isinstance(dep, Import):
                 dep.remove_if_unused()
 
             elif isinstance(dep, Symbol):
-                usages_in_file = [symb for symb in other_usages if symb.file == self.file and not symb.get_transaction_if_pending_removal()]
+                usages_in_file = [
+                    symb
+                    for symb in other_usages
+                    if symb.file == self.file
+                    and not symb.get_transaction_if_pending_removal()
+                ]
                 if dep.get_transaction_if_pending_removal():
                     if not usages_in_file and strategy != "add_back_edge":
                         # We are going to assume there is only one such import
-                        if imp_list := [import_str for import_str in self.file._pending_imports if dep.name and dep.name in import_str]:
+                        if imp_list := [
+                            import_str
+                            for import_str in self.file._pending_imports
+                            if dep.name and dep.name in import_str
+                        ]:
                             if insert_import_list := [
                                 transaction
-                                for transaction in self.transaction_manager.queued_transactions[self.file.path]
-                                if imp_list[0] and transaction.new_content and imp_list[0] in transaction.new_content and transaction.transaction_order == TransactionPriority.Insert
+                                for transaction in self.transaction_manager.queued_transactions[
+                                    self.file.path
+                                ]
+                                if imp_list[0]
+                                and transaction.new_content
+                                and imp_list[0] in transaction.new_content
+                                and transaction.transaction_order
+                                == TransactionPriority.Insert
                             ]:
-                                self.transaction_manager.queued_transactions[self.file.path].remove(insert_import_list[0])
+                                self.transaction_manager.queued_transactions[
+                                    self.file.path
+                                ].remove(insert_import_list[0])
                                 self.file._pending_imports.remove(imp_list[0])
 
     def move_to_file(
         self,
         file: SourceFile,
         include_dependencies: bool = True,
-        strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"] = "update_all_imports",
+        strategy: Literal[
+            "add_back_edge", "update_all_imports", "duplicate_dependencies"
+        ] = "update_all_imports",
         cleanup_unused_imports: bool = True,
     ) -> None:
         """Moves the given symbol to a new file and updates its imports and references.
@@ -318,7 +374,13 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
             AssertionError: If an invalid strategy is provided.
         """
         encountered_symbols = {self}
-        self._move_to_file(file, encountered_symbols, include_dependencies, strategy, cleanup_unused_imports)
+        self._move_to_file(
+            file,
+            encountered_symbols,
+            include_dependencies,
+            strategy,
+            cleanup_unused_imports,
+        )
 
     @noapidoc
     def _move_to_file(
@@ -326,7 +388,9 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
         file: SourceFile,
         encountered_symbols: set[Symbol | Import],
         include_dependencies: bool = True,
-        strategy: Literal["add_back_edge", "update_all_imports", "duplicate_dependencies"] = "update_all_imports",
+        strategy: Literal[
+            "add_back_edge", "update_all_imports", "duplicate_dependencies"
+        ] = "update_all_imports",
         cleanup_unused_imports: bool = True,
     ) -> tuple[NodeId, NodeId]:
         """Helper recursive function for `move_to_file`"""
@@ -365,7 +429,12 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
             for dep in self.dependencies:
                 # =====[ Symbols - add back edge ]=====
                 if isinstance(dep, Symbol) and dep.is_top_level:
-                    file.add_import(imp=dep, alias=dep.name, import_type=ImportType.NAMED_EXPORT, is_type_import=False)
+                    file.add_import(
+                        imp=dep,
+                        alias=dep.name,
+                        import_type=ImportType.NAMED_EXPORT,
+                        is_type_import=False,
+                    )
                 elif isinstance(dep, Import):
                     if dep.imported_symbol:
                         file.add_import(imp=dep.imported_symbol, alias=dep.alias.source)
@@ -379,20 +448,33 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
         # =====[ Checks if symbol is used in original file ]=====
         # Takes into account that it's dependencies will be moved
         is_used_in_file = any(
-            usage.file == self.file and usage.node_type == NodeType.SYMBOL and usage not in encountered_symbols and (usage.start_byte < self.start_byte or usage.end_byte > self.end_byte)  # HACK
+            usage.file == self.file
+            and usage.node_type == NodeType.SYMBOL
+            and usage not in encountered_symbols
+            and (
+                usage.start_byte < self.start_byte or usage.end_byte > self.end_byte
+            )  # HACK
             for usage in self.symbol_usages
         )
 
         # ======[ Strategy: Duplicate Dependencies ]=====
         if strategy == "duplicate_dependencies":
             # If not used in the original file. or if not imported from elsewhere, we can just remove the original symbol
-            if not is_used_in_file and not any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
+            if not is_used_in_file and not any(
+                usage.kind is UsageKind.IMPORTED
+                and usage.usage_symbol not in encountered_symbols
+                for usage in self.usages
+            ):
                 self.remove()
 
         # ======[ Strategy: Add Back Edge ]=====
         # Here, we will add a "back edge" to the old file importing the symbol
         elif strategy == "add_back_edge":
-            if is_used_in_file or any(usage.kind is UsageKind.IMPORTED and usage.usage_symbol not in encountered_symbols for usage in self.usages):
+            if is_used_in_file or any(
+                usage.kind is UsageKind.IMPORTED
+                and usage.usage_symbol not in encountered_symbols
+                for usage in self.usages
+            ):
                 self.file.add_import(imp=import_line)
             # Delete the original symbol
             self.remove()
@@ -401,14 +483,20 @@ class Symbol(Usable[Statement["CodeBlock[Parent, ...]"]], Generic[Parent, TCodeB
         # Update the imports in all the files which use this symbol to get it from the new file now
         elif strategy == "update_all_imports":
             for usage in self.usages:
-                if isinstance(usage.usage_symbol, Import) and usage.usage_symbol.file != file:
+                if (
+                    isinstance(usage.usage_symbol, Import)
+                    and usage.usage_symbol.file != file
+                ):
                     # Add updated import
                     usage.usage_symbol.file.add_import(import_line)
                     usage.usage_symbol.remove()
                 elif usage.usage_type == UsageType.CHAINED:
                     # Update all previous usages of import * to the new import name
                     if usage.match and "." + self.name in usage.match:
-                        if isinstance(usage.match, FunctionCall) and self.name in usage.match.get_name():
+                        if (
+                            isinstance(usage.match, FunctionCall)
+                            and self.name in usage.match.get_name()
+                        ):
                             usage.match.get_name().edit(self.name)
                         if isinstance(usage.match, ChainedAttribute):
                             usage.match.edit(self.name)

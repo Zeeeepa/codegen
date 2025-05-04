@@ -2,7 +2,9 @@ import re
 
 from codegen.sdk.code_generation.doc_utils.schemas import ParameterDoc
 
-SECTION_PATTERN = re.compile(r"(Args|Returns|Raises|Note):\s*(.+?)(?=(?:Args|Returns|Raises|Note):|$)", re.DOTALL)
+SECTION_PATTERN = re.compile(
+    r"(Args|Returns|Raises|Note):\s*(.+?)(?=(?:Args|Returns|Raises|Note):|$)", re.DOTALL
+)
 ARG_PATTERN = re.compile(r"\s*(\w+)\s*\(([^)]+)\):\s*([^\n]+)")
 
 
@@ -19,10 +21,19 @@ def parse_docstring(docstring: str) -> dict | None:
     docstring = docstring.strip().strip('"""').strip("'''")
 
     # Initialize result dictionary
-    result = {"description": "", "arguments": [], "return_description": None, "raises": [], "note": None}
+    result = {
+        "description": "",
+        "arguments": [],
+        "return_description": None,
+        "raises": [],
+        "note": None,
+    }
 
     # Find all sections
-    sections = {match.group(1): match.group(2).strip() for match in SECTION_PATTERN.finditer(docstring)}
+    sections = {
+        match.group(1): match.group(2).strip()
+        for match in SECTION_PATTERN.finditer(docstring)
+    }
 
     # Get description (everything before first section)
     first_section = docstring.find(":")
@@ -35,7 +46,12 @@ def parse_docstring(docstring: str) -> dict | None:
     if "Args" in sections:
         args_text = sections["Args"]
         if args_text.lower() != "none":
-            result["arguments"] = [ParameterDoc(name=m.group(1), type=m.group(2), description=m.group(3).strip()) for m in ARG_PATTERN.finditer(args_text)]
+            result["arguments"] = [
+                ParameterDoc(
+                    name=m.group(1), type=m.group(2), description=m.group(3).strip()
+                )
+                for m in ARG_PATTERN.finditer(args_text)
+            ]
 
     # Parse Returns section
     if "Returns" in sections:
@@ -44,13 +60,17 @@ def parse_docstring(docstring: str) -> dict | None:
         parts = returns_text.split(":", 1)
         if len(parts) > 1:
             # Only keep the description part after the colon
-            result["return_description"] = " ".join(line.strip() for line in parts[1].split("\n") if line.strip())
+            result["return_description"] = " ".join(
+                line.strip() for line in parts[1].split("\n") if line.strip()
+            )
         else:
             # If there's no colon, check if it's just a plain description without types
             # Remove any type-like patterns (words followed by brackets or vertical bars)
             cleaned_text = re.sub(r"^[^:]*?(?=\s*[A-Za-z].*:|\s*$)", "", returns_text)
             if cleaned_text:
-                result["return_description"] = " ".join(line.strip() for line in cleaned_text.split("\n") if line.strip())
+                result["return_description"] = " ".join(
+                    line.strip() for line in cleaned_text.split("\n") if line.strip()
+                )
 
     # Parse Raises section
     if "Raises" in sections:
@@ -59,10 +79,14 @@ def parse_docstring(docstring: str) -> dict | None:
             if ":" in line:
                 exc_type, desc = line.split(":", 1)
                 if exc_type.strip():
-                    result["raises"].append({"type": exc_type.strip(), "description": desc.strip()})
+                    result["raises"].append(
+                        {"type": exc_type.strip(), "description": desc.strip()}
+                    )
 
     # Parse Note section
     if "Note" in sections:
-        result["note"] = " ".join(line.strip() for line in sections["Note"].split("\n") if line.strip())
+        result["note"] = " ".join(
+            line.strip() for line in sections["Note"].split("\n") if line.strip()
+        )
 
     return result

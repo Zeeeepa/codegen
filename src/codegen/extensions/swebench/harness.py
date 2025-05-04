@@ -49,7 +49,12 @@ def show_problems(dataset):
         print(f"{inst}: {problem}")
 
 
-def run_agent_on_entry(entry: SweBenchExample, model: str, codebase: Codebase | None = None, run_id: str | None = None):
+def run_agent_on_entry(
+    entry: SweBenchExample,
+    model: str,
+    codebase: Codebase | None = None,
+    run_id: str | None = None,
+):
     """Process one `entry` from SWE Bench using the LLM `models` at the
     given `temperature`.  Set `model_name_or_path` in the result json.
     """
@@ -68,9 +73,18 @@ def run_agent_on_entry(entry: SweBenchExample, model: str, codebase: Codebase | 
         config = CodebaseConfig(
             disable_file_parse=True,  # Disable the graph AND disable file parsing (file.edit only)
         )
-        codebase = Codebase.from_repo(repo_full_name=entry.repo, commit=base_commit, language="python", config=config)  # check out the repo
+        codebase = Codebase.from_repo(
+            repo_full_name=entry.repo,
+            commit=base_commit,
+            language="python",
+            config=config,
+        )  # check out the repo
 
-    metadata = {"run_id": run_id, "instance_id": instance_id, "difficulty": f"difficulty_{entry.difficulty}"}
+    metadata = {
+        "run_id": run_id,
+        "instance_id": instance_id,
+        "difficulty": f"difficulty_{entry.difficulty}",
+    }
     tags = [str(value) for value in metadata.values()]
     agent = CodeAgent(codebase=codebase, tags=tags, metadata=metadata)
 
@@ -104,7 +118,9 @@ Also DO NOT ADD OR EDIT ANY TESTS!
     try:
         result = agent.run(prompt=message)
     except Exception as agent_error:
-        pprint.pprint(f"Instance ID: {instance_id} terminated with error: {agent_error}")
+        pprint.pprint(
+            f"Instance ID: {instance_id} terminated with error: {agent_error}"
+        )
         raise agent_error
 
     # Get the diff between the current state and the original commit

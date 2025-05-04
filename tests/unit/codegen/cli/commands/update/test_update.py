@@ -17,7 +17,9 @@ def mock_request():
     """
 
     def fake_get(*_, **__):
-        data = json.loads((Path(__file__).parent / "data" / "response.json").read_text())
+        data = json.loads(
+            (Path(__file__).parent / "data" / "response.json").read_text()
+        )
 
         class FakeResponse:
             def raise_for_status(self):
@@ -51,8 +53,13 @@ def test_conflicting_options():
     runner = CliRunner()
     result = runner.invoke(main.update_command, ["--list", "--version", "0.3.0"])
     # The command should exit with non-zero exit code.
-    assert result.exit_code != 0, "Expected a non-zero exit code when both --list and --version are provided."
-    assert "Cannot specify both --list and --version" in Text.from_ansi(result.output).plain
+    assert (
+        result.exit_code != 0
+    ), "Expected a non-zero exit code when both --list and --version are provided."
+    assert (
+        "Cannot specify both --list and --version"
+        in Text.from_ansi(result.output).plain
+    )
 
 
 def test_update_default(mock_install_package):
@@ -112,16 +119,35 @@ def test_list_versions(mock_request):
 @pytest.mark.parametrize(
     "versions, current, num_prev, expected",
     [
-        (["1.0.0", "1.0.1", "1.1.2", "1.2.3"], "1.0.0", 2, ["1.0.0", "1.0.1", "1.1.2", "1.2.3"]),
+        (
+            ["1.0.0", "1.0.1", "1.1.2", "1.2.3"],
+            "1.0.0",
+            2,
+            ["1.0.0", "1.0.1", "1.1.2", "1.2.3"],
+        ),
         (["0.4.5", "0.7.0", "1.0.0"], "1.0.0", 2, ["0.4.5", "0.7.0", "1.0.0"]),
         (["0.4.5", "0.7.0", "1.0.0"], "1.0.0", 1, ["0.7.0", "1.0.0"]),
         (["0.2.0", "0.3.0", "1.0.0"], "1.0.0", 0, ["1.0.0"]),
         (["0.2.0", "0.3.4", "0.3.5", "1.0.0"], "1.0.0", 1, ["0.3.4", "0.3.5", "1.0.0"]),
-        (["0.5.1", "0.5.2", "0.6.0", "1.0.0"], "0.5.2", 1, ["0.5.1", "0.5.2", "0.6.0", "1.0.0"]),
+        (
+            ["0.5.1", "0.5.2", "0.6.0", "1.0.0"],
+            "0.5.2",
+            1,
+            ["0.5.1", "0.5.2", "0.6.0", "1.0.0"],
+        ),
     ],
-    ids=["all_future_versions", "prev_2", "prev_1", "no_prev", "multiple_minor", "all_micros"],
+    ids=[
+        "all_future_versions",
+        "prev_2",
+        "prev_1",
+        "no_prev",
+        "multiple_minor",
+        "all_micros",
+    ],
 )
 def test_filter_versions(versions, current, num_prev, expected):
     """Test the filtering logic used to select releases to print."""
-    filtered_versions = main.filter_versions([Version(v) for v in versions], Version(current), num_prev)
+    filtered_versions = main.filter_versions(
+        [Version(v) for v in versions], Version(current), num_prev
+    )
     assert filtered_versions == [Version(v) for v in expected]

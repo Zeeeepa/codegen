@@ -18,7 +18,9 @@ class OpenApiException(Exception):
 
 
 class ApiTypeError(OpenApiException, TypeError):
-    def __init__(self, msg, path_to_item=None, valid_classes=None, key_type=None) -> None:
+    def __init__(
+        self, msg, path_to_item=None, valid_classes=None, key_type=None
+    ) -> None:
         """Raises an exception for TypeErrors
 
         Args:
@@ -148,7 +150,9 @@ class ApiException(OpenApiException):
             raise ConflictException(http_resp=http_resp, body=body, data=data)
 
         if http_resp.status == 422:
-            raise UnprocessableEntityException(http_resp=http_resp, body=body, data=data)
+            raise UnprocessableEntityException(
+                http_resp=http_resp, body=body, data=data
+            )
 
         if 500 <= http_resp.status <= 599:
             raise ServiceException(http_resp=http_resp, body=body, data=data)

@@ -20,7 +20,9 @@ class DockerFleet:
             containers = []
             for container in client.containers.list(all=True, filters=filters):
                 if container.attrs["Config"]["Image"] == CODEGEN_RUNNER_IMAGE:
-                    containers.append(DockerContainer(client=client, container=container))
+                    containers.append(
+                        DockerContainer(client=client, container=container)
+                    )
 
             return cls(containers=containers)
         except NotFound:
@@ -31,7 +33,9 @@ class DockerFleet:
         return [container for container in self.containers if container.is_running()]
 
     def get(self, name: str) -> DockerContainer | None:
-        return next((container for container in self.containers if container.name == name), None)
+        return next(
+            (container for container in self.containers if container.name == name), None
+        )
 
     def __str__(self) -> str:
         return f"DockerFleet(containers={',\n'.join(str(container) for container in self.containers)})"

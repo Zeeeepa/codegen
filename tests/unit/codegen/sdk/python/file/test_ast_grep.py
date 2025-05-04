@@ -3,7 +3,9 @@ import pytest
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
 
 
-@pytest.mark.skip(reason="Not implementing AST Grep for now. Much better ways of doing this.")
+@pytest.mark.skip(
+    reason="Not implementing AST Grep for now. Much better ways of doing this."
+)
 def test_ast_grep(tmpdir) -> None:
     # language=python
     content = """

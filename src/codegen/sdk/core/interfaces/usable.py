@@ -24,7 +24,9 @@ class Usable(Importable[Parent], Generic[Parent]):
 
     @proxy_property
     @reader(cache=False)
-    def symbol_usages(self, usage_types: UsageType | None = None) -> list[Import | Symbol | Export]:
+    def symbol_usages(
+        self, usage_types: UsageType | None = None
+    ) -> list[Import | Symbol | Export]:
         """Returns a list of symbols that use or import the exportable object.
 
         Args:
@@ -73,7 +75,15 @@ class Usable(Importable[Parent], Generic[Parent]):
                 usage = meta_data.usage
                 if usage_types is None or usage.usage_type in usage_types:
                     usages_to_return.append(usage)
-        return sorted(dict.fromkeys(usages_to_return), key=lambda x: x.match.ts_node.start_byte if x.match else x.usage_symbol.ts_node.start_byte, reverse=True)
+        return sorted(
+            dict.fromkeys(usages_to_return),
+            key=lambda x: (
+                x.match.ts_node.start_byte
+                if x.match
+                else x.usage_symbol.ts_node.start_byte
+            ),
+            reverse=True,
+        )
 
     def rename(self, new_name: str, priority: int = 0) -> tuple[NodeId, NodeId]:
         """Renames a symbol and updates all its references in the codebase.
@@ -87,5 +97,7 @@ class Usable(Importable[Parent], Generic[Parent]):
         """
         self.set_name(new_name)
 
-        for usage in self.usages(UsageType.DIRECT | UsageType.INDIRECT | UsageType.CHAINED):
+        for usage in self.usages(
+            UsageType.DIRECT | UsageType.INDIRECT | UsageType.CHAINED
+        ):
             usage.match.rename_if_matching(self.name, new_name)

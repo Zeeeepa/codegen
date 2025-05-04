@@ -25,14 +25,28 @@ def backup_codegen_files(repo: Repository) -> dict[str, tuple[bytes | None, bool
         if not is_codegen_file(Path(filepath)):
             continue
 
-        was_staged = bool(status & (FileStatus.INDEX_MODIFIED | FileStatus.INDEX_NEW | FileStatus.INDEX_DELETED | FileStatus.INDEX_RENAMED))
+        was_staged = bool(
+            status
+            & (
+                FileStatus.INDEX_MODIFIED
+                | FileStatus.INDEX_NEW
+                | FileStatus.INDEX_DELETED
+                | FileStatus.INDEX_RENAMED
+            )
+        )
 
         # Handle deleted files
         if status & (FileStatus.WT_DELETED | FileStatus.INDEX_DELETED):
             codegen_changes[filepath] = (None, was_staged)
             continue
         # Handle modified, new, or renamed files
-        if status & (FileStatus.WT_MODIFIED | FileStatus.WT_NEW | FileStatus.INDEX_MODIFIED | FileStatus.INDEX_NEW | FileStatus.INDEX_RENAMED):
+        if status & (
+            FileStatus.WT_MODIFIED
+            | FileStatus.WT_NEW
+            | FileStatus.INDEX_MODIFIED
+            | FileStatus.INDEX_NEW
+            | FileStatus.INDEX_RENAMED
+        ):
             file_path = Path(repo.workdir) / filepath
             if file_path.exists():  # Only read if file exists
                 codegen_changes[filepath] = (file_path.read_bytes(), was_staged)
@@ -40,7 +54,9 @@ def backup_codegen_files(repo: Repository) -> dict[str, tuple[bytes | None, bool
     return codegen_changes
 
 
-def restore_codegen_files(repo: Repository, codegen_changes: dict[str, tuple[bytes | None, bool]]) -> None:
+def restore_codegen_files(
+    repo: Repository, codegen_changes: dict[str, tuple[bytes | None, bool]]
+) -> None:
     """Restore backed up .codegen files and their staged status."""
     for filepath, (content, was_staged) in codegen_changes.items():
         file_path = Path(repo.workdir) / filepath
@@ -93,7 +109,9 @@ def reset_command() -> None:
         # Remove untracked files except .codegen
         remove_untracked_files(repo)
 
-        click.echo(f"Reset complete. Repository has been restored to HEAD (preserving {CODEGEN_DIR}) and untracked files have been removed (except {CODEGEN_DIR})")
+        click.echo(
+            f"Reset complete. Repository has been restored to HEAD (preserving {CODEGEN_DIR}) and untracked files have been removed (except {CODEGEN_DIR})"
+        )
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
 

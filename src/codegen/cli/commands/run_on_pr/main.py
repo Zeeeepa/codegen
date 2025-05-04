@@ -17,7 +17,9 @@ def run_on_pr(session: CodegenSession, codemod_name: str, pr_number: int) -> Non
         msg = f"No function found with name '{codemod_name}'"
         raise click.ClickException(msg)
 
-    with create_spinner(f"Testing webhook '{codemod_name}' on PR #{pr_number}...") as status:
+    with create_spinner(
+        f"Testing webhook '{codemod_name}' on PR #{pr_number}..."
+    ) as status:
         try:
             response = RestAPI(get_current_token()).run_on_pr(
                 codemod_name=codemod_name,
@@ -26,7 +28,9 @@ def run_on_pr(session: CodegenSession, codemod_name: str, pr_number: int) -> Non
             )
             status.stop()
             rich.print(f"✅ Webhook test completed for PR #{pr_number}")
-            rich.print(f"   [dim]View results:[/dim] [blue underline]{response.web_url}[/blue underline]")
+            rich.print(
+                f"   [dim]View results:[/dim] [blue underline]{response.web_url}[/blue underline]"
+            )
         except Exception as e:
             status.stop()
             msg = f"Failed to test webhook: {e!s}"

@@ -44,7 +44,9 @@ class PyHasBlock(HasBlock[PyCodeBlock, PyDecorator]):
             This property should be used in conjunction with is_decorated to check if the symbol has any decorators.
         """
         if self.is_decorated:
-            decorators = [x for x in self.ts_node.parent.children if x.type == "decorator"]
+            decorators = [
+                x for x in self.ts_node.parent.children if x.type == "decorator"
+            ]
             return [PyDecorator(x, self) for x in decorators]
         return []
 
@@ -61,7 +63,13 @@ class PyHasBlock(HasBlock[PyCodeBlock, PyDecorator]):
         return PyCommentGroup.from_docstring(self)
 
     @writer
-    def set_docstring(self, docstring: str, auto_format: bool = True, clean_format: bool = True, force_multiline: bool = False) -> None:
+    def set_docstring(
+        self,
+        docstring: str,
+        auto_format: bool = True,
+        clean_format: bool = True,
+        force_multiline: bool = False,
+    ) -> None:
         """Sets or updates a docstring for a Python function or class.
 
         Updates the existing docstring if one exists, otherwise creates a new docstring. The docstring can be automatically formatted and cleaned before being set.
@@ -87,5 +95,9 @@ class PyHasBlock(HasBlock[PyCodeBlock, PyDecorator]):
                 self.docstring.edit(docstring)
         else:
             if auto_format:
-                docstring = PyComment.generate_comment(docstring, PyCommentType.MULTI_LINE_DOUBLE_QUOTE, force_multiline=force_multiline)
+                docstring = PyComment.generate_comment(
+                    docstring,
+                    PyCommentType.MULTI_LINE_DOUBLE_QUOTE,
+                    force_multiline=force_multiline,
+                )
             self.code_block.insert_before(docstring)

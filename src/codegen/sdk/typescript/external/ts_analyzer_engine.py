@@ -26,7 +26,12 @@ logger = get_logger(__name__)
 class TypescriptEngine(LanguageEngine):
     dependency_manager: "DependencyManager | None"
 
-    def __init__(self, repo_path: str, base_path: str | None = None, dependency_manager: "DependencyManager | None" = None):
+    def __init__(
+        self,
+        repo_path: str,
+        base_path: str | None = None,
+        dependency_manager: "DependencyManager | None" = None,
+    ):
         super().__init__(repo_path, base_path)
         self.dependency_manager = dependency_manager
 
@@ -34,7 +39,9 @@ class TypescriptEngine(LanguageEngine):
     def _start(self):
         # If a dependency manager is provided, make sure it is ready
         if self.dependency_manager:
-            logger.info(f"TypescriptEngine: Waiting for {self.dependency_manager.__class__.__name__} to be ready...")
+            logger.info(
+                f"TypescriptEngine: Waiting for {self.dependency_manager.__class__.__name__} to be ready..."
+            )
             self.dependency_manager.wait_until_ready(ignore_error=True)
         # Start the engine
         super()._start()
@@ -64,7 +71,9 @@ class V8TypescriptEngine(TypescriptEngine):
         soft_memory_limit: int = 1024 * 1024 * 1024 * 8,
     ):
         super().__init__(repo_path, base_path, dependency_manager)
-        logger.info(f"Initializing V8TypescriptEngine with hard_memory_limit={hard_memory_limit} and soft_memory_limit={soft_memory_limit}")
+        logger.info(
+            f"Initializing V8TypescriptEngine with hard_memory_limit={hard_memory_limit} and soft_memory_limit={soft_memory_limit}"
+        )
         self.hard_memory_limit: int = hard_memory_limit
         self.soft_memory_limit: int = soft_memory_limit
         self.ctx: MiniRacer | None = None
@@ -72,7 +81,12 @@ class V8TypescriptEngine(TypescriptEngine):
         # Get the path to the current file
         self.current_file_path: str = os.path.abspath(__file__)
         # Get the path of the language engine
-        self.engine_path: str = os.path.join(os.path.dirname(self.current_file_path), "typescript_analyzer", "dist", "index.js")
+        self.engine_path: str = os.path.join(
+            os.path.dirname(self.current_file_path),
+            "typescript_analyzer",
+            "dist",
+            "index.js",
+        )
         if not os.path.exists(self.engine_path):
             msg = f"Typescript analyzer engine not found at {self.engine_path}"
             raise FileNotFoundError(msg)
@@ -84,7 +98,9 @@ class V8TypescriptEngine(TypescriptEngine):
             logger.info("Starting V8TypescriptEngine")
             super()._start()
             # Create the MiniRacer/MegaRacer context
-            self.ctx = MegaRacer()  # MegaRacer is a patch on MiniRacer that allows for more memory
+            self.ctx = (
+                MegaRacer()
+            )  # MegaRacer is a patch on MiniRacer that allows for more memory
             # Set to 16GB
             self.ctx.set_hard_memory_limit(self.hard_memory_limit)
             self.ctx.set_soft_memory_limit(self.soft_memory_limit)
@@ -104,7 +120,9 @@ class V8TypescriptEngine(TypescriptEngine):
 
             # Set up the analyzer
             logger.info(f"Setting up analyzer with path {self.full_path}")
-            self.ctx.eval(f"const type_script_analyzer = new TypeScriptAnalyzer('{self.full_path}', interop_fs);")
+            self.ctx.eval(
+                f"const type_script_analyzer = new TypeScriptAnalyzer('{self.full_path}', interop_fs);"
+            )
             self.mr_type_script_analyzer = self.ctx.eval("type_script_analyzer")
 
             # Finalize
@@ -127,7 +145,9 @@ class V8TypescriptEngine(TypescriptEngine):
                 try:
                     with open(file_path, encoding="utf-8") as f:
                         if "node_modules" in s_fp:
-                            if not s_fp.endswith(".json") and not s_fp.endswith(".d.ts"):
+                            if not s_fp.endswith(".json") and not s_fp.endswith(
+                                ".d.ts"
+                            ):
                                 continue
                         content = f.read()
                         fs_files[str(file_path)] = content
@@ -152,7 +172,9 @@ class V8TypescriptEngine(TypescriptEngine):
     def get_return_type(self, node: "Editable") -> str | None:
         file_path = os.path.join(self.repo_path, node.filepath)
         try:
-            return self.ctx.eval(f"type_script_analyzer.getFunctionAtPosition('{file_path}', {node.start_byte})")
+            return self.ctx.eval(
+                f"type_script_analyzer.getFunctionAtPosition('{file_path}', {node.start_byte})"
+            )
         except JSEvalException as e:
             return None
 
@@ -168,7 +190,12 @@ class NodeTypescriptEngine(TypescriptEngine):
 
     type_data: dict | None
 
-    def __init__(self, repo_path: str, base_path: str | None = None, dependency_manager: "DependencyManager | None" = None):
+    def __init__(
+        self,
+        repo_path: str,
+        base_path: str | None = None,
+        dependency_manager: "DependencyManager | None" = None,
+    ):
         super().__init__(repo_path, base_path, dependency_manager)
         logger.info("Initializing NodeTypescriptEngine")
         self.type_data: dict | None = None
@@ -181,8 +208,12 @@ class NodeTypescriptEngine(TypescriptEngine):
             raise RuntimeError(msg)
 
         # Get the path to the typescript analyzer
-        self.analyzer_path: str = os.path.join(os.path.dirname(self.current_file_path), "typescript_analyzer")
-        self.analyzer_entry: str = os.path.join(self.analyzer_path, "src", "run_full.ts")
+        self.analyzer_path: str = os.path.join(
+            os.path.dirname(self.current_file_path), "typescript_analyzer"
+        )
+        self.analyzer_entry: str = os.path.join(
+            self.analyzer_path, "src", "run_full.ts"
+        )
         if not os.path.exists(self.analyzer_path):
             msg = f"Typescript analyzer not found at {self.analyzer_path}"
             raise FileNotFoundError(msg)
@@ -194,9 +225,17 @@ class NodeTypescriptEngine(TypescriptEngine):
             # NPM Install
             try:
                 logger.info("Installing typescript analyzer dependencies")
-                subprocess.run(["npm", "install"], cwd=self.analyzer_path, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["npm", "install"],
+                    cwd=self.analyzer_path,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
             except subprocess.CalledProcessError as e:
-                logger.exception(f"NPM FAIL: npm install failed with exit code {e.returncode}")
+                logger.exception(
+                    f"NPM FAIL: npm install failed with exit code {e.returncode}"
+                )
                 logger.exception(f"NPM FAIL stdout: {e.stdout}")
                 logger.exception(f"NPM FAIL stderr: {e.stderr}")
                 raise
@@ -207,12 +246,26 @@ class NodeTypescriptEngine(TypescriptEngine):
                 # Run the analyzer
                 try:
                     # Create custom flags for node
-                    node_environ = {**os.environ, "NODE_OPTIONS": "--max_old_space_size=8192"}
+                    node_environ = {
+                        **os.environ,
+                        "NODE_OPTIONS": "--max_old_space_size=8192",
+                    }
 
                     # Run the analyzer
-                    logger.info(f"Running analyzer with project path {self.full_path} and output file {output_file_path}")
+                    logger.info(
+                        f"Running analyzer with project path {self.full_path} and output file {output_file_path}"
+                    )
                     subprocess.run(
-                        ["node", "--loader", "ts-node/esm", self.analyzer_entry, "--project", self.full_path, "--output", output_file_path],
+                        [
+                            "node",
+                            "--loader",
+                            "ts-node/esm",
+                            self.analyzer_entry,
+                            "--project",
+                            self.full_path,
+                            "--output",
+                            output_file_path,
+                        ],
                         cwd=self.analyzer_path,
                         check=True,
                         capture_output=True,
@@ -220,7 +273,9 @@ class NodeTypescriptEngine(TypescriptEngine):
                         env=node_environ,
                     )
                 except subprocess.CalledProcessError as e:
-                    logger.exception(f"ANALYZER FAIL: analyzer failed with exit code {e.returncode}")
+                    logger.exception(
+                        f"ANALYZER FAIL: analyzer failed with exit code {e.returncode}"
+                    )
                     logger.exception(f"ANALYZER FAIL stdout: {e.stdout}")
                     logger.exception(f"ANALYZER FAIL stderr: {e.stderr}")
                     raise

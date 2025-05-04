@@ -1,13 +1,18 @@
+import modal
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from codegen import Codebase
 from codegen.extensions.attribution.main import (
     add_attribution_to_symbols,
     analyze_ai_impact,
 )
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import modal
 
-image = modal.Image.debian_slim().apt_install("git").pip_install("codegen", "fastapi", "intervaltree", "pygit2", "requests")
+image = (
+    modal.Image.debian_slim()
+    .apt_install("git")
+    .pip_install("codegen", "fastapi", "intervaltree", "pygit2", "requests")
+)
 
 app = modal.App(name="ai-impact-analysis", image=image)
 
@@ -24,7 +29,9 @@ fastapi_app.add_middleware(
 
 @fastapi_app.post("/analyze")
 async def analyze(repo_full_name: str):
-    codebase = Codebase.from_repo(repo_full_name=repo_full_name, language="python", full_history=True)
+    codebase = Codebase.from_repo(
+        repo_full_name=repo_full_name, language="python", full_history=True
+    )
 
     print("🤖 Analyzing AI impact on codebase...")
 

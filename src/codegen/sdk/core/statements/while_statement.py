@@ -37,7 +37,14 @@ class WhileStatement(Statement[TCodeBlock], HasBlock, ABC, Generic[TCodeBlock]):
     condition: Expression[Self]
     code_block: TCodeBlock
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         self.code_block = self._parse_code_block()
         self.code_block.parse()
@@ -73,7 +80,9 @@ class WhileStatement(Statement[TCodeBlock], HasBlock, ABC, Generic[TCodeBlock]):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         self.condition._compute_dependencies(usage_type, dest)
         self.code_block._compute_dependencies(usage_type, dest)
 

@@ -73,6 +73,10 @@ class SimpleGraph:
     def add_relation(self, relation: Relation) -> None:
         """Add a relation to the graph."""
         related_nodes = f"{relation.source_id}->{relation.label}->{relation.target_id}"
-        if relation.source_id in self.nodes and relation.target_id in self.nodes and related_nodes not in self.existing_relations:
+        if (
+            relation.source_id in self.nodes
+            and relation.target_id in self.nodes
+            and related_nodes not in self.existing_relations
+        ):
             self.relations.add(relation)
             self.existing_relations.add(related_nodes)

@@ -14,7 +14,10 @@ def foo():
     """
     with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
         file = codebase.get_file("test.py")
-        assert codebase.get_function("foo").parent_statement == file.code_block.statements[0]
+        assert (
+            codebase.get_function("foo").parent_statement
+            == file.code_block.statements[0]
+        )
 
 
 def test_parent_statement_class(tmpdir):
@@ -25,7 +28,9 @@ class Foo:
     """
     with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
         file = codebase.get_file("test.py")
-        assert codebase.get_class("Foo").parent_statement == file.code_block.statements[0]
+        assert (
+            codebase.get_class("Foo").parent_statement == file.code_block.statements[0]
+        )
 
 
 def test_parent_statement_assignment(tmpdir):
@@ -35,7 +40,9 @@ foo = 1
     """
     with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}) as codebase:
         file = codebase.get_file("test.py")
-        assert file.get_global_var("foo").parent_statement == file.code_block.statements[0]
+        assert (
+            file.get_global_var("foo").parent_statement == file.code_block.statements[0]
+        )
 
 
 def test_parent_statement_nested_symbols(tmpdir):
@@ -69,7 +76,20 @@ if __name__ == "__main__":
         assert klass.parent_statement == file.code_block.statements[2]
 
         # nested symbols
-        assert foo.code_block.statements[0].symbol.parent_statement == foo.code_block.statements[0]
-        assert klass.get_attribute("attr").assignment.parent_statement == klass.code_block.statements[0] == klass.get_attribute("attr")
-        assert klass.get_method("__init__").parent_statement == klass.code_block.statements[1]
-        assert if_block.consequence_block.statements[0].assignments[0].parent_statement == if_block.consequence_block.statements[0]
+        assert (
+            foo.code_block.statements[0].symbol.parent_statement
+            == foo.code_block.statements[0]
+        )
+        assert (
+            klass.get_attribute("attr").assignment.parent_statement
+            == klass.code_block.statements[0]
+            == klass.get_attribute("attr")
+        )
+        assert (
+            klass.get_method("__init__").parent_statement
+            == klass.code_block.statements[1]
+        )
+        assert (
+            if_block.consequence_block.statements[0].assignments[0].parent_statement
+            == if_block.consequence_block.statements[0]
+        )

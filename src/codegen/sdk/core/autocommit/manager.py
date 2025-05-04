@@ -1,4 +1,3 @@
-from codegen.shared.logging.get_logger import get_logger
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -16,6 +15,7 @@ from codegen.sdk.core.autocommit.constants import (
 from codegen.sdk.core.autocommit.utils import is_file, is_on_graph, is_symbol
 from codegen.sdk.core.node_id_factory import NodeId
 from codegen.sdk.extensions.autocommit import update_dict
+from codegen.shared.logging.get_logger import get_logger
 
 if TYPE_CHECKING:
     from codegen.sdk.codebase.codebase_context import CodebaseContext

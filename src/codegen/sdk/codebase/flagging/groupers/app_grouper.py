@@ -16,17 +16,23 @@ class AppGrouper(BaseGrouper):
     type: GroupBy = GroupBy.APP
 
     @staticmethod
-    def create_all_groups(flags: list[CodeFlag], repo_operator: RepoOperator | None = None) -> list[Group]:
+    def create_all_groups(
+        flags: list[CodeFlag], repo_operator: RepoOperator | None = None
+    ) -> list[Group]:
         unique_apps = list({"/".join(flag.filepath.split("/")[:3]) for flag in flags})
         groups = []
         for idx, app in enumerate(unique_apps):
             matches = [f for f in flags if f.filepath.startswith(app)]
             if len(matches) > 0:
-                groups.append(Group(id=idx, group_by=GroupBy.APP, segment=app, flags=matches))
+                groups.append(
+                    Group(id=idx, group_by=GroupBy.APP, segment=app, flags=matches)
+                )
         return groups
 
     @staticmethod
-    def create_single_group(flags: list[CodeFlag], segment: str, repo_operator: RepoOperator | None = None) -> Group:
+    def create_single_group(
+        flags: list[CodeFlag], segment: str, repo_operator: RepoOperator | None = None
+    ) -> Group:
         segment_flags = [f for f in flags if f.filepath.startswith(segment)]
         if len(segment_flags) == 0:
             logger.warning(f"🤷‍♀️ No flags found for APP segment: {segment}")

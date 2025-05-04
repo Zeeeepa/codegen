@@ -24,9 +24,21 @@ class SessionOptions(BaseModel):
     max_ai_requests: int = Field(default=150, le=HARD_MAX_AI_LIMIT)
 
 
-TestFlags = DefaultCodebaseConfig.model_copy(update=dict(debug=True, track_graph=True, verify_graph=True, full_range_index=True, sync_enabled=True))
-LintFlags = DefaultCodebaseConfig.model_copy(update=dict(method_usages=False, sync_enabled=True))
-ParseTestFlags = DefaultCodebaseConfig.model_copy(update=dict(debug=False, track_graph=False, sync_enabled=True))
+TestFlags = DefaultCodebaseConfig.model_copy(
+    update=dict(
+        debug=True,
+        track_graph=True,
+        verify_graph=True,
+        full_range_index=True,
+        sync_enabled=True,
+    )
+)
+LintFlags = DefaultCodebaseConfig.model_copy(
+    update=dict(method_usages=False, sync_enabled=True)
+)
+ParseTestFlags = DefaultCodebaseConfig.model_copy(
+    update=dict(debug=False, track_graph=False, sync_enabled=True)
+)
 
 
 class ProjectConfig(BaseModel):
@@ -41,12 +53,16 @@ class ProjectConfig(BaseModel):
     programming_language: ProgrammingLanguage = ProgrammingLanguage.PYTHON
 
     @classmethod
-    def from_path(cls, path: str, programming_language: ProgrammingLanguage | None = None) -> Self:
+    def from_path(
+        cls, path: str, programming_language: ProgrammingLanguage | None = None
+    ) -> Self:
         # Split repo_path into (git_root, base_path)
         repo_path = os.path.abspath(path)
         git_root, base_path = split_git_path(repo_path)
         subdirectories = [base_path] if base_path else None
-        programming_language = programming_language or determine_project_language(repo_path)
+        programming_language = programming_language or determine_project_language(
+            repo_path
+        )
         repo_config = RepoConfig.from_repo_path(repo_path=git_root)
         repo_config.language = programming_language
         repo_config.subdirectories = subdirectories
@@ -59,10 +75,16 @@ class ProjectConfig(BaseModel):
         )
 
     @classmethod
-    def from_repo_operator(cls, repo_operator: RepoOperator, programming_language: ProgrammingLanguage | None = None, base_path: str | None = None) -> Self:
+    def from_repo_operator(
+        cls,
+        repo_operator: RepoOperator,
+        programming_language: ProgrammingLanguage | None = None,
+        base_path: str | None = None,
+    ) -> Self:
         return cls(
             repo_operator=repo_operator,
-            programming_language=programming_language or determine_project_language(repo_operator.repo_path),
+            programming_language=programming_language
+            or determine_project_language(repo_operator.repo_path),
             base_path=base_path,
             subdirectories=[base_path] if base_path else None,
         )

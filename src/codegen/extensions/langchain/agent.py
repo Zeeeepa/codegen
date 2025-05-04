@@ -10,7 +10,7 @@ from langgraph.graph.graph import CompiledGraph
 from codegen.agents.utils import AgentConfig
 from codegen.extensions.langchain.llm import LLM
 from codegen.extensions.langchain.prompts import REASONER_SYSTEM_MESSAGE
-from codegen.extensions.langchain.tools import (
+from codegen.extensions.langchain.tools import (  # SemanticEditTool,
     CreateFileTool,
     DeleteFileTool,
     GlobalReplacementEditTool,
@@ -23,7 +23,6 @@ from codegen.extensions.langchain.tools import (
     RevealSymbolTool,
     RipGrepTool,
     SearchFilesByNameTool,
-    # SemanticEditTool,
     ViewFileTool,
 )
 
@@ -91,7 +90,14 @@ def create_codebase_agent(
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(
+        model=llm,
+        tools=tools,
+        system_message=system_message,
+        checkpointer=memory,
+        debug=debug,
+        config=config,
+    )
 
 
 def create_chat_agent(
@@ -102,7 +108,9 @@ def create_chat_agent(
     memory: bool = True,
     debug: bool = False,
     additional_tools: list[BaseTool] | None = None,
-    config: dict[str, Any] | None = None,  # over here you can pass in the max length of the number of messages
+    config: (
+        dict[str, Any] | None
+    ) = None,  # over here you can pass in the max length of the number of messages
     **kwargs,
 ) -> CompiledGraph:
     """Create an agent with all codebase tools.
@@ -141,7 +149,14 @@ def create_chat_agent(
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(
+        model=llm,
+        tools=tools,
+        system_message=system_message,
+        checkpointer=memory,
+        debug=debug,
+        config=config,
+    )
 
 
 def create_codebase_inspector_agent(
@@ -179,7 +194,14 @@ def create_codebase_inspector_agent(
     ]
 
     memory = MemorySaver() if memory else None
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(
+        model=llm,
+        tools=tools,
+        system_message=system_message,
+        checkpointer=memory,
+        debug=debug,
+        config=config,
+    )
 
 
 def create_agent_with_tools(
@@ -214,4 +236,11 @@ def create_agent_with_tools(
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
+    return create_react_agent(
+        model=llm,
+        tools=tools,
+        system_message=system_message,
+        checkpointer=memory,
+        debug=debug,
+        config=config,
+    )

@@ -28,7 +28,10 @@ class PyParameter(Parameter[PyType, Collection["PyParameter", "PyFunction"]]):
             bool: True if the parameter is optional, False otherwise.
         """
         return (
-            self.ts_node.type == "default_parameter" or self.ts_node.type == "typed_default_parameter" or self.ts_node.type == "list_splat_pattern" or self.ts_node.type == "dictionary_splat_pattern"
+            self.ts_node.type == "default_parameter"
+            or self.ts_node.type == "typed_default_parameter"
+            or self.ts_node.type == "list_splat_pattern"
+            or self.ts_node.type == "dictionary_splat_pattern"
         )
 
     @property
@@ -41,11 +44,16 @@ class PyParameter(Parameter[PyType, Collection["PyParameter", "PyFunction"]]):
         Returns:
             bool: True if the parameter is variadic (uses * or ** syntax), False otherwise.
         """
-        return self.ts_node.type == "list_splat_pattern" or self.ts_node.type == "dictionary_splat_pattern"
+        return (
+            self.ts_node.type == "list_splat_pattern"
+            or self.ts_node.type == "dictionary_splat_pattern"
+        )
 
     @deprecated("Use `type.edit` instead")
     @writer
-    def set_type_annotation(self, type_annotation: str, include_comment: str = "") -> None:
+    def set_type_annotation(
+        self, type_annotation: str, include_comment: str = ""
+    ) -> None:
         """Sets the type annotation of a parameter.
 
         Sets or updates the type annotation for this parameter. This method is deprecated in favor of using `type.edit` directly.
@@ -74,4 +82,8 @@ class PyParameter(Parameter[PyType, Collection["PyParameter", "PyFunction"]]):
         Returns:
             None
         """
-        self.parent_function.edit(self.parent_function.source.replace(self.source + ",", self.source + "," + f"#  {comment} \n\n"))
+        self.parent_function.edit(
+            self.parent_function.source.replace(
+                self.source + ",", self.source + "," + f"#  {comment} \n\n"
+            )
+        )

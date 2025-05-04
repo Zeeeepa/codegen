@@ -77,7 +77,11 @@ async def test_server_slack_mention(app_with_handlers):
 
         try:
             # Send test mention
-            response = await client.send_slack_message(text="<@U123BOT> help me with this code", channel="C123TEST", event_type="app_mention")
+            response = await client.send_slack_message(
+                text="<@U123BOT> help me with this code",
+                channel="C123TEST",
+                event_type="app_mention",
+            )
 
             # Verify the response
             assert response is not None
@@ -110,7 +114,9 @@ async def test_simulate_slack_mention(app_with_handlers):
     }
 
     # Simulate the event
-    response = await app_with_handlers.simulate_event(provider="slack", event_type="app_mention", payload=payload)
+    response = await app_with_handlers.simulate_event(
+        provider="slack", event_type="app_mention", payload=payload
+    )
 
     # Verify the response
     assert response is not None
@@ -122,7 +128,9 @@ async def test_simulate_slack_mention(app_with_handlers):
 async def test_simulate_unknown_provider(app_with_handlers):
     """Test simulating an event with an unknown provider"""
     with pytest.raises(ValueError) as exc_info:
-        await app_with_handlers.simulate_event(provider="unknown", event_type="test", payload={})
+        await app_with_handlers.simulate_event(
+            provider="unknown", event_type="test", payload={}
+        )
 
     assert "Unknown provider" in str(exc_info.value)
 
@@ -132,7 +140,9 @@ async def test_simulate_unregistered_event(app_with_handlers):
     """Test simulating an event type that has no registered handler"""
     payload = {"event": {"type": "unknown_event", "user": "U123456"}}
 
-    response = await app_with_handlers.simulate_event(provider="slack", event_type="unknown_event", payload=payload)
+    response = await app_with_handlers.simulate_event(
+        provider="slack", event_type="unknown_event", payload=payload
+    )
 
     # Should return a default response for unhandled events
     assert response["message"] == "Event handled successfully"
@@ -158,13 +168,23 @@ async def test_simulate_github_pr_labeled(app_with_handlers):
             "updated_at": "2024-01-01T00:00:00Z",
             "draft": False,
         },
-        "label": {"id": 1, "node_id": "123", "url": "https://api.github.com/repos/test/test/labels/bug", "name": "bug", "description": "Bug report", "color": "red", "default": False},
+        "label": {
+            "id": 1,
+            "node_id": "123",
+            "url": "https://api.github.com/repos/test/test/labels/bug",
+            "name": "bug",
+            "description": "Bug report",
+            "color": "red",
+            "default": False,
+        },
         "repository": {"id": 1, "name": "test"},
         "sender": {"id": 1, "login": "test-user"},
     }
 
     # Simulate the event
-    response = await app_with_handlers.simulate_event(provider="github", event_type="pull_request:labeled", payload=payload)
+    response = await app_with_handlers.simulate_event(
+        provider="github", event_type="pull_request:labeled", payload=payload
+    )
 
     # Verify the response
     assert response is not None
@@ -193,7 +213,12 @@ async def test_server_github_pr_labeled(app_with_handlers):
                     "state": "open",
                     "locked": False,
                     "title": "Test PR",
-                    "user": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"},
+                    "user": {
+                        "id": 1,
+                        "login": "test-user",
+                        "node_id": "U_123",
+                        "type": "User",
+                    },
                     "body": "Test PR body",
                     "labels": [],
                     "created_at": "2024-01-01T00:00:00Z",
@@ -203,20 +228,79 @@ async def test_server_github_pr_labeled(app_with_handlers):
                         "label": "user:feature",
                         "ref": "feature",
                         "sha": "abc123",
-                        "user": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"},
-                        "repo": {"id": 1, "name": "test", "node_id": "R_123", "full_name": "test/test", "private": False, "owner": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"}},
+                        "user": {
+                            "id": 1,
+                            "login": "test-user",
+                            "node_id": "U_123",
+                            "type": "User",
+                        },
+                        "repo": {
+                            "id": 1,
+                            "name": "test",
+                            "node_id": "R_123",
+                            "full_name": "test/test",
+                            "private": False,
+                            "owner": {
+                                "id": 1,
+                                "login": "test-user",
+                                "node_id": "U_123",
+                                "type": "User",
+                            },
+                        },
                     },
                     "base": {
                         "label": "main",
                         "ref": "main",
                         "sha": "def456",
-                        "user": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"},
-                        "repo": {"id": 1, "name": "test", "node_id": "R_123", "full_name": "test/test", "private": False, "owner": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"}},
+                        "user": {
+                            "id": 1,
+                            "login": "test-user",
+                            "node_id": "U_123",
+                            "type": "User",
+                        },
+                        "repo": {
+                            "id": 1,
+                            "name": "test",
+                            "node_id": "R_123",
+                            "full_name": "test/test",
+                            "private": False,
+                            "owner": {
+                                "id": 1,
+                                "login": "test-user",
+                                "node_id": "U_123",
+                                "type": "User",
+                            },
+                        },
                     },
                 },
-                "label": {"id": 1, "node_id": "L_123", "url": "https://api.github.com/repos/test/test/labels/bug", "name": "bug", "description": "Bug report", "color": "red", "default": False},
-                "repository": {"id": 1, "name": "test", "node_id": "R_123", "full_name": "test/test", "private": False, "owner": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"}},
-                "sender": {"id": 1, "login": "test-user", "node_id": "U_123", "type": "User"},
+                "label": {
+                    "id": 1,
+                    "node_id": "L_123",
+                    "url": "https://api.github.com/repos/test/test/labels/bug",
+                    "name": "bug",
+                    "description": "Bug report",
+                    "color": "red",
+                    "default": False,
+                },
+                "repository": {
+                    "id": 1,
+                    "name": "test",
+                    "node_id": "R_123",
+                    "full_name": "test/test",
+                    "private": False,
+                    "owner": {
+                        "id": 1,
+                        "login": "test-user",
+                        "node_id": "U_123",
+                        "type": "User",
+                    },
+                },
+                "sender": {
+                    "id": 1,
+                    "login": "test-user",
+                    "node_id": "U_123",
+                    "type": "User",
+                },
             }
 
             # Send test event
@@ -255,7 +339,9 @@ async def test_simulate_linear_issue_created(app_with_handlers):
     }
 
     # Simulate the event
-    response = await app_with_handlers.simulate_event(provider="linear", event_type="Issue", payload=payload)
+    response = await app_with_handlers.simulate_event(
+        provider="linear", event_type="Issue", payload=payload
+    )
 
     # Verify the response
     assert response is not None

@@ -15,7 +15,11 @@ def foo():
     result = a and b
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         assign = foo.code_block.assignments[0]
@@ -40,7 +44,11 @@ def bar():
     result = (x or y) and b
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file2.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file2.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file2.py")
         bar = file.get_function("bar")
         assign_x = bar.code_block.assignments[0]
@@ -67,7 +75,11 @@ def baz():
     result = notA or b
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file3.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file3.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file3.py")
         baz = file.get_function("baz")
         assign_notA = baz.code_block.assignments[1]
@@ -92,7 +104,11 @@ def qux():
     result = "active" if isActive else "inactive"
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file4.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file4.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file4.py")
         qux = file.get_function("qux")
         assign_isActive = qux.code_block.assignments[0]
@@ -116,7 +132,11 @@ def quux():
     result = "active" if isActive else "inactive"
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file5.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file5.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file5.py")
         quux = file.get_function("quux")
         assign_isActive = quux.code_block.assignments[0]

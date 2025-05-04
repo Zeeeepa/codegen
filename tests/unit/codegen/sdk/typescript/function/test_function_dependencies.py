@@ -11,7 +11,11 @@ async function myFunction(a: A, b) {
   return a + b + d;
 };
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test myFunction ]=====
@@ -34,7 +38,11 @@ function* myFunction(a: A, b) {
   yield a + b + d;
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test myFunction ]=====
@@ -55,7 +63,11 @@ const d = 123;
 
 const myFunction = (a: A, b) => a + b + d;
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test myFunction ]=====
@@ -78,7 +90,11 @@ const myFunction = function(a: A, b) {
   return a + b + d;
 };
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test myFunction ]=====
@@ -101,7 +117,11 @@ function myFunction(a: A, b) {
   return a + b + d;
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test myFunction ]=====
@@ -125,7 +145,11 @@ export function foo() {
     bar();
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Test bar ]=====
@@ -156,7 +180,11 @@ const equalsFunction = function(a: A, b) {
   return a + b + d;
 };
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         my_func = file.get_function("myFunc")
         deps = my_func.dependencies

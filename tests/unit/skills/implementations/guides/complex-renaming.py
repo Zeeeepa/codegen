@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 RenameFunctionAndUpdateReferencesPyTestCase = SkillTestCase(
     [
@@ -65,19 +69,29 @@ class RenameFunctionAndUpdateReferences(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RenameFunctionAndUpdateReferencesPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[RenameFunctionAndUpdateReferencesPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Find the symbol to rename
-        old_function = codebase.get_file("path/to/file.py").get_function("old_function_name")
+        old_function = codebase.get_file("path/to/file.py").get_function(
+            "old_function_name"
+        )
 
         # Rename the function and update all references
         old_function.rename("new_function_name")
 
     @staticmethod
-    @skill_impl(test_cases=[RenameFunctionAndUpdateReferencesTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RenameFunctionAndUpdateReferencesTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Find the symbol to rename
-        old_function = codebase.get_file("path/to/file.ts").get_function("old_function_name")
+        old_function = codebase.get_file("path/to/file.ts").get_function(
+            "old_function_name"
+        )
 
         # Rename the function and update all references
         old_function.rename("new_function_name")
@@ -98,9 +112,14 @@ class AutoRenameFunction(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RenameFunctionAndUpdateReferencesPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[RenameFunctionAndUpdateReferencesPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
-        function = codebase.get_file("path/to/file.py").get_function("old_function_name")
+        function = codebase.get_file("path/to/file.py").get_function(
+            "old_function_name"
+        )
         function.rename("new_function_name")
 
         # All call sites are automatically updated
@@ -109,9 +128,14 @@ class AutoRenameFunction(Skill, ABC):
             print(call_site.source)  # This will show "new_name(...)"
 
     @staticmethod
-    @skill_impl(test_cases=[RenameFunctionAndUpdateReferencesTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RenameFunctionAndUpdateReferencesTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
-        function = codebase.get_file("path/to/file.ts").get_function("old_function_name")
+        function = codebase.get_file("path/to/file.ts").get_function(
+            "old_function_name"
+        )
         function.rename("new_function_name")
 
         # All call sites are automatically updated
@@ -187,8 +211,12 @@ class AutomaticClassRenamingWithReferenceUpdate(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[AutoRenameClassPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[AutoRenameClassTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[AutoRenameClassPyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[AutoRenameClassTSTestCase], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def skill_func(codebase: CodebaseType):
         old_class = codebase.get_class("OldClassName")
         old_class.rename("NewClassName")
@@ -196,7 +224,9 @@ class AutomaticClassRenamingWithReferenceUpdate(Skill, ABC):
         # All references are automatically updated
         for usage in old_class.symbol_usages:
             # This could be a subclass, an instantiation, or any other reference
-            print(usage.source)  # This will show "NewClassName" instead of "OldClassName"
+            print(
+                usage.source
+            )  # This will show "NewClassName" instead of "OldClassName"
 
 
 RemoveDeprecatedPrefixfromFunctionsPyTestCase = SkillTestCase(
@@ -275,8 +305,14 @@ class RemoveDeprecatedPrefixfromFunctions(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveDeprecatedPrefixfromFunctionsPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RemoveDeprecatedPrefixfromFunctionsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RemoveDeprecatedPrefixfromFunctionsPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[RemoveDeprecatedPrefixfromFunctionsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate over all codebase functions
         for function in codebase.functions:
@@ -396,8 +432,12 @@ class RenameMethodInBaseAndSubclasses(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RenameMethodPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RenameMethodTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RenameMethodPyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[RenameMethodTSTestCase], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def skill_func(codebase: CodebaseType):
         base_class = codebase.get_class("BaseClass")
         old_method = base_class.get_method("old_method")

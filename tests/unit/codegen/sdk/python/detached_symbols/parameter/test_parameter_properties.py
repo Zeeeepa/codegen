@@ -80,5 +80,8 @@ def foo(x: int = DEFAULT_VALUE):
         assert param.value == "DEFAULT_VALUE"
 
         assert len(default_val_var.usages) == 2
-        assert default_val_var.usages[0].match.parent_statement == function_symbol.code_block.statements[0]
+        assert (
+            default_val_var.usages[0].match.parent_statement
+            == function_symbol.code_block.statements[0]
+        )
         assert default_val_var.usages[1].match == param.value

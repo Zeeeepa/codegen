@@ -29,11 +29,11 @@ flowchart LR
     style EditRun fill:#ff6b6b,stroke:#000,stroke-width:3px,color:#000,font-weight:bold,font-size:16px
     style Linter fill:#4dabf7,stroke:#000,stroke-width:3px,color:#000,font-weight:bold,font-size:16px
     style Success fill:#cc5de8,stroke:#000,stroke-width:3px,color:#000,font-weight:bold,font-size:16px
-    
+
     EditRun["Edit + Run<br/>Codemod"] --> Linter["Run<br/>Linter"]
     Linter --"success?"--- Success["Success"]
     Linter --"errors found"--- EditRun
-    
+
     linkStyle default stroke-width:2px
     classDef edgeLabel fill:#e9ecef,color:#000,font-weight:bold
     class success?,errors edgeLabel

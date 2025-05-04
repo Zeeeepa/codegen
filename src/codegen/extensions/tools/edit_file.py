@@ -30,7 +30,10 @@ class EditFileObservation(Observation):
     def render(self, tool_call_id: str) -> ToolMessage:
         """Render edit results in a clean format."""
         if self.status == "error":
-            artifacts_error: EditFileArtifacts = {"filepath": self.filepath, "error": self.error}
+            artifacts_error: EditFileArtifacts = {
+                "filepath": self.filepath,
+                "error": self.error,
+            }
             return ToolMessage(
                 content=f"[ERROR EDITING FILE]: {self.filepath}: {self.error}",
                 status=self.status,
@@ -39,7 +42,10 @@ class EditFileObservation(Observation):
                 tool_call_id=tool_call_id,
             )
 
-        artifacts_success: EditFileArtifacts = {"filepath": self.filepath, "diff": self.diff}
+        artifacts_success: EditFileArtifacts = {
+            "filepath": self.filepath,
+            "diff": self.diff,
+        }
 
         return ToolMessage(
             content=f"""[EDIT FILE]: {self.filepath}\n\n{self.diff}""",
@@ -50,7 +56,9 @@ class EditFileObservation(Observation):
         )
 
 
-def edit_file(codebase: Codebase, filepath: str, new_content: str) -> EditFileObservation:
+def edit_file(
+    codebase: Codebase, filepath: str, new_content: str
+) -> EditFileObservation:
     """Edit the contents of a file.
 
     Args:

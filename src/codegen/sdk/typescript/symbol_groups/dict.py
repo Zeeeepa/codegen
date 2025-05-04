@@ -37,7 +37,13 @@ class TSPair(Pair):
 
     shorthand: bool
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent)
         self.shorthand = ts_node.type == "shorthand_property_identifier"
 
@@ -61,11 +67,15 @@ class TSPair(Pair):
         return key, value
 
     @writer
-    def reduce_condition(self, bool_condition: bool, node: Editable | None = None) -> None:
+    def reduce_condition(
+        self, bool_condition: bool, node: Editable | None = None
+    ) -> None:
         """Reduces an editable to the following condition"""
         if self.shorthand and node == self.value:
             # Object shorthand
-            self.parent[self.key.source] = self.ctx.node_classes.bool_conversion[bool_condition]
+            self.parent[self.key.source] = self.ctx.node_classes.bool_conversion[
+                bool_condition
+            ]
         else:
             super().reduce_condition(bool_condition, node)
 
@@ -74,8 +84,18 @@ class TSPair(Pair):
 class TSDict(Dict, HasAttribute):
     """A typescript dict object. You can use standard operations to operate on this dict (IE len, del, set, get, etc)"""
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: "CodebaseContext", parent: Parent, delimiter: str = ",", pair_type: type[Pair] = TSPair) -> None:
-        super().__init__(ts_node, file_node_id, ctx, parent, delimiter=delimiter, pair_type=pair_type)
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: "CodebaseContext",
+        parent: Parent,
+        delimiter: str = ",",
+        pair_type: type[Pair] = TSPair,
+    ) -> None:
+        super().__init__(
+            ts_node, file_node_id, ctx, parent, delimiter=delimiter, pair_type=pair_type
+        )
 
     def __getitem__(self, __key: str) -> TExpression:
         for pair in self._underlying:

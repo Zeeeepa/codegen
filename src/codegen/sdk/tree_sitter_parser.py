@@ -6,8 +6,9 @@ from typing import Union
 import tree_sitter_javascript as ts_javascript
 import tree_sitter_python as ts_python
 import tree_sitter_typescript as ts_typescript
-from tree_sitter import Language, Parser
+from tree_sitter import Language
 from tree_sitter import Node as TSNode
+from tree_sitter import Parser
 
 from codegen.sdk.output.utils import stylize_error
 
@@ -53,7 +54,9 @@ class _TreeSitterAbstraction:
 _ts_parser_factory = _TreeSitterAbstraction()
 
 
-def get_parser_by_filepath_or_extension(filepath_or_extension: str | PathLike = ".py") -> Parser:
+def get_parser_by_filepath_or_extension(
+    filepath_or_extension: str | PathLike = ".py",
+) -> Parser:
     extension = to_extension(filepath_or_extension)
     # HACK: we do not currently use a plain text parser, so default to python for now
     if extension not in _ts_parser_factory.extension_to_parser:
@@ -84,7 +87,14 @@ def print_errors(filepath: PathLike, content: str) -> None:
 
         def traverse(node):
             if node.is_error or node.is_missing:
-                stylize_error(filepath, node.start_point, node.end_point, ts_node, content, "with ts_node type of " + node.type)
+                stylize_error(
+                    filepath,
+                    node.start_point,
+                    node.end_point,
+                    ts_node,
+                    content,
+                    "with ts_node type of " + node.type,
+                )
             if node.has_error:
                 for child in node.children:
                     traverse(child)

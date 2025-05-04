@@ -13,7 +13,11 @@ describe("LoadManager test", () => {
     })
 })
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls
         assert len(func_call) == 6
@@ -24,7 +28,11 @@ def test_remove_parenthesized(tmpdir):
     content = """
 const a = (b) || c;
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         b = file.symbols[0].value.left
         b.remove()
@@ -42,7 +50,11 @@ def test_remove_tsx(tmpdir):
     content = """
 const element = <h1>Hello, {name}</h1>;
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.tsx", optional=False)
         elem = file.jsx_elements[0]
         name = elem.expressions[0].statement

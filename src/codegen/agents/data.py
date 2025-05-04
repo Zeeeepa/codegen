@@ -69,4 +69,11 @@ class UnknownMessage(BaseMessage):
     type: Literal["unknown"] = field(default="unknown")
 
 
-type AgentRunMessage = Union[UserMessage, SystemMessageData, AssistantMessage, ToolMessageData, FunctionMessageData, UnknownMessage]
+type AgentRunMessage = Union[
+    UserMessage,
+    SystemMessageData,
+    AssistantMessage,
+    ToolMessageData,
+    FunctionMessageData,
+    UnknownMessage,
+]

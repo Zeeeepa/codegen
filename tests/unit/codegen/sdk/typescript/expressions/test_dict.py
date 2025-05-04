@@ -15,7 +15,11 @@ def test_dict_basic(tmpdir):
     content = """
 let symbol = {a: 1, b: 2, c: 3}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -46,7 +50,11 @@ let symbol = {
     c: 3,
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -79,7 +87,11 @@ def test_dict_insert(tmpdir):
     content = """
 let symbol = {a: 1, b: 2, c: 3}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -97,14 +109,22 @@ let symbol = {a: 1, b: 2, c: 3, d: 4}
 cases = list(product(range(2), repeat=2))
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_dict_interleaved(tmpdir, removes, inserts):
     ref_dict = {str(-1 + -i): -(i**2) for i in range(removes)}
     file = "test.ts"
     content = f"""
 let symbol = {ref_dict}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         symbol = file.get_symbol("symbol")
         symbol_dict: Dict = symbol.value
@@ -123,14 +143,22 @@ let symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_dict_removes_first(tmpdir, removes, inserts):
     ref_dict = {str(-1 + -i): -(i**2) for i in range(removes)}
     file = "test.ts"
     content = f"""
 let symbol = {ref_dict}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         symbol = file.get_symbol("symbol")
         symbol_dict: Dict = symbol.value
@@ -148,14 +176,22 @@ let symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_dict_inserts_first(tmpdir, removes, inserts):
     ref_dict = {str(-1 + -i): -(i**2) for i in range(removes)}
     file = "test.ts"
     content = f"""
 let symbol = {ref_dict}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         symbol = file.get_symbol("symbol")
         symbol_dict: Dict = symbol.value
@@ -173,14 +209,22 @@ let symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"{existing=}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"{existing=}-{inserts=}" for existing, inserts in cases],
+)
 def test_dict_append_existing(tmpdir, existing, inserts):
     ref_dict = {str(-1 + -i): -(i**2) for i in range(existing)}
     file = "test.ts"
     content = f"""
 let symbol = {ref_dict}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         symbol = file.get_symbol("symbol")
         symbol_dict: Dict = symbol.value
@@ -195,14 +239,20 @@ let symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("existing", list(range(4)), ids=[f"existing={existing}" for existing in range(4)])
+@pytest.mark.parametrize(
+    "existing", list(range(4)), ids=[f"existing={existing}" for existing in range(4)]
+)
 def test_dict_set_existing(tmpdir, existing):
     ref_dict = {str(-1 + -i): -(i**2) for i in range(existing)}
     file = "test.ts"
     content = f"""
 let symbol = {ref_dict}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         symbol = file.get_symbol("symbol")
         symbol_dict: Dict = symbol.value
@@ -217,14 +267,22 @@ let symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases],
+)
 def test_dict_set_existing_same(tmpdir, existing, inserts):
     ref_dict = {str(-1 + -i): -(i**2) for i in range(existing)}
     file = "test.ts"
     content = f"""
 let symbol = {ref_dict}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         symbol = file.get_symbol("symbol")
         symbol_dict: Dict = symbol.value
@@ -245,7 +303,11 @@ def test_dict_empty(tmpdir):
     content = """
 let symbol = {}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -269,7 +331,11 @@ def test_dict_remove_insert(tmpdir):
     content = """
 let symbol = {a: 1}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -292,7 +358,11 @@ def test_dict_shorthand_remove_insert(tmpdir):
     content = """
 let symbol = {a}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -315,7 +385,11 @@ def test_dict_edit(tmpdir):
     content = """
 let symbol = {a: 0}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -336,7 +410,11 @@ def test_dict_edit_shorthand(tmpdir):
     content = """
 let symbol = {a: 0}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -357,7 +435,11 @@ def test_dict_edit_not_shorthand(tmpdir):
     content = """
 let symbol = {a}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -378,7 +460,11 @@ def test_dict_clear(tmpdir):
     content = """
 let symbol = {a: 1, b: 2, c, d}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -403,7 +489,11 @@ function printCoord(pt: { x: number; y: number }) {
   console.log("The coordinate's y value is " + pt.y);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol: TSFunction = file.get_symbol("printCoord")
@@ -427,7 +517,11 @@ def test_dict_shorthand(tmpdir):
     content = """
 let symbol = {a, b, c}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -458,7 +552,11 @@ let symbol = {
     c,
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -491,7 +589,11 @@ def test_convert_shorthand(tmpdir):
     content = """
 let symbol = {a: 1, b}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -515,7 +617,11 @@ def test_dict_shorthand_insert(tmpdir):
     content = """
 let symbol = {a: 1, b: 2, c: 3}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
 
         symbol = file.get_symbol("symbol")
@@ -551,7 +657,11 @@ export const mapper = {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         mapper = file.get_global_var("mapper")
         d = mapper.value
@@ -596,7 +706,11 @@ function foo() {}
 
 let obj = {key: foo}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = file.get_function("foo")
         obj = file.get_symbol("obj")
@@ -612,7 +726,11 @@ function foo() {}
 
 let obj = {foo}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = file.get_function("foo")
         obj = file.get_symbol("obj")
@@ -629,7 +747,11 @@ function foo() {}
 
 let obj = {1: "a", ...{a: foo()}}
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = file.get_function("foo")
         obj = file.get_symbol("obj")

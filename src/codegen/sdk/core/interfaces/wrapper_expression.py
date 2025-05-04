@@ -45,7 +45,9 @@ class IWrapper(Chainable, Editable):
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind = UsageKind.BODY, dest: HasName | None = None
+    ) -> None:
         if self._value_node:
             self.resolve()._compute_dependencies(usage_type, dest)
 

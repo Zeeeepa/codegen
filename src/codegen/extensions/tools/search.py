@@ -98,7 +98,9 @@ class SearchObservation(Observation):
         description="Search results for this page",
     )
 
-    str_template: ClassVar[str] = "Found {total_files} files with matches for '{query}' (page {page}/{total_pages})"
+    str_template: ClassVar[str] = (
+        "Found {total_files} files with matches for '{query}' (page {page}/{total_pages})"
+    )
 
     def render(self, tool_call_id: str) -> ToolMessage:
         """Render search results in a VSCode-like format.
@@ -157,7 +159,9 @@ class SearchObservation(Observation):
 
             # Add pagination info if there are multiple pages
             if self.total_pages > 1:
-                lines.append(f"Page {self.page}/{self.total_pages} (use page parameter to see more results)")
+                lines.append(
+                    f"Page {self.page}/{self.total_pages} (use page parameter to see more results)"
+                )
 
         return ToolMessage(
             content="\n".join(lines),
@@ -438,7 +442,11 @@ def search(
     """
     # Try to use ripgrep first
     try:
-        return _search_with_ripgrep(codebase, query, file_extensions, page, files_per_page, use_regex)
+        return _search_with_ripgrep(
+            codebase, query, file_extensions, page, files_per_page, use_regex
+        )
     except (FileNotFoundError, subprocess.SubprocessError):
         # Fall back to Python implementation if ripgrep fails or isn't available
-        return _search_with_python(codebase, query, file_extensions, page, files_per_page, use_regex)
+        return _search_with_python(
+            codebase, query, file_extensions, page, files_per_page, use_regex
+        )

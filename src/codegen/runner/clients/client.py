@@ -47,7 +47,12 @@ class Client:
         response.raise_for_status()
         return response
 
-    def post(self, endpoint: str, data: dict | None = None, authorization: str | params.Header | None = None) -> requests.Response:
+    def post(
+        self,
+        endpoint: str,
+        data: dict | None = None,
+        authorization: str | params.Header | None = None,
+    ) -> requests.Response:
         url = f"{self.base_url}{endpoint}"
         headers = {"Authorization": str(authorization)} if authorization else None
         response = requests.post(url, json=data, headers=headers)

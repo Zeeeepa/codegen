@@ -38,7 +38,12 @@ class Flags:
         Returns:
             CodeFlag: A flag object representing the flagged entity.
         """
-        flag = CodeFlag(symbol=symbol, message=message, message_type=message_type, message_recipient=message_recipient)
+        flag = CodeFlag(
+            symbol=symbol,
+            message=message,
+            message_type=message_type,
+            message_recipient=message_recipient,
+        )
         if self._find_mode:
             self._flags.append(flag)
         return flag

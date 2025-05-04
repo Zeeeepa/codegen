@@ -5,7 +5,10 @@ from codegen.sdk.core.codebase import Codebase
 
 def test_from_files_python():
     """Test creating a Python codebase from multiple files"""
-    files = {"main.py": "from utils import add\nprint(add(1, 2))", "utils.py": "def add(a, b):\n    return a + b"}
+    files = {
+        "main.py": "from utils import add\nprint(add(1, 2))",
+        "utils.py": "def add(a, b):\n    return a + b",
+    }
     # Language is optional, will be inferred
     codebase = Codebase.from_files(files)
     assert len(codebase.files) == 2
@@ -16,7 +19,10 @@ def test_from_files_python():
 
 def test_from_files_typescript():
     """Test creating a TypeScript codebase from multiple files"""
-    files = {"index.ts": "import { add } from './utils';\nconsole.log(add(1, 2));", "utils.ts": "export function add(a: number, b: number): number {\n    return a + b;\n}"}
+    files = {
+        "index.ts": "import { add } from './utils';\nconsole.log(add(1, 2));",
+        "utils.ts": "export function add(a: number, b: number): number {\n    return a + b;\n}",
+    }
     # Language is optional, will be inferred
     codebase = Codebase.from_files(files)
     assert len(codebase.files) == 2
@@ -34,7 +40,9 @@ def test_from_files_empty():
 def test_from_files_mixed_extensions():
     """Test files with mixed extensions raises error"""
     files = {"main.py": "print('hello')", "test.ts": "console.log('world')"}
-    with pytest.raises(ValueError, match="Cannot determine single language from extensions"):
+    with pytest.raises(
+        ValueError, match="Cannot determine single language from extensions"
+    ):
         Codebase.from_files(files)
 
 
@@ -54,7 +62,9 @@ def test_from_files_typescript_multiple_extensions():
 def test_from_files_explicit_language_mismatch():
     """Test error when explicit language doesn't match extensions"""
     files = {"main.py": "print('hello')", "utils.py": "def add(a, b): return a + b"}
-    with pytest.raises(ValueError, match="Provided language.*doesn't match inferred language"):
+    with pytest.raises(
+        ValueError, match="Provided language.*doesn't match inferred language"
+    ):
         Codebase.from_files(files, language="typescript")
 
 

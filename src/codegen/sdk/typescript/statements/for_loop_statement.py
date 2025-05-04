@@ -21,7 +21,9 @@ if TYPE_CHECKING:
 
 
 @ts_apidoc
-class TSForLoopStatement(ForLoopStatement["TSCodeBlock"], TSBlockStatement["TSCodeBlock"]):
+class TSForLoopStatement(
+    ForLoopStatement["TSCodeBlock"], TSBlockStatement["TSCodeBlock"]
+):
     """Abstract representation of the for loop in TypeScript.
 
     Attributes:
@@ -42,7 +44,14 @@ class TSForLoopStatement(ForLoopStatement["TSCodeBlock"], TSBlockStatement["TSCo
     condition: Expression[TSForLoopStatement] | None = None
     increment: Expression[TSForLoopStatement] | None = None
 
-    def __init__(self, ts_node: TSNode, file_node_id: NodeId, ctx: CodebaseContext, parent: TSCodeBlock, pos: int | None = None) -> None:
+    def __init__(
+        self,
+        ts_node: TSNode,
+        file_node_id: NodeId,
+        ctx: CodebaseContext,
+        parent: TSCodeBlock,
+        pos: int | None = None,
+    ) -> None:
         super().__init__(ts_node, file_node_id, ctx, parent, pos)
         if ts_node.type == "for_statement":
             self.initializer = self.child_by_field_name("initializer")
@@ -93,7 +102,9 @@ class TSForLoopStatement(ForLoopStatement["TSCodeBlock"], TSBlockStatement["TSCo
 
     @noapidoc
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind | None = None, dest: HasName | None = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind | None = None, dest: HasName | None = None
+    ) -> None:
         if self.is_for_in_loop:
             self.item._compute_dependencies(usage_type, dest)
             self.iterable._compute_dependencies(usage_type, dest)

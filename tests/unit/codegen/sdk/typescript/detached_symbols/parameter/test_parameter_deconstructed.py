@@ -31,7 +31,11 @@ const h = ({ a, b = 1 }: { a: number, b?: number }): number => {
     return a + b;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: file_content},
+    ) as codebase:
         file: TSFile = codebase.get_file(filename)
 
         # =====[ Simple case ]=====

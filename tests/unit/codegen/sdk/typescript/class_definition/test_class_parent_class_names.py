@@ -206,7 +206,11 @@ class Cube extends ThreeDimensionalShape {
   }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={FILENAME: FILE_CONTENT},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         cube = file.get_class("Cube")
         assert len(cube.parent_class_names) == 1

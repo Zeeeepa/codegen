@@ -104,7 +104,10 @@ class ForeignKeyGraph(Skill, ABC):
         # Iterate through all classes in the codebase
         for cls in codebase.classes:
             # Check if the class is a subclass of BaseModel and defined in the correct file
-            if cls.is_subclass_of("BaseModel") and "from app.models.base import BaseModel" in cls.file.content:
+            if (
+                cls.is_subclass_of("BaseModel")
+                and "from app.models.base import BaseModel" in cls.file.content
+            ):
                 # Initialize an empty list for the current class
                 foreign_key_mapping[cls.name] = []
 

@@ -35,7 +35,9 @@ class Name(Expression[Parent], Resolvable, Generic[Parent]):
             yield from self.with_resolution_frame(used)
 
     @commiter
-    def _compute_dependencies(self, usage_type: UsageKind, dest: Optional["HasName | None "] = None) -> None:
+    def _compute_dependencies(
+        self, usage_type: UsageKind, dest: Optional["HasName | None "] = None
+    ) -> None:
         """Compute the dependencies of the export object."""
         edges = []
         for used_frame in self.resolved_type_frames:
@@ -51,7 +53,9 @@ class Name(Expression[Parent], Resolvable, Generic[Parent]):
             self.edit(new)
 
     @noapidoc
-    def _resolve_conditionals(self, conditional_parent: ConditionalBlock, name: str, original_resolved):
+    def _resolve_conditionals(
+        self, conditional_parent: ConditionalBlock, name: str, original_resolved
+    ):
         """Resolves name references within conditional blocks by traversing the conditional chain.
 
         This method handles name resolution within conditional blocks (like if/elif/else statements) by:
@@ -88,35 +92,55 @@ class Name(Expression[Parent], Resolvable, Generic[Parent]):
                     return get_top_of_fake_chain(skip_fake, conditional, search_limit)
                 return search_limit
 
-            if search_limit := get_top_of_fake_chain(conditional_parent, original_resolved):
+            if search_limit := get_top_of_fake_chain(
+                conditional_parent, original_resolved
+            ):
                 search_limit = search_limit
             else:
                 return
 
         original_conditional = conditional_parent
-        while next_resolved := next(conditional_parent.resolve_name(name, start_byte=search_limit, strict=False), None):
+        while next_resolved := next(
+            conditional_parent.resolve_name(
+                name, start_byte=search_limit, strict=False
+            ),
+            None,
+        ):
             yield next_resolved
             next_conditional = next_resolved.parent_of_type(ConditionalBlock)
             if not next_conditional or next_conditional == original_conditional:
                 return
             search_limit = next_conditional.start_byte_for_condition_block
-            if next_conditional and not next_conditional.is_true_conditional(original_resolved):
+            if next_conditional and not next_conditional.is_true_conditional(
+                original_resolved
+            ):
                 pass
             if search_limit >= next_resolved.start_byte:
                 search_limit = next_resolved.start_byte - 1
 
     @noapidoc
     @reader
-    def resolve_name(self, name: str, start_byte: int | None = None, strict: bool = True) -> Generator["Symbol | Import | WildcardImport"]:
-        resolved_name = next(super().resolve_name(name, start_byte or self.start_byte, strict=strict), None)
+    def resolve_name(
+        self, name: str, start_byte: int | None = None, strict: bool = True
+    ) -> Generator["Symbol | Import | WildcardImport"]:
+        resolved_name = next(
+            super().resolve_name(name, start_byte or self.start_byte, strict=strict),
+            None,
+        )
         if resolved_name:
             yield resolved_name
         else:
             return
 
-        if hasattr(resolved_name, "parent") and (conditional_parent := resolved_name.parent_of_type(ConditionalBlock)):
+        if hasattr(resolved_name, "parent") and (
+            conditional_parent := resolved_name.parent_of_type(ConditionalBlock)
+        ):
             if self.parent_of_type(ConditionalBlock) == conditional_parent:
                 # Use in the same block, should only depend on the inside of the block
                 return
 
-            yield from self._resolve_conditionals(conditional_parent=conditional_parent, name=name, original_resolved=resolved_name)
+            yield from self._resolve_conditionals(
+                conditional_parent=conditional_parent,
+                name=name,
+                original_resolved=resolved_name,
+            )

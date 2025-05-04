@@ -86,7 +86,11 @@ myInstance.displayValue();
 myInstance.calculateSum(5, 7);
 myInstance.fileOperations('example.txt');
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         for imp in codebase.imports:
             codebase.log(imp)
         for symbol in codebase.symbols:

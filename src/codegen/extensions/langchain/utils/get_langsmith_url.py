@@ -4,7 +4,9 @@ from typing import Optional
 from langsmith import Client
 
 
-def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] = None) -> str:
+def get_langsmith_url(
+    client: Client, run_id: str, project_name: Optional[str] = None
+) -> str:
     """Get the URL for a run in LangSmith.
 
     Args:
@@ -25,7 +27,9 @@ def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] =
         if project_name is not None:
             project_id = client.read_project(project_name=project_name).id
             # Construct the URL
-            return f"{host_url}/o/{tenant_id}/projects/p/{project_id}/r/{run_id}?poll=true"
+            return (
+                f"{host_url}/o/{tenant_id}/projects/p/{project_id}/r/{run_id}?poll=true"
+            )
         else:
             # If project_name is not provided, construct a URL without it
             return f"{host_url}/o/{tenant_id}/r/{run_id}?poll=true"
@@ -35,7 +39,9 @@ def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] =
         return f"{host_url}/o/{tenant_id}/r/{run_id}?poll=true"
 
 
-def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str] = None) -> Optional[str]:
+def find_and_print_langsmith_run_url(
+    client: Client, project_name: Optional[str] = None
+) -> Optional[str]:
     """Find the most recent LangSmith run and print its URL.
 
     Args:
@@ -66,26 +72,34 @@ def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str]
                 run_id = str(recent_runs[0].id)
 
                 # Get the run URL using the run_id parameter
-                run_url = get_langsmith_url(client, run_id=run_id, project_name=project_name)
+                run_url = get_langsmith_url(
+                    client, run_id=run_id, project_name=project_name
+                )
 
                 print(f"\n{separator}\n🔍 LangSmith Run URL: {run_url}\n{separator}")
                 return run_url
             else:
-                print(f"\n{separator}\nRun object has no 'id' attribute: {recent_runs[0]}\n{separator}")
+                print(
+                    f"\n{separator}\nRun object has no 'id' attribute: {recent_runs[0]}\n{separator}"
+                )
                 return None
         else:
             # If no runs found with project name, try a more general approach
             # Use a timestamp filter to get recent runs (last 10 minutes)
             ten_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=10)
 
-            recent_runs = list(client.list_runs(start_time=ten_minutes_ago.isoformat(), limit=1))
+            recent_runs = list(
+                client.list_runs(start_time=ten_minutes_ago.isoformat(), limit=1)
+            )
 
             if recent_runs and len(recent_runs) > 0 and hasattr(recent_runs[0], "id"):
                 # Convert the ID to string to ensure it's in the right format
                 run_id = str(recent_runs[0].id)
 
                 # Get the run URL using the run_id parameter
-                run_url = get_langsmith_url(client, run_id=run_id, project_name=project_name)
+                run_url = get_langsmith_url(
+                    client, run_id=run_id, project_name=project_name
+                )
 
                 print(f"\n{separator}\n🔍 LangSmith Run URL: {run_url}\n{separator}")
                 return run_url

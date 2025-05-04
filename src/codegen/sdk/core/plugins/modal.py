@@ -19,7 +19,9 @@ class ModalApiFinder(Plugin):
         for func in codebase.functions:
             for decorator in func.decorators:
                 if decorator.full_name == "web_endpoint":
-                    value = decorator.call.get_arg_by_parameter_name("label").value.content
+                    value = decorator.call.get_arg_by_parameter_name(
+                        "label"
+                    ).value.content
                     func.register_api(value)
                     endpoints += 1
         if endpoints > 0:

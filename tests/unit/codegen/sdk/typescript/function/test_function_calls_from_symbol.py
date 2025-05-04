@@ -3,7 +3,9 @@ import pytest
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
 from codegen.sdk.core.detached_symbols.argument import Argument
 from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.parenthesized_expression import ParenthesizedExpression
+from codegen.sdk.core.expressions.parenthesized_expression import (
+    ParenthesizedExpression,
+)
 from codegen.sdk.core.statements.expression_statement import ExpressionStatement
 from codegen.sdk.core.statements.return_statement import ReturnStatement
 from codegen.sdk.core.statements.statement import StatementType
@@ -35,7 +37,11 @@ function bar(): number {
 })();
     """
     # language=typescript
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
         main_call = """(function main() {
@@ -43,9 +49,18 @@ function bar(): number {
     console.log(bar());
 })"""
 
-        assert set(f.name for f in fcalls) == {"foo", "bar", "floor", "random", "log", main_call}
+        assert set(f.name for f in fcalls) == {
+            "foo",
+            "bar",
+            "floor",
+            "random",
+            "log",
+            main_call,
+        }
         assert len(fcalls) == 9
-        fcall_parents = [(f.name, type(f.parent), f.parent.source) for f in file.function_calls]
+        fcall_parents = [
+            (f.name, type(f.parent), f.parent.source) for f in file.function_calls
+        ]
         assert fcall_parents == [
             ("bar", ReturnStatement, "return bar();"),
             ("floor", ReturnStatement, "return Math.floor(Math.random() * 101);"),
@@ -76,7 +91,11 @@ class A {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.get_class("A").function_calls
 
@@ -88,7 +107,9 @@ class A {
 
         assert fcall_parent_1.parent.parent.parent.level == 1
         assert fcall_parent_1.name == "bar"
-        assert fcall_parent_1.parent.parent.statement_type == StatementType.CLASS_ATTRIBUTE
+        assert (
+            fcall_parent_1.parent.parent.statement_type == StatementType.CLASS_ATTRIBUTE
+        )
 
         assert fcall_parent_2.parent.parent.parent.level == 2
         assert fcall_parent_2.name == "foo"
@@ -121,11 +142,21 @@ class A {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.get_class("A").function_calls
 
-        assert set(f.name for f in fcalls) == {"myDecorator", "myDecorator2", "d", "foo", "methodDecorator"}
+        assert set(f.name for f in fcalls) == {
+            "myDecorator",
+            "myDecorator2",
+            "d",
+            "foo",
+            "methodDecorator",
+        }
         assert len(fcalls) == 6
 
         fcall_parents = [(f.name, type(f.parent)) for f in fcalls]
@@ -157,13 +188,27 @@ const data: [number, number, number] = [getX(), getY(), getZ()];
 // arrow function
 const transformed = data.map(x => transform(x));
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
 
-        assert set(f.name for f in fcalls) == {"getMaxRetries", "calculateTimeout", "getX", "getY", "getZ", "map", "transform"}
+        assert set(f.name for f in fcalls) == {
+            "getMaxRetries",
+            "calculateTimeout",
+            "getX",
+            "getY",
+            "getZ",
+            "map",
+            "transform",
+        }
         assert len(fcalls) == 7
-        fcall_parents = [(f.parent.parent.level, f.name, f.parent.statement_type) for f in fcalls]
+        fcall_parents = [
+            (f.parent.parent.level, f.name, f.parent.statement_type) for f in fcalls
+        ]
         assert fcall_parents == [
             # dictionary
             (1, "getMaxRetries", StatementType.ASSIGNMENT),
@@ -186,7 +231,11 @@ function greet(name: string = getDefaultName()): void {
     console.log(`Hello, ${name}!`);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
         func = file.get_function("greet")
@@ -208,7 +257,11 @@ while (hasNextItem()) {
     processItem();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
 
@@ -216,10 +269,16 @@ while (hasNextItem()) {
         assert len(fcalls) == 2
         assert file.function_calls[0].parent.parent.parent.level == 0
         assert file.function_calls[0].name == "hasNextItem"
-        assert file.function_calls[0].parent.parent.statement_type == StatementType.WHILE_STATEMENT
+        assert (
+            file.function_calls[0].parent.parent.statement_type
+            == StatementType.WHILE_STATEMENT
+        )
         assert file.function_calls[1].parent.parent.level == 1
         assert file.function_calls[1].name == "processItem"
-        assert file.function_calls[1].parent.statement_type == StatementType.EXPRESSION_STATEMENT
+        assert (
+            file.function_calls[1].parent.statement_type
+            == StatementType.EXPRESSION_STATEMENT
+        )
 
 
 def test_function_calls_from_if_conditions(tmpdir):
@@ -232,11 +291,20 @@ if (isValid(userInput)) {
     handleError();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
 
-        assert set(f.name for f in fcalls) == {"isValid", "processData", "isInvalid", "handleError"}
+        assert set(f.name for f in fcalls) == {
+            "isValid",
+            "processData",
+            "isInvalid",
+            "handleError",
+        }
         assert len(fcalls) == 4
         fcall_parents = [(f.name, type(f.parent)) for f in file.function_calls]
         assert fcall_parents == [
@@ -252,7 +320,11 @@ def test_function_calls_for_nested_calls(tmpdir):
     content = """
 parent(nested())
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
 
@@ -270,7 +342,11 @@ def test_function_calls_for_chained_calls(tmpdir):
     content = """
 parent().child().grandchild()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
 
@@ -304,11 +380,21 @@ describe("top level", () => {
     })
 })
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         fcalls = file.function_calls
 
-        assert set(f.name for f in fcalls) == {"describe", "it", "roundToNearestOrderOfMagnitude", "expect", "toBe"}
+        assert set(f.name for f in fcalls) == {
+            "describe",
+            "it",
+            "roundToNearestOrderOfMagnitude",
+            "expect",
+            "toBe",
+        }
         assert len(fcalls) == 13
         fcall_parents = [(f.name, type(f.parent)) for f in fcalls]
         assert fcall_parents == [

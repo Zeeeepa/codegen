@@ -26,10 +26,19 @@ class RefactorReactComponentsIntoSeparateFiles(Codemod, Skill):
         # Iterate over all files in the codebase
         for file in codebase.files:
             # Find all React function components in the file
-            react_components = [func for func in file.functions if func.is_jsx and func.name is not None]
+            react_components = [
+                func for func in file.functions if func.is_jsx and func.name is not None
+            ]
 
             # Identify the default exported component
-            default_component = next((comp for comp in react_components if comp.is_exported and comp.export.is_default_export()), None)
+            default_component = next(
+                (
+                    comp
+                    for comp in react_components
+                    if comp.is_exported and comp.export.is_default_export()
+                ),
+                None,
+            )
             if default_component is None:
                 continue
 
@@ -37,7 +46,12 @@ class RefactorReactComponentsIntoSeparateFiles(Codemod, Skill):
             for component in react_components:
                 if component != default_component and component in file.symbols:
                     # Create a new file for the component
-                    new_file_path = "/".join(file.filepath.split("/")[:-1]) + "/" + component.name + ".tsx"
+                    new_file_path = (
+                        "/".join(file.filepath.split("/")[:-1])
+                        + "/"
+                        + component.name
+                        + ".tsx"
+                    )
                     if not codebase.has_file(new_file_path):
                         new_file = codebase.create_file(new_file_path)
 

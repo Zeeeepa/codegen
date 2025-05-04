@@ -66,12 +66,18 @@ def fix_ruff_imports(objects: list[DocumentedObject]):
     config.write_text(tomlkit.dumps(toml_config))
 
 
-def get_runner_imports(include_codegen=True, include_private_imports: bool = True) -> str:
+def get_runner_imports(
+    include_codegen=True, include_private_imports: bool = True
+) -> str:
     # get the imports from the apidoc, py_apidoc, and ts_apidoc
     gs_objects = get_documented_objects()
-    gs_public_objects = list(chain(gs_objects["apidoc"], gs_objects["py_apidoc"], gs_objects["ts_apidoc"]))
+    gs_public_objects = list(
+        chain(gs_objects["apidoc"], gs_objects["py_apidoc"], gs_objects["ts_apidoc"])
+    )
     fix_ruff_imports(gs_public_objects)
-    gs_public_imports = {f"from {obj.module} import {obj.name}" for obj in gs_public_objects}
+    gs_public_imports = {
+        f"from {obj.module} import {obj.name}" for obj in gs_public_objects
+    }
 
     # construct import string with all imports
     ret = IMPORT_STRING_TEMPLATE.format(
@@ -95,8 +101,17 @@ __all__ = [
 
 def generate_exported_modules() -> str:
     gs_objects = get_documented_objects()
-    gs_public_objects = list(chain(gs_objects["apidoc"], gs_objects["py_apidoc"], gs_objects["ts_apidoc"]))
-    return EXPORT_TEMPLATE.format(modules=",\n".join(dict.fromkeys('    "' + obj.name + '"' for obj in sorted(gs_public_objects, key=lambda x: x.name))))
+    gs_public_objects = list(
+        chain(gs_objects["apidoc"], gs_objects["py_apidoc"], gs_objects["ts_apidoc"])
+    )
+    return EXPORT_TEMPLATE.format(
+        modules=",\n".join(
+            dict.fromkeys(
+                '    "' + obj.name + '"'
+                for obj in sorted(gs_public_objects, key=lambda x: x.name)
+            )
+        )
+    )
 
 
 def _generate_runner_imports(imports_file: str) -> None:

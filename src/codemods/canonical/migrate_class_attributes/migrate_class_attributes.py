@@ -47,15 +47,23 @@ class MigrateClassAttributes(Codemod, Skill):
             attribute.rename(f"_{attribute.name}")
 
             # Add a "shadow copy write" to the source class
-            return_type = attribute.assignment.type.source if attribute.assignment.type else "None"
-            source_class.add_attribute_from_source(f"""{attribute.name} = hybrid_property(fget=get_{attribute.name}, fset=set_{attribute.name})""")
+            return_type = (
+                attribute.assignment.type.source
+                if attribute.assignment.type
+                else "None"
+            )
+            source_class.add_attribute_from_source(
+                f"""{attribute.name} = hybrid_property(fget=get_{attribute.name}, fset=set_{attribute.name})"""
+            )
             source_class.methods.append(
-                textwrap.dedent(f"""
+                textwrap.dedent(
+                    f"""
     def get_{attribute.name}(self) -> {return_type}:
         return self._{attribute.name}
 
     def set_{attribute.name}(self, value: str) -> None:
         self._{attribute.name} = value
         self.copy.{attribute.name} = value
-    """)
+    """
+                )
             )

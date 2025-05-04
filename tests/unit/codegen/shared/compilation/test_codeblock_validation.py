@@ -1,6 +1,8 @@
 import pytest
 
-from codegen.shared.compilation.codeblock_validation import check_for_dangerous_operations
+from codegen.shared.compilation.codeblock_validation import (
+    check_for_dangerous_operations,
+)
 from codegen.shared.exceptions.compilation import DangerousUserCodeException
 
 

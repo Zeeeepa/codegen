@@ -30,7 +30,9 @@ class EnumMover(Codemod, Skill):
             # Check if the class is a subclass of Enum
             if cls.is_subclass_of("Enum"):
                 # Determine the target file path for enums.py
-                target_filepath = "/".join(cls.file.filepath.split("/")[:-1]) + "/enums.py"
+                target_filepath = (
+                    "/".join(cls.file.filepath.split("/")[:-1]) + "/enums.py"
+                )
 
                 # Check if the current class is already in the correct enums.py file
                 if cls.file.filepath.endswith("enums.py"):

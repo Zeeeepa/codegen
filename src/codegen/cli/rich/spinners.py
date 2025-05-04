@@ -26,4 +26,8 @@ def create_spinner(text: str) -> Status:
 
     """
     config = SpinnerConfig(text)
-    return Status(f"[{config.style}]{config.text}", spinner=config.spinner, spinner_style=config.spinner_style)
+    return Status(
+        f"[{config.style}]{config.text}",
+        spinner=config.spinner,
+        spinner_style=config.spinner_style,
+    )

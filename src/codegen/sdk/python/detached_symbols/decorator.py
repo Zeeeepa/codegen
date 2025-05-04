@@ -57,6 +57,8 @@ class PyDecorator(Decorator["PyClass", "PyFunction", "PyParameter"]):
             FunctionCall | None: A FunctionCall instance if the decorator is a function call,
             None if it's a simple decorator.
         """
-        if call_node := next((x for x in self.ts_node.named_children if x.type == "call"), None):
+        if call_node := next(
+            (x for x in self.ts_node.named_children if x.type == "call"), None
+        ):
             return FunctionCall(call_node, self.file_node_id, self.ctx, self.parent)
         return None

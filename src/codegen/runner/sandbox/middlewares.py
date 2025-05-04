@@ -26,12 +26,16 @@ class CodemodRunMiddleware[TRequest, TResponse](BaseHTTPMiddleware):
     def runner(self) -> SandboxRunner:
         return self.runner_fn()
 
-    async def dispatch(self, request: TRequest, call_next: RequestResponseEndpoint) -> TResponse:
+    async def dispatch(
+        self, request: TRequest, call_next: RequestResponseEndpoint
+    ) -> TResponse:
         if request.url.path == self.path:
             return await self.process_request(request, call_next)
         return await call_next(request)
 
-    async def process_request(self, request: TRequest, call_next: RequestResponseEndpoint) -> TResponse:
+    async def process_request(
+        self, request: TRequest, call_next: RequestResponseEndpoint
+    ) -> TResponse:
         try:
             logger.info(f"> (CodemodRunMiddleware) Request: {request.url.path}")
             self.runner.codebase.viz.clear_graphviz_data()
@@ -41,10 +45,24 @@ class CodemodRunMiddleware[TRequest, TResponse](BaseHTTPMiddleware):
         except UserCodeException as e:
             message = f"Invalid user code for {request.url.path}"
             logger.info(message)
-            return JSONResponse(status_code=HTTPStatus.BAD_REQUEST, content={"detail": message, "error": str(e), "traceback": traceback.format_exc()})
+            return JSONResponse(
+                status_code=HTTPStatus.BAD_REQUEST,
+                content={
+                    "detail": message,
+                    "error": str(e),
+                    "traceback": traceback.format_exc(),
+                },
+            )
 
         except Exception as e:
             message = f"Unexpected error for {request.url.path}"
             logger.exception(message)
-            res = JSONResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, content={"detail": message, "error": str(e), "traceback": traceback.format_exc()})
+            res = JSONResponse(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                content={
+                    "detail": message,
+                    "error": str(e),
+                    "traceback": traceback.format_exc(),
+                },
+            )
             return res

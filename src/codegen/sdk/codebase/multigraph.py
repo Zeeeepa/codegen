@@ -16,4 +16,6 @@ class MultiGraph(Generic[TFunction]):
     """Mapping of API endpoints to their definitions and usages across languages."""
 
     api_definitions: dict[str, TFunction] = field(default_factory=dict)
-    usages: defaultdict[str, list[FunctionCall]] = field(default_factory=lambda: defaultdict(list))
+    usages: defaultdict[str, list[FunctionCall]] = field(
+        default_factory=lambda: defaultdict(list)
+    )

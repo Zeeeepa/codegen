@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 class SplitTests(CodeAction):
     name = "Split Tests"
 
-    def _get_targets(self, server: "CodegenLanguageServer", node: Editable) -> dict[Function, str]:
+    def _get_targets(
+        self, server: "CodegenLanguageServer", node: Editable
+    ) -> dict[Function, str]:
         targets = {}
         for function in node.file.functions:
             if function.name.startswith("test_"):
