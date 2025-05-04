@@ -181,8 +181,9 @@ class CodebaseContext:
         self.codeowners_parser = context.repo_operator.codeowners_parser
         self.base_url = context.repo_operator.base_url
         if not self.config.allow_external:
-            # TODO: Fix this to be more robust with multiple projects
-            self.io = io or FileIO(allowed_paths=[Path(self.repo_path).resolve()])
+            # Fix this to be more robust with multiple projects
+            allowed_paths = [Path(project.repo_operator.repo_path).resolve() for project in projects]
+            self.io = io or FileIO(allowed_paths=allowed_paths)
         else:
             self.io = io or FileIO()
         # =====[ computed attributes ]=====
@@ -494,10 +495,16 @@ class CodebaseContext:
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
             if not self.dependency_manager.ready() and not self.dependency_manager.error():
-                # TODO: We do not reparse dependencies during syncs as it is expensive. We should probably add a flag for this
                 logger.info("> Starting dependency manager")
                 self.dependency_manager.start(async_start=False)
-
+            elif incremental and self.config.reparse_dependencies:
+                # Reparse dependencies during syncs if the flag is set
+                logger.info("> Reparsing dependencies")
+                self.dependency_manager.reparse(async_start=False)
+            elif self.config.reparse_dependencies:
+                # Reparse dependencies during syncs if the flag is set
+                logger.info("> Reparsing dependencies")
+                self.dependency_manager.reparse(async_start=False)
         # Start the language engine. This may or may not run asynchronously, depending on the implementation
         if self.language_engine is not None:
             # Check if its inital start or a reparse
@@ -593,11 +600,15 @@ class CodebaseContext:
             # TODO: this is wrong with context changes
             if filepath.suffix in self.extensions:
                 file_cls = self.node_classes.file_cls
-                new_file = file_cls.from_content(
-                    filepath, content, self, sync=False, verify_syntax=False
-                )
-                if new_file is not None:
-                    files_to_resolve.append(new_file)
+                # Check if the file extension is supported
+                if filepath.suffix in self.extensions:
+                    # Create a new file from the content
+                    new_file = file_cls.from_content(
+                        filepath, content, self, sync=False, verify_syntax=False
+                    )
+                    if new_file is not None:
+                        # Add the file to the graph
+                        files_to_resolve.append(new_file)
         task.end()
         for file in files_to_resolve:
             to_resolve.append(file)
