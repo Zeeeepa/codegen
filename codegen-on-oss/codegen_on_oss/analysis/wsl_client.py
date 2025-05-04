@@ -143,15 +143,15 @@ class WSLClient:
 
                 try:
                     error_data = e.response.json() if hasattr(e, "response") else {}
-                except:
+                except Exception:
                     error_data = {}
 
                 raise WSLClientError(
                     f"HTTP error: {error_detail}", status_code=status_code, response=error_data
-                )
+                ) from e
 
             except Exception as e:
-                raise WSLClientError(f"Unexpected error: {str(e)}")
+                raise WSLClientError(f"Unexpected error: {str(e)}") from e
 
     def health_check(self) -> Dict[str, Any]:
         """

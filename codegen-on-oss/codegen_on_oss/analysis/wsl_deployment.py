@@ -471,7 +471,8 @@ services:
                         "name": "wsl-server",
                         "command": (
                             "cd /home/codegen-server && "
-                            f"python3 -m codegen_on_oss.analysis.wsl_server --log-level {self.log_level}"
+                            f"python3 -m codegen_on_oss.analysis.wsl_server "
+                            f"--log-level {self.log_level}"
                         ),
                         "environment": {
                             "CODEGEN_API_KEY": self.api_key or "",
@@ -551,7 +552,8 @@ After=network.target
 User=$USER
 WorkingDirectory=/home/codegen-server
 Environment="CODEGEN_API_KEY={self.api_key or ""}"
-ExecStart=/home/codegen-server/venv/bin/python -m codegen_on_oss.analysis.wsl_server --log-level {self.log_level}
+ExecStart=/home/codegen-server/venv/bin/python -m codegen_on_oss.analysis.wsl_server \
+--log-level {self.log_level}
 Restart=on-failure
 RestartSec=5s
 
