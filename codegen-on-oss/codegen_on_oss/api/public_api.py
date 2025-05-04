@@ -15,8 +15,8 @@ from codegen_on_oss.analysis.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analyzer import analyze_commit
 from codegen_on_oss.analysis.diff_analyzer import analyze_diff
 from codegen_on_oss.parser import parse_repository
-from codegen_on_oss.snapshot.snapshot import create_snapshot, compare_snapshots
-from codegen_on_oss.sources.source import RepositorySource
+from codegen_on_oss.snapshot.codebase_snapshot import create_snapshot, compare_snapshots
+from codegen_on_oss.sources.base import RepoSource as RepositorySource
 
 
 class CodegenOnOSS:
@@ -201,4 +201,3 @@ analyze_commit_func = CodegenOnOSS().analyze_commit
 analyze_diff_func = CodegenOnOSS().analyze_diff
 create_snapshot_func = CodegenOnOSS().create_snapshot
 compare_snapshots_func = CodegenOnOSS().compare_snapshots
-

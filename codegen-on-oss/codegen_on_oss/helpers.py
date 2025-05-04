@@ -162,6 +162,9 @@ def batch_analyze_repositories(
     """
     os.makedirs(output_dir, exist_ok=True)
     
+    # Set up logging
+    logger = setup_logging(level="INFO")
+    
     results = {}
     for repo_url in repo_urls:
         # Extract repo name from URL for the filename
@@ -180,7 +183,8 @@ def batch_analyze_repositories(
             )
             results[repo_url] = output_path
         except Exception as e:
-            logging.error(f"Error analyzing {repo_url}: {str(e)}")
+            # Use the logger instance instead of logging.error
+            logger.error(f"Error analyzing {repo_url}: {str(e)}")
             results[repo_url] = f"ERROR: {str(e)}"
     
     return results
@@ -220,4 +224,3 @@ def compare_repositories(
         save_results(comparison, output_path)
     
     return comparison
-

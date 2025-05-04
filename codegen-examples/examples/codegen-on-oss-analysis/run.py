@@ -160,7 +160,6 @@ def analyze_repository(
     return result
 
 
-@CodegenOnOSS
 def run(repo_url: str, output_path: Optional[str] = None, include_integrity: bool = False, branch: Optional[str] = None):
     """Run the repository analysis example.
     
@@ -219,4 +218,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)
-
