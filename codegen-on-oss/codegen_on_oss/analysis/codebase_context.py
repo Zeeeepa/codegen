@@ -438,7 +438,7 @@ class CodebaseContext:
     ) -> Directory | None:
         """Returns the directory object for the given path, or None if the directory does not exist.
 
-        If create_on_missing is set, use a recursive strategy to create the directory object and subdirs.
+        If create_on_missing is set, recursively create the directory object and subdirs.
         """
         # If not part of repo path, return None
         absolute_path = self.to_absolute(directory_path)
