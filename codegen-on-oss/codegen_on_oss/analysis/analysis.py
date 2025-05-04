@@ -604,25 +604,31 @@ class CodeAnalyzer:
     @classmethod
     def analyze_commit_from_repo_and_commit(
         cls, repo_url: str, commit_hash: str
-    ) -> Dict[str, Any]:
+    ) -> CommitAnalysisResult:
         """
-        Analyze a commit by comparing a repository at two different commits.
+        Analyze a specific commit from a repository.
 
         Args:
             repo_url: URL of the repository
             commit_hash: Hash of the commit to analyze
 
         Returns:
-            A dictionary containing the analysis results
+            CommitAnalysisResult: Analysis results for the commit
         """
-        # Create a CommitAnalyzer instance from repo and commit
-        analyzer = CommitAnalyzer.from_repo_and_commit(repo_url, commit_hash)
-
-        # Analyze the commit
-        result = analyzer.analyze_commit()
+        # Clone the repository
+        repo_dir = cls._clone_repo(repo_url)
         
-        # Convert CommitAnalysisResult to dictionary
-        return result.to_dict()
+        # Checkout the commit
+        cls._checkout_commit(repo_dir, commit_hash)
+        
+        # Create a codebase from the repository
+        codebase = Codebase(repo_dir)
+        
+        # Create an analyzer
+        analyzer = cls(codebase)
+        
+        # Analyze the commit
+        return analyzer.analyze_commit(commit_hash)
 
     @classmethod
     def analyze_commit_from_paths(
@@ -1184,55 +1190,115 @@ async def analyze_repo(request: RepoAnalysisRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/analyze_pr")
+def analyze_pr(pr_data: dict) -> Dict[str, Any]:
+    """
+    Analyze a pull request.
+    
+    Args:
+        pr_data: Pull request data
+            
+    Returns:
+        Analysis results
+    """
+    try:
+        # Extract PR data
+        repo_url = pr_data.get("repo_url")
+        base_commit = pr_data.get("base_commit")
+        head_commit = pr_data.get("head_commit")
+        
+        # Validate input
+        if not repo_url or not base_commit or not head_commit:
+            raise HTTPException(
+                status_code=400, 
+                detail="Missing required fields: repo_url, base_commit, head_commit"
+            )
+        
+        # Create a CodeAnalyzer instance
+        analyzer = CodeAnalyzer.from_repo_and_commits(repo_url, base_commit, head_commit)
+        
+        # Analyze the PR
+        results = analyzer.analyze_pr()
+        
+        return {
+            "status": "success",
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @app.post("/analyze_commit")
-async def analyze_commit(request: CommitAnalysisRequest):
+def analyze_commit(commit_data: dict) -> Dict[str, Any]:
     """
-    Analyze a commit in a repository.
-    """
-    try:
-        result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
-            repo_url=request.repo_url, commit_hash=request.commit_hash
-        )
-
-        return {
-            "repo_url": request.repo_url,
-            "commit_hash": request.commit_hash,
-            "is_properly_implemented": result.is_properly_implemented,
-            "summary": result.get_summary(),
-            "issues": [issue.to_dict() for issue in result.issues],
-            "metrics_diff": result.metrics_diff,
-            "files_added": result.files_added,
-            "files_modified": result.files_modified,
-            "files_removed": result.files_removed,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/analyze_local_commit")
-async def analyze_local_commit(request: LocalCommitAnalysisRequest):
-    """
-    Analyze a commit by comparing two local repository paths.
+    Analyze a commit.
+    
+    Args:
+        commit_data: Commit data
+            
+    Returns:
+        Analysis results
     """
     try:
-        result = CodeAnalyzer.analyze_commit_from_paths(
-            original_path=request.original_path, commit_path=request.commit_path
-        )
-
+        # Extract commit data
+        repo_url = commit_data.get("repo_url")
+        commit_hash = commit_data.get("commit_hash")
+        
+        # Validate input
+        if not repo_url or not commit_hash:
+            raise HTTPException(
+                status_code=400, 
+                detail="Missing required fields: repo_url, commit_hash"
+            )
+        
+        # Create a CodeAnalyzer instance
+        analyzer = CodeAnalyzer.from_repo_and_commit(repo_url, commit_hash)
+        
+        # Analyze the commit
+        results = analyzer.analyze_commit()
+        
         return {
-            "original_path": request.original_path,
-            "commit_path": request.commit_path,
-            "is_properly_implemented": result.is_properly_implemented,
-            "summary": result.get_summary(),
-            "issues": [issue.to_dict() for issue in result.issues],
-            "metrics_diff": result.metrics_diff,
-            "files_added": result.files_added,
-            "files_modified": result.files_modified,
-            "files_removed": result.files_removed,
+            "status": "success",
+            "results": results
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
+
+@app.post("/analyze_codebase")
+def analyze_codebase(codebase_data: dict) -> Dict[str, Any]:
+    """
+    Analyze a codebase.
+    
+    Args:
+        codebase_data: Codebase data
+            
+    Returns:
+        Analysis results
+    """
+    try:
+        # Extract codebase data
+        repo_url = codebase_data.get("repo_url")
+        
+        # Validate input
+        if not repo_url:
+            raise HTTPException(
+                status_code=400, 
+                detail="Missing required field: repo_url"
+            )
+        
+        # Create a CodeAnalyzer instance
+        analyzer = CodeAnalyzer.from_repo(repo_url)
+        
+        # Analyze the codebase
+        results = analyzer.analyze_codebase()
+        
+        return {
+            "status": "success",
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 if __name__ == "__main__":
     # Run the FastAPI app locally with uvicorn

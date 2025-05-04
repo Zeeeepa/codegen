@@ -16,20 +16,19 @@ from codegen.shared.logging.get_logger import get_logger
 logger = get_logger(__name__)
 
 
-def convert_call_to_kwargs(function_call: FunctionCall, function_def: Optional[Function] = None) -> bool:
+def convert_call_to_kwargs(
+    function_call: FunctionCall, 
+    function_def: Optional[Function] = None
+) -> bool:
     """
     Convert a function call's positional arguments to keyword arguments.
-
-    This function attempts to convert positional arguments in a function call to
-    keyword arguments. If the function definition is provided, it uses the parameter
-    names from the definition. Otherwise, it cannot perform the conversion.
-
+    
     Args:
         function_call: The function call to convert
-        function_def: The function definition, if available
-
+        function_def: Optional function definition to get parameter names from
+        
     Returns:
-        True if the conversion was successful, False otherwise
+        bool: True if conversion was successful, False otherwise
     """
     try:
         # Skip if there are no positional arguments
@@ -75,16 +74,16 @@ def convert_all_calls_to_kwargs(
 ) -> Dict[str, Union[int, List[str]]]:
     """
     Convert all function calls in the codebase to use keyword arguments.
-
+    
     This function iterates through all function calls in the codebase and attempts
     to convert positional arguments to keyword arguments. It can be restricted to
     specific target functions.
-
+    
     Args:
         codebase: The codebase to transform
         target_functions: Optional list of function names to target (if None, converts all calls)
         ignore_errors: Whether to continue processing if errors occur (default: False)
-
+    
     Returns:
         A dictionary with conversion statistics:
         - 'converted_count': The number of function calls successfully converted
@@ -147,4 +146,3 @@ def convert_all_calls_to_kwargs(
             "failed_conversions": failed_conversions + [f"Global error: {str(e)}"],
             "skipped_count": skipped_count
         }
-

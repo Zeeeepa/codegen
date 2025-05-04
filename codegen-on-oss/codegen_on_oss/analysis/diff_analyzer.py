@@ -557,73 +557,139 @@ Complexity Changes:
 
         return text
 
-def perform_detailed_analysis(self) -> Dict[str, Any]:
-    """Perform a detailed analysis of the differences between the two snapshots."""
-    results = self._initialize_analysis_results()
-    results.update(self._analyze_files_and_functions())
-    results.update(self._analyze_complexity())
-    results.update(self._analyze_risks())
-    results['recommendations'] = self._generate_recommendations(results)
-    return results
+    def analyze(self) -> Dict[str, Any]:
+        """
+        Perform a comprehensive analysis of the diff.
+        
+        Returns:
+            Dict[str, Any]: Analysis results
+        """
+        results = {
+            "added_files": [],
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],
             "removed_functions": [],
             "modified_functions": [],
-            "complexity_increases": [],
-            "complexity_decreases": [],
-            "potential_issues": [],
-            "recommendations": [],
+            "complexity_changes": [],
+            "issues": [],
+            "summary": "",
+        }
+        
+        # Analyze files
+        results.update(self._analyze_files())
+        
+        # Analyze functions
+        results.update(self._analyze_functions())
+        
+        # Analyze complexity
+        results.update(self._analyze_complexity())
+        
+        # Generate summary
+        results["summary"] = self._generate_summary(results)
+        
+        # Analyze risks
+        results.update(self._analyze_risks())
+        results['recommendations'] = self._generate_recommendations(results)
+        return results
+
+    def _analyze_files(self) -> Dict[str, Any]:
+        """
+        Analyze file changes.
+
+        Returns:
+            Dict[str, Any]: File analysis results
+        """
+        file_changes = self.analyze_file_changes()
+        return {
+            "added_files": [filepath for filepath, change_type in file_changes.items() if change_type == "added"],
+            "removed_files": [filepath for filepath, change_type in file_changes.items() if change_type == "deleted"],
+            "modified_files": [filepath for filepath, change_type in file_changes.items() if change_type == "modified"],
         }
 
-        # Analyze file changes
-        file_changes = self.analyze_file_changes()
-        for file_path, change_type in file_changes.items():
-            if change_type == "added":
-                results["added_files"].append(file_path)
-            elif change_type == "removed":
-                results["removed_files"].append(file_path)
-            elif change_type == "modified":
-                results["modified_files"].append(file_path)
+    def _analyze_functions(self) -> Dict[str, Any]:
+        """
+        Analyze function changes.
 
-        # Analyze function changes
+        Returns:
+            Dict[str, Any]: Function analysis results
+        """
         function_changes = self.analyze_function_changes()
-        for function_name, change_type in function_changes.items():
-            if change_type == "added":
-                results["added_functions"].append(function_name)
-            elif change_type == "removed":
-                results["removed_functions"].append(function_name)
-            elif change_type == "modified":
-                results["modified_functions"].append(function_name)
+        return {
+            "added_functions": [func_name for func_name, change_type in function_changes.items() if change_type == "added"],
+            "removed_functions": [func_name for func_name, change_type in function_changes.items() if change_type == "deleted"],
+            "modified_functions": [func_name for func_name, change_type in function_changes.items() if change_type == "modified"],
+        }
 
-        # Analyze complexity changes
+    def _analyze_complexity(self) -> Dict[str, Any]:
+        """
+        Analyze complexity changes.
+
+        Returns:
+            Dict[str, Any]: Complexity analysis results
+        """
         complexity_changes = self.analyze_complexity_changes()
-        for file_path, change in complexity_changes.items():
-            if change > 0:
-                results["complexity_increases"].append({
+        return {
+            "complexity_changes": [
+                {
                     "file": file_path,
-                    "increase": change,
-                })
-            elif change < 0:
-                results["complexity_decreases"].append({
-                    "file": file_path,
-                    "decrease": abs(change),
-                })
+                    "increase": change["delta"] if change["delta"] > 0 else None,
+                    "decrease": abs(change["delta"]) if change["delta"] < 0 else None,
+                }
+                for file_path, change in complexity_changes.items()
+            ],
+        }
 
-        # Identify potential issues
-        risk_assessment = self.assess_risk()
-        for category, risk_level in risk_assessment.items():
-            if risk_level in ["high", "medium"]:
-                results["potential_issues"].append({
-                    "category": category,
-                    "risk_level": risk_level,
-                    "description": self._get_risk_description(category, risk_level),
-                })
+    def _generate_summary(self, analysis_results: Dict[str, Any]) -> str:
+        """
+        Generate a summary of the analysis results.
 
-        # Generate recommendations
-        results["recommendations"] = self._generate_recommendations(results)
+        Args:
+            analysis_results: Analysis results
 
-        return results
+        Returns:
+            Summary text
+        """
+        text = f"""
+Diff Analysis Summary
+=====================
+
+Original Snapshot: {analysis_results['original_snapshot_id']} (Commit: {analysis_results['original_commit'] or "N/A"})
+Modified Snapshot: {analysis_results['modified_snapshot_id']} (Commit: {analysis_results['modified_commit'] or "N/A"})
+
+File Changes:
+- Added: {analysis_results['file_changes']['added']}
+- Deleted: {analysis_results['file_changes']['deleted']}
+- Modified: {analysis_results['file_changes']['modified']}
+- Unchanged: {analysis_results['file_changes']['unchanged']}
+- Total Files: {analysis_results['file_changes']['total']}
+
+Function Changes:
+- Added: {analysis_results['function_changes']['added']}
+- Deleted: {analysis_results['function_changes']['deleted']}
+- Modified: {analysis_results['function_changes']['modified']}
+- Moved: {analysis_results['function_changes']['moved']}
+- Unchanged: {analysis_results['function_changes']['unchanged']}
+- Total Functions: {analysis_results['function_changes']['total']}
+
+Class Changes:
+- Added: {analysis_results['class_changes']['added']}
+- Deleted: {analysis_results['class_changes']['deleted']}
+- Modified: {analysis_results['class_changes']['modified']}
+- Moved: {analysis_results['class_changes']['moved']}
+- Unchanged: {analysis_results['class_changes']['unchanged']}
+- Total Classes: {analysis_results['class_changes']['total']}
+
+Complexity Changes:
+- Functions with increased complexity: {analysis_results['complexity_changes']['increased']}
+- Functions with decreased complexity: {analysis_results['complexity_changes']['decreased']}
+- Functions with unchanged complexity: {analysis_results['complexity_changes']['unchanged']}
+- Average complexity change: {analysis_results['complexity_changes']['avg_delta']:.2f}
+- Maximum complexity increase: {analysis_results['complexity_changes']['max_increase']}
+- Maximum complexity decrease: {analysis_results['complexity_changes']['max_decrease']}
+"""
+
+        return text
 
     def _get_risk_description(self, category: str, risk_level: str) -> str:
         """

@@ -403,7 +403,16 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many parameters ({len(func.parameters)} > {max_params})"
+                        "message": f"Function '{func.name}' has too many parameters "
+                        f"({len(func.parameters)} > {max_params})",
+                        "severity": self.config["severity_levels"]["too_many_parameters"],
+                        "category": "code_quality",
+                        "filepath": func.filepath,
+                        "line": func.line_range[0],
+                        "message": (
+                            f"Function '{func.name}' has too many parameters "
+                            f"({len(func.parameters)} > {max_params})"
+                        )
                     }
                 )
 
@@ -417,7 +426,8 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many return statements ({len(func.return_statements)} > {max_returns})",
+                        "message": f"Function '{func.name}' has too many return statements "
+                        f"({len(func.return_statements)} > {max_returns})",
                     }
                 )
 
@@ -472,7 +482,8 @@ class CodeIntegrityAnalyzer:
                         "name": cls.name,
                         "filepath": cls.filepath,
                         "line": cls.line_range[0],
-                        "message": f"Class '{cls.name}' has too many methods ({len(cls.methods)} > {max_methods})",
+                        "message": f"Class '{cls.name}' has too many methods "
+                        f"({len(cls.methods)} > {max_methods})",
                     }
                 )
 
@@ -486,7 +497,8 @@ class CodeIntegrityAnalyzer:
                         "name": cls.name,
                         "filepath": cls.filepath,
                         "line": cls.line_range[0],
-                        "message": f"Class '{cls.name}' has too many attributes ({len(cls.attributes)} > {max_attributes})",
+                        "message": f"Class '{cls.name}' has too many attributes "
+                        f"({len(cls.attributes)} > {max_attributes})",
                     }
                 )
 
@@ -671,7 +683,8 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity} > {max_complexity})",
+                        "message": f"Function '{func.name}' has high cyclomatic complexity "
+                        f"({complexity} > {max_complexity})",
                         "complexity": complexity,
                         "severity": self.config["severity_levels"]["high_complexity"],
                     }
