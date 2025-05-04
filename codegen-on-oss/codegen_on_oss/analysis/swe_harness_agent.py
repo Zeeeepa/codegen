@@ -325,6 +325,41 @@ class SWEHarnessAgent:
             logger.error(f"Failed to post comment to PR: {e}")
             return False
 
+    def post_pr_comment(self, repo: str, pr_number: int, comment: str) -> bool:
+        """
+        Post a comment on a pull request.
+
+        Args:
+            repo: Repository in the format "owner/repo"
+            pr_number: PR number
+            comment: Comment text
+
+        Returns:
+            True if successful, False otherwise
+        """
+        from github import Github
+
+        if not self.github_token:
+            logger.error("GitHub token is required to post comments")
+            return False
+
+        try:
+            # Parse repository owner and name
+            owner, repo_name = repo.split("/")
+
+            # Initialize GitHub client
+            g = Github(self.github_token)
+            repo_obj = g.get_repo(f"{owner}/{repo_name}")
+            pr = repo_obj.get_pull(pr_number)
+
+            # Post the comment to GitHub
+            pr.create_issue_comment(comment)
+
+            return True
+        except Exception as e:
+            logger.error(f"Failed to post comment to PR: {e}")
+            return False
+
     def analyze_and_comment_on_pr(
         self,
         repo_url: str,
@@ -359,6 +394,46 @@ class SWEHarnessAgent:
         analysis_results["comment"] = comment
 
         return analysis_results
+
+    def get_pr_file_content(self, repo: str, pr_number: int) -> Dict[str, str]:
+        """
+        Get the content of files changed in a pull request.
+
+        Args:
+            repo: Repository in the format "owner/repo"
+            pr_number: PR number
+
+        Returns:
+            Dictionary mapping file paths to their content
+        """
+        try:
+            # Parse repository owner and name
+            owner, repo_name = repo.split("/")
+
+            # Initialize GitHub client
+            g = Github(self.github_token)
+            repo_obj = g.get_repo(f"{owner}/{repo_name}")
+            pr = repo_obj.get_pull(pr_number)
+
+            # Get files changed in the PR
+            files = pr.get_files()
+            
+            # Get content for each file
+            file_content = {}
+            for file in files:
+                try:
+                    # Get the file content from the PR head
+                    content = repo_obj.get_contents(file.filename, ref=pr.head.ref).decoded_content.decode("utf-8")
+                    file_content[file.filename] = content
+                except Exception as e:
+                    logger.warning(f"Error getting content for file {file.filename}: {str(e)}")
+                    file_content[file.filename] = f"Error: {str(e)}"
+            
+            return file_content
+        
+        except Exception as e:
+            logger.error(f"Error getting PR file content: {str(e)}")
+            return {}
 
 
 # Example usage

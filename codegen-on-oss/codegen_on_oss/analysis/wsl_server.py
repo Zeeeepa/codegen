@@ -9,11 +9,13 @@ orchestration and provides endpoints for various code analysis tasks.
 import logging
 import os
 import tempfile
-from typing import Any, Dict, List, Optional
+import traceback
+from typing import Any, Dict, List, Optional, Union
 
 import uvicorn
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
@@ -53,6 +55,23 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 API_KEY = os.getenv("CODEGEN_API_KEY", "")
 
 
+# Custom exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler for the application."""
+    logger.error(f"Unhandled exception: {str(exc)}")
+    logger.error(traceback.format_exc())
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": "Internal Server Error",
+            "message": str(exc),
+            "traceback": traceback.format_exc() if os.getenv("DEBUG", "false").lower() == "true" else None,
+        },
+    )
+
+
 # Request Models
 class CodeValidationRequest(BaseModel):
     """Request model for code validation."""
@@ -71,6 +90,7 @@ class RepoComparisonRequest(BaseModel):
     base_branch: Optional[str] = "main"
     head_branch: Optional[str] = "main"
     github_token: Optional[str] = None
+    detailed_analysis: bool = False  # New field for detailed analysis
 
 
 class PRAnalysisRequest(BaseModel):
@@ -81,6 +101,7 @@ class PRAnalysisRequest(BaseModel):
     github_token: Optional[str] = None
     detailed: bool = True
     post_comment: bool = False
+    include_file_content: bool = False  # New field to include file content in the response
 
 
 # Response Models
@@ -101,6 +122,7 @@ class CodeValidationResponse(BaseModel):
     validation_results: List[ValidationResult]
     overall_score: float
     summary: str
+    error: Optional[str] = None  # New field for error messages
 
 
 class RepoComparisonResponse(BaseModel):
@@ -113,6 +135,8 @@ class RepoComparisonResponse(BaseModel):
     complexity_changes: Dict[str, float]
     risk_assessment: Dict[str, Any]
     summary: str
+    detailed_analysis: Optional[Dict[str, Any]] = None  # New field for detailed analysis
+    error: Optional[str] = None  # New field for error messages
 
 
 class PRAnalysisResponse(BaseModel):
@@ -125,6 +149,8 @@ class PRAnalysisResponse(BaseModel):
     issues_found: List[Dict[str, Any]]
     recommendations: List[str]
     summary: str
+    file_content: Optional[Dict[str, str]] = None  # New field for file content
+    error: Optional[str] = None  # New field for error messages
 
 
 # Dependency for API key validation
@@ -181,23 +207,29 @@ async def validate_code(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            SnapshotManager(temp_dir)
+            snapshot_manager = SnapshotManager(temp_dir)
+            logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshot from repository
+            logger.info(f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})")
             snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.repo_url,
                 branch=request.branch,
                 github_token=request.github_token,
             )
+            logger.info(f"Snapshot created with {len(snapshot.files)} files")
 
             # Initialize code integrity analyzer
+            logger.info("Initializing code integrity analyzer")
             analyzer = CodeIntegrityAnalyzer(snapshot)
 
             # Perform analysis
             categories = request.categories or ["code_quality", "security", "maintainability"]
+            logger.info(f"Analyzing categories: {categories}")
             results = []
 
             for category in categories:
+                logger.info(f"Analyzing category: {category}")
                 if category == "code_quality":
                     result = analyzer.analyze_code_quality()
                 elif category == "security":
@@ -205,6 +237,7 @@ async def validate_code(
                 elif category == "maintainability":
                     result = analyzer.analyze_maintainability()
                 else:
+                    logger.warning(f"Unknown category: {category}")
                     result = {
                         "score": 0.0,
                         "issues": [],
@@ -219,15 +252,18 @@ async def validate_code(
                         recommendations=result.get("recommendations", []),
                     )
                 )
+                logger.info(f"Category {category} analyzed with score: {result.get('score', 0.0)}")
 
             # Calculate overall score
             overall_score = sum(r.score for r in results) / len(results) if results else 0.0
+            logger.info(f"Overall score: {overall_score:.2f}/10")
 
             # Generate summary
             summary = (
                 f"Analysis of {request.repo_url} ({request.branch}) completed "
                 f"with an overall score of {overall_score:.2f}/10."
             )
+            logger.info(f"Analysis summary: {summary}")
 
             return CodeValidationResponse(
                 repo_url=request.repo_url,
@@ -239,10 +275,17 @@ async def validate_code(
 
     except Exception as e:
         logger.error(f"Error validating code: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error validating code: {str(e)}",
-        ) from e
+        logger.error(traceback.format_exc())
+        
+        # Return a response with error information
+        return CodeValidationResponse(
+            repo_url=request.repo_url,
+            branch=request.branch,
+            validation_results=[],
+            overall_score=0.0,
+            summary=f"Error validating code: {str(e)}",
+            error=str(e),
+        )
 
 
 @app.post("/compare", response_model=RepoComparisonResponse)
@@ -261,34 +304,59 @@ async def compare_repositories(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            SnapshotManager(temp_dir)
+            snapshot_manager = SnapshotManager(temp_dir)
+            logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshots from repositories
+            logger.info(f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})")
             base_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.base_repo_url,
                 branch=request.base_branch,
                 github_token=request.github_token,
             )
+            logger.info(f"Base snapshot created with {len(base_snapshot.files)} files")
 
+            logger.info(f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})")
             head_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.head_repo_url,
                 branch=request.head_branch,
                 github_token=request.github_token,
             )
+            logger.info(f"Head snapshot created with {len(head_snapshot.files)} files")
 
             # Initialize diff analyzer
+            logger.info("Initializing diff analyzer")
             diff_analyzer = DiffAnalyzer(base_snapshot, head_snapshot)
 
             # Analyze differences
+            logger.info("Analyzing file changes")
             file_changes = diff_analyzer.analyze_file_changes()
+            logger.info(f"Found {len(file_changes)} file changes")
+            
+            logger.info("Analyzing function changes")
             function_changes = diff_analyzer.analyze_function_changes()
+            logger.info(f"Found {len(function_changes)} function changes")
+            
+            logger.info("Analyzing complexity changes")
             complexity_changes = diff_analyzer.analyze_complexity_changes()
+            logger.info(f"Found {len(complexity_changes)} complexity changes")
 
             # Assess risk
+            logger.info("Assessing risk")
             risk_assessment = diff_analyzer.assess_risk()
+            logger.info(f"Risk assessment completed: {risk_assessment}")
 
             # Generate summary
+            logger.info("Generating summary")
             summary = diff_analyzer.format_summary_text()
+            logger.info(f"Summary generated: {summary}")
+
+            # Perform detailed analysis if requested
+            detailed_analysis = None
+            if request.detailed_analysis:
+                logger.info("Performing detailed analysis")
+                detailed_analysis = diff_analyzer.perform_detailed_analysis()
+                logger.info("Detailed analysis completed")
 
             return RepoComparisonResponse(
                 base_repo_url=request.base_repo_url,
@@ -298,14 +366,24 @@ async def compare_repositories(
                 complexity_changes=complexity_changes,
                 risk_assessment=risk_assessment,
                 summary=summary,
+                detailed_analysis=detailed_analysis,
             )
 
     except Exception as e:
         logger.error(f"Error comparing repositories: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error comparing repositories: {str(e)}",
-        ) from e
+        logger.error(traceback.format_exc())
+        
+        # Return a response with error information
+        return RepoComparisonResponse(
+            base_repo_url=request.base_repo_url,
+            head_repo_url=request.head_repo_url,
+            file_changes={},
+            function_changes={},
+            complexity_changes={},
+            risk_assessment={},
+            summary=f"Error comparing repositories: {str(e)}",
+            error=str(e),
+        )
 
 
 @app.post("/analyze-pr", response_model=PRAnalysisResponse)
@@ -322,28 +400,43 @@ async def analyze_pull_request(
     """
     try:
         # Initialize SWE harness agent
+        logger.info(f"Initializing SWE harness agent for PR analysis: {request.repo_url}#{request.pr_number}")
         agent = SWEHarnessAgent(github_token=request.github_token)
 
         # Analyze pull request
+        logger.info(f"Analyzing pull request: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})")
         analysis_results = agent.analyze_pr(
             repo=request.repo_url,
             pr_number=request.pr_number,
             detailed=request.detailed,
         )
+        logger.info(f"PR analysis completed for {request.repo_url}#{request.pr_number}")
 
         # Post comment if requested
         if request.post_comment:
+            logger.info(f"Posting comment to PR: {request.repo_url}#{request.pr_number}")
             agent.post_pr_comment(
                 repo=request.repo_url,
                 pr_number=request.pr_number,
                 comment=analysis_results["summary"],
             )
+            logger.info(f"Comment posted to PR: {request.repo_url}#{request.pr_number}")
 
         # Extract relevant information
         code_quality_score = analysis_results.get("code_quality_score", 0.0)
         issues_found = analysis_results.get("issues", [])
         recommendations = analysis_results.get("recommendations", [])
         summary = analysis_results.get("summary", "")
+        
+        # Get file content if requested
+        file_content = None
+        if request.include_file_content:
+            logger.info(f"Retrieving file content for PR: {request.repo_url}#{request.pr_number}")
+            file_content = agent.get_pr_file_content(
+                repo=request.repo_url,
+                pr_number=request.pr_number,
+            )
+            logger.info(f"Retrieved content for {len(file_content) if file_content else 0} files")
 
         return PRAnalysisResponse(
             repo_url=request.repo_url,
@@ -353,18 +446,29 @@ async def analyze_pull_request(
             issues_found=issues_found,
             recommendations=recommendations,
             summary=summary,
+            file_content=file_content,
         )
 
     except Exception as e:
         logger.error(f"Error analyzing pull request: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error analyzing pull request: {str(e)}",
-        ) from e
+        logger.error(traceback.format_exc())
+        
+        # Return a response with error information
+        return PRAnalysisResponse(
+            repo_url=request.repo_url,
+            pr_number=request.pr_number,
+            analysis_results={},
+            code_quality_score=0.0,
+            issues_found=[],
+            recommendations=[],
+            summary=f"Error analyzing pull request: {str(e)}",
+            error=str(e),
+        )
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):
     """Run the FastAPI server."""
+    logger.info(f"Starting WSL2 server on {host}:{port}")
     uvicorn.run(app, host=host, port=port)
 
 
