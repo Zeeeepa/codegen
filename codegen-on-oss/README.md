@@ -1,81 +1,72 @@
-# Overview
+# Codegen on OSS
 
-The **Codegen on OSS** package provides a modular pipeline that:
+The **Codegen on OSS** package provides a modular pipeline for analyzing and processing open-source repositories. It offers comprehensive tools for repository parsing, code analysis, snapshot management, and quality assessment.
 
-- **Collects repository URLs** from different sources (e.g., CSV files or GitHub searches).
-- **Parses repositories** using the codegen tool.
-- **Profiles performance** and logs metrics for each parsing run.
-- **Logs errors** to help pinpoint parsing failures or performance bottlenecks.
-- **Provides a WSL2 server backend** for code validation, repository comparison, and PR analysis.
+## Core Features
 
-______________________________________________________________________
+- **Repository Collection & Parsing**: Collect repository URLs from different sources and parse them using the Codegen tool
+- **Performance Profiling**: Profile performance and log metrics for each parsing run
+- **Code Analysis**: Analyze code quality, complexity, and structure
+- **Snapshot Management**: Create, store, and compare snapshots of codebases
+- **PR & Commit Analysis**: Analyze pull requests and commits for quality assessment
+- **Server Backend**: Provide a WSL2 server backend for code validation, repository comparison, and PR analysis
 
 ## Package Structure
 
 The package is composed of several modules:
 
-- `sources`
+### Sources Module
 
-  - Defines the Repository source classes and settings. Settings are all configurable via environment variables
+Defines the Repository source classes and settings:
 
-  - Github Source
+- **Github Source**: Query repositories from GitHub based on language and heuristic
+- **CSV Source**: Read repository URLs from CSV files
 
-    ```python
-    class GithubSettings(SourceSettings):
-        language: Literal["python", "typescript"] = "python"
-        heuristic: Literal[
-            "stars",
-            "forks",
-            "updated",
-            # "watchers",
-            # "contributors",
-            # "commit_activity",
-            # "issues",
-            # "dependency",
-        ] = "stars"
-        github_token: str | None = None
-    ```
+### Cache Module
 
-    - The three options available now are the three supported by the Github API.
-      - Future Work Additional options will require different strategies
+Specifies the cache directory for storing repositories.
 
-  - CSV Source
+### CLI Module
 
-    - Simply reads repo URLs from CSV
+Built with Click, provides commands for parsing repositories:
 
-- `cache`
+- `run-one`: Parse a single repository specified by URL
+- `run`: Iterate over repositories from a selected source and parse each one
 
-  - Currently only specifies the cache directory. It is used for caching git repositories pulled by the pipeline `--force-pull` can be used to re-pull from the remote.
+### Metrics Module
 
-- `cli`
+Provides profiling tools to measure performance during parsing:
 
-  - Built with Click, the CLI provides two main commands:
-    - `run-one`: Parses a single repository specified by URL.
-    - `run`: Iterates over repositories obtained from a selected source and parses each one.
+- `MetricsProfiler`: Context manager for profiling sessions
+- `MetricsProfile`: Records step-by-step metrics (clock duration, CPU time, memory usage)
 
-- **`metrics`**
+### Parser Module
 
-  - Provides profiling tools to measure performance during the parse:
-    - `MetricsProfiler`: A context manager that creates a profiling session.
-    - `MetricsProfile`: Represents a "span" or a "run" of a specific repository. Records step-by-step metrics (clock duration, CPU time, memory usage) and writes them to a CSV file specified by `--output-path`
+Contains the `CodegenParser` class that orchestrates the parsing process:
 
-- **`parser`**
+- Clone repositories or force pull if specified
+- Initialize a `Codebase` from the Codegen tool
+- Run post-initialization validation
+- Integrate with the `MetricsProfiler` to log measurements
 
-  Contains the `CodegenParser` class that orchestrates the parsing process:
+### Analysis Module
 
-  - Clones the repository (or forces a pull if specified).
-  - Initializes a `Codebase` (from the codegen tool).
-  - Runs post-initialization validation.
-  - Integrates with the `MetricsProfiler` to log measurements at key steps.
+Provides comprehensive code analysis capabilities:
 
-- `analysis`
+- **CodeAnalyzer**: Central class for orchestrating analysis functionality
+- **DiffAnalyzer**: Analyze differences between codebase snapshots
+- **CommitAnalyzer**: Analyze commits by comparing snapshots
+- **SWEHarnessAgent**: Analyze commits and PRs
+- **Code Integrity Analysis**: Detect code quality issues and potential errors
+- **Server**: FastAPI server for analyzing repositories, commits, branches, and PRs
 
-  - Contains modules for analyzing code repositories and commits
-  - Provides a WSL2 server backend for code validation, repository comparison, and PR analysis
-  - Includes integration with external tools like ctrlplane, weave, probot, pkg.pr.new, and tldr
-  - See [WSL2 Server README](./codegen_on_oss/analysis/WSL_README.md) for more details
+### Snapshot Module
 
-______________________________________________________________________
+Enables capturing the state of a codebase at specific points in time:
+
+- **CodebaseSnapshot**: Capture and store codebase state
+- **SnapshotManager**: Manage creation, storage, and retrieval of snapshots
+- **Event Handlers**: Integrate with GitHub events for automatic snapshot creation
 
 ## Getting Started
 
@@ -83,30 +74,24 @@ ______________________________________________________________________
 
    Decide whether you want to read from a CSV file or query GitHub:
 
-   - For CSV, ensure that your CSV file (default: `input.csv`) exists and contains repository URLs in its first column \[`repo_url`\] and commit hash \[`commit_hash`\] (or empty) in the second column.
-   - For GitHub, configure your desired settings (e.g., `language`, `heuristic`, and optionally a GitHub token) via environment variables (`GITHUB_` prefix)
+   - For CSV, ensure your CSV file (default: `input.csv`) contains repository URLs in its first column and commit hash in the second column
+   - For GitHub, configure settings via environment variables (`GITHUB_` prefix)
 
-1. **Run the Parser**
+2. **Run the Parser**
 
    Use the CLI to start parsing:
 
-   - To parse one repository:
+   ```bash
+   # Parse one repository
+   uv run cgparse run-one --help
 
-     ```bash
-     uv run cgparse run-one --help
-     ```
+   # Parse multiple repositories from a source
+   uv run cgparse run --help
+   ```
 
-   - To parse multiple repositories from a source:
+3. **Review Metrics and Logs**
 
-     ```bash
-     uv run cgparse run --help
-     ```
-
-1. **Review Metrics and Logs**
-
-   After parsing, check the CSV (default: `metrics.csv` ) to review performance measurements per repository. Error logs are written to the specified error output file (default: `errors.log`)
-
-______________________________________________________________________
+   After parsing, check the CSV (default: `metrics.csv`) to review performance measurements per repository. Error logs are written to the specified error output file (default: `errors.log`)
 
 ## Running on Modal
 
@@ -118,228 +103,181 @@ Codegen runs this parser on modal using the CSV source file `input.csv` tracked 
 
 ### Modal Configuration
 
-- **Compute Resources**: Allocates 4 CPUs and 16GB of memory.
-- **Secrets & Volumes**: Uses secrets (for bucket credentials) and mounts a volume for caching repositories.
-- **Image Setup**: Builds on a Debian slim image with Python 3.12, installs required packages (`uv` and `git` )
-- **Environment Configuration**: Environment variables (e.g., GitHub settings) are injected at runtime.
-
-The function `parse_repo_on_modal` performs the following steps:
-
-1. **Environment Setup**: Updates environment variables and configures logging using Loguru.
-1. **Source Initialization**: Creates a repository source based on the provided type (e.g., GitHub).
-1. **Metrics Profiling**: Instantiates `MetricsProfiler` to capture and log performance data.
-1. **Repository Parsing**: Iterates over repository URLs and parses each using the `CodegenParser`.
-1. **Error Handling**: Logs any exceptions encountered during parsing.
-1. **Result Upload**: Uses the `BucketStore` class to upload the configuration, logs, and metrics to an S3 bucket.
+- **Compute Resources**: Allocates 4 CPUs and 16GB of memory
+- **Secrets & Volumes**: Uses secrets for bucket credentials and mounts a volume for caching repositories
+- **Image Setup**: Builds on a Debian slim image with Python 3.12, installs required packages
+- **Environment Configuration**: Environment variables are injected at runtime
 
 ### Bucket Storage
 
 **Bucket (public):** [codegen-oss-parse](https://s3.amazonaws.com/codegen-oss-parse/)
 
-The results of each run are saved under the version of `codegen` lib that the run installed and the source type it was run with. Within this prefix:
+The results of each run are saved under the version of `codegen` lib that the run installed and the source type it was run with.
 
-- Source Settings
-  - `https://s3.amazonaws.com/codegen-oss-parse/{version}/{source}/config.json`
-- Metrics
-  - `https://s3.amazonaws.com/codegen-oss-parse/{version}/{source}/metrics.csv`
-- Logs
-  - `https://s3.amazonaws.com/codegen-oss-parse/{version}/{source}/output.logs`
+## Code Analysis Usage
 
-______________________________________________________________________
+### Basic Analysis
 
-### Running it yourself
+```python
+from codegen import Codebase
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
 
-You can also run `modal_run.py` yourself. It is designed to be run via Modal for cloud-based parsing. It offers additional configuration methods:
+# Create a codebase from a directory
+codebase = Codebase.from_directory("/path/to/repo")
 
-```shell
-$ uv run modal run modal_run.py
+# Create an analyzer
+analyzer = CodeAnalyzer(codebase)
+
+# Get a summary of the codebase
+summary = analyzer.get_codebase_summary()
+print(summary)
+
+# Analyze complexity
+complexity = analyzer.analyze_complexity()
+print(complexity)
+
+# Analyze imports
+imports = analyzer.analyze_imports()
+print(imports)
 ```
 
-- **CSV and Repository Volumes:**
-  The script defines two Modal volumes:
+### Commit Analysis
 
-  - `codegen-oss-input-volume`: For uploading and reloading CSV inputs.
-  - `codegen-oss-repo-volume`: For caching repository data during parsing.
-    The repository and input volume names are configurable via environment variables (`CODEGEN_MODAL_REPO_VOLUME` and `CODEGEN_MODAL_INPUT_VOLUME`).
+```python
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
 
-- **Secrets Handling:**
-  The script loads various credentials via Modal secrets. It first checks for a pre-configured Modal secret (`codegen-oss-bucket-credentials` configurable via environment variable `CODEGEN_MODAL_SECRET_NAME`) and falls back to dynamically created Modal secret from local `.env` or environment variables if not found.
+# Create analyzer instance
+analyzer = CodeAnalyzer(codebase)
 
-- **Entrypoint Parameters:**
-  The main function supports multiple source types:
+# Analyze a commit
+analysis_results = analyzer.analyze_commit(base_commit="abc123", head_commit="def456", github_token="your_github_token")
 
-  - **csv:** Uploads a CSV file (`--csv-file input.csv`) for batch processing.
-  - **single:** Parses a single repository specified by its URL (`--single-url "https://github.com/codegen-sh/codegen-sdk.git"`) and an optional commit hash (`--single-commit ...`)
-  - **github:** Uses GitHub settings, language (`--github-language python`) and heuristic (`--github-heuristic stars`) to query for top repositories.
+# Print the results
+print(f"Is properly implemented: {analysis_results['quality_assessment']['is_properly_implemented']}")
+print(f"Quality score: {analysis_results['quality_assessment']['score']}")
+print(f"Overall assessment: {analysis_results['quality_assessment']['overall_assessment']}")
+```
 
-- **Result Storage:**
-  Upon completion, logs and metrics are automatically uploaded to the S3 bucket specified by the environment variable `BUCKET_NAME` (default: `codegen-oss-parse`). This allows for centralized storage and easy retrieval of run outputs. The AWS Credentials provided in the secret are used for this operation.
+### PR Analysis
 
-______________________________________________________________________
+```python
+from codegen_on_oss.analysis.analysis import CodeAnalyzer
+
+# Create analyzer instance
+analyzer = CodeAnalyzer(codebase)
+
+# Analyze a PR
+analysis_results = analyzer.analyze_pull_request(pr_number=123, github_token="your_github_token")
+
+# Print the results
+print(f"Is properly implemented: {analysis_results['quality_assessment']['is_properly_implemented']}")
+print(f"Quality score: {analysis_results['quality_assessment']['score']}")
+print(f"Overall assessment: {analysis_results['quality_assessment']['overall_assessment']}")
+```
+
+### Analysis Server
+
+The module provides a FastAPI server for analyzing repositories, commits, branches, and PRs:
+
+```python
+from codegen_on_oss.analysis.server import run_server
+
+# Start the server
+run_server(host="0.0.0.0", port=8000)
+```
+
+You can then make requests to the server:
+
+```bash
+# Analyze a repository
+curl -X POST http://localhost:8000/analyze_repo \
+  -H "Content-Type: application/json" \
+  -d '{"repo_url": "https://github.com/owner/repo"}'
+
+# Analyze a commit
+curl -X POST http://localhost:8000/analyze_commit \
+  -H "Content-Type: application/json" \
+  -d '{"repo_url": "https://github.com/owner/repo", "commit_hash": "abc123"}'
+
+# Compare branches
+curl -X POST http://localhost:8000/compare_branches \
+  -H "Content-Type: application/json" \
+  -d '{"repo_url": "https://github.com/owner/repo", "base_branch": "main", "compare_branch": "feature"}'
+
+# Analyze a PR
+curl -X POST http://localhost:8000/analyze_pr \
+  -H "Content-Type: application/json" \
+  -d '{"repo_url": "https://github.com/owner/repo", "pr_number": 123}'
+```
+
+## Snapshot Usage
+
+### Creating and Comparing Snapshots
+
+```python
+from codegen import Codebase
+from codegen.configs.models.secrets import SecretsConfig
+from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager, CodebaseSnapshot
+from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+
+# Create a snapshot manager
+snapshot_manager = SnapshotManager()
+
+# Create a codebase from a repository
+github_token = "your_github_token"
+secrets = SecretsConfig(github_token=github_token)
+codebase = Codebase.from_repo("owner/repo", secrets=secrets)
+
+# Create a snapshot
+snapshot = snapshot_manager.create_snapshot(codebase, commit_sha="abc123")
+
+# Save the snapshot to a file
+snapshot.save_to_file("snapshot.json")
+
+# Load a snapshot from a file
+loaded_snapshot = CodebaseSnapshot.load_from_file("snapshot.json")
+
+# Create a diff analyzer to compare two snapshots
+diff_analyzer = DiffAnalyzer(original_snapshot, modified_snapshot)
+
+# Get a summary of the changes
+summary = diff_analyzer.get_summary()
+print(summary)
+```
+
+## Code Integrity Analysis
+
+### Command Line Interface
+
+```bash
+# Basic analysis
+python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo /path/to/repo --output results.json --html report.html
+
+# Analysis with custom configuration
+python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo /path/to/repo --config config.json --output results.json --html report.html
+
+# Branch comparison
+python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo /path/to/repo --mode compare --main-branch main --feature-branch feature --output comparison.json --html report.html
+
+# PR analysis
+python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo /path/to/repo --mode pr --main-branch main --feature-branch pr-branch --output pr_analysis.json --html report.html
+```
 
 ## Extensibility
 
-**Adding New Sources:**
+### Adding New Sources
 
 You can define additional repository sources by subclassing `RepoSource` and providing a corresponding settings class. Make sure to set the `source_type` and register your new source by following the pattern established in `CSVInputSource` or `GithubSource`.
 
-**Improving Testing:**
+### Improving Testing
 
 The detailed metrics collected can help you understand where parsing failures occur or where performance lags. Use these insights to improve error handling and optimize the codegen parsing logic.
 
-**Containerization and Automation:**
+### Containerization and Automation
 
 There is a Dockerfile that can be used to create an image capable of running the parse tests. Runtime environment variables can be used to configure the run and output.
 
-**Input & Configuration**
+## License
 
-Explore a better CLI for providing options to the Modal run.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-______________________________________________________________________
-
-## Example Log Output
-
-```shell
-[codegen-on-oss*] codegen/codegen-on-oss/$ uv run cgparse run --source csv
- 21:32:36 INFO Cloning repository https://github.com/JohnSnowLabs/spark-nlp.git
- 21:36:57 INFO {
-    "profile_name": "https://github.com/JohnSnowLabs/spark-nlp.git",
-    "step": "codebase_init",
-    "delta_time": 7.186550649999845,
-    "cumulative_time": 7.186550649999845,
-    "cpu_time": 180.3553702,
-    "memory_usage": 567525376,
-    "memory_delta": 317095936,
-    "error": null
-}
- 21:36:58 INFO {
-    "profile_name": "https://github.com/JohnSnowLabs/spark-nlp.git",
-    "step": "post_init_validation",
-    "delta_time": 0.5465090990001045,
-    "cumulative_time": 7.733059748999949,
-    "cpu_time": 180.9174761,
-    "memory_usage": 569249792,
-    "memory_delta": 1724416,
-    "error": null
-}
- 21:36:58 ERROR Repository: https://github.com/JohnSnowLabs/spark-nlp.git
-Traceback (most recent call last):
-
-  File "/home/codegen/codegen/codegen-on-oss/.venv/bin/cgparse", line 10, in <module>
-    sys.exit(cli())
-    │   │    └ <Group cli>
-    │   └ <built-in function exit>
-    └ <module 'sys' (built-in)>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1161, in __call__
-    return self.main(*args, **kwargs)
-           │    │     │       └ {}
-           │    │     └ ()
-           │    └ <function BaseCommand.main at 0x7f4665c15120>
-           └ <Group cli>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1082, in main
-    rv = self.invoke(ctx)
-         │    │      └ <click.core.Context object at 0x7f4665f3c9e0>
-         │    └ <function MultiCommand.invoke at 0x7f4665c16340>
-         └ <Group cli>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1697, in invoke
-    return _process_result(sub_ctx.command.invoke(sub_ctx))
-           │               │       │       │      └ <click.core.Context object at 0x7f4665989b80>
-           │               │       │       └ <function Command.invoke at 0x7f4665c15d00>
-           │               │       └ <Command run>
-           │               └ <click.core.Context object at 0x7f4665989b80>
-           └ <function MultiCommand.invoke.<locals>._process_result at 0x7f466597fb00>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 1443, in invoke
-    return ctx.invoke(self.callback, **ctx.params)
-           │   │      │    │           │   └ {'source': 'csv', 'output_path': 'metrics.csv', 'error_output_path': 'errors.log', 'cache_dir': PosixPath('/home/.cache...
-           │   │      │    │           └ <click.core.Context object at 0x7f4665989b80>
-           │   │      │    └ <function run at 0x7f466145eac0>
-           │   │      └ <Command run>
-           │   └ <function Context.invoke at 0x7f4665c14680>
-           └ <click.core.Context object at 0x7f4665989b80>
-  File "/home/codegen/codegen/codegen-on-oss/.venv/lib/python3.12/site-packages/click/core.py", line 788, in invoke
-    return __callback(*args, **kwargs)
-                       │       └ {'source': 'csv', 'output_path': 'metrics.csv', 'error_output_path': 'errors.log', 'cache_dir': PosixPath('/home/.cache...
-                       └ ()
-
-  File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/cli.py", line 121, in run
-    parser.parse(repo_url)
-    │      │     └ 'https://github.com/JohnSnowLabs/spark-nlp.git'
-    │      └ <function CodegenParser.parse at 0x7f4664b014e0>
-    └ <codegen_on_oss.parser.CodegenParser object at 0x7f46612def30>
-
-  File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/parser.py", line 52, in parse
-    with self.metrics_profiler.start_profiler(
-         │    │                └ <function MetricsProfiler.start_profiler at 0x7f466577d760>
-         │    └ <codegen_on_oss.metrics.MetricsProfiler object at 0x7f465e6c2e70>
-         └ <codegen_on_oss.parser.CodegenParser object at 0x7f46612def30>
-
-  File "/home/.local/share/uv/python/cpython-3.12.6-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 158, in __exit__
-    self.gen.throw(value)
-    │    │   │     └ ParseRunError(<PostInitValidationStatus.LOW_IMPORT_RESOLUTION_RATE: 'LOW_IMPORT_RESOLUTION_RATE'>)
-    │    │   └ <method 'throw' of 'generator' objects>
-    │    └ <generator object MetricsProfiler.start_profiler at 0x7f4660478740>
-    └ <contextlib._GeneratorContextManager object at 0x7f46657849e0>
-
-> File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/metrics.py", line 41, in start_profiler
-    yield profile
-          └ <codegen_on_oss.metrics.MetricsProfile object at 0x7f4665784a10>
-
-  File "/home/codegen/codegen/codegen-on-oss/codegen_on_oss/parser.py", line 64, in parse
-    raise ParseRunError(validation_status)
-          │             └ <PostInitValidationStatus.LOW_IMPORT_RESOLUTION_RATE: 'LOW_IMPORT_RESOLUTION_RATE'>
-          └ <class 'codegen_on_oss.parser.ParseRunError'>
-
-codegen_on_oss.parser.ParseRunError: LOW_IMPORT_RESOLUTION_RATE
- 21:36:58 INFO {
-    "profile_name": "https://github.com/JohnSnowLabs/spark-nlp.git",
-    "step": "TOTAL",
-    "delta_time": 7.740976418000173,
-    "cumulative_time": 7.740976418000173,
-    "cpu_time": 180.9221699,
-    "memory_usage": 569249792,
-    "memory_delta": 0,
-    "error": "LOW_IMPORT_RESOLUTION_RATE"
-}
- 21:36:58 INFO Cloning repository https://github.com/Lightning-AI/lightning.git
- 21:37:53 INFO {
-    "profile_name": "https://github.com/Lightning-AI/lightning.git",
-    "step": "codebase_init",
-    "delta_time": 24.256577352999557,
-    "cumulative_time": 24.256577352999557,
-    "cpu_time": 211.3604081,
-    "memory_usage": 1535971328,
-    "memory_delta": 966184960,
-    "error": null
-}
- 21:37:53 INFO {
-    "profile_name": "https://github.com/Lightning-AI/lightning.git",
-    "step": "post_init_validation",
-    "delta_time": 0.137609629000508,
-    "cumulative_time": 24.394186982000065,
-    "cpu_time": 211.5082702,
-    "memory_usage": 1536241664,
-    "memory_delta": 270336,
-    "error": null
-}
- 21:37:53 INFO {
-    "profile_name": "https://github.com/Lightning-AI/lightning.git",
-    "step": "TOTAL",
-    "delta_time": 24.394700584999555,
-    "cumulative_time": 24.394700584999555,
-    "cpu_time": 211.5088282,
-    "memory_usage": 1536241664,
-    "memory_delta": 0,
-    "error": null
-}
-```
-
-## Example Metrics Output
-
-| profile_name           | step                 | delta_time         | cumulative_time    | cpu_time    | memory_usage | memory_delta | error                      |
-| ---------------------- | -------------------- | ------------------ | ------------------ | ----------- | ------------ | ------------ | -------------------------- |
-| JohnSnowLabs/spark-nlp | codebase_init        | 7.186550649999845  | 7.186550649999845  | 180.3553702 | 567525376    | 317095936    |                            |
-| JohnSnowLabs/spark-nlp | post_init_validation | 0.5465090990001045 | 7.733059748999949  | 180.9174761 | 569249792    | 1724416      |                            |
-| JohnSnowLabs/spark-nlp | TOTAL                | 7.740976418000173  | 7.740976418000173  | 180.9221699 | 569249792    | 0            | LOW_IMPORT_RESOLUTION_RATE |
-| Lightning-AI/lightning | codebase_init        | 24.256577352999557 | 24.256577352999557 | 211.3604081 | 1535971328   | 966184960    |                            |
-| Lightning-AI/lightning | post_init_validation | 0.137609629000508  | 24.394186982000065 | 211.5082702 | 1536241664   | 270336       |                            |
-| Lightning-AI/lightning | TOTAL                | 24.394700584999555 | 24.394700584999555 | 211.5088282 | 1536241664   | 0            |                            |
