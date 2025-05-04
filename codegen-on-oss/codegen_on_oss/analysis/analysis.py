@@ -1405,7 +1405,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Repository not found: {error_message}"
-            ) from None from e from None
+            ) from None
         elif "authentication" in error_message.lower():
             raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}") from None
         elif "timeout" in error_message.lower():
@@ -1462,7 +1462,7 @@ async def analyze_commit(request: CommitAnalysisRequest):
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Repository or commit not found: {error_message}"
-            ) from None from e from None
+            ) from None
         elif "authentication" in error_message.lower():
             raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}") from None
         elif "timeout" in error_message.lower():
@@ -1532,7 +1532,7 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Path not found: {error_message}"
-            ) from None from e from None
+            ) from None
         elif "permission" in error_message.lower():
             raise HTTPException(status_code=403, detail=f"Permission error: {error_message}") from None
         else:
