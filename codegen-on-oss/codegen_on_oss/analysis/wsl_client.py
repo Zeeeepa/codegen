@@ -13,9 +13,21 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import requests
-from requests.exceptions import ConnectionError, RequestException, Timeout
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-logger = logging.getLogger(__name__)
+class WSLClient:
+    def __init__(self, base_url: str = "http://localhost:8000", api_key: Optional[str] = None,
+                 timeout: int = 60, max_retries: int = 3, retry_delay: int = 5,
+                 pool_connections: int = 10, pool_maxsize: int = 10):
+        self.session = requests.Session()
+        retry_strategy = Retry(total=max_retries, backoff_factor=retry_delay,
+                             status_forcelist=[429, 500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=pool_connections,
+                            pool_maxsize=pool_maxsize)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
 
 class WSLClient:
