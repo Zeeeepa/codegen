@@ -21,7 +21,6 @@ import sys
 from typing import Any, Dict, Optional
 
 import yaml
-from codegen import Codebase
 from codegen.sdk.core.codebase import Codebase
 
 # Add the parent directory to the path so we can import the module
@@ -123,7 +122,8 @@ def analyze_codebase(
 
     # Print summary
     logger.info(
-        f"Found {results['total_errors']} errors in {results['total_functions']} functions and {results['total_classes']} classes"
+        f"Found {results['total_errors']} errors in "
+        f"{results['total_functions']} functions and {results['total_classes']} classes"
     )
     logger.info(f"Function errors: {results['function_errors']}")
     logger.info(f"Class errors: {results['class_errors']}")
@@ -223,10 +223,12 @@ def analyze_pull_request(
 
     # Print summary
     logger.info(
-        f"PR adds {pr_analysis['new_functions']} new functions and {pr_analysis['new_classes']} new classes"
+        f"PR adds {pr_analysis['new_functions']} new functions and "
+        f"{pr_analysis['new_classes']} new classes"
     )
     logger.info(
-        f"PR modifies {pr_analysis['modified_functions']} functions and {pr_analysis['modified_classes']} classes"
+        f"PR modifies {pr_analysis['modified_functions']} functions and "
+        f"{pr_analysis['modified_classes']} classes"
     )
     logger.info(f"PR introduces {pr_analysis['total_new_errors']} new errors")
 
@@ -388,7 +390,7 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
     </head>
     <body>
         <h1>Code Integrity Analysis Report</h1>
-        
+
         <div class="progress-bar">
             <div class="progress-bar-fill"></div>
         </div>
@@ -403,7 +405,7 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
             <div class="summary">
                 <h2>Analysis Summary</h2>
                 <p>This report provides an overview of code integrity issues found in the codebase.</p>
-                
+
                 <h3>Overview</h3>
                 <div class="stats">
                     <div class="stat-box">

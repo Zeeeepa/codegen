@@ -10,7 +10,7 @@ import logging
 import os
 import tempfile
 import traceback
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import uvicorn
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
@@ -253,15 +253,16 @@ async def root():
 async def health_check():
     """
     Health check endpoint.
-    
+
     Returns detailed information about the server's health and resource usage.
     """
-    import psutil
     import time
-    
+
+    import psutil
+
     process = psutil.Process(os.getpid())
     memory_info = process.memory_info()
-    
+
     return HealthResponse(
         status="healthy",
         version="1.0.0",
@@ -287,17 +288,18 @@ async def validate_code(
     for code quality, security, and other categories.
     """
     import time
+
     start_time = time.time()
-    
+
     try:
         # Validate request
         if not request.repo_url:
             raise ValidationError("Repository URL is required")
-            
+
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
+            SnapshotManager(temp_dir)
 
             try:
                 # Create snapshot from repository
@@ -309,7 +311,8 @@ async def validate_code(
                 )
             except Exception as e:
                 logger.error(f"Error creating snapshot: {str(e)}")
-                raise RepositoryError(f"Failed to create snapshot from repository: {str(e)}")
+                error_msg = f"Failed to create snapshot from repository: {str(e)}"
+                raise RepositoryError(error_msg) from e
 
             # Initialize code integrity analyzer
             analyzer = CodeIntegrityAnalyzer(snapshot)
@@ -332,12 +335,12 @@ async def validate_code(
                             "issues": [],
                             "recommendations": [f"Unknown category: {category}"],
                         }
-                        
+
                     # Add metrics if requested
                     metrics = None
                     if request.include_metrics:
                         metrics = analyzer.get_detailed_metrics(category)
-                        
+
                     results.append(
                         ValidationResult(
                             category=category,
@@ -367,10 +370,10 @@ async def validate_code(
                 f"Analysis of {request.repo_url} ({request.branch}) completed "
                 f"with an overall score of {overall_score:.2f}/10."
             )
-            
+
             # Calculate execution time
             execution_time = time.time() - start_time
-            
+
             # Get overall metrics if requested
             metrics = None
             if request.include_metrics:
@@ -392,7 +395,7 @@ async def validate_code(
     except Exception as e:
         logger.error(f"Error validating code: {str(e)}")
         logger.error(traceback.format_exc())
-        raise AnalysisError(f"Error validating code: {str(e)}")
+        raise AnalysisError(f"Error validating code: {str(e)}") from e
 
 
 @app.post("/compare", response_model=RepoComparisonResponse)
@@ -408,17 +411,18 @@ async def compare_repositories(
     and provides a detailed comparison report.
     """
     import time
+
     start_time = time.time()
-    
+
     try:
         # Validate request
         if not request.base_repo_url or not request.head_repo_url:
             raise ValidationError("Base and head repository URLs are required")
-            
+
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
+            SnapshotManager(temp_dir)
 
             try:
                 # Create snapshots from repositories
@@ -437,7 +441,8 @@ async def compare_repositories(
                 )
             except Exception as e:
                 logger.error(f"Error creating snapshots: {str(e)}")
-                raise RepositoryError(f"Failed to create snapshots from repositories: {str(e)}")
+                error_msg = f"Failed to create snapshots from repositories: {str(e)}"
+                raise RepositoryError(error_msg) from e
 
             # Initialize diff analyzer
             diff_analyzer = DiffAnalyzer(base_snapshot, head_snapshot)
@@ -452,16 +457,16 @@ async def compare_repositories(
 
             # Generate summary
             summary = diff_analyzer.format_summary_text()
-            
+
             # Calculate execution time
             execution_time = time.time() - start_time
-            
+
             # Get detailed metrics if requested
             metrics = None
             diff_details = None
             if request.include_metrics:
                 metrics = diff_analyzer.get_detailed_metrics()
-                
+
             # Get detailed diff information if requested
             if request.diff_format:
                 diff_details = diff_analyzer.get_detailed_diff(format=request.diff_format)
@@ -485,7 +490,7 @@ async def compare_repositories(
     except Exception as e:
         logger.error(f"Error comparing repositories: {str(e)}")
         logger.error(traceback.format_exc())
-        raise AnalysisError(f"Error comparing repositories: {str(e)}")
+        raise AnalysisError(f"Error comparing repositories: {str(e)}") from e
 
 
 @app.post("/analyze-pr", response_model=PRAnalysisResponse)
@@ -501,15 +506,16 @@ async def analyze_pull_request(
     on code quality, issues, and recommendations.
     """
     import time
+
     start_time = time.time()
-    
+
     try:
         # Validate request
         if not request.repo_url:
             raise ValidationError("Repository URL is required")
         if request.pr_number <= 0:
             raise ValidationError("Invalid PR number")
-            
+
         # Initialize SWE harness agent
         agent = SWEHarnessAgent(github_token=request.github_token)
 
@@ -523,7 +529,7 @@ async def analyze_pull_request(
             )
         except Exception as e:
             logger.error(f"Error analyzing PR: {str(e)}")
-            raise AnalysisError(f"Failed to analyze pull request: {str(e)}")
+            raise AnalysisError(f"Failed to analyze pull request: {str(e)}") from e
 
         # Post comment if requested
         if request.post_comment:
@@ -542,10 +548,10 @@ async def analyze_pull_request(
         issues_found = analysis_results.get("issues", [])
         recommendations = analysis_results.get("recommendations", [])
         summary = analysis_results.get("summary", "")
-        
+
         # Calculate execution time
         execution_time = time.time() - start_time
-        
+
         # Get detailed metrics if requested
         metrics = None
         if request.include_metrics:
@@ -572,7 +578,7 @@ async def analyze_pull_request(
     except Exception as e:
         logger.error(f"Error analyzing pull request: {str(e)}")
         logger.error(traceback.format_exc())
-        raise AnalysisError(f"Error analyzing pull request: {str(e)}")
+        raise AnalysisError(f"Error analyzing pull request: {str(e)}") from e
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000, log_level: str = "info"):
