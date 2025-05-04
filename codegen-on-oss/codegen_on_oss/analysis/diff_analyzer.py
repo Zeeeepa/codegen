@@ -465,6 +465,8 @@ class DiffAnalyzer:
                 change_type == "modified"
                 and func_name in self.original.function_metrics
                 and func_name in self.modified.function_metrics
+                and "parameter_count" in self.original.function_metrics[func_name]
+                and "parameter_count" in self.modified.function_metrics[func_name]
             ):
                 original_params = self.original.function_metrics[func_name][
                     "parameter_count"

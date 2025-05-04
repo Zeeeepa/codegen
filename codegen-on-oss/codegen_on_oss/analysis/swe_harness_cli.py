@@ -14,8 +14,10 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
+from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+
+logger = logging.getLogger(__name__)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -95,6 +97,11 @@ def compare_branches(args: argparse.Namespace) -> None:
         args.repo, args.head, args.token
     )
 
+    # Verify snapshots were created successfully
+    if not base_snapshot or not head_snapshot:
+        logger.error("Failed to create one or both snapshots")
+        return
+
     # Compare the snapshots
     diff_analyzer = DiffAnalyzer(base_snapshot, head_snapshot)
 
@@ -131,6 +138,11 @@ def create_snapshot(args: argparse.Namespace) -> None:
     snapshot = CodebaseSnapshot.create_from_repo(
         args.repo, args.commit, args.token
     )
+
+    # Verify snapshot was created successfully
+    if not snapshot:
+        logger.error(f"Failed to create snapshot for {args.repo}")
+        return
 
     # Save the snapshot
     if args.output:
@@ -237,4 +249,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

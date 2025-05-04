@@ -94,7 +94,7 @@ class CodebaseSnapshot:
             secrets = SecretsConfig(github_token=github_token)
 
         # Create a temporary directory for the repo if needed
-        temp_dir = None
+        temp_dir = tempfile.mkdtemp(prefix="codebase_snapshot_")
         try:
             # Clone the repository
             codebase = Codebase.from_repo(repo_url, secrets=secrets)
@@ -107,6 +107,9 @@ class CodebaseSnapshot:
             snapshot = cls(codebase, commit_sha, snapshot_id)
 
             return snapshot
+        except Exception as e:
+            logger.error(f"Failed to create snapshot from repo {repo_url}: {e}")
+            return None
         finally:
             # Clean up the temporary directory if requested
             if cleanup and temp_dir and os.path.exists(temp_dir):

@@ -285,14 +285,23 @@ class SWEHarnessAgent:
                 
             # Parse the repo URL to get owner and repo name
             if "/" in repo_url and "github.com" not in repo_url:
-                owner, repo_name = repo_url.split("/")
+                parts = repo_url.split("/")
+                if len(parts) >= 2:
+                    owner, repo_name = parts[-2], parts[-1]
+                else:
+                    logger.error(f"Invalid repository URL format: {repo_url}")
+                    return None
             else:
                 # Extract owner/repo from a full GitHub URL
                 parts = repo_url.rstrip("/").split("/")
-                owner = parts[-2]
-                repo_name = parts[-1]
-                if repo_name.endswith(".git"):
-                    repo_name = repo_name[:-4]
+                if len(parts) >= 2:
+                    owner = parts[-2]
+                    repo_name = parts[-1]
+                    if repo_name.endswith(".git"):
+                        repo_name = repo_name[:-4]
+                else:
+                    logger.error(f"Invalid GitHub URL format: {repo_url}")
+                    return None
             
             # Get PR details
             g = Github(self.github_token)
@@ -411,7 +420,7 @@ class SWEHarnessAgent:
 
         return comment
 
-    def post_pr_comment(self, repo_url: str, pr_number: int, comment: str) -> bool:
+    def post_comment_to_pr(self, repo_url: str, pr_number: int, comment: str) -> bool:
         """
         Post a comment to a pull request.
 
@@ -432,14 +441,23 @@ class SWEHarnessAgent:
         try:
             # Parse the repo URL to get owner and repo name
             if "/" in repo_url and "github.com" not in repo_url:
-                owner, repo_name = repo_url.split("/")
+                parts = repo_url.split("/")
+                if len(parts) >= 2:
+                    owner, repo_name = parts[-2], parts[-1]
+                else:
+                    logger.error(f"Invalid repository URL format: {repo_url}")
+                    return False
             else:
                 # Extract owner/repo from a full GitHub URL
                 parts = repo_url.rstrip("/").split("/")
-                owner = parts[-2]
-                repo_name = parts[-1]
-                if repo_name.endswith(".git"):
-                    repo_name = repo_name[:-4]
+                if len(parts) >= 2:
+                    owner = parts[-2]
+                    repo_name = parts[-1]
+                    if repo_name.endswith(".git"):
+                        repo_name = repo_name[:-4]
+                else:
+                    logger.error(f"Invalid GitHub URL format: {repo_url}")
+                    return False
 
             # Post the comment to GitHub
             g = Github(self.github_token)
@@ -479,7 +497,7 @@ class SWEHarnessAgent:
 
         # Post the comment if requested
         if post_comment:
-            comment_posted = self.post_pr_comment(repo_url, pr_number, comment)
+            comment_posted = self.post_comment_to_pr(repo_url, pr_number, comment)
             analysis_results["comment_posted"] = comment_posted
 
         # Add the comment to the results
