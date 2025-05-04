@@ -2,6 +2,18 @@
 
 The **Codegen on OSS** package provides a modular pipeline for analyzing and processing open-source repositories. It offers comprehensive tools for repository parsing, code analysis, snapshot management, and quality assessment.
 
+## Table of Contents
+- [Core Features](#core-features)
+- [Package Structure](#package-structure)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Running on Modal](#running-on-modal)
+- [Code Analysis Usage](#code-analysis-usage)
+- [Snapshot Usage](#snapshot-usage)
+- [Code Integrity Analysis](#code-integrity-analysis)
+- [Extensibility](#extensibility)
+- [License](#license)
+
 ## Core Features
 
 - **Repository Collection & Parsing**: Collect repository URLs from different sources and parse them using the Codegen tool
@@ -58,7 +70,7 @@ Provides comprehensive code analysis capabilities:
 - **CommitAnalyzer**: Analyze commits by comparing snapshots
 - **SWEHarnessAgent**: Analyze commits and PRs
 - **Code Integrity Analysis**: Detect code quality issues and potential errors
-- **Server**: FastAPI server for analyzing repositories, commits, branches, and PRs
+- **Server**: FastAPI server for analyzing repositories, commits, branches, and PRs ([WSL Server details](./codegen_on_oss/analysis/WSL_README.md))
 
 ### Snapshot Module
 
@@ -68,16 +80,34 @@ Enables capturing the state of a codebase at specific points in time:
 - **SnapshotManager**: Manage creation, storage, and retrieval of snapshots
 - **Event Handlers**: Integrate with GitHub events for automatic snapshot creation
 
-## Getting Started
+## Installation
 
-1. **Configure the Repository Source**
+1. **Install the Package**
+
+   You can install the package using pip:
+
+   ```bash
+   pip install codegen-on-oss
+   ```
+
+   Alternatively, you can install from source:
+
+   ```bash
+   git clone https://github.com/your-org/codegen-on-oss.git
+   cd codegen-on-oss
+   pip install -e .
+   ```
+
+2. **Configure the Repository Source**
 
    Decide whether you want to read from a CSV file or query GitHub:
 
    - For CSV, ensure your CSV file (default: `input.csv`) contains repository URLs in its first column and commit hash in the second column
    - For GitHub, configure settings via environment variables (`GITHUB_` prefix)
 
-2. **Run the Parser**
+## Getting Started
+
+1. **Run the Parser**
 
    Use the CLI to start parsing:
 
@@ -89,7 +119,7 @@ Enables capturing the state of a codebase at specific points in time:
    uv run cgparse run --help
    ```
 
-3. **Review Metrics and Logs**
+2. **Review Metrics and Logs**
 
    After parsing, check the CSV (default: `metrics.csv`) to review performance measurements per repository. Error logs are written to the specified error output file (default: `errors.log`)
 
@@ -123,20 +153,25 @@ from codegen import Codebase
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
 
 # Create a codebase from a directory
+# This loads all files and parses them into a structured representation
 codebase = Codebase.from_directory("/path/to/repo")
 
-# Create an analyzer
+# Create an analyzer instance with the loaded codebase
+# The analyzer provides various methods for code analysis
 analyzer = CodeAnalyzer(codebase)
 
 # Get a summary of the codebase
+# This includes file counts, language distribution, and overall metrics
 summary = analyzer.get_codebase_summary()
 print(summary)
 
-# Analyze complexity
+# Analyze code complexity
+# This calculates cyclomatic complexity, cognitive complexity, and other metrics
 complexity = analyzer.analyze_complexity()
 print(complexity)
 
-# Analyze imports
+# Analyze imports and dependencies
+# This identifies all imports and their relationships across the codebase
 imports = analyzer.analyze_imports()
 print(imports)
 ```
@@ -280,4 +315,3 @@ There is a Dockerfile that can be used to create an image capable of running the
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
