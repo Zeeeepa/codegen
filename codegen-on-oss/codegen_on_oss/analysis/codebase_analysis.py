@@ -35,7 +35,7 @@ def get_file_summary(file: SourceFile) -> str:
 - {len(file.symbols)} symbol references
 \t- {len(file.classes)} classes
 \t- {len(file.functions)} functions
-\t- {len(file.global_vars)} global variables
+\t- {len(file.global_vars)} global vars
 \t- {len(file.interfaces)} interfaces
 
 ==== [ `{file.name}` Usage Summary ] ====
@@ -74,23 +74,54 @@ def get_symbol_summary(symbol: Symbol) -> str:
 
     return f"""==== [ `{symbol.name}` ({type(symbol).__name__}) Usage Summary ] ====
 - {len(usages)} usages
-	- {len([x for x in usages 
-            if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
-	- {len([x for x in usages 
-            if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
-	- {len([x for x in usages 
-            if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
-	- {len([x for x in usages 
-            if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+	- {
+        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])
+    } functions
+	- {
+        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])
+    } classes
+	- {
+        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} \
+global vars
+	- {
+        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
 	- {len(imported_symbols)} imports
-		- {len([x for x in imported_symbols 
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
-		- {len([x for x in imported_symbols 
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
-		- {len([x for x in imported_symbols 
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
-		- {len([x for x in imported_symbols 
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+		- {
+        len(
+            [
+                x
+                for x in imported_symbols
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function
+            ]
+        )
+    } functions
+		- {
+        len(
+            [
+                x
+                for x in imported_symbols
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class
+            ]
+        )
+    } classes
+		- {
+        len(
+            [
+                x
+                for x in imported_symbols
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar
+            ]
+        )
+    } global vars
+		- {
+        len(
+            [
+                x
+                for x in imported_symbols
+                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface
+            ]
+        )
+    } interfaces
 		- {len([x for x in imported_symbols if isinstance(x, ExternalModule)])} external modules
 		- {len([x for x in imported_symbols if isinstance(x, SourceFile)])} files
     """
