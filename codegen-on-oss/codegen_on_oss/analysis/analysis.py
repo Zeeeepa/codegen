@@ -1407,9 +1407,13 @@ async def analyze_repo(request: RepoAnalysisRequest):
                 status_code=404, detail=f"Repository not found: {error_message}"
             ) from None
         elif "authentication" in error_message.lower():
-            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}") from None
+            raise HTTPException(
+                status_code=401, detail=f"Authentication error: {error_message}"
+            ) from None
         elif "timeout" in error_message.lower():
-            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}") from None
+            raise HTTPException(
+                status_code=408, detail=f"Request timeout: {error_message}"
+            ) from None
         else:
             raise HTTPException(
                 status_code=500, detail=f"Error analyzing repository: {error_message}"
@@ -1464,13 +1468,15 @@ async def analyze_commit(request: CommitAnalysisRequest):
                 status_code=404, detail=f"Repository or commit not found: {error_message}"
             ) from None
         elif "authentication" in error_message.lower():
-            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}") from None
-        elif "timeout" in error_message.lower():
-            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}") from None
-        else:
             raise HTTPException(
-                status_code=500, detail=f"Error analyzing commit: {error_message}"
-            )
+                status_code=401, detail=f"Authentication error: {error_message}"
+            ) from None
+        elif "timeout" in error_message.lower():
+            raise HTTPException(
+                status_code=408, detail=f"Request timeout: {error_message}"
+            ) from None
+        else:
+            raise HTTPException(status_code=500, detail=f"Error analyzing commit: {error_message}")
 
 
 @app.post("/analyze_local_commit")
@@ -1534,7 +1540,9 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
                 status_code=404, detail=f"Path not found: {error_message}"
             ) from None
         elif "permission" in error_message.lower():
-            raise HTTPException(status_code=403, detail=f"Permission error: {error_message}") from None
+            raise HTTPException(
+                status_code=403, detail=f"Permission error: {error_message}"
+            ) from None
         else:
             raise HTTPException(
                 status_code=500, detail=f"Error analyzing local commit: {error_message}"
