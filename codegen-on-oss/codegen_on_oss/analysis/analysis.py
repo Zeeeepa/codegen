@@ -1488,7 +1488,8 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
     """
     try:
         logger.info(
-            f"Analyzing local commit comparison between {request.original_path} and {request.commit_path}"
+            f"Analyzing local commit comparison between {request.original_path} "
+            f"and {request.commit_path}"
         )
 
         if not request.original_path:
