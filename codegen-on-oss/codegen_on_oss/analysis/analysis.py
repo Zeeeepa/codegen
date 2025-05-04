@@ -11,7 +11,7 @@ import os
 import re
 import subprocess
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 import requests
 import uvicorn
@@ -28,9 +28,10 @@ from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
 from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
 from codegen.sdk.core.symbol import Symbol
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from loguru import logger
+from pydantic import BaseModel, Field, validator
 
 from codegen_on_oss.analysis.analysis_import import (
     create_graph_from_codebase,
@@ -61,6 +62,13 @@ from codegen_on_oss.analysis.module_dependencies import (
     visualize_module_dependencies,
 )
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+from codegen_on_oss.errors import (
+    AnalysisError,
+    CodebaseNotFoundError,
+    FileNotFoundError,
+    InvalidInputError,
+    SymbolNotFoundError,
+)
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 
 # Create FastAPI app
@@ -89,7 +97,15 @@ class CodeAnalyzer:
 
         Args:
             codebase: The Codebase object to analyze
+
+        Raises:
+            InvalidInputError: If codebase is None
         """
+        if codebase is None:
+            logger.error("Cannot initialize CodeAnalyzer with None codebase")
+            raise InvalidInputError("Codebase cannot be None", "codebase")
+
+        logger.debug(f"Initializing CodeAnalyzer for codebase: {getattr(codebase, 'repo_name', 'unknown')}")
         self.codebase = codebase
         self._context = None
         self._initialized = False
@@ -99,15 +115,24 @@ class CodeAnalyzer:
         Initialize the analyzer by setting up the context and other necessary components.
         This is called automatically when needed but can be called explicitly for eager
         initialization.
+
+        Raises:
+            AnalysisError: If initialization fails
         """
         if self._initialized:
             return
 
-        # Initialize context if not already done
-        if self._context is None:
-            self._context = self._create_context()
+        try:
+            # Initialize context if not already done
+            if self._context is None:
+                logger.debug("Creating CodebaseContext")
+                self._context = self._create_context()
 
-        self._initialized = True
+            self._initialized = True
+            logger.info("CodeAnalyzer successfully initialized")
+        except Exception as e:
+            logger.exception(f"Failed to initialize CodeAnalyzer: {str(e)}")
+            raise AnalysisError(f"Failed to initialize analyzer: {str(e)}")
 
     def _create_context(self) -> CodebaseContext:
         """
@@ -115,24 +140,33 @@ class CodeAnalyzer:
 
         Returns:
             A new CodebaseContext instance
+
+        Raises:
+            AnalysisError: If context creation fails
         """
-        # If the codebase already has a context, use it
-        if hasattr(self.codebase, "ctx") and self.codebase.ctx is not None:
-            return self.codebase.ctx
+        try:
+            # If the codebase already has a context, use it
+            if hasattr(self.codebase, "ctx") and self.codebase.ctx is not None:
+                logger.debug("Using existing context from codebase")
+                return self.codebase.ctx
 
-        # Otherwise, create a new context from the codebase's configuration
-        from codegen.configs.models.codebase import CodebaseConfig
-        from codegen.sdk.codebase.config import ProjectConfig
+            # Otherwise, create a new context from the codebase's configuration
+            from codegen.configs.models.codebase import CodebaseConfig
+            from codegen.sdk.codebase.config import ProjectConfig
 
-        # Create a project config from the codebase
-        project_config = ProjectConfig(
-            repo_operator=self.codebase.repo_operator,
-            programming_language=self.codebase.programming_language,
-            base_path=self.codebase.base_path,
-        )
+            # Create a project config from the codebase
+            project_config = ProjectConfig(
+                repo_operator=self.codebase.repo_operator,
+                programming_language=self.codebase.programming_language,
+                base_path=self.codebase.base_path,
+            )
 
-        # Create and return a new context
-        return CodebaseContext([project_config], config=CodebaseConfig())
+            # Create and return a new context
+            logger.debug("Created new CodebaseContext")
+            return CodebaseContext([project_config], config=CodebaseConfig())
+        except Exception as e:
+            logger.exception(f"Failed to create context: {str(e)}")
+            raise AnalysisError(f"Failed to create context: {str(e)}")
 
     @property
     def context(self) -> CodebaseContext:
@@ -141,9 +175,16 @@ class CodeAnalyzer:
 
         Returns:
             A CodebaseContext object for the codebase
+
+        Raises:
+            AnalysisError: If context initialization fails
         """
         if not self._initialized:
-            self.initialize()
+            try:
+                self.initialize()
+            except Exception as e:
+                logger.exception(f"Failed to initialize context: {str(e)}")
+                raise AnalysisError(f"Failed to initialize context: {str(e)}")
 
         return self._context
 
@@ -153,8 +194,16 @@ class CodeAnalyzer:
 
         Returns:
             A string containing summary information about the codebase
+
+        Raises:
+            AnalysisError: If summary generation fails
         """
-        return get_codebase_summary(self.codebase)
+        try:
+            logger.debug("Generating codebase summary")
+            return get_codebase_summary(self.codebase)
+        except Exception as e:
+            logger.exception(f"Failed to generate codebase summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate codebase summary: {str(e)}")
 
     def get_file_summary(self, file_path: str) -> str:
         """
@@ -165,11 +214,27 @@ class CodeAnalyzer:
 
         Returns:
             A string containing summary information about the file
+
+        Raises:
+            FileNotFoundError: If the file is not found
+            AnalysisError: If summary generation fails
         """
-        file = self.codebase.get_file(file_path)
-        if file is None:
-            return f"File not found: {file_path}"
-        return get_file_summary(file)
+        if not file_path:
+            logger.error("File path cannot be empty")
+            raise InvalidInputError("File path cannot be empty", "file_path")
+
+        try:
+            logger.debug(f"Getting file summary for: {file_path}")
+            file = self.codebase.get_file(file_path)
+            if file is None:
+                logger.error(f"File not found: {file_path}")
+                raise FileNotFoundError(f"File not found: {file_path}")
+            return get_file_summary(file)
+        except FileNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to generate file summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate file summary: {str(e)}")
 
     def get_class_summary(self, class_name: str) -> str:
         """
@@ -180,11 +245,28 @@ class CodeAnalyzer:
 
         Returns:
             A string containing summary information about the class
+
+        Raises:
+            SymbolNotFoundError: If the class is not found
+            AnalysisError: If summary generation fails
         """
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                return get_class_summary(cls)
-        return f"Class not found: {class_name}"
+        if not class_name:
+            logger.error("Class name cannot be empty")
+            raise InvalidInputError("Class name cannot be empty", "class_name")
+
+        try:
+            logger.debug(f"Getting class summary for: {class_name}")
+            for cls in self.codebase.classes:
+                if cls.name == class_name:
+                    return get_class_summary(cls)
+            
+            logger.error(f"Class not found: {class_name}")
+            raise SymbolNotFoundError(f"Class not found: {class_name}")
+        except SymbolNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to generate class summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate class summary: {str(e)}")
 
     def get_function_summary(self, function_name: str) -> str:
         """
@@ -195,11 +277,28 @@ class CodeAnalyzer:
 
         Returns:
             A string containing summary information about the function
+
+        Raises:
+            SymbolNotFoundError: If the function is not found
+            AnalysisError: If summary generation fails
         """
-        for func in self.codebase.functions:
-            if func.name == function_name:
-                return get_function_summary(func)
-        return f"Function not found: {function_name}"
+        if not function_name:
+            logger.error("Function name cannot be empty")
+            raise InvalidInputError("Function name cannot be empty", "function_name")
+
+        try:
+            logger.debug(f"Getting function summary for: {function_name}")
+            for func in self.codebase.functions:
+                if func.name == function_name:
+                    return get_function_summary(func)
+            
+            logger.error(f"Function not found: {function_name}")
+            raise SymbolNotFoundError(f"Function not found: {function_name}")
+        except SymbolNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to generate function summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate function summary: {str(e)}")
 
     def get_symbol_summary(self, symbol_name: str) -> str:
         """
@@ -210,11 +309,28 @@ class CodeAnalyzer:
 
         Returns:
             A string containing summary information about the symbol
+
+        Raises:
+            SymbolNotFoundError: If the symbol is not found
+            AnalysisError: If summary generation fails
         """
-        for symbol in self.codebase.symbols:
-            if symbol.name == symbol_name:
-                return get_symbol_summary(symbol)
-        return f"Symbol not found: {symbol_name}"
+        if not symbol_name:
+            logger.error("Symbol name cannot be empty")
+            raise InvalidInputError("Symbol name cannot be empty", "symbol_name")
+
+        try:
+            logger.debug(f"Getting symbol summary for: {symbol_name}")
+            for symbol in self.codebase.symbols:
+                if symbol.name == symbol_name:
+                    return get_symbol_summary(symbol)
+            
+            logger.error(f"Symbol not found: {symbol_name}")
+            raise SymbolNotFoundError(f"Symbol not found: {symbol_name}")
+        except SymbolNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to generate symbol summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate symbol summary: {str(e)}")
 
     def find_symbol_by_name(self, symbol_name: str) -> Optional[Symbol]:
         """
@@ -225,7 +341,15 @@ class CodeAnalyzer:
 
         Returns:
             The Symbol object if found, None otherwise
+
+        Raises:
+            InvalidInputError: If symbol_name is empty
         """
+        if not symbol_name:
+            logger.error("Symbol name cannot be empty")
+            raise InvalidInputError("Symbol name cannot be empty", "symbol_name")
+
+        logger.debug(f"Finding symbol by name: {symbol_name}")
         for symbol in self.codebase.symbols:
             if symbol.name == symbol_name:
                 return symbol
@@ -240,7 +364,15 @@ class CodeAnalyzer:
 
         Returns:
             The SourceFile object if found, None otherwise
+
+        Raises:
+            InvalidInputError: If file_path is empty
         """
+        if not file_path:
+            logger.error("File path cannot be empty")
+            raise InvalidInputError("File path cannot be empty", "file_path")
+
+        logger.debug(f"Finding file by path: {file_path}")
         return self.codebase.get_file(file_path)
 
     def find_class_by_name(self, class_name: str) -> Optional[Class]:
@@ -252,7 +384,15 @@ class CodeAnalyzer:
 
         Returns:
             The Class object if found, None otherwise
+
+        Raises:
+            InvalidInputError: If class_name is empty
         """
+        if not class_name:
+            logger.error("Class name cannot be empty")
+            raise InvalidInputError("Class name cannot be empty", "class_name")
+
+        logger.debug(f"Finding class by name: {class_name}")
         for cls in self.codebase.classes:
             if cls.name == class_name:
                 return cls
@@ -267,7 +407,15 @@ class CodeAnalyzer:
 
         Returns:
             The Function object if found, None otherwise
+
+        Raises:
+            InvalidInputError: If function_name is empty
         """
+        if not function_name:
+            logger.error("Function name cannot be empty")
+            raise InvalidInputError("Function name cannot be empty", "function_name")
+
+        logger.debug(f"Finding function by name: {function_name}")
         for func in self.codebase.functions:
             if func.name == function_name:
                 return func
@@ -276,8 +424,17 @@ class CodeAnalyzer:
     def document_functions(self) -> None:
         """
         Generate documentation for functions in the codebase.
+
+        Raises:
+            AnalysisError: If documentation generation fails
         """
-        document_function(self.codebase)
+        try:
+            logger.info("Generating documentation for functions")
+            document_function(self.codebase)
+            logger.info("Function documentation completed")
+        except Exception as e:
+            logger.exception(f"Failed to document functions: {str(e)}")
+            raise AnalysisError(f"Failed to document functions: {str(e)}")
 
     def analyze_imports(self) -> Dict[str, Any]:
         """
@@ -285,26 +442,53 @@ class CodeAnalyzer:
 
         Returns:
             A dictionary containing import analysis results
-        """
-        graph = create_graph_from_codebase(self.codebase.repo_name)
-        cycles = find_import_cycles(graph)
-        problematic_loops = find_problematic_import_loops(graph, cycles)
 
-        return {"import_cycles": cycles, "problematic_loops": problematic_loops}
+        Raises:
+            AnalysisError: If import analysis fails
+        """
+        try:
+            logger.info("Analyzing imports")
+            repo_name = getattr(self.codebase, 'repo_name', 'unknown')
+            graph = create_graph_from_codebase(repo_name)
+            cycles = find_import_cycles(graph)
+            problematic_loops = find_problematic_import_loops(graph, cycles)
+
+            logger.info(f"Import analysis completed. Found {len(cycles)} cycles and {len(problematic_loops)} problematic loops")
+            return {"import_cycles": cycles, "problematic_loops": problematic_loops}
+        except Exception as e:
+            logger.exception(f"Failed to analyze imports: {str(e)}")
+            raise AnalysisError(f"Failed to analyze imports: {str(e)}")
 
     def convert_args_to_kwargs(self) -> None:
         """
         Convert all function call arguments to keyword arguments.
+
+        Raises:
+            AnalysisError: If conversion fails
         """
-        # TODO: Implement this function or import the required module
-        # convert_all_calls_to_kwargs(self.codebase)
-        pass
+        try:
+            logger.info("Converting args to kwargs")
+            # TODO: Implement this function or import the required module
+            # convert_all_calls_to_kwargs(self.codebase)
+            logger.warning("convert_args_to_kwargs is not implemented yet")
+        except Exception as e:
+            logger.exception(f"Failed to convert args to kwargs: {str(e)}")
+            raise AnalysisError(f"Failed to convert args to kwargs: {str(e)}")
 
     def visualize_module_dependencies(self) -> None:
         """
         Visualize module dependencies in the codebase.
+
+        Raises:
+            AnalysisError: If visualization fails
         """
-        visualize_module_dependencies(self.codebase)
+        try:
+            logger.info("Visualizing module dependencies")
+            visualize_module_dependencies(self.codebase)
+            logger.info("Module dependency visualization completed")
+        except Exception as e:
+            logger.exception(f"Failed to visualize module dependencies: {str(e)}")
+            raise AnalysisError(f"Failed to visualize module dependencies: {str(e)}")
 
     def generate_mdx_documentation(self, class_name: str) -> str:
         """
@@ -315,21 +499,46 @@ class CodeAnalyzer:
 
         Returns:
             MDX documentation as a string
+
+        Raises:
+            SymbolNotFoundError: If the class is not found
+            AnalysisError: If documentation generation fails
         """
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                # TODO: Implement this function or import the required module
-                # return render_mdx_page_for_class(cls)
-                return f"MDX documentation for {class_name}"
-        return f"Class not found: {class_name}"
+        if not class_name:
+            logger.error("Class name cannot be empty")
+            raise InvalidInputError("Class name cannot be empty", "class_name")
+
+        try:
+            logger.debug(f"Generating MDX documentation for class: {class_name}")
+            for cls in self.codebase.classes:
+                if cls.name == class_name:
+                    # TODO: Implement this function or import the required module
+                    logger.warning("generate_mdx_documentation is not fully implemented yet")
+                    return f"# {cls.name}\n\n{cls.docstring or 'No documentation available.'}"
+            
+            logger.error(f"Class not found: {class_name}")
+            raise SymbolNotFoundError(f"Class not found: {class_name}")
+        except SymbolNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to generate MDX documentation: {str(e)}")
+            raise AnalysisError(f"Failed to generate MDX documentation: {str(e)}")
 
     def print_symbol_attribution(self) -> None:
         """
         Print attribution information for symbols in the codebase.
+
+        Raises:
+            AnalysisError: If attribution printing fails
         """
-        # TODO: Implement this function or import the required module
-        # print_symbol_attribution(self.codebase)
-        pass
+        try:
+            logger.info("Printing symbol attribution")
+            # TODO: Implement this function or import the required module
+            # print_symbol_attribution(self.codebase)
+            logger.warning("print_symbol_attribution is not implemented yet")
+        except Exception as e:
+            logger.exception(f"Failed to print symbol attribution: {str(e)}")
+            raise AnalysisError(f"Failed to print symbol attribution: {str(e)}")
 
     def get_extended_symbol_context(
         self, symbol_name: str, degree: int = 2
@@ -1120,17 +1329,42 @@ def get_github_repo_description(repo_url):
 
 # Define API models
 class RepoAnalysisRequest(BaseModel):
-    repo_url: str
+    repo_url: str = Field(..., description="URL of the repository to analyze")
+    
+    @validator("repo_url")
+    def validate_repo_url(cls, v):
+        if not v:
+            raise ValueError("Repository URL cannot be empty")
+        return v
 
 
 class CommitAnalysisRequest(BaseModel):
-    repo_url: str
-    commit_hash: str
+    repo_url: str = Field(..., description="URL of the repository to analyze")
+    commit_hash: str = Field(..., description="Commit hash to analyze")
+    
+    @validator("repo_url", "commit_hash")
+    def validate_fields(cls, v, values, **kwargs):
+        if not v:
+            field_name = kwargs.get("field")
+            raise ValueError(f"{field_name} cannot be empty")
+        return v
 
 
 class LocalCommitAnalysisRequest(BaseModel):
-    original_path: str
-    commit_path: str
+    original_path: str = Field(..., description="Path to the original repository")
+    commit_path: str = Field(..., description="Path to the commit repository")
+    
+    @validator("original_path", "commit_path")
+    def validate_paths(cls, v, values, **kwargs):
+        if not v:
+            field_name = kwargs.get("field")
+            raise ValueError(f"{field_name} cannot be empty")
+        
+        if not os.path.exists(v):
+            field_name = kwargs.get("field")
+            raise ValueError(f"{field_name} does not exist: {v}")
+        
+        return v
 
 
 # API endpoints
@@ -1140,17 +1374,39 @@ async def analyze_repo(request: RepoAnalysisRequest):
     Analyze a repository.
     """
     try:
+        logger.info(f"Analyzing repository: {request.repo_url}")
+        
+        if not request.repo_url:
+            logger.error("Repository URL cannot be empty")
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty")
+            
         codebase = Codebase.from_repo(request.repo_url)
         analyzer = CodeAnalyzer(codebase)
 
-        return {
+        result = {
             "repo_url": request.repo_url,
             "summary": analyzer.get_codebase_summary(),
             "complexity": analyzer.analyze_complexity(),
             "imports": analyzer.analyze_imports(),
         }
+        
+        logger.info(f"Successfully analyzed repository: {request.repo_url}")
+        return result
     except Exception as e:
-        return {"error": str(e)}
+        error_message = str(e)
+        logger.exception(f"Error analyzing repository: {error_message}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+        
+        if "not found" in error_message.lower() or "does not exist" in error_message.lower():
+            raise HTTPException(status_code=404, detail=f"Repository not found: {error_message}")
+        elif "authentication" in error_message.lower():
+            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}")
+        elif "timeout" in error_message.lower():
+            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error analyzing repository: {error_message}")
 
 
 @app.post("/analyze_commit")
@@ -1159,11 +1415,21 @@ async def analyze_commit(request: CommitAnalysisRequest):
     Analyze a commit in a repository.
     """
     try:
+        logger.info(f"Analyzing commit {request.commit_hash} in repository: {request.repo_url}")
+        
+        if not request.repo_url:
+            logger.error("Repository URL cannot be empty")
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty")
+            
+        if not request.commit_hash:
+            logger.error("Commit hash cannot be empty")
+            raise HTTPException(status_code=400, detail="Commit hash cannot be empty")
+        
         result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
             repo_url=request.repo_url, commit_hash=request.commit_hash
         )
 
-        return {
+        response = {
             "repo_url": request.repo_url,
             "commit_hash": request.commit_hash,
             "is_properly_implemented": result.is_properly_implemented,
@@ -1174,8 +1440,24 @@ async def analyze_commit(request: CommitAnalysisRequest):
             "files_modified": result.files_modified,
             "files_removed": result.files_removed,
         }
+        
+        logger.info(f"Successfully analyzed commit {request.commit_hash} in repository: {request.repo_url}")
+        return response
     except Exception as e:
-        return {"error": str(e)}
+        error_message = str(e)
+        logger.exception(f"Error analyzing commit: {error_message}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+            
+        if "not found" in error_message.lower() or "does not exist" in error_message.lower():
+            raise HTTPException(status_code=404, detail=f"Repository or commit not found: {error_message}")
+        elif "authentication" in error_message.lower():
+            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}")
+        elif "timeout" in error_message.lower():
+            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error analyzing commit: {error_message}")
 
 
 @app.post("/analyze_local_commit")
@@ -1184,11 +1466,30 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
     Analyze a commit by comparing two local repository paths.
     """
     try:
+        logger.info(f"Analyzing local commit comparison between {request.original_path} and {request.commit_path}")
+        
+        if not request.original_path:
+            logger.error("Original path cannot be empty")
+            raise HTTPException(status_code=400, detail="Original path cannot be empty")
+            
+        if not request.commit_path:
+            logger.error("Commit path cannot be empty")
+            raise HTTPException(status_code=400, detail="Commit path cannot be empty")
+        
+        # Validate paths exist
+        if not os.path.exists(request.original_path):
+            logger.error(f"Original path does not exist: {request.original_path}")
+            raise HTTPException(status_code=404, detail=f"Original path does not exist: {request.original_path}")
+            
+        if not os.path.exists(request.commit_path):
+            logger.error(f"Commit path does not exist: {request.commit_path}")
+            raise HTTPException(status_code=404, detail=f"Commit path does not exist: {request.commit_path}")
+        
         result = CodeAnalyzer.analyze_commit_from_paths(
             original_path=request.original_path, commit_path=request.commit_path
         )
 
-        return {
+        response = {
             "original_path": request.original_path,
             "commit_path": request.commit_path,
             "is_properly_implemented": result.is_properly_implemented,
@@ -1199,8 +1500,22 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
             "files_modified": result.files_modified,
             "files_removed": result.files_removed,
         }
+        
+        logger.info(f"Successfully analyzed local commit comparison")
+        return response
     except Exception as e:
-        return {"error": str(e)}
+        error_message = str(e)
+        logger.exception(f"Error analyzing local commit: {error_message}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+            
+        if "not found" in error_message.lower() or "does not exist" in error_message.lower():
+            raise HTTPException(status_code=404, detail=f"Path not found: {error_message}")
+        elif "permission" in error_message.lower():
+            raise HTTPException(status_code=403, detail=f"Permission error: {error_message}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error analyzing local commit: {error_message}")
 
 
 if __name__ == "__main__":
