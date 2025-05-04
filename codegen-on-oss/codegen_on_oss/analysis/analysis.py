@@ -184,7 +184,7 @@ class CodeAnalyzer:
                 self.initialize()
             except Exception as e:
                 logger.exception(f"Failed to initialize context: {str(e)}")
-                raise AnalysisError(f"Failed to initialize context: {str(e)}")
+                raise AnalysisError(f"Failed to initialize context: {str(e)}") from e
 
         return self._context
 
@@ -203,7 +203,7 @@ class CodeAnalyzer:
             return get_codebase_summary(self.codebase)
         except Exception as e:
             logger.exception(f"Failed to generate codebase summary: {str(e)}")
-            raise AnalysisError(f"Failed to generate codebase summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate codebase summary: {str(e)}") from e
 
     def get_file_summary(self, file_path: str) -> str:
         """
@@ -221,7 +221,7 @@ class CodeAnalyzer:
         """
         if not file_path:
             logger.error("File path cannot be empty")
-            raise InvalidInputError("File path cannot be empty", "file_path") from e
+            raise InvalidInputError("File path cannot be empty", "file_path")
 
         try:
             logger.debug(f"Getting file summary for: {file_path}")
@@ -234,7 +234,7 @@ class CodeAnalyzer:
             raise
         except Exception as e:
             logger.exception(f"Failed to generate file summary: {str(e)}")
-            raise AnalysisError(f"Failed to generate file summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate file summary: {str(e)}") from e
 
     def get_class_summary(self, class_name: str) -> str:
         """
@@ -252,7 +252,7 @@ class CodeAnalyzer:
         """
         if not class_name:
             logger.error("Class name cannot be empty")
-            raise InvalidInputError("Class name cannot be empty", "class_name") from e
+            raise InvalidInputError("Class name cannot be empty", "class_name")
 
         try:
             logger.debug(f"Getting class summary for: {class_name}")
@@ -266,7 +266,7 @@ class CodeAnalyzer:
             raise
         except Exception as e:
             logger.exception(f"Failed to generate class summary: {str(e)}")
-            raise AnalysisError(f"Failed to generate class summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate class summary: {str(e)}") from e
 
     def get_function_summary(self, function_name: str) -> str:
         """
@@ -284,7 +284,7 @@ class CodeAnalyzer:
         """
         if not function_name:
             logger.error("Function name cannot be empty")
-            raise InvalidInputError("Function name cannot be empty", "function_name") from e
+            raise InvalidInputError("Function name cannot be empty", "function_name")
 
         try:
             logger.debug(f"Getting function summary for: {function_name}")
@@ -298,7 +298,7 @@ class CodeAnalyzer:
             raise
         except Exception as e:
             logger.exception(f"Failed to generate function summary: {str(e)}")
-            raise AnalysisError(f"Failed to generate function summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate function summary: {str(e)}") from e
 
     def get_symbol_summary(self, symbol_name: str) -> str:
         """
@@ -316,7 +316,7 @@ class CodeAnalyzer:
         """
         if not symbol_name:
             logger.error("Symbol name cannot be empty")
-            raise InvalidInputError("Symbol name cannot be empty", "symbol_name") from e
+            raise InvalidInputError("Symbol name cannot be empty", "symbol_name")
 
         try:
             logger.debug(f"Getting symbol summary for: {symbol_name}")
@@ -330,7 +330,7 @@ class CodeAnalyzer:
             raise
         except Exception as e:
             logger.exception(f"Failed to generate symbol summary: {str(e)}")
-            raise AnalysisError(f"Failed to generate symbol summary: {str(e)}")
+            raise AnalysisError(f"Failed to generate symbol summary: {str(e)}") from e
 
     def find_symbol_by_name(self, symbol_name: str) -> Optional[Symbol]:
         """
@@ -347,7 +347,7 @@ class CodeAnalyzer:
         """
         if not symbol_name:
             logger.error("Symbol name cannot be empty")
-            raise InvalidInputError("Symbol name cannot be empty", "symbol_name") from e
+            raise InvalidInputError("Symbol name cannot be empty", "symbol_name")
 
         logger.debug(f"Finding symbol by name: {symbol_name}")
         for symbol in self.codebase.symbols:
@@ -434,7 +434,7 @@ class CodeAnalyzer:
             logger.info("Function documentation completed")
         except Exception as e:
             logger.exception(f"Failed to document functions: {str(e)}")
-            raise AnalysisError(f"Failed to document functions: {str(e)}")
+            raise AnalysisError(f"Failed to document functions: {str(e)}") from e
 
     def analyze_imports(self) -> Dict[str, Any]:
         """
@@ -459,7 +459,7 @@ class CodeAnalyzer:
             return {"import_cycles": cycles, "problematic_loops": problematic_loops}
         except Exception as e:
             logger.exception(f"Failed to analyze imports: {str(e)}")
-            raise AnalysisError(f"Failed to analyze imports: {str(e)}")
+            raise AnalysisError(f"Failed to analyze imports: {str(e)}") from e
 
     def convert_args_to_kwargs(self) -> None:
         """
@@ -475,7 +475,7 @@ class CodeAnalyzer:
             logger.warning("convert_args_to_kwargs is not implemented yet")
         except Exception as e:
             logger.exception(f"Failed to convert args to kwargs: {str(e)}")
-            raise AnalysisError(f"Failed to convert args to kwargs: {str(e)}")
+            raise AnalysisError(f"Failed to convert args to kwargs: {str(e)}") from e
 
     def visualize_module_dependencies(self) -> None:
         """
@@ -490,7 +490,7 @@ class CodeAnalyzer:
             logger.info("Module dependency visualization completed")
         except Exception as e:
             logger.exception(f"Failed to visualize module dependencies: {str(e)}")
-            raise AnalysisError(f"Failed to visualize module dependencies: {str(e)}")
+            raise AnalysisError(f"Failed to visualize module dependencies: {str(e)}") from e
 
     def generate_mdx_documentation(self, class_name: str) -> str:
         """
@@ -508,7 +508,7 @@ class CodeAnalyzer:
         """
         if not class_name:
             logger.error("Class name cannot be empty")
-            raise InvalidInputError("Class name cannot be empty", "class_name") from e
+            raise InvalidInputError("Class name cannot be empty", "class_name")
 
         try:
             logger.debug(f"Generating MDX documentation for class: {class_name}")
@@ -524,7 +524,7 @@ class CodeAnalyzer:
             raise
         except Exception as e:
             logger.exception(f"Failed to generate MDX documentation: {str(e)}")
-            raise AnalysisError(f"Failed to generate MDX documentation: {str(e)}")
+            raise AnalysisError(f"Failed to generate MDX documentation: {str(e)}") from e
 
     def print_symbol_attribution(self) -> None:
         """
@@ -540,7 +540,7 @@ class CodeAnalyzer:
             logger.warning("print_symbol_attribution is not implemented yet")
         except Exception as e:
             logger.exception(f"Failed to print symbol attribution: {str(e)}")
-            raise AnalysisError(f"Failed to print symbol attribution: {str(e)}")
+            raise AnalysisError(f"Failed to print symbol attribution: {str(e)}") from e
 
     def get_extended_symbol_context(
         self, symbol_name: str, degree: int = 2
@@ -1087,7 +1087,7 @@ def cc_rank(complexity):
         A letter grade from A to F
     """
     if complexity < 0:
-        raise ValueError("Complexity must be a non-negative value") from e
+        raise ValueError("Complexity must be a non-negative value") from e from e
 
     ranks = [
         (1, 5, "A"),
@@ -1380,7 +1380,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
 
         if not request.repo_url:
             logger.error("Repository URL cannot be empty")
-            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None from None
 
         codebase = Codebase.from_repo(request.repo_url)
         analyzer = CodeAnalyzer(codebase)
@@ -1404,11 +1404,11 @@ async def analyze_repo(request: RepoAnalysisRequest):
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Repository not found: {error_message}"
-            ) from None
+            ) from None from e from None
         elif "authentication" in error_message.lower():
-            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}")
+            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}") from None
         elif "timeout" in error_message.lower():
-            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}")
+            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}") from None
         else:
             raise HTTPException(
                 status_code=500, detail=f"Error analyzing repository: {error_message}"
@@ -1461,13 +1461,15 @@ async def analyze_commit(request: CommitAnalysisRequest):
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Repository or commit not found: {error_message}"
-            ) from None
+            ) from None from e from None
         elif "authentication" in error_message.lower():
-            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}")
+            raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}") from None
         elif "timeout" in error_message.lower():
-            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}")
+            raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}") from None
         else:
-            raise HTTPException(status_code=500, detail=f"Error analyzing commit: {error_message}")
+            raise HTTPException(
+                status_code=500, detail=f"Error analyzing commit: {error_message}"
+            )
 
 
 @app.post("/analyze_local_commit")
@@ -1529,9 +1531,9 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Path not found: {error_message}"
-            ) from None
+            ) from None from e from None
         elif "permission" in error_message.lower():
-            raise HTTPException(status_code=403, detail=f"Permission error: {error_message}")
+            raise HTTPException(status_code=403, detail=f"Permission error: {error_message}") from None
         else:
             raise HTTPException(
                 status_code=500, detail=f"Error analyzing local commit: {error_message}"
