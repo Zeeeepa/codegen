@@ -416,7 +416,10 @@ async def validate_code(
             snapshot_manager = SnapshotManager(temp_dir)
 
             # Create snapshot from repository
-            logger.info(f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})")
+            logger.info(
+                f"Creating snapshot from repository: {request.repo_url} "
+                f"(branch: {request.branch})"
+            )
             snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.repo_url,
                 branch=request.branch,
@@ -514,14 +517,20 @@ async def compare_repositories(
             snapshot_manager = SnapshotManager(temp_dir)
 
             # Create snapshots from repositories
-            logger.info(f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})")
+            logger.info(
+                f"Creating base snapshot from repository: {request.base_repo_url} "
+                f"(branch: {request.base_branch})"
+            )
             base_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.base_repo_url,
                 branch=request.base_branch,
                 github_token=request.github_token,
             )
 
-            logger.info(f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})")
+            logger.info(
+                f"Creating head snapshot from repository: {request.head_repo_url} "
+                f"(branch: {request.head_branch})"
+            )
             head_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.head_repo_url,
                 branch=request.head_branch,
@@ -597,11 +606,17 @@ async def analyze_pull_request(
     
     try:
         # Initialize SWE harness agent
-        logger.info(f"Initializing SWE harness agent for PR analysis: {request.repo_url}#{request.pr_number}")
+        logger.info(
+            f"Initializing SWE harness agent for PR analysis: "
+            f"{request.repo_url}#{request.pr_number}"
+        )
         agent = SWEHarnessAgent(github_token=request.github_token)
 
         # Analyze pull request
-        logger.info(f"Analyzing PR: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})")
+        logger.info(
+            f"Analyzing PR: {request.repo_url}#{request.pr_number} "
+            f"(detailed: {request.detailed})"
+        )
         analysis_results = agent.analyze_pr(
             repo=request.repo_url,
             pr_number=request.pr_number,

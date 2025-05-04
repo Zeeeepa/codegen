@@ -21,7 +21,6 @@ import sys
 from typing import Any, Dict, Optional
 
 import yaml
-from codegen import Codebase
 from codegen.sdk.core.codebase import Codebase
 
 # Add the parent directory to the path so we can import the module

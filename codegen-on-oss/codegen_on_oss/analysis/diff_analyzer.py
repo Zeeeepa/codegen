@@ -236,23 +236,17 @@ class DiffAnalyzer:
         return original_normalized != modified_normalized
     
     def _normalize_code(self, code: str) -> str:
-        """
-        Normalize code by removing comments and normalizing whitespace.
-        
-        Args:
-            code: The code to normalize
-            
-        Returns:
-            Normalized code
-        """
+        """Normalize code for comparison by removing whitespace and comments."""
         # Remove comments
-        code = re.sub(r'#.*$', '', code, flags=re.MULTILINE)  # Python single-line comments
-        code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)  # C/C++/Java single-line comments
-        code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)  # C/C++/Java multi-line comments
+        code = re.sub(r'#.*$', '', code, flags=re.MULTILINE)  # Python comments
+        code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)  # C-style single line comments
+        code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)  # C-style multi-line comments
         
         # Normalize whitespace
         code = re.sub(r'\s+', ' ', code)  # Replace multiple whitespace with a single space
-        code = re.sub(r'^\s+|\s+$', '', code, flags=re.MULTILINE)  # Trim leading/trailing whitespace
+        code = re.sub(
+            r'^\\s+|\\s+$', '', code, flags=re.MULTILINE
+        )  # Trim leading/trailing whitespace
         
         return code.strip()
     
@@ -275,7 +269,10 @@ class DiffAnalyzer:
                 if (
                     deleted_metrics["parameter_count"] == added_metrics["parameter_count"]
                     and abs(deleted_metrics["line_count"] - added_metrics["line_count"]) <= 3
-                    and abs(deleted_metrics["cyclomatic_complexity"] - added_metrics["cyclomatic_complexity"]) <= 2
+                    and abs(
+                        deleted_metrics["cyclomatic_complexity"] - 
+                        added_metrics["cyclomatic_complexity"]
+                    ) <= 2
                 ):
                     # Get the function bodies
                     deleted_file = None
@@ -292,15 +289,21 @@ class DiffAnalyzer:
                             
                     if deleted_file and added_file:
                         # Extract the function bodies
-                        deleted_lines = deleted_file.content.splitlines()[deleted_metrics["line_start"]-1:deleted_metrics["line_end"]]
-                        added_lines = added_file.content.splitlines()[added_metrics["line_start"]-1:added_metrics["line_end"]]
+                        deleted_lines = deleted_file.content.splitlines()[
+                            deleted_metrics["line_start"]-1:deleted_metrics["line_end"]
+                        ]
+                        added_lines = added_file.content.splitlines()[
+                            added_metrics["line_start"]-1:added_metrics["line_end"]
+                        ]
                         
                         # Normalize and compare
                         deleted_normalized = self._normalize_code("\n".join(deleted_lines))
                         added_normalized = self._normalize_code("\n".join(added_lines))
                         
                         # Calculate similarity
-                        similarity = difflib.SequenceMatcher(None, deleted_normalized, added_normalized).ratio()
+                        similarity = difflib.SequenceMatcher(
+                            None, deleted_normalized, added_normalized
+                        ).ratio()
                         
                         # If similarity is high, consider it a rename
                         if similarity > 0.8:
@@ -408,15 +411,21 @@ class DiffAnalyzer:
                             
                     if deleted_file and added_file:
                         # Extract the class bodies
-                        deleted_lines = deleted_file.content.splitlines()[deleted_metrics["line_start"]-1:deleted_metrics["line_end"]]
-                        added_lines = added_file.content.splitlines()[added_metrics["line_start"]-1:added_metrics["line_end"]]
+                        deleted_lines = deleted_file.content.splitlines()[
+                            deleted_metrics["line_start"]-1:deleted_metrics["line_end"]
+                        ]
+                        added_lines = added_file.content.splitlines()[
+                            added_metrics["line_start"]-1:added_metrics["line_end"]
+                        ]
                         
                         # Normalize and compare
                         deleted_normalized = self._normalize_code("\n".join(deleted_lines))
                         added_normalized = self._normalize_code("\n".join(added_lines))
                         
                         # Calculate similarity
-                        similarity = difflib.SequenceMatcher(None, deleted_normalized, added_normalized).ratio()
+                        similarity = difflib.SequenceMatcher(
+                            None, deleted_normalized, added_normalized
+                        ).ratio()
                         
                         # If similarity is high, consider it a rename
                         if similarity > 0.8:
@@ -766,17 +775,26 @@ Complexity Changes:
         if high_risk["complexity_increases"]:
             text += "\nHigh Risk - Significant Complexity Increases:\n"
             for item in high_risk["complexity_increases"]:
-                text += f"- {item['function']}: {item['original']} → {item['modified']} ({item['delta']:+d}, {item['percent_change']:.1f}%)\n"
+                text += (
+                    f"- {item['metric']}: {item['original']} → "
+                    f"{item['modified']} ({item['delta']:+d}, {item['percent_change']:.1f}%)\n"
+                )
 
         if high_risk["core_file_changes"]:
             text += "\nHigh Risk - Core File Changes:\n"
             for item in high_risk["core_file_changes"]:
-                text += f"- {item['filepath']} ({item['change_type']}, {item['symbol_count']} symbols)\n"
+                text += (
+                    f"- {item['filepath']} ({item['change_type']}, "
+                    f"{item['symbol_count']} symbols)\n"
+                )
 
         if high_risk["interface_changes"]:
             text += "\nHigh Risk - Interface Changes:\n"
             for item in high_risk["interface_changes"]:
-                text += f"- {item['function']}: Parameters changed from {item['original_params']} to {item['modified_params']}\n"
+                text += (
+                    f"- {item['function']}: Parameters changed from "
+                    f"{item['original_params']} to {item['modified_params']}\n"
+                )
 
         if high_risk["dependency_changes"]:
             text += "\nHigh Risk - Dependency Changes:\n"

@@ -176,7 +176,7 @@ class WSLClient:
             return response.json()
         except requests.RequestException as e:
             logger.error(f"Health check failed: {str(e)}")
-            raise WSLClientError(f"Health check failed: {str(e)}")
+            raise WSLClientError(f"Health check failed: {str(e)}") from e
 
     def validate_codebase(
         self,
@@ -229,7 +229,7 @@ class WSLClient:
             return result
         except requests.RequestException as e:
             logger.error(f"Validation request failed: {str(e)}")
-            raise ValidationError(f"Validation request failed: {str(e)}")
+            raise ValidationError(f"Validation request failed: {str(e)}") from e
 
     def compare_repositories(
         self,
@@ -285,7 +285,7 @@ class WSLClient:
             return result
         except requests.RequestException as e:
             logger.error(f"Comparison request failed: {str(e)}")
-            raise ComparisonError(f"Comparison request failed: {str(e)}")
+            raise ComparisonError(f"Comparison request failed: {str(e)}") from e
 
     def analyze_pr(
         self,
@@ -341,7 +341,7 @@ class WSLClient:
             return result
         except requests.RequestException as e:
             logger.error(f"PR analysis request failed: {str(e)}")
-            raise PRAnalysisError(f"PR analysis request failed: {str(e)}")
+            raise PRAnalysisError(f"PR analysis request failed: {str(e)}") from e
 
     def get_server_metrics(self) -> Dict[str, Any]:
         """
@@ -366,7 +366,7 @@ class WSLClient:
             return response.json()
         except requests.RequestException as e:
             logger.error(f"Get metrics failed: {str(e)}")
-            raise WSLClientError(f"Get metrics failed: {str(e)}")
+            raise WSLClientError(f"Get metrics failed: {str(e)}") from e
 
     def format_validation_results_markdown(self, results: Dict[str, Any]) -> str:
         """
