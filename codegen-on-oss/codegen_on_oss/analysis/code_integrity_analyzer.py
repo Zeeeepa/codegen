@@ -541,7 +541,10 @@ class CodeIntegrityAnalyzer:
                                                 "name": func.name,
                                                 "filepath": func.filepath,
                                                 "line": call.line_range[0],
-                                                "message": (\n                                                    f"Function "{func.name}" is called with wrong type "\n                                                    f"for parameter "{param.name}""\n                                                ),
+                                                "message": (
+                                                    f"Function '{func.name}' is called with wrong type "
+                                                    f"for parameter '{param.name}'"
+                                                ),
                                             }
                                         )
 
@@ -579,7 +582,11 @@ class CodeIntegrityAnalyzer:
                                             "callback_name": callback_func.name,
                                             "filepath": func.filepath,
                                             "line": call.line_range[0],
-                                            "message": (\n                                                f"Function "{func.name}" passes "{callback_func.name}" as a callback, "\n                                                f"but it has no parameters"\n                                            ),
+                                            "message": (
+                                                f"Function '{func.name}' passes "
+                                                f"\"{callback_func.name}\" as a callback, "
+                                                f"but it has no parameters"
+                                            ),
                                         }
                                     )
 
