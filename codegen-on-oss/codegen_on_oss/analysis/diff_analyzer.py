@@ -472,7 +472,6 @@ class DiffAnalyzer:
                 modified_params = self.modified.function_metrics[func_name][
                     "parameter_count"
                 ]
-
                 if original_params != modified_params:
                     high_risk["interface_changes"].append(
                         {

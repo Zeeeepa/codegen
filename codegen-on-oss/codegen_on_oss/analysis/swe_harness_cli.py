@@ -14,7 +14,7 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
+from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager, CodebaseSnapshot
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
 
 
@@ -125,8 +125,6 @@ def create_snapshot(args: argparse.Namespace) -> None:
     Args:
         args: Command-line arguments
     """
-    snapshot_manager = SnapshotManager(args.snapshot_dir)
-
     # Create a snapshot
     snapshot = CodebaseSnapshot.create_from_repo(
         args.repo, args.commit, args.token
@@ -153,7 +151,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--token",
-        help="GitHub token for private repositories",
+        help="GitHub token for private repositories (recommended to use GITHUB_TOKEN environment variable instead)",
         default=os.environ.get("GITHUB_TOKEN"),
     )
     parser.add_argument(
@@ -227,6 +225,14 @@ def main() -> None:
     # Set up logging
     setup_logging(args.verbose)
 
+    # Security warning for token provided as command-line argument
+    if args.token and "--token" in sys.argv:
+        logging.warning(
+            "Security warning: Providing GitHub tokens via command-line arguments is not secure. "
+            "Tokens can be exposed in command history or process listings. "
+            "Use the GITHUB_TOKEN environment variable instead."
+        )
+
     if args.command is None:
         parser.print_help()
         sys.exit(1)
@@ -237,4 +243,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

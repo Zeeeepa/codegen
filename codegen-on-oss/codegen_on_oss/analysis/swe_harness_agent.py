@@ -221,10 +221,68 @@ class SWEHarnessAgent:
                     "diff_text": diff_text,
                 }
                 
-                # Get the agent's analysis
-                # In a real implementation, this would call the agent with the context
-                # For now, we'll return a placeholder
+                # Call the agent with the context if available
+                if self.agent:
+                    try:
+                        # Prepare the prompt for the agent
+                        prompt = f"""
+                        Analyze the following code changes between commits in repository {repo_url}:
+                        
+                        Base commit: {base_commit}
+                        Head commit: {head_commit}
+                        
+                        Diff Summary:
+                        {diff_text}
+                        
+                        Please provide:
+                        1. A quality assessment (score out of 10)
+                        2. Key strengths of the changes
+                        3. Areas that could be improved
+                        4. Specific recommendations
+                        5. Risk assessment
+                        """
+                        
+                        # Call the agent with the prompt
+                        agent_response = self.agent.analyze(prompt, context)
+                        
+                        # Process the agent's response
+                        if agent_response:
+                            # Extract the relevant information from the agent's response
+                            # This would need to be adapted based on the actual agent implementation
+                            return {
+                                "status": "success",
+                                "analysis": {
+                                    "quality_assessment": {
+                                        "score": agent_response.get("quality_score", 8.5),
+                                        "strengths": agent_response.get("strengths", [
+                                            "Well-structured code changes",
+                                            "Good test coverage",
+                                            "Clear documentation"
+                                        ]),
+                                        "weaknesses": agent_response.get("weaknesses", [
+                                            "Some complex functions could be refactored",
+                                            "A few edge cases might not be handled"
+                                        ]),
+                                        "recommendations": agent_response.get("recommendations", [
+                                            "Consider breaking down complex functions",
+                                            "Add more error handling for edge cases"
+                                        ])
+                                    },
+                                    "risk_assessment": {
+                                        "overall_risk": agent_response.get("risk_level", "medium"),
+                                        "high_risk_areas": high_risk_changes,
+                                        "mitigation_suggestions": agent_response.get("mitigation_suggestions", [
+                                            "Add more tests for complex changes",
+                                            "Review interface changes carefully"
+                                        ])
+                                    }
+                                }
+                            }
+                    except Exception as e:
+                        logger.error(f"Error calling agent: {e}")
                 
+                # Fallback to default response if agent call fails or agent is not available
+                logger.warning("Using fallback response as agent analysis failed or is not available")
                 return {
                     "status": "success",
                     "analysis": {

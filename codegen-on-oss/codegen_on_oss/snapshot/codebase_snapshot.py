@@ -93,11 +93,15 @@ class CodebaseSnapshot:
         if github_token:
             secrets = SecretsConfig(github_token=github_token)
 
-        # Create a temporary directory for the repo if needed
+        # Create a temporary directory for cloning if needed
         temp_dir = None
         try:
+            # Create a temporary directory for cloning if needed
+            temp_dir = tempfile.mkdtemp(prefix="codegen_snapshot_")
+            logger.info(f"Created temporary directory: {temp_dir}")
+            
             # Clone the repository
-            codebase = Codebase.from_repo(repo_url, secrets=secrets)
+            codebase = Codebase.from_repo(repo_url, secrets=secrets, clone_path=temp_dir)
 
             # Checkout the specified commit if provided
             if commit_sha:
