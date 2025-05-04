@@ -62,7 +62,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-# src/vs/platform/contextview/browser/contextMenuService.ts is ignored as there is a parsing error with tree-sitter
+# src/vs/platform/contextview/browser/contextMenuService.ts is ignored as there is a
+# parsing error with tree-sitter
 GLOBAL_FILE_IGNORE_LIST = [
     ".git/*",
     "*/.git/*",
@@ -208,7 +209,8 @@ class CodebaseContext:
         ):
             logger.warning("WARNING: The codebase is using an unsupported language!")
             logger.warning(
-                "Some features may not work as expected. Advanced static analysis will be disabled but simple file IO will still work."
+                "Some features may not work as expected. Advanced static analysis will be disabled "
+                "but simple file IO will still work."
             )
 
         # Assert config assertions
@@ -264,7 +266,9 @@ class CodebaseContext:
             ):
                 syncs[SyncType.ADD].append(self.to_absolute(filepath))
         logger.info(
-            f"> Parsing {len(syncs[SyncType.ADD])} files in {self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions"
+            f"> Parsing {len(syncs[SyncType.ADD])} files in "
+            f"{self.projects[0].subdirectories or 'ALL'} subdirectories "
+            f"with {self.extensions} extensions"
         )
         self._process_diff_files(syncs, incremental=False)
         files: list[SourceFile] = self.get_nodes(NodeType.FILE)
@@ -276,7 +280,8 @@ class CodebaseContext:
     @stopwatch
     @commiter
     def apply_diffs(self, diff_list: list[DiffLite]) -> None:
-        """Applies the given set of diffs to the graph in order to match the current file system content"""
+        """Applies the given set of diffs to the graph in order to match the current file system
+        content"""
         if self.session_options:
             self.session_options = self.session_options.model_copy(update={"max_seconds": None})
         logger.info(f"Applying {len(diff_list)} diffs to graph")
@@ -371,7 +376,8 @@ class CodebaseContext:
         self.pending_syncs.clear()  # Discard pending changes
         if len(self.all_syncs) > 0:
             logger.info(
-                f"Unapplying {len(self.all_syncs)} diffs to graph. Current graph commit: {self.synced_commit}"
+                f"Unapplying {len(self.all_syncs)} diffs to graph. "
+                f"Current graph commit: {self.synced_commit}"
             )
             self._revert_diffs(list(reversed(self.all_syncs)))
         self.all_syncs.clear()
@@ -435,7 +441,8 @@ class CodebaseContext:
     ) -> Directory | None:
         """Returns the directory object for the given path, or None if the directory does not exist.
 
-        If create_on_missing is set, use a recursive strategy to create the directory object and all subdirectories.
+        If create_on_missing is set, use a recursive strategy to create the directory object
+        and all subdirectories.
         """
         # If not part of repo path, return None
         absolute_path = self.to_absolute(directory_path)
@@ -490,15 +497,18 @@ class CodebaseContext:
         if not skip_uncache:
             uncache_all()
         # Step 0: Start the dependency manager and language engine if they exist
-        # Start the dependency manager. This may or may not run asynchronously, depending on the implementation
+        # Start the dependency manager. This may or may not run asynchronously,
+        # depending on the implementation
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
             if not self.dependency_manager.ready() and not self.dependency_manager.error():
-                # TODO: We do not reparse dependencies during syncs as it is expensive. We should probably add a flag for this
+                # TODO: We do not reparse dependencies during syncs as it is expensive.
+                # We should probably add a flag for this
                 logger.info("> Starting dependency manager")
                 self.dependency_manager.start(async_start=False)
 
-        # Start the language engine. This may or may not run asynchronously, depending on the implementation
+        # Start the language engine. This may or may not run asynchronously,
+        # depending on the implementation
         if self.language_engine is not None:
             # Check if its inital start or a reparse
             if not self.language_engine.ready() and not self.language_engine.error():
@@ -508,7 +518,8 @@ class CodebaseContext:
                 logger.info("> Reparsing language engine")
                 self.language_engine.reparse(async_start=False)
 
-        # Step 1: Wait for dependency manager and language engines to finish before graph construction
+        # Step 1: Wait for dependency manager and language engines to finish
+        # before graph construction
         if self.dependency_manager is not None:
             self.dependency_manager.wait_until_ready(ignore_error=self.config.ignore_process_errors)
         if self.language_engine is not None:
@@ -587,7 +598,8 @@ class CodebaseContext:
                 content = self.io.read_text(filepath)
             except UnicodeDecodeError:
                 logger.warning(
-                    f"Can't read file at:{filepath} since it contains non-unicode characters. File will be ignored!"
+                    f"Can't read file at:{filepath} since it contains non-unicode characters. "
+                    f"File will be ignored!"
                 )
                 continue
             # TODO: this is wrong with context changes
