@@ -325,6 +325,41 @@ class SWEHarnessAgent:
             logger.error(f"Failed to post comment to PR: {e}")
             return False
 
+    def post_pr_comment(self, repo: str, pr_number: int, comment: str) -> bool:
+        """
+        Post a comment on a pull request.
+
+        Args:
+            repo: Repository in the format "owner/repo"
+            pr_number: PR number
+            comment: Comment text
+
+        Returns:
+            True if successful, False otherwise
+        """
+        from github import Github
+
+        if not self.github_token:
+            logger.error("GitHub token is required to post comments")
+            return False
+
+        try:
+            # Parse repository owner and name
+            owner, repo_name = repo.split("/")
+
+            # Initialize GitHub client
+            g = Github(self.github_token)
+            repo_obj = g.get_repo(f"{owner}/{repo_name}")
+            pr = repo_obj.get_pull(pr_number)
+
+            # Post the comment to GitHub
+            pr.create_issue_comment(comment)
+
+            return True
+        except Exception as e:
+            logger.error(f"Failed to post comment to PR: {e}")
+            return False
+
     def analyze_and_comment_on_pr(
         self,
         repo_url: str,
@@ -358,7 +393,35 @@ class SWEHarnessAgent:
         # Add the comment to the results
         analysis_results["comment"] = comment
 
-        return analysis_results
+def get_pr_file_content(self, repo: str, pr_number: int) -> Dict[str, str]:
+    try:
+        owner, repo_name = repo.split('/')
+        g = Github(self.github_token)
+        repo_obj = g.get_repo(f"{owner}/{repo_name}")
+        pr = repo_obj.get_pull(pr_number)
+        files = pr.get_files()
+        
+        file_content = {}
+        for file in files:
+            try:
+                content = repo_obj.get_contents(file.filename, ref=pr.head.ref).decoded_content.decode('utf-8')
+                file_content[file.filename] = content
+            except GithubException as e:
+                logger.warning(f"GitHub API error for {file.filename}: {e.data.get('message', str(e))}")
+            except UnicodeDecodeError as e:
+                logger.warning(f"Unicode decode error for {file.filename}: {str(e)}")
+            except Exception as e:
+                logger.warning(f"Unexpected error for {file.filename}: {str(e)}")
+        return file_content
+    
+    except ValueError as e:
+        logger.error(f"Invalid repository format: {str(e)}")
+    except GithubException as e:
+        logger.error(f"GitHub API error: {e.data.get('message', str(e))}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+    return {}
+            return {}
 
 
 # Example usage
