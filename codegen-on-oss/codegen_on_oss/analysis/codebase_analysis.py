@@ -81,11 +81,11 @@ def get_symbol_summary(symbol: Symbol) -> str:
 \t- {
         len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])
     } classes
-\t- {
-        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} \
+\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} \
 global variables
 \t- {
-        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])
+    } interfaces
 \t- {len(imported_symbols)} imports
 \t\t- {
         len(
