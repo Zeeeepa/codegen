@@ -673,7 +673,8 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity})",
+                        "message": f"Function '{func.name}' has high cyclomatic complexity "
+                        f"({complexity})",
                         "complexity": complexity,
                         "severity": self.config["severity_levels"]["high_complexity"],
                     }
