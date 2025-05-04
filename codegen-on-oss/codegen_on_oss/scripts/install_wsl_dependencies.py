@@ -8,7 +8,6 @@ including Python packages and system dependencies.
 
 import argparse
 import logging
-import os
 import subprocess
 import sys
 from typing import List, Optional
@@ -257,7 +256,8 @@ def install_python_dependencies(distro: str, requirements_file: Optional[str] = 
                     "--",
                     "bash",
                     "-c",
-                    "source /home/codegen-venv/bin/activate && pip install -r /home/codegen-temp/requirements.txt",
+                    "source /home/codegen-venv/bin/activate && "
+                    "pip install -r /home/codegen-temp/requirements.txt",
                 ],
                 check=True,
             )
@@ -272,7 +272,8 @@ def install_python_dependencies(distro: str, requirements_file: Optional[str] = 
                     "--",
                     "bash",
                     "-c",
-                    "source /home/codegen-venv/bin/activate && pip install fastapi uvicorn psutil",
+                    ("source /home/codegen-venv/bin/activate && "
+                     "pip install fastapi uvicorn psutil"),
                 ],
                 check=True,
             )
@@ -339,4 +340,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
