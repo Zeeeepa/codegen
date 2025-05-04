@@ -325,4 +325,3 @@ The WSL integration provides the following classes and methods:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

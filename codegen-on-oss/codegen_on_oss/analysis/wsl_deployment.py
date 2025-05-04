@@ -1,15 +1,15 @@
 """
 WSL2 Deployment Utilities
 
-This module provides utilities for deploying the WSL2 server
-for code validation, with integration for ctrlplane and other tools.
+This module provides utilities for deploying the WSL2 server,
+with support for Docker and ctrlplane.
 """
 
 import logging
 import os
 import subprocess
-import sys
 import tempfile
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 
@@ -320,7 +320,10 @@ class WSLDeployment:
                 "services": [
                     {
                         "name": "wsl-server",
-                        "command": f"cd /home/codegen-server && python3 -m codegen_on_oss.analysis.wsl_server",
+                        "command": (
+                            "cd /home/codegen-server && "
+                            "python3 -m codegen_on_oss.analysis.wsl_server"
+                        ),
                         "environment": {
                             "CODEGEN_API_KEY": self.api_key or "",
                         },
@@ -507,4 +510,3 @@ class WSLDeployment:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error stopping server: {str(e)}")
             return False
-

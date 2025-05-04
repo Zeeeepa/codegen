@@ -221,7 +221,10 @@ async def validate_code(
             overall_score = sum(r.score for r in results) / len(results) if results else 0.0
             
             # Generate summary
-            summary = f"Analysis of {request.repo_url} ({request.branch}) completed with an overall score of {overall_score:.2f}/10."
+            summary = (
+                f"Analysis of {request.repo_url} ({request.branch}) completed "
+                f"with an overall score of {overall_score:.2f}/10."
+            )
             
             return CodeValidationResponse(
                 repo_url=request.repo_url,
@@ -236,7 +239,7 @@ async def validate_code(
         raise HTTPException(
             status_code=500,
             detail=f"Error validating code: {str(e)}",
-        )
+        ) from e
 
 
 @app.post("/compare", response_model=RepoComparisonResponse)
@@ -299,7 +302,7 @@ async def compare_repositories(
         raise HTTPException(
             status_code=500,
             detail=f"Error comparing repositories: {str(e)}",
-        )
+        ) from e
 
 
 @app.post("/analyze-pr", response_model=PRAnalysisResponse)
@@ -354,7 +357,7 @@ async def analyze_pull_request(
         raise HTTPException(
             status_code=500,
             detail=f"Error analyzing pull request: {str(e)}",
-        )
+        ) from e
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):
@@ -364,4 +367,3 @@ def run_server(host: str = "0.0.0.0", port: int = 8000):
 
 if __name__ == "__main__":
     run_server()
-
