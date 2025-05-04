@@ -66,9 +66,9 @@ def calculate_maintainability_index(code: str) -> float:
             loc = 1
         # Calculate raw maintainability index
         raw_mi = (
-            MI_PARAMETERS[0] * math.log(halstead_volume) +
-            MI_PARAMETERS[1] * math.log(complexity) +
-            MI_PARAMETERS[2] * math.log(loc)
+            MI_PARAMETERS[0] * math.log(halstead_volume)
+            + MI_PARAMETERS[1] * math.log(complexity)
+            + MI_PARAMETERS[2] * math.log(loc)
         )
         # Scale to 0-100
         mi = max(0, 100 - raw_mi / 171 * 100)
@@ -107,9 +107,17 @@ def calculate_halstead_metrics(code: str) -> Dict[str, float]:
     except Exception:
         # If calculation fails, return default values
         return {
-            "h1": 0, "h2": 0, "N1": 0, "N2": 0,
-            "vocabulary": 0, "length": 0, "volume": 0,
-            "difficulty": 0, "effort": 0, "time": 0, "bugs": 0
+            "h1": 0,
+            "h2": 0,
+            "N1": 0,
+            "N2": 0,
+            "vocabulary": 0,
+            "length": 0,
+            "volume": 0,
+            "difficulty": 0,
+            "effort": 0,
+            "time": 0,
+            "bugs": 0,
         }
 
 
@@ -128,14 +136,12 @@ def calculate_line_metrics(code: str) -> Dict[str, int]:
     total_lines = len(lines)
     blank_lines = sum(1 for line in lines if not line.strip())
     # Count comment lines
-    comment_pattern = re.compile(r'^\s*(#|//|/\*|\*\s|/\*\*|\*/).*$')
+    comment_pattern = re.compile(r"^\s*(#|//|/\*|\*\s|/\*\*|\*/).*$")
     comment_lines = sum(1 for line in lines if comment_pattern.match(line))
     # Calculate code lines
     code_lines = total_lines - blank_lines - comment_lines
     # Calculate comment ratio
-    comment_ratio = (
-        round((comment_lines / total_lines * 100), 2) if total_lines > 0 else 0
-    )
+    comment_ratio = round((comment_lines / total_lines * 100), 2) if total_lines > 0 else 0
     return {
         "total_lines": total_lines,
         "code_lines": code_lines,
@@ -163,32 +169,32 @@ def get_function_metrics(code: str) -> Dict[str, Any]:
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 # Get function code
-                func_lines = code.splitlines()[node.lineno - 1:node.end_lineno]
+                func_lines = code.splitlines()[node.lineno - 1 : node.end_lineno]
                 func_code = "\n".join(func_lines)
                 # Calculate metrics
                 complexity = calculate_cyclomatic_complexity(func_code)
                 maintainability = calculate_maintainability_index(func_code)
                 halstead = calculate_halstead_metrics(func_code)
                 line_metrics = calculate_line_metrics(func_code)
-                functions.append({
-                    "name": node.name,
-                    "lineno": node.lineno,
-                    "end_lineno": node.end_lineno,
-                    "complexity": complexity,
-                    "maintainability": maintainability,
-                    "halstead": halstead,
-                    "line_metrics": line_metrics,
-                })
+                functions.append(
+                    {
+                        "name": node.name,
+                        "lineno": node.lineno,
+                        "end_lineno": node.end_lineno,
+                        "complexity": complexity,
+                        "maintainability": maintainability,
+                        "halstead": halstead,
+                        "line_metrics": line_metrics,
+                    }
+                )
         return {
             "count": len(functions),
             "functions": functions,
             "avg_complexity": (
-                sum(f["complexity"] for f in functions) / len(functions)
-                if functions else 0
+                sum(f["complexity"] for f in functions) / len(functions) if functions else 0
             ),
             "avg_maintainability": (
-                sum(f["maintainability"] for f in functions) / len(functions)
-                if functions else 0
+                sum(f["maintainability"] for f in functions) / len(functions) if functions else 0
             ),
         }
     except Exception:
@@ -266,12 +272,8 @@ def analyze_codebase_metrics(
         total_functions += function_metrics["count"]
     # Calculate averages
     if filtered_files:
-        metrics["avg_complexity"] = round(
-            total_complexity / len(filtered_files), 2
-        )
-        metrics["avg_maintainability"] = round(
-            total_maintainability / len(filtered_files), 2
-        )
+        metrics["avg_complexity"] = round(total_complexity / len(filtered_files), 2)
+        metrics["avg_maintainability"] = round(total_maintainability / len(filtered_files), 2)
     # Calculate overall comment ratio
     if metrics["total_lines"] > 0:
         ratio = metrics["comment_lines"] / metrics["total_lines"] * 100

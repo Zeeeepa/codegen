@@ -56,9 +56,7 @@ def cleanup_files(dry_run=False) -> List[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Clean up unused files in codegen-on-oss"
-    )
+    parser = argparse.ArgumentParser(description="Clean up unused files in codegen-on-oss")
     parser.add_argument(
         "--dry-run",
         action="store_true",
