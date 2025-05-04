@@ -208,9 +208,12 @@ def generate_html_report(metrics: dict, repo_name: str) -> str:
             f"                <td>{file_metrics['maintainability']:.2f}</td>"
         )
         line_metrics = file_metrics['line_metrics']
-        html.append(f"                <td>{line_metrics['total_lines']}</td>")
-        html.append(f"                <td>{line_metrics['code_lines']}</td>")
-        html.append(f"                <td>{line_metrics['comment_lines']}</td>")
+        total_lines = line_metrics['total_lines']
+        code_lines = line_metrics['code_lines']
+        comment_lines = line_metrics['comment_lines']
+        html.append(f"                <td>{total_lines}</td>")
+        html.append(f"                <td>{code_lines}</td>")
+        html.append(f"                <td>{comment_lines}</td>")
         func_count = file_metrics['function_metrics']['count']
         html.append(f"                <td>{func_count}</td>")
         html.append("            </tr>")

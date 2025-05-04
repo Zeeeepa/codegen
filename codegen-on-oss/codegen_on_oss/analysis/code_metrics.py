@@ -278,4 +278,3 @@ def analyze_codebase_metrics(
             (metrics["comment_lines"] / metrics["total_lines"] * 100), 2
         )
     return metrics
-
