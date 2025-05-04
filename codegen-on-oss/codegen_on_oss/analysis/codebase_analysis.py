@@ -72,56 +72,39 @@ def get_symbol_summary(symbol: Symbol) -> str:
     usages = symbol.symbol_usages
     imported_symbols = [x.imported_symbol for x in usages if isinstance(x, Import)]
 
+    # Count different types of usages
+    func_usages = len([x for x in usages 
+                      if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])
+    class_usages = len([x for x in usages 
+                       if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])
+    var_usages = len([x for x in usages 
+                     if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])
+    iface_usages = len([x for x in usages 
+                       if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])
+    
+    # Count different types of imported symbols
+    imp_funcs = len([x for x in imported_symbols 
+                    if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])
+    imp_classes = len([x for x in imported_symbols 
+                      if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])
+    imp_vars = len([x for x in imported_symbols 
+                   if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])
+    imp_ifaces = len([x for x in imported_symbols 
+                     if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])
+    ext_mods = len([x for x in imported_symbols if isinstance(x, ExternalModule)])
+    src_files = len([x for x in imported_symbols if isinstance(x, SourceFile)])
+
     return f"""==== [ `{symbol.name}` ({type(symbol).__name__}) Usage Summary ] ====
 - {len(usages)} usages
-	- {
-        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])
-    } functions
-	- {
-        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])
-    } classes
-	- {
-        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} \
-global vars
-	- {
-        len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+	- {func_usages} functions
+	- {class_usages} classes
+	- {var_usages} global vars
+	- {iface_usages} interfaces
 	- {len(imported_symbols)} imports
-		- {
-        len(
-            [
-                x
-                for x in imported_symbols
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function
-            ]
-        )
-    } functions
-		- {
-        len(
-            [
-                x
-                for x in imported_symbols
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class
-            ]
-        )
-    } classes
-		- {
-        len(
-            [
-                x
-                for x in imported_symbols
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar
-            ]
-        )
-    } global vars
-		- {
-        len(
-            [
-                x
-                for x in imported_symbols
-                if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface
-            ]
-        )
-    } interfaces
-		- {len([x for x in imported_symbols if isinstance(x, ExternalModule)])} external modules
-		- {len([x for x in imported_symbols if isinstance(x, SourceFile)])} files
+		- {imp_funcs} functions
+		- {imp_classes} classes
+		- {imp_vars} global vars
+		- {imp_ifaces} interfaces
+		- {ext_mods} external modules
+		- {src_files} files
     """
