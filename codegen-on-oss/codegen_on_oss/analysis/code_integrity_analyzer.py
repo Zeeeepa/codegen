@@ -4,7 +4,7 @@ Analysis module for code integrity.
 This module provides tools for analyzing code integrity, including:
 - Finding functions with issues
 - Identifying classes with problems
-- Detecting parameter usage errors
+- Detecting param usage errors
 - Comparing error counts between branches
 """
 
@@ -112,7 +112,7 @@ def get_function_summary(func: Function) -> str:
     """
     return f"""==== [ `{func.name}` (Function) Dependency Summary ] ====
 - {len(func.return_statements)} return statements
-- {len(func.parameters)} parameters
+- {len(func.params)} parameters
 - {len(func.function_calls)} function calls
 - {len(func.call_sites)} call sites
 - {len(func.decorators)} decorators
@@ -198,7 +198,7 @@ class CodeIntegrityAnalyzer:
     This class provides methods for analyzing code integrity issues, including:
     - Finding all functions and classes
     - Identifying errors in functions and classes
-    - Detecting improper parameter usage
+    - Detecting improper param usage
     - Finding incorrect function callback points
 
     Attributes:
@@ -210,7 +210,7 @@ class CodeIntegrityAnalyzer:
 
     # Default thresholds for code quality metrics
     DEFAULT_CONFIG = {
-        "max_function_parameters": 7,
+        "max_function_params": 7,
         "max_function_returns": 5,
         "max_class_methods": 20,
         "max_class_attributes": 15,
@@ -222,14 +222,14 @@ class CodeIntegrityAnalyzer:
         "severity_levels": {
             "missing_docstring": "warning",
             "empty_function": "error",
-            "unused_parameter": "warning",
-            "too_many_parameters": "warning",
+            "unused_param": "warning",
+            "too_many_params": "warning",
             "too_many_returns": "warning",
             "empty_class": "error",
             "too_many_methods": "warning",
             "too_many_attributes": "warning",
             "missing_init": "warning",
-            "wrong_parameter_type": "error",
+            "wrong_param_type": "error",
             "wrong_callback_signature": "error",
             "high_complexity": "warning",
             "long_line": "warning",
@@ -276,8 +276,8 @@ class CodeIntegrityAnalyzer:
         # Analyze classes
         class_errors = self._analyze_classes(classes)
 
-        # Analyze parameter usage
-        parameter_errors = self._analyze_parameter_usage(functions)
+        # Analyze param usage
+        param_errors = self._analyze_param_usage(functions)
 
         # Analyze callback points
         callback_errors = self._analyze_callback_points(functions)
@@ -302,7 +302,7 @@ class CodeIntegrityAnalyzer:
         all_errors = (
             function_errors
             + class_errors
-            + parameter_errors
+            + param_errors
             + callback_errors
             + import_errors
             + complexity_errors
@@ -321,7 +321,7 @@ class CodeIntegrityAnalyzer:
             "total_errors": len(filtered_errors),
             "function_errors": len(function_errors),
             "class_errors": len(class_errors),
-            "parameter_errors": len(parameter_errors),
+            "param_errors": len(param_errors),
             "callback_errors": len(callback_errors),
             "import_errors": len(import_errors),
             "complexity_errors": len(complexity_errors),
@@ -372,38 +372,36 @@ class CodeIntegrityAnalyzer:
                     }
                 )
 
-            # Check for unused parameters
+            # Check for unused params
             used_params = set()
             for node in func.body:
-                if hasattr(node, "name") and node.name in [p.name for p in func.parameters]:
+                if hasattr(node, "name") and node.name in [p.name for p in func.params]:
                     used_params.add(node.name)
 
-            for param in func.parameters:
+            for param in func.params:
                 if param.name not in used_params and param.name != "self" and param.name != "cls":
                     errors.append(
                         {
                             "type": "function_error",
-                            "error_type": "unused_parameter",
+                            "error_type": "unused_param",
                             "name": func.name,
                             "filepath": func.filepath,
                             "line": func.line_range[0],
-                            "message": (
-                                f"Function '{func.name}' has unused parameter '{param.name}'"
-                            ),
+                            "message": (f"Function '{func.name}' has unused param '{param.name}'"),
                         }
                     )
 
-            # Check for too many parameters
-            if len(func.parameters) > self.config["max_function_parameters"]:  # Arbitrary threshold
+            # Check for too many params
+            if len(func.params) > self.config["max_function_params"]:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "function_error",
-                        "error_type": "too_many_parameters",
+                        "error_type": "too_many_params",
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many parameters "
-                        f"({len(func.parameters)})",
+                        "message": f"Function '{func.name}' has too many params "
+                        f"({len(func.params)})",
                     }
                 )
 
@@ -507,43 +505,40 @@ class CodeIntegrityAnalyzer:
 
         return errors
 
-    def _analyze_parameter_usage(self, functions: List[Function]) -> List[Dict[str, Any]]:
+    def _analyze_param_usage(self, functions: List[Function]) -> List[Dict[str, Any]]:
         """
-        Analyze parameter usage for errors.
+        Analyze param usage for errors.
 
         Args:
             functions: List of functions to analyze
 
         Returns:
-            List of parameter usage errors
+            List of param usage errors
         """
         errors = []
 
         for func in functions:
-            # Check for parameters with wrong types
-            for param in func.parameters:
+            # Check for params with wrong types
+            for param in func.params:
                 if param.annotation:
-                    # Check if the parameter is used with the correct type
+                    # Check if the param is used with the correct type
                     # This is a simplified check and would need more sophisticated
                     # analysis in a real implementation
                     for call in func.call_sites:
                         if hasattr(call, "args") and len(call.args) > 0:
                             for i, arg in enumerate(call.args):
-                                if (
-                                    i < len(func.parameters)
-                                    and func.parameters[i].name == param.name
-                                ):
+                                if i < len(func.params) and func.params[i].name == param.name:
                                     if hasattr(arg, "type") and arg.type != param.annotation:
                                         errors.append(
                                             {
-                                                "type": "parameter_error",
-                                                "error_type": "wrong_parameter_type",
+                                                "type": "param_error",
+                                                "error_type": "wrong_param_type",
                                                 "name": func.name,
                                                 "filepath": func.filepath,
                                                 "line": call.line_range[0],
                                                 "message": (
-                                                    f"Function '{func.name}' is called with wrong type "
-                                                    f"for parameter '{param.name}'"
+                                                    f"Function '{func.name}' is called with "
+                                                    f"wrong type for param '{param.name}'"
                                                 ),
                                             }
                                         )
@@ -572,8 +567,9 @@ class CodeIntegrityAnalyzer:
                             callback_func = next((f for f in functions if f.name == arg.name), None)
                             if callback_func:
                                 # Check if the callback function has the right signature
-                                # This is a simplified check and would need more sophisticated\n                                # analysis in a real implementation
-                                if len(callback_func.parameters) == 0:
+                                # This is a simplified check and would need more sophisticated
+                                # analysis in a real implementation
+                                if len(callback_func.params) == 0:
                                     errors.append(
                                         {
                                             "type": "callback_error",
@@ -584,8 +580,8 @@ class CodeIntegrityAnalyzer:
                                             "line": call.line_range[0],
                                             "message": (
                                                 f"Function '{func.name}' passes "
-                                                f"\"{callback_func.name}\" as a callback, "
-                                                f"but it has no parameters"
+                                                f'"{callback_func.name}" as a callback, '
+                                                f"but it has no params"
                                             ),
                                         }
                                     )
@@ -671,14 +667,15 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity})",
+                        "message": f"Function '{func.name}' has high cyclomatic "
+                        f"complexity ({complexity})",
                         "complexity": complexity,
                         "severity": self.config["severity_levels"]["high_complexity"],
                     }
                 )
 
             # Check for mutable default arguments
-            for param in func.parameters:
+            for param in func.params:
                 if hasattr(param, "default") and param.default:
                     if isinstance(param.default, (list, dict, set)):
                         errors.append(
@@ -688,7 +685,10 @@ class CodeIntegrityAnalyzer:
                                 "name": func.name,
                                 "filepath": func.filepath,
                                 "line": func.line_range[0],
-                                "message": f"Function '{func.name}' uses mutable default argument for parameter '{param.name}'",
+                                "message": (
+                                    f"Function '{func.name}' uses mutable default "
+                                    f"argument for param '{param.name}'"
+                                ),
                                 "severity": self.config["severity_levels"][
                                     "mutable_default_argument"
                                 ],
@@ -718,8 +718,8 @@ class CodeIntegrityAnalyzer:
             if any(re.search(pattern, func.filepath) for pattern in self.config["ignore_patterns"]):
                 continue
 
-            # Check for missing parameter type hints
-            for param in func.parameters:
+            # Check for missing param type hints
+            for param in func.params:
                 if param.name not in ["self", "cls"] and not param.annotation:
                     errors.append(
                         {
@@ -730,7 +730,7 @@ class CodeIntegrityAnalyzer:
                             "line": func.line_range[0],
                             "message": (
                                 f"Function '{func.name}' is missing type hint "
-                                f"for parameter '{param.name}'"
+                                f"for param '{param.name}'"
                             ),
                             "severity": self.config["severity_levels"]["missing_type_hints"],
                         }
@@ -859,19 +859,20 @@ class CodeIntegrityAnalyzer:
         """
         # Calculate average complexity
         function_complexities = [
-            metrics["cyclomatic_complexity"]
-            for metrics in self.snapshot.function_metrics.values()
+            metrics["cyclomatic_complexity"] for metrics in self.snapshot.function_metrics.values()
         ]
-        
-        avg_complexity = sum(function_complexities) / len(function_complexities) if function_complexities else 0
-        
+
+        avg_complexity = (
+            sum(function_complexities) / len(function_complexities) if function_complexities else 0
+        )
+
         # Find functions with high complexity
         high_complexity_functions = {
             name: metrics
             for name, metrics in self.snapshot.function_metrics.items()
             if metrics["cyclomatic_complexity"] > 10  # Threshold for high complexity
         }
-        
+
         return {
             "average_complexity": avg_complexity,
             "max_complexity": max(function_complexities) if function_complexities else 0,
@@ -882,7 +883,7 @@ class CodeIntegrityAnalyzer:
                 "high": sum(1 for c in function_complexities if c > 10),
             },
         }
-        
+
     def get_dependency_graph(self) -> Dict[str, List[str]]:
         """
         Get a dependency graph for the codebase.
@@ -891,15 +892,15 @@ class CodeIntegrityAnalyzer:
             Dictionary mapping modules to their dependencies
         """
         dependency_graph = {}
-        
+
         # Build dependency graph from imports
         for filepath, imports in self.snapshot.import_metrics.items():
             # Extract module name from filepath
             module_name = filepath.replace("/", ".").replace(".py", "")
-            
+
             # Add dependencies
             dependency_graph[module_name] = imports
-            
+
         return dependency_graph
 
 
