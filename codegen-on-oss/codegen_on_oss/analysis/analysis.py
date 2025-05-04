@@ -48,7 +48,6 @@ from codegen_on_oss.analysis.codebase_analysis import (
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalysisResult,
-    CommitAnalyzer,
 )
 from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
