@@ -203,8 +203,22 @@ class SWEHarnessAgent:
             }
             
         try:
-            # Get the diff between the two commits
-            diff = self._get_commit_diff(repo_url, base_commit, head_commit)
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
+    headers = {
+        "Authorization": f"Bearer {self.agent_api_key}",
+        "Content-Type": "application/json",
+    }
+    response = requests.post(
+        f"{self.agent_api_url}/{endpoint}",
+        headers=headers,
+        json=payload,
+        timeout=timeout
+    )
+    response.raise_for_status()
+    return response.json()
             
             # Get the commit message
             commit_message = self._get_commit_message(repo_url, head_commit)
