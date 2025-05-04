@@ -8,7 +8,7 @@ analyze commits and pull requests to determine if they are properly implemented.
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import requests
 from github import Github, GithubException
@@ -666,11 +666,12 @@ if __name__ == "__main__":
     parser.add_argument("--token", help="GitHub token for private repositories")
     parser.add_argument("--snapshot-dir", help="Directory to store snapshots")
     parser.add_argument(
-        "--detailed", action="store_true", help="Include detailed analysis in results"
+        "--no-agent",
+        action="store_true",
+        help="Disable agent-based analysis",
     )
-    parser.add_argument("--no-agent", action="store_true", help="Disable LLM-based agent analysis")
     parser.add_argument(
-        "--comment",
+        "--post-comment",
         action="store_true",
         help="Post a comment to the PR with analysis results",
     )
@@ -679,11 +680,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+    # Validate arguments
+    if args.pr is None and (args.base is None or args.head is None):
+        parser.error("Either --pr or both --base and --head must be provided")
 
     # Create the agent
     agent = SWEHarnessAgent(
@@ -693,14 +692,3 @@ if __name__ == "__main__":
         agent_api_key=args.agent_api_key,
         agent_api_url=args.agent_api_url,
     )
-
-    # Analyze PR or commit
-    if args.pr:
-        results = agent.analyze_and_comment_on_pr(args.repo, args.pr, args.comment, args.detailed)
-    elif args.base and args.head:
-        results = agent.analyze_commit(args.repo, args.base, args.head, args.detailed)
-    else:
-        parser.error("Either --pr or both --base and --head must be provided")
-
-    # Print the results
-    print(json.dumps(results, indent=2))
