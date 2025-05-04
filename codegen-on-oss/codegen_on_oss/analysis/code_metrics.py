@@ -277,4 +277,3 @@ def analyze_codebase_metrics(
         ratio = metrics["comment_lines"] / metrics["total_lines"] * 100
         metrics["comment_ratio"] = round(ratio, 2)
     return metrics
-
