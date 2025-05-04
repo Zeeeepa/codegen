@@ -1088,7 +1088,7 @@ def cc_rank(complexity):
         A letter grade from A to F
     """
     if complexity < 0:
-        raise ValueError("Complexity must be a non-negative value") from e from e
+        raise ValueError("Complexity must be a non-negative value")
 
     ranks = [
         (1, 5, "A"),
