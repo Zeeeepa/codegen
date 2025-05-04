@@ -162,18 +162,26 @@ def analyze_codebase_complexity(
         A dictionary with complexity metrics for the codebase
     """
     # Initialize metrics
-COMPLEXITY_RANKS = {
-    'A': {'range': (1, 5), 'description': 'Excellent'},
-    'B': {'range': (6, 10), 'description': 'Good'},
-    'C': {'range': (11, 20), 'description': 'Moderate'},
-    'D': {'range': (21, 30), 'description': 'Complex'},
-    'E': {'range': (31, 40), 'description': 'Very Complex'},
-    'F': {'range': (41, float('inf')), 'description': 'Unmaintainable'}
-}
+    COMPLEXITY_RANKS = {
+        'A': {'range': (1, 5), 'description': 'Excellent'},
+        'B': {'range': (6, 10), 'description': 'Good'},
+        'C': {'range': (11, 20), 'description': 'Moderate'},
+        'D': {'range': (21, 30), 'description': 'Complex'},
+        'E': {'range': (31, 40), 'description': 'Very Complex'},
+        'F': {'range': (41, float('inf')), 'description': 'Unmaintainable'}
+    }
 
-metrics = {
-    'complexity_distribution': {rank: 0 for rank in COMPLEXITY_RANKS}
-}
+    metrics = {
+        "files": {},
+        "overall_complexity": 0,
+        "average_complexity": 0,
+        "function_count": 0,
+        "class_count": 0,
+        "total_lines": 0,
+        'complexity_distribution': {
+            "A": 0,  # 1-5
+            "B": 0,  # 6-10
+            "C": 0,  # 11-20
             "D": 0,  # 21-30
             "E": 0,  # 31-40
             "F": 0,  # 41+
@@ -273,5 +281,3 @@ def identify_complex_hotspots(
     # Sort hotspots by complexity (descending)
     hotspots.sort(key=lambda x: x["complexity"], reverse=True)
     return hotspots
-"""
-

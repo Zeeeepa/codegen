@@ -557,14 +557,34 @@ Complexity Changes:
 
         return text
 
-def perform_detailed_analysis(self) -> Dict[str, Any]:
-    """Perform a detailed analysis of the differences between the two snapshots."""
-    results = self._initialize_analysis_results()
-    results.update(self._analyze_files_and_functions())
-    results.update(self._analyze_complexity())
-    results.update(self._analyze_risks())
-    results['recommendations'] = self._generate_recommendations(results)
-    return results
+    def perform_detailed_analysis(self) -> Dict[str, Any]:
+        """Perform a detailed analysis of the differences between the two snapshots."""
+        results = self._initialize_analysis_results()
+        results.update(self._analyze_files_and_functions())
+        results.update(self._analyze_complexity())
+        results.update(self._analyze_risks())
+        results['recommendations'] = self._generate_recommendations(results)
+        return results
+        
+    def _initialize_analysis_results(self) -> Dict[str, Any]:
+        """Initialize the analysis results dictionary."""
+        return {
+            "added_files": [],
+            "removed_files": [],
+            "modified_files": [],
+            "added_functions": [],
+            "removed_functions": [],
+            "modified_functions": [],
+            "complexity_increases": [],
+            "complexity_decreases": [],
+            "potential_issues": [],
+            "recommendations": [],
+        }
+
+    def _analyze_files_and_functions(self) -> Dict[str, Any]:
+        """Analyze files and functions."""
+        results = {
+            "added_files": [],
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],

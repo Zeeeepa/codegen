@@ -598,8 +598,6 @@ def analyze_commit_from_paths(
             metrics_diff=metrics_diff,
             files_added=files_added,
             files_modified=files_modified,
-            files_removed=files_removed,
+            files_removed=results["files_removed"],
             summary=None,  # Will be generated when get_summary is called
         )
-"""
-
