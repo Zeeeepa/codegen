@@ -542,7 +542,8 @@ class CodeIntegrityAnalyzer:
                                                 "filepath": func.filepath,
                                                 "line": call.line_range[0],
                                                 "message": (
-                                                    f"Function '{func.name}' is called with wrong type "
+                                                    "Function "
+                                                    f"'{func.name}' is called with wrong type "
                                                     f"for parameter '{param.name}'"
                                                 ),
                                             }
@@ -572,7 +573,8 @@ class CodeIntegrityAnalyzer:
                             callback_func = next((f for f in functions if f.name == arg.name), None)
                             if callback_func:
                                 # Check if the callback function has the right signature
-                                # This is a simplified check and would need more sophisticated\n                                # analysis in a real implementation
+                                # This is a simplified check and would need more sophisticated
+                                # analysis in a real implementation
                                 if len(callback_func.parameters) == 0:
                                     errors.append(
                                         {
