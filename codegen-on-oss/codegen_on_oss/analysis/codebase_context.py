@@ -493,7 +493,7 @@ class CodebaseContext:
         if not skip_uncache:
             uncache_all()
         # Step 0: Start the dependency manager and language engine if they exist
-        # Start the dependency manager. This may or may not run asynchronously, depending on the implementation
+        # Start the dependency manager. May run asynchronously, depending on implementation
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
             if not self.dependency_manager.ready() and not self.dependency_manager.error():
