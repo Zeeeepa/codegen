@@ -75,6 +75,15 @@ The package is composed of several modules:
   - Includes integration with external tools like ctrlplane, weave, probot, pkg.pr.new, and tldr
   - See [WSL2 Server README](./codegen_on_oss/analysis/WSL_README.md) for more details
 
+- `scripts`
+
+  - Contains scripts for analyzing codebases and repositories
+  - **analyze_code_integrity.py**: Analyze code integrity in a repository
+  - **compare_pr_codebase.py**: Compare a PR version of a codebase with the base branch
+  - **error_analyzer.py**: Analyze and report errors in a codebase
+  - **codebase_analyzer.py**: Analyze a codebase for structure, dependencies, complexity, and more
+  - See [Scripts README](./codegen_on_oss/scripts/README.md) for more details
+
 ______________________________________________________________________
 
 ## Getting Started
