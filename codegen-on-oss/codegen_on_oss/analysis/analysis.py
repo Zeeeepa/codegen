@@ -13,7 +13,6 @@ import subprocess
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-import networkx as nx
 import requests
 import uvicorn
 from codegen import Codebase
@@ -677,7 +676,7 @@ class CodeAnalyzer:
         """
         return CodebaseSnapshot(self.codebase, commit_sha)
 
-    def analyze_commit(
+    def analyze_commit_with_shas(
         self, base_commit: str, head_commit: str, github_token: Optional[str] = None
     ) -> Dict[str, Any]:
         """
