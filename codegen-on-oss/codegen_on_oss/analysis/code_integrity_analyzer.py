@@ -524,7 +524,7 @@ class CodeIntegrityAnalyzer:
             for param in func.parameters:
                 if param.annotation:
                     # Check if the parameter is used with the correct type
-                    # This is a simplified check and would need more sophisticated 
+                    # This is a simplified check and would need more sophisticated
                     # analysis in a real implementation
                     for call in func.call_sites:
                         if hasattr(call, "args") and len(call.args) > 0:
@@ -541,7 +541,7 @@ class CodeIntegrityAnalyzer:
                                                 "name": func.name,
                                                 "filepath": func.filepath,
                                                 "line": call.line_range[0],
-                                                "message": f"Function '{func.name}' is called with wrong type for parameter '{param.name}'",
+                                                "message": (\n                                                    f"Function "{func.name}" is called with wrong type "\n                                                    f"for parameter "{param.name}""\n                                                ),
                                             }
                                         )
 
@@ -579,7 +579,7 @@ class CodeIntegrityAnalyzer:
                                             "callback_name": callback_func.name,
                                             "filepath": func.filepath,
                                             "line": call.line_range[0],
-                                            "message": f"Function '{func.name}' passes '{callback_func.name}' as a callback, but it has no parameters",
+                                            "message": (\n                                                f"Function "{func.name}" passes "{callback_func.name}" as a callback, "\n                                                f"but it has no parameters"\n                                            ),
                                         }
                                     )
 
