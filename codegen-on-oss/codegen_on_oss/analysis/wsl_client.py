@@ -77,6 +77,7 @@ class WSLClient:
 
         Raises:
             RequestException: If the request fails
+            ValueError: If JSON decoding fails
         """
         url = f"{self.base_url}{endpoint}"
         headers = {**self.headers, **kwargs.pop("headers", {})}
@@ -100,7 +101,11 @@ class WSLClient:
             # Raise exception for error status codes
             response.raise_for_status()
             
-            return response.json()
+            try:
+                return response.json()
+            except ValueError as e:
+                logger.error(f"Failed to decode JSON response: {str(e)}")
+                raise ValueError(f"Failed to decode JSON response: {str(e)}") from e
         
         except RequestException as e:
             logger.error(f"Request to {url} failed: {str(e)}")

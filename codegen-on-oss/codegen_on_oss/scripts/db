@@ -1,7 +1,13 @@
 #! /bin/bash
 
-# Load environment variables from .env file
-source .env
+# Check if .env file exists
+if [ -f .env ]; then
+    # Load environment variables from .env file
+    source .env
+else
+    echo "Error: .env file not found"
+    exit 1
+fi
 
 # Connect to PostgreSQL using the environment variables
 PGPASSWORD=$POSTGRESQL_PASSWORD psql -h $POSTGRESQL_HOST -U ${POSTGRESQL_USER:-postgres} -d ${POSTGRESQL_DATABASE:-postgres}

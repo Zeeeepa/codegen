@@ -55,20 +55,28 @@ class CodebaseComparison:
 
         # Process added files
         for file_path in added_files:
+            # Use chunked processing for large files
+            content = self.head_snapshot.get_file_content(file_path)
+            line_count = self._count_lines_safely(content)
+            
             results[file_path] = {
                 "status": "added",
-                "content": self.head_snapshot.get_file_content(file_path),
-                "lines_added": len(self.head_snapshot.get_file_content(file_path).splitlines()),
+                "content": content if len(content) < 1024 * 1024 else f"Large file: {line_count} lines",
+                "lines_added": line_count,
                 "lines_removed": 0,
             }
 
         # Process removed files
         for file_path in removed_files:
+            # Use chunked processing for large files
+            content = self.base_snapshot.get_file_content(file_path)
+            line_count = self._count_lines_safely(content)
+            
             results[file_path] = {
                 "status": "removed",
-                "content": self.base_snapshot.get_file_content(file_path),
+                "content": content if len(content) < 1024 * 1024 else f"Large file: {line_count} lines",
                 "lines_added": 0,
-                "lines_removed": len(self.base_snapshot.get_file_content(file_path).splitlines()),
+                "lines_removed": line_count,
             }
 
         # Process modified files
@@ -80,27 +88,85 @@ class CodebaseComparison:
                 # File not modified
                 continue
 
-            # Calculate diff
-            diff = list(
-                difflib.unified_diff(
-                    base_content.splitlines(),
-                    head_content.splitlines(),
-                    lineterm="",
+            # Check file size before processing
+            if len(base_content) > 10 * 1024 * 1024 or len(head_content) > 10 * 1024 * 1024:
+                # For very large files, just report the size difference
+                base_lines = self._count_lines_safely(base_content)
+                head_lines = self._count_lines_safely(head_content)
+                lines_added = max(0, head_lines - base_lines)
+                lines_removed = max(0, base_lines - head_lines)
+                
+                results[file_path] = {
+                    "status": "modified",
+                    "diff": f"Large file: {base_lines} lines -> {head_lines} lines",
+                    "lines_added": lines_added,
+                    "lines_removed": lines_removed,
+                    "is_large_file": True,
+                }
+                continue
+
+            # For smaller files, calculate diff
+            try:
+                # Calculate diff using chunked processing
+                diff = list(
+                    difflib.unified_diff(
+                        base_content.splitlines(),
+                        head_content.splitlines(),
+                        lineterm="",
+                    )
                 )
-            )
 
-            # Count added and removed lines
-            lines_added = sum(1 for line in diff if line.startswith("+") and not line.startswith("+++"))
-            lines_removed = sum(1 for line in diff if line.startswith("-") and not line.startswith("---"))
+                # Count added and removed lines
+                lines_added = sum(1 for line in diff if line.startswith("+") and not line.startswith("+++"))
+                lines_removed = sum(1 for line in diff if line.startswith("-") and not line.startswith("---"))
 
-            results[file_path] = {
-                "status": "modified",
-                "diff": "\n".join(diff),
-                "lines_added": lines_added,
-                "lines_removed": lines_removed,
-            }
+                results[file_path] = {
+                    "status": "modified",
+                    "diff": "\n".join(diff) if len(diff) < 1000 else f"Large diff: {len(diff)} lines",
+                    "lines_added": lines_added,
+                    "lines_removed": lines_removed,
+                }
+            except MemoryError:
+                # Fallback for memory errors
+                logger.warning(f"Memory error processing diff for {file_path}, using size-based comparison")
+                base_lines = self._count_lines_safely(base_content)
+                head_lines = self._count_lines_safely(head_content)
+                lines_added = max(0, head_lines - base_lines)
+                lines_removed = max(0, base_lines - head_lines)
+                
+                results[file_path] = {
+                    "status": "modified",
+                    "diff": f"Large file: {base_lines} lines -> {head_lines} lines",
+                    "lines_added": lines_added,
+                    "lines_removed": lines_removed,
+                    "is_large_file": True,
+                }
 
         return results
+        
+    def _count_lines_safely(self, content: str) -> int:
+        """
+        Count lines in content safely, handling large files.
+        
+        Args:
+            content: File content
+            
+        Returns:
+            Number of lines
+        """
+        # For small files, use splitlines
+        if len(content) < 1024 * 1024:  # 1MB
+            return len(content.splitlines())
+        
+        # For large files, count newlines manually in chunks
+        line_count = 1  # Start with 1 for the last line that might not end with newline
+        chunk_size = 1024 * 1024  # 1MB chunks
+        
+        for i in range(0, len(content), chunk_size):
+            chunk = content[i:i + chunk_size]
+            line_count += chunk.count('\n')
+            
+        return line_count
 
     def compare_functions(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -457,4 +523,3 @@ class CodebaseComparison:
         # This is a placeholder - in a real implementation, you would
         # use the snapshot to get the class's attributes
         return []
-

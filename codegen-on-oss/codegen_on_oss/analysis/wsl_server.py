@@ -172,13 +172,20 @@ async def log_requests(request: Request, call_next):
     """Log all requests."""
     start_time = time.time()
     
+    # Filter sensitive headers
+    filtered_headers = dict(request.headers)
+    sensitive_headers = ["authorization", "x-api-key", "cookie", "token", "password"]
+    for header in sensitive_headers:
+        if header in filtered_headers:
+            filtered_headers[header] = "[REDACTED]"
+    
     # Log request
     logger.info(
         f"Request: {request.method} {request.url.path}",
         extra={
             "query_params": str(request.query_params),
             "client_host": request.client.host if request.client else "unknown",
-            "headers": dict(request.headers),
+            "headers": filtered_headers,
         },
     )
     
