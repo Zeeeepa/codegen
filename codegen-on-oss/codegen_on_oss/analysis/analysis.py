@@ -1549,7 +1549,7 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
         else:
             raise HTTPException(
                 status_code=500, detail=f"Error analyzing local commit: {error_message}"
-            )
+            ) from None
 
 
 if __name__ == "__main__":
