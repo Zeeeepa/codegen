@@ -1381,7 +1381,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
 
         if not request.repo_url:
             logger.error("Repository URL cannot be empty")
-            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None from None
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None
 
         codebase = Codebase.from_repo(request.repo_url)
         analyzer = CodeAnalyzer(codebase)
