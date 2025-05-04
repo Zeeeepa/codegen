@@ -10,7 +10,6 @@ import math
 import re
 from typing import Dict, List, Optional, Any
 
-import radon.metrics
 from radon.complexity import cc_visit
 from radon.metrics import h_visit
 
@@ -32,7 +31,6 @@ def calculate_cyclomatic_complexity(code: str) -> int:
         results = cc_visit(code)
         if not results:
             return 1  # Default complexity for empty code
-        
         # Return the maximum complexity of all functions/classes
         return max(item.complexity for item in results)
     except Exception:
@@ -55,32 +53,25 @@ def calculate_maintainability_index(code: str) -> float:
         h_stats = h_visit(code)
         if h_stats.total.N == 0:
             return 100  # Default for empty code
-        
         # Calculate cyclomatic complexity
         complexity = calculate_cyclomatic_complexity(code)
-        
         # Calculate lines of code
         loc = len(code.splitlines())
-        
         # Calculate maintainability index using radon's formula
         halstead_volume = h_stats.total.volume
-        
         # Avoid log of zero or negative values
         if halstead_volume <= 0:
             halstead_volume = 1
         if loc <= 0:
             loc = 1
-        
         # Calculate raw maintainability index
         raw_mi = (
             MI_PARAMETERS[0] * math.log(halstead_volume) +
             MI_PARAMETERS[1] * math.log(complexity) +
             MI_PARAMETERS[2] * math.log(loc)
         )
-        
         # Scale to 0-100
         mi = max(0, 100 - raw_mi / 171 * 100)
-        
         return round(mi, 2)
     except Exception:
         # If calculation fails, return a default value
@@ -99,7 +90,6 @@ def calculate_halstead_metrics(code: str) -> Dict[str, float]:
     """
     try:
         h_stats = h_visit(code)
-        
         # Extract metrics from h_stats
         return {
             "h1": h_stats.total.h1,  # Number of distinct operators
@@ -134,23 +124,18 @@ def calculate_line_metrics(code: str) -> Dict[str, int]:
         Dictionary with line metrics
     """
     lines = code.splitlines()
-    
     # Count different types of lines
     total_lines = len(lines)
     blank_lines = sum(1 for line in lines if not line.strip())
-    
     # Count comment lines
     comment_pattern = re.compile(r'^\s*(#|//|/\*|\*\s|/\*\*|\*/).*$')
     comment_lines = sum(1 for line in lines if comment_pattern.match(line))
-    
     # Calculate code lines
     code_lines = total_lines - blank_lines - comment_lines
-    
     # Calculate comment ratio
     comment_ratio = (
         round((comment_lines / total_lines * 100), 2) if total_lines > 0 else 0
     )
-    
     return {
         "total_lines": total_lines,
         "code_lines": code_lines,
@@ -173,7 +158,6 @@ def get_function_metrics(code: str) -> Dict[str, Any]:
     try:
         # Parse the code
         tree = ast.parse(code)
-        
         # Find all function definitions
         functions = []
         for node in ast.walk(tree):
@@ -181,13 +165,11 @@ def get_function_metrics(code: str) -> Dict[str, Any]:
                 # Get function code
                 func_lines = code.splitlines()[node.lineno-1:node.end_lineno]
                 func_code = "\n".join(func_lines)
-                
                 # Calculate metrics
                 complexity = calculate_cyclomatic_complexity(func_code)
                 maintainability = calculate_maintainability_index(func_code)
                 halstead = calculate_halstead_metrics(func_code)
                 line_metrics = calculate_line_metrics(func_code)
-                
                 functions.append({
                     "name": node.name,
                     "lineno": node.lineno,
@@ -197,7 +179,6 @@ def get_function_metrics(code: str) -> Dict[str, Any]:
                     "halstead": halstead,
                     "line_metrics": line_metrics,
                 })
-        
         return {
             "count": len(functions),
             "functions": functions,
@@ -242,7 +223,6 @@ def analyze_codebase_metrics(
         }
     else:
         filtered_files = files
-    
     # Initialize metrics
     metrics = {
         "files": {},
@@ -256,12 +236,10 @@ def analyze_codebase_metrics(
         "avg_maintainability": 0,
         "function_count": 0,
     }
-    
     # Analyze each file
     total_complexity = 0
     total_maintainability = 0
     total_functions = 0
-    
     for path, content in filtered_files.items():
         # Calculate metrics
         complexity = calculate_cyclomatic_complexity(content)
@@ -269,7 +247,6 @@ def analyze_codebase_metrics(
         halstead = calculate_halstead_metrics(content)
         line_metrics = calculate_line_metrics(content)
         function_metrics = get_function_metrics(content)
-        
         # Update file metrics
         metrics["files"][path] = {
             "complexity": complexity,
@@ -278,30 +255,27 @@ def analyze_codebase_metrics(
             "line_metrics": line_metrics,
             "function_metrics": function_metrics,
         }
-        
         # Update totals
         metrics["total_lines"] += line_metrics["total_lines"]
         metrics["code_lines"] += line_metrics["code_lines"]
         metrics["comment_lines"] += line_metrics["comment_lines"]
         metrics["blank_lines"] += line_metrics["blank_lines"]
         metrics["function_count"] += function_metrics["count"]
-        
         total_complexity += complexity
         total_maintainability += maintainability
         total_functions += function_metrics["count"]
-    
     # Calculate averages
     if filtered_files:
-        metrics["avg_complexity"] = round(total_complexity / len(filtered_files), 2)
+        metrics["avg_complexity"] = round(
+            total_complexity / len(filtered_files), 2
+        )
         metrics["avg_maintainability"] = round(
             total_maintainability / len(filtered_files), 2
         )
-    
     # Calculate overall comment ratio
     if metrics["total_lines"] > 0:
         metrics["comment_ratio"] = round(
             (metrics["comment_lines"] / metrics["total_lines"] * 100), 2
         )
-    
     return metrics
 

@@ -207,18 +207,12 @@ def generate_html_report(metrics: dict, repo_name: str) -> str:
         html.append(
             f"                <td>{file_metrics['maintainability']:.2f}</td>"
         )
-        html.append(
-            f"                <td>{file_metrics['line_metrics']['total_lines']}</td>"
-        )
-        html.append(
-            f"                <td>{file_metrics['line_metrics']['code_lines']}</td>"
-        )
-        html.append(
-            f"                <td>{file_metrics['line_metrics']['comment_lines']}</td>"
-        )
-        html.append(
-            f"                <td>{file_metrics['function_metrics']['count']}</td>"
-        )
+        line_metrics = file_metrics['line_metrics']
+        html.append(f"                <td>{line_metrics['total_lines']}</td>")
+        html.append(f"                <td>{line_metrics['code_lines']}</td>")
+        html.append(f"                <td>{line_metrics['comment_lines']}</td>")
+        func_count = file_metrics['function_metrics']['count']
+        html.append(f"                <td>{func_count}</td>")
         html.append("            </tr>")
 
     # HTML footer
