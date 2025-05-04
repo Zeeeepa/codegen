@@ -1,34 +1,21 @@
 """
-Analysis package for codegen-on-oss.
+Analysis Module
 
-This package provides various code analysis tools and utilities.
+This module provides functionality for code analysis, including complexity analysis,
+feature analysis, code integrity checks, and diff analysis.
 """
 
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.code_integrity_analyzer import (
-    CodeIntegrityAnalyzer,
-    compare_branches,
-    analyze_pr,
+from codegen_on_oss.analysis.consolidated_analyzer import (
+    AnalysisIssue,
+    AnalysisResult,
+    CodeAnalyzer,
 )
-from codegen_on_oss.analysis.code_integrity_main import analyze_code_integrity
-from codegen_on_oss.analysis.codebase_analysis import (
-    get_class_summary,
-    get_codebase_summary,
-    get_file_summary,
-    get_function_summary,
-    get_symbol_summary,
-)
+from codegen_on_oss.analysis.codebase_context import CodebaseContext
 
 __all__ = [
+    "AnalysisIssue",
+    "AnalysisResult",
     "CodeAnalyzer",
-    "CodeIntegrityAnalyzer",
-    "get_codebase_summary",
-    "get_file_summary",
-    "get_class_summary",
-    "get_function_summary",
-    "get_symbol_summary",
-    "analyze_code_integrity",
-    "compare_branches",
-    "analyze_pr",
+    "CodebaseContext",
 ]
 

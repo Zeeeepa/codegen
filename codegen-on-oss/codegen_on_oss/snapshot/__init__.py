@@ -1,9 +1,18 @@
 """
-Snapshot package for the codegen-on-oss system.
+Snapshot Module
 
-This package provides snapshot management for codebases.
+This module provides functionality for codebase snapshots, PR review, and PR tasks.
 """
 
-from codegen_on_oss.snapshot.enhanced_snapshot_manager import EnhancedSnapshotManager
+from codegen_on_oss.snapshot.consolidated_snapshot import (
+    CodebaseSnapshot,
+    PRReviewer,
+    PRTaskManager,
+)
 
-__all__ = ["EnhancedSnapshotManager"]
+__all__ = [
+    "CodebaseSnapshot",
+    "PRReviewer",
+    "PRTaskManager",
+]
+

@@ -14,6 +14,9 @@ from codegen_on_oss.api.rest import router as rest_router
 from codegen_on_oss.api.websocket_manager import websocket_manager
 from codegen_on_oss.database.connection import db_manager
 from codegen_on_oss.events.event_bus import event_bus
+from codegen_on_oss.analysis import CodeAnalyzer
+from codegen_on_oss.snapshot import CodebaseSnapshot, PRReviewer
+from codegen_on_oss.wsl import WSLClient
 
 logger = logging.getLogger(__name__)
 
