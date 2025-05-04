@@ -1381,7 +1381,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
 
         if not request.repo_url:
             logger.error("Repository URL cannot be empty")
-            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None from None
 
         codebase = Codebase.from_repo(request.repo_url)
         analyzer = CodeAnalyzer(codebase)
@@ -1402,7 +1402,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
         if isinstance(e, HTTPException):
             raise e
 
-        if "not found" in error_message.lower() or "does not exist" in error_message.lower():
+        if "repository not found" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Repository not found: {error_message}"
             ) from None
@@ -1417,7 +1417,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
         else:
             raise HTTPException(
                 status_code=500, detail=f"Error analyzing repository: {error_message}"
-            )
+            ) from None
 
 
 @app.post("/analyze_commit")
@@ -1430,11 +1430,11 @@ async def analyze_commit(request: CommitAnalysisRequest):
 
         if not request.repo_url:
             logger.error("Repository URL cannot be empty")
-            raise HTTPException(status_code=400, detail="Repository URL cannot be empty")
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None
 
         if not request.commit_hash:
             logger.error("Commit hash cannot be empty")
-            raise HTTPException(status_code=400, detail="Commit hash cannot be empty")
+            raise HTTPException(status_code=400, detail="Commit hash cannot be empty") from None
 
         result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
             repo_url=request.repo_url, commit_hash=request.commit_hash
@@ -1463,7 +1463,7 @@ async def analyze_commit(request: CommitAnalysisRequest):
         if isinstance(e, HTTPException):
             raise e
 
-        if "not found" in error_message.lower() or "does not exist" in error_message.lower():
+        if "repository not found" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Repository or commit not found: {error_message}"
             ) from None
@@ -1476,7 +1476,7 @@ async def analyze_commit(request: CommitAnalysisRequest):
                 status_code=408, detail=f"Request timeout: {error_message}"
             ) from None
         else:
-            raise HTTPException(status_code=500, detail=f"Error analyzing commit: {error_message}")
+            raise HTTPException(status_code=500, detail=f"Error analyzing commit: {error_message}") from None
 
 
 @app.post("/analyze_local_commit")
@@ -1491,11 +1491,11 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
 
         if not request.original_path:
             logger.error("Original path cannot be empty")
-            raise HTTPException(status_code=400, detail="Original path cannot be empty")
+            raise HTTPException(status_code=400, detail="Original path cannot be empty") from None
 
         if not request.commit_path:
             logger.error("Commit path cannot be empty")
-            raise HTTPException(status_code=400, detail="Commit path cannot be empty")
+            raise HTTPException(status_code=400, detail="Commit path cannot be empty") from None
 
         # Validate paths exist
         if not os.path.exists(request.original_path):
@@ -1535,7 +1535,7 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
         if isinstance(e, HTTPException):
             raise e
 
-        if "not found" in error_message.lower() or "does not exist" in error_message.lower():
+        if "path not found" in error_message.lower():
             raise HTTPException(
                 status_code=404, detail=f"Path not found: {error_message}"
             ) from None
