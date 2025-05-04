@@ -2,9 +2,6 @@ import logging
 import os
 from logging import getLogger
 
-from dotenv import load_dotenv
-from github import Github
-
 from codegen import CodeAgent, Codebase
 from codegen.configs.models.secrets import SecretsConfig
 from codegen.extensions.github.types.events.pull_request import (
@@ -16,6 +13,8 @@ from codegen.extensions.langchain.tools import (  # Github
     GithubCreatePRReviewCommentTool,
     GithubViewPRTool,
 )
+from dotenv import load_dotenv
+from github import Github
 
 load_dotenv()
 

@@ -7,22 +7,11 @@ and codebase analysis.
 
 import argparse
 import json
-import logging
-import os
-import subprocess
-import tempfile
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests
-from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
-from codegen_on_oss.outputs.base import OutputHandler
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot
 
 # Import from existing analysis modules
-from codegen import Codebase
 
 
 class ProjectManager:
@@ -198,25 +187,17 @@ def main():
         "--start-server", action="store_true", help="Start the enhanced analysis server"
     )
 
-    parser.add_argument(
-        "--register-project", type=str, help="Register a project with the server"
-    )
+    parser.add_argument("--register-project", type=str, help="Register a project with the server")
 
     parser.add_argument("--project-name", type=str, help="Name for the project")
 
-    parser.add_argument(
-        "--pr-validation", type=str, help="Repository URL for PR validation"
-    )
+    parser.add_argument("--pr-validation", type=str, help="Repository URL for PR validation")
 
     parser.add_argument("--pr-number", type=int, help="PR number for validation")
 
-    parser.add_argument(
-        "--analyze-feature", type=str, help="Repository URL for feature analysis"
-    )
+    parser.add_argument("--analyze-feature", type=str, help="Repository URL for feature analysis")
 
-    parser.add_argument(
-        "--feature-path", type=str, help="Path to the feature to analyze"
-    )
+    parser.add_argument("--feature-path", type=str, help="Path to the feature to analyze")
 
     args = parser.parse_args()
 
@@ -230,9 +211,7 @@ def main():
     if args.register_project:
         print(f"Registering project: {args.register_project}")
         project_manager = ProjectManager()
-        result = project_manager.register_project(
-            args.register_project, args.project_name
-        )
+        result = project_manager.register_project(args.register_project, args.project_name)
         print(json.dumps(result, indent=2))
 
     if args.pr_validation and args.pr_number:
@@ -254,9 +233,7 @@ def main():
 
         # Then analyze the feature
         feature_analyzer = FeatureAnalyzer()
-        result = feature_analyzer.analyze_feature(
-            project_result["project_id"], args.feature_path
-        )
+        result = feature_analyzer.analyze_feature(project_result["project_id"], args.feature_path)
         print(json.dumps(result, indent=2))
 
 

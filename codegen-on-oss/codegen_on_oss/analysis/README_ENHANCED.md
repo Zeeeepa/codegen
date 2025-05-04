@@ -132,19 +132,19 @@ The Enhanced Code Analysis Server is designed to be used as a backend service fo
 ### Example: PR Validation Workflow
 
 1. Register a project for analysis
-2. Set up a webhook to receive notifications
-3. When a PR is created or updated, analyze the PR
-4. Analyze specific features and functions in the PR
-5. Send the analysis results to the webhook
-6. Display the results in your frontend application
+1. Set up a webhook to receive notifications
+1. When a PR is created or updated, analyze the PR
+1. Analyze specific features and functions in the PR
+1. Send the analysis results to the webhook
+1. Display the results in your frontend application
 
 ### Example: Continuous Analysis
 
 1. Register a project for analysis
-2. Set up a webhook to receive notifications
-3. Periodically analyze the repository and its branches
-4. Send the analysis results to the webhook
-5. Display the results in your dashboard
+1. Set up a webhook to receive notifications
+1. Periodically analyze the repository and its branches
+1. Send the analysis results to the webhook
+1. Display the results in your dashboard
 
 ## Configuration
 
@@ -175,10 +175,10 @@ pytest codegen_on_oss/analysis/tests/test_server.py
 To add new features to the server:
 
 1. Add new request and response models in `server.py`
-2. Add new endpoints in `server.py`
-3. Add new analysis functionality in the appropriate module
-4. Update the documentation in `README_ENHANCED.md`
-5. Add tests for the new functionality
+1. Add new endpoints in `server.py`
+1. Add new analysis functionality in the appropriate module
+1. Update the documentation in `README_ENHANCED.md`
+1. Add tests for the new functionality
 
 ## License
 

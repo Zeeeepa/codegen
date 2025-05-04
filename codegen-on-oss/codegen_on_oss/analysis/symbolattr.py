@@ -2,8 +2,7 @@
 Module for attributing symbols to authors.
 """
 
-import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Union
 
 from codegen import Codebase
 from codegen.sdk.core.symbol import Symbol
@@ -24,11 +23,7 @@ def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int]]:
 
     # Get the line range for the symbol
     start_line = symbol.line_number
-    end_line = (
-        symbol.end_line_number
-        if hasattr(symbol, "end_line_number")
-        else start_line + 10
-    )
+    end_line = symbol.end_line_number if hasattr(symbol, "end_line_number") else start_line + 10
 
     # Use git blame to get the author information
     blame_info = _get_git_blame_info(file_path, start_line, end_line)
@@ -77,9 +72,7 @@ def get_file_attribution(
     return attribution
 
 
-def _get_git_blame_info(
-    file_path: str, start_line: int, end_line: int
-) -> List[Dict[str, str]]:
+def _get_git_blame_info(file_path: str, start_line: int, end_line: int) -> List[Dict[str, str]]:
     """
     Get git blame information for a file.
 
@@ -121,15 +114,11 @@ def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str
         author_counts[author] = author_counts.get(author, 0) + 1
 
     # Find the primary author (the one with the most lines)
-    primary_author = (
-        max(author_counts.items(), key=lambda x: x[1]) if author_counts else (None, 0)
-    )
+    primary_author = max(author_counts.items(), key=lambda x: x[1]) if author_counts else (None, 0)
 
     # Calculate the percentage of lines by the primary author
     total_lines = len(blame_info)
-    primary_percentage = (
-        (primary_author[1] / total_lines) * 100 if total_lines > 0 else 0
-    )
+    primary_percentage = (primary_author[1] / total_lines) * 100 if total_lines > 0 else 0
 
     return {
         "primary_author": primary_author[0],
@@ -139,9 +128,7 @@ def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str
     }
 
 
-def _get_author_breakdown(
-    blame_info: List[Dict[str, str]]
-) -> List[Dict[str, Union[str, int]]]:
+def _get_author_breakdown(blame_info: List[Dict[str, str]]) -> List[Dict[str, Union[str, int]]]:
     """
     Get a breakdown of lines by author.
 

@@ -49,9 +49,7 @@ def get_current_code_codebase(
     """Returns a Codebase for the code that is *currently running* (i.e. the Codegen repo)"""
     codegen_repo_path = get_graphsitter_repo_path()
     base_dir = get_codegen_codebase_base_path()
-    logger.info(
-        f"Creating codebase from repo at: {codegen_repo_path} with base_path {base_dir}"
-    )
+    logger.info(f"Creating codebase from repo at: {codegen_repo_path} with base_path {base_dir}")
 
     repo_config = RepoConfig.from_repo_path(codegen_repo_path)
     repo_config.respect_gitignore = False
@@ -82,9 +80,7 @@ def import_all_codegen_sdk_modules():
         # ignore braintrust_evaluator because it runs stuff on import
         if "__init__" in file.name or "braintrust_evaluator" in file.name:
             continue
-        module_name = "codegen.sdk." + str(relative_path).replace(
-            "/", "."
-        ).removesuffix(".py")
+        module_name = "codegen.sdk." + str(relative_path).replace("/", ".").removesuffix(".py")
         try:
             importlib.import_module(module_name)
         except Exception as e:

@@ -8,7 +8,6 @@ import argparse
 import os
 import subprocess
 import tempfile
-from typing import List
 
 
 class CommitExampleRunner:
@@ -150,9 +149,7 @@ class CommitExampleRunner:
         # The output is in the format "refs/remotes/origin/main"
         return result.stdout.strip().split("/")[-1]
 
-    def _checkout_commit(
-        self, repo_dir: str, commit_hash: str, target_dir: str
-    ) -> None:
+    def _checkout_commit(self, repo_dir: str, commit_hash: str, target_dir: str) -> None:
         """
         Checkout a specific commit to a directory.
 
@@ -178,9 +175,7 @@ class CommitExampleRunner:
             text=True,
         )
 
-    def _checkout_branch(
-        self, repo_dir: str, branch_name: str, target_dir: str
-    ) -> None:
+    def _checkout_branch(self, repo_dir: str, branch_name: str, target_dir: str) -> None:
         """
         Checkout a specific branch to a directory.
 

@@ -9,11 +9,12 @@ import os
 from contextlib import contextmanager
 from typing import Generator, Optional
 
-from codegen_on_oss.database.models import Base
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
+
+from codegen_on_oss.database.models import Base
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,7 @@ class DatabaseManager:
         Args:
             db_url: Database URL. If not provided, it will be read from the environment.
         """
-        self.db_url = db_url or os.environ.get(
-            "CODEGEN_DB_URL", "sqlite:///./codegen_analysis.db"
-        )
+        self.db_url = db_url or os.environ.get("CODEGEN_DB_URL", "sqlite:///./codegen_analysis.db")
         self.engine: Optional[Engine] = None
         self.Session = None
         self._initialize()
@@ -59,9 +58,7 @@ class DatabaseManager:
                 )
 
             # Create session factory
-            self.Session = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
+            self.Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
             logger.info(f"Database connection initialized: {self.db_url}")
         except Exception as e:

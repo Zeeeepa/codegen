@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from codegen import Codebase
@@ -132,9 +132,7 @@ def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
 
 
 def format_return_for_mdx(return_type: list[str], return_description: str) -> str:
-    description = (
-        sanitize_html_for_mdx(return_description) if return_description else ""
-    )
+    description = sanitize_html_for_mdx(return_description) if return_description else ""
     return_type_str = resolve_type_string(return_type[0])
 
     return f"""
@@ -200,9 +198,7 @@ def format_builtin_type_string(type_string: str) -> str:
 def span_type_string_by_pipe(type_string: str) -> str:
     if "|" in type_string:
         type_strings = type_string.split("|")
-        return " | ".join(
-            [f"<span>{type_str.strip()}</span>" for type_str in type_strings]
-        )
+        return " | ".join([f"<span>{type_str.strip()}</span>" for type_str in type_strings])
     return type_string
 
 

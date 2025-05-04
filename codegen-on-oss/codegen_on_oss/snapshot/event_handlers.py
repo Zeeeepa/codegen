@@ -1,26 +1,23 @@
-import json
 import logging
 import os
 import tempfile
-from datetime import datetime
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal
 
 import modal
 from classy_fastapi import Routable, post
-
-# Import analysis modules
-from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
-from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from pr_tasks import lint_for_dev_import_violations
-
 from codegen.agents.code_agent import CodeAgent
 from codegen.extensions.events.codegen_app import CodegenApp
 from codegen.extensions.events.modal.base import CodebaseEventsApp, EventRouterMixin
 from codegen.extensions.github.types.pull_request import PullRequestLabeledEvent
 from codegen.extensions.linear.types import LinearEvent
 from codegen.extensions.slack.types import SlackEvent
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from pr_tasks import lint_for_dev_import_violations
+
+# Import analysis modules
+from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
+from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
 
 load_dotenv(".env")
 
@@ -108,9 +105,7 @@ class CustomEventHandlersAPI(CodebaseEventsApp):
             logger.info(f"PR head sha: {event.pull_request.head.sha}")
 
             codebase = cg.get_codebase()
-            logger.info(
-                f"Codebase: {codebase.name} codebase.repo: {codebase.repo_path}"
-            )
+            logger.info(f"Codebase: {codebase.name} codebase.repo: {codebase.repo_path}")
 
             # =====[ Check out commit ]=====
             logger.info("> Checking out commit")
@@ -133,9 +128,7 @@ class CustomEventHandlersAPI(CodebaseEventsApp):
                     event.number,
                     post_comment=True,
                 )
-                logger.info(
-                    f"> Analysis complete: {analysis_results['is_properly_implemented']}"
-                )
+                logger.info(f"> Analysis complete: {analysis_results['is_properly_implemented']}")
 
                 # Post a message to Slack with the analysis results
                 if "SLACK_CHANNEL" in os.environ:
@@ -180,9 +173,7 @@ class CustomEventHandlersAPI(CodebaseEventsApp):
                 logger.info(f"PR #{event.number} was merged")
 
                 codebase = cg.get_codebase()
-                logger.info(
-                    f"Codebase: {codebase.name} codebase.repo: {codebase.repo_path}"
-                )
+                logger.info(f"Codebase: {codebase.name} codebase.repo: {codebase.repo_path}")
 
                 # Check out the base branch (usually main or master)
                 base_branch = event.pull_request.base.ref
@@ -206,9 +197,7 @@ class WebhookEventRouterAPI(EventRouterMixin, Routable):
     snapshot_index_id: str = SNAPSHOT_DICT_ID
 
     def get_event_handler_cls(self):
-        modal_cls = modal.Cls.from_name(
-            app_name="Events", name="CustomEventHandlersAPI"
-        )
+        modal_cls = modal.Cls.from_name(app_name="Events", name="CustomEventHandlersAPI")
         return modal_cls
 
     @post("/{org}/{repo}/{provider}/events")
@@ -238,15 +227,11 @@ class WebhookEventRouterAPI(EventRouterMixin, Routable):
     secrets=[modal.Secret.from_dotenv(".env")],
 )
 def refresh_repository_snapshots():
-    WebhookEventRouterAPI().refresh_repository_snapshots(
-        snapshot_index_id=SNAPSHOT_DICT_ID
-    )
+    WebhookEventRouterAPI().refresh_repository_snapshots(snapshot_index_id=SNAPSHOT_DICT_ID)
 
 
 # Add a new endpoint to analyze a PR
-@codegen_events_app.function(
-    image=base_image, secrets=[modal.Secret.from_dotenv(".env")]
-)
+@codegen_events_app.function(image=base_image, secrets=[modal.Secret.from_dotenv(".env")])
 @modal.web_endpoint(method="POST")
 def analyze_pr(payload: Dict[str, Any]):
     """
@@ -288,9 +273,7 @@ def analyze_pr(payload: Dict[str, Any]):
 
 
 # Add a new endpoint to analyze a commit
-@codegen_events_app.function(
-    image=base_image, secrets=[modal.Secret.from_dotenv(".env")]
-)
+@codegen_events_app.function(image=base_image, secrets=[modal.Secret.from_dotenv(".env")])
 @modal.web_endpoint(method="POST")
 def analyze_commit(payload: Dict[str, Any]):
     """
@@ -310,9 +293,7 @@ def analyze_commit(payload: Dict[str, Any]):
         github_token = payload.get("github_token", os.environ.get("GITHUB_TOKEN"))
 
         if not repo_url or not base_commit or not head_commit:
-            return {
-                "error": "Missing required parameters: repo_url, base_commit, and head_commit"
-            }
+            return {"error": "Missing required parameters: repo_url, base_commit, and head_commit"}
 
         # Create a SWE harness agent
         snapshot_dir = tempfile.mkdtemp(prefix="commit_analysis_")

@@ -6,6 +6,7 @@ The **Codegen on OSS** package provides a modular pipeline that:
 - **Parses repositories** using the codegen tool.
 - **Profiles performance** and logs metrics for each parsing run.
 - **Logs errors** to help pinpoint parsing failures or performance bottlenecks.
+- **Provides a WSL2 server backend** for code validation, repository comparison, and PR analysis.
 
 ______________________________________________________________________
 
@@ -66,6 +67,13 @@ The package is composed of several modules:
   - Initializes a `Codebase` (from the codegen tool).
   - Runs post-initialization validation.
   - Integrates with the `MetricsProfiler` to log measurements at key steps.
+
+- `analysis`
+
+  - Contains modules for analyzing code repositories and commits
+  - Provides a WSL2 server backend for code validation, repository comparison, and PR analysis
+  - Includes integration with external tools like ctrlplane, weave, probot, pkg.pr.new, and tldr
+  - See [WSL2 Server README](./codegen_on_oss/analysis/WSL_README.md) for more details
 
 ______________________________________________________________________
 

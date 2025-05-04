@@ -2,11 +2,10 @@ import logging
 
 import modal
 import networkx as nx
-from dotenv import load_dotenv
-
 from codegen import Codebase, CodegenApp
 from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent
 from codegen.extensions.tools.github.create_pr_comment import create_pr_comment
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -48,9 +47,7 @@ def find_import_cycles(G):
 
     for i, cycle in enumerate(cycles, 1):
         print(f"\nCycle #{i}: Size {len(cycle)} files")
-        print(
-            f"Total number of imports in cycle: {G.subgraph(cycle).number_of_edges()}"
-        )
+        print(f"Total number of imports in cycle: {G.subgraph(cycle).number_of_edges()}")
 
         print("\nFiles in this cycle:")
         for file in cycle:
@@ -72,12 +69,8 @@ def find_problematic_import_loops(G, cycles):
             for to_file in scc:
                 if G.has_edge(from_file, to_file):
                     edges = G.get_edge_data(from_file, to_file)
-                    dynamic_count = sum(
-                        1 for e in edges.values() if e["color"] == "red"
-                    )
-                    static_count = sum(
-                        1 for e in edges.values() if e["color"] == "black"
-                    )
+                    dynamic_count = sum(1 for e in edges.values() if e["color"] == "red")
+                    static_count = sum(1 for e in edges.values() if e["color"] == "black")
 
                     if dynamic_count > 0 and static_count > 0:
                         mixed_imports[(from_file, to_file)] = {
@@ -87,29 +80,27 @@ def find_problematic_import_loops(G, cycles):
                         }
 
         if mixed_imports:
-            problematic_cycles.append(
-                {"files": scc, "mixed_imports": mixed_imports, "index": i}
-            )
+            problematic_cycles.append({"files": scc, "mixed_imports": mixed_imports, "index": i})
 
-    print(
-        f"Found {len(problematic_cycles)} cycles with potentially problematic imports."
-    )
+    print(f"Found {len(problematic_cycles)} cycles with potentially problematic imports.")
 
+    result = ""
     for i, cycle in enumerate(problematic_cycles):
-        print(
-            f"\n⚠️ Problematic Cycle #{i + 1} (Index {cycle['index']}): Size {len(cycle['files'])} files"
+        result += (
+            f"\n⚠️ Problematic Cycle #{i + 1} (Index {cycle['index']}): "
+            f"Size {len(cycle['files'])} files"
         )
-        print("\nFiles in cycle:")
+        result += "\n  Files in cycle:"
         for file in cycle["files"]:
-            print(f"  - {file}")
-        print("\nMixed imports:")
+            result += f"\n  - {file}"
+        result += "\n  Mixed imports:"
         for (from_file, to_file), imports in cycle["mixed_imports"].items():
-            print(f"\n  From: {from_file}")
-            print(f"  To:   {to_file}")
-            print(f"  Static imports: {imports['static']}")
-            print(f"  Dynamic imports: {imports['dynamic']}")
+            result += f"\n    From: `{from_file}`"
+            result += f"\n    To:   `{to_file}`"
+            result += f"\n    - Static imports: {imports['static']}"
+            result += f"\n    - Dynamic imports: {imports['dynamic']}"
 
-    return problematic_cycles
+    return result
 
 
 @cg.github.event("pull_request:labeled")
@@ -130,13 +121,7 @@ def handle_pr(event: PullRequestLabeledEvent):
         message.append(
             "Cycles with mixed static and dynamic imports, which might recquire attention."
         )
-        for i, cycle in enumerate(problematic_loops, 1):
-            message.append(f"\n#### Problematic Cycle {i}")
-            for (from_file, to_file), imports in cycle["mixed_imports"].items():
-                message.append(f"\nFrom: `{from_file}`")
-                message.append(f"To: `{to_file}`")
-                message.append(f"- Static imports: {imports['static']}")
-                message.append(f"- Dynamic imports: {imports['dynamic']}")
+        message.append(problematic_loops)
     else:
         message.append("\nNo problematic import cycles found! 🎉")
 
