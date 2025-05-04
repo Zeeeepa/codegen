@@ -210,12 +210,12 @@ class CodeIntegrityAnalyzer:
 
     # Default thresholds for code quality metrics
     DEFAULT_CONFIG = {
-        "max_function_parameters": 7,
-        "max_function_returns": 5,
-        "max_class_methods": 20,
-        "max_class_attributes": 15,
-        "max_function_complexity": 15,
-        "max_line_length": 100,
+        "max_function_parameters": "7",
+        "max_function_returns": "5",
+        "max_class_methods": "20",
+        "max_class_attributes": "15",
+        "max_function_complexity": "15",
+        "max_line_length": "100",
         "require_docstrings": True,
         "require_type_hints": False,
         "ignore_patterns": [r"__pycache__", r"\.git", r"\.venv", r"\.env"],
@@ -394,7 +394,8 @@ class CodeIntegrityAnalyzer:
                     )
 
             # Check for too many parameters
-            if len(func.parameters) > self.config["max_function_parameters"]:  # Arbitrary threshold
+            max_params = int(str(self.config["max_function_parameters"]))
+            if len(func.parameters) > max_params:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "function_error",
@@ -402,15 +403,13 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many parameters "
-                        f"({len(func.parameters)})",
+                        "message": f"Function '{func.name}' has too many parameters ({len(func.parameters)} > {max_params})"
                     }
                 )
 
             # Check for too many return statements
-            if (
-                len(func.return_statements) > self.config["max_function_returns"]
-            ):  # Arbitrary threshold
+            max_returns = int(str(self.config["max_function_returns"]))
+            if len(func.return_statements) > max_returns:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "function_error",
@@ -418,8 +417,7 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has too many return statements "
-                        f"({len(func.return_statements)})",
+                        "message": f"Function '{func.name}' has too many return statements ({len(func.return_statements)} > {max_returns})",
                     }
                 )
 
@@ -465,7 +463,8 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many methods
-            if len(cls.methods) > self.config["max_class_methods"]:  # Arbitrary threshold
+            max_methods = int(str(self.config["max_class_methods"]))
+            if len(cls.methods) > max_methods:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "class_error",
@@ -473,12 +472,13 @@ class CodeIntegrityAnalyzer:
                         "name": cls.name,
                         "filepath": cls.filepath,
                         "line": cls.line_range[0],
-                        "message": f"Class '{cls.name}' has too many methods ({len(cls.methods)})",
+                        "message": f"Class '{cls.name}' has too many methods ({len(cls.methods)} > {max_methods})",
                     }
                 )
 
             # Check for too many attributes
-            if len(cls.attributes) > self.config["max_class_attributes"]:  # Arbitrary threshold
+            max_attributes = int(str(self.config["max_class_attributes"]))
+            if len(cls.attributes) > max_attributes:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "class_error",
@@ -486,9 +486,7 @@ class CodeIntegrityAnalyzer:
                         "name": cls.name,
                         "filepath": cls.filepath,
                         "line": cls.line_range[0],
-                        "message": (
-                            f"Class '{cls.name}' has too many attributes ({len(cls.attributes)})"
-                        ),
+                        "message": f"Class '{cls.name}' has too many attributes ({len(cls.attributes)} > {max_attributes})",
                     }
                 )
 
@@ -664,7 +662,8 @@ class CodeIntegrityAnalyzer:
                             complexity += 1
 
             # Check if complexity exceeds threshold
-            if complexity > self.config["max_function_complexity"]:
+            max_complexity = int(str(self.config["max_function_complexity"]))
+            if complexity > max_complexity:
                 errors.append(
                     {
                         "type": "complexity_error",
@@ -672,8 +671,7 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has high cyclomatic complexity "
-                        f"({complexity})",
+                        "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity} > {max_complexity})",
                         "complexity": complexity,
                         "severity": self.config["severity_levels"]["high_complexity"],
                     }

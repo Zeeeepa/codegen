@@ -602,6 +602,29 @@ class CodeAnalyzer:
         return analyzer.analyze_commit()
 
     @classmethod
+    def analyze_commit_from_repo_and_commit(
+        cls, repo_url: str, commit_hash: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze a commit by comparing a repository at two different commits.
+
+        Args:
+            repo_url: URL of the repository
+            commit_hash: Hash of the commit to analyze
+
+        Returns:
+            A dictionary containing the analysis results
+        """
+        # Create a CommitAnalyzer instance from repo and commit
+        analyzer = CommitAnalyzer.from_repo_and_commit(repo_url, commit_hash)
+
+        # Analyze the commit
+        result = analyzer.analyze_commit()
+        
+        # Convert CommitAnalysisResult to dictionary
+        return result.to_dict()
+
+    @classmethod
     def analyze_commit_from_paths(
         cls, original_path: str, commit_path: str
     ) -> CommitAnalysisResult:
@@ -639,7 +662,10 @@ class CodeAnalyzer:
         analyzer = CommitAnalyzer.from_repo_and_commit(repo_url, commit_hash)
 
         # Analyze the commit
-        return analyzer.analyze_commit()
+        result = analyzer.analyze_commit()
+        
+        # Convert CommitAnalysisResult to dictionary
+        return result.to_dict()
 
     def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:
         """
@@ -697,7 +723,10 @@ class CodeAnalyzer:
         commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
 
         # Analyze the commit
-        return commit_analyzer.analyze_commit(self.codebase.repo_path, base_commit, head_commit)
+        result = commit_analyzer.analyze_commit(self.codebase.repo_path, base_commit, head_commit)
+        
+        # Convert CommitAnalysisResult to dictionary
+        return result.to_dict()
 
     def analyze_pull_request(
         self, pr_number: int, github_token: Optional[str] = None
