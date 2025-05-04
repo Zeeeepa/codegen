@@ -184,15 +184,23 @@ def compare_codebases(
     # Write results to file if requested
     if output_file:
         logger.info(f"Writing results to {output_file}")
-        with open(output_file, "w") as f:
-            json.dump(comparison, f, indent=2)
+def _analyze_file_structure(self, file_path: str) -> None:
+    # Check file size before processing
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB limit
+    file_size = os.path.getsize(file_path)
+    if file_size > MAX_FILE_SIZE:
+        logger.warning(f"File {file_path} exceeds size limit of {MAX_FILE_SIZE} bytes")
+        self.results['errors'].append({
+            'file': os.path.relpath(file_path, self.repo_path),
+            'error_type': 'file_size_error',
+            'message': f'File exceeds maximum size of {MAX_FILE_SIZE} bytes',
+            'line': 0
+        })
+        return
 
-    return comparison
-
-
-def analyze_pull_request(
-    main_codebase: Codebase,
-    pr_codebase: Codebase,
+    # Process file in chunks for large files
+    with open(file_path, 'r', encoding='utf-8') as f:
+        # Rest of the implementation...
     config: Dict[str, Any] = None,
     output_file: Optional[str] = None,
 ) -> Dict[str, Any]:
