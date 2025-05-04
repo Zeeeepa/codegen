@@ -10,7 +10,7 @@ This module provides functionality to analyze code integrity, including:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple, Set, Union
+from typing import Dict, List, Any, Optional, Tuple, Set, Union, cast
 import difflib
 import re
 import ast
@@ -151,12 +151,6 @@ class CodeIntegrityAnalyzer:
     """
     Analyzer for code integrity issues.
     
-    This class provides methods for analyzing code integrity issues, including:
-    - Finding all functions and classes
-    - Identifying errors in functions and classes
-    - Detecting improper parameter usage
-    - Finding incorrect function callback points
-    
     Attributes:
         codebase (Codebase): The codebase to analyze
         errors (List): List of errors found during analysis
@@ -203,7 +197,7 @@ class CodeIntegrityAnalyzer:
         
         Args:
             codebase: The codebase to analyze
-            config: Optional configuration options to override defaults
+            config: Configuration options for the analyzer
         """
         self.codebase = codebase
         self.errors: List[Dict[str, Any]] = []
@@ -338,7 +332,7 @@ class CodeIntegrityAnalyzer:
                     })
             
             # Check for too many parameters
-            if len(func.parameters) > self.config["max_function_parameters"]:  # Arbitrary threshold
+            if len(func.parameters) > cast(int, self.config["max_function_parameters"]):  # Arbitrary threshold
                 errors.append({
                     "type": "function_error",
                     "error_type": "too_many_parameters",
@@ -349,7 +343,7 @@ class CodeIntegrityAnalyzer:
                 })
             
             # Check for too many return statements
-            if len(func.return_statements) > self.config["max_function_returns"]:  # Arbitrary threshold
+            if len(func.return_statements) > cast(int, self.config["max_function_returns"]):  # Arbitrary threshold
                 errors.append({
                     "type": "function_error",
                     "error_type": "too_many_returns",
@@ -397,7 +391,7 @@ class CodeIntegrityAnalyzer:
                 })
             
             # Check for too many methods
-            if len(cls.methods) > self.config["max_class_methods"]:  # Arbitrary threshold
+            if len(cls.methods) > cast(int, self.config["max_class_methods"]):  # Arbitrary threshold
                 errors.append({
                     "type": "class_error",
                     "error_type": "too_many_methods",
@@ -408,7 +402,7 @@ class CodeIntegrityAnalyzer:
                 })
             
             # Check for too many attributes
-            if len(cls.attributes) > self.config["max_class_attributes"]:  # Arbitrary threshold
+            if len(cls.attributes) > cast(int, self.config["max_class_attributes"]):  # Arbitrary threshold
                 errors.append({
                     "type": "class_error",
                     "error_type": "too_many_attributes",
@@ -568,7 +562,7 @@ class CodeIntegrityAnalyzer:
                             complexity += 1
             
             # Check if complexity exceeds threshold
-            if complexity > self.config["max_function_complexity"]:
+            if complexity > cast(int, self.config["max_function_complexity"]):
                 errors.append({
                     "type": "complexity_error",
                     "error_type": "high_complexity",
@@ -673,37 +667,39 @@ class CodeIntegrityAnalyzer:
         """
         errors = []
         
-        # This is a simplified implementation
-        # In a real implementation, this would use a more sophisticated algorithm
-        # like suffix trees or rolling hashes
-        
-        # Extract code blocks (e.g., functions, methods) from files
+        # Extract code blocks (functions and methods)
         code_blocks = []
         for file in files:
             # Skip files that match ignore patterns
             if any(re.search(pattern, file.filepath) for pattern in self.config["ignore_patterns"]):
                 continue
-                
-            # Add functions from this file
+            
+            # Add functions
             for func in file.functions:
-                if func.body:
+                code_blocks.append({
+                    "name": func.name,
+                    "type": "function",
+                    "filepath": func.filepath,
+                    "line": func.line_range[0],
+                    "code": func.body_text if hasattr(func, "body_text") else ""
+                })
+            
+            # Add methods from classes
+            for cls in file.classes:
+                for method in cls.methods:
                     code_blocks.append({
-                        "name": func.name,
-                        "filepath": file.filepath,
-                        "line": func.line_range[0],
-                        "code": "\n".join(func.body) if isinstance(func.body, list) else str(func.body)
+                        "name": f"{cls.name}.{method.name}",
+                        "type": "method",
+                        "filepath": method.filepath,
+                        "line": method.line_range[0],
+                        "code": method.body_text if hasattr(method, "body_text") else ""
                     })
         
         # Compare code blocks for similarity
         for i, block1 in enumerate(code_blocks):
-            for j in range(i + 1, len(code_blocks)):
-                block2 = code_blocks[j]
-                
-                # Skip comparing blocks from the same file with similar names
-                # (e.g., overloaded methods or test functions)
-                if block1["filepath"] == block2["filepath"] and (
-                    block1["name"] in block2["name"] or block2["name"] in block1["name"]
-                ):
+            for j, block2 in enumerate(code_blocks[i+1:], i+1):
+                # Skip if blocks are too small
+                if len(block1["code"]) < 10 or len(block2["code"]) < 10:
                     continue
                 
                 # Calculate similarity ratio
@@ -717,9 +713,7 @@ class CodeIntegrityAnalyzer:
                         "name": f"{block1['name']} and {block2['name']}",
                         "filepath": block1["filepath"],
                         "line": block1["line"],
-                        "message": f"Duplicate code detected between '{block1['name']}' in {block1['filepath']} and '{block2['name']}' in {block2['filepath']} (similarity: {similarity:.2f})",
-                        "duplicate_filepath": block2["filepath"],
-                        "duplicate_line": block2["line"],
+                        "message": f"Duplicate code detected between {block1['name']} and {block2['name']} (similarity: {similarity:.2f})",
                         "similarity": similarity,
                         "severity": self.config["severity_levels"]["duplicate_code"]
                     })
