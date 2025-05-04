@@ -497,7 +497,7 @@ class CodebaseContext:
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
             if not self.dependency_manager.ready() and not self.dependency_manager.error():
-                # TODO: We do not reparse dependencies during syncs as it is expensive. We should probably add a flag for this
+                # TODO: We do not reparse dependencies during syncs as it is expensive. Add a flag for this
                 logger.info("> Starting dependency manager")
                 self.dependency_manager.start(async_start=False)
 
