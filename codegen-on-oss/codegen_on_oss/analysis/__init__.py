@@ -4,8 +4,6 @@ Analysis package for codegen-on-oss.
 This package provides various code analysis tools and utilities.
 """
 
-from typing import List, Optional
-
 from codegen.sdk.core.codebase import Codebase
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
 from codegen_on_oss.analysis.code_integrity_analyzer import (
