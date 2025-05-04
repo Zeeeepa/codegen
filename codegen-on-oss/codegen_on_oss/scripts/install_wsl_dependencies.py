@@ -272,8 +272,10 @@ def install_python_dependencies(distro: str, requirements_file: Optional[str] = 
                     "--",
                     "bash",
                     "-c",
-                    ("source /home/codegen-venv/bin/activate && "
-                     "pip install fastapi uvicorn psutil"),
+                    (
+                        "source /home/codegen-venv/bin/activate && "
+                        "pip install fastapi uvicorn psutil"
+                    ),
                 ],
                 check=True,
             )
