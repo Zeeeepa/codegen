@@ -69,7 +69,45 @@ class WSLClient:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
-
+        
+    def __del__(self):
+        """
+        Clean up resources when the client is destroyed.
+        """
+        try:
+            if hasattr(self, 'session'):
+                self.session.close()
+                logger.debug("WSLClient session closed")
+        except Exception as e:
+            logger.warning(f"Error closing WSLClient session: {str(e)}")
+            
+    def __enter__(self):
+        """
+        Support for context manager protocol.
+        """
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Clean up resources when exiting context manager.
+        """
+        try:
+            self.session.close()
+            logger.debug("WSLClient session closed")
+        except Exception as e:
+            logger.warning(f"Error closing WSLClient session: {str(e)}")
+            
+    def close(self):
+        """
+        Explicitly close the session.
+        """
+        try:
+            self.session.close()
+            logger.debug("WSLClient session closed")
+        except Exception as e:
+            logger.warning(f"Error closing WSLClient session: {str(e)}")
+            raise WSLClientError(f"Error closing session: {str(e)}")
+    
     def _handle_response_error(self, response: requests.Response, operation: str) -> None:
         """
         Handle error responses from the server.

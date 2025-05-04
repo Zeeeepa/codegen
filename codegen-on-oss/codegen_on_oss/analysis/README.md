@@ -12,6 +12,7 @@ The Analysis Module integrates various specialized analysis components into a co
 - Comprehensive code quality metrics
 - Commit analysis and comparison
 - Repository and PR/Branch/Commit comparison
+- WSL2 server for code validation and analysis
 
 ## Components
 
@@ -31,7 +32,9 @@ The module consists of the following key components:
 
 - **Documentation Tools**: Functions for generating documentation for code
 
-- **Server**: FastAPI server for analyzing repositories, commits, branches, and PRs
+- **WSL2 Server**: FastAPI server for analyzing repositories, commits, branches, and PRs in WSL2
+
+- **WSL2 Client**: Client for interacting with the WSL2 server
 
 ## Usage
 
@@ -134,6 +137,109 @@ print(results)
 # Analyze and comment on a PR
 results = swe_agent.analyze_and_comment_on_pr("owner/repo", pr_number=123, post_comment=True)
 print(results)
+```
+
+### WSL2 Server
+
+The module provides a FastAPI server for analyzing repositories, commits, branches, and PRs in WSL2:
+
+```python
+from codegen_on_oss.analysis.wsl_server import run_server
+
+# Start the server
+run_server(host="0.0.0.0", port=8000)
+```
+
+The WSL2 server provides the following endpoints:
+
+- `/validate`: Validate a codebase
+- `/compare`: Compare two repositories or branches
+- `/analyze-pr`: Analyze a pull request
+- `/health`: Check the health of the server
+- `/metrics`: Get server metrics
+
+#### Environment Variables
+
+The WSL2 server supports the following environment variables:
+
+- `CODEGEN_API_KEY`: API key for authentication
+- `RATE_LIMIT`: Maximum number of requests per minute (default: 100)
+- `RATE_LIMIT_STORAGE`: Storage for rate limiting, either "memory" or "redis" (default: "memory")
+- `REDIS_URL`: URL for Redis connection (default: "redis://localhost:6379/0")
+- `DEBUG`: Enable debug mode (default: false)
+
+#### Rate Limiting
+
+The WSL2 server includes rate limiting to prevent resource exhaustion. By default, it uses in-memory storage for rate limiting, but it can also use Redis for distributed deployments.
+
+To use Redis for rate limiting:
+
+```bash
+export RATE_LIMIT_STORAGE=redis
+export REDIS_URL=redis://your-redis-server:6379/0
+```
+
+### WSL2 Client
+
+The module provides a client for interacting with the WSL2 server:
+
+```python
+from codegen_on_oss.analysis.wsl_client import WSLClient
+
+# Create a client
+client = WSLClient(base_url="http://localhost:8000", api_key="your_api_key", timeout=60, max_retries=3)
+
+# Check the health of the server
+health = client.health_check()
+print(health)
+
+# Validate a codebase
+validation_results = client.validate_codebase(
+    repo_url="https://github.com/owner/repo",
+    branch="main",
+    categories=["code_quality", "security", "maintainability"],
+    github_token="your_github_token"
+)
+print(validation_results)
+
+# Compare repositories
+comparison_results = client.compare_repositories(
+    base_repo_url="https://github.com/owner/repo",
+    head_repo_url="https://github.com/owner/repo",
+    base_branch="main",
+    head_branch="feature",
+    github_token="your_github_token"
+)
+print(comparison_results)
+
+# Analyze a PR
+pr_results = client.analyze_pr(
+    repo_url="https://github.com/owner/repo",
+    pr_number=123,
+    github_token="your_github_token",
+    detailed=True,
+    post_comment=False
+)
+print(pr_results)
+
+# Get server metrics
+metrics = client.get_server_metrics()
+print(metrics)
+
+# Format results as Markdown
+markdown = client.format_validation_results_markdown(validation_results)
+print(markdown)
+
+# Close the client when done
+client.close()
+```
+
+You can also use the client as a context manager:
+
+```python
+with WSLClient(base_url="http://localhost:8000") as client:
+    health = client.health_check()
+    print(health)
 ```
 
 ### Web API
@@ -241,6 +347,17 @@ Then you can make POST requests to `/analyze_repo` with a JSON body:
 - Create and compare codebase snapshots
 - Analyze differences between snapshots
 - Track changes over time
+
+### WSL2 Server Features
+
+- Validate codebases for code quality, security, and maintainability
+- Compare repositories and branches
+- Analyze pull requests
+- Rate limiting to prevent resource exhaustion
+- Comprehensive error handling
+- Performance monitoring
+- Enhanced codebase analysis with semantic code comparison
+- Detection of renamed functions and classes
 
 ## Integration with Metrics
 

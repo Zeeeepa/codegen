@@ -198,25 +198,35 @@ class DiffAnalyzer:
         modified_start = modified_metrics["line_start"]
         modified_end = modified_metrics["line_end"]
         
-        # Get the file content
+        # Find the original file in the codebase
         original_file = None
-        for file in self.original.codebase.files:
-            if file.filepath == original_filepath:
-                original_file = file
-                break
+        try:
+            original_file = next(
+                file for file in self.original.codebase.files 
+                if file.filepath == original_filepath
+            )
+        except StopIteration:
+            logger.warning(f"Original file {original_filepath} not found in codebase")
+            return False
                 
+        # Find the modified file in the codebase
         modified_file = None
-        for file in self.modified.codebase.files:
-            if file.filepath == modified_filepath:
-                modified_file = file
-                break
-                
-        if not original_file or not modified_file:
+        try:
+            modified_file = next(
+                file for file in self.modified.codebase.files 
+                if file.filepath == modified_filepath
+            )
+        except StopIteration:
+            logger.warning(f"Modified file {modified_filepath} not found in codebase")
             return False
             
         # Extract the symbol content
-        original_lines = original_file.content.splitlines()[original_start-1:original_end]
-        modified_lines = modified_file.content.splitlines()[modified_start-1:modified_end]
+        try:
+            original_lines = original_file.content.splitlines()[original_start-1:original_end]
+            modified_lines = modified_file.content.splitlines()[modified_start-1:modified_end]
+        except IndexError as e:
+            logger.warning(f"Error extracting lines from files: {str(e)}")
+            return False
         
         # Normalize whitespace and comments
         original_normalized = self._normalize_code("\n".join(original_lines))
