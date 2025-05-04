@@ -72,19 +72,39 @@ def get_symbol_summary(symbol: Symbol) -> str:
     imported_symbols = [x.imported_symbol for x in usages if isinstance(x, Import)]
 
     # Create variables for the long expressions to avoid line length issues
-    func_usages = len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])
-    class_usages = len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])
-    var_usages = len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])
-    interface_usages = len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])
+    func_usages = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function
+    ])
+    class_usages = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class
+    ])
+    var_usages = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar
+    ])
+    interface_usages = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface
+    ])
     
-    imported_func = len([x for x in imported_symbols if isinstance(x, Symbol) and 
-                         x.symbol_type == SymbolType.Function])
-    imported_class = len([x for x in imported_symbols if isinstance(x, Symbol) and 
-                          x.symbol_type == SymbolType.Class])
-    imported_var = len([x for x in imported_symbols if isinstance(x, Symbol) and 
-                        x.symbol_type == SymbolType.GlobalVar])
-    imported_interface = len([x for x in imported_symbols if isinstance(x, Symbol) and 
-                              x.symbol_type == SymbolType.Interface])
+    imported_func = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function
+    ])
+    imported_class = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class
+    ])
+    imported_var = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar
+    ])
+    imported_interface = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface
+    ])
     imported_modules = len([x for x in imported_symbols if isinstance(x, ExternalModule)])
     imported_files = len([x for x in imported_symbols if isinstance(x, SourceFile)])
 
