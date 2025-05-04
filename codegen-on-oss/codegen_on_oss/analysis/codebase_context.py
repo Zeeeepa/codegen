@@ -511,7 +511,7 @@ class CodebaseContext:
                 logger.info("> Reparsing language engine")
                 self.language_engine.reparse(async_start=False)
 
-        # Step 1: Wait for dependency manager and language engines to finish before graph construction
+        # Step 1: Wait for dependency manager and language engines before graph construction
         if self.dependency_manager is not None:
             self.dependency_manager.wait_until_ready(ignore_error=self.config.ignore_process_errors)
         if self.language_engine is not None:
