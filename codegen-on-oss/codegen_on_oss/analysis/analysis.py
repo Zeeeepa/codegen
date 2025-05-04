@@ -96,7 +96,8 @@ class CodeAnalyzer:
     def initialize(self):
         """
         Initialize the analyzer by setting up the context and other necessary components.
-        This is called automatically when needed but can be called explicitly for eager initialization.
+        This is called automatically when needed but can be called explicitly for eager
+        initialization.
         """
         if self._initialized:
             return
