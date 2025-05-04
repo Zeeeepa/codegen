@@ -1476,7 +1476,9 @@ async def analyze_commit(request: CommitAnalysisRequest):
                 status_code=408, detail=f"Request timeout: {error_message}"
             ) from None
         else:
-            raise HTTPException(status_code=500, detail=f"Error analyzing commit: {error_message}") from None
+            raise HTTPException(
+                status_code=500, detail=f"Error analyzing commit: {error_message}"
+            ) from None
 
 
 @app.post("/analyze_local_commit")
