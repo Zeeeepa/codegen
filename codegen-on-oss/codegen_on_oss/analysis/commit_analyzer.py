@@ -601,5 +601,3 @@ def analyze_commit_from_paths(
             files_removed=files_removed,
             summary=None,  # Will be generated when get_summary is called
         )
-"""
-

@@ -346,27 +346,25 @@ class UnifiedAPI:
         """
         logger.info(f"Comparing snapshots {snapshot_id_1} and {snapshot_id_2}")
 
-        # Get snapshots
+        # Get the snapshots
         snapshot_1 = self._get_snapshot(snapshot_id_1)
         snapshot_2 = self._get_snapshot(snapshot_id_2)
 
         # Initialize analyzer
+        from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
         analyzer = DiffAnalyzer(snapshot_1, snapshot_2)
 
-        # Analyze differences
-        diff_result = analyzer.analyze()
-
-        # Format results
+        # Get summary of differences
         results = {
-            "snapshot_1": snapshot_id_1,
-            "snapshot_2": snapshot_id_2,
-            "summary": diff_result.get_summary(),
+            "snapshot_id_1": snapshot_id_1,
+            "snapshot_id_2": snapshot_id_2,
+            "summary": analyzer.get_summary(),
             "changes": {
-                "files_added": diff_result.files_added,
-                "files_modified": diff_result.files_modified,
-                "files_removed": diff_result.files_removed,
+                "files_added": analyzer.analyze_file_changes(),
+                "files_modified": analyzer.analyze_file_changes(),
+                "files_removed": analyzer.analyze_file_changes(),
             },
-            "metrics_diff": diff_result.metrics_diff,
+            "metrics_diff": analyzer.analyze_complexity_changes(),
         }
 
         # Save results if output path is provided
@@ -405,19 +403,16 @@ class UnifiedAPI:
         analyzer = CodeIntegrityAnalyzer(codebase)
 
         # Analyze code integrity
-        if rules:
-            integrity_result = analyzer.analyze(rules=rules)
-        else:
-            integrity_result = analyzer.analyze()
+        integrity_result = analyzer.analyze()
 
         # Format results
         results = {
             "repo_url": repo_url,
             "branch": branch,
             "commit": commit,
-            "timestamp": integrity_result.timestamp,
-            "issues": [issue.to_dict() for issue in integrity_result.issues],
-            "summary": integrity_result.get_summary(),
+            "timestamp": str(integrity_result.get("timestamp", "")),
+            "issues": integrity_result.get("issues", []),
+            "summary": integrity_result.get("summary", ""),
         }
 
         # Save results if output path is provided
@@ -762,4 +757,3 @@ def batch_analyze_repositories(
         output_dir=output_dir,
         include_integrity=include_integrity,
     )
-

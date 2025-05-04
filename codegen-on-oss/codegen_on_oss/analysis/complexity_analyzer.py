@@ -148,20 +148,6 @@ def analyze_file_complexity(file: SourceFile) -> Dict[str, Union[int, Dict[str, 
     return metrics
 
 
-def analyze_codebase_complexity(
-    codebase: Codebase, file_patterns: Optional[List[str]] = None
-) -> Dict[str, Union[Dict[str, Dict[str, int]], int, float]]:
-    """
-    Analyze the complexity of a codebase.
-
-    Args:
-        codebase: The codebase to analyze
-        file_patterns: Optional list of file patterns to include
-
-    Returns:
-        A dictionary with complexity metrics for the codebase
-    """
-    # Initialize metrics
 COMPLEXITY_RANKS = {
     'A': {'range': (1, 5), 'description': 'Excellent'},
     'B': {'range': (6, 10), 'description': 'Good'},
@@ -171,9 +157,28 @@ COMPLEXITY_RANKS = {
     'F': {'range': (41, float('inf')), 'description': 'Unmaintainable'}
 }
 
-metrics = {
-    'complexity_distribution': {rank: 0 for rank in COMPLEXITY_RANKS}
-}
+def analyze_codebase_complexity(
+    codebase: Codebase, file_patterns: Optional[List[str]] = None
+) -> Dict[str, Union[Dict[str, Dict[str, int]], int, float]]:
+    """
+    Analyze the complexity of a codebase.
+    
+    Args:
+        codebase: The codebase to analyze
+        file_patterns: Optional list of file patterns to include
+        
+    Returns:
+        A dictionary with complexity metrics
+    """
+    metrics = {
+        "overall_complexity": 0,
+        "function_count": 0,
+        "class_count": 0,
+        "files": {},
+        "complexity_distribution": {
+            "A": 0,  # 1-5
+            "B": 0,  # 6-10
+            "C": 0,  # 11-20
             "D": 0,  # 21-30
             "E": 0,  # 31-40
             "F": 0,  # 41+
@@ -273,5 +278,3 @@ def identify_complex_hotspots(
     # Sort hotspots by complexity (descending)
     hotspots.sort(key=lambda x: x["complexity"], reverse=True)
     return hotspots
-"""
-
