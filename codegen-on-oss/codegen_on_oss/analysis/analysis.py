@@ -5,24 +5,36 @@ This module serves as a central hub for all code analysis functionality, integra
 various specialized analysis components into a cohesive system.
 """
 
-import contextlib
 import difflib
 import math
 import os
 import re
 import subprocess
-import tempfile
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
-from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional
 
 import networkx as nx
 import requests
 import uvicorn
+from codegen import Codebase
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.expressions.binary_expression import BinaryExpression
+from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.unary_expression import UnaryExpression
+from codegen.sdk.core.external_module import ExternalModule
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
+from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
+from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
+from codegen.sdk.core.statements.while_statement import WhileStatement
+from codegen.sdk.core.symbol import Symbol
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
 from codegen_on_oss.analysis.analysis_import import (
-    analyze_imports,
     find_import_cycles,
-    visualize_import_graph,
 )
 from codegen_on_oss.analysis.codebase_analysis import (
     get_class_summary,
@@ -34,57 +46,22 @@ from codegen_on_oss.analysis.codebase_analysis import (
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.codegen_sdk_codebase import (
-    get_codegen_sdk_codebase,
-    get_codegen_sdk_subdirectories,
-)
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalysisResult,
     CommitAnalyzer,
-    CommitIssue,
 )
 from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
-from codegen_on_oss.analysis.current_code_codebase import (
-    get_current_code_codebase,
-    get_current_code_file,
-)
 
 # Import new analysis modules
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
 from codegen_on_oss.analysis.document_functions import (
-    document_class,
-    document_file,
     document_function,
 )
 from codegen_on_oss.analysis.module_dependencies import (
-    get_module_dependencies,
     visualize_module_dependencies,
 )
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.analysis.symbolattr import (
-    get_file_attribution,
-    get_symbol_attribution,
-)
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
-from codegen import Codebase
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_resolution import Import
-from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
-from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
-from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
 
 # Create FastAPI app
 app = FastAPI()
@@ -463,9 +440,9 @@ class CodeAnalyzer:
 
         # Calculate average complexity
         if complexity_results:
-            avg_complexity = sum(
-                item["complexity"] for item in complexity_results
-            ) / len(complexity_results)
+            avg_complexity = sum(item["complexity"] for item in complexity_results) / len(
+                complexity_results
+            )
         else:
             avg_complexity = 0
 
@@ -539,9 +516,7 @@ class CodeAnalyzer:
         results["halstead_metrics"] = {
             "functions": halstead_results,
             "total_volume": total_volume,
-            "average_volume": (
-                total_volume / len(halstead_results) if halstead_results else 0
-            ),
+            "average_volume": (total_volume / len(halstead_results) if halstead_results else 0),
         }
 
         # Analyze inheritance depth
@@ -555,9 +530,7 @@ class CodeAnalyzer:
 
         results["inheritance_depth"] = {
             "classes": inheritance_results,
-            "average": (
-                total_doi / len(inheritance_results) if inheritance_results else 0
-            ),
+            "average": (total_doi / len(inheritance_results) if inheritance_results else 0),
         }
 
         # Analyze dependencies
@@ -655,7 +628,7 @@ class CodeAnalyzer:
             current = structure
 
             # Build the directory structure
-            for i, part in enumerate(path_parts[:-1]):
+            for _i, part in enumerate(path_parts[:-1]):
                 if part not in current:
                     current[part] = {}
                 current = current[part]
@@ -668,9 +641,7 @@ class CodeAnalyzer:
                 symbol_info = {
                     "name": symbol.name,
                     "type": (
-                        str(symbol.symbol_type)
-                        if hasattr(symbol, "symbol_type")
-                        else "unknown"
+                        str(symbol.symbol_type) if hasattr(symbol, "symbol_type") else "unknown"
                     ),
                 }
                 file_info["symbols"].append(symbol_info)
@@ -686,10 +657,7 @@ class CodeAnalyzer:
         Returns:
             A dictionary mapping month strings to commit counts
         """
-        if (
-            not hasattr(self.codebase, "repo_operator")
-            or not self.codebase.repo_operator
-        ):
+        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
             return {}
 
         try:
@@ -698,9 +666,7 @@ class CodeAnalyzer:
             start_date = end_date - timedelta(days=365)
 
             # Get all commits in the date range
-            commits = self.codebase.repo_operator.get_commits(
-                since=start_date, until=end_date
-            )
+            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
 
             # Group commits by month
             monthly_commits = {}
@@ -729,9 +695,7 @@ class CodeAnalyzer:
             A CommitAnalysisResult object containing the analysis results
         """
         # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(
-            original_codebase=self.codebase, commit_codebase=commit_codebase
-        )
+        analyzer = CommitAnalyzer(original_codebase=self.codebase, commit_codebase=commit_codebase)
 
         # Analyze the commit
         return analyzer.analyze_commit()
@@ -832,9 +796,7 @@ class CodeAnalyzer:
         commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
 
         # Analyze the commit
-        return commit_analyzer.analyze_commit(
-            self.codebase.repo_path, base_commit, head_commit
-        )
+        return commit_analyzer.analyze_commit(self.codebase.repo_path, base_commit, head_commit)
 
     def analyze_pull_request(
         self, pr_number: int, github_token: Optional[str] = None

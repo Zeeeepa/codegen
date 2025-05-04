@@ -13,10 +13,8 @@ import json
 import logging
 import os
 import subprocess
-import sys
 import tempfile
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +56,7 @@ class CtrlplaneIntegration:
             # Create ctrlplane configuration
             config = {
                 "name": name,
-                "description": f"Deployed by Codegen WSL2 Integration",
+                "description": "Deployed by Codegen WSL2 Integration",
                 "version": "1.0.0",
                 "services": [
                     {
@@ -69,29 +67,29 @@ class CtrlplaneIntegration:
                     }
                 ],
             }
-            
+
             # Write configuration to file
             with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
                 json.dump(config, f, indent=2)
                 config_path = f.name
-            
+
             # Deploy using ctrlplane
             env = os.environ.copy()
             if self.api_key:
                 env["CTRLPLANE_API_KEY"] = self.api_key
-            
+
             subprocess.run(
                 ["ctrlplane", "deploy", "-f", config_path],
                 check=True,
                 env=env,
             )
-            
+
             # Clean up
             os.unlink(config_path)
-            
+
             logger.info(f"Service '{name}' deployed successfully")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error deploying service: {str(e)}")
             return False
@@ -114,16 +112,16 @@ class CtrlplaneIntegration:
             env = os.environ.copy()
             if self.api_key:
                 env["CTRLPLANE_API_KEY"] = self.api_key
-            
+
             subprocess.run(
                 ["ctrlplane", "stop", name],
                 check=True,
                 env=env,
             )
-            
+
             logger.info(f"Service '{name}' stopped successfully")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error stopping service: {str(e)}")
             return False
@@ -171,17 +169,17 @@ class WeaveIntegration:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            
+
             # Create temporary file for data
             with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
                 json.dump(data, f, indent=2)
                 data_path = f.name
-            
+
             # Create visualization
             env = os.environ.copy()
             if self.api_key:
                 env["WEAVE_API_KEY"] = self.api_key
-            
+
             result = subprocess.run(
                 [
                     "weave",
@@ -197,20 +195,20 @@ class WeaveIntegration:
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            
+
             # Clean up
             os.unlink(data_path)
-            
+
             # Extract URL from output
             for line in result.stdout.splitlines():
                 if "https://" in line:
                     url = line.strip()
                     logger.info(f"Visualization created: {url}")
                     return url
-            
+
             logger.warning("Visualization created, but URL not found in output")
             return None
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error creating visualization: {str(e)}")
             return None
@@ -260,39 +258,39 @@ class ProbotIntegration:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            
+
             # Create webhook configuration
             config = {
                 "repo": repo,
                 "events": events,
                 "url": webhook_url,
             }
-            
+
             if secret:
                 config["secret"] = secret
-            
+
             # Write configuration to file
             with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
                 json.dump(config, f, indent=2)
                 config_path = f.name
-            
+
             # Register webhook
             env = os.environ.copy()
             if self.github_token:
                 env["GITHUB_TOKEN"] = self.github_token
-            
+
             subprocess.run(
                 ["probot", "webhook", "create", "-f", config_path],
                 check=True,
                 env=env,
             )
-            
+
             # Clean up
             os.unlink(config_path)
-            
+
             logger.info(f"Webhook registered for {repo}")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error registering webhook: {str(e)}")
             return False
@@ -342,12 +340,12 @@ class PkgPrNewIntegration:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            
+
             # Create preview release
             env = os.environ.copy()
             if self.api_key:
                 env["PKG_PR_NEW_API_KEY"] = self.api_key
-            
+
             cmd = [
                 "pkg-pr-new",
                 "create",
@@ -358,10 +356,10 @@ class PkgPrNewIntegration:
                 "--version",
                 version,
             ]
-            
+
             if package_name:
                 cmd.extend(["--package", package_name])
-            
+
             result = subprocess.run(
                 cmd,
                 check=True,
@@ -369,17 +367,17 @@ class PkgPrNewIntegration:
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            
+
             # Extract URL from output
             for line in result.stdout.splitlines():
                 if "https://" in line:
                     url = line.strip()
                     logger.info(f"Preview release created: {url}")
                     return url
-            
+
             logger.warning("Preview release created, but URL not found in output")
             return None
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error creating preview release: {str(e)}")
             return None
@@ -427,12 +425,12 @@ class TldrIntegration:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            
+
             # Summarize PR
             env = os.environ.copy()
             if self.github_token:
                 env["GITHUB_TOKEN"] = self.github_token
-            
+
             cmd = [
                 "tldr",
                 "summarize",
@@ -441,10 +439,10 @@ class TldrIntegration:
                 "--pr",
                 str(pr_number),
             ]
-            
+
             if post_comment:
                 cmd.append("--post-comment")
-            
+
             result = subprocess.run(
                 cmd,
                 check=True,
@@ -452,11 +450,11 @@ class TldrIntegration:
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            
+
             summary = result.stdout.strip()
             logger.info(f"PR summarized: {repo}#{pr_number}")
             return summary
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error summarizing PR: {str(e)}")
             return None

@@ -7,15 +7,10 @@ analyze commits and pull requests to determine if they are properly implemented.
 
 import json
 import logging
-import os
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Optional
 
 from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
-from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
-
-from codegen import CodeAgent, Codebase
-from codegen.configs.models.secrets import SecretsConfig
+from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +67,17 @@ class SWEHarnessAgent:
             A dictionary with analysis results
         """
         # Use the commit analyzer to get basic analysis
-        analysis_results = self.commit_analyzer.analyze_commit(
-            repo_url, base_commit, head_commit
-        )
+        analysis_results = self.commit_analyzer.analyze_commit(repo_url, base_commit, head_commit)
 
         # Format the analysis report
         report = self.commit_analyzer.format_analysis_report(analysis_results)
 
         # Determine if the commit is properly implemented
-        is_properly_implemented = analysis_results["quality_assessment"][
-            "is_properly_implemented"
-        ]
+        is_properly_implemented = analysis_results["quality_assessment"]["is_properly_implemented"]
 
         # If using an agent, enhance the analysis with LLM-based insights
         if self.use_agent and self.agent:
-            agent_analysis = self._get_agent_analysis(
-                repo_url, base_commit, head_commit
-            )
+            agent_analysis = self._get_agent_analysis(repo_url, base_commit, head_commit)
             if agent_analysis:
                 analysis_results["agent_analysis"] = agent_analysis
 
@@ -96,9 +85,7 @@ class SWEHarnessAgent:
         response = {
             "is_properly_implemented": is_properly_implemented,
             "quality_score": analysis_results["quality_assessment"]["score"],
-            "overall_assessment": analysis_results["quality_assessment"][
-                "overall_assessment"
-            ],
+            "overall_assessment": analysis_results["quality_assessment"]["overall_assessment"],
             "report": report,
         }
 
@@ -135,9 +122,7 @@ class SWEHarnessAgent:
         report = self.commit_analyzer.format_analysis_report(analysis_results)
 
         # Determine if the PR is properly implemented
-        is_properly_implemented = analysis_results["quality_assessment"][
-            "is_properly_implemented"
-        ]
+        is_properly_implemented = analysis_results["quality_assessment"]["is_properly_implemented"]
 
         # If using an agent, enhance the analysis with LLM-based insights
         if self.use_agent and self.agent:
@@ -149,9 +134,7 @@ class SWEHarnessAgent:
         response = {
             "is_properly_implemented": is_properly_implemented,
             "quality_score": analysis_results["quality_assessment"]["score"],
-            "overall_assessment": analysis_results["quality_assessment"][
-                "overall_assessment"
-            ],
+            "overall_assessment": analysis_results["quality_assessment"]["overall_assessment"],
             "report": report,
         }
 
@@ -198,9 +181,7 @@ class SWEHarnessAgent:
             "fallback": "Using standard analysis methods instead",
         }
 
-    def _get_agent_pr_analysis(
-        self, repo_url: str, pr_number: int
-    ) -> Optional[Dict[str, Any]]:
+    def _get_agent_pr_analysis(self, repo_url: str, pr_number: int) -> Optional[Dict[str, Any]]:
         """
         Get enhanced analysis of a PR from the LLM-based agent.
 
@@ -385,24 +366,16 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Analyze commits and pull requests")
-    parser.add_argument(
-        "--repo", required=True, help="Repository URL or owner/repo string"
-    )
+    parser.add_argument("--repo", required=True, help="Repository URL or owner/repo string")
     parser.add_argument("--pr", type=int, help="Pull request number to analyze")
-    parser.add_argument(
-        "--base", help="Base commit SHA (required if --pr not provided)"
-    )
-    parser.add_argument(
-        "--head", help="Head commit SHA (required if --pr not provided)"
-    )
+    parser.add_argument("--base", help="Base commit SHA (required if --pr not provided)")
+    parser.add_argument("--head", help="Head commit SHA (required if --pr not provided)")
     parser.add_argument("--token", help="GitHub token for private repositories")
     parser.add_argument("--snapshot-dir", help="Directory to store snapshots")
     parser.add_argument(
         "--detailed", action="store_true", help="Include detailed analysis in results"
     )
-    parser.add_argument(
-        "--no-agent", action="store_true", help="Disable LLM-based agent analysis"
-    )
+    parser.add_argument("--no-agent", action="store_true", help="Disable LLM-based agent analysis")
     parser.add_argument(
         "--comment",
         action="store_true",
@@ -426,9 +399,7 @@ if __name__ == "__main__":
 
     # Analyze PR or commit
     if args.pr:
-        results = agent.analyze_and_comment_on_pr(
-            args.repo, args.pr, args.comment, args.detailed
-        )
+        results = agent.analyze_and_comment_on_pr(args.repo, args.pr, args.comment, args.detailed)
     elif args.base and args.head:
         results = agent.analyze_commit(args.repo, args.base, args.head, args.detailed)
     else:

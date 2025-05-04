@@ -2,12 +2,13 @@ import sys
 from pathlib import Path
 
 import click
+from loguru import logger
+
 from codegen_on_oss.cache import cachedir
 from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.csv_output import CSVOutput
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource, all_sources
-from loguru import logger
 
 logger.remove(0)
 
@@ -106,9 +107,7 @@ def run(
     """
     Run codegen parsing pipeline on repositories from a given repository source.
     """
-    logger.add(
-        error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR"
-    )
+    logger.add(error_output_path, format="{time: HH:mm:ss} {level} {message}", level="ERROR")
     logger.add(
         sys.stdout,
         format="{time: HH:mm:ss} {level} {message}",

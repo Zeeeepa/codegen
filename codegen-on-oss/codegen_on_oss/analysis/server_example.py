@@ -6,7 +6,7 @@ This script demonstrates how to use the analysis server.
 
 import argparse
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import requests
 
@@ -33,9 +33,7 @@ class CodeAnalysisClient:
         Returns:
             Analysis results
         """
-        response = requests.post(
-            f"{self.base_url}/analyze_repo", json={"repo_url": repo_url}
-        )
+        response = requests.post(f"{self.base_url}/analyze_repo", json={"repo_url": repo_url})
         response.raise_for_status()
         return response.json()
 
@@ -79,9 +77,7 @@ class CodeAnalysisServer:
         run_server(host=self.host, port=self.port)
 
 
-def analyze_repository(
-    repo_url: str, server_url: str = "http://localhost:8000"
-) -> None:
+def analyze_repository(repo_url: str, server_url: str = "http://localhost:8000") -> None:
     """
     Analyze a repository and print the results.
 
@@ -98,9 +94,7 @@ def analyze_repository(
     print(json.dumps(results, indent=2))
 
 
-def analyze_file(
-    repo_url: str, file_path: str, server_url: str = "http://localhost:8000"
-) -> None:
+def analyze_file(repo_url: str, file_path: str, server_url: str = "http://localhost:8000") -> None:
     """
     Analyze a specific file in a repository and print the results.
 
@@ -122,15 +116,11 @@ def main() -> None:
     """Main function to run the example."""
     parser = argparse.ArgumentParser(description="Code Analysis Server Example")
 
-    parser.add_argument(
-        "--start-server", action="store_true", help="Start the analysis server"
-    )
+    parser.add_argument("--start-server", action="store_true", help="Start the analysis server")
 
     parser.add_argument("--host", default="localhost", help="Host to run the server on")
 
-    parser.add_argument(
-        "--port", type=int, default=8000, help="Port to run the server on"
-    )
+    parser.add_argument("--port", type=int, default=8000, help="Port to run the server on")
 
     parser.add_argument("--analyze-repo", help="URL of the repository to analyze")
 

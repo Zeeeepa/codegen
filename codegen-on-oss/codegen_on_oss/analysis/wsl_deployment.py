@@ -5,13 +5,12 @@ This module provides utilities for deploying the WSL2 server,
 with support for Docker and ctrlplane.
 """
 
+import json
 import logging
 import os
 import subprocess
 import tempfile
-import json
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ class WSLDeployment:
         self.api_key = api_key
         self.use_docker = use_docker
         self.use_ctrlplane = use_ctrlplane
-        
+
         # Set environment variables
         self.env = os.environ.copy()
         if self.api_key:
@@ -99,7 +98,7 @@ class WSLDeployment:
                 ["wsl", "-d", self.wsl_distro, "--", "sudo", "apt", "update"],
                 check=True,
             )
-            
+
             # Install Python and pip
             subprocess.run(
                 [
@@ -118,7 +117,7 @@ class WSLDeployment:
                 ],
                 check=True,
             )
-            
+
             # Install Docker if needed
             if self.use_docker:
                 subprocess.run(
@@ -136,7 +135,7 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-                
+
                 # Start Docker service
                 subprocess.run(
                     [
@@ -151,7 +150,7 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-                
+
                 # Enable Docker service
                 subprocess.run(
                     [
@@ -166,7 +165,7 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-            
+
             # Install ctrlplane if needed
             if self.use_ctrlplane:
                 subprocess.run(
@@ -181,9 +180,9 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-            
+
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error installing dependencies: {str(e)}")
             return False
@@ -202,7 +201,7 @@ class WSLDeployment:
             # If server_dir is not provided, use the current directory
             if not server_dir:
                 server_dir = os.path.dirname(os.path.abspath(__file__))
-            
+
             # Create a temporary directory for deployment
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Copy server files to temporary directory
@@ -210,7 +209,7 @@ class WSLDeployment:
                     ["cp", "-r", server_dir, temp_dir],
                     check=True,
                 )
-                
+
                 # Create deployment directory in WSL
                 subprocess.run(
                     [
@@ -224,7 +223,7 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-                
+
                 # Copy files to WSL
                 subprocess.run(
                     [
@@ -239,7 +238,7 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-                
+
                 if self.use_docker:
                     # Deploy using Docker
                     return self._deploy_with_docker()
@@ -249,7 +248,7 @@ class WSLDeployment:
                 else:
                     # Deploy directly
                     return self._deploy_direct()
-            
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error deploying server: {str(e)}")
             return False
@@ -278,7 +277,7 @@ class WSLDeployment:
                 check=True,
                 env=self.env,
             )
-            
+
             # Start Docker container
             subprocess.run(
                 [
@@ -296,10 +295,10 @@ class WSLDeployment:
                 check=True,
                 env=self.env,
             )
-            
+
             logger.info(f"Server deployed using Docker on port {self.port}")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error deploying with Docker: {str(e)}")
             return False
@@ -336,7 +335,7 @@ class WSLDeployment:
                     }
                 ],
             }
-            
+
             # Write configuration to file
             config_path = "/home/codegen-server/ctrlplane.json"
             subprocess.run(
@@ -351,7 +350,7 @@ class WSLDeployment:
                 ],
                 check=True,
             )
-            
+
             # Deploy using ctrlplane
             subprocess.run(
                 [
@@ -367,10 +366,10 @@ class WSLDeployment:
                 check=True,
                 env=self.env,
             )
-            
+
             logger.info(f"Server deployed using ctrlplane on port {self.port}")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error deploying with ctrlplane: {str(e)}")
             return False
@@ -400,7 +399,7 @@ class WSLDeployment:
                 ],
                 check=True,
             )
-            
+
             # Install dependencies
             subprocess.run(
                 [
@@ -421,7 +420,7 @@ class WSLDeployment:
                 ],
                 check=True,
             )
-            
+
             # Start server in background
             subprocess.Popen(
                 [
@@ -443,10 +442,10 @@ class WSLDeployment:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            
+
             logger.info(f"Server deployed directly on port {self.port}")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error deploying directly: {str(e)}")
             return False
@@ -503,10 +502,10 @@ class WSLDeployment:
                     ],
                     check=True,
                 )
-            
+
             logger.info("Server stopped")
             return True
-        
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error stopping server: {str(e)}")
             return False

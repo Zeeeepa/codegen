@@ -8,10 +8,7 @@ and interacting with it for code validation, repository comparison, and PR analy
 import argparse
 import json
 import logging
-import os
 import sys
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
 
 from codegen_on_oss.analysis.wsl_client import WSLClient
 from codegen_on_oss.analysis.wsl_deployment import WSLDeployment
@@ -38,30 +35,30 @@ def deploy_command(args):
         use_docker=args.docker,
         use_ctrlplane=args.ctrlplane,
     )
-    
+
     # Check if WSL is installed
     if not deployment.check_wsl_installed():
         logger.error("WSL is not installed. Please install WSL first.")
         sys.exit(1)
-    
+
     # Check if the specified distribution is installed
     if not deployment.check_distro_installed():
         logger.error(f"WSL distribution '{args.distro}' is not installed.")
         logger.info("Please install it using: wsl --install -d Ubuntu")
         sys.exit(1)
-    
+
     # Install dependencies
     logger.info("Installing dependencies...")
     if not deployment.install_dependencies():
         logger.error("Failed to install dependencies.")
         sys.exit(1)
-    
+
     # Deploy server
     logger.info("Deploying server...")
     if not deployment.deploy_server():
         logger.error("Failed to deploy server.")
         sys.exit(1)
-    
+
     logger.info(f"Server deployed successfully on port {args.port}.")
     logger.info(f"You can access the server at: http://localhost:{args.port}")
 
@@ -80,13 +77,13 @@ def stop_command(args):
         use_docker=args.docker,
         use_ctrlplane=args.ctrlplane,
     )
-    
+
     # Stop server
     logger.info("Stopping server...")
     if not deployment.stop_server():
         logger.error("Failed to stop server.")
         sys.exit(1)
-    
+
     logger.info("Server stopped successfully.")
 
 
@@ -101,7 +98,7 @@ def validate_command(args):
         base_url=args.server,
         api_key=args.api_key,
     )
-    
+
     # Check server health
     try:
         health = client.health_check()
@@ -109,7 +106,7 @@ def validate_command(args):
     except Exception as e:
         logger.error(f"Failed to connect to server: {str(e)}")
         sys.exit(1)
-    
+
     # Validate codebase
     logger.info(f"Validating codebase: {args.repo_url}")
     try:
@@ -119,7 +116,7 @@ def validate_command(args):
             categories=args.categories.split(",") if args.categories else None,
             github_token=args.github_token,
         )
-        
+
         # Format results
         if args.format == "json":
             output = json.dumps(results, indent=2)
@@ -127,15 +124,15 @@ def validate_command(args):
             output = client.format_validation_results_markdown(results)
         else:
             output = str(results)
-        
+
         # Save results to file if specified
         if args.output:
             client.save_results_to_file(results, args.output)
             logger.info(f"Results saved to: {args.output}")
-        
+
         # Print results
         print(output)
-        
+
     except Exception as e:
         logger.error(f"Failed to validate codebase: {str(e)}")
         sys.exit(1)
@@ -152,7 +149,7 @@ def compare_command(args):
         base_url=args.server,
         api_key=args.api_key,
     )
-    
+
     # Check server health
     try:
         health = client.health_check()
@@ -160,7 +157,7 @@ def compare_command(args):
     except Exception as e:
         logger.error(f"Failed to connect to server: {str(e)}")
         sys.exit(1)
-    
+
     # Compare repositories
     logger.info(f"Comparing repositories: {args.base_repo_url} vs {args.head_repo_url}")
     try:
@@ -171,7 +168,7 @@ def compare_command(args):
             head_branch=args.head_branch,
             github_token=args.github_token,
         )
-        
+
         # Format results
         if args.format == "json":
             output = json.dumps(results, indent=2)
@@ -179,15 +176,15 @@ def compare_command(args):
             output = client.format_comparison_results_markdown(results)
         else:
             output = str(results)
-        
+
         # Save results to file if specified
         if args.output:
             client.save_results_to_file(results, args.output)
             logger.info(f"Results saved to: {args.output}")
-        
+
         # Print results
         print(output)
-        
+
     except Exception as e:
         logger.error(f"Failed to compare repositories: {str(e)}")
         sys.exit(1)
@@ -204,7 +201,7 @@ def analyze_pr_command(args):
         base_url=args.server,
         api_key=args.api_key,
     )
-    
+
     # Check server health
     try:
         health = client.health_check()
@@ -212,7 +209,7 @@ def analyze_pr_command(args):
     except Exception as e:
         logger.error(f"Failed to connect to server: {str(e)}")
         sys.exit(1)
-    
+
     # Analyze pull request
     logger.info(f"Analyzing pull request: {args.repo_url}#{args.pr_number}")
     try:
@@ -223,7 +220,7 @@ def analyze_pr_command(args):
             detailed=args.detailed,
             post_comment=args.post_comment,
         )
-        
+
         # Format results
         if args.format == "json":
             output = json.dumps(results, indent=2)
@@ -231,15 +228,15 @@ def analyze_pr_command(args):
             output = client.format_pr_analysis_markdown(results)
         else:
             output = str(results)
-        
+
         # Save results to file if specified
         if args.output:
             client.save_results_to_file(results, args.output)
             logger.info(f"Results saved to: {args.output}")
-        
+
         # Print results
         print(output)
-        
+
     except Exception as e:
         logger.error(f"Failed to analyze pull request: {str(e)}")
         sys.exit(1)
@@ -251,7 +248,7 @@ def main():
         description="WSL2 Command-Line Interface for Code Validation",
     )
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
-    
+
     # Deploy command
     deploy_parser = subparsers.add_parser("deploy", help="Deploy the WSL2 server")
     deploy_parser.add_argument(
@@ -280,7 +277,7 @@ def main():
         help="Use ctrlplane for orchestration",
     )
     deploy_parser.set_defaults(func=deploy_command)
-    
+
     # Stop command
     stop_parser = subparsers.add_parser("stop", help="Stop the WSL2 server")
     stop_parser.add_argument(
@@ -309,7 +306,7 @@ def main():
         help="Server was deployed using ctrlplane",
     )
     stop_parser.set_defaults(func=stop_command)
-    
+
     # Validate command
     validate_parser = subparsers.add_parser("validate", help="Validate a codebase")
     validate_parser.add_argument(
@@ -349,7 +346,7 @@ def main():
         help="Output file to save results to",
     )
     validate_parser.set_defaults(func=validate_command)
-    
+
     # Compare command
     compare_parser = subparsers.add_parser("compare", help="Compare two repositories or branches")
     compare_parser.add_argument(
@@ -394,7 +391,7 @@ def main():
         help="Output file to save results to",
     )
     compare_parser.set_defaults(func=compare_command)
-    
+
     # Analyze PR command
     analyze_pr_parser = subparsers.add_parser("analyze-pr", help="Analyze a pull request")
     analyze_pr_parser.add_argument(
@@ -441,10 +438,10 @@ def main():
         help="Output file to save results to",
     )
     analyze_pr_parser.set_defaults(func=analyze_pr_command)
-    
+
     # Parse arguments
     args = parser.parse_args()
-    
+
     # Run command
     if hasattr(args, "func"):
         args.func(args)
@@ -454,4 +451,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

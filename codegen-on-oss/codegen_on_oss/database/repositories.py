@@ -4,23 +4,18 @@ Repository pattern implementation for database operations.
 This module provides repository classes for database operations.
 """
 
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Generic, List, Optional, Type, TypeVar
+
+from sqlalchemy.orm import Session
 
 from codegen_on_oss.database.models import (
     AnalysisJob,
     AnalysisResult,
-    Class,
-    CodeMetrics,
-    DependencyGraph,
     File,
-    Function,
-    Import,
     Issue,
     Repository,
     Snapshot,
-    SymbolAnalysis,
 )
-from sqlalchemy.orm import Session
 
 T = TypeVar("T")
 
@@ -164,11 +159,7 @@ class SnapshotRepository(BaseRepository[Snapshot]):
         Returns:
             Snapshot or None if not found
         """
-        return (
-            self.db.query(self.model)
-            .filter(self.model.snapshot_id == snapshot_id)
-            .first()
-        )
+        return self.db.query(self.model).filter(self.model.snapshot_id == snapshot_id).first()
 
     def get_snapshots_for_repository(self, repo_id: int) -> List[Snapshot]:
         """
@@ -180,9 +171,7 @@ class SnapshotRepository(BaseRepository[Snapshot]):
         Returns:
             List of snapshots
         """
-        return (
-            self.db.query(self.model).filter(self.model.repository_id == repo_id).all()
-        )
+        return self.db.query(self.model).filter(self.model.repository_id == repo_id).all()
 
     def get_latest_for_repository(self, repo_id: int) -> Optional[Snapshot]:
         """
@@ -227,9 +216,7 @@ class FileRepository(BaseRepository[File]):
         """
         return (
             self.db.query(self.model)
-            .filter(
-                self.model.snapshot_id == snapshot_id, self.model.filepath == filepath
-            )
+            .filter(self.model.snapshot_id == snapshot_id, self.model.filepath == filepath)
             .first()
         )
 
@@ -243,11 +230,7 @@ class FileRepository(BaseRepository[File]):
         Returns:
             List of files
         """
-        return (
-            self.db.query(self.model)
-            .filter(self.model.snapshot_id == snapshot_id)
-            .all()
-        )
+        return self.db.query(self.model).filter(self.model.snapshot_id == snapshot_id).all()
 
 
 class AnalysisResultRepository(BaseRepository[AnalysisResult]):
@@ -272,11 +255,7 @@ class AnalysisResultRepository(BaseRepository[AnalysisResult]):
         Returns:
             List of analysis results
         """
-        return (
-            self.db.query(self.model)
-            .filter(self.model.snapshot_id == snapshot_id)
-            .all()
-        )
+        return self.db.query(self.model).filter(self.model.snapshot_id == snapshot_id).all()
 
     def get_results_for_repository(self, repo_id: int) -> List[AnalysisResult]:
         """
@@ -288,9 +267,7 @@ class AnalysisResultRepository(BaseRepository[AnalysisResult]):
         Returns:
             List of analysis results
         """
-        return (
-            self.db.query(self.model).filter(self.model.repository_id == repo_id).all()
-        )
+        return self.db.query(self.model).filter(self.model.repository_id == repo_id).all()
 
     def get_latest_result_for_snapshot(
         self, snapshot_id: int, analysis_type: str
@@ -338,11 +315,7 @@ class AnalysisIssueRepository(BaseRepository[Issue]):
         Returns:
             List of issues
         """
-        return (
-            self.db.query(self.model)
-            .filter(self.model.analysis_result_id == analysis_id)
-            .all()
-        )
+        return self.db.query(self.model).filter(self.model.analysis_result_id == analysis_id).all()
 
 
 class AnalysisJobRepository(BaseRepository[AnalysisJob]):
@@ -357,9 +330,7 @@ class AnalysisJobRepository(BaseRepository[AnalysisJob]):
         """
         super().__init__(db, AnalysisJob)
 
-    def get_jobs_for_repo(
-        self, repo_id: int, status: Optional[str] = None
-    ) -> List[AnalysisJob]:
+    def get_jobs_for_repo(self, repo_id: int, status: Optional[str] = None) -> List[AnalysisJob]:
         """
         Get jobs for a repository.
 

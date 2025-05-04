@@ -4,13 +4,13 @@ WebSocket manager for the codegen-on-oss system.
 This module provides a WebSocket manager for real-time updates.
 """
 
-import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Set
+
+from fastapi import WebSocket, WebSocketDisconnect
 
 from codegen_on_oss.events.event_bus import Event, EventType, event_bus
-from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 

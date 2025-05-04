@@ -8,9 +8,10 @@ for code validation, repository comparison, and PR analysis.
 import json
 import logging
 import os
-import requests
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class WSLClient:
         self.base_url = base_url
         self.api_key = api_key or os.getenv("CODEGEN_API_KEY", "")
         self.headers = {}
-        
+
         if self.api_key:
             self.headers["X-API-Key"] = self.api_key
 
@@ -71,7 +72,7 @@ class WSLClient:
             "categories": categories or ["code_quality", "security", "maintainability"],
             "github_token": github_token,
         }
-        
+
         response = requests.post(
             f"{self.base_url}/validate",
             headers=self.headers,
@@ -108,7 +109,7 @@ class WSLClient:
             "head_branch": head_branch,
             "github_token": github_token,
         }
-        
+
         response = requests.post(
             f"{self.base_url}/compare",
             headers=self.headers,
@@ -145,7 +146,7 @@ class WSLClient:
             "detailed": detailed,
             "post_comment": post_comment,
         }
-        
+
         response = requests.post(
             f"{self.base_url}/analyze-pr",
             headers=self.headers,
@@ -167,23 +168,23 @@ class WSLClient:
         markdown = f"# Code Validation Results: {results['repo_url']} ({results['branch']})\n\n"
         markdown += f"**Overall Score**: {results['overall_score']:.2f}/10\n\n"
         markdown += f"**Summary**: {results['summary']}\n\n"
-        
+
         for result in results["validation_results"]:
             markdown += f"## {result['category'].title()}\n\n"
             markdown += f"**Score**: {result['score']:.2f}/10\n\n"
-            
+
             if result["issues"]:
                 markdown += "### Issues\n\n"
                 for issue in result["issues"]:
                     markdown += f"- **{issue['title']}**: {issue['description']}\n"
                 markdown += "\n"
-            
+
             if result["recommendations"]:
                 markdown += "### Recommendations\n\n"
                 for recommendation in result["recommendations"]:
                     markdown += f"- {recommendation}\n"
                 markdown += "\n"
-        
+
         return markdown
 
     def format_comparison_results_markdown(self, results: Dict[str, Any]) -> str:
@@ -196,35 +197,35 @@ class WSLClient:
         Returns:
             Markdown-formatted string
         """
-        markdown = f"# Repository Comparison Results\n\n"
+        markdown = "# Repository Comparison Results\n\n"
         markdown += f"**Base**: {results['base_repo_url']}\n"
         markdown += f"**Head**: {results['head_repo_url']}\n\n"
         markdown += f"**Summary**: {results['summary']}\n\n"
-        
+
         if results["file_changes"]:
             markdown += "## File Changes\n\n"
             for file, change in results["file_changes"].items():
                 markdown += f"- **{file}**: {change}\n"
             markdown += "\n"
-        
+
         if results["function_changes"]:
             markdown += "## Function Changes\n\n"
             for func, change in results["function_changes"].items():
                 markdown += f"- **{func}**: {change}\n"
             markdown += "\n"
-        
+
         if results["complexity_changes"]:
             markdown += "## Complexity Changes\n\n"
             for file, change in results["complexity_changes"].items():
                 markdown += f"- **{file}**: {change:+.2f}\n"
             markdown += "\n"
-        
+
         if results["risk_assessment"]:
             markdown += "## Risk Assessment\n\n"
             for category, risk in results["risk_assessment"].items():
                 markdown += f"- **{category}**: {risk}\n"
             markdown += "\n"
-        
+
         return markdown
 
     def format_pr_analysis_markdown(self, results: Dict[str, Any]) -> str:
@@ -241,7 +242,7 @@ class WSLClient:
         markdown += f"**Repository**: {results['repo_url']}\n"
         markdown += f"**Code Quality Score**: {results['code_quality_score']:.2f}/10\n\n"
         markdown += f"**Summary**: {results['summary']}\n\n"
-        
+
         if results["issues_found"]:
             markdown += "## Issues Found\n\n"
             for issue in results["issues_found"]:
@@ -249,13 +250,13 @@ class WSLClient:
                 if "file" in issue and "line" in issue:
                     markdown += f"  - Location: {issue['file']}:{issue['line']}\n"
             markdown += "\n"
-        
+
         if results["recommendations"]:
             markdown += "## Recommendations\n\n"
             for recommendation in results["recommendations"]:
                 markdown += f"- {recommendation}\n"
             markdown += "\n"
-        
+
         return markdown
 
     def save_results_to_file(self, results: Dict[str, Any], filename: str) -> str:
@@ -270,14 +271,14 @@ class WSLClient:
             Path to the saved file
         """
         filepath = Path(filename)
-        
+
         # Ensure directory exists
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Save results as JSON
         with open(filepath, "w") as f:
             json.dump(results, f, indent=2)
-        
+
         return str(filepath.absolute())
 
     def load_results_from_file(self, filename: str) -> Dict[str, Any]:
@@ -291,10 +292,9 @@ class WSLClient:
             Loaded results
         """
         filepath = Path(filename)
-        
+
         # Load results from JSON
         with open(filepath, "r") as f:
             results = json.load(f)
-        
-        return results
 
+        return results

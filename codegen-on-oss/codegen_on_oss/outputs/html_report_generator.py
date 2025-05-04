@@ -42,7 +42,7 @@ def generate_html_report(results: Dict[str, Any], output_path: str, mode: str = 
         raise ValueError(f"Invalid mode: {mode}")
 
     # Write HTML content to file
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(html_content)
 
 
@@ -55,19 +55,34 @@ def _validate_results(results: Dict[str, Any], mode: str) -> None:
         mode: Analysis mode (single, compare, or pr)
     """
     required_keys = []
-    
+
     if mode == "single":
-        required_keys = ["total_functions", "total_classes", "total_files", 
-                         "total_errors", "errors"]
+        required_keys = [
+            "total_functions",
+            "total_classes",
+            "total_files",
+            "total_errors",
+            "errors",
+        ]
     elif mode == "compare":
-        required_keys = ["main_error_count", "branch_error_count", "error_diff", 
-                         "new_errors", "fixed_errors"]
+        required_keys = [
+            "main_error_count",
+            "branch_error_count",
+            "error_diff",
+            "new_errors",
+            "fixed_errors",
+        ]
     elif mode == "pr":
-        required_keys = ["main_error_count", "branch_error_count", "error_diff", 
-                         "new_errors", "fixed_errors"]
+        required_keys = [
+            "main_error_count",
+            "branch_error_count",
+            "error_diff",
+            "new_errors",
+            "fixed_errors",
+        ]
     else:
         raise ValueError(f"Invalid mode: {mode}")
-    
+
     missing_keys = [key for key in required_keys if key not in results]
     if missing_keys:
         raise ValueError(f"Missing required keys for {mode} mode: {', '.join(missing_keys)}")
@@ -91,7 +106,7 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
     errors = results.get("errors", [])
     codebase_summary = results.get("codebase_summary", "")
     execution_time = results.get("execution_time", 0)
-    
+
     # Group errors by type
     error_types = {}
     for error in errors:
@@ -99,7 +114,7 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
         if error_type not in error_types:
             error_types[error_type] = []
         error_types[error_type].append(error)
-    
+
     # Generate HTML content
     html = f"""
     <!DOCTYPE html>
@@ -116,7 +131,7 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
         <div class="container">
             <h1>Code Integrity Analysis Report</h1>
             <p class="timestamp">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-    
+
             <div class="summary-box">
                 <h2>Summary</h2>
                 <div class="summary-grid">
@@ -139,39 +154,39 @@ def _generate_single_branch_report(results: Dict[str, Any]) -> str:
                 </div>
                 <p class="execution-time">Analysis completed in {execution_time:.2f} seconds</p>
             </div>
-    
+
             <div class="tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'errors-tab')">Errors</button>
                     <button class="tab-button" onclick="openTab(event, 'summary-tab')">Codebase Summary</button>
                 </div>
-    
+
                 <div id="errors-tab" class="tab-content active">
                     <h2>Errors by Type</h2>
                     <div class="error-type-list">
                         {_generate_error_type_list(error_types)}
                     </div>
-    
+
                     <h2>All Errors</h2>
                     <div class="error-list">
                         {_generate_error_list(errors)}
                     </div>
                 </div>
-    
+
                 <div id="summary-tab" class="tab-content">
                     <h2>Codebase Summary</h2>
                     <pre class="codebase-summary">{codebase_summary}</pre>
                 </div>
             </div>
         </div>
-    
+
         <script>
             {_get_javascript()}
         </script>
     </body>
     </html>
     """
-    
+
     return html
 
 
@@ -194,7 +209,7 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
     main_summary = results.get("main_summary", "")
     branch_summary = results.get("branch_summary", "")
     execution_time = results.get("execution_time", 0)
-    
+
     # Generate HTML content
     html = f"""
     <!DOCTYPE html>
@@ -211,7 +226,7 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
         <div class="container">
             <h1>Branch Comparison Report</h1>
             <p class="timestamp">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-    
+
             <div class="summary-box">
                 <h2>Comparison Summary</h2>
                 <div class="summary-grid">
@@ -230,7 +245,7 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
                 </div>
                 <p class="execution-time">Comparison completed in {execution_time:.2f} seconds</p>
             </div>
-    
+
             <div class="tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'new-errors-tab')">New Errors ({len(new_errors)})</button>
@@ -238,40 +253,40 @@ def _generate_branch_comparison_report(results: Dict[str, Any]) -> str:
                     <button class="tab-button" onclick="openTab(event, 'main-summary-tab')">Main Branch Summary</button>
                     <button class="tab-button" onclick="openTab(event, 'feature-summary-tab')">Feature Branch Summary</button>
                 </div>
-    
+
                 <div id="new-errors-tab" class="tab-content active">
                     <h2>New Errors in Feature Branch</h2>
                     <div class="error-list">
                         {_generate_error_list(new_errors)}
                     </div>
                 </div>
-    
+
                 <div id="fixed-errors-tab" class="tab-content">
                     <h2>Errors Fixed in Feature Branch</h2>
                     <div class="error-list">
                         {_generate_error_list(fixed_errors)}
                     </div>
                 </div>
-    
+
                 <div id="main-summary-tab" class="tab-content">
                     <h2>Main Branch Summary</h2>
                     <pre class="codebase-summary">{main_summary}</pre>
                 </div>
-    
+
                 <div id="feature-summary-tab" class="tab-content">
                     <h2>Feature Branch Summary</h2>
                     <pre class="codebase-summary">{branch_summary}</pre>
                 </div>
             </div>
         </div>
-    
+
         <script>
             {_get_javascript()}
         </script>
     </body>
     </html>
     """
-    
+
     return html
 
 
@@ -297,7 +312,7 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
     modified_class_errors = results.get("modified_class_errors", [])
     total_new_errors = results.get("total_new_errors", 0)
     execution_time = results.get("execution_time", 0)
-    
+
     # Generate HTML content
     html = f"""
     <!DOCTYPE html>
@@ -314,7 +329,7 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
         <div class="container">
             <h1>Pull Request Analysis Report</h1>
             <p class="timestamp">Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-    
+
             <div class="summary-box">
                 <h2>PR Summary</h2>
                 <div class="summary-grid">
@@ -341,7 +356,7 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
                 </div>
                 <p class="execution-time">Analysis completed in {execution_time:.2f} seconds</p>
             </div>
-    
+
             <div class="tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'new-function-errors-tab')">New Function Errors ({len(new_function_errors)})</button>
@@ -350,70 +365,70 @@ def _generate_pr_analysis_report(results: Dict[str, Any]) -> str:
                     <button class="tab-button" onclick="openTab(event, 'modified-class-errors-tab')">Modified Class Errors ({len(modified_class_errors)})</button>
                     <button class="tab-button" onclick="openTab(event, 'comparison-tab')">Branch Comparison</button>
                 </div>
-    
+
                 <div id="new-function-errors-tab" class="tab-content active">
                     <h2>Errors in New Functions</h2>
                     <div class="error-list">
                         {_generate_error_list(new_function_errors)}
                     </div>
                 </div>
-    
+
                 <div id="new-class-errors-tab" class="tab-content">
                     <h2>Errors in New Classes</h2>
                     <div class="error-list">
                         {_generate_error_list(new_class_errors)}
                     </div>
                 </div>
-    
+
                 <div id="modified-function-errors-tab" class="tab-content">
                     <h2>Errors in Modified Functions</h2>
                     <div class="error-list">
                         {_generate_error_list(modified_function_errors)}
                     </div>
                 </div>
-    
+
                 <div id="modified-class-errors-tab" class="tab-content">
                     <h2>Errors in Modified Classes</h2>
                     <div class="error-list">
                         {_generate_error_list(modified_class_errors)}
                     </div>
                 </div>
-    
+
                 <div id="comparison-tab" class="tab-content">
                     <h2>Branch Comparison</h2>
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <span class="summary-value">{comparison.get('main_error_count', 0)}</span>
+                            <span class="summary-value">{comparison.get("main_error_count", 0)}</span>
                             <span class="summary-label">Main Branch Errors</span>
                         </div>
-                        <div class="summary-item {_get_error_class(comparison.get('branch_error_count', 0))}">
-                            <span class="summary-value">{comparison.get('branch_error_count', 0)}</span>
+                        <div class="summary-item {_get_error_class(comparison.get("branch_error_count", 0))}">
+                            <span class="summary-value">{comparison.get("branch_error_count", 0)}</span>
                             <span class="summary-label">PR Branch Errors</span>
                         </div>
-                        <div class="summary-item {_get_diff_class(comparison.get('error_diff', 0))}">
-                            <span class="summary-value">{comparison.get('error_diff', 0):+d}</span>
+                        <div class="summary-item {_get_diff_class(comparison.get("error_diff", 0))}">
+                            <span class="summary-value">{comparison.get("error_diff", 0):+d}</span>
                             <span class="summary-label">Error Difference</span>
                         </div>
                     </div>
                     <h3>New Errors in PR Branch</h3>
                     <div class="error-list">
-                        {_generate_error_list(comparison.get('new_errors', []))}
+                        {_generate_error_list(comparison.get("new_errors", []))}
                     </div>
                     <h3>Errors Fixed in PR Branch</h3>
                     <div class="error-list">
-                        {_generate_error_list(comparison.get('fixed_errors', []))}
+                        {_generate_error_list(comparison.get("fixed_errors", []))}
                     </div>
                 </div>
             </div>
         </div>
-    
+
         <script>
             {_get_javascript()}
         </script>
     </body>
     </html>
     """
-    
+
     return html
 
 
@@ -429,17 +444,17 @@ def _generate_error_list(errors: List[Dict[str, Any]]) -> str:
     """
     if not errors:
         return "<p class='no-errors'>No errors found.</p>"
-    
+
     html = "<table class='error-table'>"
     html += "<tr><th>Type</th><th>File</th><th>Line</th><th>Message</th><th>Severity</th></tr>"
-    
+
     for error in errors:
         error_type = error.get("error_type", "unknown")
         filepath = error.get("filepath", "")
         line = error.get("line", "")
         message = error.get("message", "")
         severity = error.get("severity", "warning")
-        
+
         html += f"<tr class='{severity}-row'>"
         html += f"<td>{error_type}</td>"
         html += f"<td>{filepath}</td>"
@@ -447,7 +462,7 @@ def _generate_error_list(errors: List[Dict[str, Any]]) -> str:
         html += f"<td>{message}</td>"
         html += f"<td class='{severity}'>{severity.upper()}</td>"
         html += "</tr>"
-    
+
     html += "</table>"
     return html
 
@@ -464,18 +479,18 @@ def _generate_error_type_list(error_types: Dict[str, List[Dict[str, Any]]]) -> s
     """
     if not error_types:
         return "<p class='no-errors'>No errors found.</p>"
-    
+
     html = "<div class='error-type-grid'>"
-    
+
     for error_type, errors in error_types.items():
         error_count = len(errors)
         severity_class = _get_severity_class(errors)
-        
+
         html += f"<div class='error-type-item {severity_class}'>"
         html += f"<h3>{error_type}</h3>"
         html += f"<p class='error-count'>{error_count} error{'s' if error_count != 1 else ''}</p>"
         html += "</div>"
-    
+
     html += "</div>"
     return html
 
@@ -563,7 +578,7 @@ def _get_css_styles() -> str:
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                 "Helvetica Neue", Arial, sans-serif;
             line-height: 1.5;
             color: #333;
@@ -822,13 +837,13 @@ def _get_javascript() -> str:
             for (var i = 0; i < tabContents.length; i++) {
                 tabContents[i].classList.remove("active");
             }
-    
+
             // Remove active class from all tab buttons
             var tabButtons = document.getElementsByClassName("tab-button");
             for (var i = 0; i < tabButtons.length; i++) {
                 tabButtons[i].classList.remove("active");
             }
-    
+
             // Show the selected tab content and mark the button as active
             document.getElementById(tabId).classList.add("active");
             evt.currentTarget.classList.add("active");

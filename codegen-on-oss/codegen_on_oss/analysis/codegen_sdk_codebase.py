@@ -14,7 +14,5 @@ def get_codegen_sdk_subdirectories() -> list[str]:
 
 def get_codegen_sdk_codebase() -> Codebase:
     """Grabs a Codebase w/ GraphSitter content. Responsible for figuring out where it is, e.g. in Modal or local"""
-    codebase = get_current_code_codebase(
-        subdirectories=get_codegen_sdk_subdirectories()
-    )
+    codebase = get_current_code_codebase(subdirectories=get_codegen_sdk_subdirectories())
     return codebase

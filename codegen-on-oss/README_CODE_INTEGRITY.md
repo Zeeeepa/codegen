@@ -5,11 +5,13 @@ The Code Integrity Analyzer is a comprehensive tool for analyzing code quality a
 ## Features
 
 - **Comprehensive Code Analysis**
+
   - Analyzes all functions and classes in the codebase
   - Identifies error functions with exact error details
   - Detects implementation points that are not properly used
 
 - **Specific Error Detection**
+
   - Wrong parameter usage detection
   - Incorrect function callback points
   - Missing docstrings
@@ -19,11 +21,13 @@ The Code Integrity Analyzer is a comprehensive tool for analyzing code quality a
   - And more...
 
 - **Branch Comparison**
+
   - Compares error counts between branches
   - Identifies new errors introduced in PR branches
   - Shows fixed errors in PR branches
 
 - **HTML Report Generation**
+
   - Generates detailed HTML reports with error listings
   - Provides tabbed interface for easy navigation
   - Includes codebase summaries
@@ -38,12 +42,14 @@ The Code Integrity Analyzer is a comprehensive tool for analyzing code quality a
 ### Installation Steps
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Zeeeepa/codegen.git
    cd codegen
    ```
 
-2. Install the package:
+1. Install the package:
+
    ```bash
    pip install -e .
    ```
@@ -90,7 +96,7 @@ config = {
     "max_class_attributes": 20,
     "require_docstrings": True,
     "require_type_hints": True,
-    "ignore_patterns": [r"__pycache__", r"\.git", r"\.venv", r"\.env", r"tests/"]
+    "ignore_patterns": [r"__pycache__", r"\.git", r"\.venv", r"\.env", r"tests/"],
 }
 
 analyzer = CodeIntegrityAnalyzer(codebase, config)
@@ -135,7 +141,12 @@ You can customize the analyzer behavior using a configuration file (JSON or YAML
   "max_line_length": 100,
   "require_docstrings": true,
   "require_type_hints": false,
-  "ignore_patterns": ["__pycache__", "\\.git", "\\.venv", "\\.env"],
+  "ignore_patterns": [
+    "__pycache__",
+    "\\.git",
+    "\\.venv",
+    "\\.env"
+  ],
   "severity_levels": {
     "missing_docstring": "warning",
     "empty_function": "error",
@@ -168,39 +179,39 @@ name: Code Integrity Check
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e .
-    
-    - name: Analyze code integrity
-      run: |
-        python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo . --output results.json --html report.html
-    
-    - name: Upload results
-      uses: actions/upload-artifact@v3
-      with:
-        name: code-integrity-report
-        path: |
-          results.json
-          report.html
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Analyze code integrity
+        run: |
+          python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo . --output results.json --html report.html
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-integrity-report
+          path: |
+            results.json
+            report.html
 ```
 
 ### GitLab CI
@@ -211,7 +222,8 @@ code_integrity:
   image: python:3.10
   script:
     - pip install -e .
-    - python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo . --output results.json --html report.html
+    - python -m codegen_on_oss.scripts.analyze_code_integrity_example --repo . --output
+      results.json --html report.html
   artifacts:
     paths:
       - results.json
@@ -258,23 +270,27 @@ docker run -v /path/to/repo:/repo code-integrity-analyzer --repo /repo --output 
 ### Common Issues
 
 1. **ImportError: No module named 'codegen'**
+
    - Make sure you have installed the Codegen SDK
    - Check your Python path
 
-2. **FileNotFoundError: Repository not found**
+1. **FileNotFoundError: Repository not found**
+
    - Verify the repository path exists
    - Ensure you have read permissions for the repository
 
-3. **MemoryError during analysis**
+1. **MemoryError during analysis**
+
    - For large codebases, increase available memory
    - Consider analyzing specific directories instead of the entire repository
 
 ### Getting Help
 
 If you encounter any issues or have questions, please:
+
 1. Check the documentation
-2. Look for similar issues in the issue tracker
-3. Open a new issue with detailed information about your problem
+1. Look for similar issues in the issue tracker
+1. Open a new issue with detailed information about your problem
 
 ## Contributing
 
@@ -283,4 +299,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

@@ -6,7 +6,7 @@ This module provides base classes for event handlers.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from codegen_on_oss.events.event_bus import Event, EventType, event_bus
 

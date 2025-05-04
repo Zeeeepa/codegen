@@ -7,10 +7,10 @@ This module provides a complete solution for running codegen on a WSL2 server ba
 The WSL2 server implementation consists of the following components:
 
 1. **WSL Server** (`wsl_server.py`): A FastAPI server that provides endpoints for code validation, repository comparison, and PR analysis.
-2. **WSL Client** (`wsl_client.py`): A Python client for interacting with the WSL2 server.
-3. **WSL Deployment** (`wsl_deployment.py`): Utilities for deploying the WSL2 server, with support for Docker and ctrlplane.
-4. **WSL CLI** (`wsl_cli.py`): A command-line interface for deploying the server and interacting with it.
-5. **WSL Integration** (`wsl_integration.py`): Integration with external tools like ctrlplane, weave, probot, pkg.pr.new, and tldr.
+1. **WSL Client** (`wsl_client.py`): A Python client for interacting with the WSL2 server.
+1. **WSL Deployment** (`wsl_deployment.py`): Utilities for deploying the WSL2 server, with support for Docker and ctrlplane.
+1. **WSL CLI** (`wsl_cli.py`): A command-line interface for deploying the server and interacting with it.
+1. **WSL Integration** (`wsl_integration.py`): Integration with external tools like ctrlplane, weave, probot, pkg.pr.new, and tldr.
 
 ## Installation
 

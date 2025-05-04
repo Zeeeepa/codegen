@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import lox
-
 from codegen import Codebase
 from codegen.agents.code_agent import CodeAgent
 from codegen.configs.models.codebase import CodebaseConfig
@@ -118,9 +117,7 @@ Also DO NOT ADD OR EDIT ANY TESTS!
     try:
         result = agent.run(prompt=message)
     except Exception as agent_error:
-        pprint.pprint(
-            f"Instance ID: {instance_id} terminated with error: {agent_error}"
-        )
+        pprint.pprint(f"Instance ID: {instance_id} terminated with error: {agent_error}")
         raise agent_error
 
     # Get the diff between the current state and the original commit

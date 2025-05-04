@@ -1,8 +1,7 @@
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
-
-import networkx as nx
+from typing import TYPE_CHECKING, Any, Dict
 
 import codegen
+import networkx as nx
 
 if TYPE_CHECKING:
     from codegen import Codebase

@@ -8,19 +8,15 @@ orchestration and provides endpoints for various code analysis tasks.
 
 import logging
 import os
-import sys
 import tempfile
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
-from codegen import Codebase
 from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
@@ -60,6 +56,7 @@ API_KEY = os.getenv("CODEGEN_API_KEY", "")
 # Request Models
 class CodeValidationRequest(BaseModel):
     """Request model for code validation."""
+
     repo_url: str
     branch: Optional[str] = "main"
     categories: Optional[List[str]] = Field(default_factory=list)
@@ -68,6 +65,7 @@ class CodeValidationRequest(BaseModel):
 
 class RepoComparisonRequest(BaseModel):
     """Request model for repository comparison."""
+
     base_repo_url: str
     head_repo_url: str
     base_branch: Optional[str] = "main"
@@ -77,6 +75,7 @@ class RepoComparisonRequest(BaseModel):
 
 class PRAnalysisRequest(BaseModel):
     """Request model for PR analysis."""
+
     repo_url: str
     pr_number: int
     github_token: Optional[str] = None
@@ -87,6 +86,7 @@ class PRAnalysisRequest(BaseModel):
 # Response Models
 class ValidationResult(BaseModel):
     """Model for validation results."""
+
     category: str
     score: float
     issues: List[Dict[str, Any]]
@@ -95,6 +95,7 @@ class ValidationResult(BaseModel):
 
 class CodeValidationResponse(BaseModel):
     """Response model for code validation."""
+
     repo_url: str
     branch: str
     validation_results: List[ValidationResult]
@@ -104,6 +105,7 @@ class CodeValidationResponse(BaseModel):
 
 class RepoComparisonResponse(BaseModel):
     """Response model for repository comparison."""
+
     base_repo_url: str
     head_repo_url: str
     file_changes: Dict[str, str]
@@ -115,6 +117,7 @@ class RepoComparisonResponse(BaseModel):
 
 class PRAnalysisResponse(BaseModel):
     """Response model for PR analysis."""
+
     repo_url: str
     pr_number: int
     analysis_results: Dict[str, Any]
@@ -130,10 +133,10 @@ async def get_api_key(api_key_header: str = Depends(api_key_header)):
     if not API_KEY:
         # If no API key is set, allow all requests
         return True
-    
+
     if api_key_header == API_KEY:
         return True
-    
+
     raise HTTPException(
         status_code=401,
         detail="Invalid API Key",
@@ -170,7 +173,7 @@ async def validate_code(
 ):
     """
     Validate code in a repository.
-    
+
     This endpoint analyzes a repository and provides validation results
     for code quality, security, and other categories.
     """
@@ -178,22 +181,22 @@ async def validate_code(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
-            
+            SnapshotManager(temp_dir)
+
             # Create snapshot from repository
             snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.repo_url,
                 branch=request.branch,
                 github_token=request.github_token,
             )
-            
+
             # Initialize code integrity analyzer
             analyzer = CodeIntegrityAnalyzer(snapshot)
-            
+
             # Perform analysis
             categories = request.categories or ["code_quality", "security", "maintainability"]
             results = []
-            
+
             for category in categories:
                 if category == "code_quality":
                     result = analyzer.analyze_code_quality()
@@ -207,7 +210,7 @@ async def validate_code(
                         "issues": [],
                         "recommendations": [f"Unknown category: {category}"],
                     }
-                
+
                 results.append(
                     ValidationResult(
                         category=category,
@@ -216,16 +219,16 @@ async def validate_code(
                         recommendations=result.get("recommendations", []),
                     )
                 )
-            
+
             # Calculate overall score
             overall_score = sum(r.score for r in results) / len(results) if results else 0.0
-            
+
             # Generate summary
             summary = (
                 f"Analysis of {request.repo_url} ({request.branch}) completed "
                 f"with an overall score of {overall_score:.2f}/10."
             )
-            
+
             return CodeValidationResponse(
                 repo_url=request.repo_url,
                 branch=request.branch,
@@ -233,7 +236,7 @@ async def validate_code(
                 overall_score=overall_score,
                 summary=summary,
             )
-    
+
     except Exception as e:
         logger.error(f"Error validating code: {str(e)}")
         raise HTTPException(
@@ -250,7 +253,7 @@ async def compare_repositories(
 ):
     """
     Compare two repositories or branches.
-    
+
     This endpoint analyzes the differences between two repositories or branches
     and provides a detailed comparison report.
     """
@@ -258,35 +261,35 @@ async def compare_repositories(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
-            
+            SnapshotManager(temp_dir)
+
             # Create snapshots from repositories
             base_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.base_repo_url,
                 branch=request.base_branch,
                 github_token=request.github_token,
             )
-            
+
             head_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.head_repo_url,
                 branch=request.head_branch,
                 github_token=request.github_token,
             )
-            
+
             # Initialize diff analyzer
             diff_analyzer = DiffAnalyzer(base_snapshot, head_snapshot)
-            
+
             # Analyze differences
             file_changes = diff_analyzer.analyze_file_changes()
             function_changes = diff_analyzer.analyze_function_changes()
             complexity_changes = diff_analyzer.analyze_complexity_changes()
-            
+
             # Assess risk
             risk_assessment = diff_analyzer.assess_risk()
-            
+
             # Generate summary
             summary = diff_analyzer.format_summary_text()
-            
+
             return RepoComparisonResponse(
                 base_repo_url=request.base_repo_url,
                 head_repo_url=request.head_repo_url,
@@ -296,7 +299,7 @@ async def compare_repositories(
                 risk_assessment=risk_assessment,
                 summary=summary,
             )
-    
+
     except Exception as e:
         logger.error(f"Error comparing repositories: {str(e)}")
         raise HTTPException(
@@ -313,21 +316,21 @@ async def analyze_pull_request(
 ):
     """
     Analyze a pull request.
-    
+
     This endpoint analyzes a pull request and provides a detailed report
     on code quality, issues, and recommendations.
     """
     try:
         # Initialize SWE harness agent
         agent = SWEHarnessAgent(github_token=request.github_token)
-        
+
         # Analyze pull request
         analysis_results = agent.analyze_pr(
             repo=request.repo_url,
             pr_number=request.pr_number,
             detailed=request.detailed,
         )
-        
+
         # Post comment if requested
         if request.post_comment:
             agent.post_pr_comment(
@@ -335,13 +338,13 @@ async def analyze_pull_request(
                 pr_number=request.pr_number,
                 comment=analysis_results["summary"],
             )
-        
+
         # Extract relevant information
         code_quality_score = analysis_results.get("code_quality_score", 0.0)
         issues_found = analysis_results.get("issues", [])
         recommendations = analysis_results.get("recommendations", [])
         summary = analysis_results.get("summary", "")
-        
+
         return PRAnalysisResponse(
             repo_url=request.repo_url,
             pr_number=request.pr_number,
@@ -351,7 +354,7 @@ async def analyze_pull_request(
             recommendations=recommendations,
             summary=summary,
         )
-    
+
     except Exception as e:
         logger.error(f"Error analyzing pull request: {str(e)}")
         raise HTTPException(

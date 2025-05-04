@@ -92,12 +92,8 @@ def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeled
             parent_if_block = imp.parent_of_type(IfBlockStatement)
 
             # Check if import is in a valid environment check block
-            if_block_valid = parent_if_block and is_valid_block_expression(
-                parent_if_block
-            )
-            else_block_valid = parent_if_block and process_else_block_expression(
-                parent_if_block
-            )
+            if_block_valid = parent_if_block and is_valid_block_expression(parent_if_block)
+            else_block_valid = parent_if_block and process_else_block_expression(parent_if_block)
 
             # Skip if the import is properly guarded by environment checks
             if if_block_valid or else_block_valid:
@@ -112,11 +108,13 @@ def lint_for_dev_import_violations(codebase: Codebase, event: PullRequestLabeled
     if violations:
         # Comment on PR with violations
         review_attention_message = "## Dev Import Violations Found\n\n"
-        review_attention_message += "The following files have imports that violate development overlay rules:\n\n"
+        review_attention_message += (
+            "The following files have imports that violate development overlay rules:\n\n"
+        )
         review_attention_message += "\n".join(violations)
-        review_attention_message += "\n\nPlease ensure that development imports are not imported in production code."
+        review_attention_message += (
+            "\n\nPlease ensure that development imports are not imported in production code."
+        )
 
         # Create PR comment with the formatted message
-        codebase._op.create_pr_comment(
-            event.pull_request.number, review_attention_message
-        )
+        codebase._op.create_pr_comment(event.pull_request.number, review_attention_message)

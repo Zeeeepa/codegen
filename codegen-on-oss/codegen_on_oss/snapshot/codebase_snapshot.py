@@ -12,14 +12,11 @@ import logging
 import os
 import tempfile
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from codegen import Codebase
 from codegen.configs.models.secrets import SecretsConfig
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.file import SourceFile
 from codegen.sdk.core.function import Function
-from codegen.sdk.core.symbol import Symbol
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +52,9 @@ class CodebaseSnapshot:
             self.snapshot_id = snapshot_id
         else:
             # Create a unique ID based on repo name, commit SHA, and timestamp
-            id_string = f"{codebase.repo_path}:{commit_sha or 'unknown'}:{self.timestamp.isoformat()}"
+            id_string = (
+                f"{codebase.repo_path}:{commit_sha or 'unknown'}:{self.timestamp.isoformat()}"
+            )
             self.snapshot_id = hashlib.md5(id_string.encode()).hexdigest()
 
         # Capture key metrics and metadata
@@ -213,9 +212,7 @@ class CodebaseSnapshot:
             # Count early returns which create additional paths
             complexity += func.source.count("return ") - 1
             if complexity < 1:
-                complexity = (
-                    1  # Ensure at least one return is not counted as complexity
-                )
+                complexity = 1  # Ensure at least one return is not counted as complexity
 
         return complexity
 
@@ -297,14 +294,14 @@ class CodebaseSnapshot:
         """Get a summary of the snapshot."""
         return f"""
 Codebase Snapshot: {self.snapshot_id}
-Repository: {self.metadata['repo_path']}
-Commit: {self.metadata['commit_sha']}
-Timestamp: {self.metadata['timestamp']}
-Files: {self.metadata['file_count']}
-Functions: {self.metadata['function_count']}
-Classes: {self.metadata['class_count']}
-Imports: {self.metadata['import_count']}
-Symbols: {self.metadata['symbol_count']}
+Repository: {self.metadata["repo_path"]}
+Commit: {self.metadata["commit_sha"]}
+Timestamp: {self.metadata["timestamp"]}
+Files: {self.metadata["file_count"]}
+Functions: {self.metadata["function_count"]}
+Classes: {self.metadata["class_count"]}
+Imports: {self.metadata["import_count"]}
+Symbols: {self.metadata["symbol_count"]}
 """
 
 

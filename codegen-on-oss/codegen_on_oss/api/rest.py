@@ -5,7 +5,11 @@ This module provides a REST API for accessing analysis data.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from codegen_on_oss.database.connection import get_db
 from codegen_on_oss.database.repositories import (
@@ -18,9 +22,6 @@ from codegen_on_oss.database.repositories import (
 )
 from codegen_on_oss.events.event_bus import Event, EventType, event_bus
 from codegen_on_oss.snapshot.enhanced_snapshot_manager import EnhancedSnapshotManager
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
