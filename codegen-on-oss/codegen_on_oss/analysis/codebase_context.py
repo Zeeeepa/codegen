@@ -62,7 +62,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-# src/vs/platform/contextview/browser/contextMenuService.ts is ignored as there is a parsing error with tree-sitter
+# src/vs/platform/contextview/browser/contextMenuService.ts is ignored due to tree-sitter parsing error
 GLOBAL_FILE_IGNORE_LIST = [
     ".git/*",
     "*/.git/*",
@@ -208,7 +208,8 @@ class CodebaseContext:
         ):
             logger.warning("WARNING: The codebase is using an unsupported language!")
             logger.warning(
-                "Some features may not work as expected. Advanced static analysis will be disabled but simple file IO will still work."
+                "Some features may not work as expected. "
+                "Advanced static analysis will be disabled but simple file IO will still work."
             )
 
         # Assert config assertions
