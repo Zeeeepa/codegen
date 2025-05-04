@@ -380,14 +380,14 @@ class CodeIntegrityAnalyzer:
 
             for param in func.parameters:
                 if param.name not in used_params and param.name != "self" and param.name != "cls":
-                    errors.append(
+                    warnings.append(
                         {
-                            "type": "function_error",
-                            "error_type": "unused_parameter",
-                            "name": func.name,
+                            "type": "unused_parameter",
                             "filepath": func.filepath,
                             "line": func.line_range[0],
-                            "message": f"Function '{func.name}' has unused parameter '{param.name}'",
+                            "message": (
+                                f"Function '{func.name}' has unused parameter '{param.name}'"
+                            ),
                         }
                     )
 
