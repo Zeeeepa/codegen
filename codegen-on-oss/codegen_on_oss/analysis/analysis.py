@@ -11,7 +11,7 @@ import os
 import re
 import subprocess
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional
 
 import requests
 import uvicorn
@@ -64,7 +64,6 @@ from codegen_on_oss.analysis.module_dependencies import (
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
 from codegen_on_oss.errors import (
     AnalysisError,
-    CodebaseNotFoundError,
     FileNotFoundError,
     InvalidInputError,
     SymbolNotFoundError,
@@ -105,7 +104,8 @@ class CodeAnalyzer:
             logger.error("Cannot initialize CodeAnalyzer with None codebase")
             raise InvalidInputError("Codebase cannot be None", "codebase")
 
-        logger.debug(f"Initializing CodeAnalyzer for codebase: {getattr(codebase, 'repo_name', 'unknown')}")
+        repo_name = getattr(codebase, "repo_name", "unknown")
+        logger.debug(f"Initializing CodeAnalyzer for codebase: {repo_name}")
         self.codebase = codebase
         self._context = None
         self._initialized = False
@@ -132,7 +132,7 @@ class CodeAnalyzer:
             logger.info("CodeAnalyzer successfully initialized")
         except Exception as e:
             logger.exception(f"Failed to initialize CodeAnalyzer: {str(e)}")
-            raise AnalysisError(f"Failed to initialize analyzer: {str(e)}")
+            raise AnalysisError(f"Failed to initialize analyzer: {str(e)}") from e
 
     def _create_context(self) -> CodebaseContext:
         """
@@ -166,7 +166,7 @@ class CodeAnalyzer:
             return CodebaseContext([project_config], config=CodebaseConfig())
         except Exception as e:
             logger.exception(f"Failed to create context: {str(e)}")
-            raise AnalysisError(f"Failed to create context: {str(e)}")
+            raise AnalysisError(f"Failed to create context: {str(e)}") from e
 
     @property
     def context(self) -> CodebaseContext:
@@ -221,7 +221,7 @@ class CodeAnalyzer:
         """
         if not file_path:
             logger.error("File path cannot be empty")
-            raise InvalidInputError("File path cannot be empty", "file_path")
+            raise InvalidInputError("File path cannot be empty", "file_path") from e
 
         try:
             logger.debug(f"Getting file summary for: {file_path}")
@@ -252,14 +252,14 @@ class CodeAnalyzer:
         """
         if not class_name:
             logger.error("Class name cannot be empty")
-            raise InvalidInputError("Class name cannot be empty", "class_name")
+            raise InvalidInputError("Class name cannot be empty", "class_name") from e
 
         try:
             logger.debug(f"Getting class summary for: {class_name}")
             for cls in self.codebase.classes:
                 if cls.name == class_name:
                     return get_class_summary(cls)
-            
+
             logger.error(f"Class not found: {class_name}")
             raise SymbolNotFoundError(f"Class not found: {class_name}")
         except SymbolNotFoundError:
@@ -284,14 +284,14 @@ class CodeAnalyzer:
         """
         if not function_name:
             logger.error("Function name cannot be empty")
-            raise InvalidInputError("Function name cannot be empty", "function_name")
+            raise InvalidInputError("Function name cannot be empty", "function_name") from e
 
         try:
             logger.debug(f"Getting function summary for: {function_name}")
             for func in self.codebase.functions:
                 if func.name == function_name:
                     return get_function_summary(func)
-            
+
             logger.error(f"Function not found: {function_name}")
             raise SymbolNotFoundError(f"Function not found: {function_name}")
         except SymbolNotFoundError:
@@ -316,14 +316,14 @@ class CodeAnalyzer:
         """
         if not symbol_name:
             logger.error("Symbol name cannot be empty")
-            raise InvalidInputError("Symbol name cannot be empty", "symbol_name")
+            raise InvalidInputError("Symbol name cannot be empty", "symbol_name") from e
 
         try:
             logger.debug(f"Getting symbol summary for: {symbol_name}")
             for symbol in self.codebase.symbols:
                 if symbol.name == symbol_name:
                     return get_symbol_summary(symbol)
-            
+
             logger.error(f"Symbol not found: {symbol_name}")
             raise SymbolNotFoundError(f"Symbol not found: {symbol_name}")
         except SymbolNotFoundError:
@@ -347,7 +347,7 @@ class CodeAnalyzer:
         """
         if not symbol_name:
             logger.error("Symbol name cannot be empty")
-            raise InvalidInputError("Symbol name cannot be empty", "symbol_name")
+            raise InvalidInputError("Symbol name cannot be empty", "symbol_name") from e
 
         logger.debug(f"Finding symbol by name: {symbol_name}")
         for symbol in self.codebase.symbols:
@@ -448,12 +448,14 @@ class CodeAnalyzer:
         """
         try:
             logger.info("Analyzing imports")
-            repo_name = getattr(self.codebase, 'repo_name', 'unknown')
+            repo_name = getattr(self.codebase, "repo_name", "unknown")
             graph = create_graph_from_codebase(repo_name)
             cycles = find_import_cycles(graph)
             problematic_loops = find_problematic_import_loops(graph, cycles)
 
-            logger.info(f"Import analysis completed. Found {len(cycles)} cycles and {len(problematic_loops)} problematic loops")
+            logger.info(
+                f"Import analysis completed. Found {len(cycles)} cycles and {len(problematic_loops)} problematic loops"
+            )
             return {"import_cycles": cycles, "problematic_loops": problematic_loops}
         except Exception as e:
             logger.exception(f"Failed to analyze imports: {str(e)}")
@@ -506,7 +508,7 @@ class CodeAnalyzer:
         """
         if not class_name:
             logger.error("Class name cannot be empty")
-            raise InvalidInputError("Class name cannot be empty", "class_name")
+            raise InvalidInputError("Class name cannot be empty", "class_name") from e
 
         try:
             logger.debug(f"Generating MDX documentation for class: {class_name}")
@@ -515,7 +517,7 @@ class CodeAnalyzer:
                     # TODO: Implement this function or import the required module
                     logger.warning("generate_mdx_documentation is not fully implemented yet")
                     return f"# {cls.name}\n\n{cls.docstring or 'No documentation available.'}"
-            
+
             logger.error(f"Class not found: {class_name}")
             raise SymbolNotFoundError(f"Class not found: {class_name}")
         except SymbolNotFoundError:
@@ -1085,7 +1087,7 @@ def cc_rank(complexity):
         A letter grade from A to F
     """
     if complexity < 0:
-        raise ValueError("Complexity must be a non-negative value")
+        raise ValueError("Complexity must be a non-negative value") from e
 
     ranks = [
         (1, 5, "A"),
@@ -1330,7 +1332,7 @@ def get_github_repo_description(repo_url):
 # Define API models
 class RepoAnalysisRequest(BaseModel):
     repo_url: str = Field(..., description="URL of the repository to analyze")
-    
+
     @validator("repo_url")
     def validate_repo_url(cls, v):
         if not v:
@@ -1341,7 +1343,7 @@ class RepoAnalysisRequest(BaseModel):
 class CommitAnalysisRequest(BaseModel):
     repo_url: str = Field(..., description="URL of the repository to analyze")
     commit_hash: str = Field(..., description="Commit hash to analyze")
-    
+
     @validator("repo_url", "commit_hash")
     def validate_fields(cls, v, values, **kwargs):
         if not v:
@@ -1353,17 +1355,17 @@ class CommitAnalysisRequest(BaseModel):
 class LocalCommitAnalysisRequest(BaseModel):
     original_path: str = Field(..., description="Path to the original repository")
     commit_path: str = Field(..., description="Path to the commit repository")
-    
+
     @validator("original_path", "commit_path")
     def validate_paths(cls, v, values, **kwargs):
         if not v:
             field_name = kwargs.get("field")
             raise ValueError(f"{field_name} cannot be empty")
-        
+
         if not os.path.exists(v):
             field_name = kwargs.get("field")
             raise ValueError(f"{field_name} does not exist: {v}")
-        
+
         return v
 
 
@@ -1375,11 +1377,11 @@ async def analyze_repo(request: RepoAnalysisRequest):
     """
     try:
         logger.info(f"Analyzing repository: {request.repo_url}")
-        
+
         if not request.repo_url:
             logger.error("Repository URL cannot be empty")
-            raise HTTPException(status_code=400, detail="Repository URL cannot be empty")
-            
+            raise HTTPException(status_code=400, detail="Repository URL cannot be empty") from None
+
         codebase = Codebase.from_repo(request.repo_url)
         analyzer = CodeAnalyzer(codebase)
 
@@ -1389,24 +1391,28 @@ async def analyze_repo(request: RepoAnalysisRequest):
             "complexity": analyzer.analyze_complexity(),
             "imports": analyzer.analyze_imports(),
         }
-        
+
         logger.info(f"Successfully analyzed repository: {request.repo_url}")
         return result
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Error analyzing repository: {error_message}")
-        
+
         if isinstance(e, HTTPException):
             raise e
-        
+
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
-            raise HTTPException(status_code=404, detail=f"Repository not found: {error_message}")
+            raise HTTPException(
+                status_code=404, detail=f"Repository not found: {error_message}"
+            ) from None
         elif "authentication" in error_message.lower():
             raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}")
         elif "timeout" in error_message.lower():
             raise HTTPException(status_code=408, detail=f"Request timeout: {error_message}")
         else:
-            raise HTTPException(status_code=500, detail=f"Error analyzing repository: {error_message}")
+            raise HTTPException(
+                status_code=500, detail=f"Error analyzing repository: {error_message}"
+            )
 
 
 @app.post("/analyze_commit")
@@ -1416,15 +1422,15 @@ async def analyze_commit(request: CommitAnalysisRequest):
     """
     try:
         logger.info(f"Analyzing commit {request.commit_hash} in repository: {request.repo_url}")
-        
+
         if not request.repo_url:
             logger.error("Repository URL cannot be empty")
             raise HTTPException(status_code=400, detail="Repository URL cannot be empty")
-            
+
         if not request.commit_hash:
             logger.error("Commit hash cannot be empty")
             raise HTTPException(status_code=400, detail="Commit hash cannot be empty")
-        
+
         result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
             repo_url=request.repo_url, commit_hash=request.commit_hash
         )
@@ -1440,18 +1446,22 @@ async def analyze_commit(request: CommitAnalysisRequest):
             "files_modified": result.files_modified,
             "files_removed": result.files_removed,
         }
-        
-        logger.info(f"Successfully analyzed commit {request.commit_hash} in repository: {request.repo_url}")
+
+        logger.info(
+            f"Successfully analyzed commit {request.commit_hash} in repository: {request.repo_url}"
+        )
         return response
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Error analyzing commit: {error_message}")
-        
+
         if isinstance(e, HTTPException):
             raise e
-            
+
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
-            raise HTTPException(status_code=404, detail=f"Repository or commit not found: {error_message}")
+            raise HTTPException(
+                status_code=404, detail=f"Repository or commit not found: {error_message}"
+            ) from None
         elif "authentication" in error_message.lower():
             raise HTTPException(status_code=401, detail=f"Authentication error: {error_message}")
         elif "timeout" in error_message.lower():
@@ -1466,25 +1476,31 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
     Analyze a commit by comparing two local repository paths.
     """
     try:
-        logger.info(f"Analyzing local commit comparison between {request.original_path} and {request.commit_path}")
-        
+        logger.info(
+            f"Analyzing local commit comparison between {request.original_path} and {request.commit_path}"
+        )
+
         if not request.original_path:
             logger.error("Original path cannot be empty")
             raise HTTPException(status_code=400, detail="Original path cannot be empty")
-            
+
         if not request.commit_path:
             logger.error("Commit path cannot be empty")
             raise HTTPException(status_code=400, detail="Commit path cannot be empty")
-        
+
         # Validate paths exist
         if not os.path.exists(request.original_path):
             logger.error(f"Original path does not exist: {request.original_path}")
-            raise HTTPException(status_code=404, detail=f"Original path does not exist: {request.original_path}")
-            
+            raise HTTPException(
+                status_code=404, detail=f"Original path does not exist: {request.original_path}"
+            )
+
         if not os.path.exists(request.commit_path):
             logger.error(f"Commit path does not exist: {request.commit_path}")
-            raise HTTPException(status_code=404, detail=f"Commit path does not exist: {request.commit_path}")
-        
+            raise HTTPException(
+                status_code=404, detail=f"Commit path does not exist: {request.commit_path}"
+            )
+
         result = CodeAnalyzer.analyze_commit_from_paths(
             original_path=request.original_path, commit_path=request.commit_path
         )
@@ -1500,22 +1516,26 @@ async def analyze_local_commit(request: LocalCommitAnalysisRequest):
             "files_modified": result.files_modified,
             "files_removed": result.files_removed,
         }
-        
-        logger.info(f"Successfully analyzed local commit comparison")
+
+        logger.info("Successfully analyzed local commit comparison")
         return response
     except Exception as e:
         error_message = str(e)
         logger.exception(f"Error analyzing local commit: {error_message}")
-        
+
         if isinstance(e, HTTPException):
             raise e
-            
+
         if "not found" in error_message.lower() or "does not exist" in error_message.lower():
-            raise HTTPException(status_code=404, detail=f"Path not found: {error_message}")
+            raise HTTPException(
+                status_code=404, detail=f"Path not found: {error_message}"
+            ) from None
         elif "permission" in error_message.lower():
             raise HTTPException(status_code=403, detail=f"Permission error: {error_message}")
         else:
-            raise HTTPException(status_code=500, detail=f"Error analyzing local commit: {error_message}")
+            raise HTTPException(
+                status_code=500, detail=f"Error analyzing local commit: {error_message}"
+            )
 
 
 if __name__ == "__main__":
