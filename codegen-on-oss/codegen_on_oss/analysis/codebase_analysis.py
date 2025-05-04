@@ -21,7 +21,8 @@ def get_codebase_summary(codebase: Codebase) -> str:
 """
     edge_summary = f"""Contains {len(codebase.ctx.edges)} edges
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_USAGE])} symbol -> used symbol
-- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} import -> used symbol
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} \
+import -> used symbol
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.EXPORT])} export -> exported symbol
     """
 
