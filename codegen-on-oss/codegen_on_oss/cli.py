@@ -53,7 +53,7 @@ def run_one(
     cache_dir: str | Path = str(cachedir),
     output_path: str = "metrics.csv",
     commit_hash: str | None = None,
-    error_output_path: Path = str(cachedir / "errors.log"),
+    error_output_path: str | Path = str(cachedir / "errors.log"),
     debug: bool = False,
 ):
     """

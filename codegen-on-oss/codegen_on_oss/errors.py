@@ -27,7 +27,7 @@ class SymbolNotFoundError(CodegenOnOssError):
 class InvalidInputError(CodegenOnOssError):
     """Error raised when input validation fails."""
     
-    def __init__(self, message: str, parameter_name: str = None):
+    def __init__(self, message: str, parameter_name: str | None = None):
         """
         Initialize an InvalidInputError.
         
@@ -37,4 +37,3 @@ class InvalidInputError(CodegenOnOssError):
         """
         self.parameter_name = parameter_name
         super().__init__(message)
-

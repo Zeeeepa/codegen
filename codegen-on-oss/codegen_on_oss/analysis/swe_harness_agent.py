@@ -97,7 +97,10 @@ class SWEHarnessAgent:
         if detailed:
             response["detailed_analysis"] = analysis_results
 
-        return response
+        # Add the comment to the results
+        analysis_results["comment"] = response
+
+        return analysis_results
 
     def analyze_pull_request(
         self, repo_url: str, pr_number: int, detailed: bool = False
@@ -146,7 +149,10 @@ class SWEHarnessAgent:
         if detailed:
             response["detailed_analysis"] = analysis_results
 
-        return response
+        # Add the comment to the results
+        analysis_results["comment"] = response
+
+        return analysis_results
 
     def _get_agent_analysis(
         self, repo_url: str, base_commit: str, head_commit: str
@@ -393,35 +399,48 @@ class SWEHarnessAgent:
         # Add the comment to the results
         analysis_results["comment"] = comment
 
-def get_pr_file_content(self, repo: str, pr_number: int) -> Dict[str, str]:
-    try:
-        owner, repo_name = repo.split('/')
-        g = Github(self.github_token)
-        repo_obj = g.get_repo(f"{owner}/{repo_name}")
-        pr = repo_obj.get_pull(pr_number)
-        files = pr.get_files()
+        return analysis_results
+
+    def get_pr_file_content(self, repo: str, pr_number: int) -> Dict[str, str]:
+        """
+        Get the content of files changed in a pull request.
         
-        file_content = {}
-        for file in files:
-            try:
-                content = repo_obj.get_contents(file.filename, ref=pr.head.ref).decoded_content.decode('utf-8')
-                file_content[file.filename] = content
-            except GithubException as e:
-                logger.warning(f"GitHub API error for {file.filename}: {e.data.get('message', str(e))}")
-            except UnicodeDecodeError as e:
-                logger.warning(f"Unicode decode error for {file.filename}: {str(e)}")
-            except Exception as e:
-                logger.warning(f"Unexpected error for {file.filename}: {str(e)}")
-        return file_content
-    
-    except ValueError as e:
-        logger.error(f"Invalid repository format: {str(e)}")
-    except GithubException as e:
-        logger.error(f"GitHub API error: {e.data.get('message', str(e))}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-    return {}
-            return {}
+        Args:
+            repo: Repository in the format "owner/repo"
+            pr_number: PR number
+            
+        Returns:
+            Dictionary mapping filenames to their content
+        """
+        try:
+            from github import Github, GithubException
+            
+            owner, repo_name = repo.split('/')
+            g = Github(self.github_token)
+            repo_obj = g.get_repo(f"{owner}/{repo_name}")
+            pr = repo_obj.get_pull(pr_number)
+            files = pr.get_files()
+            
+            file_content = {}
+            for file in files:
+                try:
+                    content = repo_obj.get_contents(file.filename, ref=pr.head.ref).decoded_content.decode('utf-8')
+                    file_content[file.filename] = content
+                except GithubException as e:
+                    logger.warning(f"GitHub API error for {file.filename}: {e.data.get('message', str(e))}")
+                except UnicodeDecodeError as e:
+                    logger.warning(f"Unicode decode error for {file.filename}: {str(e)}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error for {file.filename}: {str(e)}")
+            return file_content
+        
+        except ValueError as e:
+            logger.error(f"Invalid repository format: {str(e)}")
+        except GithubException as e:
+            logger.error(f"GitHub API error: {e.data.get('message', str(e))}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+        return {}
 
 
 # Example usage

@@ -66,7 +66,7 @@ def get_file_attribution(
     attribution["line_count"] = num_lines
 
     # Get per-author breakdown
-    author_breakdown = _get_author_breakdown(blame_info)
+    author_breakdown: List[Dict[str, Union[str, int]]] = _get_author_breakdown(blame_info)
     attribution["author_breakdown"] = author_breakdown
 
     return attribution
