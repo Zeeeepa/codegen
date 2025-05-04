@@ -46,26 +46,22 @@ def load_codebase(
 
     Args:
         repo_path: Path to the repository
-        branch: Optional branch to load
-        commit: Optional commit to load
+        branch: Branch to load
+        commit: Commit to load
 
     Returns:
         Loaded codebase
     """
-    logger.info(f"Loading codebase from {repo_path}")
-
-    if branch:
-        logger.info(f"Using branch: {branch}")
-
-    if commit:
-        logger.info(f"Using commit: {commit}")
+    logger.info(f"Loading codebase from {repo_path} (branch: {branch}, commit: {commit})")
 
     # Load the codebase
-    codebase = Codebase.from_repo(repo_path, branch=branch, commit=commit)
-
-    logger.info(f"Loaded codebase with {len(list(codebase.files))} files")
-
-    return codebase
+    try:
+        codebase = Codebase.from_repo(repo_path, branch=branch, commit=commit)
+        logger.info(f"Loaded codebase with {len(list(codebase.files))} files")
+        return codebase
+    except Exception as e:
+        logger.error(f"Failed to load codebase: {str(e)}")
+        raise RuntimeError(f"Failed to load codebase from {repo_path}: {str(e)}")
 
 
 def load_config(config_file: Optional[str] = None) -> Dict[str, Any]:

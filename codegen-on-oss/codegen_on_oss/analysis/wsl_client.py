@@ -69,45 +69,25 @@ class WSLClient:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
-        
+    
     def __del__(self):
         """
-        Clean up resources when the client is destroyed.
+        Cleanup resources when the client is destroyed.
         """
-        try:
-            if hasattr(self, 'session'):
+        if hasattr(self, 'session') and self.session:
+            try:
                 self.session.close()
-                logger.debug("WSLClient session closed")
-        except Exception as e:
-            logger.warning(f"Error closing WSLClient session: {str(e)}")
-            
-    def __enter__(self):
-        """
-        Support for context manager protocol.
-        """
-        return self
-        
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Clean up resources when exiting context manager.
-        """
-        try:
-            self.session.close()
-            logger.debug("WSLClient session closed")
-        except Exception as e:
-            logger.warning(f"Error closing WSLClient session: {str(e)}")
-            
+            except Exception as e:
+                logger.warning(f"Error closing session: {str(e)}")
+    
     def close(self):
         """
         Explicitly close the session.
         """
-        try:
+        if hasattr(self, 'session') and self.session:
             self.session.close()
-            logger.debug("WSLClient session closed")
-        except Exception as e:
-            logger.warning(f"Error closing WSLClient session: {str(e)}")
-            raise WSLClientError(f"Error closing session: {str(e)}")
-    
+            self.session = None
+
     def _handle_response_error(self, response: requests.Response, operation: str) -> None:
         """
         Handle error responses from the server.
@@ -129,7 +109,7 @@ class WSLClient:
             error_data = response.json()
             error_message = error_data.get("detail", "Unknown error")
             error_type = error_data.get("error_type", "Unknown")
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, requests.exceptions.JSONDecodeError):
             error_message = response.text or f"HTTP {response.status_code}"
             error_type = "Unknown"
 
@@ -176,7 +156,7 @@ class WSLClient:
             return response.json()
         except requests.RequestException as e:
             logger.error(f"Health check failed: {str(e)}")
-            raise WSLClientError(f"Health check failed: {str(e)}") from e
+            raise WSLClientError(f"Health check failed: {str(e)}")
 
     def validate_codebase(
         self,
@@ -229,7 +209,7 @@ class WSLClient:
             return result
         except requests.RequestException as e:
             logger.error(f"Validation request failed: {str(e)}")
-            raise ValidationError(f"Validation request failed: {str(e)}") from e
+            raise ValidationError(f"Validation request failed: {str(e)}")
 
     def compare_repositories(
         self,
@@ -285,7 +265,7 @@ class WSLClient:
             return result
         except requests.RequestException as e:
             logger.error(f"Comparison request failed: {str(e)}")
-            raise ComparisonError(f"Comparison request failed: {str(e)}") from e
+            raise ComparisonError(f"Comparison request failed: {str(e)}")
 
     def analyze_pr(
         self,
@@ -341,7 +321,7 @@ class WSLClient:
             return result
         except requests.RequestException as e:
             logger.error(f"PR analysis request failed: {str(e)}")
-            raise PRAnalysisError(f"PR analysis request failed: {str(e)}") from e
+            raise PRAnalysisError(f"PR analysis request failed: {str(e)}")
 
     def get_server_metrics(self) -> Dict[str, Any]:
         """
@@ -366,7 +346,7 @@ class WSLClient:
             return response.json()
         except requests.RequestException as e:
             logger.error(f"Get metrics failed: {str(e)}")
-            raise WSLClientError(f"Get metrics failed: {str(e)}") from e
+            raise WSLClientError(f"Get metrics failed: {str(e)}")
 
     def format_validation_results_markdown(self, results: Dict[str, Any]) -> str:
         """
