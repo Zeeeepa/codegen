@@ -296,9 +296,8 @@ class CodeAnalyzer:
         """
         Convert all function call arguments to keyword arguments.
         """
-        # TODO: Implement this function or import the required module
-        # convert_all_calls_to_kwargs(self.codebase)
-        pass
+        from codegen_on_oss.analysis.code_transformations import convert_all_calls_to_kwargs
+        convert_all_calls_to_kwargs(self.codebase)
 
     def visualize_module_dependencies(self) -> None:
         """
@@ -316,11 +315,13 @@ class CodeAnalyzer:
         Returns:
             MDX documentation as a string
         """
+        from codegen_on_oss.analysis.mdx_docs_generation import create_class_doc, render_mdx_page_for_class
+        
         for cls in self.codebase.classes:
             if cls.name == class_name:
-                # TODO: Implement this function or import the required module
-                # return render_mdx_page_for_class(cls)
-                return f"MDX documentation for {class_name}"
+                cls_doc = create_class_doc(cls, self.codebase)
+                return render_mdx_page_for_class(cls_doc)
+        
         return f"Class not found: {class_name}"
 
     def print_symbol_attribution(self) -> None:
@@ -432,43 +433,13 @@ class CodeAnalyzer:
 
     def analyze_complexity(self) -> Dict[str, Any]:
         """
-        Analyze code complexity metrics for the codebase.
+        Analyze the complexity of the codebase.
 
         Returns:
-            A dictionary containing complexity metrics
+            A dictionary with complexity metrics
         """
-        # TODO: This method requires several helper functions that are not yet implemented
-        # Returning a placeholder result for now
-        return {
-            "cyclomatic_complexity": {
-                "functions": [],
-                "average": 0,
-            },
-            "line_metrics": {
-                "files": {},
-                "total": {
-                    "loc": 0,
-                    "lloc": 0,
-                    "sloc": 0,
-                    "comments": 0,
-                    "comment_ratio": 0,
-                },
-            },
-            "halstead_metrics": {
-                "functions": [],
-                "total_volume": 0,
-                "average_volume": 0,
-            },
-            "inheritance_depth": {
-                "classes": [],
-                "average": 0,
-            },
-            "dependency_metrics": {
-                "most_imported": [],
-                "most_dependent": [],
-                "most_central": [],
-            },
-        }
+        from codegen_on_oss.analysis.complexity_analyzer import analyze_codebase_complexity
+        return analyze_codebase_complexity(self.codebase)
 
     def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
         """
@@ -600,44 +571,39 @@ class CodeAnalyzer:
         return analyzer.analyze_commit()
 
     @classmethod
+    def analyze_commit_from_repo_and_commit(
+        cls, repo_url: str, commit_hash: str, base_commit: Optional[str] = None
+    ) -> CommitAnalysisResult:
+        """
+        Analyze a commit from a repository and commit hash.
+
+        Args:
+            repo_url: The repository URL or owner/repo string
+            commit_hash: The commit hash to analyze
+            base_commit: Optional base commit hash (if not provided, uses the parent commit)
+
+        Returns:
+            A CommitAnalysisResult object
+        """
+        from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_repo_and_commit
+        return analyze_commit_from_repo_and_commit(repo_url, commit_hash, base_commit)
+
+    @classmethod
     def analyze_commit_from_paths(
         cls, original_path: str, commit_path: str
     ) -> CommitAnalysisResult:
         """
-        Analyze a commit by comparing two repository paths.
+        Analyze a commit by comparing two local repository paths.
 
         Args:
             original_path: Path to the original repository
-            commit_path: Path to the commit repository
+            commit_path: Path to the repository with the commit applied
 
         Returns:
-            A CommitAnalysisResult object containing the analysis results
+            A CommitAnalysisResult object
         """
-        # Create a CommitAnalyzer instance from paths
-        analyzer = CommitAnalyzer.from_paths(original_path, commit_path)
-
-        # Analyze the commit
-        return analyzer.analyze_commit()
-
-    @classmethod
-    def analyze_commit_from_repo_and_commit(
-        cls, repo_url: str, commit_hash: str
-    ) -> CommitAnalysisResult:
-        """
-        Analyze a commit by comparing a repository at two different commits.
-
-        Args:
-            repo_url: URL of the repository
-            commit_hash: Hash of the commit to analyze
-
-        Returns:
-            A CommitAnalysisResult object containing the analysis results
-        """
-        # Create a CommitAnalyzer instance from repo and commit
-        analyzer = CommitAnalyzer.from_repo_and_commit(repo_url, commit_hash)
-
-        # Analyze the commit
-        return analyzer.analyze_commit()
+        from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_paths
+        return analyze_commit_from_paths(original_path, commit_path)
 
     def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:
         """

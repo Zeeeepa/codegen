@@ -7,7 +7,7 @@ from enum import IntEnum, auto, unique
 from functools import lru_cache
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from codegen.configs.models.codebase import CodebaseConfig, PinkMode
 from codegen.configs.models.secrets import SecretsConfig
@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from codegen.sdk.core.parser import Parser
     from codeowners import CodeOwners as CodeOwnersParser
     from git import Commit as GitCommit
+    from codegen.sdk.codebase.progress.progress import Task
 
 logger = get_logger(__name__)
 
@@ -181,8 +182,9 @@ class CodebaseContext:
         self.codeowners_parser = context.repo_operator.codeowners_parser
         self.base_url = context.repo_operator.base_url
         if not self.config.allow_external:
-            # TODO: Fix this to be more robust with multiple projects
-            self.io = io or FileIO(allowed_paths=[Path(self.repo_path).resolve()])
+            # Fix this to be more robust with multiple projects
+            allowed_paths = [Path(project.repo_operator.repo_path).resolve() for project in projects]
+            self.io = io or FileIO(allowed_paths=allowed_paths)
         else:
             self.io = io or FileIO()
         # =====[ computed attributes ]=====
@@ -480,12 +482,15 @@ class CodebaseContext:
         return None
 
     def _process_diff_files(
-        self, files_to_sync: Mapping[SyncType, list[Path]], incremental: bool = True
-    ) -> None:
+        self,
+        files_to_process: list[Path],
+        incremental: bool = False,
+        task: Optional[Task] = None,
+    ) -> list[SourceFile]:
         # If all the files are empty, don't uncache
         assert self._computing is False
         skip_uncache = incremental and (
-            (len(files_to_sync[SyncType.DELETE]) + len(files_to_sync[SyncType.REPARSE])) == 0
+            (len(files_to_process[SyncType.DELETE]) + len(files_to_process[SyncType.REPARSE])) == 0
         )
         if not skip_uncache:
             uncache_all()
@@ -494,10 +499,12 @@ class CodebaseContext:
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
             if not self.dependency_manager.ready() and not self.dependency_manager.error():
-                # TODO: We do not reparse dependencies during syncs as it is expensive. We should probably add a flag for this
                 logger.info("> Starting dependency manager")
                 self.dependency_manager.start(async_start=False)
-
+            elif self.config.reparse_dependencies:
+                # Reparse dependencies during syncs if the flag is set
+                logger.info("> Reparsing dependencies")
+                self.dependency_manager.reparse(async_start=False)
         # Start the language engine. This may or may not run asynchronously, depending on the implementation
         if self.language_engine is not None:
             # Check if its inital start or a reparse
@@ -518,28 +525,28 @@ class CodebaseContext:
         # Step 2: For any files that no longer exist, remove them during the sync
         add_to_remove = []
         if incremental:
-            for file_path in files_to_sync[SyncType.ADD]:
+            for file_path in files_to_process[SyncType.ADD]:
                 if not self.io.file_exists(self.to_absolute(file_path)):
                     add_to_remove.append(file_path)
                     logger.warning(
                         f"SYNC: SourceFile {file_path} no longer exists! Removing from graph"
                     )
             reparse_to_remove = []
-            for file_path in files_to_sync[SyncType.REPARSE]:
+            for file_path in files_to_process[SyncType.REPARSE]:
                 if not self.io.file_exists(self.to_absolute(file_path)):
                     reparse_to_remove.append(file_path)
                     logger.warning(
                         f"SYNC: SourceFile {file_path} no longer exists! Removing from graph"
                     )
-            files_to_sync[SyncType.ADD] = [
-                f for f in files_to_sync[SyncType.ADD] if f not in add_to_remove
+            files_to_process[SyncType.ADD] = [
+                f for f in files_to_process[SyncType.ADD] if f not in add_to_remove
             ]
-            files_to_sync[SyncType.REPARSE] = [
-                f for f in files_to_sync[SyncType.REPARSE] if f not in reparse_to_remove
+            files_to_process[SyncType.REPARSE] = [
+                f for f in files_to_process[SyncType.REPARSE] if f not in reparse_to_remove
             ]
             for file_path in add_to_remove + reparse_to_remove:
                 if self.get_file(file_path) is not None:
-                    files_to_sync[SyncType.DELETE].append(file_path)
+                    files_to_process[SyncType.DELETE].append(file_path)
                 else:
                     logger.warning(
                         f"SYNC: SourceFile {file_path} does not exist and also not found on graph!"
@@ -547,7 +554,7 @@ class CodebaseContext:
 
         # Step 3: Remove files to delete from graph
         to_resolve = []
-        for file_path in files_to_sync[SyncType.DELETE]:
+        for file_path in files_to_process[SyncType.DELETE]:
             file = self.get_file(file_path)
             file.remove_internal_edges()
             to_resolve.extend(file.unparse())
@@ -557,16 +564,16 @@ class CodebaseContext:
                 to_resolve,
             )
         )
-        for file_path in files_to_sync[SyncType.REPARSE]:
+        for file_path in files_to_process[SyncType.REPARSE]:
             file = self.get_file(file_path)
             file.remove_internal_edges()
 
         task = self.progress.begin(
-            "Reparsing updated files", count=len(files_to_sync[SyncType.REPARSE])
+            "Reparsing updated files", count=len(files_to_process[SyncType.REPARSE])
         )
         files_to_resolve = []
         # Step 4: Reparse updated files
-        for idx, file_path in enumerate(files_to_sync[SyncType.REPARSE]):
+        for idx, file_path in enumerate(files_to_process[SyncType.REPARSE]):
             task.update(f"Reparsing {self.to_relative(file_path)}", count=idx)
             file = self.get_file(file_path)
             to_resolve.extend(file.unparse(reparse=True))
@@ -580,8 +587,8 @@ class CodebaseContext:
             files_to_resolve.append(file)
         task.end()
         # Step 5: Add new files as nodes to graph (does not yet add edges)
-        task = self.progress.begin("Adding new files", count=len(files_to_sync[SyncType.ADD]))
-        for idx, filepath in enumerate(files_to_sync[SyncType.ADD]):
+        task = self.progress.begin("Adding new files", count=len(files_to_process[SyncType.ADD]))
+        for idx, filepath in enumerate(files_to_process[SyncType.ADD]):
             task.update(f"Adding {self.to_relative(filepath)}", count=idx)
             try:
                 content = self.io.read_text(filepath)
@@ -593,10 +600,12 @@ class CodebaseContext:
             # TODO: this is wrong with context changes
             if filepath.suffix in self.extensions:
                 file_cls = self.node_classes.file_cls
+                # Create a new file from the content
                 new_file = file_cls.from_content(
                     filepath, content, self, sync=False, verify_syntax=False
                 )
                 if new_file is not None:
+                    # Add the file to the graph
                     files_to_resolve.append(new_file)
         task.end()
         for file in files_to_resolve:
