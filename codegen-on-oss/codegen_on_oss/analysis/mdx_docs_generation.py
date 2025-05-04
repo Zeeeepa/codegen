@@ -251,7 +251,7 @@ def generate_mdx_docs(
     output_dir: str,
     include_patterns: Optional[List[str]] = None,
     exclude_patterns: Optional[List[str]] = None,
-) -> None:
+) -> Dict[str, int]:
     """
     Generate MDX documentation for a codebase.
 
@@ -260,43 +260,74 @@ def generate_mdx_docs(
         output_dir: The directory to write the documentation to
         include_patterns: Optional list of patterns to include
         exclude_patterns: Optional list of patterns to exclude
+
+    Returns:
+        A dictionary with statistics about the generated documentation:
+        - 'classes_count': Number of classes documented
+        - 'files_count': Number of files generated
+        - 'errors_count': Number of errors encountered
     """
     # Create output directory if it doesn't exist
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
-    # Get all classes in the codebase
-    classes = codebase.classes
+    # Statistics to return
+    stats = {
+        'classes_count': 0,
+        'files_count': 0,
+        'errors_count': 0
+    }
     
-    # Filter classes based on include/exclude patterns
-    if include_patterns:
-        classes = [cls for cls in classes if any(re.search(pattern, cls.name) for pattern in include_patterns)]
-    
-    if exclude_patterns:
-        classes = [cls for cls in classes if not any(re.search(pattern, cls.name) for pattern in exclude_patterns)]
-    
-    # Generate documentation for each class
-    for cls in classes:
-        # Create ClassDoc object
-        cls_doc = create_class_doc(cls, codebase)
+    try:
+        # Get all classes in the codebase
+        classes = codebase.classes
         
-        # Generate MDX content
-        mdx_content = render_mdx_page_for_class(cls_doc)
+        # Filter classes based on include/exclude patterns
+        if include_patterns:
+            classes = [cls for cls in classes if any(re.search(pattern, cls.name) for pattern in include_patterns)]
         
-        # Determine output file path
-        route = get_mdx_route_for_class(cls_doc)
-        file_path = output_path / f"{cls.name}.mdx"
+        if exclude_patterns:
+            classes = [cls for cls in classes if not any(re.search(pattern, cls.name) for pattern in exclude_patterns)]
         
-        # Write MDX content to file
-        with open(file_path, "w") as f:
-            f.write(mdx_content)
+        # Generate documentation for each class
+        for cls in classes:
+            try:
+                # Create ClassDoc object
+                cls_doc = create_class_doc(cls, codebase)
+                
+                # Generate MDX content
+                mdx_content = render_mdx_page_for_class(cls_doc)
+                
+                # Determine output file path
+                route = get_mdx_route_for_class(cls_doc)
+                file_path = output_path / f"{cls.name}.mdx"
+                
+                # Write MDX content to file
+                with open(file_path, "w") as f:
+                    f.write(mdx_content)
+                
+                logger.info(f"Generated MDX documentation for {cls.name} at {file_path}")
+                stats['classes_count'] += 1
+                stats['files_count'] += 1
+            except Exception as e:
+                logger.error(f"Error generating documentation for class {cls.name}: {str(e)}")
+                stats['errors_count'] += 1
         
-        logger.info(f"Generated MDX documentation for {cls.name} at {file_path}")
-    
-    # Generate index file
-    generate_index_file(classes, output_path)
-    
-    logger.info(f"Generated MDX documentation for {len(classes)} classes in {output_dir}")
+        # Generate index file
+        try:
+            generate_index_file(classes, output_path)
+            stats['files_count'] += 1
+            logger.info(f"Generated index file at {output_path / 'index.mdx'}")
+        except Exception as e:
+            logger.error(f"Error generating index file: {str(e)}")
+            stats['errors_count'] += 1
+        
+        logger.info(f"Generated MDX documentation for {stats['classes_count']} classes in {output_dir}")
+        return stats
+    except Exception as e:
+        logger.error(f"Error in generate_mdx_docs: {str(e)}")
+        stats['errors_count'] += 1
+        return stats
 
 
 def create_class_doc(cls: Class, codebase: "Codebase") -> ClassDoc:

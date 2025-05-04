@@ -282,19 +282,18 @@ class SWEHarnessAgent:
                 if repo_name.endswith(".git"):
                     repo_name = repo_name[:-4]
             
-            # Get the PR from GitHub
-            g = Github(self.github_token) if self.github_token else Github()
+            # Get the PR details from GitHub
+            g = Github(self.github_token)
             repo = g.get_repo(f"{owner}/{repo_name}")
             pr = repo.get_pull(pr_number)
             
-            # Get PR details
+            # Get the PR diff
+            diff = pr.get_files()
+            diff_text = "\n".join([f"File: {f.filename}\nStatus: {f.status}\nAdditions: {f.additions}\nDeletions: {f.deletions}\nChanges: {f.changes}\n" for f in diff])
+            
+            # Get the PR description and title
             pr_title = pr.title
             pr_description = pr.body or ""
-            pr_files = [file.filename for file in pr.get_files()]
-            
-            # Get the diff
-            diff = pr.diff_url
-            diff_content = requests.get(diff).text if diff else ""
             
             # Prepare the request to the agent API
             headers = {
@@ -307,8 +306,7 @@ class SWEHarnessAgent:
                 "pr_number": pr_number,
                 "pr_title": pr_title,
                 "pr_description": pr_description,
-                "pr_files": pr_files,
-                "diff": diff_content,
+                "diff": diff_text,
                 "analysis_type": "pull_request",
             }
             
