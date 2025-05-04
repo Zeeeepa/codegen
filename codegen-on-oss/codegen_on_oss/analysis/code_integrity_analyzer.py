@@ -542,8 +542,8 @@ class CodeIntegrityAnalyzer:
                                                 "filepath": func.filepath,
                                                 "line": call.line_range[0],
                                                 "message": (
-                                                    f"Function '{func.name}' is called with wrong type "
-                                                    f"for parameter '{param.name}'"
+                                                    f"Function '{func.name}' is called with "
+                                                    f"wrong type for parameter '{param.name}'"
                                                 ),
                                             }
                                         )
@@ -572,7 +572,8 @@ class CodeIntegrityAnalyzer:
                             callback_func = next((f for f in functions if f.name == arg.name), None)
                             if callback_func:
                                 # Check if the callback function has the right signature
-                                # This is a simplified check and would need more sophisticated\n                                # analysis in a real implementation
+                                # This is a simplified check and would need more sophisticated
+                                # analysis in a real implementation
                                 if len(callback_func.parameters) == 0:
                                     errors.append(
                                         {
@@ -584,7 +585,7 @@ class CodeIntegrityAnalyzer:
                                             "line": call.line_range[0],
                                             "message": (
                                                 f"Function '{func.name}' passes "
-                                                f"\"{callback_func.name}\" as a callback, "
+                                                f'"{callback_func.name}" as a callback, '
                                                 f"but it has no parameters"
                                             ),
                                         }
@@ -671,7 +672,8 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity})",
+                        "message": f"Function '{func.name}' has high cyclomatic complexity "
+                        f"({complexity})",
                         "complexity": complexity,
                         "severity": self.config["severity_levels"]["high_complexity"],
                     }
@@ -688,7 +690,8 @@ class CodeIntegrityAnalyzer:
                                 "name": func.name,
                                 "filepath": func.filepath,
                                 "line": func.line_range[0],
-                                "message": f"Function '{func.name}' uses mutable default argument for parameter '{param.name}'",
+                                "message": f"Function '{func.name}' uses mutable default argument "
+                                f"for parameter '{param.name}'",
                                 "severity": self.config["severity_levels"][
                                     "mutable_default_argument"
                                 ],
