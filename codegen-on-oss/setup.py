@@ -29,6 +29,7 @@ setup(
             "pytest",
             "ruff",
             "pre-commit",
+            "types-requests",
         ],
     },
     classifiers=[
