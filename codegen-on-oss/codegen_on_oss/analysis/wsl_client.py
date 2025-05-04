@@ -22,7 +22,10 @@ class WSLClientError(Exception):
     """Exception raised for errors in the WSL client."""
 
     def __init__(
-        self, message: str, status_code: Optional[int] = None, response: Optional[Dict[str, Any]] = None
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        response: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize a new WSLClientError.
@@ -118,7 +121,7 @@ class WSLClient:
             except ConnectionError as e:
                 retries += 1
                 if retries > self.max_retries:
-                    raise WSLClientError(f"Connection error: {str(e)}")
+                    raise WSLClientError(f"Connection error: {str(e)}") from e
                 logger.warning(
                     f"Connection error, retrying ({retries}/{self.max_retries}): {str(e)}"
                 )
@@ -127,7 +130,7 @@ class WSLClient:
             except Timeout as e:
                 retries += 1
                 if retries > self.max_retries:
-                    raise WSLClientError(f"Request timed out: {str(e)}")
+                    raise WSLClientError(f"Request timed out: {str(e)}") from e
                 logger.warning(
                     f"Request timed out, retrying ({retries}/{self.max_retries}): {str(e)}"
                 )

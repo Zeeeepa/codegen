@@ -593,7 +593,8 @@ WantedBy=multi-user.target
                 logger.info("Attempting to start server directly as fallback")
                 self._run_wsl_command(
                     "cd /home/codegen-server && source venv/bin/activate && "
-                    f"nohup python -m codegen_on_oss.analysis.wsl_server --log-level {self.log_level} "
+                    f"nohup python -m codegen_on_oss.analysis.wsl_server "
+                    f"--log-level {self.log_level} "
                     f"> /home/codegen-server/server.log 2>&1 &",
                     check=False,
                 )
@@ -732,7 +733,8 @@ WantedBy=multi-user.target
 
                     # Get uptime
                     returncode, stdout, stderr = self._run_wsl_command(
-                        "systemctl show codegen-wsl-server --property=ActiveState,ActiveEnterTimestamp",
+                        "systemctl show codegen-wsl-server "
+                        "--property=ActiveState,ActiveEnterTimestamp",
                         check=False,
                     )
                     status["uptime"] = stdout.strip()
