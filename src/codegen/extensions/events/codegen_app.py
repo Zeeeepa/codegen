@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 
 from codegen.configs.models.codebase import CodebaseConfig
 from codegen.configs.models.secrets import SecretsConfig
-from codegen.sdk.core.codebase import Codebase
+from graph_sitter.core.codebase import Codebase
 from codegen.shared.logging.get_logger import get_logger
 
 from .github import GitHub

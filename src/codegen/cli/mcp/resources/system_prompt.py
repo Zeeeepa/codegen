@@ -1418,7 +1418,7 @@ Here's an example:
 from codegen import Codebase
 from codegen.git.repo_operator.repo_operator import RepoOperator
 from codegen.git.schemas.repo_config import RepoConfig
-from codegen.sdk.codebase.config import ProjectConfig
+from graph_sitter.codebase.config import ProjectConfig
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 codebase = Codebase(
@@ -4921,8 +4921,8 @@ Here's how to build a directed graph of function calls using NetworkX:
 
 ```python
 import networkx as nx
-from codegen.sdk.core.interfaces.callable import FunctionCallDefinition
-from codegen.sdk.core.function import Function
+from graph_sitter.core.interfaces.callable import FunctionCallDefinition
+from graph_sitter.core.function import Function
 
 def create_call_graph(start_func, end_func, max_depth=5):
     G = nx.DiGraph()
@@ -6770,9 +6770,9 @@ First, let's import the types we need from Codegen:
 ```python
 import codegen
 from codegen import Codebase
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.import_resolution import Import
-from codegen.sdk.core.symbol import Symbol
+from graph_sitter.core.external_module import ExternalModule
+from graph_sitter.core.import_resolution import Import
+from graph_sitter.core.symbol import Symbol
 ```
 
 Here's how we get the full context for each function:

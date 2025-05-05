@@ -9,7 +9,7 @@ from codegen.configs.models.codebase import CodebaseConfig
 from codegen.extensions.lsp.io import LSPIO
 from codegen.extensions.lsp.progress import LSPProgress
 from codegen.extensions.lsp.utils import get_path
-from codegen.sdk.core.codebase import Codebase
+from graph_sitter.core.codebase import Codebase
 
 if TYPE_CHECKING:
     from codegen.extensions.lsp.server import CodegenLanguageServer

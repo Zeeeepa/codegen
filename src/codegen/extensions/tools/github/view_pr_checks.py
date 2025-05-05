@@ -4,7 +4,7 @@ import json
 
 from pydantic import Field
 
-from codegen.sdk.core.codebase import Codebase
+from graph_sitter.core.codebase import Codebase
 
 from ..observation import Observation
 
