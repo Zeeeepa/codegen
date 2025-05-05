@@ -10,6 +10,7 @@ import logging
 import os
 import tempfile
 import traceback
+import uuid
 from typing import Any, Dict, List, Optional, Union
 
 import uvicorn
@@ -213,7 +214,7 @@ async def validate_code(
 
             # Create snapshot from repository
             logger.info(f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})")
-            snapshot = CodebaseSnapshot.create_from_repo(
+            snapshot = snapshot_manager.create_snapshot(
                 repo_url=request.repo_url,
                 branch=request.branch,
                 github_token=request.github_token,
@@ -308,17 +309,17 @@ async def compare_repositories(
             snapshot_manager = SnapshotManager(temp_dir)
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
-            # Create snapshots from repositories
-            logger.info(f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})")
-            base_snapshot = CodebaseSnapshot.create_from_repo(
+            # Create snapshot from repository
+            logger.info(f"Creating snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})")
+            base_snapshot = snapshot_manager.create_snapshot(
                 repo_url=request.base_repo_url,
                 branch=request.base_branch,
                 github_token=request.github_token,
             )
             logger.info(f"Base snapshot created with {len(base_snapshot.files)} files")
 
-            logger.info(f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})")
-            head_snapshot = CodebaseSnapshot.create_from_repo(
+            logger.info(f"Creating snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})")
+            head_snapshot = snapshot_manager.create_snapshot(
                 repo_url=request.head_repo_url,
                 branch=request.head_branch,
                 github_token=request.github_token,
@@ -406,8 +407,8 @@ async def analyze_pull_request(
 
         # Analyze pull request
         logger.info(f"Analyzing pull request: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})")
-        analysis_results = agent.analyze_pr(
-            repo=request.repo_url,
+        analysis_results = agent.analyze_pull_request(
+            repo_url=request.repo_url,
             pr_number=request.pr_number,
             detailed=request.detailed,
         )
