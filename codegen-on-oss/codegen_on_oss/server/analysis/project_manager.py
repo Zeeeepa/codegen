@@ -41,8 +41,8 @@ class Project:
         self.description = description
         self.default_branch = default_branch
         self.created_at = datetime.now()
-        self.last_analyzed = None
-        self.metadata = {}
+        self.last_analyzed: Optional[datetime] = None
+        self.metadata: Dict[str, Any] = {}
 
     def to_dict(self) -> Dict[str, Any]:
         """

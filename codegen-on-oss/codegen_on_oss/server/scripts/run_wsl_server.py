@@ -13,6 +13,10 @@ import sys
 import traceback
 from typing import Dict, Any, Optional, Type, Protocol
 
+# Import the WSLDeployment class
+from codegen_on_oss.server.wsl.deployment import WSLDeployment
+from codegen_on_oss.server.wsl.server import run_server
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
