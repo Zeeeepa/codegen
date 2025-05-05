@@ -70,71 +70,88 @@ deployment = WSLDeployment(
     wsl_distro="Ubuntu",
     port=8000,
     api_key="your-api-key",
-    use_docker=True,
+    use_docker=False,
     use_ctrlplane=False,
 )
 
 # Check if WSL is installed
 if not deployment.check_wsl_installed():
-    print("WSL is not installed")
+    print("WSL is not installed. Please install WSL first.")
     exit(1)
 
-# Check if the distribution is installed
+# Check if the specified distribution is installed
 if not deployment.check_distro_installed():
-    print(f"Distribution {deployment.wsl_distro} is not installed")
+    print(f"WSL distribution '{deployment.wsl_distro}' is not installed.")
+    print(f"Please install it using: wsl --install -d {deployment.wsl_distro}")
     exit(1)
 
 # Install dependencies
-deployment.install_dependencies()
+print("Installing dependencies...")
+if not deployment.install_dependencies():
+    print("Failed to install dependencies.")
+    exit(1)
 
 # Deploy server
-deployment.deploy_server()
+print("Deploying server...")
+if not deployment.deploy_server():
+    print("Failed to deploy server.")
+    exit(1)
+
+print(f"Server deployed successfully on port {deployment.port}.")
+print(f"You can access the server at: http://localhost:{deployment.port}")
 ```
 
 ## Usage
 
-### Using the CLI
+### Deployment
 
-Once the server is deployed, you can use the CLI to interact with it:
-
-```bash
-# Validate a codebase
-python -m codegen_on_oss.analysis.wsl_cli validate https://github.com/username/repo
-
-# Validate a specific branch
-python -m codegen_on_oss.analysis.wsl_cli validate https://github.com/username/repo --branch develop
-
-# Validate specific categories
-python -m codegen_on_oss.analysis.wsl_cli validate https://github.com/username/repo --categories code_quality,security
-
-# Compare two repositories
-python -m codegen_on_oss.analysis.wsl_cli compare https://github.com/username/repo1 https://github.com/username/repo2
-
-# Compare two branches
-python -m codegen_on_oss.analysis.wsl_cli compare https://github.com/username/repo https://github.com/username/repo --base-branch main --head-branch develop
-
-# Analyze a pull request
-python -m codegen_on_oss.analysis.wsl_cli analyze-pr https://github.com/username/repo 123
-
-# Analyze a pull request and post a comment
-python -m codegen_on_oss.analysis.wsl_cli analyze-pr https://github.com/username/repo 123 --post-comment
-
-# Format output as JSON
-python -m codegen_on_oss.analysis.wsl_cli validate https://github.com/username/repo --format json
-
-# Format output as Markdown
-python -m codegen_on_oss.analysis.wsl_cli validate https://github.com/username/repo --format markdown
-
-# Save output to a file
-python -m codegen_on_oss.analysis.wsl_cli validate https://github.com/username/repo --output results.json
-```
-
-### Using the Client API
-
-You can also use the client API to interact with the server programmatically:
+The `WSLDeployment` class provides utilities for deploying the WSL2 server:
 
 ```python
-from codegen_on_oss.analysis.wsl_client import WSLClient
+from codegen_on_oss.server.wsl.deployment import WSLDeployment
+
+# Initialize deployment
+deployment = WSLDeployment(
+    wsl_distro="Ubuntu",
+    port=8000,
+    api_key="your-api-key",
+    use_docker=False,
+    use_ctrlplane=False,
+)
+
+# Check if WSL is installed
+if not deployment.check_wsl_installed():
+    print("WSL is not installed. Please install WSL first.")
+    exit(1)
+
+# Check if the specified distribution is installed
+if not deployment.check_distro_installed():
+    print(f"WSL distribution '{deployment.wsl_distro}' is not installed.")
+    print(f"Please install it using: wsl --install -d {deployment.wsl_distro}")
+    exit(1)
+
+# Install dependencies
+print("Installing dependencies...")
+if not deployment.install_dependencies():
+    print("Failed to install dependencies.")
+    exit(1)
+
+# Deploy server
+print("Deploying server...")
+if not deployment.deploy_server():
+    print("Failed to deploy server.")
+    exit(1)
+
+print(f"Server deployed successfully on port {deployment.port}.")
+print(f"You can access the server at: http://localhost:{deployment.port}")
+```
+
+### Client
+
+The `WSLClient` class provides a client for interacting with the WSL2 server:
+
+```python
+from codegen_on_oss.server.wsl.client import WSLClient
 
 # Initialize client
 client = WSLClient(
@@ -146,7 +163,7 @@ client = WSLClient(
 health = client.health_check()
 print(f"Server health: {health['status']}")
 
-# Validate a codebase
+# Validate codebase
 results = client.validate_codebase(
     repo_url="https://github.com/username/repo",
     branch="main",
@@ -158,116 +175,91 @@ results = client.validate_codebase(
 markdown = client.format_validation_results_markdown(results)
 print(markdown)
 
-# Save results to a file
-client.save_results_to_file(results, "results.json")
-
-# Compare two repositories
-comparison = client.compare_repositories(
-    base_repo_url="https://github.com/username/repo1",
-    head_repo_url="https://github.com/username/repo2",
-    base_branch="main",
-    head_branch="main",
-    github_token="your-github-token",
-)
-
-# Analyze a pull request
-pr_analysis = client.analyze_pr(
-    repo_url="https://github.com/username/repo",
-    pr_number=123,
-    github_token="your-github-token",
-    detailed=True,
-    post_comment=False,
-)
+# Save results to file
+client.save_results_to_file(results, "validation_results.json")
 ```
 
-### Integration with External Tools
+### Integration
 
-The WSL2 server implementation includes integration with several external tools:
+The WSL2 server can be integrated with various external tools:
 
 #### ctrlplane
 
 ```python
-from codegen_on_oss.analysis.wsl_integration import CtrlplaneIntegration
+from codegen_on_oss.server.wsl.integration import CtrlplaneIntegration
 
 # Initialize integration
-ctrlplane = CtrlplaneIntegration(api_key="your-ctrlplane-api-key")
-
-# Deploy a service
-ctrlplane.deploy_service(
-    name="codegen-wsl-server",
-    command="python -m codegen_on_oss.analysis.wsl_server",
-    environment={"CODEGEN_API_KEY": "your-api-key"},
-    ports=[{"internal": 8000, "external": 8000}],
+integration = CtrlplaneIntegration(
+    api_key="your-ctrlplane-api-key",
+    project_id="your-project-id",
 )
 
-# Stop a service
-ctrlplane.stop_service("codegen-wsl-server")
+# Deploy server using ctrlplane
+integration.deploy_server(
+    wsl_distro="Ubuntu",
+    port=8000,
+    api_key="your-api-key",
+)
 ```
 
 #### weave
 
 ```python
-from codegen_on_oss.analysis.wsl_integration import WeaveIntegration
+from codegen_on_oss.server.wsl.integration import WeaveIntegration
 
 # Initialize integration
-weave = WeaveIntegration(api_key="your-weave-api-key")
-
-# Create a visualization
-url = weave.create_visualization(
-    data=results,
-    title="Code Validation Results",
-    description="Results of code validation for repository",
+integration = WeaveIntegration(
+    api_key="your-weave-api-key",
+    project_id="your-project-id",
 )
+
+# Visualize validation results
+integration.visualize_results(results)
 ```
 
 #### probot
 
 ```python
-from codegen_on_oss.analysis.wsl_integration import ProbotIntegration
+from codegen_on_oss.server.wsl.integration import ProbotIntegration
 
 # Initialize integration
-probot = ProbotIntegration(github_token="your-github-token")
-
-# Register a webhook
-probot.register_webhook(
-    repo="username/repo",
-    events=["pull_request", "push"],
-    webhook_url="https://your-webhook-url.com",
-    secret="your-webhook-secret",
+integration = ProbotIntegration(
+    api_key="your-probot-api-key",
+    repo_url="https://github.com/username/repo",
 )
+
+# Automate PR validation
+integration.validate_pr(pr_number=123)
 ```
 
 #### pkg.pr.new
 
 ```python
-from codegen_on_oss.analysis.wsl_integration import PkgPrNewIntegration
+from codegen_on_oss.server.wsl.integration import PkgPrNewIntegration
 
 # Initialize integration
-pkg_pr_new = PkgPrNewIntegration(api_key="your-pkg-pr-new-api-key")
-
-# Create a preview release
-url = pkg_pr_new.create_preview_release(
-    repo="username/repo",
-    branch="feature-branch",
-    version="0.1.0-preview",
-    package_name="your-package",
+integration = PkgPrNewIntegration(
+    api_key="your-pkg-pr-new-api-key",
+    repo_url="https://github.com/username/repo",
 )
+
+# Create preview release
+integration.create_preview_release(version="1.0.0")
 ```
 
 #### tldr
 
 ```python
-from codegen_on_oss.analysis.wsl_integration import TldrIntegration
+from codegen_on_oss.server.wsl.integration import TldrIntegration
 
 # Initialize integration
-tldr = TldrIntegration(github_token="your-github-token")
-
-# Summarize a pull request
-summary = tldr.summarize_pr(
-    repo="username/repo",
-    pr_number=123,
-    post_comment=True,
+integration = TldrIntegration(
+    api_key="your-tldr-api-key",
+    repo_url="https://github.com/username/repo",
 )
+
+# Summarize PR
+integration.summarize_pr(pr_number=123)
 ```
 
 ## API Reference

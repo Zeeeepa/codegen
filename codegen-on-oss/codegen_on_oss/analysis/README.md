@@ -165,12 +165,12 @@ print(result.get_summary())
 
 ### Analysis Server
 
-The module provides a FastAPI server for analyzing repositories, commits, branches, and PRs:
+The analysis module includes a server for analyzing code repositories and commits:
 
 ```python
-from codegen_on_oss.analysis.server import run_server
+from codegen_on_oss.server.analysis.server import run_server
 
-# Start the server
+# Run the server
 run_server(host="0.0.0.0", port=8000)
 ```
 
