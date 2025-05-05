@@ -7,8 +7,8 @@ from pydantic import Field
 
 from codegen.extensions.tools.observation import Observation
 from codegen.extensions.tools.tool_output_types import ListDirectoryArtifacts
-from codegen.sdk.core.codebase import Codebase
-from codegen.sdk.core.directory import Directory
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.directory import Directory
 
 
 class DirectoryInfo(Observation):

@@ -32,7 +32,7 @@ from codegen.extensions.tools.search import search
 from codegen.extensions.tools.search_files_by_name import search_files_by_name
 from codegen.extensions.tools.semantic_edit import semantic_edit
 from codegen.extensions.tools.semantic_search import semantic_search
-from codegen.sdk.core.codebase import Codebase
+from graph_sitter.core.codebase import Codebase
 
 from ..tools import (
     commit,
