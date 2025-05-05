@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from lsprotocol.types import INITIALIZE, InitializeParams, InitializeResult
 from pygls.protocol import LanguageServerProtocol, lsp_method
 
-from codegen.configs.models.codebase import CodebaseConfig
+from graph_sitter.configs.models.codebase import CodebaseConfig
 from codegen.extensions.lsp.io import LSPIO
 from codegen.extensions.lsp.progress import LSPProgress
 from codegen.extensions.lsp.utils import get_path

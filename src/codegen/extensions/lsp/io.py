@@ -9,7 +9,7 @@ from pygls.workspace import TextDocument, Workspace
 
 from graph_sitter.codebase.io.file_io import FileIO
 from graph_sitter.codebase.io.io import IO
-from codegen.shared.logging.get_logger import get_logger
+from graph_sitter.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 
