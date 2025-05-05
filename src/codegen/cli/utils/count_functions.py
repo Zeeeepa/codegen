@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from pydantic.fields import Field
 
-import codegen.cli.sdk.decorator
+# Update import from codegen.cli.sdk to graph_sitter.cli.sdk
+import graph_sitter.cli.sdk.decorator
 from codegen.cli.utils.count_functions_2 import NumberType
 
 # from app.codemod.compilation.models.context import CodemodContext
@@ -20,7 +21,7 @@ class CountFunctionsArgs(BaseModel):
     complex_attr: str = Field(default_factory=lambda: "hello")
 
 
-@codegen.cli.sdk.decorator.function("count-functions")
+@graph_sitter.cli.sdk.decorator.function("count-functions")
 def run(codebase, pr_options, arguments: CountFunctionsArgs):
     # Count Functions in Codebase
 

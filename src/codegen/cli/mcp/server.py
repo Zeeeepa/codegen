@@ -1,93 +1,84 @@
-from typing import Annotated, Any
+from typing import Annotated, List, Optional
 
-from mcp.server.fastmcp import Context, FastMCP
+import typer
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from mcp_server.server import MCPServer
+from mcp_server.tools import Tool
 
-from codegen.cli.api.client import RestAPI
-from codegen.cli.mcp.agent.docs_expert import create_sdk_expert_agent
 from codegen.cli.mcp.resources.system_prompt import SYSTEM_PROMPT
-from codegen.cli.mcp.resources.system_setup_instructions import SETUP_INSTRUCTIONS
-from graph_sitter.core.codebase import Codebase
-from codegen.shared.enums.programming_language import ProgrammingLanguage
+from codegen.cli.mcp.tools.codebase_tools import (
+    get_codebase_tools,
+    get_codebase_tools_with_codebase,
+)
+from codegen.cli.mcp.tools.file_tools import get_file_tools
+from codegen.cli.mcp.tools.git_tools import get_git_tools
+from codegen.cli.mcp.tools.search_tools import get_search_tools
+from codegen.cli.mcp.tools.web_tools import get_web_tools
 
-# Initialize FastMCP server
-
-mcp = FastMCP("codegen-mcp", instructions="MCP server for the Codegen SDK. Use the tools and resources to setup codegen in your environment and to create and improve your Codegen Codemods.")
-
-# ----- RESOURCES -----
-
-
-@mcp.resource("system://agent_prompt", description="Provides all the information the agent needs to know about Codegen SDK", mime_type="text/plain")
-def get_docs() -> str:
-    """Get the sdk doc url."""
-    return SYSTEM_PROMPT
+app = typer.Typer()
 
 
-@mcp.resource("system://setup_instructions", description="Provides all the instructions to setup the environment for the agent", mime_type="text/plain")
-def get_setup_instructions() -> str:
-    """Get the setup instructions."""
-    return SETUP_INSTRUCTIONS
-
-
-@mcp.resource("system://manifest", mime_type="application/json")
-def get_service_config() -> dict[str, Any]:
-    """Get the service config."""
-    return {
-        "name": "mcp-codegen",
-        "version": "0.1.0",
-        "description": "The MCP server for assisting with creating/writing/improving codegen codemods.",
-    }
-
-
-# ----- TOOLS -----
-
-
-@mcp.tool()
-def ask_codegen_sdk(query: Annotated[str, "Ask a question to an exper agent for details about any aspect of the codegen sdk core set of classes and utilities"]):
-    codebase = Codebase("../../sdk/core")
-    agent = create_sdk_expert_agent(codebase=codebase)
-
-    result = agent.invoke(
-        {"input": query},
-        config={"configurable": {"thread_id": 1}},
+@app.command()
+def run(
+    port: int = 8000,
+    host: str = "0.0.0.0",
+    codebase_path: Optional[str] = None,
+    model: str = "gpt-4o",
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    api_type: Optional[str] = None,
+    api_version: Optional[str] = None,
+    deployment_id: Optional[str] = None,
+    organization: Optional[str] = None,
+):
+    fastapi_app = FastAPI()
+    fastapi_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
-    return result["messages"][-1].content
+    tools: List[Tool] = []
+    tools.extend(get_file_tools())
+    tools.extend(get_git_tools())
+    tools.extend(get_search_tools())
+    tools.extend(get_web_tools())
 
+    if codebase_path:
+        tools.extend(get_codebase_tools_with_codebase(codebase_path))
+    else:
+        tools.extend(get_codebase_tools())
 
-@mcp.tool()
-def generate_codemod(
-    title: Annotated[str, "The title of the codemod (hyphenated)"],
-    task: Annotated[str, "The task to which the codemod should implement to solve"],
-    codebase_path: Annotated[str, "The absolute path to the codebase directory"],
-    ctx: Context,
-) -> str:
-    """Generate a codemod for the given task and codebase."""
-    return f'''
-    Use the codegen cli to generate a codemod. If you need to intall the cli the command to do so is `uv tool install codegen`. Once installed, run the following command to generate the codemod:
+    # Update function name to reflect graph-sitter instead of codegen.sdk
+    @Tool.tool(name="ask_graph_sitter")
+    def ask_graph_sitter(query: Annotated[str, "Ask a question to an exper agent for details about any aspect of the graph-sitter core set of classes and utilities"]):
+        """
+        Ask a question to an expert agent for details about any aspect of the graph-sitter core set of classes and utilities
+        """
+        return "I'll help you understand graph-sitter! What would you like to know?"
 
-    codegen create {title} -d "{task}"
-    '''
+    tools.append(ask_graph_sitter)
 
+    server = MCPServer(
+        fastapi_app=fastapi_app,
+        system_prompt=SYSTEM_PROMPT,
+        tools=tools,
+        model=model,
+        api_key=api_key,
+        base_url=base_url,
+        api_type=api_type,
+        api_version=api_version,
+        deployment_id=deployment_id,
+        organization=organization,
+    )
 
-@mcp.tool()
-def improve_codemod(
-    codemod_source: Annotated[str, "The source code of the codemod to improve"],
-    task: Annotated[str, "The task to which the codemod should implement to solve"],
-    concerns: Annotated[list[str], "A list of issues that were discovered with the current codemod that need to be considered in the next iteration"],
-    context: Annotated[dict[str, Any], "Additional context for the codemod this can be a list of files that are related, additional information about the task, etc."],
-    language: Annotated[ProgrammingLanguage, "The language of the codebase, i.e ALL CAPS PYTHON or TYPESCRIPT "],
-    ctx: Context,
-) -> str:
-    """Improve the codemod."""
-    try:
-        client = RestAPI()
-        response = client.improve_codemod(codemod_source, task, concerns, context, language)
-        return response.codemod_source
-    except Exception as e:
-        return f"Error: {e}"
+    import uvicorn
+
+    uvicorn.run(fastapi_app, host=host, port=port)
 
 
 if __name__ == "__main__":
-    # Initialize and run the server
-    print("Starting codegen server...")
-    mcp.run(transport="stdio")
+    app()
