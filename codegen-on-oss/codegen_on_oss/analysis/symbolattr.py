@@ -8,7 +8,7 @@ from graph_sitter.core.codebase import Codebase
 from graph_sitter.core.symbol import Symbol
 
 
-def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int]]:
+def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]]:
     """
     Get attribution information for a symbol.
 
@@ -29,7 +29,7 @@ def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int]]:
     blame_info = _get_git_blame_info(file_path, start_line, end_line)
 
     # Process the blame info to get attribution
-    attribution = _process_blame_info(blame_info)
+    attribution: Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]] = _process_blame_info(blame_info)
 
     # Add symbol information
     attribution["symbol_name"] = symbol.name
@@ -97,7 +97,7 @@ def _get_git_blame_info(file_path: str, start_line: int, end_line: int) -> List[
     ]
 
 
-def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str, int]]:
+def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]]:
     """
     Process git blame information to get attribution.
 
