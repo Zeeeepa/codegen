@@ -271,7 +271,7 @@ class CodeIntegrityAnalyzer:
         files = list(self.codebase.files)
 
         # Analyze functions
-        function_errors = self._analyze_functions(functions)
+        function_errors = self._analyze_functions()
 
         # Analyze classes
         class_errors = self._analyze_classes(classes)
@@ -861,7 +861,7 @@ class CodeIntegrityAnalyzer:
         # like suffix trees or fingerprinting
 
         # Create a map of file content to file paths
-        file_contents = {}
+        file_contents: Dict[str, List[str]] = {}
         for file in files:
             # Skip files that match ignore patterns
             if any(
@@ -951,78 +951,32 @@ def compare_branches(
     return comparison
 
 
-def analyze_pr(main_codebase: Codebase, pr_codebase: Codebase) -> Dict[str, Any]:
+def analyze_pr(
+    base_codebase: Codebase, head_codebase: Codebase, config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
-    Analyze a pull request for code integrity issues.
+    Analyze a pull request by comparing base and head codebases.
 
     Args:
-        main_codebase: The main branch codebase
-        pr_codebase: The PR branch codebase
+        base_codebase: The base codebase (e.g., main branch)
+        head_codebase: The head codebase (e.g., PR branch)
+        config: Optional configuration options for the analyzer
 
     Returns:
         A dictionary with analysis results
     """
-    # Compare branches
-    comparison = compare_branches(main_codebase, pr_codebase)
+    # Analyze both codebases
+    base_analyzer = CodeIntegrityAnalyzer(base_codebase, config)
+    head_analyzer = CodeIntegrityAnalyzer(head_codebase, config)
 
-    # Get all functions and classes in the PR
-    pr_functions = list(pr_codebase.functions)
-    pr_classes = list(pr_codebase.classes)
+    base_results = base_analyzer.analyze()
+    head_results = head_analyzer.analyze()
 
-    # Get all functions and classes in the main branch
-    main_functions = list(main_codebase.functions)
-    main_classes = list(main_codebase.classes)
+    # Compare results
+    comparison = compare_branches(base_results, head_results)
 
-    # Find new and modified functions and classes
-    main_function_names = {f.name for f in main_functions}
-    main_class_names = {c.name for c in main_classes}
-
-    new_functions = [f for f in pr_functions if f.name not in main_function_names]
-    new_classes = [c for c in pr_classes if c.name not in main_class_names]
-
-    modified_functions = []
-    for pr_func in pr_functions:
-        if pr_func.name in main_function_names:
-            main_func = next(
-                (f for f in main_functions if f.name == pr_func.name), None
-            )
-            if main_func and pr_func.body != main_func.body:
-                modified_functions.append(pr_func)
-
-    modified_classes = []
-    for pr_class in pr_classes:
-        if pr_class.name in main_class_names:
-            main_class = next(
-                (c for c in main_classes if c.name == pr_class.name), None
-            )
-            if main_class and (
-                pr_class.methods != main_class.methods
-                or pr_class.attributes != main_class.attributes
-            ):
-                modified_classes.append(pr_class)
-
-    # Analyze new and modified functions and classes
-    analyzer = CodeIntegrityAnalyzer(pr_codebase)
-    new_function_errors = analyzer._analyze_functions(new_functions)
-    new_class_errors = analyzer._analyze_classes(new_classes)
-    modified_function_errors = analyzer._analyze_functions(modified_functions)
-    modified_class_errors = analyzer._analyze_classes(modified_classes)
-
-    # Create PR analysis summary
-    pr_analysis = {
+    return {
+        "base_results": base_results,
+        "head_results": head_results,
         "comparison": comparison,
-        "new_functions": len(new_functions),
-        "new_classes": len(new_classes),
-        "modified_functions": len(modified_functions),
-        "modified_classes": len(modified_classes),
-        "new_function_errors": new_function_errors,
-        "new_class_errors": new_class_errors,
-        "modified_function_errors": modified_function_errors,
-        "modified_class_errors": modified_class_errors,
-        "total_new_errors": len(new_function_errors)
-        + len(new_class_errors)
-        + len(modified_function_errors)
-        + len(modified_class_errors),
     }
-
-    return pr_analysis
