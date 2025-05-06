@@ -2,7 +2,7 @@
 Module for attributing symbols to authors.
 """
 
-from typing import Dict, List, Union
+from typing import Dict, List, Mapping, Union
 
 from codegen import Codebase
 from codegen.sdk.core.symbol import Symbol
@@ -29,7 +29,7 @@ def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int]]:
     blame_info = _get_git_blame_info(file_path, start_line, end_line)
 
     # Process the blame info to get attribution
-    attribution = _process_blame_info(blame_info)
+    attribution: Dict[str, Union[str, int]] = _process_blame_info(blame_info)
 
     # Add symbol information
     attribution["symbol_name"] = symbol.name
@@ -59,7 +59,9 @@ def get_file_attribution(
     blame_info = _get_git_blame_info(file_path, 1, num_lines)
 
     # Process the blame info to get attribution
-    attribution = _process_blame_info(blame_info)
+    attribution: Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]] = _process_blame_info(
+        blame_info
+    )
 
     # Add file information
     attribution["file_path"] = file_path
