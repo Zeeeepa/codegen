@@ -1,122 +1,81 @@
-# Comprehensive Codebase Analyzer
+# PR Static Analysis System
 
-A powerful static code analysis system that provides extensive information about your codebase using the Codegen SDK.
+A flexible rule-based system for analyzing pull requests and identifying potential issues.
+
+## Overview
+
+The PR Static Analysis System is designed to analyze pull requests for various issues, including:
+
+- **Code Integrity Issues**: Syntax errors, logical issues, code smells, potential bugs
+- **Parameter Validation Issues**: Parameter type checking, parameter usage, unused parameters, parameter naming
+- **Implementation Validation Issues**: Implementation completeness, validation against requirements, missing edge cases, performance issues
+
+The system is built around a flexible rule-based architecture that allows for easy customization and extension.
 
 ## Features
 
-This analyzer provides comprehensive analysis of your codebase, including:
-
-### 1. Codebase Structure Analysis
-
-- File Statistics (count, language, size)
-- Symbol Tree Analysis
-- Import/Export Analysis
-- Module Organization
-
-### 2. Symbol-Level Analysis
-
-- Function Analysis (parameters, return types, complexity)
-- Class Analysis (methods, attributes, inheritance)
-- Variable Analysis
-- Type Analysis
-
-### 3. Dependency and Flow Analysis
-
-- Call Graph Generation
-- Data Flow Analysis
-- Control Flow Analysis
-- Symbol Usage Analysis
-
-### 4. Code Quality Analysis
-
-- Unused Code Detection
-- Code Duplication Analysis
-- Complexity Metrics
-- Style and Convention Analysis
-
-### 5. Visualization Capabilities
-
-- Dependency Graphs
-- Call Graphs
-- Symbol Trees
-- Heat Maps
-
-### 6. Language-Specific Analysis
-
-- Python-Specific Analysis
-- TypeScript-Specific Analysis
-
-### 7. Code Metrics
-
-- Monthly Commits
-- Cyclomatic Complexity
-- Halstead Volume
-- Maintainability Index
+- **Flexible Rule System**: Rules are organized into categories and can be enabled/disabled individually.
+- **Rule Configuration**: Rules can be configured with custom options to adjust their behavior.
+- **Rule Dependencies**: Rules can depend on other rules, ensuring they are executed in the correct order.
+- **Severity Levels**: Issues can be reported with different severity levels (error, warning, info, hint).
+- **Fix Suggestions**: Rules can provide suggestions for fixing issues.
+- **Extensible**: The system can be easily extended with custom rules.
 
 ## Installation
 
-1. Clone the repository:
-
 ```bash
-git clone https://github.com/yourusername/codebase-analyzer.git
-cd codebase-analyzer
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Usage
 
-### Analyzing a Repository
+### Basic Usage
 
-```bash
-# Analyze from URL
-python codebase_analyzer.py --repo-url https://github.com/username/repo
+```python
+from pr_static_analysis import PRStaticAnalyzer
+from pr_static_analysis.rules import rule_config
 
-# Analyze local repository
-python codebase_analyzer.py --repo-path /path/to/repo
+# Load configuration
+rule_config.load_config_file("pr_static_analysis/config.yaml")
 
-# Specify language
-python codebase_analyzer.py --repo-url https://github.com/username/repo --language python
+# Create analyzer
+analyzer = PRStaticAnalyzer()
 
-# Analyze specific categories
-python codebase_analyzer.py --repo-url https://github.com/username/repo --categories codebase_structure code_quality
+# Create context
+context = {
+    "files": [
+        {
+            "filepath": "example.py",
+            "content": "def foo(x, y):\n    return x / y  # Potential division by zero",
+        },
+    ],
+    "pr": {
+        "title": "Example PR",
+        "description": "This is an example PR.",
+        "author": "example-user",
+        "branch": "feature/example",
+    },
+    "config": rule_config.global_config,
+}
+
+# Analyze PR
+results = analyzer.analyze(context)
+
+# Generate report
+report = analyzer.generate_report(results)
 ```
 
-### Output Formats
+### Command Line Usage
 
 ```bash
-# Output as JSON
-python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format json --output-file analysis.json
-
-# Generate HTML report
-python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format html --output-file report.html
-
-# Print to console (default)
-python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format console
+python -m pr_static_analysis.example --pr /path/to/pr --config pr_static_analysis/config.yaml --output report.json
 ```
 
-## Available Analysis Categories
+## Documentation
 
-- `codebase_structure`: File statistics, symbol tree, import/export analysis, module organization
-- `symbol_level`: Function, class, variable, and type analysis
-- `dependency_flow`: Call graphs, data flow, control flow, symbol usage
-- `code_quality`: Unused code, duplication, complexity, style
-- `visualization`: Dependency graphs, call graphs, symbol trees, heat maps
-- `language_specific`: Language-specific analysis features
-- `code_metrics`: Commits, complexity, volume, maintainability
-
-## Requirements
-
-- Python 3.8+
-- Codegen SDK
-- NetworkX
-- Matplotlib
-- Rich
+For more detailed documentation, see the [PR Static Analysis README](pr_static_analysis/README.md).
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
+
