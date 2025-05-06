@@ -15,23 +15,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import uvicorn
-from codegen import Codebase
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
-from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
-from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.symbol import Symbol
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
 from codegen_on_oss.analysis.analysis_import import (
     create_graph_from_codebase,
     find_import_cycles,
@@ -47,21 +30,32 @@ from codegen_on_oss.analysis.codebase_analysis import (
 
 # Import from other analysis modules
 from codegen_on_oss.analysis.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.commit_analysis import (
-    CommitAnalysisResult,
-)
+from codegen_on_oss.analysis.commit_analysis import CommitAnalysisResult
 from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
 # Import new analysis modules
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
-from codegen_on_oss.analysis.document_functions import (
-    document_function,
-)
-from codegen_on_oss.analysis.module_dependencies import (
-    visualize_module_dependencies,
-)
+from codegen_on_oss.analysis.document_functions import document_function
+from codegen_on_oss.analysis.module_dependencies import visualize_module_dependencies
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from codegen import Codebase
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.expressions.binary_expression import BinaryExpression
+from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.unary_expression import UnaryExpression
+from codegen.sdk.core.external_module import ExternalModule
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
+from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
+from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
+from codegen.sdk.core.statements.while_statement import WhileStatement
+from codegen.sdk.core.symbol import Symbol
 
 # Create FastAPI app
 app = FastAPI()
@@ -296,7 +290,10 @@ class CodeAnalyzer:
         """
         Convert all function call arguments to keyword arguments.
         """
-        from codegen_on_oss.analysis.code_transformations import convert_all_calls_to_kwargs
+        from codegen_on_oss.analysis.code_transformations import (
+            convert_all_calls_to_kwargs,
+        )
+
         convert_all_calls_to_kwargs(self.codebase)
 
     def visualize_module_dependencies(self) -> None:
@@ -315,13 +312,16 @@ class CodeAnalyzer:
         Returns:
             MDX documentation as a string
         """
-        from codegen_on_oss.analysis.mdx_docs_generation import create_class_doc, render_mdx_page_for_class
-        
+        from codegen_on_oss.analysis.mdx_docs_generation import (
+            create_class_doc,
+            render_mdx_page_for_class,
+        )
+
         for cls in self.codebase.classes:
             if cls.name == class_name:
                 cls_doc = create_class_doc(cls, self.codebase)
                 return render_mdx_page_for_class(cls_doc)
-        
+
         return f"Class not found: {class_name}"
 
     def print_symbol_attribution(self) -> None:
@@ -438,7 +438,10 @@ class CodeAnalyzer:
         Returns:
             A dictionary with complexity metrics
         """
-        from codegen_on_oss.analysis.complexity_analyzer import analyze_codebase_complexity
+        from codegen_on_oss.analysis.complexity_analyzer import (
+            analyze_codebase_complexity,
+        )
+
         return analyze_codebase_complexity(self.codebase)
 
     def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
@@ -511,7 +514,9 @@ class CodeAnalyzer:
                 symbol_info = {
                     "name": symbol.name,
                     "type": (
-                        str(symbol.symbol_type) if hasattr(symbol, "symbol_type") else "unknown"
+                        str(symbol.symbol_type)
+                        if hasattr(symbol, "symbol_type")
+                        else "unknown"
                     ),
                 }
                 file_info["symbols"].append(symbol_info)
@@ -527,7 +532,10 @@ class CodeAnalyzer:
         Returns:
             A dictionary mapping month strings to commit counts
         """
-        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
+        if (
+            not hasattr(self.codebase, "repo_operator")
+            or not self.codebase.repo_operator
+        ):
             return {}
 
         try:
@@ -536,7 +544,9 @@ class CodeAnalyzer:
             start_date = end_date - timedelta(days=365)
 
             # Get all commits in the date range
-            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
+            commits = self.codebase.repo_operator.get_commits(
+                since=start_date, until=end_date
+            )
 
             # Group commits by month
             monthly_commits = {}
@@ -564,11 +574,12 @@ class CodeAnalyzer:
         Returns:
             A CommitAnalysisResult object containing the analysis results
         """
-        # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(original_codebase=self.codebase, commit_codebase=commit_codebase)
+        analyzer = CommitAnalyzer(
+            original_codebase=self.codebase, commit_codebase=commit_codebase
+        )
 
         # Analyze the commit
-        return analyzer.analyze_commit()
+        return analyzer.analyze_commit()  # type: ignore
 
     @classmethod
     def analyze_commit_from_repo_and_commit(
@@ -585,8 +596,11 @@ class CodeAnalyzer:
         Returns:
             A CommitAnalysisResult object
         """
-        from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_repo_and_commit
-        return analyze_commit_from_repo_and_commit(repo_url, commit_hash, base_commit)
+        from codegen_on_oss.analysis.commit_analyzer import (
+            analyze_commit_from_repo_and_commit,
+        )
+
+        return analyze_commit_from_repo_and_commit(repo_url, commit_hash, base_commit)  # type: ignore
 
     @classmethod
     def analyze_commit_from_paths(
@@ -603,7 +617,8 @@ class CodeAnalyzer:
             A CommitAnalysisResult object
         """
         from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_paths
-        return analyze_commit_from_paths(original_path, commit_path)
+
+        return analyze_commit_from_paths(original_path, commit_path)  # type: ignore
 
     def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:
         """
@@ -661,7 +676,9 @@ class CodeAnalyzer:
         commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
 
         # Analyze the commit
-        return commit_analyzer.analyze_commit(self.codebase.repo_path, base_commit, head_commit)
+        return commit_analyzer.analyze_commit(
+            self.codebase.repo_path, base_commit, head_commit
+        )
 
     def analyze_pull_request(
         self, pr_number: int, github_token: Optional[str] = None

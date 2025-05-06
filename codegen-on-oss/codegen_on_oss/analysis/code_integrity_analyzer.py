@@ -375,11 +375,17 @@ class CodeIntegrityAnalyzer:
             # Check for unused parameters
             used_params = set()
             for node in func.body:
-                if hasattr(node, "name") and node.name in [p.name for p in func.parameters]:
+                if hasattr(node, "name") and node.name in [
+                    p.name for p in func.parameters
+                ]:
                     used_params.add(node.name)
 
             for param in func.parameters:
-                if param.name not in used_params and param.name != "self" and param.name != "cls":
+                if (
+                    param.name not in used_params
+                    and param.name != "self"
+                    and param.name != "cls"
+                ):
                     errors.append(
                         {
                             "type": "function_error",
@@ -394,7 +400,9 @@ class CodeIntegrityAnalyzer:
                     )
 
             # Check for too many parameters
-            if len(func.parameters) > self.config["max_function_parameters"]:  # Arbitrary threshold
+            if (
+                len(func.parameters) > self.config["max_function_parameters"]
+            ):  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "function_error",
@@ -465,7 +473,9 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many methods
-            if len(cls.methods) > self.config["max_class_methods"]:  # Arbitrary threshold
+            if (
+                len(cls.methods) > self.config["max_class_methods"]
+            ):  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "class_error",
@@ -478,7 +488,9 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many attributes
-            if len(cls.attributes) > self.config["max_class_attributes"]:  # Arbitrary threshold
+            if (
+                len(cls.attributes) > self.config["max_class_attributes"]  # type: ignore
+            ):  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "class_error",
@@ -507,7 +519,9 @@ class CodeIntegrityAnalyzer:
 
         return errors
 
-    def _analyze_parameter_usage(self, functions: List[Function]) -> List[Dict[str, Any]]:
+    def _analyze_parameter_usage(
+        self, functions: List[Function]
+    ) -> List[Dict[str, Any]]:
         """
         Analyze parameter usage for errors.
 
@@ -533,7 +547,10 @@ class CodeIntegrityAnalyzer:
                                     i < len(func.parameters)
                                     and func.parameters[i].name == param.name
                                 ):
-                                    if hasattr(arg, "type") and arg.type != param.annotation:
+                                    if (
+                                        hasattr(arg, "type")
+                                        and arg.type != param.annotation
+                                    ):
                                         errors.append(
                                             {
                                                 "type": "parameter_error",
@@ -550,7 +567,9 @@ class CodeIntegrityAnalyzer:
 
         return errors
 
-    def _analyze_callback_points(self, functions: List[Function]) -> List[Dict[str, Any]]:
+    def _analyze_callback_points(
+        self, functions: List[Function]
+    ) -> List[Dict[str, Any]]:
         """
         Analyze callback points for errors.
 
@@ -567,9 +586,13 @@ class CodeIntegrityAnalyzer:
             for call in func.function_calls:
                 if hasattr(call, "args") and len(call.args) > 0:
                     for arg in call.args:
-                        if hasattr(arg, "name") and arg.name in [f.name for f in functions]:
+                        if hasattr(arg, "name") and arg.name in [
+                            f.name for f in functions
+                        ]:
                             # This is a function being passed as a callback
-                            callback_func = next((f for f in functions if f.name == arg.name), None)
+                            callback_func = next(
+                                (f for f in functions if f.name == arg.name), None
+                            )
                             if callback_func:
                                 # Check if the callback function has the right signature
                                 # This is a simplified check and would need more sophisticated
@@ -585,7 +608,7 @@ class CodeIntegrityAnalyzer:
                                             "line": call.line_range[0],
                                             "message": (
                                                 f"Function '{func.name}' passes "
-                                                f"\"{callback_func.name}\" as a callback, "
+                                                f'"{callback_func.name}" as a callback, '
                                                 f"but it has no parameters"
                                             ),
                                         }
@@ -607,7 +630,10 @@ class CodeIntegrityAnalyzer:
 
         for file in files:
             # Skip files that match ignore patterns
-            if any(re.search(pattern, file.filepath) for pattern in self.config["ignore_patterns"]):
+            if any(
+                re.search(pattern, file.filepath)
+                for pattern in self.config["ignore_patterns"]
+            ):
                 continue
 
             # Check for unused imports
@@ -623,11 +649,17 @@ class CodeIntegrityAnalyzer:
                     {
                         "type": "import_error",
                         "error_type": "unused_import",
-                        "name": unused_import.name if hasattr(unused_import, "name") else "unknown",
+                        "name": (
+                            unused_import.name
+                            if hasattr(unused_import, "name")
+                            else "unknown"
+                        ),
                         "filepath": file.filepath,
-                        "line": unused_import.line_range[0]
-                        if hasattr(unused_import, "line_range")
-                        else 0,
+                        "line": (
+                            unused_import.line_range[0]
+                            if hasattr(unused_import, "line_range")
+                            else 0
+                        ),
                         "message": f"Unused import in {file.name}",
                         "severity": self.config["severity_levels"]["unused_import"],
                     }
@@ -649,7 +681,10 @@ class CodeIntegrityAnalyzer:
 
         for func in functions:
             # Skip functions that match ignore patterns
-            if any(re.search(pattern, func.filepath) for pattern in self.config["ignore_patterns"]):
+            if any(
+                re.search(pattern, func.filepath)
+                for pattern in self.config["ignore_patterns"]
+            ):
                 continue
 
             # Calculate cyclomatic complexity (simplified)
@@ -664,7 +699,7 @@ class CodeIntegrityAnalyzer:
                             complexity += 1
 
             # Check if complexity exceeds threshold
-            if complexity > self.config["max_function_complexity"]:
+            if complexity > self.config["max_function_complexity"]:  # type: ignore
                 errors.append(
                     {
                         "type": "complexity_error",
@@ -718,7 +753,10 @@ class CodeIntegrityAnalyzer:
         # Check functions for missing type hints
         for func in functions:
             # Skip functions that match ignore patterns
-            if any(re.search(pattern, func.filepath) for pattern in self.config["ignore_patterns"]):
+            if any(
+                re.search(pattern, func.filepath)
+                for pattern in self.config["ignore_patterns"]
+            ):
                 continue
 
             # Check for missing parameter type hints
@@ -735,7 +773,9 @@ class CodeIntegrityAnalyzer:
                                 f"Function '{func.name}' is missing type hint "
                                 f"for parameter '{param.name}'"
                             ),
-                            "severity": self.config["severity_levels"]["missing_type_hints"],
+                            "severity": self.config["severity_levels"][
+                                "missing_type_hints"
+                            ],
                         }
                     )
 
@@ -751,7 +791,9 @@ class CodeIntegrityAnalyzer:
                             "filepath": func.filepath,
                             "line": func.line_range[0],
                             "message": f"Function '{func.name}' is missing return type hint",
-                            "severity": self.config["severity_levels"]["missing_type_hints"],
+                            "severity": self.config["severity_levels"][
+                                "missing_type_hints"
+                            ],
                         }
                     )
 
@@ -773,13 +815,17 @@ class CodeIntegrityAnalyzer:
                             f"Function '{func.name}' has inconsistent return types: "
                             f"{', '.join(return_types)}"
                         ),
-                        "severity": self.config["severity_levels"]["inconsistent_return_type"],
+                        "severity": self.config["severity_levels"][
+                            "inconsistent_return_type"
+                        ],
                     }
                 )
 
         return errors
 
-    def _analyze_code_duplication(self, files: List[SourceFile]) -> List[Dict[str, Any]]:
+    def _analyze_code_duplication(
+        self, files: List[SourceFile]
+    ) -> List[Dict[str, Any]]:
         """
         Analyze code for duplication.
 
@@ -799,7 +845,10 @@ class CodeIntegrityAnalyzer:
         code_blocks = []
         for file in files:
             # Skip files that match ignore patterns
-            if any(re.search(pattern, file.filepath) for pattern in self.config["ignore_patterns"]):
+            if any(
+                re.search(pattern, file.filepath)
+                for pattern in self.config["ignore_patterns"]
+            ):
                 continue
 
             # Add functions from this file
@@ -810,9 +859,11 @@ class CodeIntegrityAnalyzer:
                             "name": func.name,
                             "filepath": file.filepath,
                             "line": func.line_range[0],
-                            "code": "\n".join(func.body)
-                            if isinstance(func.body, list)
-                            else str(func.body),
+                            "code": (
+                                "\n".join(func.body)
+                                if isinstance(func.body, list)
+                                else str(func.body)
+                            ),
                         }
                     )
 
@@ -829,7 +880,9 @@ class CodeIntegrityAnalyzer:
                     continue
 
                 # Calculate similarity ratio
-                similarity = difflib.SequenceMatcher(None, block1["code"], block2["code"]).ratio()
+                similarity = difflib.SequenceMatcher(
+                    None, block1["code"], block2["code"]
+                ).ratio()
 
                 # Flag if similarity is above threshold (e.g., 0.8 or 80%)
                 if similarity > 0.8:
@@ -847,14 +900,18 @@ class CodeIntegrityAnalyzer:
                             "duplicate_filepath": block2["filepath"],
                             "duplicate_line": block2["line"],
                             "similarity": similarity,
-                            "severity": self.config["severity_levels"]["duplicate_code"],
+                            "severity": self.config["severity_levels"][
+                                "duplicate_code"
+                            ],
                         }
                     )
 
         return errors
 
 
-def compare_branches(main_codebase: Codebase, branch_codebase: Codebase) -> Dict[str, Any]:
+def compare_branches(
+    main_codebase: Codebase, branch_codebase: Codebase
+) -> Dict[str, Any]:
     """
     Compare two branches for code integrity issues.
 
@@ -877,7 +934,9 @@ def compare_branches(main_codebase: Codebase, branch_codebase: Codebase) -> Dict
     branch_error_count = branch_results["total_errors"]
 
     # Find new errors in branch
-    main_error_keys = {f"{e['type']}:{e['name']}:{e['filepath']}" for e in main_results["errors"]}
+    main_error_keys = {
+        f"{e['type']}:{e['name']}:{e['filepath']}" for e in main_results["errors"]
+    }
     branch_error_keys = {
         f"{e['type']}:{e['name']}:{e['filepath']}" for e in branch_results["errors"]
     }
@@ -942,14 +1001,18 @@ def analyze_pr(main_codebase: Codebase, pr_codebase: Codebase) -> Dict[str, Any]
     modified_functions = []
     for pr_func in pr_functions:
         if pr_func.name in main_function_names:
-            main_func = next((f for f in main_functions if f.name == pr_func.name), None)
+            main_func = next(
+                (f for f in main_functions if f.name == pr_func.name), None
+            )
             if main_func and pr_func.body != main_func.body:
                 modified_functions.append(pr_func)
 
     modified_classes = []
     for pr_class in pr_classes:
         if pr_class.name in main_class_names:
-            main_class = next((c for c in main_classes if c.name == pr_class.name), None)
+            main_class = next(
+                (c for c in main_classes if c.name == pr_class.name), None
+            )
             if main_class and (
                 pr_class.methods != main_class.methods
                 or pr_class.attributes != main_class.attributes
