@@ -14,6 +14,7 @@ from codegen_on_oss.api.rest import router as rest_router
 from codegen_on_oss.api.websocket_manager import websocket_manager
 from codegen_on_oss.database.connection import db_manager
 from codegen_on_oss.events.event_bus import event_bus
+from codegen_on_oss.server import app as analysis_server_app
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(rest_router, prefix="/api")
+app.include_router(analysis_server_app, prefix="/analysis")
 
 
 # WebSocket endpoint
