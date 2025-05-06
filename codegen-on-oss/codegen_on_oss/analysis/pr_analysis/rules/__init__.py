@@ -1,4 +1,3 @@
 """
 Rules for PR analysis.
 """
-
