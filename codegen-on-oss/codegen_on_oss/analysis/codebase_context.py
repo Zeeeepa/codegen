@@ -502,7 +502,7 @@ class CodebaseContext:
         if not skip_uncache:
             uncache_all()
         # Step 0: Start the dependency manager and language engine if they exist
-        # Start the dependency manager. This may or may not run asynchronously, 
+        # Start the dependency manager. This may or may not run asynchronously,
         # depending on the implementation
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
@@ -513,7 +513,10 @@ class CodebaseContext:
                 # Reparse dependencies during syncs if the flag is set
                 logger.info("> Reparsing dependencies")
                 self.dependency_manager.reparse(async_start=False)
-        # Start the language engine. This may or may not run asynchronously, depending on the implementation
+ 
+        # Start the language engine. This may or may not run asynchronously, \
+ 
+        # depending on the implementation
         if self.language_engine is not None:
             # Check if its inital start or a reparse
             if not self.language_engine.ready() and not self.language_engine.error():
