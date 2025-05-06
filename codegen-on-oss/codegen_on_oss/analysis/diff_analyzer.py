@@ -20,7 +20,9 @@ class DiffAnalyzer:
     A class for analyzing differences between two codebase snapshots.
     """
 
-    def __init__(self, original_snapshot: CodebaseSnapshot, modified_snapshot: CodebaseSnapshot):
+    def __init__(
+        self, original_snapshot: CodebaseSnapshot, modified_snapshot: CodebaseSnapshot
+    ):
         """
         Initialize a new DiffAnalyzer.
 
@@ -125,7 +127,8 @@ class DiffAnalyzer:
             elif (
                 original_func["parameter_count"] != modified_func["parameter_count"]
                 or original_func["line_count"] != modified_func["line_count"]
-                or original_func["cyclomatic_complexity"] != modified_func["cyclomatic_complexity"]
+                or original_func["cyclomatic_complexity"]
+                != modified_func["cyclomatic_complexity"]
             ):
                 self._function_diffs[func_name] = "modified"
             else:
@@ -176,8 +179,10 @@ class DiffAnalyzer:
             # Check if the class has changed (methods, attributes, etc.)
             elif (
                 original_class["method_count"] != modified_class["method_count"]
-                or original_class["attribute_count"] != modified_class["attribute_count"]
-                or original_class["parent_class_count"] != modified_class["parent_class_count"]
+                or original_class["attribute_count"]
+                != modified_class["attribute_count"]
+                or original_class["parent_class_count"]
+                != modified_class["parent_class_count"]
             ):
                 self._class_diffs[class_name] = "modified"
             else:
@@ -245,8 +250,12 @@ class DiffAnalyzer:
         ]
 
         for func_name in common_functions:
-            original_complexity = self.original.function_metrics[func_name]["cyclomatic_complexity"]
-            modified_complexity = self.modified.function_metrics[func_name]["cyclomatic_complexity"]
+            original_complexity = self.original.function_metrics[func_name][
+                "cyclomatic_complexity"
+            ]
+            modified_complexity = self.modified.function_metrics[func_name][
+                "cyclomatic_complexity"
+            ]
 
             delta = modified_complexity - original_complexity
 
@@ -265,95 +274,30 @@ class DiffAnalyzer:
 
         return self._complexity_changes
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self):
         """
-        Get a summary of all changes between the two snapshots.
+        Get a summary of the diff analysis.
 
         Returns:
-            A dictionary with summary statistics for different types of changes.
+            A dictionary with analysis results
         """
-        file_changes = self.analyze_file_changes()
-        function_changes = self.analyze_function_changes()
-        class_changes = self.analyze_class_changes()
-        complexity_changes = self.analyze_complexity_changes()
-
-        # Count file changes by type
-        file_counts = {
-            "added": sum(1 for change_type in file_changes.values() if change_type == "added"),
-            "deleted": sum(1 for change_type in file_changes.values() if change_type == "deleted"),
-            "modified": sum(
-                1 for change_type in file_changes.values() if change_type == "modified"
-            ),
-            "unchanged": sum(
-                1 for change_type in file_changes.values() if change_type == "unchanged"
-            ),
-            "total": len(file_changes),
+        results = {
+            "added_files": [],
+            "removed_files": [],
+            "modified_files": [],
+            "added_functions": [],
+            "removed_functions": [],
+            "modified_functions": [],
+            "complexity_increases": [],
+            "complexity_decreases": [],
+            "high_risk_changes": [],
         }
 
-        # Count function changes by type
-        function_counts = {
-            "added": sum(1 for change_type in function_changes.values() if change_type == "added"),
-            "deleted": sum(
-                1 for change_type in function_changes.values() if change_type == "deleted"
-            ),
-            "modified": sum(
-                1 for change_type in function_changes.values() if change_type == "modified"
-            ),
-            "moved": sum(1 for change_type in function_changes.values() if change_type == "moved"),
-            "unchanged": sum(
-                1 for change_type in function_changes.values() if change_type == "unchanged"
-            ),
-            "total": len(function_changes),
-        }
-
-        # Count class changes by type
-        class_counts = {
-            "added": sum(1 for change_type in class_changes.values() if change_type == "added"),
-            "deleted": sum(1 for change_type in class_changes.values() if change_type == "deleted"),
-            "modified": sum(
-                1 for change_type in class_changes.values() if change_type == "modified"
-            ),
-            "moved": sum(1 for change_type in class_changes.values() if change_type == "moved"),
-            "unchanged": sum(
-                1 for change_type in class_changes.values() if change_type == "unchanged"
-            ),
-            "total": len(class_changes),
-        }
-
-        # Calculate complexity change statistics
-        complexity_stats = {
-            "increased": sum(1 for change in complexity_changes.values() if change["delta"] > 0),
-            "decreased": sum(1 for change in complexity_changes.values() if change["delta"] < 0),
-            "unchanged": sum(1 for change in complexity_changes.values() if change["delta"] == 0),
-            "total": len(complexity_changes),
-        }
-
-        if complexity_stats["total"] > 0:
-            complexity_stats["avg_delta"] = (
-                sum(change["delta"] for change in complexity_changes.values())
-                / complexity_stats["total"]
-            )
-            complexity_stats["max_increase"] = max(
-                (change["delta"] for change in complexity_changes.values()), default=0
-            )
-            complexity_stats["max_decrease"] = min(
-                (change["delta"] for change in complexity_changes.values()), default=0
-            )
-        else:
-            complexity_stats["avg_delta"] = 0
-            complexity_stats["max_increase"] = 0
-            complexity_stats["max_decrease"] = 0
-
-        return {
-            "file_changes": file_counts,
-            "function_changes": function_counts,
-            "class_changes": class_counts,
-            "complexity_changes": complexity_stats,
-            "original_snapshot_id": self.original.snapshot_id,
-            "modified_snapshot_id": self.modified.snapshot_id,
-            "original_commit": self.original.commit_sha,
-            "modified_commit": self.modified.commit_sha,
-        }
+        results.update(self._analyze_files_and_functions())
+        results.update(self._analyze_complexity())
+        results.update(self._analyze_risks())
+        results["recommendations"] = self._generate_recommendations(results)
+        return results
 
     def get_detailed_file_diff(self, filepath: str) -> Optional[List[str]]:
         """
@@ -366,7 +310,10 @@ class DiffAnalyzer:
             A list of diff lines, or None if the file doesn't exist in both snapshots
         """
         # Check if the file exists in both snapshots
-        if filepath not in self.original.file_metrics or filepath not in self.modified.file_metrics:
+        if (
+            filepath not in self.original.file_metrics
+            or filepath not in self.modified.file_metrics
+        ):
             return None
 
         # Get the file content from the codebases
@@ -433,23 +380,35 @@ class DiffAnalyzer:
         # Identify changes to core files (files with many dependencies)
         file_changes = self.analyze_file_changes()
         for filepath, change_type in file_changes.items():
-            if change_type in ["modified", "deleted"] and filepath in self.original.file_metrics:
+            if (
+                change_type in ["modified", "deleted"]
+                and filepath in self.original.file_metrics
+            ):
                 # Consider files with many symbols as core files
                 if self.original.file_metrics[filepath]["symbol_count"] > 10:
                     high_risk["core_file_changes"].append(
                         {
                             "filepath": filepath,
                             "change_type": change_type,
-                            "symbol_count": self.original.file_metrics[filepath]["symbol_count"],
+                            "symbol_count": self.original.file_metrics[filepath][
+                                "symbol_count"
+                            ],
                         }
                     )
 
         # Identify interface changes (changes to function parameters)
         function_changes = self.analyze_function_changes()
         for func_name, change_type in function_changes.items():
-            if change_type == "modified" and func_name in self.original.function_metrics:
-                original_params = self.original.function_metrics[func_name]["parameter_count"]
-                modified_params = self.modified.function_metrics[func_name]["parameter_count"]
+            if (
+                change_type == "modified"
+                and func_name in self.original.function_metrics
+            ):
+                original_params = self.original.function_metrics[func_name][
+                    "parameter_count"
+                ]
+                modified_params = self.modified.function_metrics[func_name][
+                    "parameter_count"
+                ]
 
                 if original_params != modified_params:
                     high_risk["interface_changes"].append(
@@ -557,14 +516,25 @@ Complexity Changes:
 
         return text
 
+
 def perform_detailed_analysis(self) -> Dict[str, Any]:
     """Perform a detailed analysis of the differences between the two snapshots."""
     results = self._initialize_analysis_results()
     results.update(self._analyze_files_and_functions())
     results.update(self._analyze_complexity())
     results.update(self._analyze_risks())
-    results['recommendations'] = self._generate_recommendations(results)
+    results["recommendations"] = self._generate_recommendations(results)
     return results
+
+    def _analyze_files_and_functions(self) -> Dict[str, Any]:
+        """
+        Analyze changes to files and functions.
+
+        Returns:
+            A dictionary with analysis results
+        """
+        results = {
+            "added_files": [],
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],
@@ -572,8 +542,7 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
             "modified_functions": [],
             "complexity_increases": [],
             "complexity_decreases": [],
-            "potential_issues": [],
-            "recommendations": [],
+            "high_risk_changes": [],
         }
 
         # Analyze file changes
@@ -600,28 +569,31 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
         complexity_changes = self.analyze_complexity_changes()
         for file_path, change in complexity_changes.items():
             if change > 0:
-                results["complexity_increases"].append({
-                    "file": file_path,
-                    "increase": change,
-                })
+                results["complexity_increases"].append(
+                    {
+                        "file": file_path,
+                        "increase": change,
+                    }
+                )
             elif change < 0:
-                results["complexity_decreases"].append({
-                    "file": file_path,
-                    "decrease": abs(change),
-                })
+                results["complexity_decreases"].append(
+                    {
+                        "file": file_path,
+                        "decrease": abs(change),
+                    }
+                )
 
-        # Identify potential issues
-        risk_assessment = self.assess_risk()
-        for category, risk_level in risk_assessment.items():
+        # Identify high risk changes
+        high_risk = self.get_high_risk_changes()
+        for category, risk_level in high_risk.items():
             if risk_level in ["high", "medium"]:
-                results["potential_issues"].append({
-                    "category": category,
-                    "risk_level": risk_level,
-                    "description": self._get_risk_description(category, risk_level),
-                })
-
-        # Generate recommendations
-        results["recommendations"] = self._generate_recommendations(results)
+                results["high_risk_changes"].append(
+                    {
+                        "category": category,
+                        "risk_level": risk_level,
+                        "description": self._get_risk_description(category, risk_level),
+                    }
+                )
 
         return results
 
@@ -664,7 +636,9 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
             },
         }
 
-        return descriptions.get(category, {}).get(risk_level, f"Unknown risk for {category} at {risk_level} level")
+        return descriptions.get(category, {}).get(
+            risk_level, f"Unknown risk for {category} at {risk_level} level"
+        )
 
     def _generate_recommendations(self, analysis_results: Dict[str, Any]) -> List[str]:
         """
@@ -684,27 +658,23 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
                 "Consider refactoring complex files to improve maintainability."
             )
 
-        # Check for potential issues
-        for issue in analysis_results["potential_issues"]:
-            if issue["category"] == "code_quality" and issue["risk_level"] == "high":
+        # Check for high risk changes
+        for risk in analysis_results["high_risk_changes"]:
+            if risk["risk_level"] == "high":
                 recommendations.append(
-                    "Address code quality issues to improve maintainability."
+                    f"Address {risk['category']} risk to prevent potential issues."
                 )
-            elif issue["category"] == "security" and issue["risk_level"] in ["high", "medium"]:
+            elif risk["risk_level"] == "medium":
                 recommendations.append(
-                    "Address security vulnerabilities to prevent potential exploits."
-                )
-            elif issue["category"] == "performance" and issue["risk_level"] == "high":
-                recommendations.append(
-                    "Optimize performance-critical code to improve system responsiveness."
-                )
-            elif issue["category"] == "test_coverage" and issue["risk_level"] in ["high", "medium"]:
-                recommendations.append(
-                    "Increase test coverage to ensure code reliability."
+                    f"Address {risk['category']} risk to improve code quality."
                 )
 
         # Check for large changes
-        if len(analysis_results["added_files"]) + len(analysis_results["modified_files"]) > 10:
+        if (
+            len(analysis_results["added_files"])
+            + len(analysis_results["modified_files"])
+            > 10
+        ):
             recommendations.append(
                 "Consider breaking large changes into smaller, more manageable pull requests."
             )
