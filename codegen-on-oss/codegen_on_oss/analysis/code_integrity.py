@@ -1,255 +1,492 @@
 """
-Code integrity analysis module for codegen-on-oss.
+Code integrity analysis module.
 
-This module provides functionality for analyzing code integrity.
-It combines the functionality from the previous code_integrity_analyzer.py,
-code_integrity_integration.py, and code_integrity_main.py files.
+This module provides tools for analyzing code integrity, including:
+- Finding functions with issues
+- Identifying classes with problems
+- Detecting parameter usage errors
+- Finding incorrect function callback points
+- Comparing error counts between branches
+- Analyzing code complexity and duplication
+- Checking for type hint usage
+- Detecting unused imports
 """
 
-import os
-import re
+import difflib
 import logging
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple, Any, Union, Callable
+import re
+from typing import Any, Dict, List, Optional
 
-from graph_sitter.core.codebase import Codebase
-from graph_sitter.core.file import SourceFile
-from graph_sitter.core.function import Function
 from graph_sitter.core.class_definition import Class
-from graph_sitter.enums import SymbolType, EdgeType
-from graph_sitter.shared.enums.programming_language import ProgrammingLanguage
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.external_module import ExternalModule
+from graph_sitter.core.function import Function
+from graph_sitter.core.import_statement import Import
+from graph_sitter.core.file import SourceFile
+from graph_sitter.core.symbol import Symbol
+from graph_sitter.core.enums import EdgeType, SymbolType
 
 logger = logging.getLogger(__name__)
 
 
 class CodeIntegrityAnalyzer:
-    """Analyzer for code integrity."""
-    
-    def __init__(self, codebase: Codebase, config: Optional[Dict[str, Any]] = None):
+    """
+    Analyzer for code integrity issues.
+
+    This class provides methods to analyze various aspects of code integrity,
+    including finding functions with issues, identifying classes with problems,
+    detecting parameter usage errors, and more.
+    """
+
+    def __init__(
+        self, codebase: Codebase, config: Optional[Dict[str, Any]] = None
+    ):
         """
-        Initialize the code integrity analyzer.
-        
+        Initialize the analyzer with a codebase.
+
         Args:
             codebase: The codebase to analyze
             config: Optional configuration options for the analyzer
         """
         self.codebase = codebase
         self.config = config or {}
-    
+        self.issues = []
+
     def analyze(self) -> Dict[str, Any]:
         """
         Analyze code integrity for the codebase.
-        
+
         Returns:
             A dictionary with analysis results
         """
+        # Find functions with issues
+        functions_with_issues = self.find_functions_with_issues()
+
+        # Find classes with problems
+        classes_with_problems = self.find_classes_with_problems()
+
+        # Find parameter usage errors
+        parameter_errors = self.find_parameter_usage_errors()
+
+        # Find incorrect function callback points
+        callback_errors = self.find_incorrect_function_callbacks()
+
+        # Find unused imports
+        unused_imports = self.find_unused_imports()
+
+        # Find missing type hints
+        missing_type_hints = self.find_missing_type_hints()
+
+        # Find code duplication
+        code_duplication = self.find_code_duplication()
+
+        # Analyze complexity
+        complexity_issues = self.analyze_complexity()
+
+        # Combine all issues
+        all_issues = (
+            functions_with_issues
+            + classes_with_problems
+            + parameter_errors
+            + callback_errors
+            + unused_imports
+            + missing_type_hints
+            + code_duplication
+            + complexity_issues
+        )
+
+        # Store issues for later reference
+        self.issues = all_issues
+
+        # Return analysis results
         return {
-            "import_cycles": self._find_import_cycles(),
-            "code_smells": self._find_code_smells(),
-            "complexity": self._analyze_complexity(),
+            "issues_count": len(all_issues),
+            "issues": all_issues,
+            "functions_with_issues": functions_with_issues,
+            "classes_with_problems": classes_with_problems,
+            "parameter_errors": parameter_errors,
+            "callback_errors": callback_errors,
+            "unused_imports": unused_imports,
+            "missing_type_hints": missing_type_hints,
+            "code_duplication": code_duplication,
+            "complexity_issues": complexity_issues,
         }
-    
-    def _find_import_cycles(self) -> List[Dict[str, Any]]:
+
+    def find_functions_with_issues(self) -> List[Dict[str, Any]]:
         """
-        Find import cycles in the codebase.
-        
+        Find functions with potential issues.
+
         Returns:
-            A list of import cycles
+            A list of dictionaries describing function issues
         """
-        # This is a placeholder implementation
+        issues = []
+
+        for func in self.codebase.functions:
+            # Check for functions without docstrings
+            if not func.docstring:
+                issues.append({
+                    "type": "missing_docstring",
+                    "symbol_type": "function",
+                    "name": func.name,
+                    "file": func.file.path if func.file else "unknown",
+                    "line": func.line_number,
+                    "message": f"Function '{func.name}' is missing a docstring",
+                })
+
+            # Check for functions with too many parameters
+            max_params = self.config.get("max_parameters", 7)
+            if len(func.parameters) > max_params:
+                issues.append({
+                    "type": "too_many_parameters",
+                    "symbol_type": "function",
+                    "name": func.name,
+                    "file": func.file.path if func.file else "unknown",
+                    "line": func.line_number,
+                    "message": f"Function '{func.name}' has {len(func.parameters)} parameters (max: {max_params})",
+                })
+
+            # Check for functions that are too long
+            max_lines = self.config.get("max_function_lines", 50)
+            if func.end_line_number - func.line_number > max_lines:
+                issues.append({
+                    "type": "function_too_long",
+                    "symbol_type": "function",
+                    "name": func.name,
+                    "file": func.file.path if func.file else "unknown",
+                    "line": func.line_number,
+                    "message": f"Function '{func.name}' is too long ({func.end_line_number - func.line_number} lines, max: {max_lines})",
+                })
+
+        return issues
+
+    def find_classes_with_problems(self) -> List[Dict[str, Any]]:
+        """
+        Find classes with potential problems.
+
+        Returns:
+            A list of dictionaries describing class issues
+        """
+        issues = []
+
+        for cls in self.codebase.classes:
+            # Check for classes without docstrings
+            if not cls.docstring:
+                issues.append({
+                    "type": "missing_docstring",
+                    "symbol_type": "class",
+                    "name": cls.name,
+                    "file": cls.file.path if cls.file else "unknown",
+                    "line": cls.line_number,
+                    "message": f"Class '{cls.name}' is missing a docstring",
+                })
+
+            # Check for classes with too many methods
+            max_methods = self.config.get("max_methods", 20)
+            if len(cls.methods) > max_methods:
+                issues.append({
+                    "type": "too_many_methods",
+                    "symbol_type": "class",
+                    "name": cls.name,
+                    "file": cls.file.path if cls.file else "unknown",
+                    "line": cls.line_number,
+                    "message": f"Class '{cls.name}' has {len(cls.methods)} methods (max: {max_methods})",
+                })
+
+            # Check for classes with too many attributes
+            max_attributes = self.config.get("max_attributes", 15)
+            if len(cls.attributes) > max_attributes:
+                issues.append({
+                    "type": "too_many_attributes",
+                    "symbol_type": "class",
+                    "name": cls.name,
+                    "file": cls.file.path if cls.file else "unknown",
+                    "line": cls.line_number,
+                    "message": f"Class '{cls.name}' has {len(cls.attributes)} attributes (max: {max_attributes})",
+                })
+
+        return issues
+
+    def find_parameter_usage_errors(self) -> List[Dict[str, Any]]:
+        """
+        Find parameter usage errors in functions.
+
+        Returns:
+            A list of dictionaries describing parameter usage errors
+        """
+        issues = []
+
+        for func in self.codebase.functions:
+            # Check for unused parameters
+            used_params = set()
+            for usage in func.symbol_usages:
+                if isinstance(usage, Symbol) and usage.name in [p.name for p in func.parameters]:
+                    used_params.add(usage.name)
+
+            for param in func.parameters:
+                if param.name not in used_params and not param.name.startswith("_"):
+                    issues.append({
+                        "type": "unused_parameter",
+                        "symbol_type": "parameter",
+                        "name": param.name,
+                        "function": func.name,
+                        "file": func.file.path if func.file else "unknown",
+                        "line": func.line_number,
+                        "message": f"Parameter '{param.name}' in function '{func.name}' is never used",
+                    })
+
+        return issues
+
+    def find_incorrect_function_callbacks(self) -> List[Dict[str, Any]]:
+        """
+        Find incorrect function callback points.
+
+        Returns:
+            A list of dictionaries describing callback errors
+        """
+        # This is a placeholder for function callback analysis
+        # In a real implementation, this would analyze function callbacks
+        # and identify potential issues
         return []
-    
-    def _find_code_smells(self) -> List[Dict[str, Any]]:
+
+    def find_unused_imports(self) -> List[Dict[str, Any]]:
         """
-        Find code smells in the codebase.
-        
+        Find unused imports in the codebase.
+
         Returns:
-            A list of code smells
+            A list of dictionaries describing unused imports
         """
-        # This is a placeholder implementation
+        issues = []
+
+        for file in self.codebase.files:
+            for import_stmt in file.imports:
+                # Check if the imported symbol is used
+                if not import_stmt.symbol_usages:
+                    issues.append({
+                        "type": "unused_import",
+                        "symbol_type": "import",
+                        "name": import_stmt.name,
+                        "file": file.path,
+                        "line": import_stmt.line_number,
+                        "message": f"Import '{import_stmt.name}' in file '{file.path}' is never used",
+                    })
+
+        return issues
+
+    def find_missing_type_hints(self) -> List[Dict[str, Any]]:
+        """
+        Find missing type hints in functions.
+
+        Returns:
+            A list of dictionaries describing missing type hints
+        """
+        issues = []
+
+        for func in self.codebase.functions:
+            # Check for missing return type hints
+            if not func.return_type and not func.name.startswith("_"):
+                issues.append({
+                    "type": "missing_return_type",
+                    "symbol_type": "function",
+                    "name": func.name,
+                    "file": func.file.path if func.file else "unknown",
+                    "line": func.line_number,
+                    "message": f"Function '{func.name}' is missing a return type hint",
+                })
+
+            # Check for missing parameter type hints
+            for param in func.parameters:
+                if not param.type_annotation and not param.name.startswith("_"):
+                    issues.append({
+                        "type": "missing_parameter_type",
+                        "symbol_type": "parameter",
+                        "name": param.name,
+                        "function": func.name,
+                        "file": func.file.path if func.file else "unknown",
+                        "line": func.line_number,
+                        "message": f"Parameter '{param.name}' in function '{func.name}' is missing a type hint",
+                    })
+
+        return issues
+
+    def find_code_duplication(self) -> List[Dict[str, Any]]:
+        """
+        Find code duplication in the codebase.
+
+        Returns:
+            A list of dictionaries describing code duplication
+        """
+        # This is a placeholder for code duplication analysis
+        # In a real implementation, this would analyze code duplication
+        # and identify potential issues
         return []
-    
-    def _analyze_complexity(self) -> Dict[str, Any]:
+
+    def analyze_complexity(self) -> List[Dict[str, Any]]:
         """
-        Analyze the complexity of the codebase.
-        
+        Analyze code complexity in the codebase.
+
         Returns:
-            A dictionary with complexity metrics
+            A list of dictionaries describing complexity issues
         """
-        # This is a placeholder implementation
-        return {
-            "cyclomatic_complexity": 0,
-            "cognitive_complexity": 0,
-        }
-    
-    def analyze_code_quality(self) -> Dict[str, Any]:
+        issues = []
+
+        for func in self.codebase.functions:
+            # Calculate cyclomatic complexity
+            complexity = self._calculate_cyclomatic_complexity(func)
+
+            # Check if complexity exceeds threshold
+            max_complexity = self.config.get("max_complexity", 10)
+            if complexity > max_complexity:
+                issues.append({
+                    "type": "high_complexity",
+                    "symbol_type": "function",
+                    "name": func.name,
+                    "file": func.file.path if func.file else "unknown",
+                    "line": func.line_number,
+                    "complexity": complexity,
+                    "max_complexity": max_complexity,
+                    "message": f"Function '{func.name}' has high cyclomatic complexity ({complexity}, max: {max_complexity})",
+                })
+
+        return issues
+
+    def _calculate_cyclomatic_complexity(self, func: Function) -> int:
         """
-        Analyze code quality.
-        
+        Calculate cyclomatic complexity for a function.
+
+        Args:
+            func: The function to analyze
+
         Returns:
-            A dictionary with code quality metrics
+            The cyclomatic complexity score
         """
-        return {
-            "score": 7.5,
-            "issues": [],
-            "recommendations": ["Improve test coverage", "Reduce complexity in core modules"],
-        }
-    
-    def analyze_security(self) -> Dict[str, Any]:
-        """
-        Analyze security issues.
-        
-        Returns:
-            A dictionary with security metrics
-        """
-        return {
-            "score": 8.0,
-            "issues": [],
-            "recommendations": ["Add input validation", "Use secure coding practices"],
-        }
-    
-    def analyze_maintainability(self) -> Dict[str, Any]:
-        """
-        Analyze maintainability.
-        
-        Returns:
-            A dictionary with maintainability metrics
-        """
-        return {
-            "score": 7.0,
-            "issues": [],
-            "recommendations": ["Improve documentation", "Refactor complex functions"],
-        }
+        # This is a simplified implementation of cyclomatic complexity calculation
+        # In a real implementation, this would analyze the control flow graph
+        # and calculate the cyclomatic complexity more accurately
+
+        # Start with complexity of 1 (for the function itself)
+        complexity = 1
+
+        # Count if statements
+        if_count = len(re.findall(r"\bif\b", func.source))
+        complexity += if_count
+
+        # Count else statements
+        else_count = len(re.findall(r"\belse\b", func.source))
+        complexity += else_count
+
+        # Count elif statements
+        elif_count = len(re.findall(r"\belif\b", func.source))
+        complexity += elif_count
+
+        # Count for loops
+        for_count = len(re.findall(r"\bfor\b", func.source))
+        complexity += for_count
+
+        # Count while loops
+        while_count = len(re.findall(r"\bwhile\b", func.source))
+        complexity += while_count
+
+        # Count try/except blocks
+        try_count = len(re.findall(r"\btry\b", func.source))
+        complexity += try_count
+
+        # Count except blocks
+        except_count = len(re.findall(r"\bexcept\b", func.source))
+        complexity += except_count
+
+        # Count logical operators (and, or)
+        and_count = len(re.findall(r"\band\b", func.source))
+        complexity += and_count
+
+        or_count = len(re.findall(r"\bor\b", func.source))
+        complexity += or_count
+
+        return complexity
 
 
-def compare_branches(main_codebase: Codebase, feature_codebase: Codebase) -> Dict[str, Any]:
-    """
-    Compare code integrity between two branches.
-    
-    Args:
-        main_codebase: The main branch codebase
-        feature_codebase: The feature branch codebase
-        
-    Returns:
-        A dictionary with comparison results
-    """
-    main_analyzer = CodeIntegrityAnalyzer(main_codebase)
-    feature_analyzer = CodeIntegrityAnalyzer(feature_codebase)
-    
-    main_results = main_analyzer.analyze()
-    feature_results = feature_analyzer.analyze()
-    
-    # Compare results
-    comparison = {
-        "import_cycles": {
-            "main": len(main_results["import_cycles"]),
-            "feature": len(feature_results["import_cycles"]),
-            "diff": len(feature_results["import_cycles"]) - len(main_results["import_cycles"]),
-        },
-        "code_smells": {
-            "main": len(main_results["code_smells"]),
-            "feature": len(feature_results["code_smells"]),
-            "diff": len(feature_results["code_smells"]) - len(main_results["code_smells"]),
-        },
-        "complexity": {
-            "main": main_results["complexity"],
-            "feature": feature_results["complexity"],
-            "diff": {
-                "cyclomatic_complexity": feature_results["complexity"]["cyclomatic_complexity"] - main_results["complexity"]["cyclomatic_complexity"],
-                "cognitive_complexity": feature_results["complexity"]["cognitive_complexity"] - main_results["complexity"]["cognitive_complexity"],
-            },
-        },
-    }
-    
-    return comparison
-
-
-def analyze_pr(repo_url: str, pr_number: int, github_token: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Analyze a pull request for code integrity issues.
-    
-    Args:
-        repo_url: URL of the repository
-        pr_number: Pull request number
-        github_token: Optional GitHub token for private repositories
-        
-    Returns:
-        A dictionary with analysis results
-    """
-    # This is a placeholder implementation
-    return {
-        "score": 8.0,
-        "issues": [],
-        "recommendations": ["Add more tests", "Improve documentation"],
-    }
-
-
-def analyze_code_integrity(codebase: Codebase) -> Dict[str, Any]:
+def analyze_code_integrity(
+    codebase: Codebase, config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Analyze code integrity for a codebase.
-    
+
     Args:
         codebase: The codebase to analyze
-        
+        config: Optional configuration options for the analyzer
+
     Returns:
         A dictionary with analysis results
     """
-    analyzer = CodeIntegrityAnalyzer(codebase)
+    analyzer = CodeIntegrityAnalyzer(codebase, config)
     return analyzer.analyze()
 
 
-def validate_code_integrity(codebase: Codebase) -> Dict[str, Any]:
+def compare_branches(
+    main_branch: str, feature_branch: str, repo_url: str
+) -> Dict[str, Any]:
     """
-    Validate code integrity for a codebase.
-    
+    Compare code integrity between two branches.
+
     Args:
-        codebase: The codebase to validate
-        
+        main_branch: The main branch to compare against
+        feature_branch: The feature branch to compare
+        repo_url: The repository URL
+
     Returns:
-        A dictionary with validation results
+        A dictionary with comparison results
     """
-    results = analyze_code_integrity(codebase)
-    
-    # Determine if the codebase passes validation
-    passes = (
-        len(results["import_cycles"]) == 0 and
-        len(results["code_smells"]) < 10
-    )
-    
-    return {
-        "passes": passes,
-        "results": results,
-        "message": "Code integrity validation passed" if passes else "Code integrity validation failed",
+    # Get the codebase for each branch
+    main_codebase = Codebase.from_repo(repo_url, branch=main_branch)
+    feature_codebase = Codebase.from_repo(repo_url, branch=feature_branch)
+
+    # Analyze each codebase
+    main_analysis = analyze_code_integrity(main_codebase)
+    feature_analysis = analyze_code_integrity(feature_codebase)
+
+    # Compare the results
+    comparison = {
+        "main_branch": {
+            "name": main_branch,
+            "issues_count": main_analysis["issues_count"],
+            "issues": main_analysis["issues"],
+        },
+        "feature_branch": {
+            "name": feature_branch,
+            "issues_count": feature_analysis["issues_count"],
+            "issues": feature_analysis["issues"],
+        },
+        "diff": {
+            "issues_count_diff": feature_analysis["issues_count"] - main_analysis["issues_count"],
+        },
     }
 
+    # Find new issues in the feature branch
+    main_issues_by_type = {}
+    for issue in main_analysis["issues"]:
+        issue_type = issue["type"]
+        if issue_type not in main_issues_by_type:
+            main_issues_by_type[issue_type] = []
+        main_issues_by_type[issue_type].append(issue)
 
-def check_code_quality(codebase: Codebase) -> Dict[str, Any]:
-    """
-    Check code quality for a codebase.
-    
-    Args:
-        codebase: The codebase to check
-        
-    Returns:
-        A dictionary with code quality metrics
-    """
-    analyzer = CodeIntegrityAnalyzer(codebase)
-    return analyzer.analyze_code_quality()
+    feature_issues_by_type = {}
+    for issue in feature_analysis["issues"]:
+        issue_type = issue["type"]
+        if issue_type not in feature_issues_by_type:
+            feature_issues_by_type[issue_type] = []
+        feature_issues_by_type[issue_type].append(issue)
+
+    # Calculate differences by issue type
+    diff_by_type = {}
+    all_types = set(list(main_issues_by_type.keys()) + list(feature_issues_by_type.keys()))
+    for issue_type in all_types:
+        main_count = len(main_issues_by_type.get(issue_type, []))
+        feature_count = len(feature_issues_by_type.get(issue_type, []))
+        diff_by_type[issue_type] = feature_count - main_count
+
+    comparison["diff"]["by_type"] = diff_by_type
+
+    return comparison
 
 
-def validate_dependencies(codebase: Codebase) -> Dict[str, Any]:
-    """
-    Validate dependencies for a codebase.
-    
-    Args:
-        codebase: The codebase to validate
-        
-    Returns:
-        A dictionary with dependency validation results
-    """
-    # This is a placeholder implementation
-    return {
-        "passes": True,
-        "message": "All dependencies are valid",
-        "issues": [],
-    }
+__all__ = ["CodeIntegrityAnalyzer", "analyze_code_integrity", "compare_branches"]
+
