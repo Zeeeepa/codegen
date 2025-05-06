@@ -45,50 +45,85 @@ The system is organized into several modules:
   - `diff_utils.py`: Utilities for diff analysis
   - `config_utils.py`: Utilities for configuration management
 
-## Installation
+## Component Interfaces
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/your-org/your-repo.git
-   ```
+### Core and Git Interface
 
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-## Usage
-
-### Basic Usage
+The PR analyzer interacts with Git components through the following interfaces:
 
 ```python
-from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
-
-# Create PR analyzer
-analyzer = PRAnalyzer()
-
-# Run analysis
-analyzer.initialize("https://github.com/owner/repo", 123)
-results = analyzer.analyze()
-
-# Post results to GitHub
-analyzer.post_results(results)
+# In pr_analyzer.py
+self.github_client = GitHubClient(token=token, api_url=api_url)
+repository = self.github_client.get_repository(repo_url)
+pull_request = self.github_client.get_pull_request(repository, pr_number)
+self.repo_operator = RepoOperator(repository, git_config)
+self.repo_operator.prepare_repository()
+self.repo_operator.checkout_pull_request(pull_request)
 ```
 
-### Configuration
+### Core and Rules Interface
 
-The system can be configured using a configuration file or environment variables:
+The rule engine loads and applies rules through the following interfaces:
 
 ```python
-from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
+# In pr_analyzer.py
+self.rule_engine = RuleEngine(self.context)
+self.rule_engine.load_rules_from_config(rules_config)
+rule_results = self.rule_engine.run_all_rules()
 
-# Create PR analyzer with configuration file
-analyzer = PRAnalyzer("config.yaml")
+# In rule_engine.py
+def load_rule(self, rule_class: Type[BaseRule]) -> BaseRule:
+    rule = rule_class(self.context)
+    self.rules[rule.rule_id] = rule
+    return rule
 
-# Run analysis
-analyzer.initialize("https://github.com/owner/repo", 123)
-results = analyzer.analyze()
+def run_all_rules(self) -> Dict[str, Dict[str, Any]]:
+    results = {}
+    for rule_id, rule in self.rules.items():
+        results[rule_id] = rule.run()
+    return results
 ```
+
+### Core and Reporting Interface
+
+Analysis results are passed to reporting components through the following interfaces:
+
+```python
+# In pr_analyzer.py
+self.report_generator = ReportGenerator(self.context)
+report = self.report_generator.generate_report(rule_results)
+report_markdown = self.report_generator.format_report_for_github(report)
+```
+
+### Git and Reporting Interface
+
+Git data is used in reports through the analysis context:
+
+```python
+# In report_generator.py
+def generate_report(self, rule_results: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    # Access repository and PR data from context
+    repo_name = self.context.repository.full_name
+    pr_number = self.context.pull_request.number
+    pr_title = self.context.pull_request.title
+    # Generate report using this data
+```
+
+## Configuration Management
+
+The system supports multiple configuration sources:
+
+1. **Default Configuration**: Provided by `get_default_config()` in `config_utils.py`
+2. **Configuration Files**: JSON or YAML files loaded with `load_config()`
+3. **Environment Variables**: Loaded with `get_config_from_env()`
+4. **User-defined Overrides**: Merged with `merge_configs()`
+
+Configuration options include:
+
+- **GitHub API Access**: Token and API URL
+- **Analysis Rules**: Which rules to apply and their configurations
+- **Reporting**: Format and destination for reports
+- **Performance Settings**: Timeouts and concurrency
 
 Example configuration file (YAML):
 
@@ -122,6 +157,56 @@ performance:
   concurrency: 4
 ```
 
+## Dependency Management
+
+### Internal Dependencies
+
+- **Core** depends on **Git**, **Rules**, and **Reporting**
+- **Rules** depend on **Core** (for context) and **Utils**
+- **Reporting** depends on **Core** (for context)
+- **Utils** has no dependencies on other modules
+
+### External Dependencies
+
+The system depends on the following external libraries:
+
+- **PyGithub**: For GitHub API integration
+- **GitPython**: For Git operations
+- **PyYAML**: For YAML configuration file support
+
+These dependencies are listed in `requirements.txt`.
+
+## Usage
+
+### Basic Usage
+
+```python
+from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
+
+# Create PR analyzer
+analyzer = PRAnalyzer()
+
+# Run analysis
+analyzer.initialize("https://github.com/owner/repo", 123)
+results = analyzer.analyze()
+
+# Post results to GitHub
+analyzer.post_results(results)
+```
+
+### With Configuration
+
+```python
+from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
+
+# Create PR analyzer with configuration file
+analyzer = PRAnalyzer("config.yaml")
+
+# Run analysis
+analyzer.initialize("https://github.com/owner/repo", 123)
+results = analyzer.analyze()
+```
+
 ## Adding New Rules
 
 To add a new analysis rule:
@@ -149,6 +234,18 @@ rules:
     config:
       severity: medium
       # Other rule-specific configuration
+```
+
+## End-to-End Testing
+
+The system includes an end-to-end test in `test_e2e.py` that demonstrates how to use the PR analysis system:
+
+```bash
+# Set GitHub token
+export GITHUB_TOKEN=your-github-token
+
+# Run test
+python -m codegen_on_oss.analysis.pr_analysis.test_e2e https://github.com/owner/repo 123
 ```
 
 ## License
