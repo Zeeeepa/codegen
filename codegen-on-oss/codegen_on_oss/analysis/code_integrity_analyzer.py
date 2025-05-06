@@ -650,7 +650,7 @@ class CodeIntegrityAnalyzer:
         for file in files:
             # Skip files that match ignore patterns
             if any(
-                re.search(pattern, file.filepath)
+                re.search(pattern, str(file.filepath))
                 for pattern in self.config["ignore_patterns"]
             ):
                 continue
@@ -673,7 +673,7 @@ class CodeIntegrityAnalyzer:
                             if hasattr(unused_import, "name")
                             else "unknown"
                         ),
-                        "filepath": file.filepath,
+                        "filepath": str(file.filepath),
                         "line": (
                             unused_import.line_range[0]
                             if hasattr(unused_import, "line_range")
@@ -758,7 +758,7 @@ class CodeIntegrityAnalyzer:
         self, functions: List[Function], classes: List[Class]
     ) -> List[Dict[str, Any]]:
         """
-        Analyze type hints.
+        Analyze type hints for errors.
 
         Args:
             functions: List of functions to analyze
@@ -769,76 +769,67 @@ class CodeIntegrityAnalyzer:
         """
         errors = []
 
-        # Check functions for missing type hints
+        # Check for missing type hints in functions
         for func in functions:
-            # Skip functions that match ignore patterns
+            # Skip files that match ignore patterns
             if any(
-                re.search(pattern, func.filepath)
+                re.search(pattern, str(func.filepath))
                 for pattern in self.config["ignore_patterns"]
             ):
                 continue
 
             # Check for missing parameter type hints
             for param in func.parameters:
-                if param.name not in ["self", "cls"] and not param.annotation:
+                if param.name != "self" and param.name != "cls" and not param.annotation:
                     errors.append(
                         {
                             "type": "type_hint_error",
                             "error_type": "missing_type_hints",
                             "name": func.name,
-                            "filepath": func.filepath,
+                            "filepath": str(func.filepath),
                             "line": func.line_range[0],
-                            "message": (
-                                f"Function '{func.name}' is missing type hint "
-                                f"for parameter '{param.name}'"
-                            ),
-                            "severity": self.config["severity_levels"][
-                                "missing_type_hints"
-                            ],
+                            "message": f"Function '{func.name}' is missing type hint for parameter '{param.name}'",
+                            "severity": self.config["severity_levels"]["missing_type_hints"],
                         }
                     )
 
             # Check for missing return type hint
-            if not hasattr(func, "return_annotation") or not func.return_annotation:
-                # Only flag if the function has return statements
-                if func.return_statements:
+            if not func.return_annotation:
+                errors.append(
+                    {
+                        "type": "type_hint_error",
+                        "error_type": "missing_type_hints",
+                        "name": func.name,
+                        "filepath": str(func.filepath),
+                        "line": func.line_range[0],
+                        "message": f"Function '{func.name}' is missing return type hint",
+                        "severity": self.config["severity_levels"]["missing_type_hints"],
+                    }
+                )
+
+        # Check for missing type hints in classes
+        for cls in classes:
+            # Skip files that match ignore patterns
+            if any(
+                re.search(pattern, str(cls.filepath))
+                for pattern in self.config["ignore_patterns"]
+            ):
+                continue
+
+            # Check for missing attribute type hints
+            for attr in cls.attributes:
+                if not attr.annotation:
                     errors.append(
                         {
                             "type": "type_hint_error",
                             "error_type": "missing_type_hints",
-                            "name": func.name,
-                            "filepath": func.filepath,
-                            "line": func.line_range[0],
-                            "message": f"Function '{func.name}' is missing return type hint",
-                            "severity": self.config["severity_levels"][
-                                "missing_type_hints"
-                            ],
+                            "name": f"{cls.name}.{attr.name}",
+                            "filepath": str(cls.filepath),
+                            "line": attr.line_range[0] if hasattr(attr, "line_range") else cls.line_range[0],
+                            "message": f"Class '{cls.name}' is missing type hint for attribute '{attr.name}'",
+                            "severity": self.config["severity_levels"]["missing_type_hints"],
                         }
                     )
-
-            # Check for inconsistent return types
-            return_types = set()
-            for ret in func.return_statements:
-                if hasattr(ret, "value") and hasattr(ret.value, "type"):
-                    return_types.add(ret.value.type)
-
-            if len(return_types) > 1:
-                errors.append(
-                    {
-                        "type": "type_hint_error",
-                        "error_type": "inconsistent_return_type",
-                        "name": func.name,
-                        "filepath": func.filepath,
-                        "line": func.line_range[0],
-                        "message": (
-                            f"Function '{func.name}' has inconsistent return types: "
-                            f"{', '.join(return_types)}"
-                        ),
-                        "severity": self.config["severity_levels"][
-                            "inconsistent_return_type"
-                        ],
-                    }
-                )
 
         return errors
 
@@ -865,7 +856,7 @@ class CodeIntegrityAnalyzer:
         for file in files:
             # Skip files that match ignore patterns
             if any(
-                re.search(pattern, file.filepath)
+                re.search(pattern, str(file.filepath))
                 for pattern in self.config["ignore_patterns"]
             ):
                 continue
@@ -874,7 +865,7 @@ class CodeIntegrityAnalyzer:
                 content = str(file.content)
                 if content not in file_contents:
                     file_contents[content] = []
-                file_contents[content].append(file.filepath)
+                file_contents[content].append(str(file.filepath))
 
         # Check for duplicate files
         for content, filepaths in file_contents.items():
