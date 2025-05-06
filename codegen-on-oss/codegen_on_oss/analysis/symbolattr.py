@@ -118,7 +118,7 @@ def _get_git_blame_info(file_path: str, start_line: int, end_line: int) -> List[
     ]
 
 
-def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str, int]]:
+def _process_blame_info(blame_info: List[Dict[str, str]]) -> Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]]:
     """
     Process git blame information to get attribution.
 
