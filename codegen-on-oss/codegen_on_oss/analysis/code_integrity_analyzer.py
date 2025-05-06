@@ -333,22 +333,35 @@ class CodeIntegrityAnalyzer:
 
         return summary
 
-    def _analyze_functions(self, functions: List[Function]) -> List[Dict[str, Any]]:
+    def _analyze_functions(self):
         """
-        Analyze functions for errors.
-
-        Args:
-            functions: List of functions to analyze
+        Analyze functions in the codebase for issues.
 
         Returns:
-            List of function errors
+            A list of issues found in functions
         """
-        errors = []
+        issues = []
 
-        for func in functions:
+        # Get the maximum allowed parameters and returns from config
+        max_params = 5  # Default value
+        max_returns = 3  # Default value
+
+        if self.config and "max_function_parameters" in self.config:
+            try:
+                max_params = int(str(self.config["max_function_parameters"]))
+            except (ValueError, TypeError):
+                pass
+
+        if self.config and "max_function_returns" in self.config:
+            try:
+                max_returns = int(str(self.config["max_function_returns"]))
+            except (ValueError, TypeError):
+                pass
+
+        for func in self.codebase.functions:
             # Check for missing docstring
             if not func.docstring:
-                errors.append(
+                issues.append(
                     {
                         "type": "function_error",
                         "error_type": "missing_docstring",
@@ -361,7 +374,7 @@ class CodeIntegrityAnalyzer:
 
             # Check for empty function
             if not func.body:
-                errors.append(
+                issues.append(
                     {
                         "type": "function_error",
                         "error_type": "empty_function",
@@ -386,7 +399,7 @@ class CodeIntegrityAnalyzer:
                     and param.name != "self"
                     and param.name != "cls"
                 ):
-                    errors.append(
+                    issues.append(
                         {
                             "type": "function_error",
                             "error_type": "unused_parameter",
@@ -400,9 +413,8 @@ class CodeIntegrityAnalyzer:
                     )
 
             # Check for too many parameters
-            max_params = int(self.config["max_function_parameters"])
             if len(func.parameters) > max_params:  # Arbitrary threshold
-                errors.append(
+                issues.append(
                     {
                         "type": "function_error",
                         "error_type": "too_many_parameters",
@@ -415,9 +427,8 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many return statements
-            max_returns = int(self.config["max_function_returns"])
             if len(func.return_statements) > max_returns:  # Arbitrary threshold
-                errors.append(
+                issues.append(
                     {
                         "type": "function_error",
                         "error_type": "too_many_returns",
@@ -429,7 +440,7 @@ class CodeIntegrityAnalyzer:
                     }
                 )
 
-        return errors
+        return issues
 
     def _analyze_classes(self, classes: List[Class]) -> List[Dict[str, Any]]:
         """
@@ -471,7 +482,13 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many methods
-            max_methods = int(self.config["max_class_methods"])
+            max_methods = 20  # Default value
+            if self.config and "max_class_methods" in self.config:
+                try:
+                    max_methods = int(str(self.config["max_class_methods"]))
+                except (ValueError, TypeError):
+                    pass
+                    
             if len(cls.methods) > max_methods:  # Arbitrary threshold
                 errors.append(
                     {
@@ -485,7 +502,13 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many attributes
-            max_attributes = int(self.config["max_class_attributes"])
+            max_attributes = 15  # Default value
+            if self.config and "max_class_attributes" in self.config:
+                try:
+                    max_attributes = int(str(self.config["max_class_attributes"]))
+                except (ValueError, TypeError):
+                    pass
+                    
             if len(cls.attributes) > max_attributes:  # Arbitrary threshold
                 errors.append(
                     {
@@ -665,7 +688,7 @@ class CodeIntegrityAnalyzer:
 
     def _analyze_complexity(self, functions: List[Function]) -> List[Dict[str, Any]]:
         """
-        Analyze code complexity.
+        Analyze code complexity for errors.
 
         Args:
             functions: List of functions to analyze
@@ -675,27 +698,45 @@ class CodeIntegrityAnalyzer:
         """
         errors = []
 
-        for func in functions:
-            # Skip functions that match ignore patterns
-            if any(
-                re.search(pattern, func.filepath)
-                for pattern in self.config["ignore_patterns"]
-            ):
-                continue
+        # Get the maximum allowed complexity from config
+        max_complexity = 15  # Default value
+        if self.config and "max_function_complexity" in self.config:
+            try:
+                max_complexity = int(str(self.config["max_function_complexity"]))
+            except (ValueError, TypeError):
+                pass
 
-            # Calculate cyclomatic complexity (simplified)
-            # In a real implementation, this would use a more sophisticated algorithm
+        for func in functions:
+            # Calculate cyclomatic complexity
+            # This is a simplified calculation and would need more sophisticated
+            # analysis in a real implementation
             complexity = 1  # Base complexity
 
-            # Count branches (if, for, while, etc.)
-            if func.body:
-                for node in func.body:
-                    if hasattr(node, "type"):
-                        if node.type in ["if", "for", "while", "try", "with"]:
-                            complexity += 1
+            # Count decision points
+            if hasattr(func, "body"):
+                # Count if statements
+                complexity += sum(1 for node in func.body if hasattr(node, "type") and node.type == "if")
+
+                # Count for loops
+                complexity += sum(1 for node in func.body if hasattr(node, "type") and node.type == "for")
+
+                # Count while loops
+                complexity += sum(1 for node in func.body if hasattr(node, "type") and node.type == "while")
+
+                # Count try-catch blocks
+                complexity += sum(1 for node in func.body if hasattr(node, "type") and node.type == "try")
+
+                # Count logical operators in conditions
+                complexity += sum(
+                    1
+                    for node in func.body
+                    if hasattr(node, "type")
+                    and node.type == "binary_expression"
+                    and hasattr(node, "operator")
+                    and node.operator in ["&&", "||"]
+                )
 
             # Check if complexity exceeds threshold
-            max_complexity = int(self.config["max_function_complexity"])
             if complexity > max_complexity:
                 errors.append(
                     {
@@ -704,31 +745,12 @@ class CodeIntegrityAnalyzer:
                         "name": func.name,
                         "filepath": func.filepath,
                         "line": func.line_range[0],
-                        "message": f"Function '{func.name}' has high cyclomatic complexity "
-                        f"({complexity})",
                         "complexity": complexity,
-                        "severity": self.config["severity_levels"]["high_complexity"],
+                        "message": (
+                            f"Function '{func.name}' has high cyclomatic complexity ({complexity})"
+                        ),
                     }
                 )
-
-            # Check for mutable default arguments
-            for param in func.parameters:
-                if hasattr(param, "default") and param.default:
-                    if isinstance(param.default, (list, dict, set)):
-                        errors.append(
-                            {
-                                "type": "complexity_error",
-                                "error_type": "mutable_default_argument",
-                                "name": func.name,
-                                "filepath": func.filepath,
-                                "line": func.line_range[0],
-                                "message": f"Function '{func.name}' uses mutable default argument "
-                                f"for parameter '{param.name}'",
-                                "severity": self.config["severity_levels"][
-                                    "mutable_default_argument"
-                                ],
-                            }
-                        )
 
         return errors
 
@@ -824,7 +846,7 @@ class CodeIntegrityAnalyzer:
         self, files: List[SourceFile]
     ) -> List[Dict[str, Any]]:
         """
-        Analyze code for duplication.
+        Analyze code duplication for errors.
 
         Args:
             files: List of files to analyze
@@ -834,12 +856,12 @@ class CodeIntegrityAnalyzer:
         """
         errors = []
 
-        # This is a simplified implementation
-        # In a real implementation, this would use a more sophisticated algorithm
-        # like suffix trees or rolling hashes
+        # This is a simplified implementation of code duplication detection
+        # In a real implementation, you would use a more sophisticated algorithm
+        # like suffix trees or fingerprinting
 
-        # Extract code blocks (e.g., functions, methods) from files
-        code_blocks = []
+        # Create a map of file content to file paths
+        file_contents = {}
         for file in files:
             # Skip files that match ignore patterns
             if any(
@@ -848,60 +870,23 @@ class CodeIntegrityAnalyzer:
             ):
                 continue
 
-            # Add functions from this file
-            for func in file.functions:
-                if func.body:
-                    code_blocks.append(
-                        {
-                            "name": func.name,
-                            "filepath": file.filepath,
-                            "line": func.line_range[0],
-                            "code": (
-                                "\n".join(func.body)
-                                if isinstance(func.body, list)
-                                else str(func.body)
-                            ),
-                        }
-                    )
+            if hasattr(file, "content") and file.content:
+                content = str(file.content)
+                if content not in file_contents:
+                    file_contents[content] = []
+                file_contents[content].append(file.filepath)
 
-        # Compare code blocks for similarity
-        for i, block1 in enumerate(code_blocks):
-            for j in range(i + 1, len(code_blocks)):
-                block2 = code_blocks[j]
-
-                # Skip comparing blocks from the same file with similar names
-                # (e.g., overloaded methods or test functions)
-                if block1["filepath"] == block2["filepath"] and (
-                    block1["name"] in block2["name"] or block2["name"] in block1["name"]
-                ):
-                    continue
-
-                # Calculate similarity ratio
-                similarity = difflib.SequenceMatcher(
-                    None, block1["code"], block2["code"]
-                ).ratio()
-
-                # Flag if similarity is above threshold (e.g., 0.8 or 80%)
-                if similarity > 0.8:
-                    errors.append(
-                        {
-                            "type": "duplication_error",
-                            "error_type": "duplicate_code",
-                            "name": f"{block1['name']} and {block2['name']}",
-                            "filepath": block1["filepath"],
-                            "line": block1["line"],
-                            "message": f"Duplicate code detected: '{block1['name']}' "
-                            f"in {block1['filepath']} "
-                            f"and '{block2['name']}' in {block2['filepath']} "
-                            f"(similarity: {similarity:.2f})",
-                            "duplicate_filepath": block2["filepath"],
-                            "duplicate_line": block2["line"],
-                            "similarity": similarity,
-                            "severity": self.config["severity_levels"][
-                                "duplicate_code"
-                            ],
-                        }
-                    )
+        # Check for duplicate files
+        for content, filepaths in file_contents.items():
+            if len(filepaths) > 1:
+                errors.append(
+                    {
+                        "type": "duplication_error",
+                        "error_type": "duplicate_code",
+                        "filepaths": filepaths,
+                        "message": f"Duplicate files found: {', '.join(filepaths)}",
+                    }
+                )
 
         return errors
 
