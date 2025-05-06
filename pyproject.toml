@@ -81,6 +81,7 @@ dependencies = [
   "langsmith",
   "langchain-xai>=0.2.1",
   "codegen-sdk-pink>=0.1.0",
+  "graph-sitter>=0.1.0",
 ]
 
 license = { text = "Apache-2.0" }
