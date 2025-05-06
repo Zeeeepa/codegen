@@ -37,7 +37,7 @@ from codegen_on_oss.analysis.analysis_import import (
     find_import_cycles,
     find_problematic_import_loops,
 )
-from codegen_on_oss.analysis.codebase_analysis import (
+from graph_sitter.codebase.codebase_analysis import (
     get_class_summary,
     get_codebase_summary,
     get_file_summary,
@@ -46,7 +46,7 @@ from codegen_on_oss.analysis.codebase_analysis import (
 )
 
 # Import from other analysis modules
-from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from graph_sitter.codebase.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalysisResult,
 )
@@ -54,11 +54,12 @@ from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
 # Import new analysis modules
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
-from codegen_on_oss.analysis.document_functions import (
+from graph_sitter.code_generation.doc_utils.utils import (
     document_function,
 )
-from codegen_on_oss.analysis.module_dependencies import (
-    visualize_module_dependencies,
+from graph_sitter.code_generation.mdx_docs_generation import (
+    create_class_doc, 
+    render_mdx_page_for_class
 )
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager

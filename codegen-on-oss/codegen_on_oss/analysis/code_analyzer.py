@@ -5,14 +5,14 @@ This module provides a wrapper for the CodeAnalyzer class from the analysis modu
 """
 
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
-from codegen_on_oss.analysis.codebase_analysis import (
+from graph_sitter.codebase.codebase_analysis import (
     get_class_summary,
     get_codebase_summary,
     get_file_summary,
     get_function_summary,
     get_symbol_summary,
 )
-from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from graph_sitter.codebase.codebase_context import CodebaseContext
 
 __all__ = [
     "CodeAnalyzer",
@@ -23,3 +23,4 @@ __all__ = [
     "get_function_summary",
     "get_symbol_summary",
 ]
+
