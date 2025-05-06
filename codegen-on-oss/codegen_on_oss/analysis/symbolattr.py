@@ -4,8 +4,8 @@ Module for attributing symbols to authors.
 
 from typing import Dict, List, Union
 
-from codegen import Codebase
-from codegen.sdk.core.symbol import Symbol
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.symbol import Symbol
 
 
 def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]]:

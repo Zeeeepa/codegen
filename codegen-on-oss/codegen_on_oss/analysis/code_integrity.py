@@ -4,6 +4,16 @@ Code integrity analysis module for codegen-on-oss.
 This module provides functionality for analyzing code integrity.
 It combines the functionality from the previous code_integrity_analyzer.py,
 code_integrity_integration.py, and code_integrity_main.py files.
+
+This module provides tools for analyzing code integrity, including:
+- Finding functions with issues
+- Identifying classes with problems
+- Detecting parameter usage errors
+- Finding incorrect function callback points
+- Comparing error counts between branches
+- Analyzing code complexity and duplication
+- Checking for type hint usage
+- Detecting unused imports
 """
 
 import os

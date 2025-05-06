@@ -18,7 +18,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple, Any
 
 import yaml
 from graph_sitter.core.codebase import Codebase
@@ -26,7 +26,7 @@ from graph_sitter.core.codebase import Codebase
 # Import the necessary modules
 from codegen_on_oss.analysis.code_integrity import (
     CodeIntegrityAnalyzer,
-    analyze_pr,
+    analyze_code_integrity,
     compare_branches,
 )
 
@@ -127,6 +127,11 @@ def analyze_codebase(
     logger.info(f"Function errors: {results['function_errors']}")
     logger.info(f"Class errors: {results['class_errors']}")
     logger.info(f"Parameter errors: {results['parameter_errors']}")
+    logger.info(f"Callback errors: {results['callback_errors']}")
+    logger.info(f"Import errors: {results['import_errors']}")
+    logger.info(f"Complexity errors: {results['complexity_errors']}")
+    logger.info(f"Type hint errors: {results['type_hint_errors']}")
+    logger.info(f"Duplication errors: {results['duplication_errors']}")
 
     # Write results to file if requested
     if output_file:
@@ -213,7 +218,7 @@ def analyze_pull_request(
     pr_analyzer.analyze()
 
     # Analyze PR
-    pr_analysis = analyze_pr(main_codebase, pr_codebase)
+    pr_analysis = analyze_code_integrity(main_codebase, pr_codebase)
 
     # Print summary
     logger.info(
