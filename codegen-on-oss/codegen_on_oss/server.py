@@ -319,7 +319,9 @@ async def analyze_repo(request: RepoAnalysisRequest):
 
 
 @app.post("/analyze_commit", response_model=CommitAnalysisResponse)
-async def analyze_commit(request: CommitAnalysisRequest, background_tasks: BackgroundTasks):
+async def analyze_commit(
+    request: CommitAnalysisRequest, background_tasks: BackgroundTasks
+):
     """
     Analyze a commit in a repository.
     """
@@ -333,9 +335,66 @@ async def analyze_commit(request: CommitAnalysisRequest, background_tasks: Backg
 
         logger.info(f"Analyzing commit {request.commit_hash} in repository {request.repo_url}")
 
-        result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
-            repo_url=request.repo_url, commit_hash=request.commit_hash
+        # Create temporary directories for the repository
+        base_dir = tempfile.mkdtemp()
+        commit_dir = tempfile.mkdtemp()
+        temp_dirs = [base_dir, commit_dir]
+
+        # Clone the repository for the base
+        subprocess.run(
+            ["git", "clone", request.repo_url, base_dir],
+            check=True,
+            capture_output=True,
+            text=True,
         )
+
+        # Get the parent commit
+        parent_commit = subprocess.run(
+            [
+                "git",
+                "-C",
+                base_dir,
+                "rev-parse",
+                f"{request.commit_hash}^",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+        # Checkout the parent commit
+        subprocess.run(
+            ["git", "-C", base_dir, "checkout", parent_commit],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # Clone the repository for the commit
+        subprocess.run(
+            ["git", "clone", request.repo_url, commit_dir],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # Checkout the commit
+        subprocess.run(
+            ["git", "-C", commit_dir, "checkout", request.commit_hash],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # Create codebases from the directories
+        base_codebase = Codebase.from_directory(base_dir)
+        commit_codebase = Codebase.from_directory(commit_dir)
+
+        # Create a CommitAnalyzer instance
+        analyzer = CommitAnalyzer(original_codebase=base_codebase, commit_codebase=commit_codebase)
+
+        # Analyze the commit
+        result = analyzer.analyze_commit()
 
         response = {
             "repo_url": request.repo_url,
@@ -372,7 +431,9 @@ async def analyze_commit(request: CommitAnalysisRequest, background_tasks: Backg
 
 
 @app.post("/compare_branches", response_model=BranchComparisonResponse)
-async def compare_branches(request: BranchComparisonRequest, background_tasks: BackgroundTasks):
+async def compare_branches(
+    request: BranchComparisonRequest, background_tasks: BackgroundTasks
+):
     """
     Compare two branches in a repository.
     """
@@ -388,21 +449,22 @@ async def compare_branches(request: BranchComparisonRequest, background_tasks: B
             f"Comparing branches {request.base_branch} and {request.compare_branch} in repository {request.repo_url}"
         )
 
-        # Create temporary directories for both branches
+        # Create temporary directories for the repository
         base_dir = tempfile.mkdtemp()
         compare_dir = tempfile.mkdtemp()
-        temp_dirs.extend([base_dir, compare_dir])
+        temp_dirs = [base_dir, compare_dir]
 
         # Clone the repository for the base branch
         subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                request.base_branch,
-                request.repo_url,
-                base_dir,
-            ],
+            ["git", "clone", request.repo_url, base_dir],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # Checkout the base branch
+        subprocess.run(
+            ["git", "-C", base_dir, "checkout", request.base_branch],
             check=True,
             capture_output=True,
             text=True,
@@ -410,14 +472,15 @@ async def compare_branches(request: BranchComparisonRequest, background_tasks: B
 
         # Clone the repository for the compare branch
         subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                request.compare_branch,
-                request.repo_url,
-                compare_dir,
-            ],
+            ["git", "clone", request.repo_url, compare_dir],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # Checkout the compare branch
+        subprocess.run(
+            ["git", "-C", compare_dir, "checkout", request.compare_branch],
             check=True,
             capture_output=True,
             text=True,
@@ -470,7 +533,9 @@ async def compare_branches(request: BranchComparisonRequest, background_tasks: B
 
 
 @app.post("/analyze_pr", response_model=PullRequestAnalysisResponse)
-async def analyze_pr(request: PullRequestAnalysisRequest, background_tasks: BackgroundTasks):
+async def analyze_pr(
+    request: PullRequestAnalysisRequest, background_tasks: BackgroundTasks
+):
     """
     Analyze a pull request in a repository.
     """
@@ -484,70 +549,21 @@ async def analyze_pr(request: PullRequestAnalysisRequest, background_tasks: Back
 
         logger.info(f"Analyzing PR #{request.pr_number} in repository {request.repo_url}")
 
-        # Create a temporary directory for the repository
-        repo_dir = tempfile.mkdtemp()
-        temp_dirs.append(repo_dir)
-
-        # Clone the repository
-        subprocess.run(
-            ["git", "clone", request.repo_url, repo_dir],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-        # Get PR information using git commands
-        # First, fetch the PR
-        subprocess.run(
-            [
-                "git",
-                "-C",
-                repo_dir,
-                "fetch",
-                "origin",
-                f"pull/{request.pr_number}/head:pr-{request.pr_number}",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-        # Get the base branch of the PR
-        pr_info = subprocess.run(
-            [
-                "git",
-                "-C",
-                repo_dir,
-                "show",
-                f"pr-{request.pr_number}",
-                "--format=%B",
-                "-s",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-        # Try to extract the base branch from the PR description
-        # Default to 'main' if not found
-        base_branch = "main"
-        for line in pr_info.stdout.splitlines():
-            if line.startswith("base:") or line.startswith("Base:"):
-                base_branch = line.split(":", 1)[1].strip()
-                break
-
-        # Create temporary directories for both branches
+        # Create temporary directories for the repository
         base_dir = tempfile.mkdtemp()
         pr_dir = tempfile.mkdtemp()
-        temp_dirs.extend([base_dir, pr_dir])
+        temp_dirs = [base_dir, pr_dir]
 
-        # Clone the repository for the base branch
+        # Clone the repository for the base
         subprocess.run(
             ["git", "clone", request.repo_url, base_dir],
             check=True,
             capture_output=True,
             text=True,
         )
+
+        # Get the base branch for the PR
+        base_branch = "main"  # Default to main if we can't determine the base branch
 
         # Checkout the base branch
         subprocess.run(
@@ -862,3 +878,4 @@ def run_server(host: str = "0.0.0.0", port: int = 8000):
 
 if __name__ == "__main__":
     run_server()
+
