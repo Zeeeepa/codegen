@@ -443,7 +443,7 @@ class CodebaseContext:
     ) -> Directory | None:
         """Returns the directory object for the given path, or None if the directory does not exist.
 
-        If create_on_missing is set, use a recursive strategy to create the directory object 
+        If create_on_missing is set, use a recursive strategy to create the directory object
         and all subdirectories.
         """
         # If not part of repo path, return None
@@ -502,7 +502,8 @@ class CodebaseContext:
         if not skip_uncache:
             uncache_all()
         # Step 0: Start the dependency manager and language engine if they exist
-        # Start the dependency manager. This may or may not run asynchronously, depending on the implementation
+        # Start the dependency manager. This may or may not run asynchronously, 
+        # depending on the implementation
         if self.dependency_manager is not None:
             # Check if its inital start or a reparse
             if not self.dependency_manager.ready() and not self.dependency_manager.error():
