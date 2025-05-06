@@ -291,25 +291,24 @@ class DiffAnalyzer:
         # In a real implementation, we would parse the diff to extract
         # information about the changes
         
-        # Placeholder for diff analysis
+        # Initialize analysis dictionary
         analysis = {
             "files_changed": [],
             "insertions": 0,
             "deletions": 0,
             "total_changes": 0,
             "file_changes": {},
-            "summary": "Example diff summary",
         }
         
-        # Parse the diff text
-        current_file = None
+        current_file = ""
         
+        # Parse the diff text
         for line in diff_text.split("\n"):
             # Check for file header
             file_header_match = re.match(r"^diff --git a/(.*) b/(.*)$", line)
             if file_header_match:
                 current_file = file_header_match.group(1)
-                if current_file not in analysis["files_changed"]:
+                if isinstance(analysis["files_changed"], list) and current_file not in analysis["files_changed"]:
                     analysis["files_changed"].append(current_file)
                     analysis["file_changes"][current_file] = {"insertions": 0, "deletions": 0}
                 continue
@@ -324,7 +323,9 @@ class DiffAnalyzer:
                     analysis["file_changes"][current_file]["deletions"] += 1
         
         # Calculate total changes
-        analysis["total_changes"] = analysis["insertions"] + analysis["deletions"]
+        insertions = analysis["insertions"] if isinstance(analysis["insertions"], int) else 0
+        deletions = analysis["deletions"] if isinstance(analysis["deletions"], int) else 0
+        analysis["total_changes"] = insertions + deletions
         
         return analysis
     
@@ -396,4 +397,3 @@ def analyze_diff_between_commits(codebase: Codebase, commit1: str, commit2: str,
     """
     analyzer = DiffAnalyzer(codebase, config)
     return analyzer.analyze_diff_between_commits(commit1, commit2)
-
