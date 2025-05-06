@@ -21,12 +21,11 @@ import sys
 from typing import Any, Dict, Optional
 
 import yaml
-from codegen import Codebase
-from codegen.sdk.core.codebase import Codebase
+from graph_sitter.core.codebase import Codebase
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from codegen_on_oss.analysis.code_integrity_analyzer import (
+from codegen_on_oss.analysis.code_integrity import (
     CodeIntegrityAnalyzer,
     analyze_pr,
     compare_branches,
@@ -354,23 +353,6 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 background-color: #f8f9fa;
                 border-radius: 5px;
             }
-            .filter-controls select, .filter-controls input {
-                margin-right: 10px;
-                padding: 5px;
-            }
-            .progress-bar {
-                height: 20px;
-                background-color: #ecf0f1;
-                border-radius: 10px;
-                margin-bottom: 20px;
-                overflow: hidden;
-            }
-            .progress-bar-fill {
-                height: 100%;
-                background-color: #2ecc71;
-                width: 0%;
-                transition: width 0.5s ease-in-out;
-            }
         </style>
     </head>
     <body>
@@ -538,7 +520,7 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 document.getElementById(tabId).classList.add('active');
 
                 // Activate the clicked tab
-                var clickedTab = document.querySelector('.tab[onclick="showTab(\\''+tabId+'\\')"]');
+                var clickedTab = document.querySelector('.tab[onclick="showTab(\\\''+tabId+'\\\')"]');
                 clickedTab.classList.add('active');
             }
 
@@ -660,3 +642,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

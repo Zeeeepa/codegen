@@ -21,10 +21,10 @@ import sys
 from typing import Any, Dict, Optional
 
 import yaml
-from codegen.sdk.core.codebase import Codebase
+from graph_sitter.core.codebase import Codebase
 
 # Import the necessary modules
-from codegen_on_oss.analysis.code_integrity_analyzer import (
+from codegen_on_oss.analysis.code_integrity import (
     CodeIntegrityAnalyzer,
     analyze_pr,
     compare_branches,
@@ -348,59 +348,7 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 margin-bottom: 15px;
                 padding: 10px;
                 background-color: #f8f9fa;
-                border-radius: 5px;
-            }
-            .filter-controls select, .filter-controls input {
-                margin-right: 10px;
-                padding: 5px;
-            }
-            .progress-bar {
-                height: 20px;
-                background-color: #ecf0f1;
-                border-radius: 10px;
-                margin-bottom: 20px;
-                overflow: hidden;
-            }
-            .progress-bar-fill {
-                height: 100%;
-                background-color: #2ecc71;
-                width: 0%;
-                transition: width 0.5s ease-in-out;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Code Integrity Analysis Report</h1>
-
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('summary')">Summary</div>
-            <div class="tab" onclick="showTab('errors')">Errors</div>
-            <div class="tab" onclick="showTab('codebase')">Codebase</div>
-        </div>
-
-        <div id="summary" class="tab-content active">
-            <div class="summary">
-                <h2>Analysis Summary</h2>
-                <div class="stats">
-                    <div class="stat-box">
-                        <h3>"""
-        + str(results.get("total_errors", 0))
-        + """</h3>
-                        <p>Total Errors</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>"""
-        + str(results.get("total_functions", 0))
-        + """</h3>
-                        <p>Functions</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>"""
-        + str(results.get("total_classes", 0))
-        + """</h3>
-                        <p>Classes</p>
-                    </div>
-                    <div class="stat-box">
+                border-radius: 5p...(truncated from 21763 characters)...stat-box">
                         <h3>"""
         + str(results.get("total_files", 0))
         + """</h3>
@@ -535,7 +483,7 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 document.getElementById(tabId).classList.add('active');
 
                 // Activate the clicked tab
-                var clickedTab = document.querySelector('.tab[onclick="showTab(\\''+tabId+'\\')"]');
+                var clickedTab = document.querySelector('.tab[onclick="showTab(\\\''+tabId+'\\\')"]');
                 clickedTab.classList.add('active');
             }
 
@@ -657,3 +605,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
