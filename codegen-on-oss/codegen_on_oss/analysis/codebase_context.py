@@ -43,12 +43,12 @@ from codegen.shared.performance.stopwatch_utils import stopwatch, stopwatch_with
 from rustworkx import PyDiGraph, WeightedEdgeList
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Mapping, Sequence
+    from collections.abc import Generator, Sequence
 
     from codegen.git.repo_operator.repo_operator import RepoOperator
     from codegen.sdk.codebase.io.io import IO
     from codegen.sdk.codebase.node_classes.node_classes import NodeClasses
-    from codegen.sdk.codebase.progress.progress import Progress
+    from codegen.sdk.codebase.progress.progress import Progress, Task
     from codegen.sdk.core.dataclasses.usage import Usage
     from codegen.sdk.core.expressions import Expression
     from codegen.sdk.core.external_module import ExternalModule
@@ -58,12 +58,11 @@ if TYPE_CHECKING:
     from codegen.sdk.core.parser import Parser
     from codeowners import CodeOwners as CodeOwnersParser
     from git import Commit as GitCommit
-    from codegen.sdk.codebase.progress.progress import Task
 
 logger = get_logger(__name__)
 
 
-# src/vs/platform/contextview/browser/contextMenuService.ts is ignored as there is a parsing error with tree-sitter
+# This file is ignored as there is a parsing error with tree-sitter
 GLOBAL_FILE_IGNORE_LIST = [
     ".git/*",
     "*/.git/*",
@@ -183,7 +182,9 @@ class CodebaseContext:
         self.base_url = context.repo_operator.base_url
         if not self.config.allow_external:
             # Fix this to be more robust with multiple projects
-            allowed_paths = [Path(project.repo_operator.repo_path).resolve() for project in projects]
+            allowed_paths = [
+                Path(project.repo_operator.repo_path).resolve() for project in projects
+            ]
             self.io = io or FileIO(allowed_paths=allowed_paths)
         else:
             self.io = io or FileIO()
@@ -210,7 +211,8 @@ class CodebaseContext:
         ):
             logger.warning("WARNING: The codebase is using an unsupported language!")
             logger.warning(
-                "Some features may not work as expected. Advanced static analysis will be disabled but simple file IO will still work."
+                "Some features may not work as expected. Advanced static analysis will be "
+                "disabled but simple file IO will still work."
             )
 
         # Assert config assertions
