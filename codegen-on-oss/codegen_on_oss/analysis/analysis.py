@@ -1,42 +1,15 @@
 """
-Unified Analysis Module for Codegen-on-OSS
+Core analysis functionality for codebases.
 
-This module serves as a central hub for all code analysis functionality, integrating
-various specialized analysis components into a cohesive system.
+This module provides functions for analyzing codebases, commits, and PRs.
+It serves as the central analysis engine for the codebase analysis system.
 """
 
-import difflib
-import math
+import logging
 import os
-import re
-import subprocess
-from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import requests
-import uvicorn
 from codegen import Codebase
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
-from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
-from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.symbol import Symbol
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
-from codegen_on_oss.analysis.analysis_import import (
-    create_graph_from_codebase,
-    find_import_cycles,
-    find_problematic_import_loops,
-)
 from graph_sitter.codebase.codebase_analysis import (
     get_class_summary,
     get_codebase_summary,
@@ -44,1131 +17,805 @@ from graph_sitter.codebase.codebase_analysis import (
     get_function_summary,
     get_symbol_summary,
 )
-
-# Import from other analysis modules
 from graph_sitter.codebase.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.commit_analysis import (
-    CommitAnalysisResult,
-    DiffAnalyzer,
-)
+from graph_sitter.core.codebase import Codebase as GraphSitterCodebase
+from graph_sitter.core.class_definition import Class
+from graph_sitter.core.function import Function
+from graph_sitter.core.file import SourceFile
+from graph_sitter.enums import SymbolType, EdgeType
+from graph_sitter.shared.enums.programming_language import ProgrammingLanguage
 
-# Import new analysis modules
-from graph_sitter.code_generation.doc_utils.utils import (
-    document_function,
-)
-from graph_sitter.code_generation.mdx_docs_generation import (
-    create_class_doc, 
-    render_mdx_page_for_class
-)
-from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
-from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
+from codegen_on_oss.analysis.code_integrity import validate_code_integrity
+from codegen_on_oss.analysis.commit_analysis import analyze_commit_history
 
-# Create FastAPI app
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+logger = logging.getLogger(__name__)
 
 
-class CodeAnalyzer:
+def analyze_codebase(codebase: Codebase) -> Dict[str, Any]:
     """
-    Central class for code analysis that integrates all analysis components.
-
-    This class serves as the main entry point for all code analysis functionality,
-    providing a unified interface to access various analysis capabilities.
-    """
-
-    def __init__(self, codebase: Codebase):
-        """
-        Initialize the CodeAnalyzer with a codebase.
-
-        Args:
-            codebase: The Codebase object to analyze
-        """
-        self.codebase = codebase
-        self._context = None
-        self._initialized = False
-
-    def initialize(self):
-        """
-        Initialize the analyzer by setting up the context and other necessary components.
-        This is called automatically when needed but can be called explicitly for eager
-        initialization.
-        """
-        if self._initialized:
-            return
-
-        # Initialize context if not already done
-        if self._context is None:
-            self._context = self._create_context()
-
-        self._initialized = True
-
-    def _create_context(self) -> CodebaseContext:
-        """
-        Create a CodebaseContext instance for the current codebase.
-
-        Returns:
-            A new CodebaseContext instance
-        """
-        # If the codebase already has a context, use it
-        if hasattr(self.codebase, "ctx") and self.codebase.ctx is not None:
-            return self.codebase.ctx
-
-        # Otherwise, create a new context from the codebase's configuration
-        from codegen.configs.models.codebase import CodebaseConfig
-        from codegen.sdk.codebase.config import ProjectConfig
-
-        # Create a project config from the codebase
-        project_config = ProjectConfig(
-            repo_operator=self.codebase.repo_operator,
-            programming_language=self.codebase.programming_language,
-            base_path=self.codebase.base_path,
-        )
-
-        # Create and return a new context
-        return CodebaseContext([project_config], config=CodebaseConfig())
-
-    @property
-    def context(self) -> CodebaseContext:
-        """
-        Get the CodebaseContext for the current codebase.
-
-        Returns:
-            A CodebaseContext object for the codebase
-        """
-        if not self._initialized:
-            self.initialize()
-
-        return self._context
-
-    def get_codebase_summary(self) -> str:
-        """
-        Get a comprehensive summary of the codebase.
-
-        Returns:
-            A string containing summary information about the codebase
-        """
-        return get_codebase_summary(self.codebase)
-
-    def get_file_summary(self, file_path: str) -> str:
-        """
-        Get a summary of a specific file.
-
-        Args:
-            file_path: Path to the file to analyze
-
-        Returns:
-            A string containing summary information about the file
-        """
-        file = self.codebase.get_file(file_path)
-        if file is None:
-            return f"File not found: {file_path}"
-        return get_file_summary(file)
-
-    def get_class_summary(self, class_name: str) -> str:
-        """
-        Get a summary of a specific class.
-
-        Args:
-            class_name: Name of the class to analyze
-
-        Returns:
-            A string containing summary information about the class
-        """
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                return get_class_summary(cls)
-        return f"Class not found: {class_name}"
-
-    def get_function_summary(self, function_name: str) -> str:
-        """
-        Get a summary of a specific function.
-
-        Args:
-            function_name: Name of the function to analyze
-
-        Returns:
-            A string containing summary information about the function
-        """
-        for func in self.codebase.functions:
-            if func.name == function_name:
-                return get_function_summary(func)
-        return f"Function not found: {function_name}"
-
-    def get_symbol_summary(self, symbol_name: str) -> str:
-        """
-        Get a summary of a specific symbol.
-
-        Args:
-            symbol_name: Name of the symbol to analyze
-
-        Returns:
-            A string containing summary information about the symbol
-        """
-        for symbol in self.codebase.symbols:
-            if symbol.name == symbol_name:
-                return get_symbol_summary(symbol)
-        return f"Symbol not found: {symbol_name}"
-
-    def find_symbol_by_name(self, symbol_name: str) -> Optional[Symbol]:
-        """
-        Find a symbol by its name.
-
-        Args:
-            symbol_name: Name of the symbol to find
-
-        Returns:
-            The Symbol object if found, None otherwise
-        """
-        for symbol in self.codebase.symbols:
-            if symbol.name == symbol_name:
-                return symbol
-        return None
-
-    def find_file_by_path(self, file_path: str) -> Optional[SourceFile]:
-        """
-        Find a file by its path.
-
-        Args:
-            file_path: Path to the file to find
-
-        Returns:
-            The SourceFile object if found, None otherwise
-        """
-        return self.codebase.get_file(file_path)
-
-    def find_class_by_name(self, class_name: str) -> Optional[Class]:
-        """
-        Find a class by its name.
-
-        Args:
-            class_name: Name of the class to find
-
-        Returns:
-            The Class object if found, None otherwise
-        """
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                return cls
-        return None
-
-    def find_function_by_name(self, function_name: str) -> Optional[Function]:
-        """
-        Find a function by its name.
-
-        Args:
-            function_name: Name of the function to find
-
-        Returns:
-            The Function object if found, None otherwise
-        """
-        for func in self.codebase.functions:
-            if func.name == function_name:
-                return func
-        return None
-
-    def document_functions(self) -> None:
-        """
-        Generate documentation for functions in the codebase.
-        """
-        document_function(self.codebase)
-
-    def analyze_imports(self) -> Dict[str, Any]:
-        """
-        Analyze import relationships in the codebase.
-
-        Returns:
-            A dictionary containing import analysis results
-        """
-        graph = create_graph_from_codebase(self.codebase.repo_name)
-        cycles = find_import_cycles(graph)
-        problematic_loops = find_problematic_import_loops(graph, cycles)
-
-        return {"import_cycles": cycles, "problematic_loops": problematic_loops}
-
-    def convert_args_to_kwargs(self) -> None:
-        """
-        Convert all function call arguments to keyword arguments.
-        """
-        from codegen_on_oss.analysis.code_transformations import convert_all_calls_to_kwargs
-        convert_all_calls_to_kwargs(self.codebase)
-
-    def visualize_module_dependencies(self) -> None:
-        """
-        Visualize module dependencies in the codebase.
-        """
-        visualize_module_dependencies(self.codebase)
-
-    def generate_mdx_documentation(self, class_name: str) -> str:
-        """
-        Generate MDX documentation for a class.
-
-        Args:
-            class_name: Name of the class to document
-
-        Returns:
-            MDX documentation as a string
-        """
-        from codegen_on_oss.analysis.mdx_docs_generation import create_class_doc, render_mdx_page_for_class
-        
-        for cls in self.codebase.classes:
-            if cls.name == class_name:
-                cls_doc = create_class_doc(cls, self.codebase)
-                return render_mdx_page_for_class(cls_doc)
-        
-        return f"Class not found: {class_name}"
-
-    def print_symbol_attribution(self) -> None:
-        """
-        Print attribution information for symbols in the codebase.
-        """
-        # TODO: Implement this function or import the required module
-        # print_symbol_attribution(self.codebase)
-        pass
-
-    def get_extended_symbol_context(
-        self, symbol_name: str, degree: int = 2
-    ) -> Dict[str, List[str]]:
-        """
-        Get extended context (dependencies and usages) for a symbol.
-
-        Args:
-            symbol_name: Name of the symbol to analyze
-            degree: How many levels deep to collect dependencies and usages
-
-        Returns:
-            A dictionary containing dependencies and usages
-        """
-        symbol = self.find_symbol_by_name(symbol_name)
-        if symbol:
-            # TODO: Implement this function or import the required module
-            # dependencies, usages = get_extended_context(symbol, degree)
-            dependencies = []
-            usages = []
-            if hasattr(symbol, "dependencies"):
-                dependencies = symbol.dependencies
-            if hasattr(symbol, "symbol_usages"):
-                usages = symbol.symbol_usages
-            return {
-                "dependencies": [dep.name for dep in dependencies],
-                "usages": [usage.name for usage in usages],
-            }
-        return {"dependencies": [], "usages": []}
-
-    def get_symbol_dependencies(self, symbol_name: str) -> List[str]:
-        """
-        Get direct dependencies of a symbol.
-
-        Args:
-            symbol_name: Name of the symbol to analyze
-
-        Returns:
-            A list of dependency symbol names
-        """
-        symbol = self.find_symbol_by_name(symbol_name)
-        if symbol and hasattr(symbol, "dependencies"):
-            return [dep.name for dep in symbol.dependencies]
-        return []
-
-    def get_symbol_usages(self, symbol_name: str) -> List[str]:
-        """
-        Get direct usages of a symbol.
-
-        Args:
-            symbol_name: Name of the symbol to analyze
-
-        Returns:
-            A list of usage symbol names
-        """
-        symbol = self.find_symbol_by_name(symbol_name)
-        if symbol and hasattr(symbol, "symbol_usages"):
-            return [usage.name for usage in symbol.symbol_usages]
-        return []
-
-    def get_file_imports(self, file_path: str) -> List[str]:
-        """
-        Get all imports in a file.
-
-        Args:
-            file_path: Path to the file to analyze
-
-        Returns:
-            A list of import statements
-        """
-        file = self.find_file_by_path(file_path)
-        if file and hasattr(file, "imports"):
-            return [imp.source for imp in file.imports]
-        return []
-
-    def get_file_exports(self, file_path: str) -> List[str]:
-        """
-        Get all exports from a file.
-
-        Args:
-            file_path: Path to the file to analyze
-
-        Returns:
-            A list of exported symbol names
-        """
-        file = self.find_file_by_path(file_path)
-        if file is None:
-            return []
-
-        exports = []
-        for symbol in file.symbols:
-            # Check if this symbol is exported
-            if hasattr(symbol, "is_exported") and symbol.is_exported:
-                exports.append(symbol.name)
-            # For TypeScript/JavaScript, check for export keyword
-            elif hasattr(symbol, "modifiers") and "export" in symbol.modifiers:
-                exports.append(symbol.name)
-
-        return exports
-
-    def analyze_complexity(self) -> Dict[str, Any]:
-        """
-        Analyze the complexity of the codebase.
-
-        Returns:
-            A dictionary with complexity metrics
-        """
-        from codegen_on_oss.analysis.complexity_analyzer import analyze_codebase_complexity
-        return analyze_codebase_complexity(self.codebase)
-
-    def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
-        """
-        Get all dependencies of a file, including imports and symbol dependencies.
-
-        Args:
-            file_path: Path to the file to analyze
-
-        Returns:
-            A dictionary containing different types of dependencies
-        """
-        file = self.find_file_by_path(file_path)
-        if file is None:
-            return {"imports": [], "symbols": [], "external": []}
-
-        imports = []
-        symbols = []
-        external = []
-
-        # Get imports
-        if hasattr(file, "imports"):
-            for imp in file.imports:
-                if hasattr(imp, "module_name"):
-                    imports.append(imp.module_name)
-                elif hasattr(imp, "source"):
-                    imports.append(imp.source)
-
-        # Get symbol dependencies
-        for symbol in file.symbols:
-            if hasattr(symbol, "dependencies"):
-                for dep in symbol.dependencies:
-                    if isinstance(dep, ExternalModule):
-                        external.append(dep.name)
-                    else:
-                        symbols.append(dep.name)
-
-        return {
-            "imports": list(set(imports)),
-            "symbols": list(set(symbols)),
-            "external": list(set(external)),
-        }
-
-    def get_codebase_structure(self) -> Dict[str, Any]:
-        """
-        Get a hierarchical representation of the codebase structure.
-
-        Returns:
-            A dictionary representing the codebase structure
-        """
-        # Initialize the structure with root directories
-        structure = {}
-
-        # Process all files
-        for file in self.codebase.files:
-            path_parts = file.name.split("/")
-            current = structure
-
-            # Build the directory structure
-            for _i, part in enumerate(path_parts[:-1]):
-                if part not in current:
-                    current[part] = {}
-                current = current[part]
-
-            # Add the file with its symbols
-            file_info = {"type": "file", "symbols": []}
-
-            # Add symbols in the file
-            for symbol in file.symbols:
-                symbol_info = {
-                    "name": symbol.name,
-                    "type": (
-                        str(symbol.symbol_type) if hasattr(symbol, "symbol_type") else "unknown"
-                    ),
-                }
-                file_info["symbols"].append(symbol_info)
-
-            current[path_parts[-1]] = file_info
-
-        return structure
-
-    def get_monthly_commit_activity(self) -> Dict[str, int]:
-        """
-        Get monthly commit activity for the codebase.
-
-        Returns:
-            A dictionary mapping month strings to commit counts
-        """
-        if not hasattr(self.codebase, "repo_operator") or not self.codebase.repo_operator:
-            return {}
-
-        try:
-            # Get commits from the last year
-            end_date = datetime.now(UTC)
-            start_date = end_date - timedelta(days=365)
-
-            # Get all commits in the date range
-            commits = self.codebase.repo_operator.get_commits(since=start_date, until=end_date)
-
-            # Group commits by month
-            monthly_commits = {}
-
-            for commit in commits:
-                commit_date = commit.committed_datetime
-                month_key = commit_date.strftime("%Y-%m")
-
-                if month_key not in monthly_commits:
-                    monthly_commits[month_key] = 0
-
-                monthly_commits[month_key] += 1
-
-            return monthly_commits
-        except Exception as e:
-            return {"error": str(e)}
-
-    def analyze_commit(self, commit_codebase: Codebase) -> CommitAnalysisResult:
-        """
-        Analyze a commit by comparing the current codebase with a commit codebase.
-
-        Args:
-            commit_codebase: The codebase after the commit
-
-        Returns:
-            A CommitAnalysisResult object containing the analysis results
-        """
-        # Create a CommitAnalyzer instance
-        analyzer = CommitAnalyzer(original_codebase=self.codebase, commit_codebase=commit_codebase)
-
-        # Analyze the commit
-        return analyzer.analyze_commit()
-
-    @classmethod
-    def analyze_commit_from_repo_and_commit(
-        cls, repo_url: str, commit_hash: str, base_commit: Optional[str] = None
-    ) -> CommitAnalysisResult:
-        """
-        Analyze a commit from a repository and commit hash.
-
-        Args:
-            repo_url: The repository URL or owner/repo string
-            commit_hash: The commit hash to analyze
-            base_commit: Optional base commit hash (if not provided, uses the parent commit)
-
-        Returns:
-            A CommitAnalysisResult object
-        """
-        from codegen_on_oss.analysis.commit_analysis import analyze_commit_from_repo_and_commit
-        return analyze_commit_from_repo_and_commit(repo_url, commit_hash, base_commit)
-
-    @classmethod
-    def analyze_commit_from_paths(
-        cls, original_path: str, commit_path: str
-    ) -> CommitAnalysisResult:
-        """
-        Analyze a commit by comparing two local repository paths.
-
-        Args:
-            original_path: Path to the original repository
-            commit_path: Path to the repository with the commit applied
-
-        Returns:
-            A CommitAnalysisResult object
-        """
-        from codegen_on_oss.analysis.commit_analysis import analyze_commit_from_paths
-        return analyze_commit_from_paths(original_path, commit_path)
-
-    def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:
-        """
-        Get the diff between the current codebase and a commit codebase for a file.
-
-        Args:
-            commit_codebase: The codebase after the commit
-            file_path: Path to the file to get the diff for
-        """
-        try:
-            # Get the file content from both codebases
-            original_content = self.codebase.get_file_content(file_path)
-            commit_content = commit_codebase.get_file_content(file_path)
-
-            # Generate a diff
-            diff = difflib.unified_diff(
-                original_content.splitlines(keepends=True),
-                commit_content.splitlines(keepends=True),
-                fromfile=f"a/{file_path}",
-                tofile=f"b/{file_path}",
-            )
-
-            return "".join(diff)
-        except Exception as e:
-            return f"Error generating diff: {str(e)}"
-
-    def create_snapshot(self, commit_sha: Optional[str] = None) -> CodebaseSnapshot:
-        """
-        Create a snapshot of the current codebase.
-
-        Args:
-            commit_sha: Optional commit SHA to associate with the snapshot
-
-        Returns:
-            A CodebaseSnapshot object
-        """
-        return CodebaseSnapshot(self.codebase, commit_sha)
-
-    def analyze_commit_with_shas(
-        self, base_commit: str, head_commit: str, github_token: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Analyze a commit by comparing the codebase before and after the commit.
-
-        Args:
-            base_commit: The base commit SHA (before the changes)
-            head_commit: The head commit SHA (after the changes)
-            github_token: Optional GitHub token for accessing private repositories
-
-        Returns:
-            A dictionary with analysis results
-        """
-        # Create a commit analyzer
-        snapshot_manager = SnapshotManager()
-        commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
-
-        # Analyze the commit
-        return commit_analyzer.analyze_commit(self.codebase.repo_path, base_commit, head_commit)
-
-    def analyze_pull_request(
-        self, pr_number: int, github_token: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Analyze a pull request by comparing the base and head commits.
-
-        Args:
-            pr_number: The pull request number
-            github_token: Optional GitHub token for accessing private repositories
-
-        Returns:
-            A dictionary with analysis results
-        """
-        # Create a commit analyzer
-        snapshot_manager = SnapshotManager()
-        commit_analyzer = CommitAnalyzer(snapshot_manager, github_token)
-
-        # Analyze the pull request
-        return commit_analyzer.analyze_pull_request(
-            self.codebase.repo_path, pr_number, github_token
-        )
-
-    def create_swe_harness_agent(
-        self,
-        github_token: Optional[str] = None,
-        snapshot_dir: Optional[str] = None,
-        use_agent: bool = True,
-    ) -> SWEHarnessAgent:
-        """
-        Create a SWE harness agent for analyzing commits and pull requests.
-
-        Args:
-            github_token: Optional GitHub token for accessing private repositories
-            snapshot_dir: Optional directory to store snapshots
-            use_agent: Whether to use an LLM-based agent for enhanced analysis
-
-        Returns:
-            A SWEHarnessAgent instance
-        """
-        return SWEHarnessAgent(github_token, snapshot_dir, use_agent)
-
-    def compare_snapshots(
-        self, original_snapshot: CodebaseSnapshot, modified_snapshot: CodebaseSnapshot
-    ) -> Dict[str, Any]:
-        """
-        Compare two codebase snapshots and analyze the differences.
-
-        Args:
-            original_snapshot: The original/base codebase snapshot
-            modified_snapshot: The modified/new codebase snapshot
-
-        Returns:
-            A dictionary with comparison results
-        """
-        # Create a diff analyzer
-        diff_analyzer = DiffAnalyzer(original_snapshot, modified_snapshot)
-
-        # Get the summary and high-risk changes
-        summary = diff_analyzer.get_summary()
-        high_risk_changes = diff_analyzer.get_high_risk_changes()
-
-        return {
-            "summary": summary,
-            "high_risk_changes": high_risk_changes,
-            "formatted_summary": diff_analyzer.format_summary_text(),
-        }
-
-
-def get_monthly_commits(repo_path: str) -> Dict[str, int]:
-    """
-    Get monthly commit activity for a repository.
+    Analyze a codebase.
 
     Args:
-        repo_path: Path to the repository
+        codebase: Codebase to analyze
 
     Returns:
-        Dictionary mapping month strings to commit counts
+        Analysis results
     """
-    original_dir = os.getcwd()
-    try:
-        # Change to repository directory
-        os.chdir(repo_path)
-
-        # Get all commits
-        result = subprocess.run(
-            ["git", "log", "--format=%cd", "--date=short"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        # Parse commit dates
-        commit_dates = result.stdout.strip().split("\n")
-
-        # Group by month
-        monthly_counts = {}
-        for date_str in commit_dates:
-            if date_str:
-                # Extract year and month
-                year_month = date_str[:7]  # YYYY-MM
-                month_key = year_month
-
-                if month_key not in monthly_counts:
-                    monthly_counts[month_key] = 0
-
-                monthly_counts[month_key] += 1
-
-        os.chdir(original_dir)
-        return dict(sorted(monthly_counts.items()))
-    except Exception as e:
-        if "original_dir" in locals():
-            os.chdir(original_dir)
-        return {"error": str(e)}
+    logger.info(f"Analyzing codebase: {codebase.root_path}")
+    
+    # Create a graph-sitter codebase for advanced analysis
+    gs_codebase = GraphSitterCodebase(codebase.root_path)
+    
+    # Get codebase summary
+    summary = get_codebase_summary(gs_codebase)
+    
+    # Get file statistics
+    file_stats = _get_file_statistics(gs_codebase)
+    
+    # Get symbol statistics
+    symbol_stats = _get_symbol_statistics(gs_codebase)
+    
+    # Get dependency graph
+    dependency_graph = _get_dependency_graph(gs_codebase)
+    
+    # Get code quality metrics
+    code_quality = _get_code_quality_metrics(gs_codebase)
+    
+    # Combine results
+    results = {
+        "summary": summary,
+        "file_stats": file_stats,
+        "symbol_stats": symbol_stats,
+        "dependency_graph": dependency_graph,
+        "code_quality": code_quality,
+    }
+    
+    logger.info("Codebase analysis completed")
+    return results
 
 
-# Helper functions for complexity analysis
-
-
-def calculate_cyclomatic_complexity(func: Function) -> int:
+def _get_file_statistics(codebase: GraphSitterCodebase) -> Dict[str, Any]:
     """
-    Calculate the cyclomatic complexity of a function.
+    Get file statistics.
 
     Args:
-        func: The function to analyze
+        codebase: GraphSitter codebase
 
     Returns:
-        The cyclomatic complexity value
+        File statistics
     """
-    # Start with 1 (base complexity)
-    complexity = 1
+    file_stats = {
+        "total_files": len(codebase.files),
+        "files_by_language": {},
+        "lines_of_code": 0,
+        "average_file_size": 0,
+    }
+    
+    # Count files by language
+    for file in codebase.files:
+        lang = file.language.name if file.language else "Unknown"
+        if lang not in file_stats["files_by_language"]:
+            file_stats["files_by_language"][lang] = 0
+        file_stats["files_by_language"][lang] += 1
+        
+        # Count lines of code
+        if os.path.exists(file.path):
+            with open(file.path, "r", encoding="utf-8", errors="ignore") as f:
+                try:
+                    lines = len(f.readlines())
+                    file_stats["lines_of_code"] += lines
+                except Exception:
+                    pass
+    
+    # Calculate average file size
+    if file_stats["total_files"] > 0:
+        file_stats["average_file_size"] = file_stats["lines_of_code"] / file_stats["total_files"]
+    
+    return file_stats
 
-    # Count decision points
-    if hasattr(func, "code_block"):
-        # Count if statements
-        if_statements = func.code_block.find_all(IfBlockStatement)
-        complexity += len(if_statements)
 
-        # Count for loops
-        for_loops = func.code_block.find_all(ForLoopStatement)
-        complexity += len(for_loops)
+def _get_symbol_statistics(codebase: GraphSitterCodebase) -> Dict[str, Any]:
+    """
+    Get symbol statistics.
 
-        # Count while loops
-        while_loops = func.code_block.find_all(WhileStatement)
-        complexity += len(while_loops)
+    Args:
+        codebase: GraphSitter codebase
 
-        # Count try-catch blocks
-        try_catches = func.code_block.find_all(TryCatchStatement)
-        complexity += len(try_catches)
+    Returns:
+        Symbol statistics
+    """
+    symbol_stats = {
+        "classes": 0,
+        "functions": 0,
+        "methods": 0,
+        "variables": 0,
+        "imports": 0,
+        "exports": 0,
+    }
+    
+    # Count symbols by type
+    for file in codebase.files:
+        for symbol in file.symbols:
+            if symbol.symbol_type == SymbolType.CLASS:
+                symbol_stats["classes"] += 1
+            elif symbol.symbol_type == SymbolType.FUNCTION:
+                if hasattr(symbol, "is_method") and symbol.is_method:
+                    symbol_stats["methods"] += 1
+                else:
+                    symbol_stats["functions"] += 1
+            elif symbol.symbol_type == SymbolType.VARIABLE:
+                symbol_stats["variables"] += 1
+            elif symbol.symbol_type == SymbolType.IMPORT:
+                symbol_stats["imports"] += 1
+            elif symbol.symbol_type == SymbolType.EXPORT:
+                symbol_stats["exports"] += 1
+    
+    return symbol_stats
 
-        # Count logical operators in conditions
-        binary_expressions = func.code_block.find_all(BinaryExpression)
-        for expr in binary_expressions:
-            if hasattr(expr, "operator") and expr.operator in ["&&", "||"]:
-                complexity += 1
 
-        # Count comparison expressions
-        comparison_expressions = func.code_block.find_all(ComparisonExpression)
-        complexity += len(comparison_expressions)
+def _get_dependency_graph(codebase: GraphSitterCodebase) -> Dict[str, Any]:
+    """
+    Get dependency graph.
 
-        # Count unary expressions with logical not
-        unary_expressions = func.code_block.find_all(UnaryExpression)
-        for expr in unary_expressions:
-            if hasattr(expr, "operator") and expr.operator == "!":
-                complexity += 1
+    Args:
+        codebase: GraphSitter codebase
 
+    Returns:
+        Dependency graph
+    """
+    dependency_graph = {
+        "nodes": [],
+        "edges": [],
+    }
+    
+    # Add nodes (files)
+    for file in codebase.files:
+        dependency_graph["nodes"].append({
+            "id": file.path,
+            "type": "file",
+            "name": os.path.basename(file.path),
+            "path": file.path,
+            "language": file.language.name if file.language else "Unknown",
+        })
+    
+    # Add edges (imports)
+    for file in codebase.files:
+        for edge in file.edges:
+            if edge.edge_type == EdgeType.IMPORTS:
+                dependency_graph["edges"].append({
+                    "source": file.path,
+                    "target": edge.target.path if hasattr(edge.target, "path") else str(edge.target),
+                    "type": "imports",
+                })
+    
+    return dependency_graph
+
+
+def _get_code_quality_metrics(codebase: GraphSitterCodebase) -> Dict[str, Any]:
+    """
+    Get code quality metrics.
+
+    Args:
+        codebase: GraphSitter codebase
+
+    Returns:
+        Code quality metrics
+    """
+    code_quality = {
+        "complexity": {
+            "average_function_complexity": 0,
+            "max_function_complexity": 0,
+            "complex_functions": [],
+        },
+        "maintainability": {
+            "average_file_size": 0,
+            "large_files": [],
+            "average_function_size": 0,
+            "large_functions": [],
+        },
+    }
+    
+    # Calculate complexity metrics
+    function_complexities = []
+    for file in codebase.files:
+        for symbol in file.symbols:
+            if symbol.symbol_type in [SymbolType.FUNCTION, SymbolType.METHOD]:
+                # Calculate cyclomatic complexity (simplified)
+                complexity = _calculate_function_complexity(symbol)
+                function_complexities.append(complexity)
+                
+                if complexity > 10:  # Threshold for complex functions
+                    code_quality["complexity"]["complex_functions"].append({
+                        "name": symbol.name,
+                        "file": file.path,
+                        "complexity": complexity,
+                    })
+                
+                if complexity > code_quality["complexity"]["max_function_complexity"]:
+                    code_quality["complexity"]["max_function_complexity"] = complexity
+    
+    # Calculate average function complexity
+    if function_complexities:
+        code_quality["complexity"]["average_function_complexity"] = sum(function_complexities) / len(function_complexities)
+    
+    # Calculate maintainability metrics
+    file_sizes = []
+    function_sizes = []
+    for file in codebase.files:
+        if os.path.exists(file.path):
+            try:
+                with open(file.path, "r", encoding="utf-8", errors="ignore") as f:
+                    lines = len(f.readlines())
+                    file_sizes.append(lines)
+                    
+                    if lines > 500:  # Threshold for large files
+                        code_quality["maintainability"]["large_files"].append({
+                            "path": file.path,
+                            "lines": lines,
+                        })
+            except Exception:
+                pass
+        
+        for symbol in file.symbols:
+            if symbol.symbol_type in [SymbolType.FUNCTION, SymbolType.METHOD]:
+                # Calculate function size
+                size = _calculate_function_size(symbol)
+                function_sizes.append(size)
+                
+                if size > 50:  # Threshold for large functions
+                    code_quality["maintainability"]["large_functions"].append({
+                        "name": symbol.name,
+                        "file": file.path,
+                        "lines": size,
+                    })
+    
+    # Calculate average file size
+    if file_sizes:
+        code_quality["maintainability"]["average_file_size"] = sum(file_sizes) / len(file_sizes)
+    
+    # Calculate average function size
+    if function_sizes:
+        code_quality["maintainability"]["average_function_size"] = sum(function_sizes) / len(function_sizes)
+    
+    return code_quality
+
+
+def _calculate_function_complexity(function_symbol) -> int:
+    """
+    Calculate function complexity (simplified).
+
+    Args:
+        function_symbol: Function symbol
+
+    Returns:
+        Complexity score
+    """
+    # This is a simplified calculation
+    # In a real implementation, we would parse the AST and count branches
+    complexity = 1  # Base complexity
+    
+    # Add complexity for each control flow statement
+    if hasattr(function_symbol, "source_code"):
+        source_code = function_symbol.source_code
+        complexity += source_code.count("if ") 
+        complexity += source_code.count("else ") 
+        complexity += source_code.count("for ") 
+        complexity += source_code.count("while ") 
+        complexity += source_code.count("switch ") 
+        complexity += source_code.count("case ") 
+        complexity += source_code.count("&&") 
+        complexity += source_code.count("||") 
+        complexity += source_code.count("?") 
+    
     return complexity
 
 
-def cc_rank(complexity):
+def _calculate_function_size(function_symbol) -> int:
     """
-    Convert cyclomatic complexity score to a letter grade.
+    Calculate function size in lines.
 
     Args:
-        complexity: The cyclomatic complexity score
+        function_symbol: Function symbol
 
     Returns:
-        A letter grade from A to F
+        Function size in lines
     """
-    if complexity < 0:
-        raise ValueError("Complexity must be a non-negative value")
-
-    ranks = [
-        (1, 5, "A"),
-        (6, 10, "B"),
-        (11, 20, "C"),
-        (21, 30, "D"),
-        (31, 40, "E"),
-        (41, float("inf"), "F"),
-    ]
-    for low, high, rank in ranks:
-        if low <= complexity <= high:
-            return rank
-    return "F"
+    # This is a simplified calculation
+    if hasattr(function_symbol, "source_code"):
+        source_code = function_symbol.source_code
+        return len(source_code.split("\n"))
+    return 0
 
 
-def calculate_doi(cls):
+def analyze_commit(codebase: Codebase, commit: str) -> Dict[str, Any]:
     """
-    Calculate the depth of inheritance for a given class.
+    Analyze a commit.
 
     Args:
-        cls: The class to analyze
+        codebase: Codebase to analyze
+        commit: Commit SHA
 
     Returns:
-        The depth of inheritance
+        Analysis results
     """
-    return len(cls.superclasses)
+    logger.info(f"Analyzing commit: {commit}")
+    
+    # Get commit details
+    commit_details = analyze_commit_history(codebase, [commit])
+    
+    # Get changed files
+    changed_files = _get_changed_files(codebase, commit)
+    
+    # Analyze changes
+    changes_analysis = _analyze_changes(codebase, changed_files)
+    
+    # Validate code integrity for changed files
+    integrity_results = validate_code_integrity(codebase, changed_files)
+    
+    # Combine results
+    results = {
+        "commit_details": commit_details,
+        "changed_files": changed_files,
+        "changes_analysis": changes_analysis,
+        "integrity_results": integrity_results,
+    }
+    
+    logger.info("Commit analysis completed")
+    return results
 
 
-def get_operators_and_operands(function):
+def _get_changed_files(codebase: Codebase, commit: str) -> List[Dict[str, Any]]:
     """
-    Extract operators and operands from a function.
+    Get changed files in a commit.
 
     Args:
-        function: The function to analyze
+        codebase: Codebase
+        commit: Commit SHA
 
     Returns:
-        A tuple of (operators, operands)
+        List of changed files
     """
-    operators = []
-    operands = []
-
-    for statement in function.code_block.statements:
-        for call in statement.function_calls:
-            operators.append(call.name)
-            for arg in call.args:
-                operands.append(arg.source)
-
-        if hasattr(statement, "expressions"):
-            for expr in statement.expressions:
-                if isinstance(expr, BinaryExpression):
-                    operators.extend([op.source for op in expr.operators])
-                    operands.extend([elem.source for elem in expr.elements])
-                elif isinstance(expr, UnaryExpression):
-                    operators.append(expr.ts_node.type)
-                    operands.append(expr.argument.source)
-                elif isinstance(expr, ComparisonExpression):
-                    operators.extend([op.source for op in expr.operators])
-                    operands.extend([elem.source for elem in expr.elements])
-
-        if hasattr(statement, "expression"):
-            expr = statement.expression
-            if isinstance(expr, BinaryExpression):
-                operators.extend([op.source for op in expr.operators])
-                operands.extend([elem.source for elem in expr.elements])
-            elif isinstance(expr, UnaryExpression):
-                operators.append(expr.ts_node.type)
-                operands.append(expr.argument.source)
-            elif isinstance(expr, ComparisonExpression):
-                operators.extend([op.source for op in expr.operators])
-                operands.extend([elem.source for elem in expr.elements])
-
-    return operators, operands
-
-
-def calculate_halstead_volume(operators, operands):
-    """
-    Calculate Halstead volume metrics.
-
-    Args:
-        operators: List of operators
-        operands: List of operands
-
-    Returns:
-        A tuple of (volume, N1, N2, n1, n2)
-    """
-    n1 = len(set(operators))
-    n2 = len(set(operands))
-
-    N1 = len(operators)
-    N2 = len(operands)
-
-    N = N1 + N2
-    n = n1 + n2
-
-    if n > 0:
-        volume = N * math.log2(n)
-        return volume, N1, N2, n1, n2
-    return 0, N1, N2, n1, n2
-
-
-def count_lines(source: str):
-    """
-    Count different types of lines in source code.
-
-    Args:
-        source: The source code as a string
-
-    Returns:
-        A tuple of (loc, lloc, sloc, comments)
-    """
-    if not source.strip():
-        return 0, 0, 0, 0
-
-    lines = [line.strip() for line in source.splitlines()]
-    loc = len(lines)
-    sloc = len([line for line in lines if line])
-
-    in_multiline = False
-    comments = 0
-    code_lines = []
-
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        code_part = line
-        if not in_multiline and "#" in line:
-            comment_start = line.find("#")
-            if not re.search(r"[\"\\\']\s*#\s*[\"\\\']\s*", line[:comment_start]):
-                code_part = line[:comment_start].strip()
-                if line[comment_start:].strip():
-                    comments += 1
-
-        if ('"""' in line or "'''" in line) and not (
-            line.count('"""') % 2 == 0 or line.count("'''") % 2 == 0
-        ):
-            if in_multiline:
-                in_multiline = False
-                comments += 1
-            else:
-                in_multiline = True
-                comments += 1
-                if line.strip().startswith('"""') or line.strip().startswith("'''"):
-                    code_part = ""
-        elif in_multiline or line.strip().startswith("#"):
-            comments += 1
-            code_part = ""
-
-        if code_part.strip():
-            code_lines.append(code_part)
-
-        i += 1
-
-    lloc = 0
-    continued_line = False
-    for line in code_lines:
-        if continued_line:
-            if not any(line.rstrip().endswith(c) for c in ("\\", ",", "{", "[", "(")):
-                continued_line = False
-            continue
-
-        lloc += len([stmt for stmt in line.split(";") if stmt.strip()])
-
-        if any(line.rstrip().endswith(c) for c in ("\\", ",", "{", "[", "(")):
-            continued_line = True
-
-    return loc, lloc, sloc, comments
-
-
-def calculate_maintainability_index(
-    halstead_volume: float, cyclomatic_complexity: float, loc: int
-) -> int:
-    """
-    Calculate the normalized maintainability index for a given function.
-
-    Args:
-        halstead_volume: The Halstead volume
-        cyclomatic_complexity: The cyclomatic complexity
-        loc: Lines of code
-
-    Returns:
-        The maintainability index score (0-100)
-    """
-    if loc <= 0:
-        return 100
-
+    changed_files = []
+    
+    # Get changed files using git
     try:
-        raw_mi = (
-            171
-            - 5.2 * math.log(max(1, halstead_volume))
-            - 0.23 * cyclomatic_complexity
-            - 16.2 * math.log(max(1, loc))
-        )
-        normalized_mi = max(0, min(100, raw_mi * 100 / 171))
-        return int(normalized_mi)
-    except (ValueError, TypeError):
-        return 0
-
-
-def get_maintainability_rank(mi_score: float) -> str:
-    """
-    Convert maintainability index score to a letter grade.
-
-    Args:
-        mi_score: The maintainability index score
-
-    Returns:
-        A letter grade from A to F
-    """
-    if mi_score >= 85:
-        return "A"
-    elif mi_score >= 65:
-        return "B"
-    elif mi_score >= 45:
-        return "C"
-    elif mi_score >= 25:
-        return "D"
-    else:
-        return "F"
-
-
-def get_github_repo_description(repo_url):
-    """
-    Get the description of a GitHub repository.
-
-    Args:
-        repo_url: The repository URL in the format 'owner/repo'
-
-    Returns:
-        The repository description
-    """
-    api_url = f"https://api.github.com/repos/{repo_url}"
-
-    response = requests.get(api_url)
-
-    if response.status_code == 200:
-        repo_data = response.json()
-        return repo_data.get("description", "No description available")
-    else:
-        return ""
-
-
-# Define API models
-class RepoAnalysisRequest(BaseModel):
-    repo_url: str
-
-
-class CommitAnalysisRequest(BaseModel):
-    repo_url: str
-    commit_hash: str
-
-
-class LocalCommitAnalysisRequest(BaseModel):
-    original_path: str
-    commit_path: str
-
-
-# API endpoints
-@app.post("/analyze_repo")
-async def analyze_repo(request: RepoAnalysisRequest):
-    """
-    Analyze a repository.
-    """
-    try:
-        codebase = Codebase.from_repo(request.repo_url)
-        analyzer = CodeAnalyzer(codebase)
-
-        return {
-            "repo_url": request.repo_url,
-            "summary": analyzer.get_codebase_summary(),
-            "complexity": analyzer.analyze_complexity(),
-            "imports": analyzer.analyze_imports(),
-        }
+        import subprocess
+        
+        # Get list of changed files
+        cmd = ["git", "show", "--name-status", "--pretty=format:", commit]
+        result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+        
+        for line in result.stdout.strip().split("\n"):
+            if line:
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    status = parts[0]
+                    file_path = parts[1]
+                    
+                    changed_files.append({
+                        "path": file_path,
+                        "status": status,
+                    })
+        
+        # Get diff for each file
+        for file_info in changed_files:
+            file_path = file_info["path"]
+            cmd = ["git", "show", f"{commit}:{file_path}"]
+            try:
+                result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+                file_info["content"] = result.stdout
+            except subprocess.CalledProcessError:
+                file_info["content"] = ""
+    
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Error getting changed files: {str(e)}")
+    
+    return changed_files
 
 
-@app.post("/analyze_commit")
-async def analyze_commit(request: CommitAnalysisRequest):
+def _analyze_changes(codebase: Codebase, changed_files: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Analyze a commit in a repository.
+    Analyze changes in files.
+
+    Args:
+        codebase: Codebase
+        changed_files: List of changed files
+
+    Returns:
+        Analysis of changes
     """
+    changes_analysis = {
+        "added_files": 0,
+        "modified_files": 0,
+        "deleted_files": 0,
+        "added_lines": 0,
+        "deleted_lines": 0,
+        "file_types": {},
+    }
+    
+    for file_info in changed_files:
+        status = file_info["status"]
+        file_path = file_info["path"]
+        
+        # Count files by status
+        if status.startswith("A"):
+            changes_analysis["added_files"] += 1
+        elif status.startswith("M"):
+            changes_analysis["modified_files"] += 1
+        elif status.startswith("D"):
+            changes_analysis["deleted_files"] += 1
+        
+        # Count file types
+        file_ext = os.path.splitext(file_path)[1]
+        if file_ext:
+            if file_ext not in changes_analysis["file_types"]:
+                changes_analysis["file_types"][file_ext] = 0
+            changes_analysis["file_types"][file_ext] += 1
+        
+        # Count lines
+        try:
+            import subprocess
+            
+            cmd = ["git", "diff", "--numstat", "HEAD~1", "HEAD", "--", file_path]
+            result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+            
+            for line in result.stdout.strip().split("\n"):
+                if line:
+                    parts = line.split("\t")
+                    if len(parts) >= 2:
+                        try:
+                            added = int(parts[0]) if parts[0] != "-" else 0
+                            deleted = int(parts[1]) if parts[1] != "-" else 0
+                        
+                            changes_analysis["added_lines"] += added
+                            changes_analysis["deleted_lines"] += deleted
+                        except ValueError:
+                            pass
+        except Exception:
+            pass
+    
+    return changes_analysis
+
+
+def analyze_pr(codebase: Codebase, pr_number: int, access_token: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Analyze a PR.
+
+    Args:
+        codebase: Codebase to analyze
+        pr_number: PR number
+        access_token: GitHub access token
+
+    Returns:
+        Analysis results
+    """
+    logger.info(f"Analyzing PR: {pr_number}")
+    
+    # Get PR details from GitHub
+    pr_details = _get_pr_details(codebase, pr_number, access_token)
+    
+    # Get changed files
+    changed_files = _get_pr_changed_files(codebase, pr_number, access_token)
+    
+    # Analyze changes
+    changes_analysis = _analyze_changes(codebase, changed_files)
+    
+    # Validate code integrity for changed files
+    integrity_results = validate_code_integrity(codebase, changed_files)
+    
+    # Combine results
+    results = {
+        "pr_details": pr_details,
+        "changed_files": changed_files,
+        "changes_analysis": changes_analysis,
+        "integrity_results": integrity_results,
+    }
+    
+    logger.info("PR analysis completed")
+    return results
+
+
+def _get_pr_details(codebase: Codebase, pr_number: int, access_token: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get PR details from GitHub.
+
+    Args:
+        codebase: Codebase
+        pr_number: PR number
+        access_token: GitHub access token
+
+    Returns:
+        PR details
+    """
+    pr_details = {
+        "number": pr_number,
+        "title": "",
+        "description": "",
+        "author": "",
+        "created_at": "",
+        "updated_at": "",
+        "state": "",
+        "base_branch": "",
+        "head_branch": "",
+    }
+    
     try:
-        result = CodeAnalyzer.analyze_commit_from_repo_and_commit(
-            repo_url=request.repo_url, commit_hash=request.commit_hash
-        )
-
-        return {
-            "repo_url": request.repo_url,
-            "commit_hash": request.commit_hash,
-            "is_properly_implemented": result.is_properly_implemented,
-            "summary": result.get_summary(),
-            "issues": [issue.to_dict() for issue in result.issues],
-            "metrics_diff": result.metrics_diff,
-            "files_added": result.files_added,
-            "files_modified": result.files_modified,
-            "files_removed": result.files_removed,
-        }
+        import requests
+        
+        # Get repository info
+        import subprocess
+        cmd = ["git", "config", "--get", "remote.origin.url"]
+        result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+        repo_url = result.stdout.strip()
+        
+        # Extract owner and repo from URL
+        import re
+        match = re.search(r"github\.com[:/]([^/]+)/([^/\.]+)", repo_url)
+        if match:
+            owner = match.group(1)
+            repo = match.group(2)
+            
+            # Get PR details from GitHub API
+            url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}"
+            headers = {}
+            if access_token:
+                headers["Authorization"] = f"token {access_token}"
+            
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                pr_data = response.json()
+                
+                pr_details["title"] = pr_data.get("title", "")
+                pr_details["description"] = pr_data.get("body", "")
+                pr_details["author"] = pr_data.get("user", {}).get("login", "")
+                pr_details["created_at"] = pr_data.get("created_at", "")
+                pr_details["updated_at"] = pr_data.get("updated_at", "")
+                pr_details["state"] = pr_data.get("state", "")
+                pr_details["base_branch"] = pr_data.get("base", {}).get("ref", "")
+                pr_details["head_branch"] = pr_data.get("head", {}).get("ref", "")
+    
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Error getting PR details: {str(e)}")
+    
+    return pr_details
 
 
-@app.post("/analyze_local_commit")
-async def analyze_local_commit(request: LocalCommitAnalysisRequest):
+def _get_pr_changed_files(codebase: Codebase, pr_number: int, access_token: Optional[str] = None) -> List[Dict[str, Any]]:
     """
-    Analyze a commit by comparing two local repository paths.
+    Get changed files in a PR.
+
+    Args:
+        codebase: Codebase
+        pr_number: PR number
+        access_token: GitHub access token
+
+    Returns:
+        List of changed files
     """
+    changed_files = []
+    
     try:
-        result = CodeAnalyzer.analyze_commit_from_paths(
-            original_path=request.original_path, commit_path=request.commit_path
-        )
-
-        return {
-            "original_path": request.original_path,
-            "commit_path": request.commit_path,
-            "is_properly_implemented": result.is_properly_implemented,
-            "summary": result.get_summary(),
-            "issues": [issue.to_dict() for issue in result.issues],
-            "metrics_diff": result.metrics_diff,
-            "files_added": result.files_added,
-            "files_modified": result.files_modified,
-            "files_removed": result.files_removed,
-        }
+        import requests
+        
+        # Get repository info
+        import subprocess
+        cmd = ["git", "config", "--get", "remote.origin.url"]
+        result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+        repo_url = result.stdout.strip()
+        
+        # Extract owner and repo from URL
+        import re
+        match = re.search(r"github\.com[:/]([^/]+)/([^/\.]+)", repo_url)
+        if match:
+            owner = match.group(1)
+            repo = match.group(2)
+            
+            # Get PR files from GitHub API
+            url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/files"
+            headers = {}
+            if access_token:
+                headers["Authorization"] = f"token {access_token}"
+            
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                files_data = response.json()
+                
+                for file_data in files_data:
+                    changed_files.append({
+                        "path": file_data.get("filename", ""),
+                        "status": file_data.get("status", ""),
+                        "additions": file_data.get("additions", 0),
+                        "deletions": file_data.get("deletions", 0),
+                        "changes": file_data.get("changes", 0),
+                    })
+    
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Error getting PR changed files: {str(e)}")
+    
+    return changed_files
 
 
-if __name__ == "__main__":
-    # Run the FastAPI app locally with uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+def compare_branches(codebase: Codebase, base_branch: str, head_branch: str) -> Dict[str, Any]:
+    """
+    Compare branches.
+
+    Args:
+        codebase: Codebase to analyze
+        base_branch: Base branch name
+        head_branch: Head branch name
+
+    Returns:
+        Comparison results
+    """
+    logger.info(f"Comparing branches: {base_branch} and {head_branch}")
+    
+    # Get changed files between branches
+    changed_files = _get_changed_files_between_branches(codebase, base_branch, head_branch)
+    
+    # Analyze changes
+    changes_analysis = _analyze_branch_changes(codebase, changed_files)
+    
+    # Get commits between branches
+    commits = _get_commits_between_branches(codebase, base_branch, head_branch)
+    
+    # Validate code integrity for changed files
+    integrity_results = validate_code_integrity(codebase, changed_files)
+    
+    # Combine results
+    results = {
+        "base_branch": base_branch,
+        "head_branch": head_branch,
+        "changed_files": changed_files,
+        "changes_analysis": changes_analysis,
+        "commits": commits,
+        "integrity_results": integrity_results,
+    }
+    
+    logger.info("Branch comparison completed")
+    return results
+
+
+def _get_changed_files_between_branches(codebase: Codebase, base_branch: str, head_branch: str) -> List[Dict[str, Any]]:
+    """
+    Get changed files between branches.
+
+    Args:
+        codebase: Codebase
+        base_branch: Base branch name
+        head_branch: Head branch name
+
+    Returns:
+        List of changed files
+    """
+    changed_files = []
+    
+    try:
+        import subprocess
+        
+        # Get list of changed files
+        cmd = ["git", "diff", "--name-status", f"{base_branch}...{head_branch}"]
+        result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+        
+        for line in result.stdout.strip().split("\n"):
+            if line:
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    status = parts[0]
+                    file_path = parts[1]
+                    
+                    changed_files.append({
+                        "path": file_path,
+                        "status": status,
+                    })
+    
+    except Exception as e:
+        logger.error(f"Error getting changed files between branches: {str(e)}")
+    
+    return changed_files
+
+
+def _analyze_branch_changes(codebase: Codebase, changed_files: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Analyze changes between branches.
+
+    Args:
+        codebase: Codebase
+        changed_files: List of changed files
+
+    Returns:
+        Analysis of changes
+    """
+    changes_analysis = {
+        "added_files": 0,
+        "modified_files": 0,
+        "deleted_files": 0,
+        "file_types": {},
+    }
+    
+    for file_info in changed_files:
+        status = file_info["status"]
+        file_path = file_info["path"]
+        
+        # Count files by status
+        if status.startswith("A"):
+            changes_analysis["added_files"] += 1
+        elif status.startswith("M"):
+            changes_analysis["modified_files"] += 1
+        elif status.startswith("D"):
+            changes_analysis["deleted_files"] += 1
+        
+        # Count file types
+        file_ext = os.path.splitext(file_path)[1]
+        if file_ext:
+            if file_ext not in changes_analysis["file_types"]:
+                changes_analysis["file_types"][file_ext] = 0
+            changes_analysis["file_types"][file_ext] += 1
+    
+    return changes_analysis
+
+
+def _get_commits_between_branches(codebase: Codebase, base_branch: str, head_branch: str) -> List[Dict[str, Any]]:
+    """
+    Get commits between branches.
+
+    Args:
+        codebase: Codebase
+        base_branch: Base branch name
+        head_branch: Head branch name
+
+    Returns:
+        List of commits
+    """
+    commits = []
+    
+    try:
+        import subprocess
+        
+        # Get list of commits
+        cmd = ["git", "log", "--pretty=format:%H|%an|%ae|%at|%s", f"{base_branch}..{head_branch}"]
+        result = subprocess.run(cmd, cwd=codebase.root_path, capture_output=True, text=True, check=True)
+        
+        for line in result.stdout.strip().split("\n"):
+            if line:
+                parts = line.split("|")
+                if len(parts) >= 5:
+                    commit_hash = parts[0]
+                    author_name = parts[1]
+                    author_email = parts[2]
+                    timestamp = parts[3]
+                    message = parts[4]
+                    
+                    import datetime
+                    date = datetime.datetime.fromtimestamp(int(timestamp)).isoformat()
+                    
+                    commits.append({
+                        "hash": commit_hash,
+                        "author_name": author_name,
+                        "author_email": author_email,
+                        "date": date,
+                        "message": message,
+                    })
+    
+    except Exception as e:
+        logger.error(f"Error getting commits between branches: {str(e)}")
+    
+    return commits
+
+
+def get_codebase_summary(codebase_path: str) -> Dict[str, Any]:
+    """
+    Get a summary of the codebase.
+
+    Args:
+        codebase_path: Path to the codebase
+
+    Returns:
+        Codebase summary
+    """
+    # Create a graph-sitter codebase for advanced analysis
+    gs_codebase = GraphSitterCodebase(codebase_path)
+    
+    # Get codebase summary using graph-sitter
+    summary = get_codebase_summary(gs_codebase)
+    
+    return summary
