@@ -6,6 +6,7 @@ undefined references, unused imports, and circular dependencies.
 """
 
 import ast
+import builtins
 import importlib
 import os
 import sys
@@ -80,6 +81,8 @@ class UndefinedReferenceRule(BaseRule):
             name="Undefined Reference Check",
             description="Checks for undefined references in the code."
         )
+        # Add built-in names to defined names
+        self.defined_names: Set[str] = set(dir(builtins))
         
     def apply(self, context) -> List[AnalysisResult]:
         """
@@ -114,18 +117,18 @@ class UndefinedReferenceRule(BaseRule):
         results = []
         try:
             tree = ast.parse(content, filename=file_path)
-            visitor = UndefinedReferenceVisitor(file_path, context)
+            visitor = UndefinedReferenceVisitor(self.defined_names)
             visitor.visit(tree)
             
             for ref in visitor.undefined_references:
                 results.append(AnalysisResult(
                     rule_id=self.rule_id,
                     severity="error",
-                    message=f"Undefined reference: {ref.name}",
+                    message=f"Undefined reference: {ref.id}",
                     file=file_path,
                     line=ref.lineno,
                     column=ref.col_offset,
-                    details={"error_type": "undefined_reference", "name": ref.name}
+                    details={"error_type": "undefined_reference", "name": ref.id}
                 ))
         except SyntaxError:
             # Syntax errors will be caught by the SyntaxErrorRule
@@ -135,74 +138,24 @@ class UndefinedReferenceRule(BaseRule):
 
 
 class UndefinedReferenceVisitor(ast.NodeVisitor):
-    """AST visitor for finding undefined references."""
-    
-    def __init__(self, file_path: str, context):
+    """AST visitor to find undefined references in Python code."""
+
+    def __init__(self, defined_names: Set[str]):
         """
-        Initialize the visitor.
-        
+        Initialize the visitor with a set of defined names.
+
         Args:
-            file_path: Path to the file being checked
-            context: Analysis context
+            defined_names: Set of names that are defined in the current scope
         """
-        self.file_path = file_path
-        self.context = context
-        self.undefined_references = []
-        self.defined_names = set()
-        self.imported_modules = set()
-        
-        # Add built-in names to defined names
-        self.defined_names.update(dir(builtins))
-        
-    def visit_Import(self, node):
-        """Visit an Import node."""
-        for name in node.names:
-            self.defined_names.add(name.name.split('.')[0])
-            self.imported_modules.add(name.name.split('.')[0])
-        self.generic_visit(node)
-        
-    def visit_ImportFrom(self, node):
-        """Visit an ImportFrom node."""
-        if node.module:
-            self.imported_modules.add(node.module.split('.')[0])
-        for name in node.names:
-            if name.name != '*':
-                self.defined_names.add(name.name)
-        self.generic_visit(node)
-        
-    def visit_ClassDef(self, node):
-        """Visit a ClassDef node."""
-        self.defined_names.add(node.name)
-        self.generic_visit(node)
-        
-    def visit_FunctionDef(self, node):
-        """Visit a FunctionDef node."""
-        self.defined_names.add(node.name)
-        self.generic_visit(node)
-        
-    def visit_Assign(self, node):
-        """Visit an Assign node."""
-        for target in node.targets:
-            if isinstance(target, ast.Name):
-                self.defined_names.add(target.id)
-        self.generic_visit(node)
-        
-    def visit_Name(self, node):
+        self.defined_names: Set[str] = defined_names
+        self.undefined_references: List[ast.Name] = []
+
+    def visit_Name(self, node: ast.Name) -> None:
         """Visit a Name node."""
         if isinstance(node.ctx, ast.Load) and node.id not in self.defined_names:
-            # Check if this is part of a module attribute access
-            parent = self.get_parent(node)
-            if not (isinstance(parent, ast.Attribute) and parent.value == node):
-                self.undefined_references.append(node)
+            # Add the node to undefined references
+            self.undefined_references.append(node)
         self.generic_visit(node)
-        
-    def get_parent(self, node):
-        """Get the parent node of a node."""
-        for parent in ast.walk(ast.parse(self.context.head_context.get_file_content(self.file_path))):
-            for child in ast.iter_child_nodes(parent):
-                if child == node:
-                    return parent
-        return None
 
 
 class UnusedImportRule(BaseRule):
@@ -250,6 +203,7 @@ class UnusedImportRule(BaseRule):
             tree = ast.parse(content, filename=file_path)
             visitor = UnusedImportVisitor()
             visitor.visit(tree)
+            visitor.finalize()
             
             for import_node, name in visitor.unused_imports:
                 results.append(AnalysisResult(
@@ -361,7 +315,7 @@ class CircularDependencyRule(BaseRule):
         Returns:
             Dictionary mapping module names to sets of imported module names
         """
-        graph = {}
+        graph: Dict[str, Set[str]] = {}
         
         for file_path, change_type in context.get_file_changes().items():
             if change_type in ["added", "modified"] and file_path.endswith(".py"):
@@ -434,11 +388,11 @@ class CircularDependencyRule(BaseRule):
         Returns:
             List of cycles, where each cycle is a list of module names
         """
-        cycles = []
-        visited = set()
-        path = []
+        cycles: List[List[str]] = []
+        visited: Set[str] = set()
+        path: List[str] = []
         
-        def dfs(node):
+        def dfs(node: str) -> None:
             if node in path:
                 cycle = path[path.index(node):] + [node]
                 cycles.append(cycle)
@@ -460,8 +414,4 @@ class CircularDependencyRule(BaseRule):
             dfs(node)
         
         return cycles
-
-
-# Import builtins module for UndefinedReferenceVisitor
-import builtins
 

@@ -100,8 +100,8 @@ class ParameterTypeVisitor(ast.NodeVisitor):
         """
         self.file_path = file_path
         self.context = context
-        self.type_mismatches = []
-        self.function_defs = {}  # name -> (args, type_hints)
+        self.type_mismatches: List[Tuple[ast.Call, str, str, str, str]] = []
+        self.function_defs: Dict[str, Tuple[ast.arguments, Dict[str, str]]] = {}
         
     def visit_FunctionDef(self, node):
         """Visit a FunctionDef node."""
@@ -293,8 +293,8 @@ class MissingParameterVisitor(ast.NodeVisitor):
         """
         self.file_path = file_path
         self.context = context
-        self.missing_parameters = []
-        self.function_defs = {}  # name -> (args, defaults, kwonlyargs, kw_defaults)
+        self.missing_parameters: List[Tuple[ast.Call, str, List[str]]] = []
+        self.function_defs: Dict[str, Tuple[List[str], List[ast.expr], List[str], List[ast.expr]]] = {}
         
     def visit_FunctionDef(self, node):
         """Visit a FunctionDef node."""
@@ -435,8 +435,8 @@ class IncorrectParameterUsageVisitor(ast.NodeVisitor):
         """
         self.file_path = file_path
         self.context = context
-        self.incorrect_usages = []
-        self.function_defs = {}  # name -> (args, kwonlyargs, vararg, kwarg)
+        self.incorrect_usages: List[Tuple[ast.Call, str, Optional[str], str]] = []
+        self.function_defs: Dict[str, Tuple[List[str], List[str], Optional[str], Optional[str]]] = {}
         
     def visit_FunctionDef(self, node):
         """Visit a FunctionDef node."""
@@ -495,4 +495,3 @@ class IncorrectParameterUsageVisitor(ast.NodeVisitor):
         elif isinstance(node, ast.Attribute):
             return node.attr
         return None
-
