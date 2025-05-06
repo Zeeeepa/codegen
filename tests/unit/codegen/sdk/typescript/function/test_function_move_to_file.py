@@ -125,7 +125,9 @@ export function bar() {
         file3 = codebase.get_file("file3.ts")
 
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, include_dependencies=True, strategy="update_all_imports")
+        bar.move_to_file(
+            file3, include_dependencies=True, strategy="update_all_imports"
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -221,7 +223,9 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -325,7 +329,9 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=False)
+        bar_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=False
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -529,7 +535,9 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="add_back_edge", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="add_back_edge", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -636,7 +644,9 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="add_back_edge", include_dependencies=False)
+        bar_symbol.move_to_file(
+            file1, strategy="add_back_edge", include_dependencies=False
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -744,7 +754,9 @@ export function bar() {
         file3 = codebase.get_file("file3.ts")
 
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, include_dependencies=True, strategy="duplicate_dependencies")
+        bar.move_to_file(
+            file3, include_dependencies=True, strategy="duplicate_dependencies"
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -851,7 +863,9 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="duplicate_dependencies", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="duplicate_dependencies", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -864,7 +878,9 @@ function baz(): string {
     assert isinstance(new_symbol, Function)
 
 
-def test_move_to_file_duplicate_dependencies_without_include_dependencies(tmpdir) -> None:
+def test_move_to_file_duplicate_dependencies_without_include_dependencies(
+    tmpdir,
+) -> None:
     # ========== [ BEFORE ] ==========
     # language=typescript
     FILE_1_CONTENT = """
@@ -960,7 +976,9 @@ function baz(): string {
         file3 = codebase.get_file("file3.ts")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="duplicate_dependencies", include_dependencies=False)
+        bar_symbol.move_to_file(
+            file1, strategy="duplicate_dependencies", include_dependencies=False
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -1015,13 +1033,17 @@ const value3 = targetFunction();
         "usage.ts": USAGE_FILE_CONTENT,
     }
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as codebase:
         source_file = codebase.get_file("source.ts")
         dest_file = codebase.get_file("destination.ts")
         usage_file = codebase.get_file("usage.ts")
 
         target_function = source_file.get_function("targetFunction")
-        target_function.move_to_file(dest_file, include_dependencies=False, strategy="update_all_imports")
+        target_function.move_to_file(
+            dest_file, include_dependencies=False, strategy="update_all_imports"
+        )
 
     assert usage_file.content.strip() == EXPECTED_USAGE_FILE_CONTENT.strip()
 
@@ -1064,13 +1086,17 @@ const value = targetFunction();
         "usage.ts": USAGE_FILE_CONTENT,
     }
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as codebase:
         source_file = codebase.get_file("source.ts")
         dest_file = codebase.get_file("destination.ts")
         usage_file = codebase.get_file("usage.ts")
 
         target_function = source_file.get_function("targetFunction")
-        target_function.move_to_file(dest_file, include_dependencies=False, strategy="update_all_imports")
+        target_function.move_to_file(
+            dest_file, include_dependencies=False, strategy="update_all_imports"
+        )
 
     assert usage_file.content.strip() == EXPECTED_USAGE_FILE_CONTENT.strip()
 
@@ -1112,13 +1138,17 @@ const value = targetFunction();
         "usage.ts": USAGE_FILE_CONTENT,
     }
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as codebase:
         source_file = codebase.get_file("source.ts")
         dest_file = codebase.get_file("destination.ts")
         usage_file = codebase.get_file("usage.ts")
 
         target_function = source_file.get_function("targetFunction")
-        target_function.move_to_file(dest_file, include_dependencies=False, strategy="update_all_imports")
+        target_function.move_to_file(
+            dest_file, include_dependencies=False, strategy="update_all_imports"
+        )
 
     assert usage_file.content.strip() == EXPECTED_USAGE_FILE_CONTENT.strip()
 
@@ -1189,14 +1219,20 @@ export function targetFunction(input: TypeA): TypeB {
         "destination.ts": DEST_FILE_CONTENT,
     }
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as codebase:
         source_file = codebase.get_file("source.ts")
         dest_file = codebase.get_file("destination.ts")
 
         target_function = source_file.get_function("targetFunction")
-        target_function.move_to_file(dest_file, include_dependencies=False, strategy="update_all_imports")
+        target_function.move_to_file(
+            dest_file, include_dependencies=False, strategy="update_all_imports"
+        )
 
-    assert normalize_imports(dest_file.content.strip()) == normalize_imports(EXPECTED_DEST_FILE_CONTENT.strip())
+    assert normalize_imports(dest_file.content.strip()) == normalize_imports(
+        EXPECTED_DEST_FILE_CONTENT.strip()
+    )
 
 
 def test_move_to_file_imports_local_deps(tmpdir) -> None:
@@ -1244,15 +1280,23 @@ export function helperFunction(x: number): number {
         "destination.ts": DEST_FILE_CONTENT,
     }
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files
+    ) as codebase:
         source_file = codebase.get_file("source.ts")
         dest_file = codebase.get_file("destination.ts")
 
         target_function = source_file.get_function("targetFunction")
-        target_function.move_to_file(dest_file, include_dependencies=False, strategy="update_all_imports")
+        target_function.move_to_file(
+            dest_file, include_dependencies=False, strategy="update_all_imports"
+        )
 
-    assert normalize_imports(dest_file.content.strip()) == normalize_imports(EXPECTED_DEST_FILE_CONTENT.strip())
-    assert normalize_imports(source_file.content.strip()) == normalize_imports(EXPECTED_SOURCE_FILE_CONTENT.strip())
+    assert normalize_imports(dest_file.content.strip()) == normalize_imports(
+        EXPECTED_DEST_FILE_CONTENT.strip()
+    )
+    assert normalize_imports(source_file.content.strip()) == normalize_imports(
+        EXPECTED_SOURCE_FILE_CONTENT.strip()
+    )
 
 
 def test_function_move_to_file_circular_dependency(tmpdir) -> None:
@@ -1306,7 +1350,10 @@ export function foo(): number {
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
 
 
-@pytest.mark.skipif(condition=platform.system() != "Linux", reason="Only works on case-sensitive file systems")
+@pytest.mark.skipif(
+    condition=platform.system() != "Linux",
+    reason="Only works on case-sensitive file systems",
+)
 def test_function_move_to_file_lower_upper(tmpdir) -> None:
     # ========== [ BEFORE ] ==========
     # language=typescript
@@ -1413,7 +1460,10 @@ export function foo(): number {
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
 
 
-@pytest.mark.skipif(condition=platform.system() != "Linux", reason="Only works on case-sensitive file systems")
+@pytest.mark.skipif(
+    condition=platform.system() != "Linux",
+    reason="Only works on case-sensitive file systems",
+)
 def test_function_move_to_file_lower_upper_no_deps(tmpdir) -> None:
     # ========== [ BEFORE ] ==========
     # language=typescript

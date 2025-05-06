@@ -13,7 +13,11 @@ function baz(): number {
     return foo(1) + foo(1);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("foo")
         symbol.rename("XYZ")
@@ -78,9 +82,18 @@ function main() {
   console.log(introduction);
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={DEF_FILENAME: DEF_FILE_CONTENT_INPUT, USAGE_FILENAME: USAGE_FILE_CONTENT_INPUT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={
+            DEF_FILENAME: DEF_FILE_CONTENT_INPUT,
+            USAGE_FILENAME: USAGE_FILE_CONTENT_INPUT,
+        },
+    ) as codebase:
         symbol_for_rename = codebase.get_symbol("greet")
         symbol_for_rename.rename("offender")
 
     assert codebase.get_file(DEF_FILENAME).content == DEF_FILE_CONTENT_EXPECTED_OUTPUT
-    assert codebase.get_file(USAGE_FILENAME).content == USAGE_FILE_CONTENT_EXPECTED_OUTPUT
+    assert (
+        codebase.get_file(USAGE_FILENAME).content == USAGE_FILE_CONTENT_EXPECTED_OUTPUT
+    )

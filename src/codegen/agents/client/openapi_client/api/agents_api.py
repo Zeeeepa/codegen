@@ -14,8 +14,12 @@ from pydantic import Field, StrictFloat, StrictInt, StrictStr, validate_call
 
 from codegen.agents.client.openapi_client.api_client import ApiClient, RequestSerialized
 from codegen.agents.client.openapi_client.api_response import ApiResponse
-from codegen.agents.client.openapi_client.models.agent_run_response import AgentRunResponse
-from codegen.agents.client.openapi_client.models.create_agent_run_input import CreateAgentRunInput
+from codegen.agents.client.openapi_client.models.agent_run_response import (
+    AgentRunResponse,
+)
+from codegen.agents.client.openapi_client.models.create_agent_run_input import (
+    CreateAgentRunInput,
+)
 from codegen.agents.client.openapi_client.rest import RESTResponseType
 
 
@@ -37,7 +41,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -74,21 +84,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -101,7 +115,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -138,21 +158,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -165,7 +189,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -202,21 +232,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _create_agent_run_v1_organizations_org_id_agent_run_post_serialize(
@@ -237,7 +271,9 @@ class AgentsApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -254,13 +290,17 @@ class AgentsApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # set the HTTP header `Content-Type`
         if _content_type:
             _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = self.api_client.select_header_content_type(["application/json"])
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
+            )
             if _default_content_type is not None:
                 _header_params["Content-Type"] = _default_content_type
 
@@ -288,7 +328,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -325,21 +371,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -352,7 +402,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -389,21 +445,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -416,7 +476,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -453,21 +519,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _create_agent_run_v1_organizations_org_id_agent_run_post_0_serialize(
@@ -488,7 +558,9 @@ class AgentsApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -505,13 +577,17 @@ class AgentsApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # set the HTTP header `Content-Type`
         if _content_type:
             _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = self.api_client.select_header_content_type(["application/json"])
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
+            )
             if _default_content_type is not None:
                 _header_params["Content-Type"] = _default_content_type
 
@@ -539,7 +615,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -576,21 +658,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -603,7 +689,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -640,21 +732,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -667,7 +763,13 @@ class AgentsApi:
         org_id: StrictInt,
         create_agent_run_input: CreateAgentRunInput,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -704,21 +806,25 @@ class AgentsApi:
         :type _host_index: int, optional
         :return: Returns the result object.
         """  # noqa: E501
-        _param = self._create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
-            org_id=org_id,
-            create_agent_run_input=create_agent_run_input,
-            authorization=authorization,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index,
+        _param = (
+            self._create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
+                org_id=org_id,
+                create_agent_run_input=create_agent_run_input,
+                authorization=authorization,
+                _request_auth=_request_auth,
+                _content_type=_content_type,
+                _headers=_headers,
+                _host_index=_host_index,
+            )
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _create_agent_run_v1_organizations_org_id_agent_run_post_1_serialize(
@@ -739,7 +845,9 @@ class AgentsApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -756,13 +864,17 @@ class AgentsApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # set the HTTP header `Content-Type`
         if _content_type:
             _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = self.api_client.select_header_content_type(["application/json"])
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
+            )
             if _default_content_type is not None:
                 _header_params["Content-Type"] = _default_content_type
 
@@ -790,7 +902,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -828,14 +946,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -848,7 +974,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -886,14 +1018,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -906,7 +1046,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -944,14 +1090,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_serialize(
@@ -972,7 +1126,9 @@ class AgentsApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -989,7 +1145,9 @@ class AgentsApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -1015,7 +1173,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1053,14 +1217,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_0_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1073,7 +1245,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1111,14 +1289,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_0_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1131,7 +1317,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1169,14 +1361,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_0_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_0_serialize(
@@ -1197,7 +1397,9 @@ class AgentsApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -1214,7 +1416,9 @@ class AgentsApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []
@@ -1240,7 +1444,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1278,14 +1488,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_1_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1298,7 +1516,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1336,14 +1560,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_1_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         return self.api_client.response_deserialize(
             response_data=response_data,
@@ -1356,7 +1588,13 @@ class AgentsApi:
         agent_run_id: StrictInt,
         org_id: StrictInt,
         authorization: Optional[Any] = None,
-        _request_timeout: Union[None, Annotated[StrictFloat, Field(gt=0)], tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]]] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
+        ] = None,
         _request_auth: Optional[dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[dict[StrictStr, Any]] = None,
@@ -1394,14 +1632,22 @@ class AgentsApi:
         :return: Returns the result object.
         """  # noqa: E501
         _param = self._get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_1_serialize(
-            agent_run_id=agent_run_id, org_id=org_id, authorization=authorization, _request_auth=_request_auth, _content_type=_content_type, _headers=_headers, _host_index=_host_index
+            agent_run_id=agent_run_id,
+            org_id=org_id,
+            authorization=authorization,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index,
         )
 
         _response_types_map: dict[str, Optional[str]] = {
             "200": "AgentRunResponse",
             "422": "HTTPValidationError",
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         return response_data.response
 
     def _get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get_1_serialize(
@@ -1422,7 +1668,9 @@ class AgentsApi:
         _query_params: list[tuple[str, str]] = []
         _header_params: dict[str, Optional[str]] = _headers or {}
         _form_params: list[tuple[str, str]] = []
-        _files: dict[str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]] = {}
+        _files: dict[
+            str, Union[str, bytes, list[str], list[bytes], list[tuple[str, bytes]]]
+        ] = {}
         _body_params: Optional[bytes] = None
 
         # process the path parameters
@@ -1439,7 +1687,9 @@ class AgentsApi:
 
         # set the HTTP header `Accept`
         if "Accept" not in _header_params:
-            _header_params["Accept"] = self.api_client.select_header_accept(["application/json"])
+            _header_params["Accept"] = self.api_client.select_header_accept(
+                ["application/json"]
+            )
 
         # authentication setting
         _auth_settings: list[str] = []

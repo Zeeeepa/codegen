@@ -15,7 +15,9 @@ async def test_sandbox_runner_warmup_builds_graph(mock_executor, runner: Sandbox
 
 @pytest.mark.asyncio
 @patch("codegen.runner.sandbox.runner.SandboxRunner._build_graph")
-async def test_sandbox_runner_warmup_builds_graph_throws(mock_build_graph, runner: SandboxRunner):
+async def test_sandbox_runner_warmup_builds_graph_throws(
+    mock_build_graph, runner: SandboxRunner
+):
     mock_build_graph.side_effect = Exception("Test exception")
 
     with pytest.raises(Exception):
@@ -25,7 +27,9 @@ async def test_sandbox_runner_warmup_builds_graph_throws(mock_build_graph, runne
 @pytest.mark.asyncio
 @patch("codegen.runner.sandbox.runner.logger")
 @patch("codegen.runner.sandbox.runner.SandboxExecutor")
-async def test_sandbox_runner_warmup_logs_repo_id(mock_executor, mock_logger, runner: SandboxRunner):
+async def test_sandbox_runner_warmup_logs_repo_id(
+    mock_executor, mock_logger, runner: SandboxRunner
+):
     await runner.warmup()
     assert runner.codebase.files
     assert len(runner.codebase.files) == 1
@@ -35,11 +39,15 @@ async def test_sandbox_runner_warmup_logs_repo_id(mock_executor, mock_logger, ru
 
 @pytest.mark.asyncio
 @patch("codegen.runner.sandbox.runner.SandboxExecutor")
-async def test_sandbox_runner_warmup_starts_with_default_branch(mock_executor, runner: SandboxRunner):
+async def test_sandbox_runner_warmup_starts_with_default_branch(
+    mock_executor, runner: SandboxRunner
+):
     await runner.warmup()  # assert True is returned
     # assert len(runner.codebase._op.git_cli.branches) == 1  TODO: fix GHA creating master and main branch
     assert not runner.codebase._op.git_cli.head.is_detached
-    assert runner.codebase._op.git_cli.active_branch.name == runner.codebase.default_branch
+    assert (
+        runner.codebase._op.git_cli.active_branch.name == runner.codebase.default_branch
+    )
     assert runner.codebase._op.git_cli.head.commit == runner.op.head_commit
 
 
@@ -47,10 +55,14 @@ async def test_sandbox_runner_warmup_starts_with_default_branch(mock_executor, r
 @patch("codegen.runner.sandbox.runner.logger")
 @patch("codegen.runner.sandbox.runner.SandboxExecutor")
 @patch("codegen.sdk.core.codebase.Codebase.default_branch", new_callable=PropertyMock)
-async def test_sandbox_runner_reset_runner_deletes_branches(mock_branch, mock_executor, mock_logger, runner: SandboxRunner):
+async def test_sandbox_runner_reset_runner_deletes_branches(
+    mock_branch, mock_executor, mock_logger, runner: SandboxRunner
+):
     mock_branch.return_value = "main"
     await runner.warmup()
-    num_branches = len(runner.codebase._op.git_cli.heads)  # TODO: fix GHA creating master and main branch and assert the len is 1 at the start
+    num_branches = len(
+        runner.codebase._op.git_cli.heads
+    )  # TODO: fix GHA creating master and main branch and assert the len is 1 at the start
     runner.codebase.checkout(branch="test-branch-a", create_if_missing=True)
     runner.codebase.checkout(branch="test-branch-b", create_if_missing=True)
     assert len(runner.codebase._op.git_cli.heads) == num_branches + 2

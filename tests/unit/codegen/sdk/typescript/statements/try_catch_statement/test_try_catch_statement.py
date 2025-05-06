@@ -22,7 +22,11 @@ try {
     cleanup();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         statements = file.code_block.statements
         try_catch_1 = statements[0]
@@ -51,7 +55,11 @@ try {
     finalizeProcess();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         try_catch = file.code_block.statements[0]
         assert len(try_catch.function_calls) == 3
@@ -72,7 +80,11 @@ function example() {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         example = file.get_function("example")
         assert len(example.dependencies) == 1
@@ -97,7 +109,11 @@ let use = test
 
 
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("test")
         func_call = file.function_calls[0]
@@ -117,7 +133,11 @@ try {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("PYSPARK")
         func_call = file.function_calls[0]
@@ -141,7 +161,11 @@ try {
 }
 foo();
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         func_call = file.function_calls[2]
@@ -169,7 +193,11 @@ try {
 }
 foo();
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         func_call = file.function_calls[3]
@@ -198,7 +226,11 @@ try {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         pyspark_arg = func_call.args.children[0]
@@ -222,7 +254,11 @@ function process() {
     return result;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         process_func = file.get_function("process")
         return_stmt = process_func.code_block.statements[-1]
@@ -250,7 +286,11 @@ try {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         pyspark_arg = func_call.args.children[0]
@@ -279,7 +319,11 @@ try {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         pyspark_arg = func_call.args.children[0]

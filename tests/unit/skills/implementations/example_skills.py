@@ -16,7 +16,11 @@ test_cases = [
 ]
 
 
-@skill(eval_skill=False, prompt="Set the value of all global variables to 2 if their current assigned literal is 1", uid="917e6632-2a65-4879-8dcf-566645a65262")
+@skill(
+    eval_skill=False,
+    prompt="Set the value of all global variables to 2 if their current assigned literal is 1",
+    uid="917e6632-2a65-4879-8dcf-566645a65262",
+)
 class SetGlobalVarValueSkill(Skill, ABC):
     """This skill modifies the values of all global variables in the codebase, setting them to 2 if their current assigned value is 1."""
 
@@ -42,7 +46,11 @@ test_cases = [
 ]
 
 
-@skill(eval_skill=False, prompt="Rename all global variables named 'x' to 'y'", uid="540d32c1-223b-4b66-bebd-94ebbcd5dcb7")
+@skill(
+    eval_skill=False,
+    prompt="Rename all global variables named 'x' to 'y'",
+    uid="540d32c1-223b-4b66-bebd-94ebbcd5dcb7",
+)
 class RenameGlobalVarSkill(Skill, ABC):
     """Renames all global variables named 'x' to 'y' across the codebase."""
 
@@ -130,7 +138,11 @@ def test_function():
 ]
 
 
-@skill(eval_skill=False, prompt="Add pytest.mark.skip decorator to all test functions with reason='This is a test'", uid="8a1da729-ba4c-4d2f-8f85-0d3a5477775e")
+@skill(
+    eval_skill=False,
+    prompt="Add pytest.mark.skip decorator to all test functions with reason='This is a test'",
+    uid="8a1da729-ba4c-4d2f-8f85-0d3a5477775e",
+)
 class SkipAllTests(Skill, ABC):
     """This skill adds a decorator to all test functions in the codebase, marking them to be skipped during test execution with a specified reason."""
 
@@ -148,7 +160,9 @@ class SkipAllTests(Skill, ABC):
                 for method in cls.methods:
                     if method.name.startswith("test_"):
                         file.add_import("import pytest")
-                        method.add_decorator('@pytest.mark.skip(reason="This is a test")')
+                        method.add_decorator(
+                            '@pytest.mark.skip(reason="This is a test")'
+                        )
 
     @staticmethod
     @skill_impl([], ignore=True)
@@ -162,12 +176,30 @@ class SkipAllTests(Skill, ABC):
 ########################################################################################################################
 
 test_cases = [
-    SkillTestCase(files=[SkillTestCasePyFile(input="def func(x):\n    print(x)", output="from typing import Any\ndef func(x: Any) -> None:\n    print(x)")]),
-    SkillTestCase(files=[SkillTestCasePyFile(input="def greet(name):\n    return f'Hello, {name}'", output="from typing import Any\ndef greet(name: str) -> Any:\n    return f'Hello, {name}'")]),
+    SkillTestCase(
+        files=[
+            SkillTestCasePyFile(
+                input="def func(x):\n    print(x)",
+                output="from typing import Any\ndef func(x: Any) -> None:\n    print(x)",
+            )
+        ]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCasePyFile(
+                input="def greet(name):\n    return f'Hello, {name}'",
+                output="from typing import Any\ndef greet(name: str) -> Any:\n    return f'Hello, {name}'",
+            )
+        ]
+    ),
 ]
 
 
-@skill(eval_skill=False, prompt="Add trivial type hints to function parameters and return values", uid="ecc14909-a28d-4a53-88f0-a2e7bbb4c72c")
+@skill(
+    eval_skill=False,
+    prompt="Add trivial type hints to function parameters and return values",
+    uid="ecc14909-a28d-4a53-88f0-a2e7bbb4c72c",
+)
 class AddTypeHintsSkill(Skill, ABC):
     """This skill adds type hints to function parameters and return values in a codebase, enhancing type safety and improving code readability."""
 
@@ -235,7 +267,11 @@ test_cases = [
 ]
 
 
-@skill(eval_skill=False, prompt="Rename the class OldName to NewName", uid="5867f33c-436a-4f16-a3e2-70203798d8f5")
+@skill(
+    eval_skill=False,
+    prompt="Rename the class OldName to NewName",
+    uid="5867f33c-436a-4f16-a3e2-70203798d8f5",
+)
 class RenameClassSkill(Skill, ABC):
     """Renames a specified class in the codebase from an old name to a new name."""
 
@@ -293,7 +329,14 @@ class RenameClassSkill(Skill, ABC):
 ########################################################################################################################
 
 test_cases = [
-    SkillTestCase(files=[SkillTestCasePyFile(input="def old_func():\n    pass", output="def old_func():\n    pass\n\ndef new_old_func():\n    return old_func()")]),
+    SkillTestCase(
+        files=[
+            SkillTestCasePyFile(
+                input="def old_func():\n    pass",
+                output="def old_func():\n    pass\n\ndef new_old_func():\n    return old_func()",
+            )
+        ]
+    ),
     SkillTestCase(
         files=[
             SkillTestCasePyFile(
@@ -305,7 +348,11 @@ test_cases = [
 ]
 
 
-@skill(eval_skill=False, prompt="Add a trivial wrapper function called `new_{function.name}` around each function and class method", uid="f9478659-3fe4-4855-85b2-bb2a39ec4a47")
+@skill(
+    eval_skill=False,
+    prompt="Add a trivial wrapper function called `new_{function.name}` around each function and class method",
+    uid="f9478659-3fe4-4855-85b2-bb2a39ec4a47",
+)
 class AddWrapperFunctionSkill(Skill, ABC):
     """Adds a trivial wrapper function around each function and class method, creating a new function that simply calls the original function."""
 
@@ -357,7 +404,11 @@ def foo():
 ]
 
 
-@skill(eval_skill=False, prompt="Remove unused import statements from the code", uid="b1fbed63-1932-4434-854d-182202e74c70")
+@skill(
+    eval_skill=False,
+    prompt="Remove unused import statements from the code",
+    uid="b1fbed63-1932-4434-854d-182202e74c70",
+)
 class RemoveUnusedImportsSkill(Skill, ABC):
     """Removes all unused import statements from the codebase, ensuring that only necessary imports are retained in each file."""
 
@@ -400,7 +451,11 @@ def foo():
 ]
 
 
-@skill(eval_skill=False, prompt="Add docstrings to all functions and methods", uid="bea814b1-b834-43a0-a6f5-bab146d1fd38")
+@skill(
+    eval_skill=False,
+    prompt="Add docstrings to all functions and methods",
+    uid="bea814b1-b834-43a0-a6f5-bab146d1fd38",
+)
 class AddDocstringsSkill(Skill, ABC):
     """This skill adds docstrings to all functions and methods in a codebase, ensuring that each function has a descriptive comment explaining its purpose and functionality."""
 

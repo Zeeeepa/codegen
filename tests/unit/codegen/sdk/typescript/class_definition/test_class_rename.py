@@ -41,7 +41,11 @@ class MyOtherClass {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
 

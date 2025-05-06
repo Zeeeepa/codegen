@@ -43,14 +43,20 @@ function f() {
     return
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 6
 
         assert file.get_import("a").source == "const a = await import('./m');"
         assert file.get_import("a").module.source == "'./m'"
-        assert file.get_import("a").symbol_name.source == "a"  # TODO: shouldn't this be null?
+        assert (
+            file.get_import("a").symbol_name.source == "a"
+        )  # TODO: shouldn't this be null?
         assert file.get_import("a").name == "a"
         assert file.get_import("a").alias.source == "a"
         assert file.get_import("a").import_type == ImportType.MODULE
@@ -60,7 +66,9 @@ function f() {
 
         assert file.get_import("b").source == "const b = require('./m');"
         assert file.get_import("b").module.source == "'./m'"
-        assert file.get_import("b").symbol_name.source == "b"  # TODO: shouldn't this be null?
+        assert (
+            file.get_import("b").symbol_name.source == "b"
+        )  # TODO: shouldn't this be null?
         assert file.get_import("b").name == "b"
         assert file.get_import("b").alias.source == "b"
         assert file.get_import("b").import_type == ImportType.MODULE
@@ -70,7 +78,9 @@ function f() {
 
         assert file.get_import("c").source == "let c = await import('./m');"
         assert file.get_import("c").module.source == "'./m'"
-        assert file.get_import("c").symbol_name.source == "c"  # TODO: shouldn't this be null?
+        assert (
+            file.get_import("c").symbol_name.source == "c"
+        )  # TODO: shouldn't this be null?
         assert file.get_import("c").name == "c"
         assert file.get_import("c").alias.source == "c"
         assert file.get_import("c").import_type == ImportType.MODULE
@@ -80,7 +90,9 @@ function f() {
 
         assert file.get_import("d").source == "let d = require('./m');"
         assert file.get_import("d").module.source == "'./m'"
-        assert file.get_import("d").symbol_name.source == "d"  # TODO: shouldn't this be null?
+        assert (
+            file.get_import("d").symbol_name.source == "d"
+        )  # TODO: shouldn't this be null?
         assert file.get_import("d").name == "d"
         assert file.get_import("d").alias.source == "d"
         assert file.get_import("d").import_type == ImportType.MODULE
@@ -90,7 +102,9 @@ function f() {
 
         assert file.get_import("e").source == "e = await import('./m');"
         assert file.get_import("e").module.source == "'./m'"
-        assert file.get_import("e").symbol_name.source == "e"  # TODO: shouldn't this be null?
+        assert (
+            file.get_import("e").symbol_name.source == "e"
+        )  # TODO: shouldn't this be null?
         assert file.get_import("e").name == "e"
         assert file.get_import("e").alias.source == "e"
         assert file.get_import("e").import_type == ImportType.MODULE
@@ -100,7 +114,9 @@ function f() {
 
         assert file.get_import("f").source == "f = require('./m');"
         assert file.get_import("f").module.source == "'./m'"
-        assert file.get_import("f").symbol_name.source == "f"  # TODO: shouldn't this be null?
+        assert (
+            file.get_import("f").symbol_name.source == "f"
+        )  # TODO: shouldn't this be null?
         assert file.get_import("f").name == "f"
         assert file.get_import("f").alias.source == "f"
         assert file.get_import("f").import_type == ImportType.MODULE
@@ -135,7 +151,11 @@ export function b() {
 export type SomeType = {};
 export type OtherType = {};
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 4
@@ -207,12 +227,19 @@ export interface SomeInterface {
 
 export default SomeInterface;
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 4
 
-        assert file.get_import("DynamicType").source == "type DynamicType = typeof import('./m').SomeType"
+        assert (
+            file.get_import("DynamicType").source
+            == "type DynamicType = typeof import('./m').SomeType"
+        )
         assert file.get_import("DynamicType").module.source == "'./m'"
         assert file.get_import("DynamicType").symbol_name.source == "SomeType"
         assert file.get_import("DynamicType").name == "DynamicType"
@@ -221,9 +248,14 @@ export default SomeInterface;
         assert not file.get_import("DynamicType").is_wildcard_import()
         assert not file.get_import("DynamicType").is_module_import()
         assert file.get_import("DynamicType").is_type_import()
-        assert file.get_import("DynamicType").resolved_symbol == m_file.get_type("SomeType")
+        assert file.get_import("DynamicType").resolved_symbol == m_file.get_type(
+            "SomeType"
+        )
 
-        assert file.get_import("MyType").source == "const MyType = typeof import('./m').SomeType"
+        assert (
+            file.get_import("MyType").source
+            == "const MyType = typeof import('./m').SomeType"
+        )
         assert file.get_import("MyType").module.source == "'./m'"
         assert file.get_import("MyType").symbol_name.source == "SomeType"
         assert file.get_import("MyType").name == "MyType"
@@ -234,7 +266,10 @@ export default SomeInterface;
         assert file.get_import("MyType").is_type_import()
         assert file.get_import("MyType").resolved_symbol == m_file.get_type("SomeType")
 
-        assert file.get_import("DefaultType").source == "DefaultType = (await import('./m')).default"
+        assert (
+            file.get_import("DefaultType").source
+            == "DefaultType = (await import('./m')).default"
+        )
         assert file.get_import("DefaultType").module.source == "'./m'"
         assert file.get_import("DefaultType").symbol_name.source == "default"
         assert file.get_import("DefaultType").name == "DefaultType"
@@ -244,19 +279,31 @@ export default SomeInterface;
         assert file.get_import("DefaultType").is_module_import()
         assert file.get_import("DefaultType").is_default_import()
         assert file.get_import("DefaultType").is_type_import()
-        assert file.get_import("DefaultType").resolved_symbol == m_file.get_interface("SomeInterface")
+        assert file.get_import("DefaultType").resolved_symbol == m_file.get_interface(
+            "SomeInterface"
+        )
 
-        assert file.get_import("RequiredDefaultType").source == "RequiredDefaultType = require('./m').default"
+        assert (
+            file.get_import("RequiredDefaultType").source
+            == "RequiredDefaultType = require('./m').default"
+        )
         assert file.get_import("RequiredDefaultType").module.source == "'./m'"
         assert file.get_import("RequiredDefaultType").symbol_name.source == "default"
         assert file.get_import("RequiredDefaultType").name == "RequiredDefaultType"
-        assert file.get_import("RequiredDefaultType").alias.source == "RequiredDefaultType"
-        assert file.get_import("RequiredDefaultType").import_type == ImportType.DEFAULT_EXPORT
+        assert (
+            file.get_import("RequiredDefaultType").alias.source == "RequiredDefaultType"
+        )
+        assert (
+            file.get_import("RequiredDefaultType").import_type
+            == ImportType.DEFAULT_EXPORT
+        )
         assert not file.get_import("RequiredDefaultType").is_wildcard_import()
         assert file.get_import("RequiredDefaultType").is_module_import()
         assert file.get_import("RequiredDefaultType").is_default_import()
         assert file.get_import("RequiredDefaultType").is_type_import()
-        assert file.get_import("RequiredDefaultType").resolved_symbol == m_file.get_interface("SomeInterface")
+        assert file.get_import(
+            "RequiredDefaultType"
+        ).resolved_symbol == m_file.get_interface("SomeInterface")
 
 
 @pytest.mark.xfail(reason="Currently dynamic imports not supported for type parameters")
@@ -274,7 +321,11 @@ section: {
     content2 = """
 export default type SomeType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 2
@@ -323,12 +374,19 @@ export function b() {
 export type SomeType = {}
 export type OtherType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 4
 
-        assert file.get_import("aliasedA").source == "const { a: aliasedA, b } = await import('./m');"
+        assert (
+            file.get_import("aliasedA").source
+            == "const { a: aliasedA, b } = await import('./m');"
+        )
         assert file.get_import("aliasedA").module.source == "'./m'"
         assert file.get_import("aliasedA").symbol_name.source == "a"
         assert file.get_import("aliasedA").name == "aliasedA"
@@ -340,7 +398,10 @@ export type OtherType = {}
         assert file.get_import("aliasedA").imported_symbol == m_file.get_function("a")
         assert file.get_import("aliasedA").resolved_symbol == m_file.get_function("a")
 
-        assert file.get_import("b").source == "const { a: aliasedA, b } = await import('./m');"
+        assert (
+            file.get_import("b").source
+            == "const { a: aliasedA, b } = await import('./m');"
+        )
         assert file.get_import("b").module.source == "'./m'"
         assert file.get_import("b").symbol_name.source == "b"
         assert file.get_import("b").name == "b"
@@ -352,7 +413,10 @@ export type OtherType = {}
         assert file.get_import("b").imported_symbol == m_file.get_function("b")
         assert file.get_import("b").resolved_symbol == m_file.get_function("b")
 
-        assert file.get_import("SomeType").source == "const { SomeType, OtherType: AliasedType } = require('./m')"
+        assert (
+            file.get_import("SomeType").source
+            == "const { SomeType, OtherType: AliasedType } = require('./m')"
+        )
         assert file.get_import("SomeType").module.source == "'./m'"
         assert file.get_import("SomeType").symbol_name.source == "SomeType"
         assert file.get_import("SomeType").name == "SomeType"
@@ -361,10 +425,17 @@ export type OtherType = {}
         assert not file.get_import("SomeType").is_wildcard_import()
         assert not file.get_import("SomeType").is_module_import()
         assert not file.get_import("SomeType").is_type_import()
-        assert file.get_import("SomeType").imported_symbol == m_file.get_type("SomeType")
-        assert file.get_import("SomeType").resolved_symbol == m_file.get_type("SomeType")
+        assert file.get_import("SomeType").imported_symbol == m_file.get_type(
+            "SomeType"
+        )
+        assert file.get_import("SomeType").resolved_symbol == m_file.get_type(
+            "SomeType"
+        )
 
-        assert file.get_import("AliasedType").source == "const { SomeType, OtherType: AliasedType } = require('./m')"
+        assert (
+            file.get_import("AliasedType").source
+            == "const { SomeType, OtherType: AliasedType } = require('./m')"
+        )
         assert file.get_import("AliasedType").module.source == "'./m'"
         assert file.get_import("AliasedType").symbol_name.source == "OtherType"
         assert file.get_import("AliasedType").name == "AliasedType"
@@ -373,8 +444,12 @@ export type OtherType = {}
         assert not file.get_import("AliasedType").is_wildcard_import()
         assert not file.get_import("AliasedType").is_module_import()
         assert not file.get_import("AliasedType").is_type_import()
-        assert file.get_import("AliasedType").imported_symbol == m_file.get_type("OtherType")
-        assert file.get_import("AliasedType").resolved_symbol == m_file.get_type("OtherType")
+        assert file.get_import("AliasedType").imported_symbol == m_file.get_type(
+            "OtherType"
+        )
+        assert file.get_import("AliasedType").resolved_symbol == m_file.get_type(
+            "OtherType"
+        )
 
 
 def test_import_default_export(tmpdir) -> None:
@@ -388,7 +463,11 @@ export default function a() {
     return
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -415,7 +494,11 @@ import type a from './m'
     content2 = """
 export default type a = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -442,7 +525,11 @@ import type a from './m'
     content2 = """
 export type a = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -469,7 +556,11 @@ import './m'
     content2 = """
 export type a = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -496,7 +587,11 @@ import * as namespace from './m'
     content2 = """
 export default type MyType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 1
@@ -535,12 +630,19 @@ export default const something = [
     "beta",
 ] as something
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 4
 
-        assert file.get_import("something").source == "import something, {a, b as c, d} from './m'"
+        assert (
+            file.get_import("something").source
+            == "import something, {a, b as c, d} from './m'"
+        )
         assert file.get_import("something").module.source == "'./m'"
         assert file.get_import("something").symbol_name.source == "something"
         assert file.get_import("something").name == "something"
@@ -550,9 +652,13 @@ export default const something = [
         assert file.get_import("something").is_module_import()
         assert not file.get_import("something").is_type_import()
         assert file.get_import("something").imported_symbol == m_file
-        assert file.get_import("something").resolved_symbol == m_file.get_global_var("something")
+        assert file.get_import("something").resolved_symbol == m_file.get_global_var(
+            "something"
+        )
 
-        assert file.get_import("a").source == "import something, {a, b as c, d} from './m'"
+        assert (
+            file.get_import("a").source == "import something, {a, b as c, d} from './m'"
+        )
         assert file.get_import("a").module.source == "'./m'"
         assert file.get_import("a").symbol_name.source == "a"
         assert file.get_import("a").name == "a"
@@ -562,7 +668,9 @@ export default const something = [
         assert not file.get_import("a").is_module_import()
         assert not file.get_import("a").is_type_import()
 
-        assert file.get_import("c").source == "import something, {a, b as c, d} from './m'"
+        assert (
+            file.get_import("c").source == "import something, {a, b as c, d} from './m'"
+        )
         assert file.get_import("c").module.source == "'./m'"
         assert file.get_import("c").symbol_name.source == "b"
         assert file.get_import("c").name == "c"
@@ -572,7 +680,9 @@ export default const something = [
         assert not file.get_import("c").is_module_import()
         assert not file.get_import("c").is_type_import()
 
-        assert file.get_import("d").source == "import something, {a, b as c, d} from './m'"
+        assert (
+            file.get_import("d").source == "import something, {a, b as c, d} from './m'"
+        )
         assert file.get_import("d").module.source == "'./m'"
         assert file.get_import("d").symbol_name.source == "d"
         assert file.get_import("d").name == "d"
@@ -598,12 +708,19 @@ export type a = {}
 export type b = {}
 export default type DefaultType = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         m_file = codebase.get_file("m.ts")
         assert len(file.imports) == 3
 
-        assert file.get_import("DefaultType").source == "import type DefaultType, {a, b as c} from './m'"
+        assert (
+            file.get_import("DefaultType").source
+            == "import type DefaultType, {a, b as c} from './m'"
+        )
         assert file.get_import("DefaultType").module.source == "'./m'"
         assert file.get_import("DefaultType").symbol_name.source == "DefaultType"
         assert file.get_import("DefaultType").name == "DefaultType"
@@ -613,9 +730,14 @@ export default type DefaultType = {}
         assert file.get_import("DefaultType").is_module_import()
         assert file.get_import("DefaultType").is_type_import()
         assert file.get_import("DefaultType").imported_symbol == m_file
-        assert file.get_import("DefaultType").resolved_symbol == m_file.get_type("DefaultType")
+        assert file.get_import("DefaultType").resolved_symbol == m_file.get_type(
+            "DefaultType"
+        )
 
-        assert file.get_import("a").source == "import type DefaultType, {a, b as c} from './m'"
+        assert (
+            file.get_import("a").source
+            == "import type DefaultType, {a, b as c} from './m'"
+        )
         assert file.get_import("a").module.source == "'./m'"
         assert file.get_import("a").symbol_name.source == "a"
         assert file.get_import("a").name == "a"
@@ -627,7 +749,10 @@ export default type DefaultType = {}
         assert file.get_import("a").imported_symbol == m_file.get_type("a")
         assert file.get_import("a").resolved_symbol == m_file.get_type("a")
 
-        assert file.get_import("c").source == "import type DefaultType, {a, b as c} from './m'"
+        assert (
+            file.get_import("c").source
+            == "import type DefaultType, {a, b as c} from './m'"
+        )
         assert file.get_import("c").module.source == "'./m'"
         assert file.get_import("c").symbol_name.source == "b"
         assert file.get_import("c").name == "c"
@@ -652,7 +777,11 @@ export function someFunction() {}
     usage_file_content = """
 import * as bar from "./foo/bar"
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_file_content, usage_filename: usage_file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={src_filename: src_file_content, usage_filename: usage_file_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         usage_file: SourceFile = codebase.get_file(usage_filename)
         assert len(usage_file.imports) == 1
@@ -675,7 +804,11 @@ export function someFunction() {}
     usage_file_content = """
 import * as foo from "./foo"
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_file_content, usage_filename: usage_file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={src_filename: src_file_content, usage_filename: usage_file_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         usage_file: SourceFile = codebase.get_file(usage_filename)
         assert len(usage_file.imports) == 1
@@ -698,7 +831,11 @@ export function someFunction() {}
     usage_file_content = """
 import * as foo from "./foo"
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_file_content, usage_filename: usage_file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={src_filename: src_file_content, usage_filename: usage_file_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         usage_file: SourceFile = codebase.get_file(usage_filename)
         assert len(usage_file.imports) == 1
@@ -721,7 +858,11 @@ export function someFunction() {}
     usage_file_content = """
 import * as bar from "./foo/bar"
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_file_content, usage_filename: usage_file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={src_filename: src_file_content, usage_filename: usage_file_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         usage_file: SourceFile = codebase.get_file(usage_filename)
         assert len(usage_file.imports) == 1
@@ -744,7 +885,11 @@ export function someFunction() {}
     usage_file_content = """
 import * as foo from "../foo"
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_file_content, usage_filename: usage_file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={src_filename: src_file_content, usage_filename: usage_file_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         usage_file: SourceFile = codebase.get_file(usage_filename)
         assert len(usage_file.imports) == 1
@@ -767,7 +912,11 @@ export function someFunction() {}
     usage_file_content = """
 import * as foo from "../../foo"
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={src_filename: src_file_content, usage_filename: usage_file_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={src_filename: src_file_content, usage_filename: usage_file_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         usage_file: SourceFile = codebase.get_file(usage_filename)
         assert len(usage_file.imports) == 1
@@ -791,7 +940,11 @@ const a = foo.someFunction();
 const b = foo.someOtherFunction();
 const c = foo.someFunction();
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"source.ts": src_content, "usage.ts": usage_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"source.ts": src_content, "usage.ts": usage_content},
+    ) as codebase:
         src_file: SourceFile = codebase.get_file("source.ts")
         some_function = src_file.get_function("someFunction")
         assert len(some_function.symbol_usages(UsageType.DIRECT)) == 1
@@ -824,7 +977,11 @@ export function bar() {
   console.log("This is bar from file3");
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"file1.ts": content1, "file2.ts": content2, "file3.ts": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"file1.ts": content1, "file2.ts": content2, "file3.ts": content3},
+    ) as codebase:
         file2 = codebase.get_file("file2.ts")
         file3 = codebase.get_file("file3.ts")
         foo = file2.get_function("foo")
@@ -854,7 +1011,11 @@ export namespace CONSTS {
     export const c = 4;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         file2 = codebase.get_file("file2.ts")
         assert len(file.imports) == 1
@@ -862,4 +1023,7 @@ export namespace CONSTS {
         consts = file2.get_namespace("CONSTS")
 
         assert file.imports[0].resolved_symbol == consts
-        assert file.get_symbol("use_a").resolved_value == consts.get_symbol("a").resolved_value
+        assert (
+            file.get_symbol("use_a").resolved_value
+            == consts.get_symbol("a").resolved_value
+        )

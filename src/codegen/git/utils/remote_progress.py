@@ -29,4 +29,6 @@ class CustomRemoteProgress(RemoteProgress):
         max_count: str | float | None = None,
         message: str = "",
     ) -> None:
-        logger.info(f"message: {message} op_code: {op_code} cur_count: {cur_count} max_count: {max_count}")
+        logger.info(
+            f"message: {message} op_code: {op_code} cur_count: {cur_count} max_count: {max_count}"
+        )

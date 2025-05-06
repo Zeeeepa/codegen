@@ -62,7 +62,10 @@ class SymbolIndex(CodeIndex):
                 n_tokens = self.MAX_TOKENS_PER_TEXT
 
             # Check if adding this text would exceed batch limits
-            if len(current_batch) + 1 > self.BATCH_SIZE or current_tokens + n_tokens > self.MAX_BATCH_TOKENS:
+            if (
+                len(current_batch) + 1 > self.BATCH_SIZE
+                or current_tokens + n_tokens > self.MAX_BATCH_TOKENS
+            ):
                 # Current batch is full, start a new one
                 if current_batch:
                     batches.append(current_batch)
@@ -91,7 +94,9 @@ class SymbolIndex(CodeIndex):
         # Process batches with progress bar
         all_embeddings = []
         for batch in tqdm(batches, desc="Getting embeddings"):
-            response = self.client.embeddings.create(model=self.EMBEDDING_MODEL, input=batch, encoding_format="float")
+            response = self.client.embeddings.create(
+                model=self.EMBEDDING_MODEL, input=batch, encoding_format="float"
+            )
             all_embeddings.extend(data.embedding for data in response.data)
 
         return all_embeddings
@@ -134,7 +139,9 @@ class SymbolIndex(CodeIndex):
     def _save_index(self, path: Path) -> None:
         """Save index data to disk."""
         with open(path, "wb") as f:
-            pickle.dump({"E": self.E, "items": self.items, "commit_hash": self.commit_hash}, f)
+            pickle.dump(
+                {"E": self.E, "items": self.items, "commit_hash": self.commit_hash}, f
+            )
 
     def _load_index(self, path: Path) -> None:
         """Load index data from disk."""

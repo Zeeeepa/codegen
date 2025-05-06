@@ -36,7 +36,9 @@ def a():
 def b():
     pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         c = file1.get_function("c")
         assert len(c.dependencies) == 2
@@ -59,7 +61,9 @@ def a():
 def b():
     pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         c = file1.get_function("c")
         assert set(c.dependencies) == {file1.imports[0]}

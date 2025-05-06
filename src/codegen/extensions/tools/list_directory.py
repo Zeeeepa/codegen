@@ -41,7 +41,9 @@ class DirectoryInfo(Observation):
         description="Maximum depth allowed",
     )
 
-    str_template: ClassVar[str] = "Directory {path} ({file_count} files, {dir_count} subdirs)"
+    str_template: ClassVar[str] = (
+        "Directory {path} ({file_count} files, {dir_count} subdirs)"
+    )
 
     def _get_details(self) -> dict[str, int]:
         """Get details for string representation."""
@@ -57,13 +59,17 @@ class DirectoryInfo(Observation):
             "",
         ]
 
-        def add_tree_item(name: str, prefix: str = "", is_last: bool = False) -> tuple[str, str]:
+        def add_tree_item(
+            name: str, prefix: str = "", is_last: bool = False
+        ) -> tuple[str, str]:
             """Helper to format a tree item with proper prefix."""
             marker = "└── " if is_last else "├── "
             indent = "    " if is_last else "│   "
             return prefix + marker + name, prefix + indent
 
-        def build_tree(items: list[tuple[str, bool, "DirectoryInfo | None"]], prefix: str = "") -> list[str]:
+        def build_tree(
+            items: list[tuple[str, bool, "DirectoryInfo | None"]], prefix: str = ""
+        ) -> list[str]:
             """Recursively build tree with proper indentation."""
             if not items:
                 return []
@@ -161,7 +167,9 @@ class ListDirectoryObservation(Observation):
         )
 
 
-def list_directory(codebase: Codebase, path: str = "./", depth: int = 2) -> ListDirectoryObservation:
+def list_directory(
+    codebase: Codebase, path: str = "./", depth: int = 2
+) -> ListDirectoryObservation:
     """List contents of a directory.
 
     Args:
@@ -185,7 +193,9 @@ def list_directory(codebase: Codebase, path: str = "./", depth: int = 2) -> List
             ),
         )
 
-    def get_directory_info(dir_obj: Directory, current_depth: int, max_depth: int) -> DirectoryInfo:
+    def get_directory_info(
+        dir_obj: Directory, current_depth: int, max_depth: int
+    ) -> DirectoryInfo:
         """Helper function to get directory info recursively."""
         # Get direct files (always include files unless at max depth)
         all_files = []

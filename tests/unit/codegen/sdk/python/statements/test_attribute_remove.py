@@ -16,4 +16,7 @@ class MyClass(ma.Schema):
         b.remove()
         codebase.commit()
 
-        assert file.content == "\nclass MyClass(ma.Schema):\n    a: int\n    c: OtherClass = OtherClass()\n"
+        assert (
+            file.content
+            == "\nclass MyClass(ma.Schema):\n    a: int\n    c: OtherClass = OtherClass()\n"
+        )

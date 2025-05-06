@@ -363,7 +363,9 @@ class Efg():
         foo(1, 2, 3)
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content, "file2.py": content2}
+    ) as codebase:
         file1: PyFile = codebase.get_file("file1.py")
         file2: PyFile = codebase.get_file("file2.py")
         abc = file1.get_class("Abc")

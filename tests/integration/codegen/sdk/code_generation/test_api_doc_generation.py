@@ -2,7 +2,10 @@ import pytest
 
 from codegen.sdk.ai.utils import count_tokens
 from codegen.sdk.code_generation.doc_utils.generate_docs_json import generate_docs_json
-from codegen.sdk.code_generation.prompts.api_docs import get_codegen_sdk_codebase, get_codegen_sdk_docs
+from codegen.sdk.code_generation.prompts.api_docs import (
+    get_codegen_sdk_codebase,
+    get_codegen_sdk_docs,
+)
 from codegen.sdk.core.symbol import Symbol
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
@@ -34,7 +37,9 @@ def test_basic_docs(codebase) -> None:
 
 
 @pytest.mark.xdist_group("codegen")
-@pytest.mark.parametrize("language", [ProgrammingLanguage.PYTHON, ProgrammingLanguage.TYPESCRIPT])
+@pytest.mark.parametrize(
+    "language", [ProgrammingLanguage.PYTHON, ProgrammingLanguage.TYPESCRIPT]
+)
 def test_api_doc_generation_sanity(codebase, language: ProgrammingLanguage) -> None:
     lang = "Py" if language == ProgrammingLanguage.PYTHON else "TS"
     other_lang = "TS" if language == ProgrammingLanguage.PYTHON else "Py"
@@ -56,12 +61,16 @@ def test_mdx_api_doc_generation_sanity(codebase) -> None:
 
 
 @pytest.mark.xdist_group("codegen")
-@pytest.mark.parametrize("language", [ProgrammingLanguage.PYTHON, ProgrammingLanguage.TYPESCRIPT])
+@pytest.mark.parametrize(
+    "language", [ProgrammingLanguage.PYTHON, ProgrammingLanguage.TYPESCRIPT]
+)
 def test_get_codegen_sdk_codebase(codebase, language) -> None:
     """Make sure we can get the current codebase for GraphSitter, and that imports get resolved correctly"""
     cls = codebase.get_symbol("PyClass")
     assert cls is not None
     func = codebase.get_symbol("PyFunction")
     superclasses = func.superclasses()
-    callable = [x for x in superclasses if isinstance(x, Symbol) and x.name == "Callable"]
+    callable = [
+        x for x in superclasses if isinstance(x, Symbol) and x.name == "Callable"
+    ]
     assert len(callable) == 1

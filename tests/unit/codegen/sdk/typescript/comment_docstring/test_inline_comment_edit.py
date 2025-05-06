@@ -6,7 +6,11 @@ def test_comment_inline(tmpdir) -> None:
     content = """
 const symbol = 1;  // this is an inline comment
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -23,7 +27,11 @@ def test_comment_inline_source(tmpdir) -> None:
     content = """
 const symbol = 1;  // this is an inline comment
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -40,7 +48,11 @@ def test_comment_inline_block(tmpdir) -> None:
     content = """
 const symbol = 1;  /* this is an inline comment */
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")

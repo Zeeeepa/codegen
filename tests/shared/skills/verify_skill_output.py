@@ -43,7 +43,9 @@ def reformat_code_string(code: str, language: ProgrammingLanguage) -> str:
         raise ValueError(msg)
 
 
-def verify_skill_output(codebase: Codebase, skill, test_case, get_diff, snapshot) -> str | None:
+def verify_skill_output(
+    codebase: Codebase, skill, test_case, get_diff, snapshot
+) -> str | None:
     """Verify the output of a skill against the expected output."""
     if test_case.sanity:
         return None
@@ -53,7 +55,9 @@ def verify_skill_output(codebase: Codebase, skill, test_case, get_diff, snapshot
         graph_json = open(f"{codebase.op.base_dir}/codegen-graphviz/graph.json").read()
 
         # Compare with snapshot
-        snapshot.assert_match(graph_json, f"{skill.name}_{test_case.name or 'unnamed'}.json")
+        snapshot.assert_match(
+            graph_json, f"{skill.name}_{test_case.name or 'unnamed'}.json"
+        )
         return None
 
     diff_output = []
@@ -65,30 +69,58 @@ def verify_skill_output(codebase: Codebase, skill, test_case, get_diff, snapshot
         if not expected_output:
             if codebase.has_file(file.filepath):
                 if get_diff:
-                    diff_output.append(f"<h2>Error: File {file.filepath} exists but was expected to be deleted</h2>")
-                    diff_output.append(f"<pre>{codebase.get_file(file.filepath).content}</pre>")
+                    diff_output.append(
+                        f"<h2>Error: File {file.filepath} exists but was expected to be deleted</h2>"
+                    )
+                    diff_output.append(
+                        f"<pre>{codebase.get_file(file.filepath).content}</pre>"
+                    )
                 else:
-                    error_message = create_unexpected_file_error_message(skill.name, test_case, file.filepath, codebase.get_file(file.filepath).content)
+                    error_message = create_unexpected_file_error_message(
+                        skill.name,
+                        test_case,
+                        file.filepath,
+                        codebase.get_file(file.filepath).content,
+                    )
                     raise AssertionError(error_message)
             continue
 
         if not codebase.has_file(file.filepath):
             if get_diff:
-                diff_output.append(f"<h2>Error: File {file.filepath} does not exist but was expected</h2>")
+                diff_output.append(
+                    f"<h2>Error: File {file.filepath} does not exist but was expected</h2>"
+                )
             else:
-                error_message = create_missing_file_error_message(skill.name, test_case, file.filepath)
+                error_message = create_missing_file_error_message(
+                    skill.name, test_case, file.filepath
+                )
                 raise AssertionError(error_message)
             continue
 
-        generated_output = reformat_code_string(codebase.get_file(file.filepath).content, skill.language)
+        generated_output = reformat_code_string(
+            codebase.get_file(file.filepath).content, skill.language
+        )
         expected_output = reformat_code_string(expected_output, skill.language)
         if generated_output != expected_output:
             if get_diff:
-                diff = difflib.HtmlDiff().make_file(expected_output.splitlines(), generated_output.splitlines(), fromdesc="Expected", todesc="Generated", context=True, numlines=3)
+                diff = difflib.HtmlDiff().make_file(
+                    expected_output.splitlines(),
+                    generated_output.splitlines(),
+                    fromdesc="Expected",
+                    todesc="Generated",
+                    context=True,
+                    numlines=3,
+                )
                 diff_output.append(f"<h2>Diff for {file.filepath}</h2>")
                 diff_output.append(diff)
             else:
-                error_message = create_file_mismatch_error_message(skill.name, test_case, file.filepath, expected_output, generated_output)
+                error_message = create_file_mismatch_error_message(
+                    skill.name,
+                    test_case,
+                    file.filepath,
+                    expected_output,
+                    generated_output,
+                )
                 raise AssertionError(error_message)
 
     if diff_output:
@@ -98,30 +130,43 @@ def verify_skill_output(codebase: Codebase, skill, test_case, get_diff, snapshot
     return None
 
 
-def create_unexpected_file_error_message(skill_name: str, test_case, filepath: str, file_content: str) -> str:
-    error_message = textwrap.dedent(f"""
+def create_unexpected_file_error_message(
+    skill_name: str, test_case, filepath: str, file_content: str
+) -> str:
+    error_message = textwrap.dedent(
+        f"""
                                         Failure in skill {skill_name} for test case {test_case}, file {filepath}.
                                         Expected file to not exist, but it does.
                                         File content:
                                         ```
                                         {file_content}
                                         ```
-                                    """)
+                                    """
+    )
 
     return error_message
 
 
 def create_missing_file_error_message(skill_name: str, test_case, filepath: str) -> str:
-    error_message = textwrap.dedent(f"""
+    error_message = textwrap.dedent(
+        f"""
                                         Failure in skill {skill_name} for test case {test_case}, file {filepath}.
                                         Expected file to exist, but it does not.
-                                    """)
+                                    """
+    )
 
     return error_message
 
 
-def create_file_mismatch_error_message(skill_name: str, test_case, filepath: str, expected_content: str, generated_content: str) -> str:
-    error_message = textwrap.dedent(f"""
+def create_file_mismatch_error_message(
+    skill_name: str,
+    test_case,
+    filepath: str,
+    expected_content: str,
+    generated_content: str,
+) -> str:
+    error_message = textwrap.dedent(
+        f"""
                                         Failure in skill {skill_name} for test case {test_case}, file {filepath}.
                                         Expected output:
 
@@ -134,6 +179,7 @@ def create_file_mismatch_error_message(skill_name: str, test_case, filepath: str
                                         ```
 {generated_content}
                                         ```
-                                    """)
+                                    """
+    )
 
     return error_message

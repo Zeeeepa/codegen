@@ -5,7 +5,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 UpdateFunctionDocstringPyTestCase = SkillTestCase(
     [
@@ -56,7 +60,10 @@ class UpdateFunctionDocstring(Skill, ABC):
     """Retrieves a specific function from a file in the codebase and updates its docstring to a new value."""
 
     @staticmethod
-    @skill_impl(test_cases=[UpdateFunctionDocstringPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[UpdateFunctionDocstringPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Get a specific function
         function = codebase.get_file("path/to/file.py").get_function("my_function")
@@ -64,7 +71,10 @@ class UpdateFunctionDocstring(Skill, ABC):
         function.set_docstring("Hello, world!")
 
     @staticmethod
-    @skill_impl(test_cases=[UpdateFunctionDocstringTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[UpdateFunctionDocstringTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Get a specific function
         function = codebase.get_file("path/to/file.ts").get_function("myFunction")
@@ -155,8 +165,14 @@ class CalculateDocumentationCoverage(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CalculateDocumentationCoveragePyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[CalculateDocumentationCoverageTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[CalculateDocumentationCoveragePyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[CalculateDocumentationCoverageTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Initialize counters for total and documented functions/classes
         count_total = 0
@@ -228,18 +244,31 @@ class DocstringEnhancer(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[DocstringEnhancerPyTestCase], skip_test=True, language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[DocstringEnhancerTSTestCase], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[DocstringEnhancerPyTestCase],
+        skip_test=True,
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[DocstringEnhancerTSTestCase],
+        skip_test=True,
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         for function in codebase.functions:
             current_docstring = function.docstring
             if current_docstring:
                 # Update existing docstring
-                new_docstring = codebase.ai(f"Update the docstring for {function.name} to be more descriptive.", target=function)
+                new_docstring = codebase.ai(
+                    f"Update the docstring for {function.name} to be more descriptive.",
+                    target=function,
+                )
                 new_docstring += "\n\nUpdated on: Sept 11, 2024"
             else:
                 # Add new docstring
-                new_docstring = codebase.ai(f"Add a docstring for {function.name}.", target=function)
+                new_docstring = codebase.ai(
+                    f"Add a docstring for {function.name}.", target=function
+                )
                 new_docstring += "\n\nCreated on: Sept 11, 2024"
             function.set_docstring(new_docstring)
 
@@ -361,15 +390,22 @@ class StaticDocstringGenerator(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[StaticDocstringGeneratorPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[StaticDocstringGeneratorTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[StaticDocstringGeneratorPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[StaticDocstringGeneratorTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate through all functions in the codebase
         for function in codebase.functions:
             # Check if the function has a docstring
             if not function.docstring:
                 # Create a new docstring
-                updated_docstring = textwrap.dedent(f"""
+                updated_docstring = textwrap.dedent(
+                    f"""
     Docstring for {function.name}.
 
     Args:
@@ -377,6 +413,7 @@ class StaticDocstringGenerator(Skill, ABC):
 
     Returns:
         Description of the return value
-                """)
+                """
+                )
                 # Set the new docstring for the function
                 function.set_docstring(updated_docstring)

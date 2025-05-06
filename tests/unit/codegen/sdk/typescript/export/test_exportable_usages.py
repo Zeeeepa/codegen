@@ -24,7 +24,11 @@ function zoo() {
     return file1.fuzz();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         foo = file1.get_symbol("foo")
@@ -39,7 +43,9 @@ function zoo() {
         assert set(foo.symbol_usages(UsageType.DIRECT)) == {foo.export}
         assert set(foo.symbol_usages) == {foo.export, bar}
         assert set(fuzz.symbol_usages(UsageType.DIRECT)) == {fuzz.export}
-        assert set(fuzz.symbol_usages(usage_types=UsageType.CHAINED | UsageType.DIRECT)) == {fuzz.export, zoo}
+        assert set(
+            fuzz.symbol_usages(usage_types=UsageType.CHAINED | UsageType.DIRECT)
+        ) == {fuzz.export, zoo}
         assert set(fuzz.symbol_usages) == {fuzz.export, zoo}
         assert len(foo.symbol_usages) == 2
         assert len(fuzz.symbol_usages) == 2
@@ -64,7 +70,11 @@ function zoo() {
     return 12;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"export1.ts": content1, "export2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"export1.ts": content1, "export2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("export1.ts")
         file2 = codebase.get_file("export2.ts")
         foo = file1.get_symbol("foo")
@@ -74,8 +84,13 @@ function zoo() {
         assert foo.exported_name == "foo"
         assert len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
         assert len(foo.symbol_usages) == 3
-        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo.export, imp}
-        assert set(foo.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT)) == {foo.export, imp, bar}
+        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo.export,
+            imp,
+        }
+        assert set(
+            foo.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT)
+        ) == {foo.export, imp, bar}
         assert set(foo.symbol_usages) == {foo.export, imp, bar}
 
 
@@ -99,7 +114,11 @@ function zoo() {
     return file1.fizz();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         foo = file1.get_symbol("foo")
@@ -112,12 +131,22 @@ function zoo() {
         assert foo.exported_name == "foo"
         assert fuzz.exported_name == "fizz"
         assert set(foo.symbol_usages(UsageType.DIRECT)) == {foo.export}
-        assert set(foo.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT | UsageType.CHAINED)) == {foo.export, bar}
+        assert set(
+            foo.symbol_usages(
+                usage_types=UsageType.DIRECT | UsageType.INDIRECT | UsageType.CHAINED
+            )
+        ) == {foo.export, bar}
         assert set(foo.symbol_usages) == {foo.export, bar}
         assert set(fuzz.symbol_usages) == {fuzz.export, zoo}
-        assert set(fuzz.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT)) == {fuzz.export}
+        assert set(
+            fuzz.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT)
+        ) == {fuzz.export}
         assert set(fuzz.symbol_usages) == {fuzz.export, zoo}
-        assert len(foo.symbol_usages(UsageType.DIRECT)) == len(fuzz.symbol_usages(UsageType.DIRECT)) == 1
+        assert (
+            len(foo.symbol_usages(UsageType.DIRECT))
+            == len(fuzz.symbol_usages(UsageType.DIRECT))
+            == 1
+        )
         assert len(foo.symbol_usages) == len(fuzz.symbol_usages) == 2
 
 
@@ -141,7 +170,11 @@ function zoo() {
     return 12;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         foo = file1.get_symbol("foo")
@@ -155,21 +188,39 @@ function zoo() {
         assert foo.exported_name == "floop"
         assert fuzz.exported_name == "buzz"
 
-        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo.export, floop_imp}
+        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo.export,
+            floop_imp,
+        }
         assert set(foo.symbol_usages) == {foo.export, floop_imp, bar}
-        assert set(fuzz.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {fuzz.export, bar}
+        assert set(fuzz.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            fuzz.export,
+            bar,
+        }
         assert set(fuzz.symbol_usages) == {fuzz.export, bar}
-        assert len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == len(fuzz.symbol_usages) == 2
+        assert (
+            len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == len(fuzz.symbol_usages)
+            == 2
+        )
         assert len(foo.symbol_usages) == 3
         assert len(fuzz.symbol_usages) == 2
 
-        assert set(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {floop_imp}
+        assert set(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            floop_imp
+        }
         assert set(foo.export.symbol_usages) == {floop_imp, bar}
-        assert set(fuzz.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar}
+        assert set(fuzz.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            bar
+        }
         assert set(fuzz.export.symbol_usages) == {bar}
         assert set(floop_imp.symbol_usages) == {bar}
-        assert set(floop_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar}
-        assert set(file1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar}
+        assert set(floop_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            bar
+        }
+        assert set(file1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            bar
+        }
         assert set(file1_imp.symbol_usages) == {bar}
 
 
@@ -192,7 +243,11 @@ function bar() {
     return floop() + fizz();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2, "file3.ts": content3}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2, "file3.ts": content3},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         file3 = codebase.get_file("file3.ts")
@@ -208,27 +263,58 @@ function bar() {
         assert floop_imp.namespace is None
         assert foo.exported_name == "floop"
         assert fuzz.exported_name == "fizz"
-        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo.export}
+        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo.export
+        }
         assert set(foo.symbol_usages) == {foo.export, floop_imp, bar}
-        assert set(fuzz.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {fuzz.export}
+        assert set(fuzz.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            fuzz.export
+        }
         assert set(fuzz.symbol_usages) == {fuzz.export, fuzz_imp, bar}
-        assert len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == len(fuzz.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        assert (
+            len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == len(fuzz.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 1
+        )
         assert len(foo.symbol_usages) == len(fuzz.symbol_usages) == 3
 
-        assert set(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == set()
+        assert (
+            set(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == set()
+        )
         assert set(foo.export.symbol_usages) == {floop_imp, bar}
-        assert set(fuzz.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == set()
+        assert (
+            set(fuzz.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == set()
+        )
         assert set(fuzz.export.symbol_usages) == {fuzz_imp, bar}
-        assert len(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == len(fuzz.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 0
+        assert (
+            len(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == len(fuzz.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 0
+        )
         assert len(foo.export.symbol_usages) == len(fuzz.export.symbol_usages) == 2
 
-        assert set(wildcard_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {wildcard_export}
-        assert set(wildcard_imp.symbol_usages) == {wildcard_export, floop_imp, fuzz_imp, bar}
-        assert set(wildcard_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {floop_imp, fuzz_imp}
+        assert set(
+            wildcard_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {wildcard_export}
+        assert set(wildcard_imp.symbol_usages) == {
+            wildcard_export,
+            floop_imp,
+            fuzz_imp,
+            bar,
+        }
+        assert set(
+            wildcard_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {floop_imp, fuzz_imp}
         assert set(wildcard_export.symbol_usages) == {floop_imp, fuzz_imp, bar}
-        assert len(wildcard_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        assert (
+            len(wildcard_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        )
         assert len(wildcard_imp.symbol_usages) == 4
-        assert len(wildcard_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
+        assert (
+            len(wildcard_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 2
+        )
         assert len(wildcard_export.symbol_usages) == 3
 
 
@@ -251,7 +337,11 @@ function bar() {
     return foo_rename4();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content, "file2.ts": content2, "file3.ts": content3}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content, "file2.ts": content2, "file3.ts": content3},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         file3 = codebase.get_file("file3.ts")
@@ -268,23 +358,51 @@ function bar() {
         assert foo_rename3_export.exported_name == "foo_rename3"
         assert foo_rename4_imp.exported_name is None
 
-        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo.export, foo_rename2_imp}
-        assert set(foo.symbol_usages) == {foo.export, foo_rename2_imp, foo_rename3_export, foo_rename4_imp, bar}
-        assert set(foo_rename2_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo_rename2_imp.export, foo_rename4_imp}
-        assert set(foo_rename2_imp.symbol_usages) == {foo_rename2_imp.export, foo_rename4_imp, bar}
-        assert set(foo_rename3_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo_rename4_imp}
+        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo.export,
+            foo_rename2_imp,
+        }
+        assert set(foo.symbol_usages) == {
+            foo.export,
+            foo_rename2_imp,
+            foo_rename3_export,
+            foo_rename4_imp,
+            bar,
+        }
+        assert set(
+            foo_rename2_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {foo_rename2_imp.export, foo_rename4_imp}
+        assert set(foo_rename2_imp.symbol_usages) == {
+            foo_rename2_imp.export,
+            foo_rename4_imp,
+            bar,
+        }
+        assert set(
+            foo_rename3_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {foo_rename4_imp}
         assert set(foo_rename3_export.symbol_usages) == {foo_rename4_imp, bar}
         assert set(foo_rename4_imp.symbol_usages) == {bar}
-        assert set(foo_rename4_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar}
+        assert set(
+            foo_rename4_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {bar}
 
         assert len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
         assert len(foo.symbol_usages) == 5
-        assert len(foo_rename2_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
+        assert (
+            len(foo_rename2_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 2
+        )
         assert len(foo_rename2_imp.symbol_usages) == 3
-        assert len(foo_rename3_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        assert (
+            len(foo_rename3_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 1
+        )
         assert len(foo_rename3_export.symbol_usages) == 2
         assert len(foo_rename4_imp.symbol_usages) == 1
-        assert len(foo_rename4_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        assert (
+            len(foo_rename4_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 1
+        )
 
 
 def test_usages_module_export_aliased_twice(tmpdir) -> None:
@@ -306,7 +424,11 @@ function bar() {
     return file1_rename3.foo_rename1();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content, "file2.ts": content2, "file3.ts": content3}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content, "file2.ts": content2, "file3.ts": content3},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         file3 = codebase.get_file("file3.ts")
@@ -328,22 +450,48 @@ function bar() {
         assert set(foo.symbol_usages(UsageType.DIRECT)) == {foo.export}
         assert set(foo.symbol_usages) == {foo.export, bar}
         assert set(foo_rename1_export.symbol_usages) == {bar}
-        assert set(foo_rename1_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar}
-        assert set(file1_rename1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {file1_rename1_imp.export, file1_rename3_imp}
-        assert set(file1_rename1_imp.symbol_usages) == {file1_rename1_imp.export, file1_rename3_imp, bar}
-        assert set(file1_rename2_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {file1_rename3_imp}
+        assert set(
+            foo_rename1_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {bar}
+        assert set(
+            file1_rename1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {file1_rename1_imp.export, file1_rename3_imp}
+        assert set(file1_rename1_imp.symbol_usages) == {
+            file1_rename1_imp.export,
+            file1_rename3_imp,
+            bar,
+        }
+        assert set(
+            file1_rename2_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {file1_rename3_imp}
         assert set(file1_rename2_export.symbol_usages) == {file1_rename3_imp, bar}
         assert set(file1_rename3_imp.symbol_usages) == {bar}
-        assert set(file1_rename3_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar}
+        assert set(
+            file1_rename3_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {bar}
         assert len(foo.symbol_usages(UsageType.DIRECT)) == 1
         assert len(foo.symbol_usages) == 2
         assert len(foo_rename1_export.symbol_usages) == 1
-        assert len(foo_rename1_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
-        assert len(file1_rename1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
+        assert (
+            len(foo_rename1_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 1
+        )
+        assert (
+            len(file1_rename1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 2
+        )
         assert len(file1_rename1_imp.symbol_usages) == 3
-        assert len(file1_rename2_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        assert (
+            len(
+                file1_rename2_export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+            )
+            == 1
+        )
         assert len(file1_rename2_export.symbol_usages) == 2
-        assert len(file1_rename3_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 1
+        assert (
+            len(file1_rename3_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED))
+            == 1
+        )
         assert len(file1_rename3_imp.symbol_usages) == 1
 
 
@@ -360,13 +508,21 @@ function someFunction() {
     return randomName();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.js": content1, "file2.js": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.js": content1, "file2.js": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.js")
         file2 = codebase.get_file("file2.js")
         foo = file1.get_function("foo")
         imp = file2.get_import("randomName")
         assert imp.import_type == ImportType.DEFAULT_EXPORT
-        assert set(foo.symbol_usages) == {foo.export, imp, file2.get_function("someFunction")}
+        assert set(foo.symbol_usages) == {
+            foo.export,
+            imp,
+            file2.get_function("someFunction"),
+        }
 
 
 def test_exportable_usage_via_wildcard_import_default_export(tmpdir) -> None:
@@ -382,7 +538,11 @@ function someFunction() {
     return file1Alias.default();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.js": content1, "file2.js": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.js": content1, "file2.js": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.js")
         file2 = codebase.get_file("file2.js")
         foo = file1.get_symbol("foo")
@@ -416,7 +576,11 @@ function someFunction() {
     return someRandomFooName();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.js": content1, "file2.js": content2, "file3.js": content3}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.js": content1, "file2.js": content2, "file3.js": content3},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.js")
         file2 = codebase.get_file("file2.js")
         file3 = codebase.get_file("file3.js")
@@ -429,18 +593,48 @@ function someFunction() {
         assert foo.exported_name == "foo"
         assert foo_imp.namespace is None
         assert file1_imp.namespace is None
-        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo.export, foo_imp}
-        assert set(foo.symbol_usages) == {foo.export, foo_imp, foo_reexport, file1_imp, file3.get_function("someFunction")}
+        assert set(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo.export,
+            foo_imp,
+        }
+        assert set(foo.symbol_usages) == {
+            foo.export,
+            foo_imp,
+            foo_reexport,
+            file1_imp,
+            file3.get_function("someFunction"),
+        }
         assert len(foo.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
         assert len(foo.symbol_usages) == 5
-        assert set(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo_imp}
-        assert set(foo.export.symbol_usages) == {foo_imp, foo_reexport, file1_imp, file3.get_function("someFunction")}
-        assert set(foo_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {foo_reexport, file1_imp}
-        assert set(foo_imp.symbol_usages) == {foo_reexport, file1_imp, file3.get_function("someFunction")}
-        assert set(foo_reexport.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {file1_imp}
-        assert set(foo_reexport.symbol_usages) == {file1_imp, file3.get_function("someFunction")}
+        assert set(foo.export.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo_imp
+        }
+        assert set(foo.export.symbol_usages) == {
+            foo_imp,
+            foo_reexport,
+            file1_imp,
+            file3.get_function("someFunction"),
+        }
+        assert set(foo_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            foo_reexport,
+            file1_imp,
+        }
+        assert set(foo_imp.symbol_usages) == {
+            foo_reexport,
+            file1_imp,
+            file3.get_function("someFunction"),
+        }
+        assert set(
+            foo_reexport.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)
+        ) == {file1_imp}
+        assert set(foo_reexport.symbol_usages) == {
+            file1_imp,
+            file3.get_function("someFunction"),
+        }
         assert set(file1_imp.symbol_usages) == {file3.get_function("someFunction")}
-        assert set(file1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {file3.get_function("someFunction")}
+        assert set(file1_imp.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            file3.get_function("someFunction")
+        }
 
 
 def test_exportable_usage_namespace_import(tmpdir) -> None:
@@ -457,7 +651,11 @@ function zoo() {
     myAlias.foo();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.js": content1, "file2.js": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.js": content1, "file2.js": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.js")
         file2 = codebase.get_file("file2.js")
         foo = file1.get_function("foo")
@@ -500,7 +698,11 @@ function someOtherFunction() {
     return myDefaultFunction();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.js": content1, "file2.js": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.js": content1, "file2.js": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.js")
         file2 = codebase.get_file("file2.js")
         default_function = file1.get_function("myDefaultFunction")
@@ -535,7 +737,11 @@ export default foo(() => {bar()});
     content2 = """
 export function bar() {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.js": content1, "file2.js": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.js": content1, "file2.js": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.js")
         file2 = codebase.get_file("file2.js")
         bar = file2.get_function("bar")
@@ -543,7 +749,10 @@ export function bar() {}
         foo = foo_exp.value.args[0].value
         imp = file1.get_import("bar")
 
-        assert set(bar.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {bar.export, imp}
+        assert set(bar.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == {
+            bar.export,
+            imp,
+        }
         assert set(bar.symbol_usages) == {bar.export, imp, foo, foo_exp}
         assert len(bar.call_sites) == 1
         assert len(bar.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
@@ -565,7 +774,11 @@ export default test({
     }
 })
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"file1.ts": content1, "file2.ts": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"file1.ts": content1, "file2.ts": content2},
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
         foo = file1.get_function("foo")
@@ -589,7 +802,15 @@ import {foo} from "libs"
 
 foo()
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"libs/thing.ts": content1, "libs/index.ts": content2, "main.ts": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={
+            "libs/thing.ts": content1,
+            "libs/index.ts": content2,
+            "main.ts": content3,
+        },
+    ) as codebase:
         foo = codebase.get_function("foo")
         main = codebase.get_file("main.ts")
         imp = main.imports[0]

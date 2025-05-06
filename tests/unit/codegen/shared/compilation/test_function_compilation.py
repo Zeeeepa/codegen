@@ -12,7 +12,9 @@ def execute(codebase: Codebase):
     print(len(codebase.files))
 """
     try:
-        safe_compile_function_string(custom_scope={}, func_name="execute", func_str=func_str)
+        safe_compile_function_string(
+            custom_scope={}, func_name="execute", func_str=func_str
+        )
     except InvalidUserCodeException:
         pytest.fail("Unexpected InvalidUserCodeException raised")
 
@@ -28,7 +30,9 @@ def execute(codebase: Codebase):
     nested()
 """
     try:
-        safe_compile_function_string(custom_scope={}, func_name="execute", func_str=func_str)
+        safe_compile_function_string(
+            custom_scope={}, func_name="execute", func_str=func_str
+        )
     except InvalidUserCodeException:
         pytest.fail("Unexpected InvalidUserCodeException raised")
 
@@ -40,7 +44,9 @@ a = 1
     print(a)
 """
     with pytest.raises(InvalidUserCodeException) as exc_info:
-        safe_compile_function_string(custom_scope={}, func_name="execute", func_str=func_str)
+        safe_compile_function_string(
+            custom_scope={}, func_name="execute", func_str=func_str
+        )
     assert exc_info
     error_msg = str(exc_info.value)
     assert "IndentationError" in error_msg  # an example of a SyntaxError
@@ -54,7 +60,9 @@ def execute(codebase: Codebase):
 """
 
     with pytest.raises(InvalidUserCodeException) as exc_info:
-        safe_compile_function_string(custom_scope={}, func_str=func_str, func_name="execute")
+        safe_compile_function_string(
+            custom_scope={}, func_str=func_str, func_name="execute"
+        )
     assert exc_info
     error_msg = str(exc_info.value)
     assert "SyntaxError" in error_msg
@@ -69,7 +77,9 @@ def execute(codebase: Codebase):
 
     SyntaxError()
     with pytest.raises(InvalidUserCodeException) as exc_info:
-        safe_compile_function_string(custom_scope={}, func_str=func_str, func_name="execute")
+        safe_compile_function_string(
+            custom_scope={}, func_str=func_str, func_name="execute"
+        )
     assert exc_info
     error_msg = str(exc_info.value)
     assert "UnicodeEncodeError" in error_msg
@@ -88,7 +98,9 @@ def execute(codebase: Codebase, exec_error: int = 1/0):
     print("zero division error")
 """
     with pytest.raises(InvalidUserCodeException) as exc_info:
-        safe_compile_function_string(custom_scope={}, func_str=func_str, func_name="execute")
+        safe_compile_function_string(
+            custom_scope={}, func_str=func_str, func_name="execute"
+        )
     assert exc_info
     error_msg = str(exc_info.value)
     assert "ZeroDivisionError" in error_msg
@@ -106,7 +118,9 @@ def execute(codebase: Codebase):
     print("zero division error")
 """
     with pytest.raises(InvalidUserCodeException) as exc_info:
-        safe_compile_function_string(custom_scope={}, func_str=func_str, func_name="execute")
+        safe_compile_function_string(
+            custom_scope={}, func_str=func_str, func_name="execute"
+        )
     assert exc_info
     error_msg = str(exc_info.value)
     assert "NameError" in error_msg
@@ -121,6 +135,10 @@ def test_func_str_uses_custom_scope_var_does_not_raise():
 print(local_a)
 """
     try:
-        safe_compile_function_string(custom_scope={"local_a": "this is local_a"}, func_str=func_str, func_name="execute")
+        safe_compile_function_string(
+            custom_scope={"local_a": "this is local_a"},
+            func_str=func_str,
+            func_name="execute",
+        )
     except InvalidUserCodeException:
         pytest.fail("Unexpected InvalidPythonCodeException raised")

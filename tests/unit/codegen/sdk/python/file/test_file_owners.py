@@ -20,9 +20,18 @@ def test_file_owners_codeowners_parser_returns_non_empty_set(tmpdir) -> None:
 print("hello world")
 """
     mock_codeowners = MagicMock()
-    mock_codeowners.of = lambda file_path: [("TEAM", "@team-owner"), ("USER", "@user-owner")] if file_path == "file.py" else {}
-    with patch("codegen.git.repo_operator.repo_operator.RepoOperator.codeowners_parser", mock_codeowners):
-        with get_codebase_session(tmpdir=tmpdir, files={"file.py": content}) as codebase:
+    mock_codeowners.of = lambda file_path: (
+        [("TEAM", "@team-owner"), ("USER", "@user-owner")]
+        if file_path == "file.py"
+        else {}
+    )
+    with patch(
+        "codegen.git.repo_operator.repo_operator.RepoOperator.codeowners_parser",
+        mock_codeowners,
+    ):
+        with get_codebase_session(
+            tmpdir=tmpdir, files={"file.py": content}
+        ) as codebase:
             file = codebase.get_file("file.py")
             owners = file.owners
             assert len(owners) == 2

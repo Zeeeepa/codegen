@@ -5,7 +5,11 @@ from codegen.sdk.core.detached_symbols.function_call import FunctionCall
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 py_input1 = """
 def func_to_convert(a: int) -> int:
@@ -126,7 +130,11 @@ ts_files = [
 ]
 
 
-@skill(eval_skill=False, prompt="Converts a signature of a synchronous function to asynchronous function", uid="2a5ba602-59e8-47d6-98ce-6dce73065c48")
+@skill(
+    eval_skill=False,
+    prompt="Converts a signature of a synchronous function to asynchronous function",
+    uid="2a5ba602-59e8-47d6-98ce-6dce73065c48",
+)
 class AsyncifyFunctionSkill(Skill):
     """Given a synchronous function 'func_to_convert', convert its signature to be asynchronous.
     The function's call sites as well as the call sites' functions are recursively converted as well.
@@ -157,7 +165,9 @@ class AsyncifyFunctionSkill(Skill):
                     convert_queue.append(parent_function)
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=ts_files)], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase(files=ts_files)], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def typescript_skill_func(codebase: TSCodebaseType):
         func_to_convert = codebase.get_function("funcToConvert")
 

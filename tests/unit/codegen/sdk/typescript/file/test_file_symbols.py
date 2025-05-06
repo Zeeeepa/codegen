@@ -18,7 +18,11 @@ class foo {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         symbols = file.symbols
         assert len(symbols) == 1
@@ -33,7 +37,11 @@ class foo {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         symbols = file.symbols
         assert len(symbols) == 1
@@ -48,7 +56,11 @@ class foo {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         symbols = file.symbols
         assert len(symbols) == 1
@@ -67,7 +79,11 @@ class foo {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         symbols = file.symbols
         assert len(symbols) == 1
@@ -84,7 +100,11 @@ class foo extends bar {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         symbols = file.symbols
         assert len(symbols) == 2
@@ -101,7 +121,11 @@ class foo extends bar {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ symbols ]=====
@@ -130,7 +154,11 @@ func("Do a function", () => {
     })
   """
     # Should not get any functions
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         assert len(file.symbols) == 0
 
@@ -146,7 +174,11 @@ type Dictionary<T> = {
   [key: string]: T;
 };"""
 
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         symbols = file.symbols
         assert len(symbols) == 2

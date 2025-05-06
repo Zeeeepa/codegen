@@ -119,7 +119,11 @@ def _extract_code_block(llm_response: str) -> str:
     matches = re.findall(pattern, llm_response.strip(), re.DOTALL)
 
     if not matches:
-        msg = "LLM response must contain code wrapped in ``` blocks. Got response: " + llm_response[:200] + "..."
+        msg = (
+            "LLM response must contain code wrapped in ``` blocks. Got response: "
+            + llm_response[:200]
+            + "..."
+        )
         raise ValueError(msg)
 
     # Return the last code block exactly as is
@@ -140,15 +144,24 @@ def get_llm_edit(original_file_section: str, edit_content: str) -> str:
     human_message = _HUMAN_PROMPT_DRAFT_EDITOR
     prompt = ChatPromptTemplate.from_messages([system_message, human_message])
 
-    llm = LLM(model_provider="anthropic", model_name="claude-3-5-sonnet-latest", temperature=0, max_tokens=5000)
+    llm = LLM(
+        model_provider="anthropic",
+        model_name="claude-3-5-sonnet-latest",
+        temperature=0,
+        max_tokens=5000,
+    )
 
     chain = prompt | llm | StrOutputParser()
-    response = chain.invoke({"original_file_section": original_file_section, "edit_content": edit_content})
+    response = chain.invoke(
+        {"original_file_section": original_file_section, "edit_content": edit_content}
+    )
 
     return response
 
 
-def _validate_edit_boundaries(original_lines: list[str], modified_lines: list[str], start_idx: int, end_idx: int) -> None:
+def _validate_edit_boundaries(
+    original_lines: list[str], modified_lines: list[str], start_idx: int, end_idx: int
+) -> None:
     """Validate` that the edit only modified lines within the specified boundaries.
 
     Args:
@@ -173,11 +186,15 @@ def _validate_edit_boundaries(original_lines: list[str], modified_lines: list[st
         if len(modified_lines) >= remaining_lines:
             mod_suffix = modified_lines[-remaining_lines:]
             if orig_suffix != mod_suffix:
-                msg = f"Edit modified content after the specified end line {end_idx + 1}"
+                msg = (
+                    f"Edit modified content after the specified end line {end_idx + 1}"
+                )
                 raise ValueError(msg)
 
 
-def extract_file_window(file_content: str, start: int = 1, end: int = -1) -> tuple[str, int, int]:
+def extract_file_window(
+    file_content: str, start: int = 1, end: int = -1
+) -> tuple[str, int, int]:
     """Extract a window of content from a file.
 
     Args:
@@ -203,7 +220,13 @@ def extract_file_window(file_content: str, start: int = 1, end: int = -1) -> tup
     return window_content, start_idx, end_idx
 
 
-def apply_semantic_edit(codebase: Codebase, filepath: str, edited_content: str, start: int = 1, end: int = -1) -> tuple[str, str]:
+def apply_semantic_edit(
+    codebase: Codebase,
+    filepath: str,
+    edited_content: str,
+    start: int = 1,
+    end: int = -1,
+) -> tuple[str, str]:
     """Apply a semantic edit to a section of content.
 
     Args:
@@ -244,7 +267,9 @@ def apply_semantic_edit(codebase: Codebase, filepath: str, edited_content: str, 
     )
 
     # Preserve original file's newline if it had one
-    new_content = "\n".join(new_lines) + ("\n" if original_content.endswith("\n") else "")
+    new_content = "\n".join(new_lines) + (
+        "\n" if original_content.endswith("\n") else ""
+    )
     # Validate the edit boundaries
     _validate_edit_boundaries(original_lines, new_lines, start_idx, end_idx)
 
@@ -261,7 +286,9 @@ def apply_semantic_edit(codebase: Codebase, filepath: str, edited_content: str, 
     return new_content, diff
 
 
-def semantic_edit(codebase: Codebase, filepath: str, edit_content: str, start: int = 1, end: int = -1) -> SemanticEditObservation:
+def semantic_edit(
+    codebase: Codebase, filepath: str, edit_content: str, start: int = 1, end: int = -1
+) -> SemanticEditObservation:
     """Edit a file using semantic editing with line range support."""
     try:
         file = codebase.get_file(filepath)
@@ -288,11 +315,15 @@ def semantic_edit(codebase: Codebase, filepath: str, edit_content: str, start: i
         )
 
     # Extract the window of content to edit
-    original_file_section, start_idx, end_idx = extract_file_window(original_content, start, end)
+    original_file_section, start_idx, end_idx = extract_file_window(
+        original_content, start, end
+    )
 
     # Get edited content from LLM
     try:
-        modified_segment = _extract_code_block(get_llm_edit(original_file_section, edit_content))
+        modified_segment = _extract_code_block(
+            get_llm_edit(original_file_section, edit_content)
+        )
     except ValueError as e:
         return SemanticEditObservation(
             status="error",
@@ -302,7 +333,9 @@ def semantic_edit(codebase: Codebase, filepath: str, edit_content: str, start: i
 
     # Apply the semantic edit
     try:
-        new_content, diff = apply_semantic_edit(codebase, filepath, modified_segment, start, end)
+        new_content, diff = apply_semantic_edit(
+            codebase, filepath, modified_segment, start, end
+        )
     except ValueError as e:
         return SemanticEditObservation(
             status="error",

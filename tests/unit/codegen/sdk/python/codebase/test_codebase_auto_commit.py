@@ -30,7 +30,11 @@ def bar(x):
     return square(x)
     """
     # language=python
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file0.py": file0, "dir/file1.py": file1, "file2.py": file2}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file0.py": file0, "dir/file1.py": file1, "file2.py": file2},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file0 = codebase.get_file("dir/file0.py")
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("file2.py")

@@ -81,8 +81,13 @@ def foo():
         with_statement = file.get_function("foo").code_block.with_statements[0]
         with_clause = with_statement.clause
         assert len(with_clause.expressions) == 2
-        assert [x.source for x in with_clause.expressions] == ["context_manager1 as var1", "context_manager2 as var2"]
-        assert with_clause.source == "context_manager1 as var1, context_manager2 as var2"
+        assert [x.source for x in with_clause.expressions] == [
+            "context_manager1 as var1",
+            "context_manager2 as var2",
+        ]
+        assert (
+            with_clause.source == "context_manager1 as var1, context_manager2 as var2"
+        )
         with_statement.code_block.unwrap()
     # language=python
     assert (

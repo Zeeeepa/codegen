@@ -49,13 +49,19 @@ py_test_cases = [
     SkillTestCase(
         files=[
             SkillTestCasePyFile(input=py_file_1, output=py_file_1_output),
-            SkillTestCasePyFile(filepath="dataclasses.py", input="", output=py_file_2_output),
+            SkillTestCasePyFile(
+                filepath="dataclasses.py", input="", output=py_file_2_output
+            ),
         ]
     ),
 ]
 
 
-@skill(eval_skill=False, prompt="Moves all classes decorated with @dataclasses into a dedicated directory", uid="98450421-bb3b-4605-9f94-f169e4ae0f23")
+@skill(
+    eval_skill=False,
+    prompt="Moves all classes decorated with @dataclasses into a dedicated directory",
+    uid="98450421-bb3b-4605-9f94-f169e4ae0f23",
+)
 class MoveDataclassesSkills(Skill):
     """Moves all classes decorated with @dataclasses into a dedicated directory"""
 
@@ -81,7 +87,11 @@ class MoveDataclassesSkills(Skill):
                             dst_file = codebase.get_file(new_filename)
 
                         # Move the symbol and it's dependencies, adding a "back edge" import to the original file
-                        cls.move_to_file(dst_file, include_dependencies=True, strategy="add_back_edge")
+                        cls.move_to_file(
+                            dst_file,
+                            include_dependencies=True,
+                            strategy="add_back_edge",
+                        )
 
     @staticmethod
     @skill_impl([], language=ProgrammingLanguage.TYPESCRIPT, ignore=True)

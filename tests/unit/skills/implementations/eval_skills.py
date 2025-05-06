@@ -9,7 +9,9 @@ from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
 from tests.shared.skills.skill_test import SkillTestCase
 
-EVAL_SKILLS_TEST_DIR = Path(__file__).parent.parents[3] / "src" / "codemods" / "eval" / "test_files"
+EVAL_SKILLS_TEST_DIR = (
+    Path(__file__).parent.parents[3] / "src" / "codemods" / "eval" / "test_files"
+)
 
 
 ########################################################################################################################
@@ -24,32 +26,53 @@ class AddCopyrightHeaderSkill(Skill, ABC):
     """Add a copyright header to all files in the codebase"""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_1")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_1")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         r"""Adds the following header to all files in the codebase: 'Copyright (c) Codegen.\nAll rights reserved.\n\n'"""
         for file in codebase.files:
             # Adds header to the file. Note: comments are added
-            file.edit("# Copyright (c) Codegen.\n# All rights reserved.\n\n" + file.content)
+            file.edit(
+                "# Copyright (c) Codegen.\n# All rights reserved.\n\n" + file.content
+            )
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_1")], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_1")],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         r"""Adds the following header to all files in the codebase: '// Copyright (c) Codegen.\n// All rights reserved.\n\n'"""
         for file in codebase.files:
             # Adds header to the file. Note: comments are added
-            file.edit("// Copyright (c) Codegen.\n// All rights reserved.\n" + file.content)
+            file.edit(
+                "// Copyright (c) Codegen.\n// All rights reserved.\n" + file.content
+            )
 
 
-@skill(eval_skill=True, prompt="Move all functions starting with 'foo' to a file named foo", uid="0c10e812-f19b-4a79-9f7c-6c1a41ae814a")
+@skill(
+    eval_skill=True,
+    prompt="Move all functions starting with 'foo' to a file named foo",
+    uid="0c10e812-f19b-4a79-9f7c-6c1a41ae814a",
+)
 class MoveFooFunctionsSkill(Skill, ABC):
     """Moves all functions starting with 'foo' to a file named foo"""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_2")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_2")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Move all functions starting with 'foo' to foo.py."""
         # get the foo.py file if it exists, otherwise create it Note: extension is included in the file name
-        foo_file = codebase.get_file("foo.py") if codebase.has_file("foo.py") else codebase.create_file("foo.py")
+        foo_file = (
+            codebase.get_file("foo.py")
+            if codebase.has_file("foo.py")
+            else codebase.create_file("foo.py")
+        )
 
         # for each function in the codebase
         for function in codebase.functions:
@@ -65,12 +88,19 @@ class MoveFooFunctionsSkill(Skill, ABC):
         ...
 
 
-@skill(eval_skill=True, prompt="Adds the following decorator to all functions starting with 'foo': '@decorator_function'", uid="600f0315-4375-49d8-9c3d-8bcd5be87a96")
+@skill(
+    eval_skill=True,
+    prompt="Adds the following decorator to all functions starting with 'foo': '@decorator_function'",
+    uid="600f0315-4375-49d8-9c3d-8bcd5be87a96",
+)
 class AddDecoratorToFooFunctionsSkill(Skill, ABC):
     """This skill adds a specified decorator to all functions within a codebase that start with a particular prefix, ensuring that the decorator is properly imported if not already present."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_3")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_3")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Adds the following decorator to all functions starting with 'foo': '@decorator_function'."""
         # get the decorator_function symbol
@@ -82,7 +112,10 @@ class AddDecoratorToFooFunctionsSkill(Skill, ABC):
                 # if the function name starts with 'foo'
                 if function.name.startswith("foo"):
                     # if the decorator is not imported or declared in the file
-                    if not file.has_import("decorator_function") and decorator_symbol.file != file:
+                    if (
+                        not file.has_import("decorator_function")
+                        and decorator_symbol.file != file
+                    ):
                         # add an import for the decorator function
                         file.add_import(decorator_symbol)
                     # add the decorator to the function
@@ -95,12 +128,19 @@ class AddDecoratorToFooFunctionsSkill(Skill, ABC):
         ...
 
 
-@skill(eval_skill=True, prompt="Rename all functions starting with 'foo' to start with 'bar'", uid="0c266e31-22ce-4016-bc08-22f19f84a09f")
+@skill(
+    eval_skill=True,
+    prompt="Rename all functions starting with 'foo' to start with 'bar'",
+    uid="0c266e31-22ce-4016-bc08-22f19f84a09f",
+)
 class RenameFooToBarSkill(Skill, ABC):
     """Renames all functions in the codebase that start with 'foo' to start with 'bar', ensuring consistent naming conventions throughout the code."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_4")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_4")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Renames all functions starting with 'foo' to start with 'bar'."""
         # for each function in the codebase
@@ -122,12 +162,19 @@ class RenameFooToBarSkill(Skill, ABC):
                 function.rename(function.name.replace("foo", "bar", 1))
 
 
-@skill(eval_skill=True, prompt="Add an int return type hint to all functions starting with 'foo'", uid="9d49107e-2723-4b38-8a2e-735e3e183ad7")
+@skill(
+    eval_skill=True,
+    prompt="Add an int return type hint to all functions starting with 'foo'",
+    uid="9d49107e-2723-4b38-8a2e-735e3e183ad7",
+)
 class AddReturnTypeHintSkill(Skill, ABC):
     """Adds an integer return type hint to all functions whose names start with 'foo'."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_5")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_5")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Adds an int return type hint to all functions starting with 'foo'."""
         # for each function in the codebase
@@ -157,7 +204,10 @@ class MoveEnumsToSeparateFileSkill(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_7")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_7")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Moves any enums within a file into a file called: `enums.py`. Creates the `enums.py` if it does not
         exist. If the original file only contains enums this skill renames it to `enums.py`
@@ -180,7 +230,13 @@ class MoveEnumsToSeparateFileSkill(Skill, ABC):
                     file.update_filepath(new_filepath)
                 else:
                     # get the enums file if it exists, otherwise create it
-                    dst_file = codebase.get_file(new_filepath) if codebase.has_file(new_filepath) else codebase.create_file(new_filepath, "from enum import Enum\n\n")
+                    dst_file = (
+                        codebase.get_file(new_filepath)
+                        if codebase.has_file(new_filepath)
+                        else codebase.create_file(
+                            new_filepath, "from enum import Enum\n\n"
+                        )
+                    )
                     # for each enum class in the file
                     for enum_class in enum_classes:
                         # move the enum class to the enums file
@@ -193,12 +249,19 @@ class MoveEnumsToSeparateFileSkill(Skill, ABC):
         ...
 
 
-@skill(eval_skill=True, prompt="Replace Optional[type] with type | None in all functions.", uid="51070237-774f-484e-83d5-9b0ca6be19fc")
+@skill(
+    eval_skill=True,
+    prompt="Replace Optional[type] with type | None in all functions.",
+    uid="51070237-774f-484e-83d5-9b0ca6be19fc",
+)
 class UpdateOptionalTypeHintsSkill(Skill, ABC):
     """This skill replaces type hints in functions and methods by updating instances of Optional[type] to type | None, ensuring compatibility with modern type hinting practices."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_8")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_8")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Replaces Optional[type] with type | None in all functions."""
         # pattern to match Optional[type]
@@ -227,7 +290,9 @@ class UpdateOptionalTypeHintsSkill(Skill, ABC):
                 # if the old return type is Optional[type]
                 if "Optional[" in old_return_type:
                     # replace Optional[type] with type | None
-                    new_return_type = optional_type_pattern.sub(r"\1 | None", old_return_type)
+                    new_return_type = optional_type_pattern.sub(
+                        r"\1 | None", old_return_type
+                    )
                     # update the return type hint
                     function.return_type.edit(new_return_type)
 
@@ -263,8 +328,14 @@ class DeleteUnusedSymbolsSkill(Skill, ABC):
     """Deletes all unused symbols in the codebase except for those starting with `bar` (case insensitive) and deletes all files without any remaining symbols."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_3")], language=ProgrammingLanguage.TYPESCRIPT)
-    @skill_impl([SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_6")], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_3")],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
+    @skill_impl(
+        [SkillTestCase.from_dir(filepath=EVAL_SKILLS_TEST_DIR / "sample_py_6")],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         # for each symbol in the codebase
         for symbol in codebase.symbols:
@@ -284,12 +355,19 @@ class DeleteUnusedSymbolsSkill(Skill, ABC):
                 file.remove()
 
 
-@skill(eval_skill=True, prompt="Mark functions only used within the app directory as internal with @internal in the docs", uid="b75d483f-c060-4896-8551-c5e512043cfe")
+@skill(
+    eval_skill=True,
+    prompt="Mark functions only used within the app directory as internal with @internal in the docs",
+    uid="b75d483f-c060-4896-8551-c5e512043cfe",
+)
 class MarkInternalFunctionsSkill(Skill, ABC):
     """This skill identifies functions that are exclusively used within the application directory and marks them as internal by appending an @internal tag to their docstrings."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_7")], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_7")],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         """Marks all functions that are only used in the `app` directory as an internal function. Marks functions as
         internal by adding the @internal tag to the bottom of the docstring.
@@ -319,7 +397,9 @@ class MarkInternalFunctionsSkill(Skill, ABC):
                     else:
                         # add the @internal tag to the bottom of the docstring
                         current_docstring = function.docstring.text or ""
-                        updated_docstring = current_docstring.strip() + "\n\n@internal\n"
+                        updated_docstring = (
+                            current_docstring.strip() + "\n\n@internal\n"
+                        )
                     # update the function docstring
                     function.set_docstring(updated_docstring)
 
@@ -336,13 +416,18 @@ class MarkInternalFunctionsSkill(Skill, ABC):
 
 
 @skill(
-    eval_skill=True, prompt="Move all JSX components that are not exported by default into a new file that is in the same directory as the original file.", uid="3af98bae-1336-48e5-9ab1-ff1677f61557"
+    eval_skill=True,
+    prompt="Move all JSX components that are not exported by default into a new file that is in the same directory as the original file.",
+    uid="3af98bae-1336-48e5-9ab1-ff1677f61557",
 )
 class MoveNonDefaultExportedJSXComponentsSkill(Skill, ABC):
     """Moves all JSX components that are not exported by default into a new file located in the same directory as the original file."""
 
     @staticmethod
-    @skill_impl([SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_2")], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase.from_dir(EVAL_SKILLS_TEST_DIR / "sample_ts_2")],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         """Moves all JSX components that are not exported by default into a new file that is in the same directory as the original file."""
         # for each file in the codebase

@@ -17,4 +17,6 @@ def foo():
         b.remove()
         codebase.commit()
 
-        assert file.content == "\ndef foo():\n    a = 1\n    c = 3\n    return a + b + c\n"
+        assert (
+            file.content == "\ndef foo():\n    a = 1\n    c = 3\n    return a + b + c\n"
+        )

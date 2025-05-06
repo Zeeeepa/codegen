@@ -8,7 +8,11 @@ def test_function_flag_with_message(tmpdir):
 def foo():
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         foo = file.get_function("foo")
 

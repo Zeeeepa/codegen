@@ -66,7 +66,9 @@ def test_create_issue(client: LinearClient) -> None:
     """Test creating an issue in Linear."""
     # Test creating an issue with explicit team_id
     title = "Test Issue - Automated Testing (Explicit Team)"
-    description = "This is a test issue created by automated testing with explicit team_id"
+    description = (
+        "This is a test issue created by automated testing with explicit team_id"
+    )
 
     issue = client.create_issue(title, description)
     assert issue.title == title
@@ -74,14 +76,18 @@ def test_create_issue(client: LinearClient) -> None:
 
     # Test creating an issue using default team_id from environment
     title2 = "Test Issue - Automated Testing (Default Team)"
-    description2 = "This is a test issue created by automated testing with default team_id"
+    description2 = (
+        "This is a test issue created by automated testing with default team_id"
+    )
 
     issue2 = client.create_issue(title2, description2)
     assert issue2.title == title2
     assert issue2.description == description2
 
     # Test the tool wrapper with default team_id
-    result = linear_create_issue_tool(client, "Test Tool Issue", "Test description from tool")
+    result = linear_create_issue_tool(
+        client, "Test Tool Issue", "Test description from tool"
+    )
     assert result.status == "success"
     assert result.title == "Test Tool Issue"
     assert result.issue_data["title"] == "Test Tool Issue"

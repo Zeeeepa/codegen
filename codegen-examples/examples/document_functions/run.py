@@ -12,7 +12,9 @@ def hop_through_imports(imp: Import) -> Symbol | ExternalModule:
     return imp.imported_symbol
 
 
-def get_extended_context(symbol: Symbol, degree: int) -> tuple[set[Symbol], set[Symbol]]:
+def get_extended_context(
+    symbol: Symbol, degree: int
+) -> tuple[set[Symbol], set[Symbol]]:
     """Recursively collect dependencies and usages up to the specified degree.
 
     Args:
@@ -47,7 +49,9 @@ def get_extended_context(symbol: Symbol, degree: int) -> tuple[set[Symbol], set[
 
             if isinstance(usage_symbol, Symbol) and usage_symbol not in usages:
                 usages.add(usage_symbol)
-                usage_deps, usage_usages = get_extended_context(usage_symbol, degree - 1)
+                usage_deps, usage_usages = get_extended_context(
+                    usage_symbol, degree - 1
+                )
                 dependencies.update(usage_deps)
                 usages.update(usage_usages)
 
@@ -60,23 +64,34 @@ def run(codebase: Codebase):
     N_DEGREE = 2
 
     # Filter out test and tutorial functions first
-    functions = [f for f in codebase.functions if not any(pattern in f.name.lower() for pattern in ["test", "tutorial"]) and not any(pattern in f.filepath.lower() for pattern in ["test", "tutorial"])]
+    functions = [
+        f
+        for f in codebase.functions
+        if not any(pattern in f.name.lower() for pattern in ["test", "tutorial"])
+        and not any(pattern in f.filepath.lower() for pattern in ["test", "tutorial"])
+    ]
 
     # Track progress for user feedback
     total_functions = len(functions)
     processed = 0
 
-    print(f"Found {total_functions} functions to process (excluding tests and tutorials)")
+    print(
+        f"Found {total_functions} functions to process (excluding tests and tutorials)"
+    )
 
     for function in functions:
         processed += 1
 
         # Skip if already has docstring
         if function.docstring:
-            print(f"[{processed}/{total_functions}] Skipping {function.name} - already has docstring")
+            print(
+                f"[{processed}/{total_functions}] Skipping {function.name} - already has docstring"
+            )
             continue
 
-        print(f"[{processed}/{total_functions}] Generating docstring for {function.name} at {function.filepath}")
+        print(
+            f"[{processed}/{total_functions}] Generating docstring for {function.name} at {function.filepath}"
+        )
 
         # Collect context using N-degree dependencies and usages
         dependencies, usages = get_extended_context(function, N_DEGREE)
@@ -113,7 +128,9 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Parsing codebase...")
-    codebase = Codebase.from_repo("fastapi/fastapi", commit="887270ff8a54bb58c406b0651678a27589793d2f")
+    codebase = Codebase.from_repo(
+        "fastapi/fastapi", commit="887270ff8a54bb58c406b0651678a27589793d2f"
+    )
 
     print("Running function...")
     run(codebase)

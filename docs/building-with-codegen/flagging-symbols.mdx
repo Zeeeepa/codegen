@@ -50,13 +50,13 @@ Here's an example of using flags during code analysis:
 
 ```python
 def analyze_codebase(codebase):
-    for function in codebase.functions:            
+    for function in codebase.functions:
         # Check documentation
         if not function.docstring:
             function.flag(
                 message="Missing docstring",
             )
-            
+
         # Check error handling
         if function.is_async and not function.has_try_catch:
             function.flag(

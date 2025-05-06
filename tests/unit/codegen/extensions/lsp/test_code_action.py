@@ -11,9 +11,7 @@ from lsprotocol.types import (
     Range,
     TextDocumentIdentifier,
 )
-from pytest_lsp import (
-    LanguageClient,
-)
+from pytest_lsp import LanguageClient
 
 from codegen.sdk.core.codebase import Codebase
 from tests.unit.codegen.extensions.lsp.utils import apply_edit
@@ -81,7 +79,9 @@ def test_b():
                         start=Position(line=0, character=4),
                         end=Position(line=0, character=11),
                     ),
-                    text_document=TextDocumentIdentifier(uri="file://{workspaceFolder}/test.py"),
+                    text_document=TextDocumentIdentifier(
+                        uri="file://{workspaceFolder}/test.py"
+                    ),
                     context=CodeActionContext(diagnostics=[]),
                 )
             ],
@@ -98,7 +98,9 @@ async def test_code_action(
     actions: list[CodeActionParams],
 ):
     for action in actions:
-        action.text_document.uri = action.text_document.uri.format(workspaceFolder=codebase.repo_path)
+        action.text_document.uri = action.text_document.uri.format(
+            workspaceFolder=codebase.repo_path
+        )
 
         result = await client.text_document_code_action_async(params=action)
         assert result is not None
@@ -108,7 +110,11 @@ async def test_code_action(
             edit = to_execute.popleft()
             if isinstance(edit, Command):
                 assert not isinstance(edit.command, Command)
-                await client.workspace_execute_command_async(types.ExecuteCommandParams(command=edit.command, arguments=edit.arguments))
+                await client.workspace_execute_command_async(
+                    types.ExecuteCommandParams(
+                        command=edit.command, arguments=edit.arguments
+                    )
+                )
             else:
                 result = await client.code_action_resolve_async(edit)
                 if result.edit:

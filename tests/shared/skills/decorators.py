@@ -48,7 +48,9 @@ def skill_impl(
         if func is not None:
             qualname_as_array = func.__qualname__.split(".")
             if len(qualname_as_array) > 1:
-                assert properly_named_function(name=func.__name__, language=language), skill_func_name_error(name=func.__name__, language=language)
+                assert properly_named_function(
+                    name=func.__name__, language=language
+                ), skill_func_name_error(name=func.__name__, language=language)
                 if language == ProgrammingLanguage.PYTHON:
                     if not hasattr(func, "python_skill_implementation"):
                         func.python_skill_implementation = new_skill
@@ -72,7 +74,9 @@ def properly_named_function(name: str, language: ProgrammingLanguage):
     if language == ProgrammingLanguage.PYTHON:
         return name == "skill_func" or name == "python_skill_func" or name == "execute"
     elif language == ProgrammingLanguage.TYPESCRIPT:
-        return name == "skill_func" or name == "typescript_skill_func" or name == "execute"
+        return (
+            name == "skill_func" or name == "typescript_skill_func" or name == "execute"
+        )
     else:
         return False
 
@@ -106,7 +110,14 @@ def populate_skill_implementation(skill_imp: "SkillImplementation", sk: "Skill")
     return skill_imp
 
 
-def skill(uid: str, eval_skill: bool = False, prompt: str | None = None, s_id: int | None = None, guide: bool = False, canonical=True):
+def skill(
+    uid: str,
+    eval_skill: bool = False,
+    prompt: str | None = None,
+    s_id: int | None = None,
+    guide: bool = False,
+    canonical=True,
+):
     """Decorator for Skill classes. Adds the class to the skills list."""
 
     def decorator(cls):
@@ -120,7 +131,12 @@ def skill(uid: str, eval_skill: bool = False, prompt: str | None = None, s_id: i
         cls.uid = uid
         new_attributes = {}
         for name, method in cls.__dict__.items():
-            if name not in ["python_skill_func", "typescript_skill_func", "skill_func", "execute"] or not callable(method):
+            if name not in [
+                "python_skill_func",
+                "typescript_skill_func",
+                "skill_func",
+                "execute",
+            ] or not callable(method):
                 continue
             if hasattr(method, "__func__"):
                 func = method.__func__
@@ -129,10 +145,14 @@ def skill(uid: str, eval_skill: bool = False, prompt: str | None = None, s_id: i
 
             if hasattr(func, "python_skill_implementation"):
                 skill_imp = func.python_skill_implementation
-                new_attributes["python_skill_implementation"] = populate_skill_implementation(skill_imp, cls)
+                new_attributes["python_skill_implementation"] = (
+                    populate_skill_implementation(skill_imp, cls)
+                )
             if hasattr(func, "typescript_skill_implementation"):
                 skill_imp = func.typescript_skill_implementation
-                new_attributes["typescript_skill_implementation"] = populate_skill_implementation(skill_imp, cls)
+                new_attributes["typescript_skill_implementation"] = (
+                    populate_skill_implementation(skill_imp, cls)
+                )
         for name, value in new_attributes.items():
             setattr(cls, name, value)
 

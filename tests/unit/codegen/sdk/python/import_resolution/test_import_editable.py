@@ -17,7 +17,9 @@ from file1 import foo1
 def bar(a, b):
     return a * b + foo1(a, b)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -82,7 +84,9 @@ def bar(a, b):
     foo5()
     """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file2 = codebase.get_file("file2.py")
 
         remove_list = ["foo1", "foo2", "foo3"]
@@ -136,7 +140,9 @@ def bar(a, b):
     foo5()
     """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file2 = codebase.get_file("file2.py")
 
         remove_list = ["foo2", "foo3"]
@@ -190,7 +196,9 @@ def bar(a, b):
     foo5()
     """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file2 = codebase.get_file("file2.py")
 
         remove_list = ["foo3", "foo4"]
@@ -249,7 +257,9 @@ def bar(a, b):
     foo5()
     """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file2 = codebase.get_file("file2.py")
 
         remove_list = ["foo1", "foo2"]

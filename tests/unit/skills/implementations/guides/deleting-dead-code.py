@@ -5,7 +5,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 RemoveUnusedSymbolsPyTestCase = SkillTestCase(
     [
@@ -120,8 +124,13 @@ class RemoveUnusedSymbols(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveUnusedSymbolsPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RemoveUnusedSymbolsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RemoveUnusedSymbolsPyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[RemoveUnusedSymbolsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate through all symbols in the codebase
         for symbol in codebase.symbols:
@@ -193,8 +202,14 @@ class RemoveUnusedFunctions(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveUnusedFunctionsPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RemoveUnusedFunctionsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RemoveUnusedFunctionsPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[RemoveUnusedFunctionsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate through all functions in the codebase
         for function in codebase.functions:
@@ -260,8 +275,13 @@ class RemoveUnusedImports(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveUnusedImportsPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RemoveUnusedImportsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RemoveUnusedImportsPyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[RemoveUnusedImportsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate through all imports in the codebase
         for import_stmt in codebase.imports:
@@ -333,8 +353,14 @@ class RemoveUnusedLocalVariableAssignments(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveUnusedLocalVariableAssignmentsPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RemoveUnusedLocalVariableAssignmentsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RemoveUnusedLocalVariableAssignmentsPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        test_cases=[RemoveUnusedLocalVariableAssignmentsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate through all functions in the codebase
         for func in codebase.functions:
@@ -405,14 +431,24 @@ class RemoveUnusedParametersAndArguments(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveUnusedParametersAndArgumentsPyTestCase], language=ProgrammingLanguage.PYTHON, ignore=True)
-    @skill_impl(test_cases=[RemoveUnusedParametersAndArgumentsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT, ignore=True)
+    @skill_impl(
+        test_cases=[RemoveUnusedParametersAndArgumentsPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+        ignore=True,
+    )
+    @skill_impl(
+        test_cases=[RemoveUnusedParametersAndArgumentsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+        ignore=True,
+    )
     def skill_func(codebase: CodebaseType):
         # iterate through all functions in the codebase
         for function in codebase.functions:
             for param in function.parameters:
                 if not param.usages:
-                    print(f"✂️ Removing unused parameter: {param.name} from {function.name}")
+                    print(
+                        f"✂️ Removing unused parameter: {param.name} from {function.name}"
+                    )
                     param.remove()
 
 
@@ -490,8 +526,13 @@ class RemoveUnusedClasses(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[RemoveUnusedClassesPyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[RemoveUnusedClassesTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[RemoveUnusedClassesPyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[RemoveUnusedClassesTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         # Iterate through all classes in the codebase
         for cls in codebase.classes:
@@ -580,8 +621,12 @@ class CleanUpCodebase(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CleanUpCodebasePyTestCase], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[CleanUpCodebaseTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[CleanUpCodebasePyTestCase], language=ProgrammingLanguage.PYTHON
+    )
+    @skill_impl(
+        test_cases=[CleanUpCodebaseTSTestCase], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def skill_func(codebase: CodebaseType):
         # iterate through all files in the codebase
         for file in codebase.files:

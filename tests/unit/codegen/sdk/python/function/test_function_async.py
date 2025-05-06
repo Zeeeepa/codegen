@@ -18,7 +18,11 @@ class MyClass:
     def qux(self):
         pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         foo = file.get_function("foo")
         bar = file.get_function("bar")
@@ -81,7 +85,11 @@ class MyClass:
         '''Docstring'''
         pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         foo = file.get_function("foo")
         bar = file.get_function("bar")

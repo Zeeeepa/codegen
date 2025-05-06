@@ -24,7 +24,11 @@ class Child(Parent):
         parent = file.get_class("Parent")
 
         # Track which methods we found
-        found_methods = {"parent_method": False, "child_method": False, "overridden_method": False}
+        found_methods = {
+            "parent_method": False,
+            "child_method": False,
+            "overridden_method": False,
+        }
 
         # Check each method's parent class
         for method in child.methods(max_depth=None):

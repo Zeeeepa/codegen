@@ -97,7 +97,11 @@ symbol = [a, b, c, d]
 cases = list(product(range(4), repeat=2))
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_list_interleaved(tmpdir, removes, inserts) -> None:
     ref_list = [-1 + -i for i in range(removes)]
     file = "test.py"
@@ -123,7 +127,11 @@ symbol = {ref_list}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_list_interleaved_syncing(tmpdir, removes, inserts) -> None:
     ref_list = [-1 + -i for i in range(removes)]
     file = "test.py"
@@ -156,7 +164,11 @@ symbol = {ref_list}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_list_removes_first(tmpdir, removes, inserts) -> None:
     ref_list = [-1 + -i for i in range(removes)]
     file = "test.py"
@@ -181,7 +193,11 @@ symbol = {ref_list}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_list_inserts_first(tmpdir, removes, inserts) -> None:
     ref_list = [-1 + -i for i in range(removes)]
     file = "test.py"
@@ -206,7 +222,11 @@ symbol = {ref_list}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"{existing=}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"{existing=}-{inserts=}" for existing, inserts in cases],
+)
 def test_list_append_existing(tmpdir, existing, inserts) -> None:
     ref_list = [-1 + -i for i in range(existing)]
     file = "test.py"
@@ -228,7 +248,11 @@ symbol = {ref_list}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases],
+)
 def test_list_insert_existing(tmpdir, existing, inserts) -> None:
     ref_list = [-1 + -i for i in range(existing + 1)]
     file = "test.py"
@@ -250,7 +274,11 @@ symbol = {ref_list}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases],
+)
 def test_list_insert_existing_same(tmpdir, existing, inserts) -> None:
     ref_list = [-1 + -i for i in range(existing + 1)]
     file = "test.py"

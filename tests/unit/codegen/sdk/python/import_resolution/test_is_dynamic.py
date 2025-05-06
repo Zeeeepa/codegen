@@ -17,7 +17,11 @@ def test_py_import_is_dynamic_in_function(tmpdir):
 
     import static_import  # Static import at module level
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -38,7 +42,11 @@ def test_py_import_is_dynamic_in_if_block(tmpdir):
         import conditional  # Dynamic import in if block
         from x import y    # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -58,7 +66,11 @@ def test_py_import_is_dynamic_in_try_except(tmpdir):
     except ImportError:
         pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -76,7 +88,11 @@ def test_py_import_is_dynamic_in_with_block(tmpdir):
         import dynamic_in_with  # Dynamic import in with block
         from a.b import c      # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -99,7 +115,11 @@ def test_py_import_is_dynamic_in_class_method(tmpdir):
         def class_method(cls):
             import another_dynamic    # Dynamic import in classmethod
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -121,7 +141,11 @@ def test_py_import_is_dynamic_in_nested_function(tmpdir):
             import dynamic_in_inner  # Dynamic import in inner function
             from x import y         # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -142,7 +166,11 @@ def test_py_import_is_dynamic_in_else_clause(tmpdir):
         import dynamic_in_else  # Dynamic import in else clause
         from x import y        # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -162,7 +190,11 @@ def test_py_import_is_dynamic_in_except_clause(tmpdir):
         import dynamic_in_except  # Dynamic import in except clause
         from x import y          # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -184,7 +216,11 @@ def test_py_import_is_dynamic_in_finally_clause(tmpdir):
         import dynamic_in_finally  # Dynamic import in finally clause
         from x import y          # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -202,7 +238,11 @@ def test_py_import_is_dynamic_in_while_statement(tmpdir):
         import dynamic_in_while  # Dynamic import in while loop
         from a import b         # Another dynamic import
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -223,7 +263,11 @@ def test_py_import_is_dynamic_in_match_case(tmpdir):
         case _:
             import another_dynamic  # Dynamic import in default case
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file = codebase.get_file("test.py")
         imports = file.imports
 
@@ -272,7 +316,9 @@ def test_parent_of_types_multiple():
     # Should find both Function and IfBlockStatement parents
     assert import_stmt.parent_of_types({Function, IfBlockStatement}) is not None
     # Should find closest parent first (IfBlockStatement)
-    assert isinstance(import_stmt.parent_of_types({Function, IfBlockStatement}), IfBlockStatement)
+    assert isinstance(
+        import_stmt.parent_of_types({Function, IfBlockStatement}), IfBlockStatement
+    )
 
 
 def test_parent_of_types_try_catch():

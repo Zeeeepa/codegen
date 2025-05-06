@@ -21,10 +21,14 @@ def foo():
     else:
         print(c)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(True)
     # language=python
     assert (
@@ -53,10 +57,14 @@ def foo():
     else:
         print(c)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(False)
     # language=python
     assert (
@@ -81,10 +89,14 @@ def foo():
     else:
         print(b)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(True)
     # language=python
     assert (
@@ -107,10 +119,14 @@ def foo():
         print(b)
         print(c)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(False)
     # language=python
     assert (
@@ -136,10 +152,14 @@ def foo():
         print(c)
         return
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        second_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[1]
+        second_if = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[1]
         second_if.reduce_condition(False)
     # language=python
     assert (
@@ -174,12 +194,16 @@ class MyClass:
             print(e)
             return
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_class("MyClass").get_method("foo")
         top_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
         top_if.reduce_condition(True)
-        nested_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[2]
+        nested_if = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[2]
         nested_if.reduce_condition(False)
 
     # language=python
@@ -212,10 +236,14 @@ def foo():
     else:
         print(d)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        elif_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].elif_statements[0]
+        elif_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].elif_statements[0]
         elif_block.reduce_condition(True)
     # language=python
     assert (
@@ -248,10 +276,14 @@ def foo():
     else:
         print(d)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        elif_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].elif_statements[0]
+        elif_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].elif_statements[0]
         elif_block.reduce_condition(False)
     # language=python
     assert (
@@ -281,10 +313,14 @@ def foo():
     else:
         print(d)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        elif_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].elif_statements[1]
+        elif_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].elif_statements[1]
         elif_block.reduce_condition(True)
     # language=python
     assert (
@@ -313,10 +349,14 @@ def foo():
     else:
         print(d)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        elif_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].elif_statements[1]
+        elif_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].elif_statements[1]
         elif_block.reduce_condition(True)
     # language=python
     assert (
@@ -343,10 +383,14 @@ def foo():
     else:
         print(c)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        else_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].else_statement
+        else_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].else_statement
         with pytest.raises(ValueError):
             else_block.reduce_condition(True)
 
@@ -359,10 +403,14 @@ def foo():
         print(a)
     print(b)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(True)
     # language=python
     assert (
@@ -383,10 +431,14 @@ def foo():
         print(a)
     print(b)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(False)
     # language=python
     assert (

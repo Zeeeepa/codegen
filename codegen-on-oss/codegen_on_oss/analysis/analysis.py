@@ -18,11 +18,11 @@ from graph_sitter.codebase.codebase_analysis import (
     get_symbol_summary,
 )
 from graph_sitter.codebase.codebase_context import CodebaseContext
-from graph_sitter.core.codebase import Codebase as GraphSitterCodebase
 from graph_sitter.core.class_definition import Class
-from graph_sitter.core.function import Function
+from graph_sitter.core.codebase import Codebase as GraphSitterCodebase
 from graph_sitter.core.file import SourceFile
-from graph_sitter.enums import SymbolType, EdgeType
+from graph_sitter.core.function import Function
+from graph_sitter.enums import EdgeType, SymbolType
 from graph_sitter.shared.enums.programming_language import ProgrammingLanguage
 
 from codegen_on_oss.analysis.code_integrity import validate_code_integrity
@@ -48,11 +48,13 @@ def analyze_codebase(codebase: Codebase) -> Dict[str, Any]:
         "function_count": sum(1 for file in codebase.files for _ in file.functions),
         "class_count": sum(1 for file in codebase.files for _ in file.classes),
     }
-    
+
     return results
 
 
-def analyze_commit(repo_url: str, commit_hash: str, base_commit: Optional[str] = None) -> Dict[str, Any]:
+def analyze_commit(
+    repo_url: str, commit_hash: str, base_commit: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Analyze a commit in a repository.
 

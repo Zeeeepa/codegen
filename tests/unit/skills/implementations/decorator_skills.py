@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 ########################################################################################################################
 # ADD FUNCTION DECORATOR
@@ -13,7 +17,11 @@ from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, S
 test_cases = [
     SkillTestCase(
         files=[
-            SkillTestCasePyFile(input="def my_function():\n    pass", output="from my_decorator_module import my_decorator\n@my_decorator\ndef my_function():\n    pass", filepath="file1.py"),
+            SkillTestCasePyFile(
+                input="def my_function():\n    pass",
+                output="from my_decorator_module import my_decorator\n@my_decorator\ndef my_function():\n    pass",
+                filepath="file1.py",
+            ),
             SkillTestCasePyFile(
                 input="def my_decorator(func):\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper\n",
                 output="def my_decorator(func):\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper\n",
@@ -38,7 +46,10 @@ test_cases = [
 ]
 
 
-@skill(prompt="Add the following decorator to all functions and methods: '@my_decorator'", uid="c1452d22-c8f7-4c58-8bc5-d026a8ef4a86")
+@skill(
+    prompt="Add the following decorator to all functions and methods: '@my_decorator'",
+    uid="c1452d22-c8f7-4c58-8bc5-d026a8ef4a86",
+)
 class AddDecoratorToFunction(Skill, ABC):
     """Adds a specified decorator to all functions and methods in a codebase, ensuring that it is not already present, and handles the necessary imports for the decorator."""
 
@@ -52,7 +63,10 @@ class AddDecoratorToFunction(Skill, ABC):
         # iterate through each file
         for file in codebase.files:
             # if the file does not have the decorator symbol and the decorator symbol is not in the same file
-            if not file.has_import(decorator_symbol.name) and decorator_symbol.file != file:
+            if (
+                not file.has_import(decorator_symbol.name)
+                and decorator_symbol.file != file
+            ):
                 # import the decorator symbol
                 file.add_import(decorator_symbol)
 
@@ -68,7 +82,9 @@ class AddDecoratorToFunction(Skill, ABC):
                 # iterate through each method in the class
                 for method in cls.methods:
                     # add the decorator to the method, don't add the decorator if it already exists
-                    method.add_decorator(f"@{decorator_symbol.name}", skip_if_exists=True)
+                    method.add_decorator(
+                        f"@{decorator_symbol.name}", skip_if_exists=True
+                    )
 
     @staticmethod
     @skill_impl(test_cases=[], ignore=True)
@@ -120,8 +136,12 @@ class MyClass {
 }
 """
 
-py_test_cases = [SkillTestCase(files=[SkillTestCasePyFile(input=py_input, output=py_output)])]
-ts_test_cases = [SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input, output=ts_output)])]
+py_test_cases = [
+    SkillTestCase(files=[SkillTestCasePyFile(input=py_input, output=py_output)])
+]
+ts_test_cases = [
+    SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input, output=ts_output)])
+]
 
 
 @skill(uid="331d5b5d-cb6c-4cdb-8296-325ed27d73b9")
@@ -137,8 +157,12 @@ class UpdateDocStringOfDecoratedMethods(Skill, ABC):
     def python_skill_func(codebase: CodebaseType):
         for cls in codebase.classes:
             for method in cls.methods:
-                if method.decorators and any(["with_user" in dec.name for dec in method.decorators]):
-                    method.set_docstring(f"{method.docstring.text}\nOPERATES ON USER DATA")
+                if method.decorators and any(
+                    ["with_user" in dec.name for dec in method.decorators]
+                ):
+                    method.set_docstring(
+                        f"{method.docstring.text}\nOPERATES ON USER DATA"
+                    )
 
     @staticmethod
     @skill_impl(
@@ -149,7 +173,15 @@ class UpdateDocStringOfDecoratedMethods(Skill, ABC):
     def typescript_skill_func(codebase: CodebaseType):
         for cls in codebase.classes:
             for method in cls.methods:
-                if method.decorators and any(["withUser" in dec.name for dec in method.decorators]):
-                    current_docstring = method.docstring.text if method.docstring else ""
-                    new_docstring = f"{current_docstring}\nOPERATES ON USER DATA" if current_docstring else "OPERATES ON USER DATA"
+                if method.decorators and any(
+                    ["withUser" in dec.name for dec in method.decorators]
+                ):
+                    current_docstring = (
+                        method.docstring.text if method.docstring else ""
+                    )
+                    new_docstring = (
+                        f"{current_docstring}\nOPERATES ON USER DATA"
+                        if current_docstring
+                        else "OPERATES ON USER DATA"
+                    )
                     method.set_docstring(new_docstring)

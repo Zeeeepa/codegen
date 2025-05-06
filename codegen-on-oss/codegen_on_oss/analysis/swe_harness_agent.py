@@ -61,12 +61,12 @@ class SWEHarnessAgent:
         if self.use_agent and not self.agent_api_key:
             # Try to get the API key from environment variables
             self.agent_api_key = os.environ.get("CODEGEN_API_KEY")
-            
+
         if self.use_agent and not self.agent_api_key:
             logger.warning("Agent-based analysis requested but no API key provided")
             logger.warning("Set CODEGEN_API_KEY environment variable or pass agent_api_key")
             self.use_agent = False
-        
+
         # Initialize the agent client if we have credentials
         if self.use_agent and self.agent_api_key:
             try:
@@ -201,34 +201,39 @@ class SWEHarnessAgent:
                 "message": "Agent-based analysis is not initialized",
                 "fallback": "Using standard analysis methods instead",
             }
-            
-        try:
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
-    headers = {
-        "Authorization": f"Bearer {self.agent_api_key}",
-        "Content-Type": "application/json",
-    }
-    response = requests.post(
-        f"{self.agent_api_url}/{endpoint}",
-        headers=headers,
-        json=payload,
-        timeout=timeout
-    )
-    response.raise_for_status()
-    return response.json()
-            
+        try:
+            from tenacity import retry, stop_after_attempt, wait_exponential
+
+            @retry(
+                stop=stop_after_attempt(3),
+                wait=wait_exponential(multiplier=1, min=4, max=10),
+            )
+            def _make_agent_request(
+                self, endpoint: str, payload: Dict[str, Any], timeout: int = 30
+            ) -> Dict[str, Any]:
+                headers = {
+                    "Authorization": f"Bearer {self.agent_api_key}",
+                    "Content-Type": "application/json",
+                }
+                response = requests.post(
+                    f"{self.agent_api_url}/{endpoint}",
+                    headers=headers,
+                    json=payload,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                return response.json()
+
             # Get the commit message
             commit_message = self._get_commit_message(repo_url, head_commit)
-            
+
             # Prepare the request to the agent API
             headers = {
                 "Authorization": f"Bearer {self.agent_api_key}",
                 "Content-Type": "application/json",
             }
-            
+
             payload = {
                 "repo_url": repo_url,
                 "base_commit": base_commit,
@@ -237,14 +242,14 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 "commit_message": commit_message,
                 "analysis_type": "commit",
             }
-            
+
             # Send the request to the agent API
             response = requests.post(
                 f"{self.agent_api_url}/analyze",
                 headers=headers,
                 json=payload,
             )
-            
+
             # Check if the request was successful
             if response.status_code == 200:
                 return response.json()
@@ -256,7 +261,7 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                     "message": f"Agent API returned status code {response.status_code}",
                     "fallback": "Using standard analysis methods instead",
                 }
-                
+
         except Exception as e:
             logger.exception(f"Error during agent-based commit analysis: {e}")
             return {
@@ -283,7 +288,7 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 "message": "Agent-based analysis is not initialized",
                 "fallback": "Using standard analysis methods instead",
             }
-            
+
         try:
             # Parse the repo URL to get owner and repo name
             if "/" in repo_url and "github.com" not in repo_url:
@@ -295,26 +300,31 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 repo_name = parts[-1]
                 if repo_name.endswith(".git"):
                     repo_name = repo_name[:-4]
-            
+
             # Get the PR details from GitHub
             g = Github(self.github_token)
             repo = g.get_repo(f"{owner}/{repo_name}")
             pr = repo.get_pull(pr_number)
-            
+
             # Get the PR diff
             diff = pr.get_files()
-            diff_text = "\n".join([f"File: {f.filename}\nStatus: {f.status}\nAdditions: {f.additions}\nDeletions: {f.deletions}\nChanges: {f.changes}\n" for f in diff])
-            
+            diff_text = "\n".join(
+                [
+                    f"File: {f.filename}\nStatus: {f.status}\nAdditions: {f.additions}\nDeletions: {f.deletions}\nChanges: {f.changes}\n"
+                    for f in diff
+                ]
+            )
+
             # Get the PR description and title
             pr_title = pr.title
             pr_description = pr.body or ""
-            
+
             # Prepare the request to the agent API
             headers = {
                 "Authorization": f"Bearer {self.agent_api_key}",
                 "Content-Type": "application/json",
             }
-            
+
             payload = {
                 "repo_url": repo_url,
                 "pr_number": pr_number,
@@ -323,14 +333,14 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 "diff": diff_text,
                 "analysis_type": "pull_request",
             }
-            
+
             # Send the request to the agent API
             response = requests.post(
                 f"{self.agent_api_url}/analyze",
                 headers=headers,
                 json=payload,
             )
-            
+
             # Check if the request was successful
             if response.status_code == 200:
                 return response.json()
@@ -342,7 +352,7 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                     "message": f"Agent API returned status code {response.status_code}",
                     "fallback": "Using standard analysis methods instead",
                 }
-                
+
         except Exception as e:
             logger.exception(f"Error during agent-based PR analysis: {e}")
             return {
@@ -354,12 +364,12 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
     def _get_commit_diff(self, repo_url: str, base_commit: str, head_commit: str) -> str:
         """
         Get the diff between two commits.
-        
+
         Args:
             repo_url: The repository URL or owner/repo string
             base_commit: The base commit SHA
             head_commit: The head commit SHA
-            
+
         Returns:
             The diff as a string
         """
@@ -374,29 +384,31 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 repo_name = parts[-1]
                 if repo_name.endswith(".git"):
                     repo_name = repo_name[:-4]
-            
+
             # Get the diff from GitHub
-            diff_url = f"https://github.com/{owner}/{repo_name}/compare/{base_commit}...{head_commit}.diff"
+            diff_url = (
+                f"https://github.com/{owner}/{repo_name}/compare/{base_commit}...{head_commit}.diff"
+            )
             response = requests.get(diff_url)
-            
+
             if response.status_code == 200:
                 return response.text
             else:
                 logger.warning(f"Failed to get diff: {response.status_code}")
                 return ""
-                
+
         except Exception as e:
             logger.exception(f"Error getting commit diff: {e}")
             return ""
-            
+
     def _get_commit_message(self, repo_url: str, commit_hash: str) -> str:
         """
         Get the commit message for a commit.
-        
+
         Args:
             repo_url: The repository URL or owner/repo string
             commit_hash: The commit hash
-            
+
         Returns:
             The commit message as a string
         """
@@ -411,14 +423,14 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 repo_name = parts[-1]
                 if repo_name.endswith(".git"):
                     repo_name = repo_name[:-4]
-            
+
             # Get the commit from GitHub
             g = Github(self.github_token) if self.github_token else Github()
             repo = g.get_repo(f"{owner}/{repo_name}")
             commit = repo.get_commit(commit_hash)
-            
+
             return commit.commit.message
-                
+
         except Exception as e:
             logger.exception(f"Error getting commit message: {e}")
             return ""
@@ -495,7 +507,7 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
                 for insight in agent_analysis["insights"]:
                     comment += f"- {insight}\n"
                 comment += "\n"
-            
+
             if "recommendations" in agent_analysis:
                 comment += "### Recommendations\n\n"
                 for recommendation in agent_analysis["recommendations"]:
@@ -619,46 +631,50 @@ def _make_agent_request(self, endpoint: str, payload: Dict[str, Any], timeout: i
 
         # Add the comment to the results
         analysis_results["comment"] = comment
-        
+
         return analysis_results
 
     def get_pr_file_content(self, repo: str, pr_number: int) -> Dict[str, str]:
         """
         Get the content of files changed in a pull request.
-        
+
         Args:
             repo: Repository in the format "owner/repo"
             pr_number: PR number
-            
+
         Returns:
             A dictionary mapping file paths to their content
         """
         try:
             from github import Github, GithubException
-            
+
             if not self.github_token:
                 logger.error("GitHub token is required to get PR file content")
                 return {}
-                
-            owner, repo_name = repo.split('/')
+
+            owner, repo_name = repo.split("/")
             g = Github(self.github_token)
             repo_obj = g.get_repo(f"{owner}/{repo_name}")
             pr = repo_obj.get_pull(pr_number)
             files = pr.get_files()
-            
+
             file_content = {}
             for file in files:
                 try:
-                    content = repo_obj.get_contents(file.filename, ref=pr.head.ref).decoded_content.decode('utf-8')
+                    content = repo_obj.get_contents(
+                        file.filename, ref=pr.head.ref
+                    ).decoded_content.decode("utf-8")
                     file_content[file.filename] = content
                 except GithubException as e:
-                    logger.warning(f"GitHub API error for {file.filename}: {e.data.get('message', str(e))}")
+                    logger.warning(
+                        f"GitHub API error for {file.filename}: {e.data.get('message', str(e))}"
+                    )
                 except UnicodeDecodeError as e:
                     logger.warning(f"Unicode decode error for {file.filename}: {str(e)}")
                 except Exception as e:
                     logger.warning(f"Unexpected error for {file.filename}: {str(e)}")
             return file_content
-        
+
         except ValueError as e:
             logger.error(f"Invalid repository format: {str(e)}")
         except GithubException as e:

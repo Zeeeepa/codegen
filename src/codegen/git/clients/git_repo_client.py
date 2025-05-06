@@ -31,9 +31,13 @@ class GitRepoClient:
     gh_client: GithubClient
     _repo: Repository
 
-    def __init__(self, repo_config: RepoConfig, access_token: str | None = None) -> None:
+    def __init__(
+        self, repo_config: RepoConfig, access_token: str | None = None
+    ) -> None:
         self.repo_config = repo_config
-        self.gh_client = self._create_github_client(token=access_token or SecretsConfig().github_token)
+        self.gh_client = self._create_github_client(
+            token=access_token or SecretsConfig().github_token
+        )
         self._repo = self._create_client()
 
     def _create_github_client(self, token: str) -> GithubClient:
@@ -154,7 +158,13 @@ class GitRepoClient:
         head_branch_name = f"{self.repo_config.organization_name}:{head_branch_name}"
 
         # retrieve all pulls ordered by created descending
-        prs = self.repo.get_pulls(base=base_branch_name, head=head_branch_name, state=state, sort="created", direction="desc")
+        prs = self.repo.get_pulls(
+            base=base_branch_name,
+            head=head_branch_name,
+            state=state,
+            sort="created",
+            direction="desc",
+        )
         if prs.totalCount > 0:
             return prs[0]
         else:
@@ -193,12 +203,23 @@ class GitRepoClient:
         title: str | None = None,  # type: ignore[assignment]
         body: str | None = None,  # type: ignore[assignment]
     ) -> PullRequest | None:
-        pull = self.get_pull_by_branch_and_state(head_branch_name=head_branch_name, base_branch_name=base_branch_name)
+        pull = self.get_pull_by_branch_and_state(
+            head_branch_name=head_branch_name, base_branch_name=base_branch_name
+        )
         if pull:
-            logger.info(f"Pull request for head branch: {head_branch_name} already exists. Skip creation.")
+            logger.info(
+                f"Pull request for head branch: {head_branch_name} already exists. Skip creation."
+            )
         else:
-            logger.info(f"Creating pull request base: {base_branch_name} head: {head_branch_name} ...")
-            pull = self.create_pull(head_branch_name=head_branch_name, base_branch_name=base_branch_name, title=title, body=body)
+            logger.info(
+                f"Creating pull request base: {base_branch_name} head: {head_branch_name} ..."
+            )
+            pull = self.create_pull(
+                head_branch_name=head_branch_name,
+                base_branch_name=base_branch_name,
+                title=title,
+                body=body,
+            )
         return pull
 
     def create_pull(
@@ -219,8 +240,16 @@ class GitRepoClient:
             draft = False
 
         try:
-            pr = self.repo.create_pull(title=title or f"Draft PR for {head_branch_name}", body=body or "", head=head_branch_name, base=base_branch_name, draft=draft)
-            logger.info(f"Created pull request for head branch: {head_branch_name} at {pr.html_url}")
+            pr = self.repo.create_pull(
+                title=title or f"Draft PR for {head_branch_name}",
+                body=body or "",
+                head=head_branch_name,
+                base=base_branch_name,
+                draft=draft,
+            )
+            logger.info(
+                f"Created pull request for head branch: {head_branch_name} at {pr.html_url}"
+            )
             # NOTE: return a read-only copy to prevent people from editing it
             return self.repo.get_pull(pr.number)
         except GithubException as ge:
@@ -230,7 +259,13 @@ class GitRepoClient:
 
         return None
 
-    def squash_and_merge(self, base_branch_name: str, head_branch_name: str, squash_commit_msg: str | None = None, squash_commit_title: str | None = None) -> None:
+    def squash_and_merge(
+        self,
+        base_branch_name: str,
+        head_branch_name: str,
+        squash_commit_msg: str | None = None,
+        squash_commit_title: str | None = None,
+    ) -> None:
         # =====[ Step 1: Make a squash PR ]=====
         # We will do a squash merge via a pull request, since regular
         # merges in PyGithub do not support `squash`
@@ -244,7 +279,13 @@ class GitRepoClient:
         # TODO: handle PR not mergeable due to merge conflicts
         merge = squash_pr.merge(commit_message=squash_commit_msg, commit_title=squash_commit_title, merge_method="squash")  # type: ignore[arg-type]
 
-    def edit_pull(self, pull: PullRequest, title: Opt[str] = NotSet, body: Opt[str] = NotSet, state: Opt[str] = NotSet) -> None:
+    def edit_pull(
+        self,
+        pull: PullRequest,
+        title: Opt[str] = NotSet,
+        body: Opt[str] = NotSet,
+        state: Opt[str] = NotSet,
+    ) -> None:
         writable_pr = self.repo.get_pull(pull.number)
         writable_pr.edit(title=title, body=body, state=state)
 
@@ -260,18 +301,26 @@ class GitRepoClient:
     # BRANCHES
     ####################################################################################################################
 
-    def get_or_create_branch(self, new_branch_name: str, base_branch_name: str | None = None) -> Branch | None:
+    def get_or_create_branch(
+        self, new_branch_name: str, base_branch_name: str | None = None
+    ) -> Branch | None:
         try:
             existing_branch = self.get_branch_safe(new_branch_name)
             if existing_branch:
                 return existing_branch
-            new_branch = self.create_branch(new_branch_name, base_branch_name=base_branch_name)
+            new_branch = self.create_branch(
+                new_branch_name, base_branch_name=base_branch_name
+            )
             return new_branch
         except Exception as e:
-            logger.exception(f"Unexpected error creating branch: {new_branch_name}\n\t{e}")
+            logger.exception(
+                f"Unexpected error creating branch: {new_branch_name}\n\t{e}"
+            )
             return None
 
-    def get_branch_safe(self, branch_name: str, attempts: int = 1, wait_seconds: int = 1) -> Branch | None:
+    def get_branch_safe(
+        self, branch_name: str, attempts: int = 1, wait_seconds: int = 1
+    ) -> Branch | None:
         for i in range(attempts):
             try:
                 return self.repo.get_branch(branch_name)
@@ -282,24 +331,32 @@ class GitRepoClient:
                 logger.warning(f"Unexpected error getting branch: {branch_name}\n\t{e}")
         return None
 
-    def create_branch(self, new_branch_name: str, base_branch_name: str | None = None) -> Branch | None:
+    def create_branch(
+        self, new_branch_name: str, base_branch_name: str | None = None
+    ) -> Branch | None:
         if base_branch_name is None:
             base_branch_name = self.default_branch
 
         base_branch = self.repo.get_branch(base_branch_name)
         # TODO: also wrap git ref. low pri b/c the only write operation on refs is creating one
-        self.repo.create_git_ref(sha=base_branch.commit.sha, ref=f"refs/heads/{new_branch_name}")
+        self.repo.create_git_ref(
+            sha=base_branch.commit.sha, ref=f"refs/heads/{new_branch_name}"
+        )
         branch = self.get_branch_safe(new_branch_name)
         return branch
 
-    def create_branch_from_sha(self, new_branch_name: str, base_sha: str) -> Branch | None:
+    def create_branch_from_sha(
+        self, new_branch_name: str, base_sha: str
+    ) -> Branch | None:
         self.repo.create_git_ref(ref=f"refs/heads/{new_branch_name}", sha=base_sha)
         branch = self.get_branch_safe(new_branch_name)
         return branch
 
     def delete_branch(self, branch_name: str) -> None:
         if branch_name == self.default_branch:
-            logger.warning("Deleting the default branch is not allowed! Skipping delete.")
+            logger.warning(
+                "Deleting the default branch is not allowed! Skipping delete."
+            )
             return
         # TODO: log event
 
@@ -331,20 +388,31 @@ class GitRepoClient:
 
     def get_commit_diff(self, commit: Commit, show_commits: bool = False) -> str:
         """Diff of a single commit"""
-        return self.compare_commits(commit.parents[0], commit, show_commits=show_commits)
+        return self.compare_commits(
+            commit.parents[0], commit, show_commits=show_commits
+        )
 
     def get_pr_diff(self, pr: PullRequest, show_commits: bool = False) -> str:
         return self.compare(pr.base.sha, pr.head.sha, show_commits=show_commits)
 
-    def compare_commits(self, base_commit: Commit, head_commit: Commit, show_commits: bool = False) -> str:
+    def compare_commits(
+        self, base_commit: Commit, head_commit: Commit, show_commits: bool = False
+    ) -> str:
         return self.compare(base_commit.sha, head_commit.sha, show_commits=show_commits)
 
     # TODO: make base_branch param optional
-    def compare_branches(self, base_branch_name: str | None, head_branch_name: str, show_commits: bool = False) -> str:
+    def compare_branches(
+        self,
+        base_branch_name: str | None,
+        head_branch_name: str,
+        show_commits: bool = False,
+    ) -> str:
         """Comparison between two branches"""
         if base_branch_name is None:
             base_branch_name = self.default_branch
-        return self.compare(base_branch_name, head_branch_name, show_commits=show_commits)
+        return self.compare(
+            base_branch_name, head_branch_name, show_commits=show_commits
+        )
 
     # NOTE: base utility that other compare functions should try to use
     def compare(self, base: str, head: str, show_commits: bool = False) -> str:
@@ -416,7 +484,14 @@ class GitRepoClient:
         conclusion: Opt[str] = NotSet,
         output: Opt[dict[str, str | list[dict[str, str | int]]]] = NotSet,
     ) -> CheckRun:
-        new_check_run = self.repo.create_check_run(name=name, head_sha=head_sha, details_url=details_url, status=status, conclusion=conclusion, output=output)
+        new_check_run = self.repo.create_check_run(
+            name=name,
+            head_sha=head_sha,
+            details_url=details_url,
+            status=status,
+            conclusion=conclusion,
+            output=output,
+        )
         return self.repo.get_check_run(new_check_run.id)
 
     ####################################################################################################################
@@ -432,7 +507,12 @@ class GitRepoClient:
             logger.warning(f"Error getting workflow by file name: {file_name}\n\t{e}")
             return None
 
-    def create_workflow_dispatch(self, workflow: Workflow, ref: Branch | Tag | Commit | str, inputs: Opt[dict] = NotSet):
+    def create_workflow_dispatch(
+        self,
+        workflow: Workflow,
+        ref: Branch | Tag | Commit | str,
+        inputs: Opt[dict] = NotSet,
+    ):
         writeable_workflow = self.repo.get_workflow(workflow.id)
         writeable_workflow.create_dispatch(ref=ref, inputs=inputs)
 
@@ -449,7 +529,9 @@ class GitRepoClient:
         """
         assert isinstance(branch_name, str), branch_name
         post_parameters = {"branch": branch_name}
-        status, _, _ = self.repo._requester.requestJson("POST", f"{self.repo.url}/merge-upstream", input=post_parameters)
+        status, _, _ = self.repo._requester.requestJson(
+            "POST", f"{self.repo.url}/merge-upstream", input=post_parameters
+        )
         return status == 200
 
     ####################################################################################################################

@@ -10,7 +10,11 @@ def test_assignment_statement_type_resolution_simple(tmpdir) -> None:
     content = """
 const a: number = 0;
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.get_symbol("a")
         assert a.type == "number"
@@ -22,7 +26,11 @@ def test_assignment_statement_type_resolution_complex_unpack(tmpdir) -> None:
     content = """
 const [a, b]: [number, string] = [1, 'test'];
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.functions[0].code_block.get_local_var_assignment("a")
         b = file.functions[0].code_block.get_local_var_assignment("b")
@@ -37,7 +45,11 @@ def test_assignment_statement_type_resolution_nested_unpacking(tmpdir) -> None:
     content = """
 const [[a, b], c]: [[number, string], boolean] = [[1, 'test'], true];
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.functions[0].code_block.get_local_var_assignment("a")
         b = file.functions[0].code_block.get_local_var_assignment("b")
@@ -55,7 +67,11 @@ function simpleUnpack(args: { x: number; y: string }) {
     const { x, y } = args;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         x = file.functions[0].code_block.get_local_var_assignment("x")
         y = file.functions[0].code_block.get_local_var_assignment("y")
@@ -72,7 +88,11 @@ function nestedUnpack(args: { a: number; b: { c: string; d: boolean } }) {
     const { a, b: { c, d } } = args;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.functions[0].code_block.get_local_var_assignment("a")
         c = file.functions[0].code_block.get_local_var_assignment("c")
@@ -90,7 +110,11 @@ function deeplyNestedUnpack(args: { a: number; b: { c: string; d: { e: boolean; 
     const { a, b: { c, d: { e, f } } } = args;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.functions[0].code_block.get_local_var_assignment("a")
         c = file.functions[0].code_block.get_local_var_assignment("c")
@@ -128,7 +152,11 @@ async function processComplexArgs(args: {
     } = args;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.functions[0].code_block.get_local_var_assignment("a")
         b = file.functions[0].code_block.get_local_var_assignment("b")

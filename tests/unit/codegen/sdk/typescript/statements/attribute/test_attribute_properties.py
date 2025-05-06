@@ -29,7 +29,11 @@ export default class OtherClass {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file1.ts")
         cls = file.get_class("MyClass")
         a = cls.get_attribute("a")
@@ -65,7 +69,11 @@ class A {
     b: int = 1;  // comment
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_class("A")
         attrs = symbol.attributes
@@ -86,7 +94,11 @@ class MyClass {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         cls = file.get_class("MyClass")
 
@@ -107,7 +119,11 @@ type MyType = {
     c: OtherClass;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         type = file.get_type("MyType")
 
@@ -134,7 +150,11 @@ class MyClass {
     }
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         cls = file.get_class("MyClass")
         attributes = cls.attributes

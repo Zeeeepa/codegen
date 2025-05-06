@@ -27,7 +27,11 @@ switch (y) {
         handleDefault();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         statements = file.code_block.statements
         switch_1 = statements[0]
@@ -58,7 +62,11 @@ switch (fruit) {
         eatFruit();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         switch = file.code_block.statements[0]
         assert len(switch.function_calls) == 3
@@ -84,7 +92,11 @@ function selectFruit() {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         selectFruit = file.get_function("selectFruit")
         assert len(selectFruit.dependencies) == 1
@@ -109,7 +121,11 @@ switch (filter) {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("PYSPARK")
         func_call = file.function_calls[0]
@@ -136,7 +152,11 @@ switch (type) {
 }
 process();
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         process = file.get_function("process")
         func_call = file.function_calls[0]
@@ -165,7 +185,11 @@ function getStatus(code) {
     return status;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         get_status = file.get_function("getStatus")
         return_stmt = get_status.code_block.statements[-1]
@@ -199,7 +223,11 @@ switch (outer) {
 }
 console.log(RESULT);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         result_arg = func_call.args.children[0]
@@ -234,7 +262,11 @@ switch (second) {
 
 console.log(VALUE);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         value_arg = func_call.args.children[0]
@@ -264,7 +296,11 @@ switch (code) {
 }
 console.log(STATUS);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         status_arg = func_call.args.children[0]

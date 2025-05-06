@@ -71,7 +71,9 @@ def run(codebase: Codebase):
                 continue
 
             # Check for nullable=True
-            is_nullable = any(x.name == "nullable" and x.value == "True" for x in db_column_call.args)
+            is_nullable = any(
+                x.name == "nullable" and x.value == "True" for x in db_column_call.args
+            )
 
             # Extract the first argument for the column type
             first_argument = db_column_call.args[0].source or ""

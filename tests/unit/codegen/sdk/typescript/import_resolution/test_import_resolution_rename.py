@@ -11,7 +11,11 @@ import a from 'b';  // test one
 import { d } from 'b/c';  // test two
 import { h as g, j as i } from 'd/f';  // test three
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test_update_import_name.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test_update_import_name.ts": content},
+    ) as codebase:
         file = codebase.get_file("test_update_import_name.ts")
 
         # =====[ Rename d/f ]=====

@@ -28,7 +28,11 @@ class NotExportedClass {
   }
 }
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         exported_class = file.get_symbol("ExportedClass")

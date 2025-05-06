@@ -1,12 +1,5 @@
 from collections.abc import Iterator
-from typing import (
-    TYPE_CHECKING,
-    ClassVar,
-    Generic,
-    List,
-    Optional,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, ClassVar, Generic, List, Optional, TypeVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

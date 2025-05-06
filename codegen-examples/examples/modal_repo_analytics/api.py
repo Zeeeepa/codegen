@@ -1,11 +1,16 @@
 """Modal API endpoint for repository analysis."""
 
 import modal  # deptry: ignore
-from codegen import Codebase
 from pydantic import BaseModel
 
+from codegen import Codebase
+
 # Create image with dependencies
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=0.5.30")
+image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .apt_install("git")
+    .pip_install("fastapi[standard]", "codegen>=0.5.30")
+)
 
 # Create Modal app
 app = modal.App("codegen-repo-analyzer")
@@ -35,7 +40,9 @@ def analyze_repo(repo_name: str) -> RepoMetrics:
     try:
         # Validate input
         if "/" not in repo_name:
-            return RepoMetrics(status="error", error="Repository name must be in format 'owner/repo'")
+            return RepoMetrics(
+                status="error", error="Repository name must be in format 'owner/repo'"
+            )
 
         # Initialize codebase
         codebase = Codebase.from_repo(repo_name)

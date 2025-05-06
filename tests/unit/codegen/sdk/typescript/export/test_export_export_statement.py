@@ -15,7 +15,11 @@ function fuzz() {}
 
 export { foo as foop, fuzz };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         exports = file.exports
         assert len(file.export_statements) == 1
@@ -37,7 +41,11 @@ function bar() {}
 function baz() {}
 export { foo as foop, bar as barp, baz };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]
         export_statement.exports.pop()
@@ -62,7 +70,11 @@ function foo() {}
 function bar() {}
 export { foo, bar };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]
         export_statement.exports.clear()
@@ -84,7 +96,11 @@ function foo() {}
 function bar() {}
 export { foo };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]
         original_export = export_statement.exports[0]
@@ -108,7 +124,11 @@ function foo() {}
 function bar() {}
 export { bar };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]
         original_export = export_statement.exports[0]
@@ -133,7 +153,11 @@ function bar() {}
 function baz() {}
 export { foo, bar, baz };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]
         del export_statement.exports[1]
@@ -157,7 +181,11 @@ export function foo() {}
 export const bar = 123;
 export class Baz {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[1]  # Get the const export
         export_statement.exports[0].remove()
@@ -178,7 +206,11 @@ def test_add_remove_reexport_inline(tmpdir):
 export { foo, bar } from './other';
 export { baz } from './another';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         # Remove one re-export
         export_statement = file.export_statements[0]
@@ -208,7 +240,11 @@ export namespace Baz {
     export function qux() {}
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]  # Get first namespace export
         export_statement.exports[0].remove()
@@ -230,7 +266,11 @@ def test_remove_add_wildcard_export(tmpdir):
 export * from './foo';
 export * as bar from './bar';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         # Remove first wildcard export
         export_statement = file.export_statements[0]
@@ -257,7 +297,11 @@ export {
     baz,
 };
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         export_statement = file.export_statements[0]
         export_statement.exports.clear()

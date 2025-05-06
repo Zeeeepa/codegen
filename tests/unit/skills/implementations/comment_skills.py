@@ -12,7 +12,10 @@ ts_case_1_input = """
 """
 ts_case_1_output = """
 """
-ts_case_1 = SkillTestCase(name="single_line_comment_all_rules", files=[SkillTestCaseTSFile(input=ts_case_1_input, output=ts_case_1_output)])
+ts_case_1 = SkillTestCase(
+    name="single_line_comment_all_rules",
+    files=[SkillTestCaseTSFile(input=ts_case_1_input, output=ts_case_1_output)],
+)
 
 # Case 2: some rules disabled in a SINGLE line comment are no longer required - should just remove required rules from comment
 ts_case_2_input = """
@@ -21,7 +24,10 @@ ts_case_2_input = """
 ts_case_2_output = """
 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 """
-ts_case_2 = SkillTestCase(name="single_line_comment_some_rules", files=[SkillTestCaseTSFile(input=ts_case_2_input, output=ts_case_2_output)])
+ts_case_2 = SkillTestCase(
+    name="single_line_comment_some_rules",
+    files=[SkillTestCaseTSFile(input=ts_case_2_input, output=ts_case_2_output)],
+)
 
 # Case 3: all rules disabled in a MULTI line comment are no longer required - should remove entire comment
 ts_case_3_input = """
@@ -29,7 +35,10 @@ ts_case_3_input = """
 """
 ts_case_3_output = """
 """
-ts_case_3 = SkillTestCase(name="multi_line_comment_all_rules", files=[SkillTestCaseTSFile(input=ts_case_3_input, output=ts_case_3_output)])
+ts_case_3 = SkillTestCase(
+    name="multi_line_comment_all_rules",
+    files=[SkillTestCaseTSFile(input=ts_case_3_input, output=ts_case_3_output)],
+)
 
 # Case 4: some rules disabled in a MULTI line comment are no longer required - should just remove required rules from comment
 ts_case_4_input = """
@@ -38,12 +47,19 @@ ts_case_4_input = """
 ts_case_4_output = """
 /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions */
 """
-ts_case_4 = SkillTestCase(name="multi_line_comment_some_rules", files=[SkillTestCaseTSFile(input=ts_case_3_input, output=ts_case_3_output)])
+ts_case_4 = SkillTestCase(
+    name="multi_line_comment_some_rules",
+    files=[SkillTestCaseTSFile(input=ts_case_3_input, output=ts_case_3_output)],
+)
 
 ts_test_cases = [ts_case_1, ts_case_2, ts_case_3, ts_case_4]
 
 
-@skill(eval_skill=False, prompt="Remove eslint disable comments in TypeScript", uid="3619c21c-6460-4925-acec-2f8dd4871991")
+@skill(
+    eval_skill=False,
+    prompt="Remove eslint disable comments in TypeScript",
+    uid="3619c21c-6460-4925-acec-2f8dd4871991",
+)
 class EslintCommentSkill(Skill):
     """Remove eslint disable comments for an eslint rule.
     This is useful if a codebase is making an eslint rule either not required or reducing it to warning level.
@@ -60,7 +76,9 @@ class EslintCommentSkill(Skill):
             # Iterate over all comment statements in the file
             for comment in file.code_block.comments:
                 if "eslint-disable" in comment.source:
-                    pattern = r"(.*eslint-disable(?:-next-line?)?)(?:\s+([@a-z-\/,\s]+))?(.*)"
+                    pattern = (
+                        r"(.*eslint-disable(?:-next-line?)?)(?:\s+([@a-z-\/,\s]+))?(.*)"
+                    )
                     match = re.search(pattern, comment.source)
                     if not match:
                         continue
@@ -73,7 +91,11 @@ class EslintCommentSkill(Skill):
                             comment.remove()
                         # Case: multiples rules are being disabled. Remove just ESLINT_RULE from the comment
                         else:
-                            print(f"Removing {ESLINT_RULE} from comment: {comment.source}")
+                            print(
+                                f"Removing {ESLINT_RULE} from comment: {comment.source}"
+                            )
                             rules.remove(ESLINT_RULE)
-                            new_comment_source = f"{match.group(1)} {', '.join(rules)}{match.group(3)}"
+                            new_comment_source = (
+                                f"{match.group(1)} {', '.join(rules)}{match.group(3)}"
+                            )
                             comment.edit(new_comment_source)

@@ -10,14 +10,18 @@ from codegen.runner.models.codemod import GroupingConfig
 from codegen.sdk.codebase.config import SessionOptions
 from codegen.sdk.codebase.flagging.code_flag import CodeFlag
 from codegen.sdk.codebase.flagging.groupers.enums import GroupBy
-from codegen.shared.compilation.string_to_code import create_execute_function_from_codeblock
+from codegen.shared.compilation.string_to_code import (
+    create_execute_function_from_codeblock,
+)
 
 if TYPE_CHECKING:
     from codegen.runner.sandbox.executor import SandboxExecutor
 
 
 @pytest.mark.asyncio
-async def test_execute_func_pass_in_codemod_context_takes_priority(executor: SandboxExecutor):
+async def test_execute_func_pass_in_codemod_context_takes_priority(
+    executor: SandboxExecutor,
+):
     codemod_context = CodemodContext(
         CODEMOD_LINK="http://codegen.sh/codemod/5678",
     )
@@ -25,7 +29,9 @@ async def test_execute_func_pass_in_codemod_context_takes_priority(executor: San
 print(context.CODEMOD_LINK)
 """
     custom_scope = {"context": codemod_context}
-    code_to_exec = create_execute_function_from_codeblock(codeblock=mock_source, custom_scope=custom_scope)
+    code_to_exec = create_execute_function_from_codeblock(
+        codeblock=mock_source, custom_scope=custom_scope
+    )
     mock_log = MagicMock()
     executor.codebase.log = mock_log
 
@@ -85,40 +91,64 @@ print(context.CODEMOD_LINK)
 
 
 @pytest.mark.asyncio
-async def test_run_max_preview_time_exceeded_sets_observation_meta(executor: SandboxExecutor):
+async def test_run_max_preview_time_exceeded_sets_observation_meta(
+    executor: SandboxExecutor,
+):
     mock_source = """
 codebase.files[0].edit("a = 2")
 """
     code_to_exec = create_execute_function_from_codeblock(codeblock=mock_source)
-    result = await executor.execute(code_to_exec, session_options=SessionOptions(max_seconds=0))
+    result = await executor.execute(
+        code_to_exec, session_options=SessionOptions(max_seconds=0)
+    )
 
     assert result.is_complete
-    assert result.observation_meta == {"flags": [], "stop_codemod_exception_type": "MaxPreviewTimeExceeded", "threshold": 0}
+    assert result.observation_meta == {
+        "flags": [],
+        "stop_codemod_exception_type": "MaxPreviewTimeExceeded",
+        "threshold": 0,
+    }
 
 
 @pytest.mark.asyncio
-async def test_run_max_ai_requests_error_sets_observation_meta(executor: SandboxExecutor):
+async def test_run_max_ai_requests_error_sets_observation_meta(
+    executor: SandboxExecutor,
+):
     mock_source = """
 codebase.ai("tell me a joke")
 """
     code_to_exec = create_execute_function_from_codeblock(codeblock=mock_source)
-    result = await executor.execute(code_to_exec, session_options=SessionOptions(max_ai_requests=0))
+    result = await executor.execute(
+        code_to_exec, session_options=SessionOptions(max_ai_requests=0)
+    )
 
     assert result.is_complete
-    assert result.observation_meta == {"flags": [], "stop_codemod_exception_type": "MaxAIRequestsError", "threshold": 0}
+    assert result.observation_meta == {
+        "flags": [],
+        "stop_codemod_exception_type": "MaxAIRequestsError",
+        "threshold": 0,
+    }
 
 
 @pytest.mark.asyncio
-async def test_run_max_transactions_exceeded_sets_observation_meta(executor: SandboxExecutor):
+async def test_run_max_transactions_exceeded_sets_observation_meta(
+    executor: SandboxExecutor,
+):
     mock_source = """
 codebase.files[0].edit("a = 2")
 """
 
     code_to_exec = create_execute_function_from_codeblock(codeblock=mock_source)
-    result = await executor.execute(code_to_exec, session_options=SessionOptions(max_transactions=0))
+    result = await executor.execute(
+        code_to_exec, session_options=SessionOptions(max_transactions=0)
+    )
 
     assert result.is_complete
-    assert result.observation_meta == {"flags": [], "stop_codemod_exception_type": "MaxTransactionsExceeded", "threshold": 0}
+    assert result.observation_meta == {
+        "flags": [],
+        "stop_codemod_exception_type": "MaxTransactionsExceeded",
+        "threshold": 0,
+    }
 
 
 @pytest.mark.asyncio

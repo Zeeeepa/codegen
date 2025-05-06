@@ -10,8 +10,20 @@ from rich.console import Console
 from rich.table import Table
 
 from codegen.shared.enums.programming_language import ProgrammingLanguage
-from tests.shared.codemod.models import BASE_TMP_DIR, REPO_ID_TO_URL, VERIFIED_CODEMOD_DATA_DIR, ClonedRepoTestCase, Size
-from tests.shared.codemod.test_discovery import filter_repos, find_codemod_test_cases, find_codemods, find_repos, find_verified_codemod_repos
+from tests.shared.codemod.models import (
+    BASE_TMP_DIR,
+    REPO_ID_TO_URL,
+    VERIFIED_CODEMOD_DATA_DIR,
+    ClonedRepoTestCase,
+    Size,
+)
+from tests.shared.codemod.test_discovery import (
+    filter_repos,
+    find_codemod_test_cases,
+    find_codemods,
+    find_repos,
+    find_verified_codemod_repos,
+)
 from tests.shared.codemod.verified_codemod_utils import CodemodAPI, RepoCodemodMetadata
 
 
@@ -35,8 +47,12 @@ def generate_cases(extra_repos: bool = False):
 
 def _generate_diffs(extra_repos: bool = False):
     """Generate diffs for codemod tests"""
-    os.system(f"pytest tests/integration/codemod/test_codemods.py::test_codemods_cloned_repos  --size small --extra-repos={str(extra_repos).lower()} -n auto --snapshot-update")
-    os.system(f"pytest tests/integration/codemod/test_codemods.py::test_codemods_cloned_repos  --size large --extra-repos={str(extra_repos).lower()} -n auto --snapshot-update")
+    os.system(
+        f"pytest tests/integration/codemod/test_codemods.py::test_codemods_cloned_repos  --size small --extra-repos={str(extra_repos).lower()} -n auto --snapshot-update"
+    )
+    os.system(
+        f"pytest tests/integration/codemod/test_codemods.py::test_codemods_cloned_repos  --size large --extra-repos={str(extra_repos).lower()} -n auto --snapshot-update"
+    )
 
 
 @codemod.command()
@@ -56,11 +72,17 @@ def is_empty(path) -> bool:
     return True
 
 
-def gather_repos_per_codemod() -> dict[str, dict[tuple[Size, bool], list[ClonedRepoTestCase]]]:
+def gather_repos_per_codemod() -> (
+    dict[str, dict[tuple[Size, bool], list[ClonedRepoTestCase]]]
+):
     repos = {**find_repos(extra_repos=True), **find_repos(extra_repos=False)}
     counter = defaultdict(lambda: defaultdict(lambda: []))
-    for case in sorted(find_codemod_test_cases(repos), key=lambda case: case.codemod_metadata.name):
-        counter[case.codemod_metadata.name][case.repo.size, case.repo.extra_repo].append(case)
+    for case in sorted(
+        find_codemod_test_cases(repos), key=lambda case: case.codemod_metadata.name
+    ):
+        counter[case.codemod_metadata.name][
+            case.repo.size, case.repo.extra_repo
+        ].append(case)
     return counter
 
 
@@ -71,7 +93,10 @@ def _clean_diffs(aggressive: bool = False):
     repos = {**find_repos(extra_repos=True), **find_repos(extra_repos=False)}
 
     for test_case in find_codemod_test_cases(repos=repos):
-        if test_case.diff_path.exists() and test_case.diff_path.read_text().strip() == "":
+        if (
+            test_case.diff_path.exists()
+            and test_case.diff_path.read_text().strip() == ""
+        ):
             os.remove(test_case.diff_path)
     for codemod in find_codemods():
         if not codemod.test_dir.exists():
@@ -85,7 +110,11 @@ def _clean_diffs(aggressive: bool = False):
         for codemod, cases in gather_repos_per_codemod().items():
             for size in [Size.Small, Size.Large]:
                 if len(cases[size, False]) > MAX_CASES[size]:
-                    cases_to_remove = sorted(cases[size, False], key=lambda case: case.repo.priority, reverse=True)[MAX_CASES[size] :]
+                    cases_to_remove = sorted(
+                        cases[size, False],
+                        key=lambda case: case.repo.priority,
+                        reverse=True,
+                    )[MAX_CASES[size] :]
                     for case_to_remove in cases_to_remove:
                         if case_to_remove.test_dir.exists():
                             shutil.rmtree(case_to_remove.test_dir)
@@ -112,7 +141,13 @@ def report_cases() -> None:
         def cases_to_str(cases: list[ClonedRepoTestCase]) -> str:
             return ",".join(case.repo.name for case in cases)
 
-        table.add_row(codemod, cases_to_str(cases[Size.Small, False]), cases_to_str(cases[Size.Large, False]), cases_to_str(cases[Size.Small, True]), cases_to_str(cases[Size.Large, True]))
+        table.add_row(
+            codemod,
+            cases_to_str(cases[Size.Small, False]),
+            cases_to_str(cases[Size.Large, False]),
+            cases_to_str(cases[Size.Small, True]),
+            cases_to_str(cases[Size.Large, True]),
+        )
     console = Console()
     console.print(table)
 
@@ -121,7 +156,9 @@ def report_cases() -> None:
 @click.option("--extra-repos", is_flag=True)
 @click.option("--size", type=click.Choice([e.value for e in Size]))
 @click.option("--language", type=click.Choice([e.value for e in ProgrammingLanguage]))
-def report_repos(extra_repos: bool = False, size: str | None = None, language: str | None = None) -> None:
+def report_repos(
+    extra_repos: bool = False, size: str | None = None, language: str | None = None
+) -> None:
     """Report which repos exist. Can filter by size."""
     all_repos = find_repos(
         extra_repos=extra_repos,
@@ -139,7 +176,15 @@ def report_repos(extra_repos: bool = False, size: str | None = None, language: s
     table.add_column("URL")
 
     for repo_name, repo in all_repos.items():
-        table.add_row(repo.repo_id, repo_name, repo.language.value, repo.size.value, str(repo.extra_repo), str(repo.priority), repo.url)
+        table.add_row(
+            repo.repo_id,
+            repo_name,
+            repo.language.value,
+            repo.size.value,
+            str(repo.extra_repo),
+            str(repo.priority),
+            repo.url,
+        )
 
     console = Console()
     console.print(table)
@@ -150,13 +195,20 @@ def report_repos(extra_repos: bool = False, size: str | None = None, language: s
 @click.option("--extra-repos", is_flag=True)
 @click.option("--token", is_flag=False)
 @click.option("--verified-codemod-repos", is_flag=True)
-def clone_repos(clean_cache: bool = False, extra_repos: bool = False, token: str | None = None, verified_codemod_repos: bool = False) -> None:
+def clone_repos(
+    clean_cache: bool = False,
+    extra_repos: bool = False,
+    token: str | None = None,
+    verified_codemod_repos: bool = False,
+) -> None:
     """Clone all repositories for codemod testing."""
     if extra_repos and not token:
         msg = "Token is required for extra repos"
         raise ValueError(msg)
 
-    repo_dir = BASE_TMP_DIR / ("extra_repos" if extra_repos or verified_codemod_repos else "oss_repos")
+    repo_dir = BASE_TMP_DIR / (
+        "extra_repos" if extra_repos or verified_codemod_repos else "oss_repos"
+    )
     if clean_cache and repo_dir.exists():
         shutil.rmtree(repo_dir)
 
@@ -171,14 +223,18 @@ def clone_repos(clean_cache: bool = False, extra_repos: bool = False, token: str
             executor.submit(repo.to_op, name, token)
 
 
-def _fetch_and_store_codemod(repo_id: str, url: str, cli_api_key: str) -> tuple[str, list[dict]]:
+def _fetch_and_store_codemod(
+    repo_id: str, url: str, cli_api_key: str
+) -> tuple[str, list[dict]]:
     """Helper function to fetch and store codemod data for a single repo"""
     codemod_api = CodemodAPI(api_key=cli_api_key)
     print(f"Fetching codemods for {repo_id}...")
     codemods_data = codemod_api.get_verified_codemods(repo_id=repo_id)
 
     # Store codemod metadata
-    codemod_data_file = VERIFIED_CODEMOD_DATA_DIR / f"{codemods_data.anonymized_name}.json"
+    codemod_data_file = (
+        VERIFIED_CODEMOD_DATA_DIR / f"{codemods_data.anonymized_name}.json"
+    )
     old = None
     if codemod_data_file.exists():
         old = RepoCodemodMetadata.from_json_file(codemod_data_file)
@@ -189,7 +245,9 @@ def _fetch_and_store_codemod(repo_id: str, url: str, cli_api_key: str) -> tuple[
             if old_codemods := old.codemods_by_base_commit.get(commit, []):
                 old_codemods_by_id = {c.codemod_id: c for c in old_codemods}
                 for new_codemod in codemods:
-                    if old_codemod := old_codemods_by_id.get(new_codemod.codemod_id, None):
+                    if old_codemod := old_codemods_by_id.get(
+                        new_codemod.codemod_id, None
+                    ):
                         new_codemod.source = old_codemod.source
 
     print(f"Storing codemods in {codemod_data_file!s}...")
@@ -198,7 +256,10 @@ def _fetch_and_store_codemod(repo_id: str, url: str, cli_api_key: str) -> tuple[
         f.flush()
 
     # Return repo commit data
-    commits_data = [{"commit": commit, "language": codemods_data.language, "url": url} for commit in codemods_data.codemods_by_base_commit.keys()]
+    commits_data = [
+        {"commit": commit, "language": codemods_data.language, "url": url}
+        for commit in codemods_data.codemods_by_base_commit.keys()
+    ]
     return codemods_data.repo_name, commits_data
 
 
@@ -212,7 +273,9 @@ def fetch_verified_codemods(cli_api_key: str):
     # Fetch codemods in parallel
     with ProcessPoolExecutor() as executor:
         repos = filter_repos(REPO_ID_TO_URL)
-        for result in executor.map(_fetch_and_store_codemod, repos.keys(), repos.values(), repeat(cli_api_key)):
+        for result in executor.map(
+            _fetch_and_store_codemod, repos.keys(), repos.values(), repeat(cli_api_key)
+        ):
             repo_name, commits_data = result
             if commits_data:
                 repos_to_commits[repo_name] = commits_data

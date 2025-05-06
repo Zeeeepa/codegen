@@ -1,5 +1,9 @@
 """Demo implementation of an agent with Codegen tools."""
 
+from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph.graph import CompiledGraph
+
 from codegen import Codebase
 from codegen.extensions.langchain.graph import create_react_agent
 from codegen.extensions.langchain.llm import LLM
@@ -17,9 +21,6 @@ from codegen.extensions.langchain.tools import (
     SemanticEditTool,
     ViewFileTool,
 )
-from langchain_core.messages import SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph.graph import CompiledGraph
 
 
 def create_codebase_agent(
@@ -68,7 +69,13 @@ def create_codebase_agent(
 
     memory = MemorySaver() if memory else None
 
-    return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug)
+    return create_react_agent(
+        model=llm,
+        tools=tools,
+        system_message=system_message,
+        checkpointer=memory,
+        debug=debug,
+    )
 
 
 if __name__ == "__main__":

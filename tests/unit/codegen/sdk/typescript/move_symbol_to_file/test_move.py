@@ -28,7 +28,11 @@ class TestBasicMoveToFile:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
             target_function = source_file.get_function("targetFunction")
@@ -57,13 +61,19 @@ class TestBasicMoveToFile:
             "usage.ts": usage_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file("destination.ts")
             usage_file = codebase.get_file("usage.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=False, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=False, strategy="update_all_imports"
+            )
 
         assert "targetFunction" not in source_file.content
         assert "export function targetFunction" in dest_file.content
@@ -84,12 +94,18 @@ class TestBasicMoveToFile:
             "destination.ts": "",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file("destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=False, strategy="add_back_edge")
+            target_function.move_to_file(
+                dest_file, include_dependencies=False, strategy="add_back_edge"
+            )
 
         assert "import { targetFunction } from 'destination'" in source_file.content
         assert "export { targetFunction }" in source_file.content
@@ -111,12 +127,18 @@ class TestBasicMoveToFile:
             "destination.ts": "",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file("destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import { helperUtil } from './utils'" not in source_file.content
         assert "import { helperUtil } from './utils'" in dest_file.content
@@ -138,12 +160,18 @@ class TestBasicMoveToFile:
             "destination.ts": "",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file("destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="add_back_edge")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="add_back_edge"
+            )
 
         assert "import { targetFunction } from 'destination'" in source_file.content
         assert "import { helperUtil } from './utils'" not in source_file.content
@@ -171,12 +199,21 @@ class TestMoveToFileImports:
             "destination.ts": "",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file("destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports", cleanup_unused_imports=True)
+            target_function.move_to_file(
+                dest_file,
+                include_dependencies=True,
+                strategy="update_all_imports",
+                cleanup_unused_imports=True,
+            )
 
         # Unused import should be removed
         assert "import { otherUtil } from './other'" not in source_file.content
@@ -200,12 +237,21 @@ class TestMoveToFileImports:
             "destination.ts": "",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file("destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports", cleanup_unused_imports=False)
+            target_function.move_to_file(
+                dest_file,
+                include_dependencies=True,
+                strategy="update_all_imports",
+                cleanup_unused_imports=False,
+            )
 
         # All imports should be kept in source
         assert "import { helperUtil } from './utils'" in source_file.content
@@ -231,12 +277,21 @@ class TestMoveToFileImports:
         }
 
         for remove_unused in [True, False]:
-            with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+            with get_codebase_session(
+                tmpdir=tmpdir,
+                programming_language=ProgrammingLanguage.TYPESCRIPT,
+                files=files,
+            ) as codebase:
                 source_file = codebase.get_file("source.ts")
                 dest_file = codebase.get_file("destination.ts")
 
                 target_function = source_file.get_function("targetFunction")
-                target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports", cleanup_unused_imports=remove_unused)
+                target_function.move_to_file(
+                    dest_file,
+                    include_dependencies=True,
+                    strategy="update_all_imports",
+                    cleanup_unused_imports=remove_unused,
+                )
 
         # Used import should always move to destination
         assert "import { helperUtil } from './utils'" in dest_file.content
@@ -268,12 +323,18 @@ class TestMoveToFileImportVariations:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import * as utils from './utils'" not in source_file.content
         assert "import * as unused from './unused'" not in source_file.content
@@ -302,12 +363,18 @@ class TestMoveToFileImportVariations:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Side effect imports should remain in source
         assert "import './styles.css';" in source_file.content
@@ -351,13 +418,19 @@ class TestMoveToFileImportVariations:
             "helper-b.ts": helper_b_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
             helper_b_file = codebase.get_file("helper-b.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check circular dependency handling
         assert "import { helperB } from './helper-b'" not in source_file.content
@@ -396,18 +469,29 @@ class TestMoveToFileImportVariations:
             "reexport-b.ts": reexport_b_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
             reexport_a_file = codebase.get_file("reexport-a.ts")
             reexport_b_file = codebase.get_file("reexport-b.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check re-export updates
-        assert "export { targetFunction } from './destination'" in reexport_a_file.content
-        assert "export { targetFunction as renamedFunction } from './destination'" in reexport_b_file.content
+        assert (
+            "export { targetFunction } from './destination'" in reexport_a_file.content
+        )
+        assert (
+            "export { targetFunction as renamedFunction } from './destination'"
+            in reexport_b_file.content
+        )
 
 
 class TestMoveToFileDecoratorsAndComments:
@@ -436,12 +520,18 @@ class TestMoveToFileDecoratorsAndComments:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "@injectable()" not in source_file.content
         assert "@validate()" not in source_file.content
@@ -475,12 +565,18 @@ class TestMoveToFileDecoratorsAndComments:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "@param {string}" not in source_file.content
         assert "@returns {SomeType}" not in source_file.content
@@ -511,12 +607,18 @@ class TestMoveToFileDynamicImports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import('./helper')" not in source_file.content
         assert "import('./utils')" not in source_file.content
@@ -545,12 +647,18 @@ class TestMoveToFileDynamicImports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import { baseHelper }" not in source_file.content
         assert "import('./dynamic')" not in source_file.content
@@ -583,12 +691,18 @@ class TestMoveToFileNamedImports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import { foo, bar as alias" in dest_file.content
         assert "unused" not in dest_file.content
@@ -616,12 +730,18 @@ class TestMoveToFileNamedImports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import defaultHelper, { namedHelper }" in dest_file.content
         assert "unusedHelper" not in dest_file.content
@@ -655,12 +775,18 @@ class TestMoveToFileTypeImports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check type imports are moved correctly
         assert "import type { Config }" in dest_file.content
@@ -693,12 +819,18 @@ class TestMoveToFileTypeImports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check both type and value imports are handled
         assert "import type { Type1 }" in dest_file.content
@@ -741,13 +873,19 @@ class TestMoveToFileUsageUpdates:
             "usage.ts": usage_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
             usage_file = codebase.get_file("usage.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check usage file updates
         assert "import { targetFunction } from './destination'" in usage_file.content
@@ -807,12 +945,18 @@ class TestMoveToFileComplexScenarios:
             "types.ts": types_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check imports in destination file
         assert "import { helperA } from './helper-a'" in dest_file.content
@@ -848,12 +992,18 @@ class TestMoveToFileEdgeCases:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check self-reference is preserved
         assert "targetFunction(n - 1)" in dest_file.content
@@ -898,12 +1048,18 @@ class TestMoveToFileEdgeCases:
             "namespace2.ts": namespace2_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check namespace imports are handled correctly
         assert "import * as ns1 from './namespace1'" in dest_file.content
@@ -942,15 +1098,25 @@ class TestMoveToFileErrorConditions:
         dest_content = """
         """
 
-        files = {source_filename: source_content, dest_filename: dest_content, "helper-b.ts": helper_b_content}
+        files = {
+            source_filename: source_content,
+            dest_filename: dest_content,
+            "helper-b.ts": helper_b_content,
+        }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
             helper_b_file = codebase.get_file("helper-b.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check circular dependency is resolved
         assert "import { targetFunction } from './destination'" in helper_b_file.content
@@ -990,12 +1156,18 @@ class TestMoveToFileJSXScenarios:
 
         files = {source_filename: source_content, dest_filename: dest_content}
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_component = source_file.get_function("TargetComponent")
-            target_component.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_component.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check JSX-specific imports and dependencies
         assert "import React from 'react'" in dest_file.content
@@ -1036,12 +1208,18 @@ class TestMoveToFileModuleAugmentation:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check module augmentation is handled
         assert "declare module 'external-module'" in dest_file.content
@@ -1087,9 +1265,19 @@ class TestMoveToFileReExportChains:
         dest_content = """
         """
 
-        files = {source_filename: source_content, dest_filename: dest_content, "barrel-a.ts": barrel_a_content, "barrel-b.ts": barrel_b_content, "usage.ts": usage_content}
+        files = {
+            source_filename: source_content,
+            dest_filename: dest_content,
+            "barrel-a.ts": barrel_a_content,
+            "barrel-b.ts": barrel_b_content,
+            "usage.ts": usage_content,
+        }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
             barrel_a_file = codebase.get_file("barrel-a.ts")
@@ -1097,7 +1285,9 @@ class TestMoveToFileReExportChains:
             usage_file = codebase.get_file("usage.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check re-export chain updates
         assert "export { targetFunction } from './destination'" in barrel_a_file.content
@@ -1140,12 +1330,18 @@ class TestMoveToFileAmbientDeclarations:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check ambient declarations are moved
         assert "declare module 'config'" in dest_file.content
@@ -1182,12 +1378,18 @@ class TestMoveToFileGenerics:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         assert "import { Validator, Serializable }" not in source_file.content
         assert "import { Validator, Serializable } from './types'" in dest_file.content
@@ -1223,12 +1425,18 @@ class TestMoveToFileDecoratorFactories:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check decorator factory and its dependencies are moved
         assert "import { createDecorator }" in dest_file.content
@@ -1266,19 +1474,31 @@ class TestMoveToFileDefaultExports:
         dest_content = """
         """
 
-        files = {source_filename: source_content, dest_filename: dest_content, "usage.ts": usage_content}
+        files = {
+            source_filename: source_content,
+            dest_filename: dest_content,
+            "usage.ts": usage_content,
+        }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
             usage_file = codebase.get_file("usage.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Check default export handling
         assert "import targetFunction from './destination'" in usage_file.content
-        assert "import { default as renamed } from './destination'" in usage_file.content
+        assert (
+            "import { default as renamed } from './destination'" in usage_file.content
+        )
 
     @pytest.mark.skip(reason="This test or related implementation needs work.")
     def test_move_with_multiline_imports(self, tmpdir) -> None:
@@ -1310,12 +1530,18 @@ class TestMoveToFileDefaultExports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify only used imports were moved
         assert "unusedUtil" not in source_file.content
@@ -1350,12 +1576,18 @@ class TestMoveToFileDefaultExports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify only used aliased imports were moved
         assert "helper" not in source_file.content
@@ -1390,12 +1622,21 @@ class TestMoveToFileDefaultExports:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="add_back_edge", cleanup_unused_imports=True)
+            target_function.move_to_file(
+                dest_file,
+                include_dependencies=True,
+                strategy="add_back_edge",
+                cleanup_unused_imports=True,
+            )
 
         # Source file should have import from new location but keep originals
         assert "import { targetFunction } from './destination'" in source_file.content
@@ -1432,12 +1673,21 @@ class TestMoveToFileStrategies:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports", cleanup_unused_imports=True)
+            target_function.move_to_file(
+                dest_file,
+                include_dependencies=True,
+                strategy="update_all_imports",
+                cleanup_unused_imports=True,
+            )
 
         assert "import { helperUtil } from './utils'" not in source_file.content
         assert "import { otherUtil } from './other'" not in source_file.content
@@ -1467,12 +1717,21 @@ class TestMoveToFileStrategies:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file(source_filename)
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="add_back_edge", cleanup_unused_imports=True)
+            target_function.move_to_file(
+                dest_file,
+                include_dependencies=True,
+                strategy="add_back_edge",
+                cleanup_unused_imports=True,
+            )
 
         # Source file should have import from new location
         assert "import { targetFunction } from './destination'" in source_file.content
@@ -1502,12 +1761,18 @@ class TestMoveToFileStrategies:
             dest_filename: dest_content,
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("source.ts")
             dest_file = codebase.get_file(dest_filename)
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify absolute imports are preserved
         assert "import { helperUtil } from '@/utils/helpers'" in dest_file.content
@@ -1536,17 +1801,26 @@ class TestMoveToFileStrategies:
             "src/features/auth/components/local/helper.ts": "export const helperC = () => 'test';",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("src/features/auth/components/source.ts")
             dest_file = codebase.get_file("src/features/user/services/destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify relative paths are correctly updated based on new file location
         assert "import { helperA } from '../../utils/helpers'" in dest_file.content
         assert "import { helperB } from '../../../../shared/utils'" in dest_file.content
-        assert "import { helperC } from '../../auth/components/local/helper'" in dest_file.content
+        assert (
+            "import { helperC } from '../../auth/components/local/helper'"
+            in dest_file.content
+        )
 
     @pytest.mark.skip(reason="This test or related implementation needs work.")
     def test_move_with_mixed_import_styles(self, tmpdir) -> None:
@@ -1580,19 +1854,33 @@ class TestMoveToFileStrategies:
             "src/features/dynamic-helper.ts": "export default () => 'test';",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("src/features/source.ts")
             dest_file = codebase.get_file("src/services/destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify different import styles are handled correctly
         assert "import defaultHelper from '@/helpers/default'" in dest_file.content
         assert "import * as utils from '~/utils'" in dest_file.content
-        assert "import { namedHelper as aliasedHelper } from '../shared/helpers'" in dest_file.content
-        assert "import type { HelperType } from '../features/types'" in dest_file.content
-        assert "const dynamicHelper = await import('../features/dynamic-helper')" in dest_file.content
+        assert (
+            "import { namedHelper as aliasedHelper } from '../shared/helpers'"
+            in dest_file.content
+        )
+        assert (
+            "import type { HelperType } from '../features/types'" in dest_file.content
+        )
+        assert (
+            "const dynamicHelper = await import('../features/dynamic-helper')"
+            in dest_file.content
+        )
 
     @pytest.mark.skip(reason="This test or related implementation needs work.")
     def test_move_between_monorepo_packages(self, tmpdir) -> None:
@@ -1618,17 +1906,26 @@ class TestMoveToFileStrategies:
             "packages/package-b/package.json": '{"name": "@myorg/package-b"}',
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("packages/package-a/src/source.ts")
             dest_file = codebase.get_file("packages/package-b/src/destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify package imports are handled correctly
         assert "import { sharedUtil } from '@myorg/shared'" in dest_file.content
         assert "import { helperUtil } from '@myorg/utils'" in dest_file.content
-        assert "import { localUtil } from '@myorg/package-a/src/utils'" in dest_file.content
+        assert (
+            "import { localUtil } from '@myorg/package-a/src/utils'"
+            in dest_file.content
+        )
 
     @pytest.mark.skip(reason="This test or related implementation needs work.")
     def test_move_between_different_depths(self, tmpdir) -> None:
@@ -1652,23 +1949,38 @@ class TestMoveToFileStrategies:
             "lib/services/destination.ts": "",
         }
 
-        with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files=files) as codebase:
+        with get_codebase_session(
+            tmpdir=tmpdir,
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+            files=files,
+        ) as codebase:
             source_file = codebase.get_file("src/features/auth/source.ts")
             dest_file = codebase.get_file("lib/services/destination.ts")
 
             target_function = source_file.get_function("targetFunction")
-            target_function.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
+            target_function.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )
 
         # Verify imports are updated for new directory depth
-        assert "import { helperA } from '../../src/features/auth/helper'" in dest_file.content
-        assert "import { helperB } from '../../src/features/utils/helper'" in dest_file.content
+        assert (
+            "import { helperA } from '../../src/features/auth/helper'"
+            in dest_file.content
+        )
+        assert (
+            "import { helperB } from '../../src/features/utils/helper'"
+            in dest_file.content
+        )
         assert "import { helperC } from '../../src/shared/helper'" in dest_file.content
 
 
 class TestMoveToFileFileSystem:
     """Test moving functions with different file system considerations."""
 
-    @pytest.mark.skipif(condition=platform.system() != "Linux", reason="Only works on case-sensitive file systems")
+    @pytest.mark.skipif(
+        condition=platform.system() != "Linux",
+        reason="Only works on case-sensitive file systems",
+    )
     def test_function_move_to_file_lower_upper(self, tmpdir) -> None:
         # language=typescript
         content1 = """
@@ -1680,7 +1992,11 @@ export function bar(): number {
     return foo() + 1;
 }
         """
-        with get_codebase_session(tmpdir, files={"file1.ts": content1}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+        with get_codebase_session(
+            tmpdir,
+            files={"file1.ts": content1},
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+        ) as codebase:
             file1 = codebase.get_file("file1.ts")
             foo = file1.get_function("foo")
             bar = file1.get_function("bar")
@@ -1703,9 +2019,15 @@ export function foo(): number {
 }
     """.strip()
         )
-        assert file1.content.strip() == "export { bar } from 'File1'\nexport { foo } from 'File1'"
+        assert (
+            file1.content.strip()
+            == "export { bar } from 'File1'\nexport { foo } from 'File1'"
+        )
 
-    @pytest.mark.skipif(condition=platform.system() != "Linux", reason="Only works on case-sensitive file systems")
+    @pytest.mark.skipif(
+        condition=platform.system() != "Linux",
+        reason="Only works on case-sensitive file systems",
+    )
     def test_function_move_to_file_lower_upper_no_deps(self, tmpdir) -> None:
         # language=typescript
         content1 = """
@@ -1717,7 +2039,11 @@ export function bar(): number {
     return foo() + 1;
 }
         """
-        with get_codebase_session(tmpdir, files={"file1.ts": content1}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+        with get_codebase_session(
+            tmpdir,
+            files={"file1.ts": content1},
+            programming_language=ProgrammingLanguage.TYPESCRIPT,
+        ) as codebase:
             file1 = codebase.get_file("file1.ts")
             foo = file1.get_function("foo")
             bar = file1.get_function("bar")
@@ -1725,7 +2051,9 @@ export function bar(): number {
             assert foo in bar.dependencies
 
             file2 = codebase.create_file("File1.ts", "")
-            foo.move_to_file(file2, include_dependencies=False, strategy="add_back_edge")
+            foo.move_to_file(
+                file2, include_dependencies=False, strategy="add_back_edge"
+            )
 
         # language=typescript
         assert (

@@ -8,7 +8,11 @@ from codegen.sdk.python.statements.with_statement import WithStatement
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 py_feature_flag_def = """
 ROLLED_OUT_FLAG_TO_DELETE = False
@@ -88,11 +92,25 @@ function main(): void {
     console.log("Does a thing when feature is enabled");
 }
 """
-py_files = [SkillTestCasePyFile(input=py_input, output=py_output), SkillTestCasePyFile(input=py_feature_flag_def, output=py_feature_flag_def, filepath="dir/enums.py")]
-ts_files = [SkillTestCaseTSFile(input=ts_input, output=ts_output), SkillTestCaseTSFile(input=ts_feature_flag_def, output=ts_feature_flag_def, filepath="dir/enums.ts")]
+py_files = [
+    SkillTestCasePyFile(input=py_input, output=py_output),
+    SkillTestCasePyFile(
+        input=py_feature_flag_def, output=py_feature_flag_def, filepath="dir/enums.py"
+    ),
+]
+ts_files = [
+    SkillTestCaseTSFile(input=ts_input, output=ts_output),
+    SkillTestCaseTSFile(
+        input=ts_feature_flag_def, output=ts_feature_flag_def, filepath="dir/enums.ts"
+    ),
+]
 
 
-@skill(eval_skill=False, prompt="Delete a fully rolled out feature flag and simplify related code", uid="5f3fe71f-a31f-4c0d-83f8-0f6c49a1c3a8")
+@skill(
+    eval_skill=False,
+    prompt="Delete a fully rolled out feature flag and simplify related code",
+    uid="5f3fe71f-a31f-4c0d-83f8-0f6c49a1c3a8",
+)
 class DeleteRolledOutFeatureFlagSkill(Skill, ABC):
     """Locates a fully rolled out feature flag that has changed from a default value of False to True,
     and deletes all uses of the flag assuming the flag value is True. This skill simplifies
@@ -111,10 +129,19 @@ class DeleteRolledOutFeatureFlagSkill(Skill, ABC):
             if isinstance(usage_symbol, Function):
                 # Check statements within the function
                 for statement in usage_symbol.code_block.get_statements():
-                    if isinstance(statement, IfBlockStatement) and feature_flag_name in statement.condition.source:
+                    if (
+                        isinstance(statement, IfBlockStatement)
+                        and feature_flag_name in statement.condition.source
+                    ):
                         # Simplify the condition of the if statement
-                        statement.reduce_condition(bool_condition=feature_flag_name == statement.condition.source)
-                    elif isinstance(statement, WithStatement) and feature_flag_name in statement.clause.source:
+                        statement.reduce_condition(
+                            bool_condition=feature_flag_name
+                            == statement.condition.source
+                        )
+                    elif (
+                        isinstance(statement, WithStatement)
+                        and feature_flag_name in statement.clause.source
+                    ):
                         # Unwrap the with statement block
                         statement.code_block.unwrap()
             if isinstance(usage_symbol, Import):
@@ -122,7 +149,9 @@ class DeleteRolledOutFeatureFlagSkill(Skill, ABC):
                 usage_symbol.remove()
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=ts_files)], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase(files=ts_files)], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def typescript_skill_func(codebase: TSCodebaseType):
         """Implements the feature flag deletion for TypeScript codebases."""
         feature_flag = codebase.get_symbol("ROLLED_OUT_FLAG_TO_DELETE")
@@ -133,9 +162,15 @@ class DeleteRolledOutFeatureFlagSkill(Skill, ABC):
             if isinstance(usage_symbol, Function):
                 # Check statements within the function
                 for statement in usage_symbol.code_block.get_statements():
-                    if isinstance(statement, IfBlockStatement) and feature_flag_name in statement.condition.source:
+                    if (
+                        isinstance(statement, IfBlockStatement)
+                        and feature_flag_name in statement.condition.source
+                    ):
                         # Simplify the condition of the if statement
-                        statement.reduce_condition(bool_condition=feature_flag_name == statement.condition.source)
+                        statement.reduce_condition(
+                            bool_condition=feature_flag_name
+                            == statement.condition.source
+                        )
             elif isinstance(usage_symbol, Import):
                 # Remove the import of the feature flag
                 usage_symbol.remove()

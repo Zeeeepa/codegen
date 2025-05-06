@@ -47,13 +47,17 @@ class Foo:
     def foo(fun):
         return fun
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"src.py": src_content, "dest.py": dest_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"src.py": src_content, "dest.py": dest_content}
+    ) as codebase:
         src_file = codebase.get_file("src.py")
         dest_file = codebase.get_file("dest.py")
 
         foo_class = dest_file.get_class("Foo")
         bar_class = src_file.get_class("Bar")
-        foo_class.add_attribute(bar_class.get_attribute("bar"), include_dependencies=True)
+        foo_class.add_attribute(
+            bar_class.get_attribute("bar"), include_dependencies=True
+        )
 
     # language=python
     assert (

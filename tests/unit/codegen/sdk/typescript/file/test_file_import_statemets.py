@@ -16,7 +16,11 @@ def test_file_import_statements_includes_require_statements(tmpdir) -> None:
 
     module.exports = router;
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file: content},
+    ) as codebase:
         file = codebase.get_file(file)
         assert len(file.import_statements) == 4
         assert len(file.imports) == 5
@@ -30,7 +34,11 @@ def test_file_import_statements_and_imports(tmpdir) -> None:
     content = """
 import { Type1, Type2, Type3 } from "package";
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file: content},
+    ) as codebase:
         file = codebase.get_file(file)
         assert file.has_import("Type2")
         assert [x.name for x in file.imports] == ["Type1", "Type2", "Type3"]
@@ -46,7 +54,11 @@ def test_file_import_statements_require_statements_binary_expressions(tmpdir) ->
     content = """
     const pkg = fallback || require('package');
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file: content},
+    ) as codebase:
         file = codebase.get_file(file)
         assert len(file.import_statements) == 1
         assert len(file.imports) == 1
@@ -61,7 +73,11 @@ def test_file_import_statements_require_statements_ternary_expressions(tmpdir) -
     content = """
     const pkg = condition ? require('package') : fallback;
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file: content},
+    ) as codebase:
         file = codebase.get_file(file)
         assert len(file.import_statements) == 1
         assert len(file.imports) == 1

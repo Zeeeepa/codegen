@@ -11,7 +11,11 @@ def test_set_import_module_updates_source(tmpdir) -> None:
     import { d } from 'b/c';  // test two
     import { h as g, j as i } from 'd/f';  // test three
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         # =====[ Rename a ]=====
@@ -47,29 +51,45 @@ def test_set_import_module_quote_handling(tmpdir) -> None:
     import alreadyQuoted from 'already/quoted/path';  // should preserve quotes
     import doubleQuoted from "double/quoted/path";  // should convert to single quotes
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         # Test 1: Normal path should use single quotes (TypeScript standard)
         file.get_import("normal").set_import_module("new/standard/path")
         codebase.ctx.commit_transactions()
-        assert "import normal from 'new/standard/path';  // should convert to single quotes" in file.content
+        assert (
+            "import normal from 'new/standard/path';  // should convert to single quotes"
+            in file.content
+        )
         assert file.get_import("normal").module.source == "'new/standard/path'"
 
         # Test 2: Path with single quote should use double quotes
         file.get_import("singleQuote").set_import_module("new/don't/break/path")
         codebase.ctx.commit_transactions()
-        assert 'import singleQuote from "new/don\'t/break/path";  // should use double quotes' in file.content
+        assert (
+            'import singleQuote from "new/don\'t/break/path";  // should use double quotes'
+            in file.content
+        )
         assert file.get_import("singleQuote").module.source == '"new/don\'t/break/path"'
 
         # Test 3: Already quoted path (single quotes) should work
         file.get_import("alreadyQuoted").set_import_module("'new/quoted/path'")
         codebase.ctx.commit_transactions()
-        assert "import alreadyQuoted from 'new/quoted/path';  // should preserve quotes" in file.content
+        assert (
+            "import alreadyQuoted from 'new/quoted/path';  // should preserve quotes"
+            in file.content
+        )
         assert file.get_import("alreadyQuoted").module.source == "'new/quoted/path'"
 
         # Test 4: Already quoted path (double quotes) should work
         file.get_import("doubleQuoted").set_import_module('"another/quoted/path"')
         codebase.ctx.commit_transactions()
-        assert '    import doubleQuoted from "another/quoted/path";  // should convert to single quotes' in file.content
+        assert (
+            '    import doubleQuoted from "another/quoted/path";  // should convert to single quotes'
+            in file.content
+        )
         assert file.get_import("doubleQuoted").module.source == '"another/quoted/path"'

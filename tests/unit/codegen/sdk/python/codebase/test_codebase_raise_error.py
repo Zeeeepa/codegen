@@ -12,7 +12,11 @@ def hello():
     pass
     """
     # Create a Python codebase with a simple Python file
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         # Verify that accessing exports raises NotImplementedError
         with pytest.raises(NotImplementedError):
             _ = codebase.exports

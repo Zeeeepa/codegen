@@ -12,7 +12,11 @@ function foo(): number {
     return x + y;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         code_block.indent(-1)
@@ -39,7 +43,11 @@ function foo(): number {
     return x + y;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         code_block.indent(-5)
@@ -66,7 +74,11 @@ function foo(): number {
     return x + y;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         code_block.indent(1)
@@ -93,7 +105,11 @@ function foo(): number {
     return x + y;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         code_block.indent(5)
@@ -120,7 +136,11 @@ function foo(): number {
     return x + y;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         code_block.indent(0)
@@ -160,7 +180,11 @@ function foo(): number {
     return 0;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         code_block.indent(-1)
@@ -219,7 +243,11 @@ function foo(a: boolean, b: any, c: any, d: boolean): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         code_block = file.get_function("foo").code_block
         if_blocks = code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)

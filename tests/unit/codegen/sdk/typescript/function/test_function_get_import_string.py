@@ -9,7 +9,11 @@ function foo() {
     return 1;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"src.ts": src_file}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"src.ts": src_file},
+    ) as codebase:
         file = codebase.get_file("src.ts")
         foo_function = file.get_symbol("foo")
         import_string = foo_function.get_import_string(alias="bar")

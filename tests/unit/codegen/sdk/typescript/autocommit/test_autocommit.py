@@ -23,7 +23,11 @@ function bar(): int {
 }"""
     file3_name = "file3.ts"
     content3 = ""
-    with get_codebase_session(tmpdir=tmpdir, files={file1_name: content1, file2_name: content2, file3_name: content3}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={file1_name: content1, file2_name: content2, file3_name: content3},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file(file1_name)
         file2 = codebase.get_file(file2_name)
         file3 = codebase.get_file(file3_name)
@@ -31,7 +35,9 @@ function bar(): int {
         external_dep.rename("baz")
         bar = file2.get_function("bar")
         bar.rename("bar2")
-        bar.move_to_file(file3, strategy="update_all_imports", include_dependencies=True)
+        bar.move_to_file(
+            file3, strategy="update_all_imports", include_dependencies=True
+        )
 
     # language=typescript
     assert (

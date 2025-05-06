@@ -1,5 +1,6 @@
-import codegen
 import networkx as nx
+
+import codegen
 from codegen import Codebase
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.detached_symbols.function_call import FunctionCall
@@ -31,7 +32,13 @@ def generate_edge_meta(call: FunctionCall) -> dict:
     Returns:
         dict: Metadata including name, file path, and location information
     """
-    return {"name": call.name, "file_path": call.filepath, "start_point": call.start_point, "end_point": call.end_point, "symbol_name": "FunctionCall"}
+    return {
+        "name": call.name,
+        "file_path": call.filepath,
+        "start_point": call.start_point,
+        "end_point": call.end_point,
+        "symbol_name": "FunctionCall",
+    }
 
 
 def create_downstream_call_trace(src_func: Function, depth: int = 0):
@@ -75,10 +82,14 @@ def create_downstream_call_trace(src_func: Function, depth: int = 0):
         if isinstance(func, (Class, ExternalModule)):
             func_name = func.name
         elif isinstance(func, Function):
-            func_name = f"{func.parent_class.name}.{func.name}" if func.is_method else func.name
+            func_name = (
+                f"{func.parent_class.name}.{func.name}" if func.is_method else func.name
+            )
 
         # Add node and edge to the graph with appropriate metadata
-        G.add_node(func, name=func_name, color=COLOR_PALETTE.get(func.__class__.__name__))
+        G.add_node(
+            func, name=func_name, color=COLOR_PALETTE.get(func.__class__.__name__)
+        )
         G.add_edge(src_func, func, **generate_edge_meta(call))
 
         # Recursively process called function if it's a regular function
@@ -105,7 +116,11 @@ def run(codebase: Codebase):
     create_downstream_call_trace(target_method)
 
     # Add the root node (target method) to the graph
-    G.add_node(target_method, name=f"{target_class.name}.{target_method.name}", color=COLOR_PALETTE.get("StartFunction"))
+    G.add_node(
+        target_method,
+        name=f"{target_class.name}.{target_method.name}",
+        color=COLOR_PALETTE.get("StartFunction"),
+    )
 
     print(G)
     print("Use codegen.sh to visualize the graph!")
@@ -113,8 +128,14 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Initializing codebase...")
-    codebase = Codebase.from_repo("codegen-oss/posthog", commit="b174f2221ea4ae50e715eb6a7e70e9a2b0760800", language="python")
-    print(f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions.")
+    codebase = Codebase.from_repo(
+        "codegen-oss/posthog",
+        commit="b174f2221ea4ae50e715eb6a7e70e9a2b0760800",
+        language="python",
+    )
+    print(
+        f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions."
+    )
     print("Creating graph...")
 
     run(codebase)

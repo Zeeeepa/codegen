@@ -11,7 +11,11 @@ function parent() {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         parent = codebase.get_symbol("parent")
         assert len(parent.nested_functions) == 1
         assert parent.nested_functions[0].name == "a"
@@ -39,10 +43,21 @@ function parent() {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         parent = codebase.get_symbol("parent")
         assert len(parent.nested_functions) == 6
-        assert {f.name for f in parent.nested_functions} == {"b", "c_1", "c_2", "c_3", "c_4", "d"}
+        assert {f.name for f in parent.nested_functions} == {
+            "b",
+            "c_1",
+            "c_2",
+            "c_3",
+            "c_4",
+            "d",
+        }
 
 
 def test_usages(tmpdir) -> None:
@@ -60,7 +75,11 @@ function parent() {
     b();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         parent = codebase.get_symbol("parent")
         a = codebase.get_symbol("a")
         assert len(a.symbol_usages) == 1
@@ -86,7 +105,11 @@ function parent() {
     b();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         parent = codebase.get_symbol("parent")
         a = codebase.get_symbol("a")
         assert len(a.dependencies) == 0

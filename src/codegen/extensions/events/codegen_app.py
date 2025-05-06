@@ -23,7 +23,13 @@ class CodegenApp:
     linear: Linear
     slack: Slack
 
-    def __init__(self, name: str, repo: Optional[str] = None, tmp_dir: str = "/tmp/codegen", commit: str | None = "latest"):
+    def __init__(
+        self,
+        name: str,
+        repo: Optional[str] = None,
+        tmp_dir: str = "/tmp/codegen",
+        commit: str | None = "latest",
+    ):
         self.name = name
         self.tmp_dir = tmp_dir
 
@@ -56,11 +62,22 @@ class CodegenApp:
         try:
             logger.info(f"[CODEBASE] Parsing repository: {repo_name}")
             config = CodebaseConfig(sync_enabled=True)
-            secrets = SecretsConfig(github_token=os.environ.get("GITHUB_ACCESS_TOKEN"), linear_api_key=os.environ.get("LINEAR_ACCESS_TOKEN"))
-            self.codebase = Codebase.from_repo(repo_full_name=repo_name, tmp_dir=self.tmp_dir, commit=commit, config=config, secrets=secrets)
+            secrets = SecretsConfig(
+                github_token=os.environ.get("GITHUB_ACCESS_TOKEN"),
+                linear_api_key=os.environ.get("LINEAR_ACCESS_TOKEN"),
+            )
+            self.codebase = Codebase.from_repo(
+                repo_full_name=repo_name,
+                tmp_dir=self.tmp_dir,
+                commit=commit,
+                config=config,
+                secrets=secrets,
+            )
             logger.info(f"[CODEBASE] Successfully parsed and cached: {repo_name}")
         except Exception as e:
-            logger.exception(f"[CODEBASE] Failed to parse repository {repo_name}: {e!s}")
+            logger.exception(
+                f"[CODEBASE] Failed to parse repository {repo_name}: {e!s}"
+            )
             raise
 
     def get_codebase(self) -> Codebase:
@@ -88,7 +105,9 @@ class CodegenApp:
         """
         self._parse_repo(repo_name)
 
-    async def simulate_event(self, provider: str, event_type: str, payload: dict) -> Any:
+    async def simulate_event(
+        self, provider: str, event_type: str, payload: dict
+    ) -> Any:
         """Simulate an event without running the server.
 
         Args:
@@ -99,7 +118,11 @@ class CodegenApp:
         Returns:
             The handler's response
         """
-        provider_map = {"slack": self.slack, "github": self.github, "linear": self.linear}
+        provider_map = {
+            "slack": self.slack,
+            "github": self.github,
+            "linear": self.linear,
+        }
 
         if provider not in provider_map:
             msg = f"Unknown provider: {provider}. Must be one of {list(provider_map.keys())}"

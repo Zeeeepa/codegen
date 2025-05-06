@@ -1,4 +1,7 @@
-from codegen.sdk.codebase.factory.get_session import get_codebase_graph_session, get_codebase_session
+from codegen.sdk.codebase.factory.get_session import (
+    get_codebase_graph_session,
+    get_codebase_session,
+)
 from codegen.sdk.core.function import Function
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
@@ -20,7 +23,11 @@ function foo(
 function bar(...args, ...kwargs) {}
 """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         #
         # Function foo
         #
@@ -95,7 +102,11 @@ const Parent = ({ renderChild = Child }) => {
     return null;
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         child = file.get_symbol("Child")
         assert child is not None
@@ -145,7 +156,11 @@ export function AsyncComponent<TData>({
   }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         component = file.get_symbol("DefaultLoading")
         assert component is not None

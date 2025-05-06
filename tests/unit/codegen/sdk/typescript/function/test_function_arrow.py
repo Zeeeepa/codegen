@@ -19,7 +19,11 @@ const arrowFunc = () => {
     // Body
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_symbol("arrowFunc")
         assert function_symbol.is_arrow
         assert "() => {" in function_symbol.source
@@ -47,7 +51,11 @@ const c = (x, y) => {
 	return;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         file.get_function("a").arrow_to_named()
         file.get_function("b").arrow_to_named()
@@ -93,7 +101,11 @@ const c = (x, y) => {
 	return;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         file.get_function("a").arrow_to_named("a_new")
         file.get_function("b").arrow_to_named("b_new")
@@ -139,7 +151,11 @@ const c = async (x, y) => {
     return;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         file.get_function("a").arrow_to_named()
         file.get_function("b").arrow_to_named()
@@ -175,7 +191,11 @@ export const a = x => someFunction(MyObject)
 export const a = () => { someFunction(MyObject) }
 export const a = x => { someFunction(MyObject) }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         for function in file.functions:
             function.arrow_to_named()
@@ -198,7 +218,11 @@ def test_function_arrow_to_named_keeps_return_type(tmpdir) -> None:
 const a = (): number => 1
 const b = (x: number): number => x
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         for function in file.functions:
             function.arrow_to_named()
@@ -218,7 +242,11 @@ def test_function_arrow_to_named_keeps_parameter_types(tmpdir) -> None:
     content = """
 const a: MyObj<Props> = ({x, y}): MyType => 1;
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         file.get_function("a").arrow_to_named()
 
@@ -236,7 +264,11 @@ def test_function_arrow_to_named_keeps_generic_types(tmpdir) -> None:
     content = """
 const a = <T>() => 1;
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file: TSFile = codebase.get_file("test.ts")
         file.get_function("a").arrow_to_named()
 

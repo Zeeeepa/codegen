@@ -13,7 +13,11 @@ const b = false;
 const c = true;
 const d = a || b || false || c;
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         a = file.get_global_var("a")
         b = file.get_global_var("b")
@@ -25,4 +29,9 @@ const d = a || b || false || c;
         assert isinstance(b.value, Boolean)
         assert isinstance(d.value, BinaryExpression)
         # TODO: FIX THIS, should all resolve to Boolean types (CG-9489)
-        assert [type(e.resolved_value) for e in d.value.elements] == [Boolean, TSAssignment, Boolean, Boolean]
+        assert [type(e.resolved_value) for e in d.value.elements] == [
+            Boolean,
+            TSAssignment,
+            Boolean,
+            Boolean,
+        ]

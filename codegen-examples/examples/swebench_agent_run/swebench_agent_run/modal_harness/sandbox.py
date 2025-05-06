@@ -3,12 +3,8 @@ import json
 from collections import defaultdict
 
 import modal as modal_lib
-from swebench.harness.constants import (
-    SWEbenchInstance,
-)
-from swebench.harness.modal_eval.run_evaluation_modal import (
-    ModalSandboxRuntime,
-)
+from swebench.harness.constants import SWEbenchInstance
+from swebench.harness.modal_eval.run_evaluation_modal import ModalSandboxRuntime
 from swebench.harness.test_spec.test_spec import make_test_spec
 
 
@@ -24,7 +20,9 @@ class SnapshotManager:
 
 class VolumeSnapshotManager(SnapshotManager):
     def __init__(self, volume_name: str = "swebench-agent-snapshot-volume"):
-        self.snapshot_volume = modal_lib.Volume.from_name(volume_name, create_if_missing=True)
+        self.snapshot_volume = modal_lib.Volume.from_name(
+            volume_name, create_if_missing=True
+        )
         self.snapshot_meta_file_path: str = "/root/snapshot_meta.json"
 
     def get_snapshot_uid(self, example: SWEbenchInstance) -> str:
@@ -44,7 +42,9 @@ class VolumeSnapshotManager(SnapshotManager):
     def read_snapshot_meta(self) -> dict[str, dict[str, str]]:
         bytes_io = io.BytesIO()
         try:
-            self.snapshot_volume.read_file_into_fileobj(self.snapshot_meta_file_path, bytes_io)
+            self.snapshot_volume.read_file_into_fileobj(
+                self.snapshot_meta_file_path, bytes_io
+            )
             snapshot_meta = json.loads(bytes_io.getvalue().decode("utf-8"))
         except FileNotFoundError:
             snapshot_meta = {}
@@ -62,7 +62,9 @@ class ModalDictSnapshotManager(SnapshotManager):
             return None
 
     def save_snapshot_uid(self, example: SWEbenchInstance, snapshot_uid: str) -> None:
-        self.snapshot_dict[(example.repo, example.environment_setup_commit)] = snapshot_uid
+        self.snapshot_dict[(example.repo, example.environment_setup_commit)] = (
+            snapshot_uid
+        )
 
 
 class CGModalSandboxRuntime(ModalSandboxRuntime):

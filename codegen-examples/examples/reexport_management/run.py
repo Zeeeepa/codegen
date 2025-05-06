@@ -10,7 +10,10 @@ def run(codebase: Codebase):
     print("🚀 Starting reexport analysis...")
     for file in codebase.files:
         # Only process files under /src/shared
-        if "examples/analize_reexports" not in file.filepath or "/src/shared" not in file.filepath:
+        if (
+            "examples/analize_reexports" not in file.filepath
+            or "/src/shared" not in file.filepath
+        ):
             continue
 
         print(f"📁 Analyzing: {file.filepath}")
@@ -31,11 +34,15 @@ def run(codebase: Codebase):
             has_wildcard = False
 
             # Replace "src/" with "src/shared/"
-            resolved_public_file = export.resolved_symbol.filepath.replace("src/", "src/shared/")
+            resolved_public_file = export.resolved_symbol.filepath.replace(
+                "src/", "src/shared/"
+            )
             print(f"🔄 Processing: {export.name} -> {resolved_public_file}")
 
             # Get relative path from the "public" file back to the original file
-            relative_path = codebase.get_relative_path(from_file=resolved_public_file, to_file=export.resolved_symbol.filepath)
+            relative_path = codebase.get_relative_path(
+                from_file=resolved_public_file, to_file=export.resolved_symbol.filepath
+            )
 
             # Ensure the "public" file exists
             if not codebase.has_file(resolved_public_file):
@@ -50,7 +57,9 @@ def run(codebase: Codebase):
                 continue
 
             # Compare "public" path to the local file's export.filepath
-            if codebase._remove_extension(resolved_public_file) != codebase._remove_extension(export.filepath):
+            if codebase._remove_extension(
+                resolved_public_file
+            ) != codebase._remove_extension(export.filepath):
                 # A) Wildcard export
                 if export.is_wildcard_export():
                     target_file.insert_before(f'export * from "{relative_path}"')
@@ -58,34 +67,50 @@ def run(codebase: Codebase):
 
                 # B) Type export
                 elif export.is_type_export():
-                    statement = file.get_export_statement_for_path(relative_path, "TYPE")
+                    statement = file.get_export_statement_for_path(
+                        relative_path, "TYPE"
+                    )
                     if statement:
                         if export.is_aliased():
-                            statement.insert(0, f"{export.resolved_symbol.name} as {export.name}")
+                            statement.insert(
+                                0, f"{export.resolved_symbol.name} as {export.name}"
+                            )
                         else:
                             statement.insert(0, f"{export.name}")
                         print(f"📝 Updated existing type export for {export.name}")
                     else:
                         if export.is_aliased():
-                            target_file.insert_before(f'export type {{ {export.resolved_symbol.name} as {export.name} }} from "{relative_path}"')
+                            target_file.insert_before(
+                                f'export type {{ {export.resolved_symbol.name} as {export.name} }} from "{relative_path}"'
+                            )
                         else:
-                            target_file.insert_before(f'export type {{ {export.name} }} from "{relative_path}"')
+                            target_file.insert_before(
+                                f'export type {{ {export.name} }} from "{relative_path}"'
+                            )
                         print(f"✨ Added new type export for {export.name}")
 
                 # C) Normal export
                 else:
-                    statement = file.get_export_statement_for_path(relative_path, "EXPORT")
+                    statement = file.get_export_statement_for_path(
+                        relative_path, "EXPORT"
+                    )
                     if statement:
                         if export.is_aliased():
-                            statement.insert(0, f"{export.resolved_symbol.name} as {export.name}")
+                            statement.insert(
+                                0, f"{export.resolved_symbol.name} as {export.name}"
+                            )
                         else:
                             statement.insert(0, f"{export.name}")
                         print(f"📝 Updated existing export for {export.name}")
                     else:
                         if export.is_aliased():
-                            target_file.insert_before(f'export {{ {export.resolved_symbol.name} as {export.name} }} from "{relative_path}"')
+                            target_file.insert_before(
+                                f'export {{ {export.resolved_symbol.name} as {export.name} }} from "{relative_path}"'
+                            )
                         else:
-                            target_file.insert_before(f'export {{ {export.name} }} from "{relative_path}"')
+                            target_file.insert_before(
+                                f'export {{ {export.name} }} from "{relative_path}"'
+                            )
                         print(f"✨ Added new export for {export.name}")
 
             # Update import usages
@@ -93,7 +118,9 @@ def run(codebase: Codebase):
                 if isinstance(usage, TSImport) and usage not in processed_imports:
                     processed_imports.add(usage)
 
-                    new_path = usage.file.ts_config.translate_import_path(resolved_public_file)
+                    new_path = usage.file.ts_config.translate_import_path(
+                        resolved_public_file
+                    )
 
                     if has_wildcard and export.name != export.resolved_symbol.name:
                         name = f"{export.resolved_symbol.name} as {export.name}"

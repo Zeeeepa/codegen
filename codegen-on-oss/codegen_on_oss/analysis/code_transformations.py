@@ -75,7 +75,9 @@ def convert_call_to_kwargs(
 
 
 def convert_all_calls_to_kwargs(
-    codebase: Codebase, target_functions: Optional[List[str]] = None, ignore_errors: bool = False
+    codebase: Codebase,
+    target_functions: Optional[List[str]] = None,
+    ignore_errors: bool = False,
 ) -> Dict[str, Union[int, List[str]]]:
     """
     Convert all function calls in the codebase to use keyword arguments.

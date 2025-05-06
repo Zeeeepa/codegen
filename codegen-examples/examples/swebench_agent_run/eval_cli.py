@@ -8,6 +8,10 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 import click
 import modal
+from swebench_agent_run.constants import DATASET_DICT
+from swebench_agent_run.report import generate_report
+from swebench_agent_run.utils import track_batches
+
 from codegen.extensions.swebench.harness import run_agent_on_entry
 from codegen.extensions.swebench.utils import (
     SWEBenchDataset,
@@ -15,10 +19,6 @@ from codegen.extensions.swebench.utils import (
     get_swe_bench_examples,
 )
 from codegen.sdk.core.codebase import Codebase
-
-from swebench_agent_run.constants import DATASET_DICT
-from swebench_agent_run.report import generate_report
-from swebench_agent_run.utils import track_batches
 
 # Constants
 PREDS_DNAME = Path(__file__).parent / "predictions"
@@ -43,13 +43,17 @@ class ErrorInfo:
     def format_error(self, example_id: str = "") -> Dict[str, Any]:
         """Format error information into a structured dictionary."""
         error_dict = {
-            "error_context": "Processing error"
-            if not example_id
-            else f"Error processing {example_id}",
+            "error_context": (
+                "Processing error"
+                if not example_id
+                else f"Error processing {example_id}"
+            ),
             "error_details": {
                 "type": self.error_type,
                 "message": self.error_message,
-                "traceback": self.traceback.split("\n"),  # Split for better JSON formatting
+                "traceback": self.traceback.split(
+                    "\n"
+                ),  # Split for better JSON formatting
             },
         }
 
@@ -72,9 +76,13 @@ class ProcessingResult:
     ERROR_STATUS: ClassVar[str] = "error"  # Class constant for error status
 
     @classmethod
-    def create_error(cls, instance_id: str, error_info: ErrorInfo) -> "ProcessingResult":
+    def create_error(
+        cls, instance_id: str, error_info: ErrorInfo
+    ) -> "ProcessingResult":
         """Create a ProcessingResult instance for an error case."""
-        return cls(instance_id=instance_id, status=cls.ERROR_STATUS, error_info=error_info)
+        return cls(
+            instance_id=instance_id, status=cls.ERROR_STATUS, error_info=error_info
+        )
 
 
 def create_error_info(error: Exception, example_id: str = "") -> ErrorInfo:
@@ -117,7 +125,9 @@ def process_modal(
         for example, result in zip(examples, batch_results):
             if isinstance(result, Exception):
                 error_info = create_error_info(result, example.instance_id)
-                results.append(ProcessingResult.create_error(example.instance_id, error_info))
+                results.append(
+                    ProcessingResult.create_error(example.instance_id, error_info)
+                )
             elif result is None:
                 print(f"Warning: Null result for {example.instance_id}")
                 results.append(
@@ -130,13 +140,18 @@ def process_modal(
                     )
                 )
             else:
-                results.append(ProcessingResult(instance_id=example.instance_id, result=result))
+                results.append(
+                    ProcessingResult(instance_id=example.instance_id, result=result)
+                )
 
     except Exception as e:
         error_info = create_error_info(e)
         # Mark all examples as failed
         results.extend(
-            [ProcessingResult.create_error(example.instance_id, error_info) for example in examples]
+            [
+                ProcessingResult.create_error(example.instance_id, error_info)
+                for example in examples
+            ]
         )
 
     return results
@@ -161,10 +176,14 @@ def process_batch_local(
                     codebase=codebases.get(example.instance_id),
                     run_id=run_id,
                 )
-                results.append(ProcessingResult(instance_id=example.instance_id, result=result))
+                results.append(
+                    ProcessingResult(instance_id=example.instance_id, result=result)
+                )
             except Exception as e:
                 error_info = create_error_info(e, example.instance_id)
-                results.append(ProcessingResult.create_error(example.instance_id, error_info))
+                results.append(
+                    ProcessingResult.create_error(example.instance_id, error_info)
+                )
 
     return results
 
@@ -185,8 +204,12 @@ def save_results(
     summary = {
         "timestamp": timestamp,
         "total_examples": len(results),
-        "successful": len([r for r in results if not r.status]),  # No status means success
-        "failed": len([r for r in results if r.status == ProcessingResult.ERROR_STATUS]),
+        "successful": len(
+            [r for r in results if not r.status]
+        ),  # No status means success
+        "failed": len(
+            [r for r in results if r.status == ProcessingResult.ERROR_STATUS]
+        ),
         "error_types": {},
         "results": [asdict(r) for r in results],  # Convert all results to dict
     }
@@ -195,7 +218,9 @@ def save_results(
     for result in results:
         if result.status == ProcessingResult.ERROR_STATUS and result.error_info:
             error_type = result.error_info.error_type
-            summary["error_types"][error_type] = summary["error_types"].get(error_type, 0) + 1
+            summary["error_types"][error_type] = (
+                summary["error_types"].get(error_type, 0) + 1
+            )
 
     summary_file = predictions_dir / f"summary_{timestamp}.json"
     with open(summary_file, "w") as f:
@@ -243,7 +268,8 @@ def run_eval(
         instance_ids=instance_ids or [],
     )
     print(
-        "Examples:\n" + "\n".join(f"{e.instance_id} - {e.repo} - {e.base_commit}" for e in examples)
+        "Examples:\n"
+        + "\n".join(f"{e.instance_id} - {e.repo} - {e.base_commit}" for e in examples)
     )
 
     try:
@@ -295,17 +321,25 @@ def list_of_strings(value: str) -> list[str]:
     type=click.Choice(["lite", "full", "verified"]),
     default="lite",
 )
-@click.option("--length", help="The number of examples to process.", type=int, default=10)
+@click.option(
+    "--length", help="The number of examples to process.", type=int, default=10
+)
 @click.option(
     "--instance-id",
     help="The instance ID of the example to process.",
     type=str,
     default=None,
 )
-@click.option("--local", help="Run the evaluation locally.", is_flag=True, default=False)
-@click.option("--push-metrics", help="Push metrics to the database.", is_flag=True, default=False)
+@click.option(
+    "--local", help="Run the evaluation locally.", is_flag=True, default=False
+)
+@click.option(
+    "--push-metrics", help="Push metrics to the database.", is_flag=True, default=False
+)
 @click.option("--repo", help="The repo to use.", type=str, default=None)
-@click.option("--model", help="The model to use.", type=str, default="claude-3-7-sonnet-latest")
+@click.option(
+    "--model", help="The model to use.", type=str, default="claude-3-7-sonnet-latest"
+)
 @click.option(
     "--instance-ids",
     help="The instance IDs of the examples to process. Example: --instance-ids <instance_id1>,<instance_id2>,...",
@@ -347,8 +381,8 @@ def main(
 
         try:
             from swebench_agent_run.metrics import (
-                write_report_to_db,  # delay import because of extras
-            )
+                write_report_to_db,
+            )  # delay import because of extras
 
             write_report_to_db(str(evaluation_result_file.resolve()))
         except Exception:

@@ -20,10 +20,20 @@ from codegen.configs.models.secrets import SecretsConfig
 from codegen.git.clients.git_repo_client import GitRepoClient
 from codegen.git.configs.constants import CODEGEN_BOT_EMAIL, CODEGEN_BOT_NAME
 from codegen.git.repo_operator.local_git_repo import LocalGitRepo
-from codegen.git.schemas.enums import CheckoutResult, FetchResult, RepoVisibility, SetupOption
+from codegen.git.schemas.enums import (
+    CheckoutResult,
+    FetchResult,
+    RepoVisibility,
+    SetupOption,
+)
 from codegen.git.schemas.repo_config import RepoConfig
 from codegen.git.utils.clone import clone_or_pull_repo, clone_repo, pull_repo
-from codegen.git.utils.clone_url import add_access_token_to_url, get_authenticated_clone_url_for_repo_config, get_clone_url_for_repo_config, url_to_github
+from codegen.git.utils.clone_url import (
+    add_access_token_to_url,
+    get_authenticated_clone_url_for_repo_config,
+    get_clone_url_for_repo_config,
+    url_to_github,
+)
 from codegen.git.utils.codeowner_utils import create_codeowners_parser_for_repo
 from codegen.git.utils.file_utils import create_files
 from codegen.git.utils.remote_progress import CustomRemoteProgress
@@ -89,18 +99,25 @@ class RepoOperator:
 
     @property
     def remote_git_repo(self) -> GitRepoClient:
-        if not self.access_token and self.repo_config.visibility != RepoVisibility.PUBLIC:
+        if (
+            not self.access_token
+            and self.repo_config.visibility != RepoVisibility.PUBLIC
+        ):
             msg = "Must initialize with access_token to get remote"
             raise ValueError(msg)
 
         if not self._remote_git_repo:
-            self._remote_git_repo = GitRepoClient(self.repo_config, access_token=self.access_token)
+            self._remote_git_repo = GitRepoClient(
+                self.repo_config, access_token=self.access_token
+            )
         return self._remote_git_repo
 
     @property
     def clone_url(self) -> str:
         if self.access_token:
-            return get_authenticated_clone_url_for_repo_config(repo=self.repo_config, token=self.access_token)
+            return get_authenticated_clone_url_for_repo_config(
+                repo=self.repo_config, token=self.access_token
+            )
         return f"https://github.com/{self.repo_config.full_name}.git"
 
     @property
@@ -170,7 +187,9 @@ class RepoOperator:
         try:
             return self.git_cli.head.commit
         except ValueError as e:
-            if (f"Reference at {self.git_cli.head.ref.path!r} does not exist") in str(e):
+            if (f"Reference at {self.git_cli.head.ref.path!r} does not exist") in str(
+                e
+            ):
                 logger.info(f"Ref: {self.git_cli.head.ref.name} has no commits")
                 return None
             raise
@@ -192,7 +211,9 @@ class RepoOperator:
         # Priority 2: If origin/HEAD ref exists
         origin_prefix = "origin"
         if f"{origin_prefix}/HEAD" in self.git_cli.refs:
-            return self.git_cli.refs[f"{origin_prefix}/HEAD"].reference.name.removeprefix(f"{origin_prefix}/")
+            return self.git_cli.refs[
+                f"{origin_prefix}/HEAD"
+            ].reference.name.removeprefix(f"{origin_prefix}/")
 
         # Priority 3: Fallback to the active branch
         return self.git_cli.active_branch.name
@@ -202,24 +223,34 @@ class RepoOperator:
         if not self._codeowners_parser:
             if not self._remote_git_repo:
                 return None
-            self._codeowners_parser = create_codeowners_parser_for_repo(self.remote_git_repo)
+            self._codeowners_parser = create_codeowners_parser_for_repo(
+                self.remote_git_repo
+            )
         return self._codeowners_parser
 
     ####################################################################################################################
     # SET UP
     ####################################################################################################################
-    def setup_repo_dir(self, setup_option: SetupOption = SetupOption.PULL_OR_CLONE, shallow: bool = True) -> None:
+    def setup_repo_dir(
+        self,
+        setup_option: SetupOption = SetupOption.PULL_OR_CLONE,
+        shallow: bool = True,
+    ) -> None:
         os.makedirs(self.base_dir, exist_ok=True)
         os.chdir(self.base_dir)
         if setup_option is SetupOption.CLONE:
             # if repo exists delete, then clone, else clone
-            clone_repo(shallow=shallow, repo_path=self.repo_path, clone_url=self.clone_url)
+            clone_repo(
+                shallow=shallow, repo_path=self.repo_path, clone_url=self.clone_url
+            )
         elif setup_option is SetupOption.PULL_OR_CLONE:
             # if repo exists, pull changes, else clone
             self.clone_or_pull_repo(shallow=shallow)
         elif setup_option is SetupOption.SKIP:
             if not self.repo_exists():
-                logger.warning(f"Valid git repo does not exist at {self.repo_path}. Cannot skip setup with SetupOption.SKIP.")
+                logger.warning(
+                    f"Valid git repo does not exist at {self.repo_path}. Cannot skip setup with SetupOption.SKIP."
+                )
         os.chdir(self.repo_path)
 
     def repo_exists(self) -> bool:
@@ -250,13 +281,17 @@ class RepoOperator:
     def discard_changes(self) -> None:
         """Cleans repo dir by discarding any changes in staging/working directory and removes untracked files/dirs. Use with .is_dirty()."""
         ts1 = perf_counter()
-        self.git_cli.head.reset(index=True, working_tree=True)  # discard staged (aka index) + unstaged (aka working tree) changes in tracked files
+        self.git_cli.head.reset(
+            index=True, working_tree=True
+        )  # discard staged (aka index) + unstaged (aka working tree) changes in tracked files
         ts2 = perf_counter()
         self.git_cli.git.clean("-fdxq")  # removes untracked changes and ignored files
         ts3 = perf_counter()
         self.git_cli.git.gc("--auto")  # garbage collect
         ts4 = perf_counter()
-        logger.info(f"discard_changes took {humanize_duration(ts2 - ts1)} to reset, {humanize_duration(ts3 - ts2)} to clean, {humanize_duration(ts4 - ts3)} to gc")
+        logger.info(
+            f"discard_changes took {humanize_duration(ts2 - ts1)} to reset, {humanize_duration(ts3 - ts2)} to clean, {humanize_duration(ts4 - ts3)} to gc"
+        )
 
     @stopwatch
     def clean_remotes(self) -> None:
@@ -286,17 +321,23 @@ class RepoOperator:
         # TODO(CG-7804): if repo is not valid we should delete it and re-clone. maybe we can create a pull_repo util + use the existing clone_repo util
         if self.repo_exists():
             self.clean_repo()
-        clone_or_pull_repo(repo_path=self.repo_path, clone_url=self.clone_url, shallow=shallow)
+        clone_or_pull_repo(
+            repo_path=self.repo_path, clone_url=self.clone_url, shallow=shallow
+        )
 
     ####################################################################################################################
     # CHECKOUT, BRANCHES & COMMITS
     ####################################################################################################################
     @stopwatch
-    def checkout_remote_branch(self, branch_name: str | None = None, remote_name: str = "origin") -> CheckoutResult:
+    def checkout_remote_branch(
+        self, branch_name: str | None = None, remote_name: str = "origin"
+    ) -> CheckoutResult:
         """Checks out a branch from a Remote + tracks the Remote.
         If the branch_name is already checked out, does nothing
         """
-        return self.checkout_branch(branch_name, remote_name=remote_name, remote=True, create_if_missing=False)
+        return self.checkout_branch(
+            branch_name, remote_name=remote_name, remote=True, create_if_missing=False
+        )
 
     def safe_get_commit(self, commit: str) -> GitCommit | None:
         """Gets commit if it exists, else returns None"""
@@ -306,7 +347,12 @@ class RepoOperator:
             logger.warning(f"Failed to get commit {commit}:\n\t{e}")
             return None
 
-    def fetch_remote(self, remote_name: str = "origin", refspec: str | None = None, force: bool = True) -> FetchResult:
+    def fetch_remote(
+        self,
+        remote_name: str = "origin",
+        refspec: str | None = None,
+        force: bool = True,
+    ) -> FetchResult:
         """Fetches and updates a ref from a remote repository.
 
         Args:
@@ -329,7 +375,9 @@ class RepoOperator:
         progress = CustomRemoteProgress()
 
         try:
-            self.git_cli.remotes[remote_name].fetch(refspec=refspec, force=force, progress=progress, no_tags=True)
+            self.git_cli.remotes[remote_name].fetch(
+                refspec=refspec, force=force, progress=progress, no_tags=True
+            )
             return FetchResult.SUCCESS
         except GitCommandError as e:
             if progress.fetch_result == FetchResult.REFSPEC_NOT_FOUND:
@@ -345,12 +393,16 @@ class RepoOperator:
     def create_remote(self, remote_name: str, remote_url: str) -> None:
         """Creates a remote. Skips if the remote already exists."""
         if remote_name in self.git_cli.remotes:
-            logger.warning(f"Remote with name {remote_name} already exists. Skipping create_remote.")
+            logger.warning(
+                f"Remote with name {remote_name} already exists. Skipping create_remote."
+            )
             return
         self.git_cli.create_remote(remote_name, url=remote_url)
 
     @stopwatch
-    def checkout_commit(self, commit_hash: str | GitCommit, remote_name: str = "origin") -> CheckoutResult:
+    def checkout_commit(
+        self, commit_hash: str | GitCommit, remote_name: str = "origin"
+    ) -> CheckoutResult:
         """Checks out the relevant commit
         TODO: handle the environment being dirty
         """
@@ -361,7 +413,9 @@ class RepoOperator:
                 return CheckoutResult.NOT_FOUND
 
         if self.git_cli.is_dirty():
-            logger.info(f"Environment is dirty, discarding changes before checking out commit: {commit_hash}")
+            logger.info(
+                f"Environment is dirty, discarding changes before checking out commit: {commit_hash}"
+            )
             self.discard_changes()
 
         self.git_cli.git.checkout(commit_hash)
@@ -378,7 +432,14 @@ class RepoOperator:
             return False
         return self.git_cli.active_branch.name == branch_name
 
-    def checkout_branch(self, branch_name: str | None, *, remote: bool = False, remote_name: str = "origin", create_if_missing: bool = True) -> CheckoutResult:
+    def checkout_branch(
+        self,
+        branch_name: str | None,
+        *,
+        remote: bool = False,
+        remote_name: str = "origin",
+        create_if_missing: bool = True,
+    ) -> CheckoutResult:
         """Attempts to check out the branch in the following order:
         - Check out the local branch by name
         - Check out the remote branch if it's been fetched
@@ -407,26 +468,36 @@ class RepoOperator:
             if self.is_branch_checked_out(branch_name):
                 if remote:
                     # If the branch is already checked out and we want to fetch it from the remote, reset --hard to the remote branch
-                    logger.info(f"Branch {branch_name} is already checked out locally. Resetting to remote branch: {remote_name}/{branch_name}")
+                    logger.info(
+                        f"Branch {branch_name} is already checked out locally. Resetting to remote branch: {remote_name}/{branch_name}"
+                    )
                     # TODO: would have to fetch the the remote branch first to retrieve latest changes
                     self.git_cli.git.reset("--hard", f"{remote_name}/{branch_name}")
                     return CheckoutResult.SUCCESS
                 else:
-                    logger.info(f"Branch {branch_name} is already checked out! Skipping checkout_branch.")
+                    logger.info(
+                        f"Branch {branch_name} is already checked out! Skipping checkout_branch."
+                    )
                     return CheckoutResult.SUCCESS
 
             if self.git_cli.is_dirty():
-                logger.info(f"Environment is dirty, discarding changes before checking out branch: {branch_name}.")
+                logger.info(
+                    f"Environment is dirty, discarding changes before checking out branch: {branch_name}."
+                )
                 self.discard_changes()
 
             # If remote=True, create a local branch tracking the remote branch and checkout onto it
             if remote:
-                res = self.fetch_remote(remote_name, refspec=f"{branch_name}:{branch_name}")
+                res = self.fetch_remote(
+                    remote_name, refspec=f"{branch_name}:{branch_name}"
+                )
                 if res is FetchResult.SUCCESS:
                     self.git_cli.git.checkout(branch_name)
                     return CheckoutResult.SUCCESS
                 if res is FetchResult.REFSPEC_NOT_FOUND:
-                    logger.warning(f"Branch {branch_name} not found in remote {remote_name}. Unable to checkout remote branch.")
+                    logger.warning(
+                        f"Branch {branch_name} not found in remote {remote_name}. Unable to checkout remote branch."
+                    )
                     return CheckoutResult.NOT_FOUND
 
             # If the branch already exists, checkout onto it
@@ -436,7 +507,9 @@ class RepoOperator:
 
             # If the branch does not exist and create_if_missing=True, create and checkout a new branch from the current commit
             elif create_if_missing:
-                logger.info(f"Creating new branch {branch_name} from current commit: {self.git_cli.head.commit.hexsha}")
+                logger.info(
+                    f"Creating new branch {branch_name} from current commit: {self.git_cli.head.commit.hexsha}"
+                )
                 new_branch = self.git_cli.create_head(branch_name)
                 new_branch.checkout()
                 return CheckoutResult.SUCCESS
@@ -445,7 +518,9 @@ class RepoOperator:
 
         except GitCommandError as e:
             if "fatal: ambiguous argument" in e.stderr:
-                logger.warning(f"Branch {branch_name} was not found in remote {remote_name}. Unable to checkout.")
+                logger.warning(
+                    f"Branch {branch_name} was not found in remote {remote_name}. Unable to checkout."
+                )
                 return CheckoutResult.NOT_FOUND
             else:
                 logger.exception(f"Error with Git operations: {e}")
@@ -463,7 +538,9 @@ class RepoOperator:
         return [diff for diff in self.git_cli.index.diff(ref, R=reverse)]
 
     @stopwatch
-    def stage_and_commit_all_changes(self, message: str, verify: bool = False, exclude_paths: list[str] | None = None) -> bool:
+    def stage_and_commit_all_changes(
+        self, message: str, verify: bool = False, exclude_paths: list[str] | None = None
+    ) -> bool:
         """TODO: rename to stage_and_commit_changes
         Stage all changes and commit them with the given message.
         Returns True if a commit was made and False otherwise.
@@ -481,8 +558,15 @@ class RepoOperator:
         for level in ["user", "global", "system"]:
             with self.git_cli.config_reader(level) as reader:
                 if reader.has_section("user"):
-                    user, email = reader.get_value("user", "name"), reader.get_value("user", "email")
-                    if isinstance(user, str) and isinstance(email, str) and user != CODEGEN_BOT_NAME and email != CODEGEN_BOT_EMAIL:
+                    user, email = reader.get_value("user", "name"), reader.get_value(
+                        "user", "email"
+                    )
+                    if (
+                        isinstance(user, str)
+                        and isinstance(email, str)
+                        and user != CODEGEN_BOT_NAME
+                        and email != CODEGEN_BOT_EMAIL
+                    ):
                         return user, email
         return None
 
@@ -495,7 +579,9 @@ class RepoOperator:
                 message += f"\n\n Co-authored-by: {user} <{email}>"
             commit_args = ["-m", message]
             if self.bot_commit:
-                commit_args.append(f"--author='{CODEGEN_BOT_NAME} <{CODEGEN_BOT_EMAIL}>'")
+                commit_args.append(
+                    f"--author='{CODEGEN_BOT_NAME} <{CODEGEN_BOT_EMAIL}>'"
+                )
             if not verify:
                 commit_args.append("--no-verify")
             self.git_cli.git.commit(*commit_args)
@@ -505,7 +591,12 @@ class RepoOperator:
             return False
 
     @stopwatch
-    def push_changes(self, remote: Remote | None = None, refspec: str | None = None, force: bool = False) -> PushInfoList:
+    def push_changes(
+        self,
+        remote: Remote | None = None,
+        refspec: str | None = None,
+        force: bool = False,
+    ) -> PushInfoList:
         """Push the changes to the given refspec of the remote.
 
         Args:
@@ -600,12 +691,23 @@ class RepoOperator:
             # -c: show cached files
             # -o: show other / untracked files
             # --exclude-standard: exclude standard gitignore rules
-            filepaths = self.git_cli.git.ls_files("-co", "--exclude-standard").split("\n")
+            filepaths = self.git_cli.git.ls_files("-co", "--exclude-standard").split(
+                "\n"
+            )
         else:
-            filepaths = glob.glob("**", root_dir=self.repo_path, recursive=True, include_hidden=True)
+            filepaths = glob.glob(
+                "**", root_dir=self.repo_path, recursive=True, include_hidden=True
+            )
             # Filter filepaths by ignore list.
         if ignore_list:
-            filepaths = [f for f in filepaths if not any(fnmatch.fnmatch(f, pattern) or f.startswith(pattern) for pattern in ignore_list)]
+            filepaths = [
+                f
+                for f in filepaths
+                if not any(
+                    fnmatch.fnmatch(f, pattern) or f.startswith(pattern)
+                    for pattern in ignore_list
+                )
+            ]
 
         # Fix bug where unicode characters are not handled correctly
         for i, filepath in enumerate(filepaths):
@@ -656,7 +758,9 @@ class RepoOperator:
             filepath = os.path.join(self.repo_path, rel_filepath)
 
             # Filter by subdirectory (includes full filenames)
-            if subdirs and not any(rel_filepath.startswith(subdir) for subdir in subdirs):
+            if subdirs and not any(
+                rel_filepath.startswith(subdir) for subdir in subdirs
+            ):
                 continue
 
             if extensions is None or any(filepath.endswith(e) for e in extensions):
@@ -668,11 +772,15 @@ class RepoOperator:
                         else:
                             yield rel_filepath, ""
                     else:
-                        logger.warning(f"Skipping {filepath} because it does not exist or is not a valid file.")
+                        logger.warning(
+                            f"Skipping {filepath} because it does not exist or is not a valid file."
+                        )
                 except Exception as e:
                     logger.warning(f"Error reading file {filepath}: {e}")
 
-    def list_files(self, subdirs: list[str] | None = None, extensions: list[str] | None = None) -> list[str]:
+    def list_files(
+        self, subdirs: list[str] | None = None, extensions: list[str] | None = None
+    ) -> list[str]:
         """List files matching subdirs + extensions in a repo.
 
         Args:
@@ -711,7 +819,9 @@ class RepoOperator:
             ret.append(commit.hexsha)
         return ret
 
-    def get_modified_files_in_last_n_days(self, days: int = 1) -> tuple[list[str], list[str]]:
+    def get_modified_files_in_last_n_days(
+        self, days: int = 1
+    ) -> tuple[list[str], list[str]]:
         """Returns a list of files modified and deleted in the last n days"""
         modified_files = []
         deleted_files = []
@@ -827,7 +937,9 @@ class RepoOperator:
     # CLASS METHODS
     ####################################################################################################################
     @classmethod
-    def create_from_files(cls, repo_path: str, files: dict[str, str], bot_commit: bool = True) -> Self:
+    def create_from_files(
+        cls, repo_path: str, files: dict[str, str], bot_commit: bool = True
+    ) -> Self:
         """Used when you want to create a directory from a set of files and then create a RepoOperator that points to that directory.
         Use cases:
         - Unit testing
@@ -843,13 +955,22 @@ class RepoOperator:
         create_files(base_dir=repo_path, files=files)
 
         # Step 2: Init git repo
-        op = cls(repo_config=RepoConfig.from_repo_path(repo_path), bot_commit=bot_commit)
+        op = cls(
+            repo_config=RepoConfig.from_repo_path(repo_path), bot_commit=bot_commit
+        )
         if op.stage_and_commit_all_changes("[Codegen] initial commit"):
             op.checkout_branch(None, create_if_missing=True)
         return op
 
     @classmethod
-    def create_from_commit(cls, repo_path: str, commit: str, url: str, access_token: str | None = None, full_name: str | None = None) -> Self:
+    def create_from_commit(
+        cls,
+        repo_path: str,
+        commit: str,
+        url: str,
+        access_token: str | None = None,
+        full_name: str | None = None,
+    ) -> Self:
         """Do a shallow checkout of a particular commit to get a repository from a given remote URL.
 
         Args:
@@ -858,7 +979,11 @@ class RepoOperator:
             url (str): Git URL of the repository
             access_token (str | None): Optional GitHub API key for operations that need GitHub access
         """
-        op = cls(repo_config=RepoConfig.from_repo_path(repo_path, full_name=full_name), bot_commit=False, access_token=access_token)
+        op = cls(
+            repo_config=RepoConfig.from_repo_path(repo_path, full_name=full_name),
+            bot_commit=False,
+            access_token=access_token,
+        )
 
         op.discard_changes()
         if op.get_active_branch_or_commit() != commit:
@@ -868,7 +993,13 @@ class RepoOperator:
         return op
 
     @classmethod
-    def create_from_repo(cls, repo_path: str, url: str, access_token: str | None = None, full_history: bool = False) -> Self | None:
+    def create_from_repo(
+        cls,
+        repo_path: str,
+        url: str,
+        access_token: str | None = None,
+        full_history: bool = False,
+    ) -> Self | None:
         """Create a fresh clone of a repository or use existing one if up to date.
 
         Args:
@@ -892,12 +1023,20 @@ class RepoOperator:
                     git_cli.remotes.origin.fetch()
                     # Get current and remote HEADs
                     local_head = git_cli.head.commit
-                    remote_head = git_cli.remotes.origin.refs[git_cli.active_branch.name].commit
+                    remote_head = git_cli.remotes.origin.refs[
+                        git_cli.active_branch.name
+                    ].commit
                     # If up to date, use existing repo
                     if local_head.hexsha == remote_head.hexsha:
-                        return cls(repo_config=RepoConfig.from_repo_path(repo_path), bot_commit=False, access_token=access_token)
+                        return cls(
+                            repo_config=RepoConfig.from_repo_path(repo_path),
+                            bot_commit=False,
+                            access_token=access_token,
+                        )
             except Exception:
-                logger.exception("Failed to initialize Git repository. Falling back to fresh clone.")
+                logger.exception(
+                    "Failed to initialize Git repository. Falling back to fresh clone."
+                )
 
             # If we get here, repo exists but is not up to date or valid
             # Remove the existing directory to do a fresh clone
@@ -917,4 +1056,8 @@ class RepoOperator:
         except (GitCommandError, ValueError) as e:
             logger.exception("Failed to initialize Git repository")
             return None
-        return cls(repo_config=RepoConfig.from_repo_path(repo_path), bot_commit=False, access_token=access_token)
+        return cls(
+            repo_config=RepoConfig.from_repo_path(repo_path),
+            bot_commit=False,
+            access_token=access_token,
+        )

@@ -51,7 +51,11 @@ export class C extends React.Component<Props, State> {
     """
     os.chdir(tmpdir)  # TODO: CG-10643
 
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.tsx")
         component = file.get_class("C")
         component.source = component.class_component_to_function_component()

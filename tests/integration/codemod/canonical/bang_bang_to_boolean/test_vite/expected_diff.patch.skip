@@ -13,7 +13,7 @@ index c4a648753128ac5da7d9a74e6b1cef32a7e9ebea..e2cb2a354bd461f96107ac0add2e480e
        if (result.runtime) {
 @@ -538,12 +538,12 @@ function viteLegacyPlugin(options: Options = {}): Plugin[] {
          options.polyfills !== false && !Array.isArray(options.polyfills)
- 
+
        // transform the legacy chunk with @babel/preset-env
 -      const sourceMaps = !!config.build.sourcemap
 +      const sourceMaps = Boolean(config.build.sourcemap)
@@ -29,11 +29,11 @@ index c4a648753128ac5da7d9a74e6b1cef32a7e9ebea..e2cb2a354bd461f96107ac0add2e480e
 @@ -877,7 +877,7 @@ function isLegacyBundle(
        (output) => output.type === 'chunk' && output.isEntry,
      )
- 
+
 -    return !!entryChunk && entryChunk.fileName.includes('-legacy')
 +    return Boolean(entryChunk) && entryChunk.fileName.includes('-legacy')
    }
- 
+
    return false
 diff --git a/packages/vite/src/node/build.ts b/packages/vite/src/node/build.ts
 index d86393d36656fcf9fd328b718cbf684c04d00ae8..b4333ab42b72be6bcda50c67b748299ef5d33414 100644
@@ -41,12 +41,12 @@ index d86393d36656fcf9fd328b718cbf684c04d00ae8..b4333ab42b72be6bcda50c67b748299e
 +++ b/packages/vite/src/node/build.ts
 @@ -418,7 +418,7 @@ export function resolveBuildOptions(
    }
- 
+
    if (resolved.cssMinify == null) {
 -    resolved.cssMinify = !!resolved.minify
 +    resolved.cssMinify = Boolean(resolved.minify)
    }
- 
+
    return resolved
 @@ -475,7 +475,7 @@ export async function build(
    )
@@ -55,7 +55,7 @@ index d86393d36656fcf9fd328b718cbf684c04d00ae8..b4333ab42b72be6bcda50c67b748299e
 -  const ssr = !!options.ssr
 +  const ssr = Boolean(options.ssr)
    const libOptions = options.lib
- 
+
    logger.info(
 @@ -1210,7 +1210,7 @@ export function toOutputFilePathInJS(
        hostId,
@@ -86,7 +86,7 @@ index e38e5b5959809ba9a1f08ba10ee14a8722fdd308..3ed2c71a92f6efddded098fffda0b639
 -  const isNodeEnvSet = !!process.env.NODE_ENV
 +  const isNodeEnvSet = Boolean(process.env.NODE_ENV)
    const packageCache: PackageCache = new Map()
- 
+
    // some dependencies e.g. @vue/compiler-* relies on NODE_ENV for getting
 @@ -469,7 +469,7 @@ export async function resolveConfig(
    const configEnv: ConfigEnv = {
@@ -96,7 +96,7 @@ index e38e5b5959809ba9a1f08ba10ee14a8722fdd308..3ed2c71a92f6efddded098fffda0b639
 +    isSsrBuild: command === 'build' && Boolean(config.build?.ssr),
      isPreview,
    }
- 
+
 @@ -1152,11 +1152,11 @@ async function bundleConfigFile(
                  if (!isImport) {
                    let canResolveWithImport = false
@@ -131,11 +131,11 @@ index 3f76e480a45e75338010944b163da39847e4d633..33db424d2181f6f313721f049ac863f2
 @@ -159,7 +159,7 @@ async function createDepsOptimizer(
    let enqueuedRerun: (() => void) | undefined
    let currentlyProcessing = false
- 
+
 -  let firstRunCalled = !!cachedMetadata
 +  let firstRunCalled = Boolean(cachedMetadata)
    let warnAboutMissedDependencies = false
- 
+
    // If this is a cold run, we wait for static imports discovered
 diff --git a/packages/vite/src/node/plugins/clientInjections.ts b/packages/vite/src/node/plugins/clientInjections.ts
 index c66f3877eca822c14989eac10c480f2639d1080a..6f305f2b71a3eded0527163027b76eb7612479f4 100644
@@ -148,7 +148,7 @@ index c66f3877eca822c14989eac10c480f2639d1080a..6f305f2b71a3eded0527163027b76eb7
 -      const isHmrServerSpecified = !!hmrConfig?.server
 +      const isHmrServerSpecified = Boolean(hmrConfig?.server)
        const hmrConfigName = path.basename(config.configFile || 'vite.config.js')
- 
+
        // hmr.clientPort -> hmr.port
 diff --git a/packages/vite/src/node/plugins/css.ts b/packages/vite/src/node/plugins/css.ts
 index 26ba17c192f84ea79fed0d46c371925c6fa117d1..de40ca7d2486c1405008fba8ab137d3250953c12 100644
@@ -228,7 +228,7 @@ index 585bc0154fa263e270f20eab587042fb66fd8f3d..5d53513ed4806d7ff61563541ab078d8
 -    sourcemap: config.command === 'build' ? !!config.build.sourcemap : true,
 +    sourcemap: config.command === 'build' ? Boolean(config.build.sourcemap) : true,
    })
- 
+
    // remove esbuild's <define:...> source entries
 diff --git a/packages/vite/src/node/plugins/html.ts b/packages/vite/src/node/plugins/html.ts
 index b7109debc3863a9ddab4d278912a83f0ac1ac115..5e11b9e009a88b65ba387701d9a73d8cbffa4a68 100644
@@ -236,7 +236,7 @@ index b7109debc3863a9ddab4d278912a83f0ac1ac115..5e11b9e009a88b65ba387701d9a73d8c
 +++ b/packages/vite/src/node/plugins/html.ts
 @@ -435,7 +435,7 @@ export function buildHtmlPlugin(config: ResolvedConfig): Plugin {
                getScriptInfo(node)
- 
+
              const url = src && src.value
 -            const isPublicFile = !!(url && checkPublicFile(url, config))
 +            const isPublicFile = Boolean((url && checkPublicFile(url, config)))
@@ -253,7 +253,7 @@ index 7dcad179654fe4afcc406b46fed262a58af5b81f..ae11759929ec1c8856ae12d91fe15db6
          const cssSelector = isCss ? '[rel="stylesheet"]' : ''
 -        const isBaseRelative = !!importerUrl
 +        const isBaseRelative = Boolean(importerUrl)
- 
+
          // check if the file is already preloaded by SSR markup
          if (isBaseRelative) {
 @@ -162,16 +162,16 @@ function preload(
@@ -265,7 +265,7 @@ index 7dcad179654fe4afcc406b46fed262a58af5b81f..ae11759929ec1c8856ae12d91fe15db6
    const isWorker = config.isWorker
 -  const insertPreload = !(ssr || !!config.build.lib || isWorker)
 +  const insertPreload = !(ssr || Boolean(config.build.lib) || isWorker)
- 
+
    const resolveModulePreloadDependencies =
      config.build.modulePreload && config.build.modulePreload.resolveDependencies
    const renderBuiltUrl = config.experimental.renderBuiltUrl
@@ -317,21 +317,21 @@ index b5e1d9c57e5f196cc2cca347cec1a14496420263..5623153d4a3946be42096cfd2727cbf4
            server._restartPromise = null
            server._forceOptimizeOnRestart = false
 @@ -865,7 +865,7 @@ export async function _createServer(
- 
+
    // base
    if (config.base !== '/') {
 -    middlewares.use(baseMiddleware(config.rawBase, !!middlewareMode))
 +    middlewares.use(baseMiddleware(config.rawBase, Boolean(middlewareMode)))
    }
- 
+
    // open in editor support
 @@ -920,7 +920,7 @@ export async function _createServer(
    }
- 
+
    // error handler
 -  middlewares.use(errorMiddleware(server, !!middlewareMode))
 +  middlewares.use(errorMiddleware(server, Boolean(middlewareMode)))
- 
+
    // httpServer.listen can be called multiple times
    // when port when using next port number
 diff --git a/packages/vite/src/node/server/moduleGraph.ts b/packages/vite/src/node/server/moduleGraph.ts
@@ -359,7 +359,7 @@ index 3251790d1698644c05ea4da3e2091b15b814aae2..4aec442b9d452d98f46a74f901cfebaf
 -    const ctx = new ResolveIdContext(this, !!ssr, skip, scan)
 +    const scan = Boolean(options?.scan)
 +    const ctx = new ResolveIdContext(this, Boolean(ssr), skip, scan)
- 
+
      const resolveStart = debugResolve ? performance.now() : 0
      let id: string | null = null
 @@ -331,7 +331,7 @@ class PluginContainer {
@@ -377,7 +377,7 @@ index 3251790d1698644c05ea4da3e2091b15b814aae2..4aec442b9d452d98f46a74f901cfebaf
      const ssr = options?.ssr
 -    const ctx = new LoadPluginContext(this, !!ssr)
 +    const ctx = new LoadPluginContext(this, Boolean(ssr))
- 
+
      for (const plugin of this.getSortedPlugins('load')) {
        if (this._closed && !ssr) throwClosedServerError()
 @@ -421,7 +421,7 @@ class PluginContainer {
@@ -388,7 +388,7 @@ index 3251790d1698644c05ea4da3e2091b15b814aae2..4aec442b9d452d98f46a74f901cfebaf
 +      Boolean(ssr),
      )
      ctx._addedImports = this._getAddedImports(id)
- 
+
 @@ -539,7 +539,7 @@ class PluginContext implements Omit<RollupPluginContext, 'cache'> {
      let out = await this._container.resolveId(id, importer, {
        attributes: options?.attributes,
@@ -417,11 +417,11 @@ index dc98c1795daf26a8344158bee040b58d6955e55d..fdd06e9ed24159273802afead00a04cf
 +++ b/packages/vite/src/node/server/transformRequest.ts
 @@ -132,7 +132,7 @@ async function doTransform(
    url = removeTimestampQuery(url)
- 
+
    const { config, pluginContainer } = server
 -  const ssr = !!options.ssr
 +  const ssr = Boolean(options.ssr)
- 
+
    if (ssr && isDepsOptimizerEnabled(config, true)) {
      await initDevSsrDepsOptimizer(config, server)
 @@ -237,7 +237,7 @@ async function loadAndTransform(
@@ -430,9 +430,9 @@ index dc98c1795daf26a8344158bee040b58d6955e55d..fdd06e9ed24159273802afead00a04cf
      debugLoad || debugTransform ? prettifyUrl(url, config.root) : ''
 -  const ssr = !!options.ssr
 +  const ssr = Boolean(options.ssr)
- 
+
    const file = cleanUrl(id)
- 
+
 diff --git a/packages/vite/src/node/ssr/ssrExternal.ts b/packages/vite/src/node/ssr/ssrExternal.ts
 index 5681e000502a5f2d1a44183711c8c1c128b6d677..53eff3822d9a998ff0eda5cddffd8c1b3085099f 100644
 --- a/packages/vite/src/node/ssr/ssrExternal.ts
@@ -468,7 +468,7 @@ index 393bc391799aad12b47cfd2f2495e95529ec4348..248e1c2852428990b7f24b8fa6059773
 -    enabled = !!DEBUG?.includes(ns)
 +    enabled = Boolean(DEBUG?.includes(ns))
    }
- 
+
    if (enabled) {
 @@ -745,7 +745,7 @@ function splitSrcSetDescriptor(srcs: string): ImageCandidate[] {
          descriptor: src.slice(url.length).trim(),
@@ -477,16 +477,16 @@ index 393bc391799aad12b47cfd2f2495e95529ec4348..248e1c2852428990b7f24b8fa6059773
 -    .filter(({ url }) => !!url)
 +    .filter(({ url }) => Boolean(url))
  }
- 
+
  export function processSrcSet(
 diff --git a/playground/vitestSetup.ts b/playground/vitestSetup.ts
 index eb28b5f544d453bc234ee6f3da780f2d4fa44cd4..9c25b1cac3de9e99909374f4f1fa6fd11fa898d1 100644
 --- a/playground/vitestSetup.ts
 +++ b/playground/vitestSetup.ts
 @@ -27,7 +27,7 @@ import { beforeAll, inject } from 'vitest'
- 
+
  export const workspaceRoot = path.resolve(__dirname, '../')
- 
+
 -export const isBuild = !!process.env.VITE_TEST_BUILD
 +export const isBuild = Boolean(process.env.VITE_TEST_BUILD)
  export const isServe = !isBuild

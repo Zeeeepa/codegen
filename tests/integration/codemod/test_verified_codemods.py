@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import TypeVar
 
 import pytest
+from codemods.codemod import Codemod
 from pytest_snapshot.plugin import Snapshot
 
 from codegen.sdk.core.codebase import Codebase
-from codemods.codemod import Codemod
 from tests.shared.codemod.codebase_comparison_utils import compare_codebase_diff
 from tests.shared.codemod.models import BASE_PATH
 from tests.shared.utils.recursion import set_recursion_limit

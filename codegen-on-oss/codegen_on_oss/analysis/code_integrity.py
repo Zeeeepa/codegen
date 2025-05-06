@@ -6,17 +6,17 @@ It combines the functionality from the previous code_integrity_analyzer.py,
 code_integrity_integration.py, and code_integrity_main.py files.
 """
 
+import logging
 import os
 import re
-import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple, Any, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from graph_sitter.core.class_definition import Class
 from graph_sitter.core.codebase import Codebase
 from graph_sitter.core.file import SourceFile
 from graph_sitter.core.function import Function
-from graph_sitter.core.class_definition import Class
-from graph_sitter.enums import SymbolType, EdgeType
+from graph_sitter.enums import EdgeType, SymbolType
 from graph_sitter.shared.enums.programming_language import ProgrammingLanguage
 
 logger = logging.getLogger(__name__)
@@ -24,22 +24,22 @@ logger = logging.getLogger(__name__)
 
 class CodeIntegrityAnalyzer:
     """Analyzer for code integrity."""
-    
+
     def __init__(self, codebase: Codebase, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the code integrity analyzer.
-        
+
         Args:
             codebase: The codebase to analyze
             config: Optional configuration options for the analyzer
         """
         self.codebase = codebase
         self.config = config or {}
-    
+
     def analyze(self) -> Dict[str, Any]:
         """
         Analyze code integrity for the codebase.
-        
+
         Returns:
             A dictionary with analysis results
         """
@@ -48,31 +48,31 @@ class CodeIntegrityAnalyzer:
             "code_smells": self._find_code_smells(),
             "complexity": self._analyze_complexity(),
         }
-    
+
     def _find_import_cycles(self) -> List[Dict[str, Any]]:
         """
         Find import cycles in the codebase.
-        
+
         Returns:
             A list of import cycles
         """
         # This is a placeholder implementation
         return []
-    
+
     def _find_code_smells(self) -> List[Dict[str, Any]]:
         """
         Find code smells in the codebase.
-        
+
         Returns:
             A list of code smells
         """
         # This is a placeholder implementation
         return []
-    
+
     def _analyze_complexity(self) -> Dict[str, Any]:
         """
         Analyze the complexity of the codebase.
-        
+
         Returns:
             A dictionary with complexity metrics
         """
@@ -81,24 +81,27 @@ class CodeIntegrityAnalyzer:
             "cyclomatic_complexity": 0,
             "cognitive_complexity": 0,
         }
-    
+
     def analyze_code_quality(self) -> Dict[str, Any]:
         """
         Analyze code quality.
-        
+
         Returns:
             A dictionary with code quality metrics
         """
         return {
             "score": 7.5,
             "issues": [],
-            "recommendations": ["Improve test coverage", "Reduce complexity in core modules"],
+            "recommendations": [
+                "Improve test coverage",
+                "Reduce complexity in core modules",
+            ],
         }
-    
+
     def analyze_security(self) -> Dict[str, Any]:
         """
         Analyze security issues.
-        
+
         Returns:
             A dictionary with security metrics
         """
@@ -107,11 +110,11 @@ class CodeIntegrityAnalyzer:
             "issues": [],
             "recommendations": ["Add input validation", "Use secure coding practices"],
         }
-    
+
     def analyze_maintainability(self) -> Dict[str, Any]:
         """
         Analyze maintainability.
-        
+
         Returns:
             A dictionary with maintainability metrics
         """
@@ -125,20 +128,20 @@ class CodeIntegrityAnalyzer:
 def compare_branches(main_codebase: Codebase, feature_codebase: Codebase) -> Dict[str, Any]:
     """
     Compare code integrity between two branches.
-    
+
     Args:
         main_codebase: The main branch codebase
         feature_codebase: The feature branch codebase
-        
+
     Returns:
         A dictionary with comparison results
     """
     main_analyzer = CodeIntegrityAnalyzer(main_codebase)
     feature_analyzer = CodeIntegrityAnalyzer(feature_codebase)
-    
+
     main_results = main_analyzer.analyze()
     feature_results = feature_analyzer.analyze()
-    
+
     # Compare results
     comparison = {
         "import_cycles": {
@@ -155,24 +158,26 @@ def compare_branches(main_codebase: Codebase, feature_codebase: Codebase) -> Dic
             "main": main_results["complexity"],
             "feature": feature_results["complexity"],
             "diff": {
-                "cyclomatic_complexity": feature_results["complexity"]["cyclomatic_complexity"] - main_results["complexity"]["cyclomatic_complexity"],
-                "cognitive_complexity": feature_results["complexity"]["cognitive_complexity"] - main_results["complexity"]["cognitive_complexity"],
+                "cyclomatic_complexity": feature_results["complexity"]["cyclomatic_complexity"]
+                - main_results["complexity"]["cyclomatic_complexity"],
+                "cognitive_complexity": feature_results["complexity"]["cognitive_complexity"]
+                - main_results["complexity"]["cognitive_complexity"],
             },
         },
     }
-    
+
     return comparison
 
 
 def analyze_pr(repo_url: str, pr_number: int, github_token: Optional[str] = None) -> Dict[str, Any]:
     """
     Analyze a pull request for code integrity issues.
-    
+
     Args:
         repo_url: URL of the repository
         pr_number: Pull request number
         github_token: Optional GitHub token for private repositories
-        
+
     Returns:
         A dictionary with analysis results
     """
@@ -187,10 +192,10 @@ def analyze_pr(repo_url: str, pr_number: int, github_token: Optional[str] = None
 def analyze_code_integrity(codebase: Codebase) -> Dict[str, Any]:
     """
     Analyze code integrity for a codebase.
-    
+
     Args:
         codebase: The codebase to analyze
-        
+
     Returns:
         A dictionary with analysis results
     """
@@ -201,35 +206,34 @@ def analyze_code_integrity(codebase: Codebase) -> Dict[str, Any]:
 def validate_code_integrity(codebase: Codebase) -> Dict[str, Any]:
     """
     Validate code integrity for a codebase.
-    
+
     Args:
         codebase: The codebase to validate
-        
+
     Returns:
         A dictionary with validation results
     """
     results = analyze_code_integrity(codebase)
-    
+
     # Determine if the codebase passes validation
-    passes = (
-        len(results["import_cycles"]) == 0 and
-        len(results["code_smells"]) < 10
-    )
-    
+    passes = len(results["import_cycles"]) == 0 and len(results["code_smells"]) < 10
+
     return {
         "passes": passes,
         "results": results,
-        "message": "Code integrity validation passed" if passes else "Code integrity validation failed",
+        "message": (
+            "Code integrity validation passed" if passes else "Code integrity validation failed"
+        ),
     }
 
 
 def check_code_quality(codebase: Codebase) -> Dict[str, Any]:
     """
     Check code quality for a codebase.
-    
+
     Args:
         codebase: The codebase to check
-        
+
     Returns:
         A dictionary with code quality metrics
     """
@@ -240,10 +244,10 @@ def check_code_quality(codebase: Codebase) -> Dict[str, Any]:
 def validate_dependencies(codebase: Codebase) -> Dict[str, Any]:
     """
     Validate dependencies for a codebase.
-    
+
     Args:
         codebase: The codebase to validate
-        
+
     Returns:
         A dictionary with dependency validation results
     """

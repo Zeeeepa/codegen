@@ -20,7 +20,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -57,7 +61,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -100,7 +108,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -141,7 +153,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -176,7 +192,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -191,8 +211,13 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
         ctx.commit_transactions()
 
         # Assert the changes
-        assert '<h1 key2="value2" test2={doAnotherThing()}>Hello, {name}!</h1>' in file.source
-        assert '<h1 key="value" test={doAThing()}>Hello, {name}!</h1>' not in file.source
+        assert (
+            '<h1 key2="value2" test2={doAnotherThing()}>Hello, {name}!</h1>'
+            in file.source
+        )
+        assert (
+            '<h1 key="value" test={doAThing()}>Hello, {name}!</h1>' not in file.source
+        )
 
 
 def test_tsx_prop_add(tmpdir) -> None:
@@ -211,7 +236,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -225,8 +254,13 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
         ctx.commit_transactions()
 
         # Assert the changes
-        assert '<h1 key2="value2" key="value" test={doAThing()} test2={doAnotherThing()} key3={123}>Hello, {name}!</h1>' in file.source
-        assert '<h1 key="value" test={doAThing()}>Hello, {name}!</h1>' not in file.source
+        assert (
+            '<h1 key2="value2" key="value" test={doAThing()} test2={doAnotherThing()} key3={123}>Hello, {name}!</h1>'
+            in file.source
+        )
+        assert (
+            '<h1 key="value" test={doAThing()}>Hello, {name}!</h1>' not in file.source
+        )
 
 
 def test_tsx_prop_add_empty(tmpdir) -> None:
@@ -245,7 +279,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -276,7 +314,11 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         greeting = file.get_symbol("FooBar")
 
@@ -290,7 +332,9 @@ function FooBar({ name }: FooBarProps): React.ReactElement {
 
         # Assert the changes
         assert "<h1>Hello, {name}!</h1>" in file.source
-        assert '<h1 key="value" test={doAThing()}>Hello, {name}!</h1>' not in file.source
+        assert (
+            '<h1 key="value" test={doAThing()}>Hello, {name}!</h1>' not in file.source
+        )
 
 
 def test_tsx_move_component(tmpdir) -> None:
@@ -324,7 +368,14 @@ function FooBar({ component }: FooBarProps) {
 """
     new_file_name = "new.tsx"
     new_file_content = ""
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={original_file_name: original_file_content, new_file_name: new_file_content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={
+            original_file_name: original_file_content,
+            new_file_name: new_file_content,
+        },
+    ) as ctx:
         original_file = ctx.get_file(original_file_name)
         foo_bar = original_file.get_symbol("FooBar")
 
@@ -351,7 +402,11 @@ function FooBar(): React.ReactElement {
   );
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         foo_bar = file.get_symbol("FooBar")
 
@@ -369,4 +424,6 @@ function FooBar(): React.ReactElement {
 </div>
 </section>
 """
-        assert expected_result in "\n".join([x.strip() for x in new_file.content.split("\n")])
+        assert expected_result in "\n".join(
+            [x.strip() for x in new_file.content.split("\n")]
+        )

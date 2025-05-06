@@ -106,7 +106,9 @@ def get_relace_api_key() -> str:
     return api_key
 
 
-def apply_relace_edit(api_key: str, initial_code: str, edit_snippet: str, stream: bool = False) -> str:
+def apply_relace_edit(
+    api_key: str, initial_code: str, edit_snippet: str, stream: bool = False
+) -> str:
     """Apply an edit using the Relace Instant Apply API.
 
     Args:
@@ -135,7 +137,9 @@ def apply_relace_edit(api_key: str, initial_code: str, edit_snippet: str, stream
         raise Exception(msg)
 
 
-def relace_edit(codebase: Codebase, filepath: str, edit_snippet: str, api_key: str | None = None) -> RelaceEditObservation:
+def relace_edit(
+    codebase: Codebase, filepath: str, edit_snippet: str, api_key: str | None = None
+) -> RelaceEditObservation:
     """Edit a file using the Relace Instant Apply API.
 
     Args:

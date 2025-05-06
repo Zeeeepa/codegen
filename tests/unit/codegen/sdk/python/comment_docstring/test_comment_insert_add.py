@@ -48,7 +48,10 @@ symbol = 1
         symbol.set_comment("this is a test comment\nthat spans multiple lines")
 
     # Check that the comment was added
-    assert "# this is a test comment\n# that spans multiple lines\nsymbol = 1\n" in file.source
+    assert (
+        "# this is a test comment\n# that spans multiple lines\nsymbol = 1\n"
+        in file.source
+    )
 
 
 def test_set_comment_with_indentation(tmpdir) -> None:
@@ -66,7 +69,10 @@ class MyClass:
         foo.set_comment("this is a test comment")
 
     # Check that the comment was added
-    assert "class MyClass:\n    # this is a test comment\n    def foo(self):\n        pass\n" in file.source
+    assert (
+        "class MyClass:\n    # this is a test comment\n    def foo(self):\n        pass\n"
+        in file.source
+    )
 
 
 def test_add_comment(tmpdir) -> None:
@@ -82,7 +88,10 @@ symbol = 1
         symbol.add_comment("this is a test comment")
 
     # Check that the comment was added
-    assert "# this is an existing comment\n# this is a test comment\nsymbol = 1\n" in file.source
+    assert (
+        "# this is an existing comment\n# this is a test comment\nsymbol = 1\n"
+        in file.source
+    )
 
 
 def test_add_comment_new(tmpdir) -> None:
@@ -113,7 +122,10 @@ symbol = 1
         symbol.add_comment("# this is a test comment")
 
     # Check that the comment was added
-    assert "# this is an existing comment\n# this is a test comment\nsymbol = 1\n" in file.source
+    assert (
+        "# this is an existing comment\n# this is a test comment\nsymbol = 1\n"
+        in file.source
+    )
     assert "##" not in file.source
     assert "# #" not in file.source
 
@@ -132,7 +144,10 @@ symbol = 1
         symbol.add_comment("this is a test comment\nthat spans multiple lines")
 
     # Check that the comment was added
-    assert "# this is an existing comment\n# that spans multiple lines\n# this is a test comment\n# that spans multiple lines\nsymbol = 1\n" in file.source
+    assert (
+        "# this is an existing comment\n# that spans multiple lines\n# this is a test comment\n# that spans multiple lines\nsymbol = 1\n"
+        in file.source
+    )
 
 
 def test_add_comment_with_indentation(tmpdir) -> None:
@@ -151,7 +166,10 @@ class MyClass:
         foo.add_comment("this is a test comment")
 
     # Check that the comment was added
-    assert "class MyClass:\n    # this is an existing comment\n    # this is a test comment\n    def foo(self):\n        pass\n" in file.source
+    assert (
+        "class MyClass:\n    # this is an existing comment\n    # this is a test comment\n    def foo(self):\n        pass\n"
+        in file.source
+    )
 
 
 def test_insert_comment(tmpdir) -> None:
@@ -182,11 +200,17 @@ symbol = 1
         file = codebase.get_file("test.py")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "# this is a test comment\n# that spans multiple lines"
+        assert (
+            symbol.comment.source
+            == "# this is a test comment\n# that spans multiple lines"
+        )
         symbol.set_comment("this is an inserted comment\nthat spans multiple lines")
 
     # Check that the comment was inserted
-    assert "# this is an inserted comment\n# that spans multiple lines\nsymbol = 1\n" in file.source
+    assert (
+        "# this is an inserted comment\n# that spans multiple lines\nsymbol = 1\n"
+        in file.source
+    )
 
 
 def test_insert_comment_weird_spacing(tmpdir) -> None:
@@ -200,11 +224,16 @@ symbol = 1
         file = codebase.get_file("test.py")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "# this is a test comment\n#that has weird spacing"
+        assert (
+            symbol.comment.source == "# this is a test comment\n#that has weird spacing"
+        )
         symbol.set_comment("this is an inserted comment\n  that has weird spacing")
 
     # Check that the comment was inserted
-    assert "# this is an inserted comment\n#   that has weird spacing\nsymbol = 1\n" in file.source
+    assert (
+        "# this is an inserted comment\n#   that has weird spacing\nsymbol = 1\n"
+        in file.source
+    )
 
 
 def test_insert_comment_with_indentation(tmpdir) -> None:
@@ -224,4 +253,7 @@ class MyClass:
         foo.set_comment("this is an inserted comment")
 
     # Check that the comment was inserted
-    assert "class MyClass:\n    # this is an inserted comment\n    def foo(self):\n        pass\n" in file.source
+    assert (
+        "class MyClass:\n    # this is an inserted comment\n    def foo(self):\n        pass\n"
+        in file.source
+    )

@@ -24,4 +24,7 @@ import { Component } from "./component"
 
         symbol = exporter_file.get_symbol("Component")
         assert len(symbol.symbol_usages) == 2
-        assert symbol.symbol_usages == [exporter_file.get_export("Component"), importer_file.get_import("Component")]
+        assert symbol.symbol_usages == [
+            exporter_file.get_export("Component"),
+            importer_file.get_import("Component"),
+        ]

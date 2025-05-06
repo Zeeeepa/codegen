@@ -3,8 +3,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from codegen.git.models.pr_options import PROptions
-from codegen.shared.compilation.string_to_code import create_execute_function_from_codeblock
-from codegen.shared.exceptions.compilation import DangerousUserCodeException, InvalidUserCodeException
+from codegen.shared.compilation.string_to_code import (
+    create_execute_function_from_codeblock,
+)
+from codegen.shared.exceptions.compilation import (
+    DangerousUserCodeException,
+    InvalidUserCodeException,
+)
 from codegen.shared.exceptions.control_flow import StopCodemodException
 
 
@@ -45,7 +50,9 @@ def test_set_custom_scope_does_not_raise():
     codeblock = """
 print(local_a)
 """
-    func = create_execute_function_from_codeblock(codeblock=codeblock, custom_scope={"local_a": "this is local_a"})
+    func = create_execute_function_from_codeblock(
+        codeblock=codeblock, custom_scope={"local_a": "this is local_a"}
+    )
     mock_log = MagicMock()
     func(codebase=MagicMock(log=mock_log), pr_options=PROptions())
     assert mock_log.call_count == 1
@@ -62,7 +69,9 @@ raise StopCodemodException("test exception")
     with pytest.raises(StopCodemodException):
         func(codebase=MagicMock(), pr_options=PROptions())
     mock_logger.info.call_count == 2
-    mock_logger.info.call_args_list[1][0][0] == "Stopping codemod due to StopCodemodException: test exception"
+    mock_logger.info.call_args_list[1][0][
+        0
+    ] == "Stopping codemod due to StopCodemodException: test exception"
 
 
 def test_references_import_from_generated_imports_does_not_raise():

@@ -24,7 +24,11 @@ class A {
 }
     """
 
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file(FILENAME)
 
         # Check setting docstring

@@ -45,7 +45,9 @@ def analyze_doc_responses(method) -> list[tuple]:
         if ".doc" in decorator.source:
             try:
                 if "responses=" in decorator.source:
-                    responses_dict = decorator.source.split("responses=")[1].split("}")[0] + "}"
+                    responses_dict = (
+                        decorator.source.split("responses=")[1].split("}")[0] + "}"
+                    )
                     if "{" in responses_dict:
                         resp_content = responses_dict.strip("{}").split(",")
                         for resp in resp_content:
@@ -53,7 +55,9 @@ def analyze_doc_responses(method) -> list[tuple]:
                                 code, desc = resp.split(":", 1)
                                 code = int(code.strip())
                                 desc = desc.strip().strip("'").strip('"')
-                                schema = None  # Could extract from body/model if present
+                                schema = (
+                                    None  # Could extract from body/model if present
+                                )
                                 responses.append((code, desc, schema))
             except Exception as e:
                 print(f"   ⚠️ Couldn't parse doc responses: {str(e)}")
@@ -147,7 +151,10 @@ def analyze_method_params(method) -> dict:
                     for entry in dict_content.split(","):
                         if ":" in entry and "'" in entry:
                             key = entry.split(":")[0].strip().strip("'").strip('"')
-                            schema[key] = {"type": "any", "required": False}  # Default to not required
+                            schema[key] = {
+                                "type": "any",
+                                "required": False,
+                            }  # Default to not required
             except Exception as e:
                 print(f"   ⚠️ Couldn't parse expect decorator: {str(e)}")
 
@@ -178,7 +185,9 @@ def run(codebase: Codebase):
         if cls.is_subclass_of("Resource"):
             file_analytics = []
 
-            ns_decorator = next((d for d in cls.decorators if ".route" in d.source), None)
+            ns_decorator = next(
+                (d for d in cls.decorators if ".route" in d.source), None
+            )
             if not ns_decorator:
                 continue
 
@@ -197,34 +206,57 @@ def run(codebase: Codebase):
                 print(f"         📝 Existing decorators: {existing_decorators}")
 
                 # Check for missing decorators
-                missing_response = not any(".response" in d for d in existing_decorators)
+                missing_response = not any(
+                    ".response" in d for d in existing_decorators
+                )
                 missing_expect = not any(".expect" in d for d in existing_decorators)
 
                 if not (missing_response or missing_expect):
                     print("         ✅ All decorators present")
                     continue
 
-                print(f"         🔧 Missing decorators - response: {missing_response}, expect: {missing_expect}")
+                print(
+                    f"         🔧 Missing decorators - response: {missing_response}, expect: {missing_expect}"
+                )
 
-                missing_info = {"class": cls.name, "method": method.name, "missing_response": missing_response, "missing_expect": missing_expect}
+                missing_info = {
+                    "class": cls.name,
+                    "method": method.name,
+                    "missing_response": missing_response,
+                    "missing_expect": missing_expect,
+                }
                 file_analytics.append(missing_info)
 
                 try:
                     response_schemas = analyze_method_returns(method)
-                    expect_schema = analyze_method_params(method) if method.name in ("post", "put", "patch") else {}
+                    expect_schema = (
+                        analyze_method_params(method)
+                        if method.name in ("post", "put", "patch")
+                        else {}
+                    )
 
                     # Add missing expect decorator
-                    if missing_expect and method.name in ("post", "put", "patch") and expect_schema:
+                    if (
+                        missing_expect
+                        and method.name in ("post", "put", "patch")
+                        and expect_schema
+                    ):
                         schema_str = "{\n"
                         for key, value in expect_schema.items():
                             schema_str += f"    '{key}': {value},\n"
                         schema_str += "}"
-                        print(f"         ➕ Adding expect decorator with schema: {schema_str}")
-                        method.insert_before(f"@{ns_name}.expect({schema_str})", fix_indentation=True)
+                        print(
+                            f"         ➕ Adding expect decorator with schema: {schema_str}"
+                        )
+                        method.insert_before(
+                            f"@{ns_name}.expect({schema_str})", fix_indentation=True
+                        )
 
                     # Add missing response decorators
                     if missing_response:
-                        print(f"         ➕ Adding {len(response_schemas)} response decorators")
+                        print(
+                            f"         ➕ Adding {len(response_schemas)} response decorators"
+                        )
                         for code, desc, schema in reversed(response_schemas):
                             if schema:
                                 schema_str = "{\n"
@@ -232,10 +264,16 @@ def run(codebase: Codebase):
                                     schema_str += f"    '{key}': {value},\n"
                                 schema_str += "}"
                                 print(f"         Adding response {code} with schema")
-                                method.insert_before(f"@{ns_name}.response({code}, '{desc}', {schema_str})", fix_indentation=True)
+                                method.insert_before(
+                                    f"@{ns_name}.response({code}, '{desc}', {schema_str})",
+                                    fix_indentation=True,
+                                )
                             else:
                                 print(f"         Adding response {code} without schema")
-                                method.insert_before(f"@{ns_name}.response({code}, '{desc}')", fix_indentation=True)
+                                method.insert_before(
+                                    f"@{ns_name}.response({code}, '{desc}')",
+                                    fix_indentation=True,
+                                )
                 except Exception as e:
                     print(f"         ❌ Error adding decorators: {str(e)}")
                     continue
@@ -261,6 +299,10 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("🎯 Starting OpenAPI decorators addition...")
-    codebase = Codebase.from_repo("mindsdb/mindsdb", commit="4b76c44bfaec789289e15fbdff7397e866009f94", language="python")
+    codebase = Codebase.from_repo(
+        "mindsdb/mindsdb",
+        commit="4b76c44bfaec789289e15fbdff7397e866009f94",
+        language="python",
+    )
     run(codebase)
     print("✅ Done! OpenAPI decorators added to all API endpoints!")

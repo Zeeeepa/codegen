@@ -557,14 +557,34 @@ Complexity Changes:
 
         return text
 
-def perform_detailed_analysis(self) -> Dict[str, Any]:
-    """Perform a detailed analysis of the differences between the two snapshots."""
-    results = self._initialize_analysis_results()
-    results.update(self._analyze_files_and_functions())
-    results.update(self._analyze_complexity())
-    results.update(self._analyze_risks())
-    results['recommendations'] = self._generate_recommendations(results)
-    return results
+    def perform_detailed_analysis(self) -> Dict[str, Any]:
+        """Perform a detailed analysis of the differences between the two snapshots."""
+        results = self._initialize_analysis_results()
+        results.update(self._analyze_files_and_functions())
+        results.update(self._analyze_complexity())
+        results.update(self._analyze_risks())
+        results["recommendations"] = self._generate_recommendations(results)
+        return results
+
+    def _initialize_analysis_results(self) -> Dict[str, Any]:
+        """Initialize the analysis results dictionary."""
+        return {
+            "added_files": [],
+            "removed_files": [],
+            "modified_files": [],
+            "added_functions": [],
+            "removed_functions": [],
+            "modified_functions": [],
+            "complexity_increases": [],
+            "complexity_decreases": [],
+            "potential_issues": [],
+            "recommendations": [],
+        }
+
+    def _analyze_files_and_functions(self) -> Dict[str, Any]:
+        """Analyze files and functions."""
+        results = {
+            "added_files": [],
             "removed_files": [],
             "modified_files": [],
             "added_functions": [],
@@ -599,26 +619,32 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
         # Analyze complexity changes
         complexity_changes = self.analyze_complexity_changes()
         for file_path, change in complexity_changes.items():
-            if change > 0:
-                results["complexity_increases"].append({
-                    "file": file_path,
-                    "increase": change,
-                })
-            elif change < 0:
-                results["complexity_decreases"].append({
-                    "file": file_path,
-                    "decrease": abs(change),
-                })
+            if change["delta"] > 0:
+                results["complexity_increases"].append(
+                    {
+                        "file": file_path,
+                        "increase": change["delta"],
+                    }
+                )
+            elif change["delta"] < 0:
+                results["complexity_decreases"].append(
+                    {
+                        "file": file_path,
+                        "decrease": abs(change["delta"]),
+                    }
+                )
 
         # Identify potential issues
         risk_assessment = self.assess_risk()
         for category, risk_level in risk_assessment.items():
             if risk_level in ["high", "medium"]:
-                results["potential_issues"].append({
-                    "category": category,
-                    "risk_level": risk_level,
-                    "description": self._get_risk_description(category, risk_level),
-                })
+                results["potential_issues"].append(
+                    {
+                        "category": category,
+                        "risk_level": risk_level,
+                        "description": self._get_risk_description(category, risk_level),
+                    }
+                )
 
         # Generate recommendations
         results["recommendations"] = self._generate_recommendations(results)
@@ -664,7 +690,9 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
             },
         }
 
-        return descriptions.get(category, {}).get(risk_level, f"Unknown risk for {category} at {risk_level} level")
+        return descriptions.get(category, {}).get(
+            risk_level, f"Unknown risk for {category} at {risk_level} level"
+        )
 
     def _generate_recommendations(self, analysis_results: Dict[str, Any]) -> List[str]:
         """
@@ -680,17 +708,16 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
 
         # Check for complexity increases
         if len(analysis_results["complexity_increases"]) > 3:
-            recommendations.append(
-                "Consider refactoring complex files to improve maintainability."
-            )
+            recommendations.append("Consider refactoring complex files to improve maintainability.")
 
         # Check for potential issues
         for issue in analysis_results["potential_issues"]:
             if issue["category"] == "code_quality" and issue["risk_level"] == "high":
-                recommendations.append(
-                    "Address code quality issues to improve maintainability."
-                )
-            elif issue["category"] == "security" and issue["risk_level"] in ["high", "medium"]:
+                recommendations.append("Address code quality issues to improve maintainability.")
+            elif issue["category"] == "security" and issue["risk_level"] in [
+                "high",
+                "medium",
+            ]:
                 recommendations.append(
                     "Address security vulnerabilities to prevent potential exploits."
                 )
@@ -698,10 +725,11 @@ def perform_detailed_analysis(self) -> Dict[str, Any]:
                 recommendations.append(
                     "Optimize performance-critical code to improve system responsiveness."
                 )
-            elif issue["category"] == "test_coverage" and issue["risk_level"] in ["high", "medium"]:
-                recommendations.append(
-                    "Increase test coverage to ensure code reliability."
-                )
+            elif issue["category"] == "test_coverage" and issue["risk_level"] in [
+                "high",
+                "medium",
+            ]:
+                recommendations.append("Increase test coverage to ensure code reliability.")
 
         # Check for large changes
         if len(analysis_results["added_files"]) + len(analysis_results["modified_files"]) > 10:

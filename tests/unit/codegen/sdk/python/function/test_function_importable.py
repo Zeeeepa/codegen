@@ -27,7 +27,13 @@ class MyClass:
         file = codebase.get_file("test.py")
         symbols = file.symbols
         assert len(symbols) == 5
-        assert set(s.name for s in symbols) == {"GLOBAL_VAR_1", "GLOBAL_VAR_2", "foo", "bar", "MyClass"}
+        assert set(s.name for s in symbols) == {
+            "GLOBAL_VAR_1",
+            "GLOBAL_VAR_2",
+            "foo",
+            "bar",
+            "MyClass",
+        }
 
         foo_deps = file.get_symbol("foo").dependencies
         assert set(d.name for d in foo_deps) == {"bar", "GLOBAL_VAR_1"}
@@ -97,13 +103,26 @@ def g(tmpdir):
         file = codebase.get_file("test.py")
 
         f_deps = file.get_symbol("f").dependencies
-        assert any((isinstance(dep, Import) and dep.alias.source == "MyType") for dep in f_deps)
-        assert any((isinstance(dep, Import) and dep.alias.source == "my_decorator") for dep in f_deps)
-        assert any((isinstance(dep, Import) and dep.alias.source == "my_module") for dep in f_deps)
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "MyType") for dep in f_deps
+        )
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "my_decorator")
+            for dep in f_deps
+        )
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "my_module")
+            for dep in f_deps
+        )
 
         g_deps = file.get_symbol("g").dependencies
-        assert any((isinstance(dep, Import) and dep.alias.source == "MyType") for dep in g_deps)
-        assert any((isinstance(dep, Import) and dep.alias.source == "my_module") for dep in g_deps)
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "MyType") for dep in g_deps
+        )
+        assert any(
+            (isinstance(dep, Import) and dep.alias.source == "my_module")
+            for dep in g_deps
+        )
 
 
 def test_function_parameter_dependencies(tmpdir) -> None:
@@ -133,6 +152,15 @@ def k() -> Optional[B] | None | B:
 
         assert set(dep.name for dep in file.get_symbol("f").dependencies) == {"B"}
         assert set(dep.name for dep in file.get_symbol("g").dependencies) == {"B"}
-        assert set(dep.name for dep in file.get_symbol("h").dependencies) == {"B", "Optional"}
-        assert set(dep.name for dep in file.get_symbol("i").dependencies) == {"B", "Optional"}
-        assert set(dep.name for dep in file.get_symbol("k").dependencies) == {"B", "Optional"}
+        assert set(dep.name for dep in file.get_symbol("h").dependencies) == {
+            "B",
+            "Optional",
+        }
+        assert set(dep.name for dep in file.get_symbol("i").dependencies) == {
+            "B",
+            "Optional",
+        }
+        assert set(dep.name for dep in file.get_symbol("k").dependencies) == {
+            "B",
+            "Optional",
+        }

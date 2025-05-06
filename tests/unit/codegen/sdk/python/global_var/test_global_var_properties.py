@@ -44,7 +44,9 @@ def test_global_var_comments_not_included(tmpdir) -> None:
 
 foo = 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_global_var("foo")
 
@@ -63,7 +65,9 @@ def test_global_var_comment_included(tmpdir) -> None:
 # This is a comment
 foo = 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_global_var("foo")
 
@@ -85,7 +89,9 @@ def test_global_var_broken_comment(tmpdir) -> None:
 # This is comment 2
 foo = 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_global_var("foo")
 
@@ -109,11 +115,16 @@ def test_global_var_multiline_comment(tmpdir) -> None:
 # This is comment 3
 foo = 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_global_var("foo")
 
-        assert foo.comment.source == "# This is comment 1\n# This is comment 2\n# This is comment 3"
+        assert (
+            foo.comment.source
+            == "# This is comment 1\n# This is comment 2\n# This is comment 3"
+        )
         assert "# This is comment 1" in foo.extended_source
         assert "# This is comment 2" in foo.extended_source
         assert "# This is comment 3" in foo.extended_source
@@ -130,7 +141,9 @@ def test_global_var_inline_comment(tmpdir) -> None:
     FILE_CONTENT = """
 foo = 1  # This is a comment
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_global_var("foo")
 

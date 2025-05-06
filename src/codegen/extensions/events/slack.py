@@ -39,7 +39,9 @@ class Slack(EventHandlerManagerProtocol):
                 return {"challenge": event.challenge}
             elif event.type == "event_callback" and event.event:
                 if event.event.type not in self.registered_handlers:
-                    logger.info(f"[HANDLER] No handler found for event type: {event.event.type}")
+                    logger.info(
+                        f"[HANDLER] No handler found for event type: {event.event.type}"
+                    )
                     return {"message": "Event handled successfully"}
                 else:
                     handler = self.registered_handlers[event.event.type]

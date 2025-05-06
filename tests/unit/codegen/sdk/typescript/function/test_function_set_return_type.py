@@ -10,7 +10,11 @@ export function foo(input: string) {
     return "hello";
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file(FILE_NAME)
         func = file.get_function("foo")
         func.set_return_type("string")

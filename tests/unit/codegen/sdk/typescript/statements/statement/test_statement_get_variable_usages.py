@@ -28,7 +28,11 @@ function foo(x: number, y: string): MyClass {
     return obj;
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file_name: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file_name: content},
+    ) as codebase:
         file = codebase.get_file(file_name)
         code_block = file.get_function("foo").code_block
 
@@ -45,4 +49,7 @@ function foo(x: number, y: string): MyClass {
         obj_usages[0].edit("new_obj")
         all_z_usages = code_block.get_variable_usages(z.name)
         assert len(all_z_usages) == 4
-    assert 'if (new_z === "some random string") {\n        new_obj.attr1 = new_z;' in file.content
+    assert (
+        'if (new_z === "some random string") {\n        new_obj.attr1 = new_z;'
+        in file.content
+    )

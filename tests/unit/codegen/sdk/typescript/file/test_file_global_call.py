@@ -23,7 +23,11 @@ if (true) {
 
 Array.from({ length: 10 }, () => foo());
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_symbol("foo")
         assert len(foo.call_sites) == 5

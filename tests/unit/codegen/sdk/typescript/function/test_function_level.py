@@ -16,7 +16,11 @@ class A {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         # Test top-level function
         function_f = codebase.get_symbol("f")
         assert function_f.code_block.level == 1

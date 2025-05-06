@@ -32,19 +32,32 @@ from file1 import foo
 def baz():
     return foo()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         foo_function = file1.get_function("foo")
         bar_function = file1.get_function("bar")
         baz_function = file2.get_function("baz")
 
-        assert len(foo_function.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
+        assert (
+            len(foo_function.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 2
+        )
         assert len(foo_function.symbol_usages) == 3
-        assert len(bar_function.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 0
+        assert (
+            len(bar_function.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)) == 0
+        )
         assert len(baz_function.symbol_usages) == 0
-        assert foo_function.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)[0] is bar_function
-        assert set(foo_function.symbol_usages) == {bar_function, file2.get_import("foo"), baz_function}
+        assert (
+            foo_function.symbol_usages(UsageType.DIRECT | UsageType.CHAINED)[0]
+            is bar_function
+        )
+        assert set(foo_function.symbol_usages) == {
+            bar_function,
+            file2.get_import("foo"),
+            baz_function,
+        }
 
 
 def test_function_usages_aliased(tmpdir) -> None:
@@ -70,7 +83,10 @@ from file1 import foo
 def baz2():
     return foo()
         """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2, "file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.py": content1, "file2.py": content2, "file3.py": content3},
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         file3 = codebase.get_file("file3.py")
@@ -78,12 +94,48 @@ def baz2():
         bar_function = file1.get_function("bar")
         baz_function = file2.get_function("baz")
         baz2_function = file3.get_function("baz2")
-        direct_usages = {bar_function, file2.get_import("foo2"), file3.get_import("foo")}
+        direct_usages = {
+            bar_function,
+            file2.get_import("foo2"),
+            file3.get_import("foo"),
+        }
         indirect_usages = {baz2_function}
         aliased_usages = {baz_function}
-        assert set(foo_function.symbol_usages(usage_types=UsageType.DIRECT)) == direct_usages, direct_usages
-        assert set(foo_function.symbol_usages(usage_types=UsageType.INDIRECT)) == indirect_usages, set(foo_function.symbol_usages(usage_types=UsageType.INDIRECT))
-        assert set(foo_function.symbol_usages(usage_types=UsageType.ALIASED)) == aliased_usages
-        assert set(foo_function.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT)) == direct_usages | indirect_usages
-        assert set(foo_function.symbol_usages(usage_types=UsageType.INDIRECT | UsageType.ALIASED)) == aliased_usages | indirect_usages
-        assert set(foo_function.symbol_usages(usage_types=UsageType.DIRECT | UsageType.INDIRECT | UsageType.ALIASED)) == direct_usages | indirect_usages | aliased_usages
+        assert (
+            set(foo_function.symbol_usages(usage_types=UsageType.DIRECT))
+            == direct_usages
+        ), direct_usages
+        assert (
+            set(foo_function.symbol_usages(usage_types=UsageType.INDIRECT))
+            == indirect_usages
+        ), set(foo_function.symbol_usages(usage_types=UsageType.INDIRECT))
+        assert (
+            set(foo_function.symbol_usages(usage_types=UsageType.ALIASED))
+            == aliased_usages
+        )
+        assert (
+            set(
+                foo_function.symbol_usages(
+                    usage_types=UsageType.DIRECT | UsageType.INDIRECT
+                )
+            )
+            == direct_usages | indirect_usages
+        )
+        assert (
+            set(
+                foo_function.symbol_usages(
+                    usage_types=UsageType.INDIRECT | UsageType.ALIASED
+                )
+            )
+            == aliased_usages | indirect_usages
+        )
+        assert (
+            set(
+                foo_function.symbol_usages(
+                    usage_types=UsageType.DIRECT
+                    | UsageType.INDIRECT
+                    | UsageType.ALIASED
+                )
+            )
+            == direct_usages | indirect_usages | aliased_usages
+        )

@@ -27,7 +27,10 @@ def test_codebase_git(tmpdir, commit: bool, sync: bool) -> None:
     message = commit.message
     if not os.environ.get("CI"):
         assert "Co-authored-by:" in message
-        assert f"Co-authored-by: {commit.author.name} <{commit.author.email}>" not in message
+        assert (
+            f"Co-authored-by: {commit.author.name} <{commit.author.email}>"
+            not in message
+        )
     codebase.sync_to_commit(commit)
     assert c1 != c2
     assert codebase.get_symbol("a", optional=True) is not None
@@ -39,7 +42,13 @@ def test_codebase_git(tmpdir, commit: bool, sync: bool) -> None:
 
 @pytest.mark.parametrize("commit, sync", [(True, True), (True, False), (False, False)])
 def test_codebase_clean_repo_deletes_branches(tmpdir, commit: bool, sync: bool) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file.py": "a = 1"}, programming_language=ProgrammingLanguage.PYTHON, commit=commit, sync_graph=sync) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file.py": "a = 1"},
+        programming_language=ProgrammingLanguage.PYTHON,
+        commit=commit,
+        sync_graph=sync,
+    ) as codebase:
         num_branches = len(codebase._op.git_cli.branches)
         codebase.checkout(branch="foo", create_if_missing=True)
         codebase.checkout(branch="bar", create_if_missing=True)

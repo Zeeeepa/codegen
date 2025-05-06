@@ -34,9 +34,15 @@ let t: boolean = 39 || 40;
 let u: boolean = 41 instanceof 42;
 let v: boolean = 43 in 44;
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
-        assert all([isinstance(var.value, BinaryExpression) for var in file.global_vars])
+        assert all(
+            [isinstance(var.value, BinaryExpression) for var in file.global_vars]
+        )
 
         assert file.get_global_var("a").value.left.source == "1"
         assert file.get_global_var("a").value.right.source == "2"
@@ -139,17 +145,57 @@ let b: boolean = 9 == 10 && 10 != 11 && 11 < 12 && 12 > 13 && 13 <= 14
 // boolean operators
 let c: boolean = true && false || false && true || false;
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
 
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "3", "4", "5", "6", "7", "0"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "0",
+        ]
         assert [x.source for x in a.operators] == ["+", "-", "*", "/", "%", "**", "|"]
 
         b = file.get_global_var("b").value
-        assert [x.source for x in b.elements] == ["9", "10", "10", "11", "11", "12", "12", "13", "13", "14"]
-        assert [x.source for x in b.operators] == ["==", "&&", "!=", "&&", "<", "&&", ">", "&&", "<="]
+        assert [x.source for x in b.elements] == [
+            "9",
+            "10",
+            "10",
+            "11",
+            "11",
+            "12",
+            "12",
+            "13",
+            "13",
+            "14",
+        ]
+        assert [x.source for x in b.operators] == [
+            "==",
+            "&&",
+            "!=",
+            "&&",
+            "<",
+            "&&",
+            ">",
+            "&&",
+            "<=",
+        ]
 
         c = file.get_global_var("c").value
-        assert [x.source for x in c.elements] == ["true", "false", "false", "true", "false"]
+        assert [x.source for x in c.elements] == [
+            "true",
+            "false",
+            "false",
+            "true",
+            "false",
+        ]
         assert [x.source for x in c.operators] == ["&&", "||", "&&", "||"]

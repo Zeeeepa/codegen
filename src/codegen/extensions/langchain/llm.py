@@ -20,19 +20,36 @@ from pydantic import Field
 class LLM(BaseChatModel):
     """A unified chat model that supports both OpenAI and Anthropic."""
 
-    model_provider: str = Field(default="anthropic", description="The model provider to use.")
+    model_provider: str = Field(
+        default="anthropic", description="The model provider to use."
+    )
 
-    model_name: str = Field(default="claude-3-5-sonnet-latest", description="Name of the model to use.")
+    model_name: str = Field(
+        default="claude-3-5-sonnet-latest", description="Name of the model to use."
+    )
 
-    temperature: float = Field(default=0, description="Temperature parameter for the model.", ge=0, le=1)
+    temperature: float = Field(
+        default=0, description="Temperature parameter for the model.", ge=0, le=1
+    )
 
-    top_p: Optional[float] = Field(default=None, description="Top-p sampling parameter.", ge=0, le=1)
+    top_p: Optional[float] = Field(
+        default=None, description="Top-p sampling parameter.", ge=0, le=1
+    )
 
-    top_k: Optional[int] = Field(default=None, description="Top-k sampling parameter.", ge=1)
+    top_k: Optional[int] = Field(
+        default=None, description="Top-k sampling parameter.", ge=1
+    )
 
-    max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.", ge=1)
+    max_tokens: Optional[int] = Field(
+        default=None, description="Maximum number of tokens to generate.", ge=1
+    )
 
-    def __init__(self, model_provider: str = "anthropic", model_name: str = "claude-3-5-sonnet-latest", **kwargs: Any) -> None:
+    def __init__(
+        self,
+        model_provider: str = "anthropic",
+        model_name: str = "claude-3-5-sonnet-latest",
+        **kwargs: Any,
+    ) -> None:
         """Initialize the LLM.
 
         Args:
@@ -49,7 +66,17 @@ class LLM(BaseChatModel):
         kwargs["model_name"] = model_name
 
         # Filter out unsupported kwargs
-        supported_kwargs = {"model_provider", "model_name", "temperature", "top_p", "top_k", "max_tokens", "callbacks", "tags", "metadata"}
+        supported_kwargs = {
+            "model_provider",
+            "model_name",
+            "temperature",
+            "top_p",
+            "top_k",
+            "max_tokens",
+            "callbacks",
+            "tags",
+            "metadata",
+        }
         filtered_kwargs = {k: v for k, v in kwargs.items() if k in supported_kwargs}
 
         super().__init__(**filtered_kwargs)
@@ -79,7 +106,11 @@ class LLM(BaseChatModel):
             return {**base_kwargs, "model": self.model_name}
         elif self.model_provider == "xai":
             xai_api_base = os.getenv("XAI_API_BASE", "https://api.x.ai/v1/")
-            return {**base_kwargs, "model": self.model_name, "xai_api_base": xai_api_base}
+            return {
+                **base_kwargs,
+                "model": self.model_name,
+                "xai_api_base": xai_api_base,
+            }
         else:  # openai
             return {**base_kwargs, "model": self.model_name}
 
@@ -90,13 +121,23 @@ class LLM(BaseChatModel):
                 msg = "ANTHROPIC_API_KEY not found in environment. Please set it in your .env file or environment variables."
                 raise ValueError(msg)
             max_tokens = 8192
-            return ChatAnthropic(**self._get_model_kwargs(), max_tokens=max_tokens, max_retries=10, timeout=1000)
+            return ChatAnthropic(
+                **self._get_model_kwargs(),
+                max_tokens=max_tokens,
+                max_retries=10,
+                timeout=1000,
+            )
 
         elif self.model_provider == "openai":
             if not os.getenv("OPENAI_API_KEY"):
                 msg = "OPENAI_API_KEY not found in environment. Please set it in your .env file or environment variables."
                 raise ValueError(msg)
-            return ChatOpenAI(**self._get_model_kwargs(), max_tokens=4096, max_retries=10, timeout=1000)
+            return ChatOpenAI(
+                **self._get_model_kwargs(),
+                max_tokens=4096,
+                max_retries=10,
+                timeout=1000,
+            )
 
         elif self.model_provider == "xai":
             if not os.getenv("XAI_API_KEY"):
@@ -125,7 +166,9 @@ class LLM(BaseChatModel):
         Returns:
             ChatResult containing the generated completion
         """
-        return self._model._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
+        return self._model._generate(
+            messages, stop=stop, run_manager=run_manager, **kwargs
+        )
 
     def bind_tools(
         self,

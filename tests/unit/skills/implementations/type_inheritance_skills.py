@@ -215,7 +215,11 @@ ts_files_write = [
 ]
 
 
-@skill(eval_skill=False, prompt="Gets all set of symbols that can inherits, extends, or implements a given type symbol.", uid="8b2442b5-aa5e-44c5-bebc-640f7cf7f2d7")
+@skill(
+    eval_skill=False,
+    prompt="Gets all set of symbols that can inherits, extends, or implements a given type symbol.",
+    uid="8b2442b5-aa5e-44c5-bebc-640f7cf7f2d7",
+)
 class SearchTypeAliasInheritanceSkill(Skill):
     """Gets all implementation instances of type alias 'MyMapper' in TypeScript codebase."""
 
@@ -228,7 +232,10 @@ class SearchTypeAliasInheritanceSkill(Skill):
         pass
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=ts_files_readonly)], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase(files=ts_files_readonly)],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: TSCodebaseType):
         """Given a type alias 'MyMapper', find all inherited or extended implementations of the type object.
         Loops through all codebase symbols and handles each symbol type accordingly.
@@ -242,24 +249,40 @@ class SearchTypeAliasInheritanceSkill(Skill):
         for symbol in codebase.symbols:
             if isinstance(symbol, Assignment):
                 # Check if the global variable initializes a mapper implementation
-                if symbol.type and symbol.type.name == "MyMapper" and isinstance(symbol.value, Dict):
+                if (
+                    symbol.type
+                    and symbol.type.name == "MyMapper"
+                    and isinstance(symbol.value, Dict)
+                ):
                     mapper_impl.append((symbol, symbol.value))
             elif isinstance(symbol, Function):
                 if symbol.return_type and symbol.return_type.name == "MyMapper":
                     # Search for the assignment statement that implements the mapper type
                     for statement in symbol.code_block.assignment_statements:
-                        if (val := statement.right) and isinstance(val, Dict) and set(val.keys()) == set(mapper_dict.keys()):
+                        if (
+                            (val := statement.right)
+                            and isinstance(val, Dict)
+                            and set(val.keys()) == set(mapper_dict.keys())
+                        ):
                             mapper_impl.append((symbol, val))
                             break
             elif isinstance(symbol, Class):
                 if mapper_symbol in symbol.superclasses:
-                    mapper_impl.append((symbol, {**{x.name: x for x in symbol.methods}}))
+                    mapper_impl.append(
+                        (symbol, {**{x.name: x for x in symbol.methods}})
+                    )
 
         assert len(mapper_impl) == 3
-        assert all([set(val.keys()) == set(mapper_dict.keys()) for _, val in mapper_impl])
+        assert all(
+            [set(val.keys()) == set(mapper_dict.keys()) for _, val in mapper_impl]
+        )
 
 
-@skill(eval_skill=False, prompt="Converts a specified set of functions in an object type to be asynchronous.", uid="d091ab15-0071-407b-bf1a-e89aeb69add9")
+@skill(
+    eval_skill=False,
+    prompt="Converts a specified set of functions in an object type to be asynchronous.",
+    uid="d091ab15-0071-407b-bf1a-e89aeb69add9",
+)
 class AsyncifyTypeAliasElements(Skill):
     """Given a type alias 'MyMapper' containing synchronous methods, convert 'getFromMethod' method to be asynchronous.
     The inherited implementations of the type alias as well as all their call sites are also update.
@@ -274,7 +297,9 @@ class AsyncifyTypeAliasElements(Skill):
         pass
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=ts_files_write)], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [SkillTestCase(files=ts_files_write)], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def typescript_skill_func(codebase: TSCodebaseType):
         FUNC_NAME_TO_CONVERT = "convert"
 
@@ -289,18 +314,28 @@ class AsyncifyTypeAliasElements(Skill):
         for symbol in codebase.symbols:
             if isinstance(symbol, Assignment):
                 # Check if the global variable initializes a mapper implementation
-                if symbol.type and symbol.type.name == "MyMapper" and isinstance(symbol.value, Dict):
+                if (
+                    symbol.type
+                    and symbol.type.name == "MyMapper"
+                    and isinstance(symbol.value, Dict)
+                ):
                     mapper_impl.append((symbol, symbol.value))
             elif isinstance(symbol, Function):
                 if symbol.return_type and symbol.return_type.name == "MyMapper":
                     # Search for the assignment statement that implements the mapper type
                     for statement in symbol.code_block.assignment_statements:
-                        if (val := statement.right) and isinstance(val, Dict) and set(val.keys()) == set(mapper_dict.keys()):
+                        if (
+                            (val := statement.right)
+                            and isinstance(val, Dict)
+                            and set(val.keys()) == set(mapper_dict.keys())
+                        ):
                             mapper_impl.append((symbol, val))
                             break
             elif isinstance(symbol, Class):
                 if mapper_symbol in symbol.superclasses:
-                    mapper_impl.append((symbol, {**{x.name: x for x in symbol.methods}}))
+                    mapper_impl.append(
+                        (symbol, {**{x.name: x for x in symbol.methods}})
+                    )
 
         # Update the mapper type alias implementations
         usages_to_check = []

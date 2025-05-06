@@ -33,7 +33,9 @@ class GitAttributionTracker:
 
         # Cache structures
         self._file_history = {}  # file path -> list of commit info
-        self._symbol_history: defaultdict[str, list] = defaultdict(list)  # symbol id -> list of commit info
+        self._symbol_history: defaultdict[str, list] = defaultdict(
+            list
+        )  # symbol id -> list of commit info
         self._author_contributions = defaultdict(list)  # author -> list of commit info
 
         # Track if history has been built
@@ -104,13 +106,22 @@ class GitAttributionTracker:
 
         # Print diagnostic information
         print(f"Finished building history in {elapsed:.2f} seconds.")
-        print(f"Processed {commit_count} commits from {len(author_set)} unique authors.")
+        print(
+            f"Processed {commit_count} commits from {len(author_set)} unique authors."
+        )
         print(f"Found {len(self._file_history)} files with history.")
         print(f"Found {len(self._author_contributions)} contributors.")
 
         if len(self._author_contributions) > 0:
             print("Top contributors:")
-            top_contributors = sorted([(author, len(commits)) for author, commits in self._author_contributions.items()], key=lambda x: x[1], reverse=True)[:5]
+            top_contributors = sorted(
+                [
+                    (author, len(commits))
+                    for author, commits in self._author_contributions.items()
+                ],
+                key=lambda x: x[1],
+                reverse=True,
+            )[:5]
             for author, count in top_contributors:
                 print(f"  • {author}: {count} commits")
         else:
@@ -161,7 +172,9 @@ class GitAttributionTracker:
                 for symbol in file.symbols:
                     symbol: Symbol
                     start_line = symbol.range.start_point.row + 1  # 1 Indexing
-                    end_line = symbol.range.end_point.row + 2  # Intervaltree is end non-inclusive
+                    end_line = (
+                        symbol.range.end_point.row + 2
+                    )  # Intervaltree is end non-inclusive
                     filetree.addi(start_line, end_line, symbol)
             except Exception as e:
                 pass
@@ -174,7 +187,9 @@ class GitAttributionTracker:
         for hunk in patch.hunks:
             start = hunk.new_start
             end = start + hunk.new_lines  # Intervaltree is end non-inclusive
-            for interval in self._file_symbol_location_state[filepath].overlap(start, end):
+            for interval in self._file_symbol_location_state[filepath].overlap(
+                start, end
+            ):
                 symbols_affected.add(interval[2])
 
         return symbols_affected
@@ -209,12 +224,16 @@ class GitAttributionTracker:
         stash_msg = f"Codegen Attribution Stash @ {datetime.now().timestamp()}"
         stash_id = None
         try:
-            stash_id = self.repo.stash(self.repo.default_signature, stash_msg, include_untracked=True)
+            stash_id = self.repo.stash(
+                self.repo.default_signature, stash_msg, include_untracked=True
+            )
             print("Stashed!")
         except KeyError as e:
             print("Nothing to stash, proceeding.....")
         except Exception as e:
-            print("Error encountered attempting to stash the current working state, stopping to preserve work, please manually clean the working directory and try again!")
+            print(
+                "Error encountered attempting to stash the current working state, stopping to preserve work, please manually clean the working directory and try again!"
+            )
             raise (e)
 
         print("Generating initial symbol state...")
@@ -246,7 +265,9 @@ class GitAttributionTracker:
                     empty_tree = self.repo.get(empty_tree_old)
                     diff = self.repo.diff(empty_tree, commit.tree)
                 else:
-                    diff = self.repo.diff(commit_previous, commit, context_lines=0)  # We don't need context lines
+                    diff = self.repo.diff(
+                        commit_previous, commit, context_lines=0
+                    )  # We don't need context lines
 
                 if isinstance(diff, Patch):
                     diff = [diff]
@@ -255,16 +276,22 @@ class GitAttributionTracker:
                     filepath = patch.delta.new_file.path
                     if not self._is_tracked_file(filepath):
                         continue  # Ignore files we don't track
-                    if not patch.delta.status == DeltaStatus.ADDED:  # Reversed since we're going backwards, if it doesn't exist in the past commits don't sync!
+                    if (
+                        not patch.delta.status == DeltaStatus.ADDED
+                    ):  # Reversed since we're going backwards, if it doesn't exist in the past commits don't sync!
                         sync_past_filepaths.append(filepath)
-                    symbols_affected = self._get_symbols_affected_by_patch(patch, filepath)
+                    symbols_affected = self._get_symbols_affected_by_patch(
+                        patch, filepath
+                    )
                     for symbol in symbols_affected:
                         symbol_id = f"{symbol.filepath}:{symbol.name}"  # For future stuff might want to do this more neatly and allow for future dead symbols/renames
                         self._symbol_history[symbol_id].append(commit_info)
 
                 if commit_previous:
                     # If not last commit
-                    self.repo.checkout_tree(commit_previous, strategy=CheckoutStrategy.FORCE)
+                    self.repo.checkout_tree(
+                        commit_previous, strategy=CheckoutStrategy.FORCE
+                    )
                     self.repo.set_head(commit_previous.id)
                     files = [self.codebase.get_file(fp) for fp in sync_past_filepaths]
                     exclude_state_files = []
@@ -274,13 +301,23 @@ class GitAttributionTracker:
                             exclude_state_files.append(file.filepath)
                             continue
                         file.sync_with_file_content()
-                    self._process_symbol_location_state([fp for fp in sync_past_filepaths if fp not in exclude_state_files])
+                    self._process_symbol_location_state(
+                        [
+                            fp
+                            for fp in sync_past_filepaths
+                            if fp not in exclude_state_files
+                        ]
+                    )
 
         finally:
             print("Finished, restoring git repo state...")
-            self.repo.checkout(self.org_branch_reference, strategy=CheckoutStrategy.FORCE)
+            self.repo.checkout(
+                self.org_branch_reference, strategy=CheckoutStrategy.FORCE
+            )
 
-            print(f"Restored to latest commit, newest commit id in repo is {self.repo.revparse_single(self.org_branch_reference.name).id}")
+            print(
+                f"Restored to latest commit, newest commit id in repo is {self.repo.revparse_single(self.org_branch_reference.name).id}"
+            )
 
             if stash_id:
                 # Restoring Working Directory
@@ -297,7 +334,9 @@ class GitAttributionTracker:
                     self.repo.stash_drop(0)
                     print("Stash Removed!")
                 else:
-                    print("Another stash occured in the meantime,please handle stash resotration manually")
+                    print(
+                        "Another stash occured in the meantime,please handle stash resotration manually"
+                    )
                     print(f"Codebase stash index:{found_stash}")
                     print(f"Codebase stash msg:{stash_msg}")
                     print(f"Codebase stash oid:{stash_id}")
@@ -357,22 +396,35 @@ class GitAttributionTracker:
         for file_path, commits in self._file_history.items():
             for commit in commits:
                 total_file_commits[file_path] += 1
-                if commit["author"] in self.ai_authors or commit["email"] in self.ai_authors:
+                if (
+                    commit["author"] in self.ai_authors
+                    or commit["email"] in self.ai_authors
+                ):
                     ai_file_commits[file_path] += 1
 
         # Find files with highest AI contribution percentage
         ai_contribution_percentage = {}
         for file_path, total in total_file_commits.items():
             if total > 0:
-                ai_contribution_percentage[file_path] = (ai_file_commits[file_path] / total) * 100
+                ai_contribution_percentage[file_path] = (
+                    ai_file_commits[file_path] / total
+                ) * 100
 
         # Get top files by AI contribution
-        top_ai_files = sorted(ai_contribution_percentage.items(), key=lambda x: x[1], reverse=True)[:20]
+        top_ai_files = sorted(
+            ai_contribution_percentage.items(), key=lambda x: x[1], reverse=True
+        )[:20]
 
         # Count total AI commits
-        ai_commits = sum(len(commits) for author, commits in self._author_contributions.items() if any(name in author for name in self.ai_authors))
+        ai_commits = sum(
+            len(commits)
+            for author, commits in self._author_contributions.items()
+            if any(name in author for name in self.ai_authors)
+        )
 
-        total_commits = sum(len(commits) for commits in self._author_contributions.values())
+        total_commits = sum(
+            len(commits) for commits in self._author_contributions.values()
+        )
 
         # Calculate AI percentage safely
         if total_commits > 0:
@@ -385,7 +437,9 @@ class GitAttributionTracker:
             "ai_commits": ai_commits,
             "ai_percentage": ai_percentage,
             "top_ai_files": top_ai_files,
-            "ai_file_count": len([f for f, p in ai_contribution_percentage.items() if p > 50]),
+            "ai_file_count": len(
+                [f for f, p in ai_contribution_percentage.items() if p > 50]
+            ),
             "total_file_count": len(total_file_commits),
         }
 
@@ -403,7 +457,11 @@ class GitAttributionTracker:
             history = self.get_symbol_history(symbol)
 
             # Check if any commit is from an AI author
-            if any(commit["author"] in self.ai_authors or commit["email"] in self.ai_authors for commit in history):
+            if any(
+                commit["author"] in self.ai_authors
+                or commit["email"] in self.ai_authors
+                for commit in history
+            ):
                 ai_symbols.append(symbol)
 
         return ai_symbols

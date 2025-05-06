@@ -24,10 +24,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(True)
     # language=typescript
     assert (
@@ -60,10 +66,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(False)
     # language=typescript
     assert (
@@ -92,10 +104,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(True)
     # language=typescript
     assert (
@@ -121,10 +139,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(False)
     # language=typescript
     assert (
@@ -154,10 +178,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        second_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[1]
+        second_if = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[1]
         second_if.reduce_condition(False)
     # language=typescript
     assert (
@@ -200,12 +230,18 @@ class MyClass {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_class("MyClass").get_method("foo")
         top_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
         top_if.reduce_condition(True)
-        nested_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[2]
+        nested_if = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[2]
         nested_if.reduce_condition(False)
 
     # language=typescript
@@ -244,10 +280,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        elif_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].elif_statements[0]
+        elif_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].elif_statements[0]
         elif_block.reduce_condition(True)
     # language=typescript
     assert (
@@ -285,10 +327,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        elif_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].elif_statements[0]
+        elif_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].elif_statements[0]
         elif_block.reduce_condition(False)
     # language=typescript
     assert (
@@ -320,10 +368,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        else_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0].else_statement
+        else_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[0].else_statement
         with pytest.raises(ValueError):
             else_block.reduce_condition(True)
 
@@ -338,10 +392,16 @@ function foo(): void {
     console.log(b);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(True)
     # language=typescript
     assert (
@@ -365,10 +425,16 @@ function foo(): void {
     console.log(b);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[0]
+        if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[
+            0
+        ]
         if_block.reduce_condition(False)
     # language=typescript
     assert (

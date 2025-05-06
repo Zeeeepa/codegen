@@ -27,7 +27,9 @@ class PRReviewCommentObservation(Observation):
     line: int = Field(
         description="Line number the comment was added to",
     )
-    str_template: ClassVar[str] = "Added review comment to PR #{pr_number} at {path}:{line}"
+    str_template: ClassVar[str] = (
+        "Added review comment to PR #{pr_number} at {path}:{line}"
+    )
 
 
 def create_pr_review_comment(

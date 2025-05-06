@@ -1,5 +1,8 @@
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
-from tests.unit.codegen.sdk.python.utils.test_file_contents import file1_content, file2_content
+from tests.unit.codegen.sdk.python.utils.test_file_contents import (
+    file1_content,
+    file2_content,
+)
 
 
 def test_global_var_source(tmpdir) -> None:
@@ -254,7 +257,9 @@ foo = 1
 
 
 def test_edit_global_var(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
 
         # Move GLOBAL_CONSTANT_1 from file1 to file2
@@ -280,7 +285,11 @@ def bar(x: Union[int, str]) -> Union[int, str]:
         if "Union" in [imp.name for imp in file.imports]:
             for editable in file.find("Union["):
                 if editable.ts_node_type == "generic_type":
-                    new_type = editable.source.replace("Union[", "").replace("]", "").replace(", ", " | ")
+                    new_type = (
+                        editable.source.replace("Union[", "")
+                        .replace("]", "")
+                        .replace(", ", " | ")
+                    )
                     editable.replace(editable.source, new_type)
 
             union_import = file.get_import("Union")

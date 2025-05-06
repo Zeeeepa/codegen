@@ -91,7 +91,11 @@ class CodeAgent:
         self.instance_id = metadata.get("instance_id")
         # Extract difficulty value from "difficulty_X" format
         difficulty_str = metadata.get("difficulty", "")
-        self.difficulty = int(difficulty_str.split("_")[1]) if difficulty_str and "_" in difficulty_str else None
+        self.difficulty = (
+            int(difficulty_str.split("_")[1])
+            if difficulty_str and "_" in difficulty_str
+            else None
+        )
 
         # Initialize tags for agent trace
         self.tags = [*tags, self.model_name]
@@ -128,12 +132,24 @@ class CodeAgent:
         # Prepare content with prompt and images if provided
         content = [{"type": "text", "text": prompt}]
         if image_urls:
-            content += [{"type": "image_url", "image_url": {"url": image_url}} for image_url in image_urls]
+            content += [
+                {"type": "image_url", "image_url": {"url": image_url}}
+                for image_url in image_urls
+            ]
 
-        config = RunnableConfig(configurable={"thread_id": self.thread_id}, tags=self.tags, metadata=self.metadata, recursion_limit=200)
+        config = RunnableConfig(
+            configurable={"thread_id": self.thread_id},
+            tags=self.tags,
+            metadata=self.metadata,
+            recursion_limit=200,
+        )
         # we stream the steps instead of invoke because it allows us to access intermediate nodes
 
-        stream = self.agent.stream({"messages": [HumanMessage(content=content)]}, config=config, stream_mode="values")
+        stream = self.agent.stream(
+            {"messages": [HumanMessage(content=content)]},
+            config=config,
+            stream_mode="values",
+        )
 
         _tracer = MessageStreamTracer(logger=self.logger)
 
@@ -153,13 +169,21 @@ class CodeAgent:
                 # print(message)
                 pass
             else:
-                if isinstance(message, AIMessage) and isinstance(message.content, list) and len(message.content) > 0 and "text" in message.content[0]:
+                if (
+                    isinstance(message, AIMessage)
+                    and isinstance(message.content, list)
+                    and len(message.content) > 0
+                    and "text" in message.content[0]
+                ):
                     AIMessage(message.content[0]["text"]).pretty_print()
                 else:
                     message.pretty_print()
 
                 # Try to extract run ID if available in metadata
-                if hasattr(message, "additional_kwargs") and "run_id" in message.additional_kwargs:
+                if (
+                    hasattr(message, "additional_kwargs")
+                    and "run_id" in message.additional_kwargs
+                ):
                     run_ids.append(message.additional_kwargs["run_id"])
 
         # Get the last message content
@@ -187,7 +211,9 @@ class CodeAgent:
         """
         try:
             # TODO - this is definitely not correct, we should be able to get the URL directly...
-            return find_and_print_langsmith_run_url(client=self.langsmith_client, project_name=self.project_name)
+            return find_and_print_langsmith_run_url(
+                client=self.langsmith_client, project_name=self.project_name
+            )
         except Exception as e:
             separator = "=" * 60
             print(f"\n{separator}\nCould not retrieve LangSmith URL: {e}")

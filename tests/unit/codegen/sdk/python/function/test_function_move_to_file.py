@@ -81,7 +81,9 @@ def bar():
         file3 = codebase.get_file("file3.py")
 
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, include_dependencies=True, strategy="update_all_imports")
+        bar.move_to_file(
+            file3, include_dependencies=True, strategy="update_all_imports"
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -175,7 +177,9 @@ def foo():
         file3 = codebase.get_file("file3.py")
 
         foo = file2.get_function("foo")
-        foo.move_to_file(file3, include_dependencies=True, strategy="update_all_imports")
+        foo.move_to_file(
+            file3, include_dependencies=True, strategy="update_all_imports"
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -262,7 +266,9 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -357,7 +363,9 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=False)
+        bar_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=False
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -647,7 +655,9 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="add_back_edge", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="add_back_edge", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -744,7 +754,9 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="add_back_edge", include_dependencies=False)
+        bar_symbol.move_to_file(
+            file1, strategy="add_back_edge", include_dependencies=False
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -834,7 +846,9 @@ def bar():
         file3 = codebase.get_file("file3.py")
 
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, include_dependencies=True, strategy="duplicate_dependencies")
+        bar.move_to_file(
+            file3, include_dependencies=True, strategy="duplicate_dependencies"
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -928,7 +942,9 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="duplicate_dependencies", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="duplicate_dependencies", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -941,7 +957,9 @@ def baz():
     assert isinstance(new_symbol, Function)
 
 
-def test_move_to_file_duplicate_dependencies_without_include_dependencies(tmpdir) -> None:
+def test_move_to_file_duplicate_dependencies_without_include_dependencies(
+    tmpdir,
+) -> None:
     # ========== [ BEFORE ] ==========
     # language=python
     FILE_1_CONTENT = """
@@ -1029,7 +1047,9 @@ def baz():
         file3 = codebase.get_file("file3.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="duplicate_dependencies", include_dependencies=False)
+        bar_symbol.move_to_file(
+            file1, strategy="duplicate_dependencies", include_dependencies=False
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -1085,7 +1105,9 @@ GLOBAL = thing1(thing2, arg=thing3)
         file2 = codebase.get_file("file2.py")
 
         global_symbol = file2.get_symbol("GLOBAL")
-        global_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=True)
+        global_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -1150,7 +1172,9 @@ def baz():
         file2 = codebase.get_file("file2.py")
 
         bar_symbol = file2.get_symbol("bar")
-        bar_symbol.move_to_file(file1, strategy="add_back_edge", include_dependencies=True)
+        bar_symbol.move_to_file(
+            file1, strategy="add_back_edge", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -1225,7 +1249,9 @@ def baz():
 
         bar_func_symbol = file2.get_symbol("bar_func")
         assert bar_func_symbol
-        bar_func_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=True)
+        bar_func_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -1316,7 +1342,9 @@ def baz():
 
         bar_func_symbol = file2.get_symbol("bar_func")
         assert bar_func_symbol
-        bar_func_symbol.move_to_file(file1, strategy="update_all_imports", include_dependencies=True)
+        bar_func_symbol.move_to_file(
+            file1, strategy="update_all_imports", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file2.content.strip() == EXPECTED_FILE_2_CONTENT.strip()
@@ -1560,12 +1588,16 @@ class ExtendedConfig(Config):
 
         # Move Config dataclass first since ExtendedConfig depends on it
         config_class = file1.get_class("Config")
-        config_class.move_to_file(file1_types, strategy="update_all_imports", include_dependencies=True)
+        config_class.move_to_file(
+            file1_types, strategy="update_all_imports", include_dependencies=True
+        )
         codebase.commit()
 
         # Then move ExtendedConfig
         extended_config_class = file2.get_class("ExtendedConfig")
-        extended_config_class.move_to_file(file2_types, strategy="update_all_imports", include_dependencies=True)
+        extended_config_class.move_to_file(
+            file2_types, strategy="update_all_imports", include_dependencies=True
+        )
 
     assert file1.content.strip() == EXPECTED_FILE_1_CONTENT.strip()
     assert file1_types.content.strip() == EXPECTED_FILE_1_TYPES_CONTENT.strip()

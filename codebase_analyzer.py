@@ -18,7 +18,13 @@ from typing import Any, Optional
 
 import networkx as nx
 from rich.console import Console
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 
 try:
@@ -31,7 +37,11 @@ except ImportError:
     sys.exit(1)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", handlers=[logging.StreamHandler()])
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
 logger = logging.getLogger(__name__)
 
 # Constants
@@ -154,7 +164,12 @@ class CodebaseAnalyzer:
     about its structure, dependencies, code quality, and more.
     """
 
-    def __init__(self, repo_url: Optional[str] = None, repo_path: Optional[str] = None, language: Optional[str] = None):
+    def __init__(
+        self,
+        repo_url: Optional[str] = None,
+        repo_path: Optional[str] = None,
+        language: Optional[str] = None,
+    ):
         """Initialize the CodebaseAnalyzer.
 
         Args:
@@ -200,18 +215,31 @@ class CodebaseAnalyzer:
             secrets = SecretsConfig()
 
             # Initialize the codebase
-            self.console.print(f"[bold green]Initializing codebase from {repo_url}...[/bold green]")
+            self.console.print(
+                f"[bold green]Initializing codebase from {repo_url}...[/bold green]"
+            )
 
             prog_lang = None
             if language:
                 prog_lang = ProgrammingLanguage(language.upper())
 
-            self.codebase = Codebase.from_github(repo_full_name=repo_full_name, tmp_dir=tmp_dir, language=prog_lang, config=config, secrets=secrets, full_history=True)
+            self.codebase = Codebase.from_github(
+                repo_full_name=repo_full_name,
+                tmp_dir=tmp_dir,
+                language=prog_lang,
+                config=config,
+                secrets=secrets,
+                full_history=True,
+            )
 
-            self.console.print(f"[bold green]Successfully initialized codebase from {repo_url}[/bold green]")
+            self.console.print(
+                f"[bold green]Successfully initialized codebase from {repo_url}[/bold green]"
+            )
 
         except Exception as e:
-            self.console.print(f"[bold red]Error initializing codebase from URL: {e}[/bold red]")
+            self.console.print(
+                f"[bold red]Error initializing codebase from URL: {e}[/bold red]"
+            )
             raise
 
     def _init_from_path(self, repo_path: str, language: Optional[str] = None):
@@ -227,21 +255,34 @@ class CodebaseAnalyzer:
             secrets = SecretsConfig()
 
             # Initialize the codebase
-            self.console.print(f"[bold green]Initializing codebase from {repo_path}...[/bold green]")
+            self.console.print(
+                f"[bold green]Initializing codebase from {repo_path}...[/bold green]"
+            )
 
             prog_lang = None
             if language:
                 prog_lang = ProgrammingLanguage(language.upper())
 
-            self.codebase = Codebase(repo_path=repo_path, language=prog_lang, config=config, secrets=secrets)
+            self.codebase = Codebase(
+                repo_path=repo_path, language=prog_lang, config=config, secrets=secrets
+            )
 
-            self.console.print(f"[bold green]Successfully initialized codebase from {repo_path}[/bold green]")
+            self.console.print(
+                f"[bold green]Successfully initialized codebase from {repo_path}[/bold green]"
+            )
 
         except Exception as e:
-            self.console.print(f"[bold red]Error initializing codebase from path: {e}[/bold red]")
+            self.console.print(
+                f"[bold red]Error initializing codebase from path: {e}[/bold red]"
+            )
             raise
 
-    def analyze(self, categories: Optional[list[str]] = None, output_format: str = "json", output_file: Optional[str] = None):
+    def analyze(
+        self,
+        categories: Optional[list[str]] = None,
+        output_format: str = "json",
+        output_file: Optional[str] = None,
+    ):
         """Perform a comprehensive analysis of the codebase.
 
         Args:
@@ -264,7 +305,9 @@ class CodebaseAnalyzer:
         self.results = {
             "metadata": {
                 "repo_name": self.codebase.ctx.repo_name,
-                "analysis_time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "analysis_time": datetime.datetime.now(
+                    datetime.timezone.utc
+                ).isoformat(),
                 "language": str(self.codebase.ctx.programming_language),
             },
             "categories": {},
@@ -278,11 +321,15 @@ class CodebaseAnalyzer:
             TextColumn("[bold green]{task.completed}/{task.total}"),
             TimeElapsedColumn(),
         ) as progress:
-            task = progress.add_task("[bold green]Analyzing codebase...", total=len(categories))
+            task = progress.add_task(
+                "[bold green]Analyzing codebase...", total=len(categories)
+            )
 
             for category in categories:
                 if category not in METRICS_CATEGORIES:
-                    self.console.print(f"[bold yellow]Warning: Unknown category '{category}'. Skipping.[/bold yellow]")
+                    self.console.print(
+                        f"[bold yellow]Warning: Unknown category '{category}'. Skipping.[/bold yellow]"
+                    )
                     progress.update(task, advance=1)
                     continue
 
@@ -300,7 +347,9 @@ class CodebaseAnalyzer:
                             result = method()
                             category_results[metric] = result
                         else:
-                            category_results[metric] = {"error": f"Method {metric} not implemented"}
+                            category_results[metric] = {
+                                "error": f"Method {metric} not implemented"
+                            }
                     except Exception as e:
                         category_results[metric] = {"error": str(e)}
 
@@ -314,7 +363,9 @@ class CodebaseAnalyzer:
             if output_file:
                 with open(output_file, "w") as f:
                     json.dump(self.results, f, indent=2)
-                self.console.print(f"[bold green]Results saved to {output_file}[/bold green]")
+                self.console.print(
+                    f"[bold green]Results saved to {output_file}[/bold green]"
+                )
             else:
                 return self.results
         elif output_format == "html":
@@ -331,7 +382,10 @@ class CodebaseAnalyzer:
     def get_file_count(self) -> dict[str, int]:
         """Get the total number of files in the codebase."""
         files = list(self.codebase.files)
-        return {"total_files": len(files), "source_files": len([f for f in files if not f.is_binary])}
+        return {
+            "total_files": len(files),
+            "source_files": len([f for f in files if not f.is_binary]),
+        }
 
     def get_files_by_language(self) -> dict[str, int]:
         """Get the distribution of files by language/extension."""
@@ -356,7 +410,12 @@ class CodebaseAnalyzer:
     def get_file_size_distribution(self) -> dict[str, int]:
         """Get the distribution of file sizes."""
         files = list(self.codebase.files)
-        size_ranges = {"small (< 1KB)": 0, "medium (1KB - 10KB)": 0, "large (10KB - 100KB)": 0, "very large (> 100KB)": 0}
+        size_ranges = {
+            "small (< 1KB)": 0,
+            "medium (1KB - 10KB)": 0,
+            "large (10KB - 100KB)": 0,
+            "very large (> 100KB)": 0,
+        }
 
         for file in files:
             if file.is_binary:
@@ -381,12 +440,23 @@ class CodebaseAnalyzer:
 
         for directory in self.codebase.directories:
             path = str(directory.path)
-            parent_path = str(directory.path.parent) if directory.path.parent != self.codebase.repo_path else "/"
+            parent_path = (
+                str(directory.path.parent)
+                if directory.path.parent != self.codebase.repo_path
+                else "/"
+            )
 
             if parent_path not in directories:
                 directories[parent_path] = []
 
-            directories[parent_path].append({"name": directory.path.name, "path": path, "files": len(directory.files), "subdirectories": len(directory.subdirectories)})
+            directories[parent_path].append(
+                {
+                    "name": directory.path.name,
+                    "path": path,
+                    "files": len(directory.files),
+                    "subdirectories": len(directory.subdirectories),
+                }
+            )
 
         return directories
 
@@ -431,7 +501,11 @@ class CodebaseAnalyzer:
             hierarchy[class_name] = {
                 "parent_classes": parent_classes,
                 "methods": [method.name for method in cls.methods],
-                "attributes": [attr.name for attr in cls.attributes] if hasattr(cls, "attributes") else [],
+                "attributes": (
+                    [attr.name for attr in cls.attributes]
+                    if hasattr(cls, "attributes")
+                    else []
+                ),
             }
 
         return hierarchy
@@ -540,7 +614,9 @@ class CodebaseAnalyzer:
 
             for imp in file.imports:
                 if hasattr(imp, "usages") and len(imp.usages) == 0:
-                    unused_imports.append({"file": file.file_path, "import": imp.source})
+                    unused_imports.append(
+                        {"file": file.file_path, "import": imp.source}
+                    )
 
         return unused_imports
 
@@ -570,12 +646,26 @@ class CodebaseAnalyzer:
         total_dependencies = sum(len(deps) for deps in dependency_map.values())
 
         if total_files == 0:
-            return {"average_dependencies_per_file": 0, "max_dependencies": 0, "coupling_factor": 0}
+            return {
+                "average_dependencies_per_file": 0,
+                "max_dependencies": 0,
+                "coupling_factor": 0,
+            }
 
-        max_dependencies = max(len(deps) for deps in dependency_map.values()) if dependency_map else 0
-        coupling_factor = total_dependencies / (total_files * (total_files - 1)) if total_files > 1 else 0
+        max_dependencies = (
+            max(len(deps) for deps in dependency_map.values()) if dependency_map else 0
+        )
+        coupling_factor = (
+            total_dependencies / (total_files * (total_files - 1))
+            if total_files > 1
+            else 0
+        )
 
-        return {"average_dependencies_per_file": total_dependencies / total_files, "max_dependencies": max_dependencies, "coupling_factor": coupling_factor}
+        return {
+            "average_dependencies_per_file": total_dependencies / total_files,
+            "max_dependencies": max_dependencies,
+            "coupling_factor": coupling_factor,
+        }
 
     def get_module_cohesion_analysis(self) -> dict[str, float]:
         """Analyze module cohesion."""
@@ -620,7 +710,11 @@ class CodebaseAnalyzer:
 
         for directory in self.codebase.directories:
             path = str(directory.path)
-            parent_path = str(directory.path.parent) if directory.path.parent != self.codebase.repo_path else "/"
+            parent_path = (
+                str(directory.path.parent)
+                if directory.path.parent != self.codebase.repo_path
+                else "/"
+            )
 
             if parent_path not in directories:
                 directories[parent_path] = []
@@ -628,7 +722,15 @@ class CodebaseAnalyzer:
             # Check if this is a package (has __init__.py)
             is_package = any(f.name == "__init__.py" for f in directory.files)
 
-            directories[parent_path].append({"name": directory.path.name, "path": path, "is_package": is_package, "files": len(directory.files), "subdirectories": len(directory.subdirectories)})
+            directories[parent_path].append(
+                {
+                    "name": directory.path.name,
+                    "path": path,
+                    "is_package": is_package,
+                    "files": len(directory.files),
+                    "subdirectories": len(directory.subdirectories),
+                }
+            )
 
         return directories
 
@@ -699,7 +801,9 @@ class CodebaseAnalyzer:
 
         parameter_stats["total_parameters"] = total_params
         parameter_stats["avg_parameters_per_function"] = total_params / len(functions)
-        parameter_stats["parameter_type_coverage"] = functions_with_types / len(functions) if functions else 0
+        parameter_stats["parameter_type_coverage"] = (
+            functions_with_types / len(functions) if functions else 0
+        )
         parameter_stats["functions_with_default_params"] = functions_with_defaults
 
         return parameter_stats
@@ -707,7 +811,11 @@ class CodebaseAnalyzer:
     def get_return_type_analysis(self) -> dict[str, Any]:
         """Analyze function return types."""
         functions = list(self.codebase.functions)
-        return_type_stats = {"functions_with_return_type": 0, "return_type_coverage": 0, "common_return_types": {}}
+        return_type_stats = {
+            "functions_with_return_type": 0,
+            "return_type_coverage": 0,
+            "common_return_types": {},
+        }
 
         if not functions:
             return return_type_stats
@@ -719,7 +827,11 @@ class CodebaseAnalyzer:
             if hasattr(func, "return_type") and func.return_type:
                 functions_with_return_type += 1
 
-                return_type = str(func.return_type.source) if hasattr(func.return_type, "source") else str(func.return_type)
+                return_type = (
+                    str(func.return_type.source)
+                    if hasattr(func.return_type, "source")
+                    else str(func.return_type)
+                )
 
                 if return_type in return_types:
                     return_types[return_type] += 1
@@ -727,11 +839,15 @@ class CodebaseAnalyzer:
                     return_types[return_type] = 1
 
         return_type_stats["functions_with_return_type"] = functions_with_return_type
-        return_type_stats["return_type_coverage"] = functions_with_return_type / len(functions)
+        return_type_stats["return_type_coverage"] = functions_with_return_type / len(
+            functions
+        )
 
         # Get the most common return types
         sorted_types = sorted(return_types.items(), key=lambda x: x[1], reverse=True)
-        return_type_stats["common_return_types"] = dict(sorted_types[:10])  # Top 10 return types
+        return_type_stats["common_return_types"] = dict(
+            sorted_types[:10]
+        )  # Top 10 return types
 
         return return_type_stats
 
@@ -809,15 +925,23 @@ class CodebaseAnalyzer:
         call_site_stats["avg_call_sites_per_function"] = total_calls / len(functions)
 
         # Get the most called functions
-        sorted_functions = sorted(function_calls.items(), key=lambda x: x[1], reverse=True)
-        call_site_stats["most_called_functions"] = [{"name": name, "calls": calls} for name, calls in sorted_functions[:10]]
+        sorted_functions = sorted(
+            function_calls.items(), key=lambda x: x[1], reverse=True
+        )
+        call_site_stats["most_called_functions"] = [
+            {"name": name, "calls": calls} for name, calls in sorted_functions[:10]
+        ]
 
         return call_site_stats
 
     def get_async_function_detection(self) -> dict[str, Any]:
         """Detect async functions."""
         functions = list(self.codebase.functions)
-        async_stats = {"total_async_functions": 0, "async_function_percentage": 0, "async_functions": []}
+        async_stats = {
+            "total_async_functions": 0,
+            "async_function_percentage": 0,
+            "async_functions": [],
+        }
 
         if not functions:
             return async_stats
@@ -826,7 +950,14 @@ class CodebaseAnalyzer:
 
         for func in functions:
             if hasattr(func, "is_async") and func.is_async:
-                async_functions.append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown"})
+                async_functions.append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                    }
+                )
 
         async_stats["total_async_functions"] = len(async_functions)
         async_stats["async_function_percentage"] = len(async_functions) / len(functions)
@@ -837,7 +968,11 @@ class CodebaseAnalyzer:
     def get_function_overload_analysis(self) -> dict[str, Any]:
         """Analyze function overloads."""
         functions = list(self.codebase.functions)
-        overload_stats = {"total_overloaded_functions": 0, "overloaded_function_percentage": 0, "overloaded_functions": []}
+        overload_stats = {
+            "total_overloaded_functions": 0,
+            "overloaded_function_percentage": 0,
+            "overloaded_functions": [],
+        }
 
         if not functions:
             return overload_stats
@@ -855,10 +990,22 @@ class CodebaseAnalyzer:
 
         for name, funcs in function_names.items():
             if len(funcs) > 1:
-                overloaded_functions.append({"name": name, "overloads": len(funcs), "file": funcs[0].file.file_path if hasattr(funcs[0], "file") else "Unknown"})
+                overloaded_functions.append(
+                    {
+                        "name": name,
+                        "overloads": len(funcs),
+                        "file": (
+                            funcs[0].file.file_path
+                            if hasattr(funcs[0], "file")
+                            else "Unknown"
+                        ),
+                    }
+                )
 
         overload_stats["total_overloaded_functions"] = len(overloaded_functions)
-        overload_stats["overloaded_function_percentage"] = len(overloaded_functions) / len(function_names) if function_names else 0
+        overload_stats["overloaded_function_percentage"] = (
+            len(overloaded_functions) / len(function_names) if function_names else 0
+        )
         overload_stats["overloaded_functions"] = overloaded_functions
 
         return overload_stats
@@ -876,7 +1023,10 @@ class CodebaseAnalyzer:
             if hasattr(cls, "parent_class_names"):
                 parent_classes = cls.parent_class_names
 
-            hierarchy[class_name] = {"parent_classes": parent_classes, "file": cls.file.file_path if hasattr(cls, "file") else "Unknown"}
+            hierarchy[class_name] = {
+                "parent_classes": parent_classes,
+                "file": cls.file.file_path if hasattr(cls, "file") else "Unknown",
+            }
 
         # Build inheritance tree
         inheritance_tree = {}
@@ -931,7 +1081,9 @@ class CodebaseAnalyzer:
                     method_stats["method_types"]["instance"] += 1
 
         method_stats["total_methods"] = total_methods
-        method_stats["avg_methods_per_class"] = total_methods / len(classes) if classes else 0
+        method_stats["avg_methods_per_class"] = (
+            total_methods / len(classes) if classes else 0
+        )
 
         return method_stats
 
@@ -965,7 +1117,11 @@ class CodebaseAnalyzer:
             # Analyze attribute types
             for attr in attributes:
                 if hasattr(attr, "type") and attr.type:
-                    attr_type = str(attr.type.source) if hasattr(attr.type, "source") else str(attr.type)
+                    attr_type = (
+                        str(attr.type.source)
+                        if hasattr(attr.type, "source")
+                        else str(attr.type)
+                    )
 
                     if attr_type in attribute_types:
                         attribute_types[attr_type] += 1
@@ -973,7 +1129,9 @@ class CodebaseAnalyzer:
                         attribute_types[attr_type] = 1
 
         attribute_stats["total_attributes"] = total_attributes
-        attribute_stats["avg_attributes_per_class"] = total_attributes / len(classes) if classes else 0
+        attribute_stats["avg_attributes_per_class"] = (
+            total_attributes / len(classes) if classes else 0
+        )
         attribute_stats["attribute_types"] = attribute_types
 
         return attribute_stats
@@ -981,7 +1139,11 @@ class CodebaseAnalyzer:
     def get_constructor_analysis(self) -> dict[str, Any]:
         """Analyze class constructors."""
         classes = list(self.codebase.classes)
-        constructor_stats = {"classes_with_constructor": 0, "constructor_percentage": 0, "avg_constructor_params": 0}
+        constructor_stats = {
+            "classes_with_constructor": 0,
+            "constructor_percentage": 0,
+            "avg_constructor_params": 0,
+        }
 
         if not classes:
             return constructor_stats
@@ -1000,12 +1162,22 @@ class CodebaseAnalyzer:
 
             if constructor:
                 classes_with_constructor += 1
-                param_count = len(constructor.parameters) if hasattr(constructor, "parameters") else 0
+                param_count = (
+                    len(constructor.parameters)
+                    if hasattr(constructor, "parameters")
+                    else 0
+                )
                 total_constructor_params += param_count
 
         constructor_stats["classes_with_constructor"] = classes_with_constructor
-        constructor_stats["constructor_percentage"] = classes_with_constructor / len(classes)
-        constructor_stats["avg_constructor_params"] = total_constructor_params / classes_with_constructor if classes_with_constructor else 0
+        constructor_stats["constructor_percentage"] = classes_with_constructor / len(
+            classes
+        )
+        constructor_stats["avg_constructor_params"] = (
+            total_constructor_params / classes_with_constructor
+            if classes_with_constructor
+            else 0
+        )
 
         return constructor_stats
 
@@ -1013,7 +1185,11 @@ class CodebaseAnalyzer:
         """Verify interface implementations."""
         classes = list(self.codebase.classes)
         interfaces = list(self.codebase.interfaces)
-        implementation_stats = {"total_interfaces": len(interfaces), "classes_implementing_interfaces": 0, "interface_implementations": {}}
+        implementation_stats = {
+            "total_interfaces": len(interfaces),
+            "classes_implementing_interfaces": 0,
+            "interface_implementations": {},
+        }
 
         if not interfaces or not classes:
             return implementation_stats
@@ -1026,7 +1202,10 @@ class CodebaseAnalyzer:
             implementing_classes = []
 
             for cls in classes:
-                if hasattr(cls, "parent_class_names") and interface_name in cls.parent_class_names:
+                if (
+                    hasattr(cls, "parent_class_names")
+                    and interface_name in cls.parent_class_names
+                ):
                     implementing_classes.append(cls.name)
 
             interface_implementations[interface_name] = implementing_classes
@@ -1036,7 +1215,9 @@ class CodebaseAnalyzer:
         for implementers in interface_implementations.values():
             classes_implementing.update(implementers)
 
-        implementation_stats["classes_implementing_interfaces"] = len(classes_implementing)
+        implementation_stats["classes_implementing_interfaces"] = len(
+            classes_implementing
+        )
         implementation_stats["interface_implementations"] = interface_implementations
 
         return implementation_stats
@@ -1044,7 +1225,13 @@ class CodebaseAnalyzer:
     def get_access_modifier_usage(self) -> dict[str, Any]:
         """Analyze access modifier usage."""
         symbols = list(self.codebase.symbols)
-        access_stats = {"public": 0, "private": 0, "protected": 0, "internal": 0, "unknown": 0}
+        access_stats = {
+            "public": 0,
+            "private": 0,
+            "protected": 0,
+            "internal": 0,
+            "unknown": 0,
+        }
 
         for symbol in symbols:
             if hasattr(symbol, "is_private") and symbol.is_private:
@@ -1079,7 +1266,14 @@ class CodebaseAnalyzer:
                 if func.name in ["main", "__main__"]:
                     continue
 
-                unused_functions.append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown"})
+                unused_functions.append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                    }
+                )
 
         return unused_functions
 
@@ -1090,7 +1284,14 @@ class CodebaseAnalyzer:
 
         for cls in classes:
             if hasattr(cls, "symbol_usages") and len(cls.symbol_usages) == 0:
-                unused_classes.append({"name": cls.name, "file": cls.file.file_path if hasattr(cls, "file") else "Unknown"})
+                unused_classes.append(
+                    {
+                        "name": cls.name,
+                        "file": (
+                            cls.file.file_path if hasattr(cls, "file") else "Unknown"
+                        ),
+                    }
+                )
 
         return unused_classes
 
@@ -1101,7 +1302,14 @@ class CodebaseAnalyzer:
 
         for var in global_vars:
             if hasattr(var, "symbol_usages") and len(var.symbol_usages) == 0:
-                unused_vars.append({"name": var.name, "file": var.file.file_path if hasattr(var, "file") else "Unknown"})
+                unused_vars.append(
+                    {
+                        "name": var.name,
+                        "file": (
+                            var.file.file_path if hasattr(var, "file") else "Unknown"
+                        ),
+                    }
+                )
 
         return unused_vars
 
@@ -1116,7 +1324,9 @@ class CodebaseAnalyzer:
 
             for imp in file.imports:
                 if hasattr(imp, "usages") and len(imp.usages) == 0:
-                    unused_imports.append({"file": file.file_path, "import": imp.source})
+                    unused_imports.append(
+                        {"file": file.file_path, "import": imp.source}
+                    )
 
         return unused_imports
 
@@ -1139,7 +1349,16 @@ class CodebaseAnalyzer:
         # Find similar functions
         for name, funcs in function_groups.items():
             if len(funcs) > 1:
-                similar_functions.append({"name": name, "count": len(funcs), "files": [func.file.file_path if hasattr(func, "file") else "Unknown" for func in funcs]})
+                similar_functions.append(
+                    {
+                        "name": name,
+                        "count": len(funcs),
+                        "files": [
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                            for func in funcs
+                        ],
+                    }
+                )
 
         return similar_functions
 
@@ -1173,7 +1392,12 @@ class CodebaseAnalyzer:
 
     def get_refactoring_opportunities(self) -> dict[str, Any]:
         """Identify refactoring opportunities."""
-        refactoring_opportunities = {"long_functions": [], "large_classes": [], "high_coupling_files": [], "low_cohesion_files": []}
+        refactoring_opportunities = {
+            "long_functions": [],
+            "large_classes": [],
+            "high_coupling_files": [],
+            "low_cohesion_files": [],
+        }
 
         # Find long functions
         functions = list(self.codebase.functions)
@@ -1182,7 +1406,15 @@ class CodebaseAnalyzer:
             func_lines = func_source.count("\n") + 1
 
             if func_lines > 50:  # Threshold for long functions
-                refactoring_opportunities["long_functions"].append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown", "lines": func_lines})
+                refactoring_opportunities["long_functions"].append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                        "lines": func_lines,
+                    }
+                )
 
         # Find large classes
         classes = list(self.codebase.classes)
@@ -1192,7 +1424,14 @@ class CodebaseAnalyzer:
 
             if len(methods) + len(attributes) > 20:  # Threshold for large classes
                 refactoring_opportunities["large_classes"].append(
-                    {"name": cls.name, "file": cls.file.file_path if hasattr(cls, "file") else "Unknown", "methods": len(methods), "attributes": len(attributes)}
+                    {
+                        "name": cls.name,
+                        "file": (
+                            cls.file.file_path if hasattr(cls, "file") else "Unknown"
+                        ),
+                        "methods": len(methods),
+                        "attributes": len(attributes),
+                    }
                 )
 
         # Find high coupling files
@@ -1203,7 +1442,9 @@ class CodebaseAnalyzer:
 
             imports = file.imports
             if len(imports) > 15:  # Threshold for high coupling
-                refactoring_opportunities["high_coupling_files"].append({"file": file.file_path, "imports": len(imports)})
+                refactoring_opportunities["high_coupling_files"].append(
+                    {"file": file.file_path, "imports": len(imports)}
+                )
 
         # Find low cohesion files
         cohesion_metrics = self.get_module_cohesion_analysis()
@@ -1211,7 +1452,9 @@ class CodebaseAnalyzer:
 
         for file_path, cohesion in file_cohesion.items():
             if cohesion < 0.3:  # Threshold for low cohesion
-                refactoring_opportunities["low_cohesion_files"].append({"file": file_path, "cohesion": cohesion})
+                refactoring_opportunities["low_cohesion_files"].append(
+                    {"file": file_path, "cohesion": cohesion}
+                )
 
         return refactoring_opportunities
 
@@ -1246,13 +1489,24 @@ class CodebaseAnalyzer:
             if_count = source.count("if ") + source.count("elif ")
             for_count = source.count("for ")
             while_count = source.count("while ")
-            case_count = source.count("case ") + source.count("switch ") + source.count("match ")
+            case_count = (
+                source.count("case ") + source.count("switch ") + source.count("match ")
+            )
             catch_count = source.count("catch ") + source.count("except ")
             and_count = source.count(" && ") + source.count(" and ")
             or_count = source.count(" || ") + source.count(" or ")
 
             # Calculate complexity
-            complexity = 1 + if_count + for_count + while_count + case_count + catch_count + and_count + or_count
+            complexity = (
+                1
+                + if_count
+                + for_count
+                + while_count
+                + case_count
+                + catch_count
+                + and_count
+                + or_count
+            )
 
             total_complexity += complexity
             max_complexity = max(max_complexity, complexity)
@@ -1269,11 +1523,23 @@ class CodebaseAnalyzer:
 
             # Track complex functions
             if complexity > 10:
-                complex_functions.append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown", "complexity": complexity})
+                complex_functions.append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                        "complexity": complexity,
+                    }
+                )
 
         complexity_results["avg_complexity"] = total_complexity / len(functions)
         complexity_results["max_complexity"] = max_complexity
-        complexity_results["complex_functions"] = sorted(complex_functions, key=lambda x: x["complexity"], reverse=True)[:10]  # Top 10 most complex
+        complexity_results["complex_functions"] = sorted(
+            complex_functions, key=lambda x: x["complexity"], reverse=True
+        )[
+            :10
+        ]  # Top 10 most complex
 
         return complexity_results
 
@@ -1290,15 +1556,23 @@ class CodebaseAnalyzer:
             description = "Good: Moderate complexity, maintainable code"
         elif avg_complexity < 15:
             rank = "C"
-            description = "Fair: Moderate to high complexity, some maintenance challenges"
+            description = (
+                "Fair: Moderate to high complexity, some maintenance challenges"
+            )
         elif avg_complexity < 20:
             rank = "D"
             description = "Poor: High complexity, difficult to maintain"
         else:
             rank = "F"
-            description = "Very Poor: Very high complexity, extremely difficult to maintain"
+            description = (
+                "Very Poor: Very high complexity, extremely difficult to maintain"
+            )
 
-        return {"rank": rank, "description": description, "avg_complexity": avg_complexity}
+        return {
+            "rank": rank,
+            "description": description,
+            "avg_complexity": avg_complexity,
+        }
 
     def get_operators_and_operands(self) -> dict[str, Any]:
         """Get operators and operands for Halstead metrics."""
@@ -1398,8 +1672,12 @@ class CodebaseAnalyzer:
             "total_operators": sum(operator_count.values()),
             "unique_operands": len(operand_count),
             "total_operands": sum(operand_count.values()),
-            "top_operators": dict(sorted(operator_count.items(), key=lambda x: x[1], reverse=True)[:10]),
-            "top_operands": dict(sorted(operand_count.items(), key=lambda x: x[1], reverse=True)[:10]),
+            "top_operators": dict(
+                sorted(operator_count.items(), key=lambda x: x[1], reverse=True)[:10]
+            ),
+            "top_operands": dict(
+                sorted(operand_count.items(), key=lambda x: x[1], reverse=True)[:10]
+            ),
         }
 
     def calculate_halstead_volume(self) -> dict[str, float]:
@@ -1418,7 +1696,9 @@ class CodebaseAnalyzer:
         difficulty = (n1 / 2) * (N2 / n2) if n2 > 0 else 0
         effort = volume * difficulty
         time = effort / 18  # Time in seconds (18 is a constant from empirical studies)
-        bugs = volume / 3000  # Estimated bugs (3000 is a constant from empirical studies)
+        bugs = (
+            volume / 3000
+        )  # Estimated bugs (3000 is a constant from empirical studies)
 
         return {
             "vocabulary": vocabulary,
@@ -1453,12 +1733,23 @@ class CodebaseAnalyzer:
 
                 if not line:
                     blank_lines += 1
-                elif line.startswith("#") or line.startswith("//") or line.startswith("/*") or line.startswith("*"):
+                elif (
+                    line.startswith("#")
+                    or line.startswith("//")
+                    or line.startswith("/*")
+                    or line.startswith("*")
+                ):
                     comment_lines += 1
                 else:
                     code_lines += 1
 
-        return {"total_lines": total_lines, "code_lines": code_lines, "comment_lines": comment_lines, "blank_lines": blank_lines, "comment_ratio": comment_lines / code_lines if code_lines > 0 else 0}
+        return {
+            "total_lines": total_lines,
+            "code_lines": code_lines,
+            "comment_lines": comment_lines,
+            "blank_lines": blank_lines,
+            "comment_ratio": comment_lines / code_lines if code_lines > 0 else 0,
+        }
 
     def calculate_maintainability_index(self) -> dict[str, float]:
         """Calculate maintainability index."""
@@ -1472,12 +1763,19 @@ class CodebaseAnalyzer:
         avg_complexity = complexity["avg_complexity"]
         loc = lines["code_lines"]
 
-        mi = 171 - 5.2 * math.log(volume) - 0.23 * avg_complexity - 16.2 * math.log(loc) if volume > 0 and loc > 0 else 0
+        mi = (
+            171 - 5.2 * math.log(volume) - 0.23 * avg_complexity - 16.2 * math.log(loc)
+            if volume > 0 and loc > 0
+            else 0
+        )
 
         # Normalize to 0-100 scale
         normalized_mi = max(0, min(100, mi * 100 / 171))
 
-        return {"maintainability_index": mi, "normalized_maintainability_index": normalized_mi}
+        return {
+            "maintainability_index": mi,
+            "normalized_maintainability_index": normalized_mi,
+        }
 
     def get_maintainability_rank(self) -> dict[str, str]:
         """Rank the codebase based on maintainability index."""
@@ -1568,11 +1866,23 @@ class CodebaseAnalyzer:
 
             # Track complex functions
             if cognitive_complexity > 10:
-                complex_functions.append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown", "complexity": cognitive_complexity})
+                complex_functions.append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                        "complexity": cognitive_complexity,
+                    }
+                )
 
         complexity_results["avg_complexity"] = total_complexity / len(functions)
         complexity_results["max_complexity"] = max_complexity
-        complexity_results["complex_functions"] = sorted(complex_functions, key=lambda x: x["complexity"], reverse=True)[:10]  # Top 10 most complex
+        complexity_results["complex_functions"] = sorted(
+            complex_functions, key=lambda x: x["complexity"], reverse=True
+        )[
+            :10
+        ]  # Top 10 most complex
 
         return complexity_results
 
@@ -1609,7 +1919,9 @@ class CodebaseAnalyzer:
                 line = line.strip()
 
                 # Increase nesting level
-                if re.search(r"\b(if|for|while|switch|case|catch|try)\b", line) and not line.startswith("}"):
+                if re.search(
+                    r"\b(if|for|while|switch|case|catch|try)\b", line
+                ) and not line.startswith("}"):
                     current_nesting += 1
                     max_nesting = max(max_nesting, current_nesting)
 
@@ -1632,11 +1944,23 @@ class CodebaseAnalyzer:
 
             # Track deeply nested functions
             if max_nesting > 4:
-                deeply_nested_functions.append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown", "max_nesting": max_nesting})
+                deeply_nested_functions.append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                        "max_nesting": max_nesting,
+                    }
+                )
 
         nesting_results["avg_max_nesting"] = total_max_nesting / len(functions)
         nesting_results["max_nesting"] = max_nesting_overall
-        nesting_results["deeply_nested_functions"] = sorted(deeply_nested_functions, key=lambda x: x["max_nesting"], reverse=True)[:10]  # Top 10 most nested
+        nesting_results["deeply_nested_functions"] = sorted(
+            deeply_nested_functions, key=lambda x: x["max_nesting"], reverse=True
+        )[
+            :10
+        ]  # Top 10 most nested
 
         return nesting_results
 
@@ -1681,11 +2005,23 @@ class CodebaseAnalyzer:
 
             # Track large functions
             if func_lines > 30:
-                largest_functions.append({"name": func.name, "file": func.file.file_path if hasattr(func, "file") else "Unknown", "lines": func_lines})
+                largest_functions.append(
+                    {
+                        "name": func.name,
+                        "file": (
+                            func.file.file_path if hasattr(func, "file") else "Unknown"
+                        ),
+                        "lines": func_lines,
+                    }
+                )
 
         size_metrics["avg_function_length"] = total_length / len(functions)
         size_metrics["max_function_length"] = max_length
-        size_metrics["largest_functions"] = sorted(largest_functions, key=lambda x: x["lines"], reverse=True)[:10]  # Top 10 largest
+        size_metrics["largest_functions"] = sorted(
+            largest_functions, key=lambda x: x["lines"], reverse=True
+        )[
+            :10
+        ]  # Top 10 largest
 
         return size_metrics
 
@@ -1752,19 +2088,31 @@ class CodebaseAnalyzer:
         with open(output_file, "w") as f:
             f.write(html)
 
-        self.console.print(f"[bold green]HTML report saved to {output_file}[/bold green]")
+        self.console.print(
+            f"[bold green]HTML report saved to {output_file}[/bold green]"
+        )
 
     def _print_console_report(self) -> None:
         """Print a summary report to the console."""
-        self.console.print(f"[bold blue]Codebase Analysis Report for {self.results['metadata']['repo_name']}[/bold blue]")
-        self.console.print(f"[bold]Analysis Time:[/bold] {self.results['metadata']['analysis_time']}")
-        self.console.print(f"[bold]Language:[/bold] {self.results['metadata']['language']}")
+        self.console.print(
+            f"[bold blue]Codebase Analysis Report for {self.results['metadata']['repo_name']}[/bold blue]"
+        )
+        self.console.print(
+            f"[bold]Analysis Time:[/bold] {self.results['metadata']['analysis_time']}"
+        )
+        self.console.print(
+            f"[bold]Language:[/bold] {self.results['metadata']['language']}"
+        )
 
         for category, metrics in self.results["categories"].items():
-            self.console.print(f"\n[bold green]{category.replace('_', ' ').title()}[/bold green]")
+            self.console.print(
+                f"\n[bold green]{category.replace('_', ' ').title()}[/bold green]"
+            )
 
             for metric_name, metric_value in metrics.items():
-                self.console.print(f"[bold]{metric_name.replace('_', ' ').title()}:[/bold]")
+                self.console.print(
+                    f"[bold]{metric_name.replace('_', ' ').title()}:[/bold]"
+                )
 
                 if isinstance(metric_value, dict):
                     table = Table(show_header=True)
@@ -1790,7 +2138,9 @@ class CodebaseAnalyzer:
 
                             self.console.print(table)
                             if len(metric_value) > 10:
-                                self.console.print(f"... and {len(metric_value) - 10} more items")
+                                self.console.print(
+                                    f"... and {len(metric_value) - 10} more items"
+                                )
                     else:
                         self.console.print(str(metric_value))
                 else:
@@ -1829,30 +2179,50 @@ def main():
     # Repository source
     source_group = parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument("--repo-url", help="URL of the repository to analyze")
-    source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
+    source_group.add_argument(
+        "--repo-path", help="Local path to the repository to analyze"
+    )
 
     # Analysis options
-    parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
-    parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
+    parser.add_argument(
+        "--language",
+        help="Programming language of the codebase (auto-detected if not provided)",
+    )
+    parser.add_argument(
+        "--categories", nargs="+", help="Categories to analyze (default: all)"
+    )
 
     # Output options
-    parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
+    parser.add_argument(
+        "--output-format",
+        choices=["json", "html", "console"],
+        default="console",
+        help="Output format",
+    )
     parser.add_argument("--output-file", help="Path to the output file")
 
     args = parser.parse_args()
 
     try:
         # Initialize the analyzer
-        analyzer = CodebaseAnalyzer(repo_url=args.repo_url, repo_path=args.repo_path, language=args.language)
+        analyzer = CodebaseAnalyzer(
+            repo_url=args.repo_url, repo_path=args.repo_path, language=args.language
+        )
 
         # Perform the analysis
-        results = analyzer.analyze(categories=args.categories, output_format=args.output_format, output_file=args.output_file)
+        results = analyzer.analyze(
+            categories=args.categories,
+            output_format=args.output_format,
+            output_file=args.output_file,
+        )
 
         # Print success message
         if args.output_format == "json" and args.output_file:
             print(f"Analysis results saved to {args.output_file}")
         elif args.output_format == "html":
-            print(f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}")
+            print(
+                f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}"
+            )
 
     except Exception as e:
         print(f"Error: {e}")

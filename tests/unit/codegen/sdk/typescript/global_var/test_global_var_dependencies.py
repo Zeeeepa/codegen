@@ -19,7 +19,11 @@ const bar = {
     key: foo,
 } as const
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: content},
+    ) as ctx:
         file = ctx.get_file(filename)
 
         gvar: TSAssignment = file.get_global_var("bar")
@@ -37,7 +41,11 @@ export const values = [
     ...helper(),
 ] as const
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={filename: content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={filename: content},
+    ) as ctx:
         file = ctx.get_file(filename)
 
         gvar: TSAssignment = file.get_global_var("values")
@@ -55,7 +63,11 @@ const d = 4, e = 5;
 let f = a + b + c;
 export const g = 6;
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # =====[ Count symbols ]=====
@@ -78,7 +90,11 @@ function Component() {
 
 Container.SubComponent = Component
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": ts_code}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": ts_code},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
 
         # =====[ Count symbols ]=====

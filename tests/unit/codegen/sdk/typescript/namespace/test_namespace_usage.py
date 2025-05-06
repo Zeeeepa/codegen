@@ -16,7 +16,11 @@ def test_namespace_same_file_usage(tmpdir) -> None:
         return MathUtils.PI * MathUtils.square(radius);
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         namespace = file.get_symbol("MathUtils")
@@ -70,7 +74,11 @@ def test_namespace_cross_file_usage(tmpdir) -> None:
         return area * radius;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content1, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content1, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1 = codebase.get_file("file1.ts")
         file2 = codebase.get_file("file2.ts")
 

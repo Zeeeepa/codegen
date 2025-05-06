@@ -50,10 +50,18 @@ class LinearClient:
             }
         """
         variables = {"issueId": issue_id}
-        response = requests.post(self.api_endpoint, headers=self.api_headers, json={"query": query, "variables": variables})
+        response = requests.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": query, "variables": variables},
+        )
         data = response.json()
         issue_data = data["data"]["issue"]
-        return LinearIssue(id=issue_data["id"], title=issue_data["title"], description=issue_data["description"])
+        return LinearIssue(
+            id=issue_data["id"],
+            title=issue_data["title"],
+            description=issue_data["description"],
+        )
 
     def get_issue_comments(self, issue_id: str) -> list[LinearComment]:
         query = """
@@ -74,7 +82,11 @@ class LinearClient:
             }
         """
         variables = {"issueId": issue_id}
-        response = requests.post(self.api_endpoint, headers=self.api_headers, json={"query": query, "variables": variables})
+        response = requests.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": query, "variables": variables},
+        )
         data = response.json()
         comments = data["data"]["issue"]["comments"]["nodes"]
 
@@ -82,7 +94,15 @@ class LinearClient:
         parsed_comments = []
         for comment in comments:
             user = comment.get("user", None)
-            parsed_comment = LinearComment(id=comment["id"], body=comment["body"], user=LinearUser(id=user.get("id"), name=user.get("name")) if user else None)
+            parsed_comment = LinearComment(
+                id=comment["id"],
+                body=comment["body"],
+                user=(
+                    LinearUser(id=user.get("id"), name=user.get("name"))
+                    if user
+                    else None
+                ),
+            )
             parsed_comments.append(parsed_comment)
 
         # Convert raw comments to LinearComment objects
@@ -128,10 +148,21 @@ class LinearClient:
             }
         """
         variables = {"id": webhook_id}
-        response = requests.post(self.api_endpoint, headers=self.api_headers, json={"query": mutation, "variables": variables})
+        response = requests.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": mutation, "variables": variables},
+        )
         return response.json()
 
-    def register_webhook(self, webhook_url: str, team_id: str, secret: str, enabled: bool, resource_types: list[str]) -> str | None:
+    def register_webhook(
+        self,
+        webhook_url: str,
+        team_id: str,
+        secret: str,
+        enabled: bool,
+        resource_types: list[str],
+    ) -> str | None:
         mutation = """
             mutation createWebhook($input: WebhookCreateInput!) {
                 webhookCreate(input: $input) {
@@ -154,7 +185,11 @@ class LinearClient:
             }
         }
 
-        response = requests.post(self.api_endpoint, headers=self.api_headers, json={"query": mutation, "variables": variables})
+        response = requests.post(
+            self.api_endpoint,
+            headers=self.api_headers,
+            json={"query": mutation, "variables": variables},
+        )
         if response.status_code != 200:
             return None
 

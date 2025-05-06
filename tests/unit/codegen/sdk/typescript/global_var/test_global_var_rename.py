@@ -16,7 +16,11 @@ function baz() {
     const c = a.b;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("b")
         symbol.rename("XYZ")

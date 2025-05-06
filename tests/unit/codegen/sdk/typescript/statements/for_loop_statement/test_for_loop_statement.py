@@ -29,7 +29,11 @@ for (const key in obj) {
     console.log(key);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         statements = file.code_block.statements
         traditional_for = statements[1]
@@ -38,7 +42,10 @@ for (const key in obj) {
         for_in = statements[9]
 
         assert traditional_for.statement_type == StatementType.FOR_LOOP_STATEMENT
-        assert traditional_for_no_increment.statement_type == StatementType.FOR_LOOP_STATEMENT
+        assert (
+            traditional_for_no_increment.statement_type
+            == StatementType.FOR_LOOP_STATEMENT
+        )
         assert for_of.statement_type == StatementType.FOR_LOOP_STATEMENT
         assert for_in.statement_type == StatementType.FOR_LOOP_STATEMENT
 
@@ -68,7 +75,11 @@ for(let i = init(); i < 10; i += increment()) {
     console.log(i);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         for_loop = file.code_block.statements[0]
 
@@ -91,7 +102,11 @@ function foo() {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
 

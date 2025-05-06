@@ -45,7 +45,14 @@ for file in codegen.files:
 for url, func in codegen.global_context.multigraph.api_definitions.items():
     usages = codegen.global_context.multigraph.usages.get(url, None)
     if usages:
-        res.append((url, func.name, func.filepath, [usage.filepath + "::" + usage.name for usage in usages]))
+        res.append(
+            (
+                url,
+                func.name,
+                func.filepath,
+                [usage.filepath + "::" + usage.name for usage in usages],
+            )
+        )
         for usage in usages:
             G.add_edge(usage.filepath, func.filepath)
 print(tabulate(res, headers=["URL", "Function Name", "Filepath", "Usages"]))

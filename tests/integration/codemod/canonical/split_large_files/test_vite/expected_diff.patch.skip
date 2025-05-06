@@ -21,7 +21,7 @@ index 2dad85578..ae345af1c 100644
 +import { resolveLibFilename } from '../build'
  import type { Logger } from '../logger'
  import { createLogger } from '../logger'
- 
+
 diff --git a/packages/vite/src/node/__tests__/config.spec.ts b/packages/vite/src/node/__tests__/config.spec.ts
 index 9fbbdd61f..d37fe9703 100644
 --- a/packages/vite/src/node/__tests__/config.spec.ts
@@ -42,7 +42,7 @@ index 9fbbdd61f..d37fe9703 100644
 +import { defineConfig } from '../config'
  import { resolveEnvPrefix } from '../env'
  import { createLogger, mergeConfig } from '../publicUtils'
- 
+
 diff --git a/packages/vite/src/node/__tests__/plugins/css.spec.ts b/packages/vite/src/node/__tests__/plugins/css.spec.ts
 index e1c435211..b6629ec1b 100644
 --- a/packages/vite/src/node/__tests__/plugins/css.spec.ts
@@ -75,7 +75,7 @@ index 2165461c7..83c22cd05 100644
  import { describe, expect, test } from 'vitest'
  import { definePlugin } from '../../plugins/define'
 -import { resolveConfig } from '../../config'
- 
+
  async function createDefinePluginTransform(
    define: Record<string, any> = {},
 diff --git a/packages/vite/src/node/__tests__/plugins/esbuild.spec.ts b/packages/vite/src/node/__tests__/plugins/esbuild.spec.ts
@@ -102,7 +102,7 @@ index 3b24fbd52..695b7cf6a 100644
  import type { ModuleFormat, RollupOutput } from 'rollup'
 -import { build } from '../../../build'
  import { modulePreloadPolyfillId } from '../../../plugins/modulePreloadPolyfill'
- 
+
  const buildProject = ({ format = 'es' as ModuleFormat } = {}) =>
 diff --git a/packages/vite/src/node/build.ts b/packages/vite/src/node/build.ts
 index d86393d36..daf2573d3 100644
@@ -146,7 +146,7 @@ index d86393d36..daf2573d3 100644
 @@ -61,369 +81,6 @@ import { mergeConfig } from './publicUtils'
  import { webWorkerPostPlugin } from './plugins/worker'
  import { getHookHandler } from './plugins'
- 
+
 -export interface BuildOptions {
 -  /**
 -   * Compatibility transform target. The transform is performed with esbuild
@@ -516,7 +516,7 @@ index d86393d36..daf2573d3 100644
 @@ -460,329 +117,6 @@ export async function resolveBuildPlugins(config: ResolvedConfig): Promise<{
    }
  }
- 
+
 -/**
 - * Bundles the app for production.
 - * Returns a Promise containing the build result.
@@ -846,7 +846,7 @@ index d86393d36..daf2573d3 100644
 @@ -880,139 +214,6 @@ export function resolveLibFilename(
    return `${name}.${format}.${extension}`
  }
- 
+
 -export function resolveBuildOutputs(
 -  outputs: OutputOptions | OutputOptions[] | undefined,
 -  libOptions: LibraryOptions | false,
@@ -2236,16 +2236,16 @@ index f0fa20921..3be8d25d6 100644
  import type { LogLevel } from './logger'
  import { createLogger } from './logger'
 -import { resolveConfig } from './config'
- 
+
  const cli = cac('vite')
- 
+
 @@ -265,7 +268,6 @@ cli
    .option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
    .action(async (root: string, options: BuildOptions & GlobalCLIOptions) => {
      filterDuplicateOptions(options)
 -    const { build } = await import('./build')
      const buildOptions: BuildOptions = cleanOptions(options)
- 
+
      try {
 diff --git a/packages/vite/src/node/config.ts b/packages/vite/src/node/config.ts
 index e38e5b595..325205b0f 100644
@@ -2331,7 +2331,7 @@ index e38e5b595..325205b0f 100644
 @@ -76,26 +111,6 @@ import { resolveSSROptions } from './ssr'
  const debug = createDebugger('vite:config')
  const promisifiedRealpath = promisify(fs.realpath)
- 
+
 -export interface ConfigEnv {
 -  /**
 -   * 'serve': during dev (`vite` command)
@@ -2358,7 +2358,7 @@ index e38e5b595..325205b0f 100644
 @@ -120,823 +135,6 @@ export function defineConfig(config: UserConfigExport): UserConfigExport {
    return config
  }
- 
+
 -export type PluginOption =
 -  | Plugin
 -  | false
@@ -3182,7 +3182,7 @@ index e38e5b595..325205b0f 100644
 @@ -999,227 +197,6 @@ export function sortUserPlugins(
    return [prePlugins, normalPlugins, postPlugins]
  }
- 
+
 -export async function loadConfigFromFile(
 -  configEnv: ConfigEnv,
 -  configFile?: string,
@@ -5081,7 +5081,7 @@ index 897524612..ddfe02937 100644
  import { type DotenvPopulateInput, expand } from 'dotenv-expand'
  import { arraify, normalizePath, tryStatSync } from './utils'
 -import type { UserConfig } from './config'
- 
+
  export function getEnvFilesForMode(mode: string, envDir: string): string[] {
    return [
 diff --git a/packages/vite/src/node/fsUtils.ts b/packages/vite/src/node/fsUtils.ts
@@ -5115,7 +5115,7 @@ index 51a063ba8..0bf31e9a2 100644
  import type { ProxyOptions } from './server/middlewares/proxy'
  import type { Logger } from './logger'
 -import type { HttpServer } from './server'
- 
+
  export interface CommonServerOptions {
    /**
 diff --git a/packages/vite/src/node/index.ts b/packages/vite/src/node/index.ts
@@ -5209,7 +5209,7 @@ index 3d17f8737..6f26e34e2 100644
 +import { TransformOptions } from 'packages/vite/src/node/server/transformRequest/loadAndTransform';
 +import { TransformResult } from 'packages/vite/src/node/server/transformRequest/handleModuleSoftInvalidation';
  import type * as Rollup from 'rollup'
- 
+
  export type { Rollup }
  export { parseAst, parseAstAsync } from 'rollup/parseAst'
  export {
@@ -5226,7 +5226,7 @@ index 3d17f8737..6f26e34e2 100644
  export { transformWithEsbuild } from './plugins/esbuild'
 @@ -20,58 +102,14 @@ export type { FetchModuleOptions } from './ssr/fetchModule'
  export * from './publicUtils'
- 
+
  // additional types
 -export type {
 -  AppType,
@@ -5290,7 +5290,7 @@ index 3d17f8737..6f26e34e2 100644
 -export type { ResolveOptions, InternalResolveOptions } from './plugins/resolve'
  export type { SplitVendorChunkCache } from './plugins/splitVendorChunk'
  export type { TerserOptions } from './plugins/terser'
- 
+
 @@ -117,11 +154,7 @@ export type { PluginContainer } from './server/pluginContainer'
  export type { ModuleGraph, ModuleNode, ResolvedUrl } from './server/moduleGraph'
  export type { SendOptions } from './server/send'
@@ -5301,7 +5301,7 @@ index 3d17f8737..6f26e34e2 100644
 -} from './server/transformRequest'
 -export type { HmrOptions, HmrContext } from './server/hmr'
 +export type { HmrOptions } from './server/hmr'
- 
+
  export type {
    HMRBroadcaster,
 diff --git a/packages/vite/src/node/logger.ts b/packages/vite/src/node/logger.ts
@@ -5310,7 +5310,7 @@ index 7928c954b..ece4da37a 100644
 +++ b/packages/vite/src/node/logger.ts
 @@ -1,9 +1,11 @@
  /* eslint no-console: 0 */
- 
+
 +import { ResolvedServerUrls } from 'packages/vite/src/node/server/index/ViteDevServer';
 +import { ResolvedServerUrls } from 'packages/vite/src/node/server/index/_createServer';
 +import { ResolvedServerUrls } from 'packages/vite/src/node/server/index/restartServer';
@@ -5318,7 +5318,7 @@ index 7928c954b..ece4da37a 100644
  import colors from 'picocolors'
  import type { RollupError } from 'rollup'
 -import type { ResolvedServerUrls } from './server'
- 
+
  export type LogType = 'error' | 'warn' | 'info'
  export type LogLevel = LogType | 'silent'
 diff --git a/packages/vite/src/node/optimizer/esbuildDepPlugin.ts b/packages/vite/src/node/optimizer/esbuildDepPlugin.ts
@@ -5350,7 +5350,7 @@ index 1f4c4dab1..36d84b6e4 100644
  } from '../utils'
 -import { browserExternalId, optionalPeerDepId } from '../plugins/resolve'
 -import { isCSSRequest, isModuleCSSRequest } from '../plugins/css'
- 
+
  const externalWithConversionNamespace =
    'vite:dep-pre-bundle:external-conversion'
 diff --git a/packages/vite/src/node/optimizer/index.ts b/packages/vite/src/node/optimizer/index.ts
@@ -5399,7 +5399,7 @@ index e62d78fdf..826868a61 100644
 @@ -37,18 +63,7 @@ export {
    getDepsOptimizer,
  } from './optimizer'
- 
+
 -const debug = createDebugger('vite:deps')
 -
  const jsExtensionRE = /\.js$/i
@@ -5412,13 +5412,13 @@ index e62d78fdf..826868a61 100644
 -  // hint if the dep requires loading as jsx
 -  jsxLoader?: boolean
 -}
- 
+
  export interface DepsOptimizer {
    metadata: DepOptimizationMetadata
 @@ -65,88 +80,6 @@ export interface DepsOptimizer {
    options: DepOptimizationOptions
  }
- 
+
 -export interface DepOptimizationConfig {
 -  /**
 -   * Force optimize listed dependencies (must be resolvable import paths,
@@ -5507,7 +5507,7 @@ index e62d78fdf..826868a61 100644
 @@ -166,76 +99,6 @@ export type DepOptimizationOptions = DepOptimizationConfig & {
    force?: boolean
  }
- 
+
 -export interface DepOptimizationResult {
 -  metadata: DepOptimizationMetadata
 -  /**
@@ -5584,7 +5584,7 @@ index e62d78fdf..826868a61 100644
 @@ -301,91 +164,8 @@ export async function optimizeServerSsrDeps(
    return result.metadata
  }
- 
+
 -export function initDepsOptimizerMetadata(
 -  config: ResolvedConfig,
 -  ssr: boolean,
@@ -5614,7 +5614,7 @@ index e62d78fdf..826868a61 100644
 -}
 -
  let firstLoadCachedDepOptimizationMetadata = true
- 
+
 -/**
 - * Creates the initial dep optimization metadata, loading it from the deps cache
 - * if it exists and pre-bundling isn't forced
@@ -5676,7 +5676,7 @@ index e62d78fdf..826868a61 100644
 @@ -447,422 +227,6 @@ export function depsLogString(qualifiedIds: string[]): string {
    return colors.yellow(qualifiedIds.join(`, `))
  }
- 
+
 -/**
 - * Internally, Vite uses this function to prepare a optimizeDeps run. When Vite starts, we can get
 - * the metadata and start the server without waiting for the optimizeDeps processing to be completed
@@ -6099,7 +6099,7 @@ index e62d78fdf..826868a61 100644
 @@ -1059,60 +423,6 @@ function esbuildOutputFromId(
    }
  }
- 
+
 -export async function extractExportsData(
 -  filePath: string,
 -  config: ResolvedConfig,
@@ -7100,9 +7100,9 @@ index 3f76e480a..046df3009 100644
    toDiscoveredDependencies,
  } from '.'
 -import type { DepOptimizationResult, DepsOptimizer, OptimizedDepInfo } from '.'
- 
+
  const debug = createDebugger('vite:deps')
- 
+
 diff --git a/packages/vite/src/node/optimizer/resolve.ts b/packages/vite/src/node/optimizer/resolve.ts
 index 822b19e18..5e2041a30 100644
 --- a/packages/vite/src/node/optimizer/resolve.ts
@@ -7141,7 +7141,7 @@ index 8ef2f2281..2240dd95d 100644
  import type { ModuleNode } from './server/moduleGraph'
 -import type { HmrContext } from './server/hmr'
  import type { PreviewServerHook } from './preview'
- 
+
  /**
 diff --git a/packages/vite/src/node/plugins/asset.ts b/packages/vite/src/node/plugins/asset.ts
 index 1415211d5..0e4221cf0 100644
@@ -7187,7 +7187,7 @@ index 588f6e08b..924658276 100644
 -import type { InternalResolveOptions } from './resolve'
 -import { tryFsResolve } from './resolve'
  import { hasViteIgnoreRE } from './importAnalysis'
- 
+
  /**
 diff --git a/packages/vite/src/node/plugins/clientInjections.ts b/packages/vite/src/node/plugins/clientInjections.ts
 index c66f3877e..accf28907 100644
@@ -7356,7 +7356,7 @@ index 26ba17c19..9d7570f37 100644
 -
 -const decoder = new TextDecoder()
  // const debug = createDebugger('vite:css')
- 
+
  export interface CSSOptions {
 @@ -185,61 +314,21 @@ export function resolveCSSOptions(
    }
@@ -7374,7 +7374,7 @@ index 26ba17c19..9d7570f37 100644
 -const functionCallRE = /^[A-Z_][\w-]*\(/i
 -const transformOnlyRE = /[?&]transform-only\b/
  const nonEscapedDoubleQuoteRe = /(?<!\\)"/g
- 
+
 -const cssBundleName = 'style.css'
 -
 -const enum PreprocessLang {
@@ -7397,19 +7397,19 @@ index 26ba17c19..9d7570f37 100644
 -
 -export const isCSSRequest = (request: string): boolean =>
 -  CSS_LANGS_RE.test(request)
-+export 
- 
++export
+
 -export const isModuleCSSRequest = (request: string): boolean =>
 -  cssModuleRE.test(request)
-+export 
- 
++export
+
 -export const isDirectCSSRequest = (request: string): boolean =>
 -  CSS_LANGS_RE.test(request) && directRequestRE.test(request)
-+export 
- 
++export
+
  export const isDirectRequest = (request: string): boolean =>
    directRequestRE.test(request)
- 
+
 -const cssModulesCache = new WeakMap<
 -  ResolvedConfig,
 -  Map<string, Record<string, string>>
@@ -7426,7 +7426,7 @@ index 26ba17c19..9d7570f37 100644
 @@ -249,784 +338,6 @@ function encodePublicUrlsInCSS(config: ResolvedConfig) {
    return config.command === 'build'
  }
- 
+
 -const cssUrlAssetRE = /__VITE_CSS_URL__([\da-f]+)__/g
 -
 -/**
@@ -8211,7 +8211,7 @@ index 26ba17c19..9d7570f37 100644
 @@ -1062,408 +373,6 @@ export function getEmptyChunkReplacer(
      )
  }
- 
+
 -interface CSSAtImportResolvers {
 -  css: ResolveFn
 -  sass: ResolveFn
@@ -8638,7 +8638,7 @@ index 26ba17c19..9d7570f37 100644
 @@ -1685,36 +583,6 @@ const UrlRewritePostcssPlugin: PostCSS.PluginCreator<{
  }
  UrlRewritePostcssPlugin.postcss = true
- 
+
 -function rewriteCssUrls(
 -  css: string,
 -  replacer: CssUrlReplacer,
@@ -8690,7 +8690,7 @@ index 26ba17c19..9d7570f37 100644
 @@ -1799,65 +659,6 @@ async function doImportCSSReplace(
    return `@import ${wrap}${await replacer(rawUrl)}${wrap}`
  }
- 
+
 -async function minifyCSS(
 -  css: string,
 -  config: ResolvedConfig,
@@ -8754,9 +8754,9 @@ index 26ba17c19..9d7570f37 100644
    options: ESBuildOptions,
  ): TransformOptions {
 @@ -1923,75 +724,6 @@ export async function hoistAtRules(css: string): Promise<string> {
- 
+
  // Preprocessor support. This logic is largely replicated from @vue/compiler-sfc
- 
+
 -type PreprocessorAdditionalDataResult =
 -  | string
 -  | { content: string; map?: ExistingRawSourceMap }
@@ -8832,7 +8832,7 @@ index 26ba17c19..9d7570f37 100644
 @@ -2053,774 +785,14 @@ function loadSss(root: string) {
  declare const window: unknown | undefined
  declare const location: { href: string } | undefined
- 
+
 -// in unix, scss might append `location.href` in environments that shim `location`
 -// see https://github.com/sass/dart-sass/issues/710
 -function cleanScssBugUrl(url: string) {
@@ -9487,7 +9487,7 @@ index 26ba17c19..9d7570f37 100644
 -  }
 -}
  // #endregion
- 
+
 -// #region Stylus
 -// .styl
 -const makeStylWorker = (maxWorkers: number | undefined) => {
@@ -9606,7 +9606,7 @@ index 26ba17c19..9d7570f37 100644
    root: string,
 @@ -2932,118 +904,6 @@ function isPreProcessor(lang: any): lang is PreprocessLang {
  }
- 
+
  const importLightningCSS = createCachedImport(() => import('lightningcss'))
 -async function compileLightningCSS(
 -  id: string,
@@ -9720,7 +9720,7 @@ index 26ba17c19..9d7570f37 100644
 -    modules,
 -  }
 -}
- 
+
  // Convert https://esbuild.github.io/api/#target
  // To https://github.com/parcel-bundler/lightningcss/blob/master/node/targets.d.ts
 diff --git a/packages/vite/src/node/plugins/css/compileCSS.ts b/packages/vite/src/node/plugins/css/compileCSS.ts
@@ -14001,7 +14001,7 @@ index 585bc0154..ef6bfd644 100644
  import { escapeRegex } from '../utils'
 -import { isCSSRequest } from './css'
  import { isHTMLRequest } from './html'
- 
+
  const nonJsRe = /\.json(?:$|\?)/
 diff --git a/packages/vite/src/node/plugins/dynamicImportVars.ts b/packages/vite/src/node/plugins/dynamicImportVars.ts
 index 8c55632a7..bed219778 100644
@@ -14040,7 +14040,7 @@ index fda6ca02a..b041a5e1f 100644
 -import type { ResolvedConfig } from '../config'
  import type { Plugin } from '../plugin'
  import { cleanUrl } from '../../shared/utils'
- 
+
 diff --git a/packages/vite/src/node/plugins/html.ts b/packages/vite/src/node/plugins/html.ts
 index b7109debc..53b83e3f0 100644
 --- a/packages/vite/src/node/plugins/html.ts
@@ -14078,7 +14078,7 @@ index b7109debc..53b83e3f0 100644
  } from './asset'
 -import { isCSSRequest } from './css'
  import { modulePreloadPolyfillId } from './modulePreloadPolyfill'
- 
+
  interface ScriptAssetsUrl {
 diff --git a/packages/vite/src/node/plugins/importAnalysis.ts b/packages/vite/src/node/plugins/importAnalysis.ts
 index 8027bae9a..f9b95778a 100644
@@ -14142,7 +14142,7 @@ index 8027bae9a..f9b95778a 100644
  import { serializeDefine } from './define'
  import { WORKER_FILE_ID } from './worker'
  import { getAliasPatternMatcher } from './preAlias'
- 
+
  const debug = createDebugger('vite:import-analysis')
 -
 -const clientDir = normalizePath(CLIENT_DIR)
@@ -14153,10 +14153,10 @@ index 8027bae9a..f9b95778a 100644
 -
 -const optimizedDepChunkRE = /\/chunk-[A-Z\d]{8}\.js/
 -const optimizedDepDynamicRE = /-[A-Z\d]{8}\.js/
-+export 
- 
++export
+
  export const hasViteIgnoreRE = /\/\*\s*@vite-ignore\s*\*\//
- 
+
 -const urlIsStringRE = /^(?:'.*'|".*"|`.*`)$/
 -
 -const templateLiteralRE = /^\s*`(.*)`\s*$/
@@ -14166,7 +14166,7 @@ index 8027bae9a..f9b95778a 100644
    start: number
    end: number
  }
- 
+
 -export function isExplicitImportRequired(url: string): boolean {
 -  return !isJSRequest(url) && !isCSSRequest(url)
 -}
@@ -14955,12 +14955,12 @@ index 8027bae9a..f9b95778a 100644
 -    }
 -  }
 -}
- 
+
  // get line breaks to preserve line count for not breaking source maps
  function getLineBreaks(str: string) {
    return str.includes('\n') ? '\n'.repeat(str.split('\n').length - 1) : ''
  }
- 
+
 -type ImportNameSpecifier = { importedName: string; localName: string }
 -
 -/**
@@ -16163,7 +16163,7 @@ index 7dcad1796..96301d2fb 100644
  import { genSourceMapUrl } from '../server/sourcemap'
 -import { removedPureCssFilesCache } from './css'
  import { createParseErrorInfo } from './importAnalysis'
- 
+
  type FileDep = {
 diff --git a/packages/vite/src/node/plugins/importMetaGlob.ts b/packages/vite/src/node/plugins/importMetaGlob.ts
 index d596d39d1..a7681c04f 100644
@@ -16231,7 +16231,7 @@ index eaefdb7e6..39c70a47e 100644
  import { getDepsOptimizer } from '../optimizer'
  import { cleanUrl, withTrailingSlash } from '../../shared/utils'
 -import { tryOptimizedResolve } from './resolve'
- 
+
  /**
   * A plugin to avoid an aliased AND optimized dep from being aliased in src
 diff --git a/packages/vite/src/node/plugins/reporter.ts b/packages/vite/src/node/plugins/reporter.ts
@@ -16290,7 +16290,7 @@ index c9facf7cf..ed395143a 100644
 @@ -57,419 +87,12 @@ import {
  const normalizedClientEntry = normalizePath(CLIENT_ENTRY)
  const normalizedEnvEntry = normalizePath(ENV_ENTRY)
- 
+
 -const ERR_RESOLVE_PACKAGE_ENTRY_FAIL = 'ERR_RESOLVE_PACKAGE_ENTRY_FAIL'
 -
 -// special id for paths marked with browser: false
@@ -16300,13 +16300,13 @@ index c9facf7cf..ed395143a 100644
 -export const optionalPeerDepId = '__vite-optional-peer-dep'
 -
  const subpathImportsPrefix = '#'
- 
+
 -const startsWithWordCharRE = /^\w/
 -
  const debug = createDebugger('vite:resolve-details', {
    onlyWhenFocused: true,
  })
- 
+
 -export interface ResolveOptions {
 -  /**
 -   * @default ['browser', 'module', 'jsnext:main', 'jsnext']
@@ -16710,7 +16710,7 @@ index c9facf7cf..ed395143a 100644
 @@ -531,547 +154,6 @@ function ensureVersionQuery(
    return resolved
  }
- 
+
 -function splitFileAndPostfix(path: string) {
 -  const file = cleanUrl(path)
 -  return { file, postfix: path.slice(file.length) }
@@ -17258,7 +17258,7 @@ index c9facf7cf..ed395143a 100644
 @@ -1082,121 +164,6 @@ function packageEntryFailure(id: string, details?: string) {
    throw err
  }
- 
+
 -function resolveExportsOrImports(
 -  pkg: PackageData['data'],
 -  key: string,
@@ -18860,7 +18860,7 @@ index 407ea5f00..3522fbbf5 100644
 +import { ResolvedConfig } from 'packages/vite/src/node/config/resolveConfig';
  import type { Plugin } from '../plugin'
  import { fileToUrl } from './asset'
- 
+
 diff --git a/packages/vite/src/node/plugins/worker.ts b/packages/vite/src/node/plugins/worker.ts
 index dcaed0473..2155a04ce 100644
 --- a/packages/vite/src/node/plugins/worker.ts
@@ -18916,7 +18916,7 @@ index 4065c6470..584e9aa1d 100644
 -import type { InternalResolveOptions } from './resolve'
 -import { tryFsResolve } from './resolve'
  import { hasViteIgnoreRE } from './importAnalysis'
- 
+
  interface WorkerOptions {
 diff --git a/packages/vite/src/node/preview.ts b/packages/vite/src/node/preview.ts
 index 38192abea..4b59e43bc 100644
@@ -18956,9 +18956,9 @@ index 38192abea..4b59e43bc 100644
  import type { BindCLIShortcutsOptions } from './shortcuts'
 -import { resolveConfig } from './config'
 -import type { InlineConfig, ResolvedConfig } from './config'
- 
+
  export interface PreviewOptions extends CommonServerOptions {}
- 
+
 diff --git a/packages/vite/src/node/publicDir.ts b/packages/vite/src/node/publicDir.ts
 index a72afd414..07badc628 100644
 --- a/packages/vite/src/node/publicDir.ts
@@ -18999,9 +18999,9 @@ index 3c4a009f6..13ccd814e 100644
  import { fileURLToPath } from 'node:url'
  import { afterEach, describe, expect, it, vi } from 'vitest'
 -import { type ViteDevServer, createServer } from '../index'
- 
+
  const stubGetWatchedCode = /getWatched\(\) \{.+?return \{\};.+?\}/s
- 
+
 diff --git a/packages/vite/src/node/server/hmr.ts b/packages/vite/src/node/server/hmr.ts
 index 0c659a1d5..2538388a9 100644
 --- a/packages/vite/src/node/server/hmr.ts
@@ -19051,7 +19051,7 @@ index 0c659a1d5..2538388a9 100644
  import type { ModuleNode } from './moduleGraph'
 -import type { HttpServer } from '.'
  import { restartServerWithUrls } from '.'
- 
+
 -export const debugHmr = createDebugger('vite:hmr')
 -
 -const whitespaceRE = /\s/
@@ -19064,7 +19064,7 @@ index 0c659a1d5..2538388a9 100644
 @@ -35,20 +55,6 @@ export interface HmrOptions {
    channels?: HMRChannel[]
  }
- 
+
 -export interface HmrContext {
 -  file: string
 -  timestamp: number
@@ -19085,7 +19085,7 @@ index 0c659a1d5..2538388a9 100644
 @@ -111,195 +117,6 @@ export interface HMRBroadcaster extends Omit<HMRChannel, 'close' | 'name'> {
    close(): Promise<unknown[]>
  }
- 
+
 -export function getShortName(file: string, root: string): string {
 -  return file.startsWith(withTrailingSlash(root))
 -    ? path.posix.relative(root, file)
@@ -19281,7 +19281,7 @@ index 0c659a1d5..2538388a9 100644
 @@ -326,206 +143,6 @@ function getSSRInvalidatedImporters(module: ModuleNode) {
    )
  }
- 
+
 -function areAllImportsAccepted(
 -  importedBindings: Set<string>,
 -  acceptedExports: Set<string>,
@@ -19488,7 +19488,7 @@ index 0c659a1d5..2538388a9 100644
 @@ -545,125 +162,6 @@ export function handlePrunedModules(
    })
  }
- 
+
 -const enum LexerState {
 -  inCall,
 -  inSingleQuoteString,
@@ -20279,7 +20279,7 @@ index b5e1d9c57..3286c5245 100644
 -import { transformRequest } from './transformRequest'
  import { searchForWorkspaceRoot } from './searchRoot'
  import { warmupFiles } from './warmup'
- 
+
 -export interface ServerOptions extends CommonServerOptions {
 -  /**
 -   * Configure HMR-specific options (port, host, path & protocol)
@@ -20402,7 +20402,7 @@ index b5e1d9c57..3286c5245 100644
    this: void,
    server: ViteDevServer,
  ) => (() => void) | void | Promise<(() => void) | void>
- 
+
 -export type HttpServer = http.Server | Http2SecureServer
 -
 -export interface ViteDevServer {
@@ -20609,7 +20609,7 @@ index b5e1d9c57..3286c5245 100644
  ): Promise<ViteDevServer> {
    return _createServer(inlineConfig, { hotListen: true })
  }
- 
+
 -export async function _createServer(
 -  inlineConfig: InlineConfig = {},
 -  options: { hotListen: boolean },
@@ -21156,7 +21156,7 @@ index b5e1d9c57..3286c5245 100644
 @@ -1036,145 +209,6 @@ export function createServerCloseFn(
      })
  }
- 
+
 -function resolvedAllowDir(root: string, dir: string): string {
 -  return normalizePath(path.resolve(root, dir))
 -}
@@ -23749,7 +23749,7 @@ index f47811371..5313273f2 100644
 -import { isCSSRequest } from '../../plugins/css'
  import { getCodeWithSourcemap, injectSourcesContent } from '../sourcemap'
  import { cleanUrl, unwrapId, wrapId } from '../../../shared/utils'
- 
+
 diff --git a/packages/vite/src/node/server/middlewares/proxy.ts b/packages/vite/src/node/server/middlewares/proxy.ts
 index 17f6d7a23..44afb7722 100644
 --- a/packages/vite/src/node/server/middlewares/proxy.ts
@@ -23768,9 +23768,9 @@ index 17f6d7a23..44afb7722 100644
  import { createDebugger } from '../../utils'
  import type { CommonServerOptions, ResolvedConfig } from '../..'
 -import type { HttpServer } from '..'
- 
+
  const debug = createDebugger('vite:proxy')
- 
+
 diff --git a/packages/vite/src/node/server/middlewares/transform.ts b/packages/vite/src/node/server/middlewares/transform.ts
 index 12a440d4c..9b088d2d3 100644
 --- a/packages/vite/src/node/server/middlewares/transform.ts
@@ -23830,7 +23830,7 @@ index 442ece308..773008a9c 100644
  import { FS_PREFIX } from '../constants'
  import { cleanUrl } from '../../shared/utils'
 -import type { TransformResult } from './transformRequest'
- 
+
  export class ModuleNode {
    /**
 diff --git a/packages/vite/src/node/server/pluginContainer.ts b/packages/vite/src/node/server/pluginContainer.ts
@@ -23840,7 +23840,7 @@ index 3251790d1..e3122cf47 100644
 @@ -29,6 +29,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
  */
- 
+
 +import { PluginHookUtils } from 'packages/vite/src/node/config/resolveConfig';
 +import { ResolvedConfig } from 'packages/vite/src/node/config/resolveConfig';
  import fs from 'node:fs'
@@ -23890,7 +23890,7 @@ index dc98c1795..665002a2c 100644
 -const debugLoad = createDebugger('vite:load')
 -const debugTransform = createDebugger('vite:transform')
  const debugCache = createDebugger('vite:cache')
- 
+
 -export interface TransformResult {
 -  code: string
 -  map: SourceMap | { mappings: '' } | null
@@ -24900,7 +24900,7 @@ index d0bffcdce..29fa802f4 100644
  import { isObject } from '../utils'
  import type { HMRChannel } from './hmr'
 -import type { HttpServer } from '.'
- 
+
  /* In Bun, the `ws` module is overridden to hook into the native code. Using the bundled `js` version
   * of `ws` will not work as Bun's req.socket does not allow reading/writing to the underlying socket.
 diff --git a/packages/vite/src/node/shortcuts.ts b/packages/vite/src/node/shortcuts.ts
@@ -24929,7 +24929,7 @@ index 68e753af7..3c9cb06fa 100644
  import type { SSROptions } from '..'
 -import { resolveConfig } from '../../config'
  import { createIsConfiguredAsSsrExternal } from '../ssrExternal'
- 
+
  describe('createIsConfiguredAsSsrExternal', () => {
 diff --git a/packages/vite/src/node/ssr/fetchModule.ts b/packages/vite/src/node/ssr/fetchModule.ts
 index 60c0cb0a4..e00062f62 100644
@@ -24955,7 +24955,7 @@ index 3847e6954..806a2d63b 100644
 -
 +import { DepOptimizationConfig } from 'packages/vite/src/node/optimizer/index/DepOptimizationConfig';
  export type SSRTarget = 'node' | 'webworker'
- 
+
  export type SsrDepOptimizationOptions = DepOptimizationConfig
 diff --git a/packages/vite/src/node/ssr/runtime/__tests__/utils.ts b/packages/vite/src/node/ssr/runtime/__tests__/utils.ts
 index 5d8c06d4b..2de3f38cd 100644
@@ -24977,7 +24977,7 @@ index 5d8c06d4b..2de3f38cd 100644
 -import type { InlineConfig } from '../../../config'
  import { createServer } from '../../../server'
  import { createViteRuntime } from '../mainThreadRuntime'
- 
+
 diff --git a/packages/vite/src/node/ssr/runtime/mainThreadRuntime.ts b/packages/vite/src/node/ssr/runtime/mainThreadRuntime.ts
 index cbb8e3d8e..e9276eb21 100644
 --- a/packages/vite/src/node/ssr/runtime/mainThreadRuntime.ts
@@ -24992,7 +24992,7 @@ index cbb8e3d8e..e9276eb21 100644
 -import type { ViteDevServer } from '../../server'
  import type { HMRLogger } from '../../../shared/hmr'
  import { ServerHMRConnector } from './serverHmrConnector'
- 
+
 diff --git a/packages/vite/src/node/ssr/runtime/serverHmrConnector.ts b/packages/vite/src/node/ssr/runtime/serverHmrConnector.ts
 index b8bed32a8..f235dba5a 100644
 --- a/packages/vite/src/node/ssr/runtime/serverHmrConnector.ts
@@ -25005,7 +25005,7 @@ index b8bed32a8..f235dba5a 100644
  import type { HMRRuntimeConnection } from 'vite/runtime'
 -import type { ViteDevServer } from '../../server'
  import type { HMRBroadcasterClient, ServerHMRChannel } from '../../server/hmr'
- 
+
  class ServerHMRBroadcasterClient implements HMRBroadcasterClient {
 diff --git a/packages/vite/src/node/ssr/ssrExternal.ts b/packages/vite/src/node/ssr/ssrExternal.ts
 index 5681e0005..8ae33dc00 100644
@@ -25119,5 +25119,5 @@ index d8eb128f1..71e63f37f 100644
  import { arraify, normalizePath } from './utils'
 -import type { ResolvedConfig } from './config'
  import type { Logger } from './logger'
- 
+
  export function getResolvedOutDirs(

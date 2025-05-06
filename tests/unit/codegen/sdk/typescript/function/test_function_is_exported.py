@@ -9,7 +9,11 @@ export function add_symbol_to_file() {
     return x
 }
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         add_symbol_to_file = file.get_symbol("add_symbol_to_file")
         assert add_symbol_to_file.is_exported
@@ -26,7 +30,11 @@ const equalsFunction = (arg) => {
     return arg.equals(a);
 }
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         exported_equals_function = file.get_symbol("exportedEqualsFunction")
@@ -39,7 +47,11 @@ const equalsFunction = (arg) => {
     return arg.equals(a);
 }
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": file},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         exported_equals_function = file.get_symbol("equalsFunction")

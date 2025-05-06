@@ -11,7 +11,10 @@ def test_remove_unpacking_assignment(tmpdir) -> None:
     # language=python
     content = """foo,bar,buzz = (a, b, c)"""
 
-    with get_codebase_session(tmpdir=tmpdir, files={"test1.py": content, "test2.py": content, "test3.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test1.py": content, "test2.py": content, "test3.py": content},
+    ) as codebase:
         file1 = codebase.get_file("test1.py")
         file2 = codebase.get_file("test2.py")
         file3 = codebase.get_file("test3.py")
@@ -62,7 +65,10 @@ def test_remove_unpacking_assignment_funct(tmpdir) -> None:
     # language=python
     content = """foo,bar,buzz = f()"""
 
-    with get_codebase_session(tmpdir=tmpdir, files={"test1.py": content, "test2.py": content, "test3.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test1.py": content, "test2.py": content, "test3.py": content},
+    ) as codebase:
         file1 = codebase.get_file("test1.py")
         file2 = codebase.get_file("test2.py")
         file3 = codebase.get_file("test3.py")
@@ -106,7 +112,9 @@ def test_remove_unpacking_assignment_num(tmpdir) -> None:
     # language=python
     content = """a,b,c,d,e,f = (1, 2, 2, 4, 5, 3)"""
 
-    with get_codebase_session(tmpdir=tmpdir, files={"test1.py": content, "test2.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test1.py": content, "test2.py": content}
+    ) as codebase:
         file1 = codebase.get_file("test1.py")
 
         a = file1.get_symbol("a")

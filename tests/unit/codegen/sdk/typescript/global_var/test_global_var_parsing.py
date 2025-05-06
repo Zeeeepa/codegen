@@ -10,7 +10,11 @@ let a = 5;
 const b = 10;
 var c = d;
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         global_vars = file.global_vars
         assert len(global_vars) == 3
@@ -56,7 +60,11 @@ export const exportedObject = {
     ref: arrowFunction,
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
 
         # =====[ arrowFunction ]=====
@@ -133,7 +141,11 @@ const componentConfig = {
   },
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.tsx": file}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.tsx": file},
+    ) as ctx:
         file = ctx.get_file("test.tsx")
         component = file.get_symbol("TestComponent")
         assert len(component.symbol_usages) > 0

@@ -25,7 +25,9 @@ class OtherClass:
     def __init__(self):
         pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file = codebase.get_file("file1.py")
         cls = file.get_class("MyClass")
         a = cls.get_attribute("a")

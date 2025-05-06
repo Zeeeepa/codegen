@@ -32,11 +32,16 @@ def run(codebase: Codebase):
                     promise_statement = promise_chain.parent_statement
                     i += 1
                     if i < 10:
-                        print(f"Found operation promise in the {method.name} method in {method.file.filepath} file.")
+                        print(
+                            f"Found operation promise in the {method.name} method in {method.file.filepath} file."
+                        )
 
                     # ---------- CONVERT PROMISE CHAIN TO ASYNC AWAIT ----------
                     assignment_variable_name = "operation"
-                    async_await_code = promise_chain.convert_to_async_await(assignment_variable_name=assignment_variable_name, inplace_edit=False)
+                    async_await_code = promise_chain.convert_to_async_await(
+                        assignment_variable_name=assignment_variable_name,
+                        inplace_edit=False,
+                    )
 
                     new_code = f"""\
                         try {{
@@ -58,8 +63,22 @@ def run(codebase: Codebase):
 
                     # Cleanup callback handler assignment and subsequent return statement
                     statements = promise_statement.parent.get_statements()
-                    return_stmt = next((stmt for stmt in statements if stmt.statement_type == StatementType.RETURN_STATEMENT), None)
-                    assign_stmt = next((stmt for stmt in reversed(statements) if stmt.statement_type == StatementType.ASSIGNMENT), None)
+                    return_stmt = next(
+                        (
+                            stmt
+                            for stmt in statements
+                            if stmt.statement_type == StatementType.RETURN_STATEMENT
+                        ),
+                        None,
+                    )
+                    assign_stmt = next(
+                        (
+                            stmt
+                            for stmt in reversed(statements)
+                            if stmt.statement_type == StatementType.ASSIGNMENT
+                        ),
+                        None,
+                    )
 
                     if return_stmt:
                         return_stmt.remove()

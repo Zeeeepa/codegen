@@ -21,7 +21,11 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
         function.code_block.unwrap()
@@ -58,10 +62,16 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        nested_if = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)[1]
+        nested_if = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT
+        )[1]
         nested_if.consequence_block.unwrap()
     # language=typescript
     assert (
@@ -99,7 +109,12 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT, verify_output=False) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        verify_output=False,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
         if_block = function.code_block.if_blocks[0]
@@ -157,7 +172,11 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
         block_statements = function.code_block.statements

@@ -19,7 +19,18 @@ from typing import Any, ClassVar, Literal, Optional, TypedDict, Union
 import urllib3
 from typing_extensions import NotRequired, Self
 
-JSON_SCHEMA_VALIDATION_KEYWORDS = {"multipleOf", "maximum", "exclusiveMaximum", "minimum", "exclusiveMinimum", "maxLength", "minLength", "pattern", "maxItems", "minItems"}
+JSON_SCHEMA_VALIDATION_KEYWORDS = {
+    "multipleOf",
+    "maximum",
+    "exclusiveMaximum",
+    "minimum",
+    "exclusiveMinimum",
+    "maxLength",
+    "minLength",
+    "pattern",
+    "maxItems",
+    "minItems",
+}
 
 ServerVariablesT = dict[str, str]
 
@@ -436,7 +447,9 @@ class Configuration:
         self.__logger_format = value
         self.logger_formatter = logging.Formatter(self.__logger_format)
 
-    def get_api_key_with_prefix(self, identifier: str, alias: Optional[str] = None) -> Optional[str]:
+    def get_api_key_with_prefix(
+        self, identifier: str, alias: Optional[str] = None
+    ) -> Optional[str]:
         """Gets API key (with prefix if set).
 
         :param identifier: The identifier of apiKey.
@@ -445,7 +458,9 @@ class Configuration:
         """
         if self.refresh_api_key_hook is not None:
             self.refresh_api_key_hook(self)
-        key = self.api_key.get(identifier, self.api_key.get(alias) if alias is not None else None)
+        key = self.api_key.get(
+            identifier, self.api_key.get(alias) if alias is not None else None
+        )
         if key:
             prefix = self.api_key_prefix.get(identifier)
             if prefix:
@@ -466,7 +481,9 @@ class Configuration:
         password = ""
         if self.password is not None:
             password = self.password
-        return urllib3.util.make_headers(basic_auth=username + ":" + password).get("authorization")
+        return urllib3.util.make_headers(basic_auth=username + ":" + password).get(
+            "authorization"
+        )
 
     def auth_settings(self) -> AuthSettings:
         """Gets Auth Settings dict for api client.
@@ -526,7 +543,9 @@ class Configuration:
             used_value = variables.get(variable_name, variable["default_value"])
 
             if "enum_values" in variable and used_value not in variable["enum_values"]:
-                msg = "The variable `{}` in the host URL has invalid value {}. Must be {}.".format(variable_name, variables[variable_name], variable["enum_values"])
+                msg = "The variable `{}` in the host URL has invalid value {}. Must be {}.".format(
+                    variable_name, variables[variable_name], variable["enum_values"]
+                )
                 raise ValueError(msg)
 
             url = url.replace("{" + variable_name + "}", used_value)
@@ -536,7 +555,9 @@ class Configuration:
     @property
     def host(self) -> str:
         """Return generated host."""
-        return self.get_host_from_settings(self.server_index, variables=self.server_variables)
+        return self.get_host_from_settings(
+            self.server_index, variables=self.server_variables
+        )
 
     @host.setter
     def host(self, value: str) -> None:

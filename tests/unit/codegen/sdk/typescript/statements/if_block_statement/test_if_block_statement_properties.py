@@ -25,20 +25,35 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
         if_blocks = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
         assert len(if_blocks) == 1
         statement = if_blocks[0]
-        assert statement.is_if_statement and not statement.is_else_statement and not statement.is_elif_statement
+        assert (
+            statement.is_if_statement
+            and not statement.is_else_statement
+            and not statement.is_elif_statement
+        )
         assert statement.condition.source == "a + b"
         assert len(statement.consequence_block.statements) == 1
         assert statement.consequence_block.statements[0].source == "console.log(a);"
 
         else_ifs = statement.elif_statements
         assert len(else_ifs) == 2
-        assert all([not else_if.is_if_statement and not else_if.is_else_statement and else_if.is_elif_statement for else_if in else_ifs])
+        assert all(
+            [
+                not else_if.is_if_statement
+                and not else_if.is_else_statement
+                and else_if.is_elif_statement
+                for else_if in else_ifs
+            ]
+        )
         assert else_ifs[0].condition.source == "b && c"
         assert else_ifs[1].condition.source == "(c = a + b) && true"
         assert len(else_ifs[0].consequence_block.statements) == 1
@@ -48,7 +63,11 @@ function foo(): void {
         assert else_ifs[1].consequence_block.statements[1].source == "return;"
 
         else_statement = statement.else_statement
-        assert else_statement.is_else_statement and not else_statement.is_elif_statement and not else_statement.is_if_statement
+        assert (
+            else_statement.is_else_statement
+            and not else_statement.is_elif_statement
+            and not else_statement.is_if_statement
+        )
         assert else_statement.condition is None
         assert len(else_statement.consequence_block.statements) == 1
         assert else_statement.consequence_block.statements[0].source == "return;"
@@ -72,21 +91,59 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)) == 3
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level)) == 1
-        assert len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level + 1)) == 3
+        assert (
+            len(function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT))
+            == 3
+        )
+        assert (
+            len(
+                function.code_block.get_statements(
+                    StatementType.IF_BLOCK_STATEMENT, function.code_block.level
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                function.code_block.get_statements(
+                    StatementType.IF_BLOCK_STATEMENT, function.code_block.level + 1
+                )
+            )
+            == 3
+        )
 
-        top_if_block = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT, function.code_block.level)[0]
-        assert top_if_block.is_if_statement and not top_if_block.is_else_statement and not top_if_block.is_elif_statement
+        top_if_block = function.code_block.get_statements(
+            StatementType.IF_BLOCK_STATEMENT, function.code_block.level
+        )[0]
+        assert (
+            top_if_block.is_if_statement
+            and not top_if_block.is_else_statement
+            and not top_if_block.is_elif_statement
+        )
         assert len(top_if_block.elif_statements) == 0
         assert top_if_block.else_statement is not None
 
-        nested_if_blocks: list[TSIfBlockStatement] = top_if_block.consequence_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
+        nested_if_blocks: list[TSIfBlockStatement] = (
+            top_if_block.consequence_block.get_statements(
+                StatementType.IF_BLOCK_STATEMENT
+            )
+        )
         assert len(nested_if_blocks) == 2
-        assert all([nested_if_block.is_if_statement and not nested_if_block.is_else_statement and not nested_if_block.is_elif_statement for nested_if_block in nested_if_blocks])
+        assert all(
+            [
+                nested_if_block.is_if_statement
+                and not nested_if_block.is_else_statement
+                and not nested_if_block.is_elif_statement
+                for nested_if_block in nested_if_blocks
+            ]
+        )
         assert nested_if_blocks[0].condition.source == "b"
         assert len(nested_if_blocks[0].elif_statements) == 0
         assert nested_if_blocks[0].else_statement is None
@@ -112,7 +169,11 @@ function foo(): void {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("dir/file1.ts")
         function = file.get_function("foo")
         if_blocks = function.code_block.get_statements(StatementType.IF_BLOCK_STATEMENT)
@@ -155,7 +216,11 @@ if (true) {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("PYSPARK")
         func_call = file.function_calls[0]
@@ -183,7 +248,11 @@ if (true) {
 }
 foo();
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         func_call = file.function_calls[3]
@@ -206,7 +275,11 @@ function foo(a) {
     f(b); // b resolves to 2 possible names
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         foo = file.get_function("foo")
         assert foo
@@ -234,7 +307,11 @@ if (true) {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("PYSPARK")
         func_call = file.function_calls[0]
@@ -253,7 +330,11 @@ if (true) {
 }
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("PYSPARK")
         func_call = file.function_calls[0]
@@ -280,7 +361,11 @@ if (true) {
 
 console.log(PYSPARK);
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         symbol = file.get_symbol("PYSPARK")
         func_call = file.function_calls[0]
@@ -300,7 +385,11 @@ if (true) {
     console.log(PYSPARK);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         pyspark_arg = func_call.args.children[0]
@@ -323,7 +412,11 @@ function foo() {
     console.log(PYSPARK);
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         func_call = file.function_calls[0]
         pyspark_arg = func_call.args.children[0]

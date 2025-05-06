@@ -1,6 +1,4 @@
-from codegen.extensions.swebench.enums import SWEBenchDataset
-from codegen.extensions.swebench.enums import SWEBenchLiteSubset
-
+from codegen.extensions.swebench.enums import SWEBenchDataset, SWEBenchLiteSubset
 
 DATASET_DICT = {
     "lite": SWEBenchDataset.LITE,

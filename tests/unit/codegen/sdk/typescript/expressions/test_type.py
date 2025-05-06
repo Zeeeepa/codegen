@@ -13,7 +13,11 @@ function foo(a: string): number {
     let symbol = "test_string"
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = codebase.get_symbol("foo")
         assert foo.return_type.source == "number"
@@ -38,7 +42,11 @@ function foo(a: (a: number) => number): number {
     let symbol = "test_string"
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = codebase.get_symbol("foo")
         assert foo.parameters[0].type == "(a: number) => number"
@@ -64,7 +72,11 @@ function foo(a: {a: int; b?(a: int): c}): number {
     let symbol = "test_string"
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         foo = codebase.get_symbol("foo")
         assert foo.return_type.source == "number"
@@ -80,7 +92,11 @@ def test_type_query(tmpdir) -> None:
     content = """
 let n: typeof s;
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         n = codebase.get_symbol("n")
         assert n.type == "typeof s"
         assert n.is_typed
@@ -93,7 +109,11 @@ def test_type_undefined(tmpdir) -> None:
     content = """
 let n: undefined;
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         n = codebase.get_symbol("n")
         assert n.type == "undefined"
         assert isinstance(n.type, TSUndefinedType)
@@ -105,7 +125,11 @@ def test_type_readonly(tmpdir) -> None:
     content = """
 let n: readonly T[];
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file(file)
         n = codebase.get_symbol("n")
         assert n.type.type == "T[]"
@@ -138,7 +162,11 @@ export type foo = {
     }
 };
 """
-    with get_codebase_session(tmpdir=tmpdir, files={file: content, file2: content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={file: content, file2: content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         test_func = codebase.get_symbol("test_func")
         foo = codebase.get_symbol("foo")
         imp = codebase.get_file(file).imports[0]
@@ -178,7 +206,11 @@ export async function exampleFunction<T>(
 
 """
     # language=typescript
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         func = codebase.get_symbol("exampleFunction")
         ret = func.return_type
         assert ret.name == "Promise"
@@ -201,7 +233,10 @@ export async function exampleFunction<T>(
   >"""
         )
         assert override.parameters[0] == "schemas.ResponseType<T>"
-        assert override.parameters[1] == "OperationsOverrides['example_operation']['response']"
+        assert (
+            override.parameters[1]
+            == "OperationsOverrides['example_operation']['response']"
+        )
         assert override.parameters[1].name == "OperationsOverrides"
         assert override.parameters[1].lookup.ts_node_type == "string"
         assert isinstance(override.parameters[1].lookup, String)

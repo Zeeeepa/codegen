@@ -4,49 +4,80 @@ from codegen.sdk.codebase.factory.get_session import get_codebase_session
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.file import File
 from codegen.sdk.enums import EdgeType
-from tests.unit.codegen.sdk.python.utils.test_file_contents import file1_content, file2_content
+from tests.unit.codegen.sdk.python.utils.test_file_contents import (
+    file1_content,
+    file2_content,
+)
 
 
 @pytest.fixture(scope="function")
 def mock_codebase_setup(tmpdir) -> tuple[Codebase, File, File]:
     tmpdir.mkdir("test_reparse")
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}) as mock_code_base:
-        yield mock_code_base, mock_code_base.get_file("file1.py"), mock_code_base.get_file("file2.py")
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}
+    ) as mock_code_base:
+        yield mock_code_base, mock_code_base.get_file(
+            "file1.py"
+        ), mock_code_base.get_file("file2.py")
 
 
-def test_file_reparse_rename_global_var(mock_codebase_setup: tuple[Codebase, File, File]) -> None:
+def test_file_reparse_rename_global_var(
+    mock_codebase_setup: tuple[Codebase, File, File]
+) -> None:
     codebase, file1, file2 = mock_codebase_setup
 
     ctx = codebase.ctx
     init_nodes = ctx.get_nodes()
     init_edges = ctx.get_edges()
     assert [x.name for x in file2.classes] == ["MyClass2"]
-    assert [x.name for x in file2.get_class("MyClass2").methods] == ["__init__", "square_plus_constant", "cube_plus_constant", "sin_plus_constant"]
+    assert [x.name for x in file2.get_class("MyClass2").methods] == [
+        "__init__",
+        "square_plus_constant",
+        "cube_plus_constant",
+        "sin_plus_constant",
+    ]
 
     file2.get_class("MyClass2").rename("MyClass3")
     codebase.ctx.commit_transactions()
 
     assert [x.name for x in file2.classes] == ["MyClass3"]
-    assert [x.name for x in file2.get_class("MyClass3").methods] == ["__init__", "square_plus_constant", "cube_plus_constant", "sin_plus_constant"]
+    assert [x.name for x in file2.get_class("MyClass3").methods] == [
+        "__init__",
+        "square_plus_constant",
+        "cube_plus_constant",
+        "sin_plus_constant",
+    ]
     assert len(ctx.nodes) == len(init_nodes)
     assert len(ctx.edges) == len(init_edges)
 
 
-def test_file_reparse_rename_referenced_class(mock_codebase_setup: tuple[Codebase, File, File]) -> None:
+def test_file_reparse_rename_referenced_class(
+    mock_codebase_setup: tuple[Codebase, File, File]
+) -> None:
     codebase, file1, file2 = mock_codebase_setup
 
     ctx = codebase.ctx
     init_nodes = ctx.get_nodes()
     init_edges = ctx.get_edges()
     assert [x.name for x in file1.classes] == ["MyClass1"]
-    assert [x.name for x in file1.get_class("MyClass1").methods] == ["__init__", "square", "cube", "sin"]
+    assert [x.name for x in file1.get_class("MyClass1").methods] == [
+        "__init__",
+        "square",
+        "cube",
+        "sin",
+    ]
 
     symbol_to_rename = file1.get_class("MyClass1")
     symbol_to_rename.rename("ReferencedClass")
     codebase.ctx.commit_transactions()
 
     assert [x.name for x in file1.classes] == ["ReferencedClass"]
-    assert [x.name for x in file1.get_class("ReferencedClass").methods] == ["__init__", "square", "cube", "sin"]
+    assert [x.name for x in file1.get_class("ReferencedClass").methods] == [
+        "__init__",
+        "square",
+        "cube",
+        "sin",
+    ]
     assert len(ctx.nodes) == len(init_nodes)
     assert len(ctx.edges) == len(init_edges)
     assert "MyClass1" not in file2.source
@@ -55,7 +86,9 @@ def test_file_reparse_rename_referenced_class(mock_codebase_setup: tuple[Codebas
     assert "MyClass1" not in file1.content
 
 
-def test_file_reparse_add_new_import(mock_codebase_setup: tuple[Codebase, File, File]) -> None:
+def test_file_reparse_add_new_import(
+    mock_codebase_setup: tuple[Codebase, File, File]
+) -> None:
     codebase, file1, file2 = mock_codebase_setup
 
     ctx = codebase.ctx
@@ -74,8 +107,22 @@ def test_file_reparse_add_new_import(mock_codebase_setup: tuple[Codebase, File, 
 
     # Assert that the new import has been added an external module as well as new import
     nodes_diff = set(ctx.get_nodes()) - set(init_nodes)
-    external_module = next((x for x in nodes_diff if type(x).__name__ == "ExternalModule" and x.name == "datetime"), None)
-    imp = next((x for x in nodes_diff if type(x).__name__ == "PyImport" and x.name == "datetime"), None)
+    external_module = next(
+        (
+            x
+            for x in nodes_diff
+            if type(x).__name__ == "ExternalModule" and x.name == "datetime"
+        ),
+        None,
+    )
+    imp = next(
+        (
+            x
+            for x in nodes_diff
+            if type(x).__name__ == "PyImport" and x.name == "datetime"
+        ),
+        None,
+    )
     assert len(nodes_diff) == 2
     assert external_module is not None
     assert imp is not None
@@ -83,12 +130,21 @@ def test_file_reparse_add_new_import(mock_codebase_setup: tuple[Codebase, File, 
     # Assert that new edges have been created to incorporate the new import and external module nodes
     edges_diff = set(ctx.get_edges()) - set(init_edges)
     imp_resolution_edge = next(
-        ((u, v, edge_type, usage_type) for (u, v, edge_type, usage_type) in edges_diff if edge_type == EdgeType.IMPORT_SYMBOL_RESOLUTION and u == imp.node_id and v == external_module.node_id), None
+        (
+            (u, v, edge_type, usage_type)
+            for (u, v, edge_type, usage_type) in edges_diff
+            if edge_type == EdgeType.IMPORT_SYMBOL_RESOLUTION
+            and u == imp.node_id
+            and v == external_module.node_id
+        ),
+        None,
     )
     assert imp_resolution_edge is not None
 
 
-def test_file_reparse_move_global_var(mock_codebase_setup: tuple[Codebase, File, File]) -> None:
+def test_file_reparse_move_global_var(
+    mock_codebase_setup: tuple[Codebase, File, File]
+) -> None:
     codebase, file1, file2 = mock_codebase_setup
 
     ctx = codebase.ctx
@@ -136,7 +192,10 @@ from dir.file1 import square
 def bar(x):
     return square(x)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file0.py": file0, "dir/file1.py": file1, "file2.py": file2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file0.py": file0, "dir/file1.py": file1, "file2.py": file2},
+    ) as codebase:
         file0 = codebase.get_file("dir/file0.py")
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("file2.py")

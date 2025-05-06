@@ -8,34 +8,53 @@ from graph_sitter.core.codebase import Codebase
 from graph_sitter.core.symbol import Symbol
 
 
-def get_symbol_attribution(symbol: Symbol) -> Dict[str, Union[str, int]]:
+def get_symbol_attribution(
+    codebase: Codebase, symbol_name: str
+) -> Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]]:
     """
     Get attribution information for a symbol.
 
     Args:
-        symbol: The symbol to get attribution for
+        codebase: The codebase to analyze
+        symbol_name: The name of the symbol to get attribution for
 
     Returns:
         A dictionary with attribution information
     """
-    # Get the file path for the symbol
+    # Find the symbol in the codebase
+    symbol = codebase.get_symbol(symbol_name)
+    if not symbol:
+        return {
+            "error": f"Symbol {symbol_name} not found in codebase",
+            "symbol_name": symbol_name,
+            "file_path": "",
+            "line_count": 0,
+            "author_breakdown": [],
+        }
+
+    # Get the file path and line range
     file_path = symbol.filepath
+    start_line = symbol.start_line
+    end_line = symbol.end_line
 
-    # Get the line range for the symbol
-    start_line = symbol.line_number
-    end_line = symbol.end_line_number if hasattr(symbol, "end_line_number") else start_line + 10
+    # Get the number of lines in the symbol
+    num_lines = end_line - start_line + 1
 
-    # Use git blame to get the author information
+    # Get git blame information for the symbol
     blame_info = _get_git_blame_info(file_path, start_line, end_line)
 
-    # Process the blame info to get attribution
-    attribution = _process_blame_info(blame_info)
+    # Process the blame information
+    attribution: Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]] = _process_blame_info(
+        blame_info
+    )
 
-    # Add symbol information
-    attribution["symbol_name"] = symbol.name
-    attribution["symbol_type"] = symbol.type
+    # Add file information
     attribution["file_path"] = file_path
-    attribution["line_range"] = f"{start_line}-{end_line}"
+    attribution["line_count"] = num_lines
+
+    # Get per-author breakdown
+    author_breakdown = _get_author_breakdown(blame_info)
+    attribution["author_breakdown"] = author_breakdown
 
     return attribution
 
@@ -59,7 +78,9 @@ def get_file_attribution(
     blame_info = _get_git_blame_info(file_path, 1, num_lines)
 
     # Process the blame info to get attribution
-    attribution = _process_blame_info(blame_info)
+    attribution: Dict[str, Union[str, int, List[Dict[str, Union[str, int]]]]] = _process_blame_info(
+        blame_info
+    )
 
     # Add file information
     attribution["file_path"] = file_path
@@ -186,7 +207,7 @@ def print_symbol_attribution(codebase: Codebase) -> None:
         codebase: The codebase to analyze
     """
     for symbol in codebase.symbols:
-        attribution = get_symbol_attribution(symbol)
+        attribution = get_symbol_attribution(codebase, symbol.name)
         print(f"Symbol: {attribution['symbol_name']} ({attribution['symbol_type']})")
         print(f"File: {attribution['file_path']}")
         print(f"Lines: {attribution['line_range']}")

@@ -30,29 +30,43 @@ class TestAgent:
         mock_get_response.result = {"output": "Task completed successfully"}
 
         # Configure the mock methods
-        mock_api.create_agent_run_v1_organizations_org_id_agent_run_post.return_value = mock_create_response
-        mock_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = mock_get_response
+        mock_api.create_agent_run_v1_organizations_org_id_agent_run_post.return_value = (
+            mock_create_response
+        )
+        mock_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = (
+            mock_get_response
+        )
 
         return mock_api
 
     @pytest.fixture
     def agent(self, mock_agents_api):
         """Create an Agent with mocked dependencies."""
-        with patch("codegen.agents.agent.ApiClient"), patch("codegen.agents.agent.AgentsApi", return_value=mock_agents_api), patch("codegen.agents.agent.Configuration"):
+        with (
+            patch("codegen.agents.agent.ApiClient"),
+            patch("codegen.agents.agent.AgentsApi", return_value=mock_agents_api),
+            patch("codegen.agents.agent.Configuration"),
+        ):
             agent = Agent(token="test-token", org_id=42)
             return agent
 
     def test_initialization(self):
         """Test Agent initialization with different parameters."""
         # Test with explicit org_id
-        with patch("codegen.agents.agent.ApiClient"), patch("codegen.agents.agent.AgentsApi"), patch("codegen.agents.agent.Configuration") as mock_config:
+        with (
+            patch("codegen.agents.agent.ApiClient"),
+            patch("codegen.agents.agent.AgentsApi"),
+            patch("codegen.agents.agent.Configuration") as mock_config,
+        ):
             agent = Agent(token="test-token", org_id=42)
             assert agent.token == "test-token"
             assert agent.org_id == 42
             assert agent.current_job is None
 
             # Verify Configuration was initialized correctly
-            mock_config.assert_called_once_with(host=CODEGEN_BASE_API_URL, access_token="test-token")
+            mock_config.assert_called_once_with(
+                host=CODEGEN_BASE_API_URL, access_token="test-token"
+            )
 
             # Test with env var for org_id
             with patch.dict("os.environ", {"CODEGEN_ORG_ID": "99"}):
@@ -71,7 +85,9 @@ class TestAgent:
 
         # Verify the API was called correctly
         mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.assert_called_once()
-        call_args = mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.call_args[1]
+        call_args = mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.call_args[
+            1
+        ]
         assert call_args["org_id"] == 42
         assert call_args["authorization"] == "Bearer test-token"
         assert call_args["_headers"] == {"Content-Type": "application/json"}
@@ -90,10 +106,16 @@ class TestAgent:
 
     def test_exception_handling(self):
         """Test handling of API exceptions during agent run."""
-        with patch("codegen.agents.agent.ApiClient"), patch("codegen.agents.agent.AgentsApi") as mock_agents_api_class, patch("codegen.agents.agent.Configuration"):
+        with (
+            patch("codegen.agents.agent.ApiClient"),
+            patch("codegen.agents.agent.AgentsApi") as mock_agents_api_class,
+            patch("codegen.agents.agent.Configuration"),
+        ):
             # Setup API to raise exception
             mock_agents_api = MagicMock()
-            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.side_effect = Exception("API Error")
+            mock_agents_api.create_agent_run_v1_organizations_org_id_agent_run_post.side_effect = Exception(
+                "API Error"
+            )
             mock_agents_api_class.return_value = mock_agents_api
 
             # Initialize agent

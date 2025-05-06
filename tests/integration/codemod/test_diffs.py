@@ -33,6 +33,13 @@ def verify_diffs(_codebase):
             try:
                 ast.parse(content, filename=path)
             except SyntaxError as error:
-                stylize_error(path, (error.lineno - 1, error.offset), (error.end_lineno - 1, error.end_offset), _codebase.get_file(path).ts_node, content, error.msg)
+                stylize_error(
+                    path,
+                    (error.lineno - 1, error.offset),
+                    (error.end_lineno - 1, error.end_offset),
+                    _codebase.get_file(path).ts_node,
+                    content,
+                    error.msg,
+                )
                 raise error
         # TODO: ts support

@@ -21,7 +21,11 @@ def test_file_add_symbol_import_updates_source(tmpdir) -> None:
         return 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE1_FILENAME: FILE1_CONTENT, FILE2_FILENAME: FILE2_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE1_FILENAME: FILE1_CONTENT, FILE2_FILENAME: FILE2_CONTENT},
+    ) as codebase:
         file1 = codebase.get_file(FILE1_FILENAME)
         file2 = codebase.get_file(FILE2_FILENAME)
 

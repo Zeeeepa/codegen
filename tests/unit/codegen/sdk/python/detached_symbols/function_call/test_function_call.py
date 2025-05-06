@@ -230,7 +230,9 @@ from file1 import foo
 def bar(x, y, z):  # trivial case
     return foo(arg1=1, 2)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1, "file2.py": file2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1, "file2.py": file2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -281,7 +283,9 @@ def bar(x, y, z):  # trivial case
     c = MyClass()
     return c.foo(arg1=1, 2)
         """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1, "file2.py": file2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1, "file2.py": file2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -310,7 +314,9 @@ def test_get_function_definition_imported_from_file(tmpdir) -> None:
         c = file1.MyClass()
         return c.foo(arg1=1, 2)
             """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": file1, "file2.py": file2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": file1, "file2.py": file2}
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -339,7 +345,9 @@ def bar(x, y, z):  # trivial case
     c = f.MyClass()
     return c.foo(arg1=1, 2)
         """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": file1, "file2.py": file2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": file1, "file2.py": file2}
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -374,7 +382,10 @@ from dir.file1 import square
 def bar(x):
     return square(x)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file0.py": file0, "dir/file1.py": file1, "file2.py": file2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file0.py": file0, "dir/file1.py": file1, "file2.py": file2},
+    ) as codebase:
         file0 = codebase.get_file("dir/file0.py")
         file2 = codebase.get_file("file2.py")
 
@@ -705,7 +716,9 @@ from def import generate_data
 def test_something(str_val: str, int_val: int) -> None:
     assert isinstance(str_val, str)
     assert isinstance(int_val, int)"""
-    with get_codebase_session(tmpdir=tmpdir, files={"def.py": def_content, "usage.py": usage_content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"def.py": def_content, "usage.py": usage_content}
+    ) as codebase:
         def_file = codebase.get_file("def.py")
         usage_file = codebase.get_file("usage.py")
 

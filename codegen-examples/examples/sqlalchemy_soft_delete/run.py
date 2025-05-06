@@ -31,12 +31,16 @@ def add_deleted_at_check(file, call, model_name):
 
     second_arg = call_args[1].value
     if second_arg.source == deleted_at_check:
-        print(f"Skipping {file.filepath} because the deleted_at check is already present")
+        print(
+            f"Skipping {file.filepath} because the deleted_at check is already present"
+        )
         return
 
     if isinstance(second_arg, FunctionCall) and second_arg.name == "and_":
         if deleted_at_check in {str(x) for x in second_arg.args}:
-            print(f"Skipping {file.filepath} because the deleted_at check is already present")
+            print(
+                f"Skipping {file.filepath} because the deleted_at check is already present"
+            )
             return
         print(f"Adding deleted_at check to and_ call in {file.filepath}")
         second_arg.args.append(deleted_at_check)
@@ -99,7 +103,9 @@ if __name__ == "__main__":
     try:
         clone_repo(repo_url, repo_path)
         subprocess.run(["git", "-C", str(repo_path), "checkout", "8454e15"], check=True)
-        codebase = Codebase(str(repo_path), language="python", config=CodebaseConfig(disable_graph=True))
+        codebase = Codebase(
+            str(repo_path), language="python", config=CodebaseConfig(disable_graph=True)
+        )
         process_soft_deletes(codebase)
     finally:
         shutil.rmtree(repo_path)

@@ -14,7 +14,11 @@ def foo() -> None:
     result = 'valueA' if a else 'valueB'
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         ternary_expr = foo.code_block.statements[0].value
@@ -37,7 +41,11 @@ def foo() -> None:
     result = 'valueA' if a else 'valueB'
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         ternary_expr = foo.code_block.statements[0].value
@@ -60,7 +68,11 @@ def foo() -> None:
     result = 'valueB_true' if b else 'valueB_false' if a else 'valueA'
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         outer_ternary = foo.code_block.statements[0].value
@@ -85,7 +97,11 @@ def foo() -> None:
     result = 'valueB_true' if b else 'valueB_false' if a else 'valueA'
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         outer_ternary = foo.code_block.statements[0].value
@@ -109,7 +125,11 @@ def foo() -> None:
     result2 = 'valueC' if b else 'valueD'
     print(result1, result2)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         ternary_expr1 = foo.code_block.statements[0].value
@@ -135,7 +155,11 @@ def foo() -> None:
     result = 'valueA' if is_true(a) else 'valueB'
     print(result)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}, programming_language=ProgrammingLanguage.PYTHON) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"dir/file1.py": content},
+        programming_language=ProgrammingLanguage.PYTHON,
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         foo = file.get_function("foo")
         ternary_expr = foo.code_block.statements[0].value

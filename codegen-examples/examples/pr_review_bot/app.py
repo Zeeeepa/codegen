@@ -1,12 +1,19 @@
 import logging
 from logging import getLogger
-import modal
-from codegen.extensions.events.app import CodegenApp
-from fastapi import Request
-from codegen.extensions.github.types.events.pull_request import PullRequestLabeledEvent, PullRequestUnlabeledEvent
-from helpers import remove_bot_comments, pr_review_agent
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+import modal
+from fastapi import Request
+from helpers import pr_review_agent, remove_bot_comments
+
+from codegen.extensions.events.app import CodegenApp
+from codegen.extensions.github.types.events.pull_request import (
+    PullRequestLabeledEvent,
+    PullRequestUnlabeledEvent,
+)
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = getLogger(__name__)
 
 REPO_URL = "https://github.com/codegen-sh/codegen-sdk.git"

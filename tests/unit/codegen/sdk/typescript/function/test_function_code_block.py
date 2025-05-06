@@ -41,12 +41,18 @@ function sumEvenNumbers(numbers: number[], threshold: number = 11): number {
 }
 sumEvenNumbers([1, 2, 3, 4, 5]);
         """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={file_name: content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={file_name: content},
+    ) as codebase:
         file = codebase.get_file(file_name)
         statements = file.get_function("sumEvenNumbers").code_block.get_statements()
 
         assert len(statements) == 18
-        statement_types = [(x.index, x.statement_type, x.parent.level) for x in statements]
+        statement_types = [
+            (x.index, x.statement_type, x.parent.level) for x in statements
+        ]
         assert statement_types == [
             (0, StatementType.COMMENT, 1),
             (1, StatementType.COMMENT, 1),

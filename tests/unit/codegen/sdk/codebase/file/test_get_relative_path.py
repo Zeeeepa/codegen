@@ -21,7 +21,9 @@ def test_get_relative_path_subdirectory(tmpdir) -> None:
 
     with get_codebase_session(tmpdir=tmpdir, files=files) as codebase:
         relative = codebase.get_relative_path("src/file1.py", "src/subdir/file2.js")
-        assert relative == "subdir/file2", f"Expected 'subdir/file2' but got {relative!r}"
+        assert (
+            relative == "subdir/file2"
+        ), f"Expected 'subdir/file2' but got {relative!r}"
 
 
 def test_get_relative_path_move_up_one_directory(tmpdir) -> None:
@@ -42,7 +44,9 @@ def test_get_relative_path_different_folders_deep(tmpdir) -> None:
     }
 
     with get_codebase_session(tmpdir=tmpdir, files=files) as codebase:
-        relative = codebase.get_relative_path("src/subdir/deeper/file1.ts", "src/subdir/file2.tsx")
+        relative = codebase.get_relative_path(
+            "src/subdir/deeper/file1.ts", "src/subdir/file2.tsx"
+        )
         assert relative == "../file2", f"Expected '../file2' but got {relative!r}"
 
 
@@ -53,8 +57,12 @@ def test_get_relative_path_multiple_levels_up(tmpdir) -> None:
     }
 
     with get_codebase_session(tmpdir=tmpdir, files=files) as codebase:
-        relative = codebase.get_relative_path("src/subdir/deeper/file1.ts", "tests/file2.js")
-        assert relative == "../../../tests/file2", f"Expected '../../../tests/file2' but got {relative!r}"
+        relative = codebase.get_relative_path(
+            "src/subdir/deeper/file1.ts", "tests/file2.js"
+        )
+        assert (
+            relative == "../../../tests/file2"
+        ), f"Expected '../../../tests/file2' but got {relative!r}"
 
 
 def test_get_relative_path_same_file(tmpdir) -> None:
@@ -63,5 +71,7 @@ def test_get_relative_path_same_file(tmpdir) -> None:
     }
 
     with get_codebase_session(tmpdir=tmpdir, files=files) as codebase:
-        relative = codebase.get_relative_path("src/subdir/deeper/file.ts", "src/subdir/deeper/file.ts")
+        relative = codebase.get_relative_path(
+            "src/subdir/deeper/file.ts", "src/subdir/deeper/file.ts"
+        )
         assert relative == "file", f"Expected 'file' but got {relative!r}"

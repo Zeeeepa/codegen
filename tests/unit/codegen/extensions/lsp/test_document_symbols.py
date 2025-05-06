@@ -224,7 +224,13 @@ async def test_document_symbols(
     original: dict,
     expected_symbols: list[DocumentSymbol],
 ):
-    result = await client.text_document_document_symbol_async(params=DocumentSymbolParams(text_document=TextDocumentIdentifier(uri=f"file://{codebase.repo_path}/test.py")))
+    result = await client.text_document_document_symbol_async(
+        params=DocumentSymbolParams(
+            text_document=TextDocumentIdentifier(
+                uri=f"file://{codebase.repo_path}/test.py"
+            )
+        )
+    )
 
     assert result is not None
     symbols = cast(Sequence[DocumentSymbol], result)

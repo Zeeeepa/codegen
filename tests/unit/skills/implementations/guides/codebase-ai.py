@@ -42,7 +42,11 @@ class MethodSummaryGenerator(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[MethodSummaryGeneratorPyTestCase], skip_test=True, language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[MethodSummaryGeneratorPyTestCase],
+        skip_test=True,
+        language=ProgrammingLanguage.PYTHON,
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
     def skill_func(codebase: CodebaseType):
         # get the method and its parent class
@@ -148,7 +152,11 @@ class FunctionDecomposition(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[FunctionDecompositionPyTestCase], skip_test=True, language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[FunctionDecompositionPyTestCase],
+        skip_test=True,
+        language=ProgrammingLanguage.PYTHON,
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
     def skill_func(codebase: CodebaseType):
         # Get the large function
@@ -192,7 +200,11 @@ class DocstringGenerator(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[DocstringGeneratorPyTestCase], skip_test=True, language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[DocstringGeneratorPyTestCase],
+        skip_test=True,
+        language=ProgrammingLanguage.PYTHON,
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
     def skill_func(codebase: CodebaseType):
         # Loop through all functions in the codebase
@@ -235,7 +247,11 @@ class DocstringFormatter(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[DocstringFormatterPyTestCase], skip_test=True, language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[DocstringFormatterPyTestCase],
+        skip_test=True,
+        language=ProgrammingLanguage.PYTHON,
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
     def skill_func(codebase: CodebaseType):
         # Loop through all functions in the codebase

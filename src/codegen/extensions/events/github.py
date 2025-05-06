@@ -7,7 +7,10 @@ from github import Github
 from pydantic import BaseModel
 
 from codegen.extensions.events.interface import EventHandlerManagerProtocol
-from codegen.extensions.github.types.base import GitHubInstallation, GitHubWebhookPayload
+from codegen.extensions.github.types.base import (
+    GitHubInstallation,
+    GitHubWebhookPayload,
+)
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
@@ -102,17 +105,27 @@ class GitHub(EventHandlerManagerProtocol):
                 "x-github-event": request.headers.get("x-github-event"),
                 "x-github-delivery": request.headers.get("x-github-delivery"),
                 "x-github-hook-id": request.headers.get("x-github-hook-id"),
-                "x-github-hook-installation-target-id": request.headers.get("x-github-hook-installation-target-id"),
-                "x-github-hook-installation-target-type": request.headers.get("x-github-hook-installation-target-type"),
+                "x-github-hook-installation-target-id": request.headers.get(
+                    "x-github-hook-installation-target-id"
+                ),
+                "x-github-hook-installation-target-type": request.headers.get(
+                    "x-github-hook-installation-target-type"
+                ),
             }
 
         # Handle webhook events
         try:
             # For simulation, use event data directly
             if not request:
-                event_type = f"pull_request:{event['action']}" if "action" in event else event.get("type", "unknown")
+                event_type = (
+                    f"pull_request:{event['action']}"
+                    if "action" in event
+                    else event.get("type", "unknown")
+                )
                 if event_type not in self.registered_handlers:
-                    logger.info(f"[HANDLER] No handler found for event type: {event_type}")
+                    logger.info(
+                        f"[HANDLER] No handler found for event type: {event_type}"
+                    )
                     return {"message": "Event type not handled"}
                 else:
                     logger.info(f"[HANDLER] Handling event: {event_type}")
@@ -120,13 +133,17 @@ class GitHub(EventHandlerManagerProtocol):
                     return handler(event)
 
             # For actual webhooks, use the full payload
-            webhook = GitHubWebhookPayload.model_validate({"headers": headers, "event": event})
+            webhook = GitHubWebhookPayload.model_validate(
+                {"headers": headers, "event": event}
+            )
             event_type = webhook.headers.event_type
             action = webhook.event.action
             full_event_type = f"{event_type}:{action}" if action else event_type
 
             if full_event_type not in self.registered_handlers:
-                logger.info(f"[HANDLER] No handler found for event type: {full_event_type}")
+                logger.info(
+                    f"[HANDLER] No handler found for event type: {full_event_type}"
+                )
                 return {"message": "Event type not handled"}
             else:
                 logger.info(f"[HANDLER] Handling event: {full_event_type}")

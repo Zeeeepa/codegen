@@ -28,7 +28,14 @@ class AgentRunResponse(BaseModel):
     created_at: StrictStr | None = None
     result: StrictStr | None = None
     web_url: StrictStr | None = None
-    __properties: ClassVar[list[str]] = ["id", "organization_id", "status", "created_at", "result", "web_url"]
+    __properties: ClassVar[list[str]] = [
+        "id",
+        "organization_id",
+        "status",
+        "created_at",
+        "result",
+        "web_url",
+    ]
 
     model_config = ConfigDict(
         populate_by_name=True,

@@ -9,7 +9,11 @@ def test_comment_basic(tmpdir) -> None:
 // this is a test comment
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -27,7 +31,12 @@ def test_comment_edit_source(tmpdir) -> None:
 // this is a test comment
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}, sync_graph=False) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+        sync_graph=False,
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -45,7 +54,11 @@ def test_comment_block(tmpdir) -> None:
 /* this is a test comment */
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -63,12 +76,21 @@ def test_comment_multiline(tmpdir) -> None:
 // that spans multiple lines
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "// this is a test comment\n// that spans multiple lines"
-        assert symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        assert (
+            symbol.comment.source
+            == "// this is a test comment\n// that spans multiple lines"
+        )
+        assert (
+            symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        )
         symbol.comment.edit_text("this is a new comment\nthat spans multiple lines")
 
     # Check that the comment was edited
@@ -83,12 +105,21 @@ that spans multiple lines
 */
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "/*\nthis is a test comment\nthat spans multiple lines\n*/"
-        assert symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        assert (
+            symbol.comment.source
+            == "/*\nthis is a test comment\nthat spans multiple lines\n*/"
+        )
+        assert (
+            symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        )
         symbol.comment.edit_text("this is a new comment\nthat spans multiple lines")
 
     # Check that the comment was edited
@@ -103,16 +134,28 @@ def test_comment_multiline_block_starred(tmpdir) -> None:
  */
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "/**\n * this is a test comment\n * that spans multiple lines\n */"
-        assert symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        assert (
+            symbol.comment.source
+            == "/**\n * this is a test comment\n * that spans multiple lines\n */"
+        )
+        assert (
+            symbol.comment.text == "this is a test comment\nthat spans multiple lines"
+        )
         symbol.comment.edit_text("this is a new comment\nthat spans multiple lines")
 
     # Check that the comment was edited
-    assert "/**\n * this is a new comment\n * that spans multiple lines\n */" in file.source
+    assert (
+        "/**\n * this is a new comment\n * that spans multiple lines\n */"
+        in file.source
+    )
 
 
 def test_comment_mixed(tmpdir) -> None:
@@ -131,16 +174,31 @@ comment 6
 */
 const symbol = 1
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.comment.source == "// comment 1\n/* comment 2 */\n// comment 3\n// comment 4\n/*\ncomment 5\ncomment 6\n*/\n/*\n * comment 7\n * comment 8\n*/"
-        assert symbol.comment.text == "comment 1\ncomment 2\ncomment 3\ncomment 4\ncomment 5\ncomment 6\ncomment 7\ncomment 8"
-        symbol.comment.edit_text("new comment 1\nnew comment 2\nnew comment 3\nnew comment 4\nnew comment 5\nnew comment 6\nnew comment 7\nnew comment 8")
+        assert (
+            symbol.comment.source
+            == "// comment 1\n/* comment 2 */\n// comment 3\n// comment 4\n/*\ncomment 5\ncomment 6\n*/\n/*\n * comment 7\n * comment 8\n*/"
+        )
+        assert (
+            symbol.comment.text
+            == "comment 1\ncomment 2\ncomment 3\ncomment 4\ncomment 5\ncomment 6\ncomment 7\ncomment 8"
+        )
+        symbol.comment.edit_text(
+            "new comment 1\nnew comment 2\nnew comment 3\nnew comment 4\nnew comment 5\nnew comment 6\nnew comment 7\nnew comment 8"
+        )
 
     # Check that the comment was edited
-    assert "// new comment 1\n// new comment 2\n// new comment 3\n// new comment 4\n// new comment 5\n// new comment 6\n// new comment 7\n// new comment 8" in file.source
+    assert (
+        "// new comment 1\n// new comment 2\n// new comment 3\n// new comment 4\n// new comment 5\n// new comment 6\n// new comment 7\n// new comment 8"
+        in file.source
+    )
 
 
 def test_comment_with_indentation(tmpdir) -> None:
@@ -154,12 +212,19 @@ class A {
 }
 """
 
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         A = file.get_symbol("A")
         symbol = A.get_method("symbol")
-        assert symbol.comment.source == "// this is a test comment\n// that has indentation"
+        assert (
+            symbol.comment.source
+            == "// this is a test comment\n// that has indentation"
+        )
         assert symbol.comment.text == "this is a test comment\nthat has indentation"
         symbol.comment.edit_text("this is a new comment\nthat has indentation")
 
@@ -179,17 +244,27 @@ class A {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         A = file.get_symbol("A")
         symbol = A.get_method("symbol")
-        assert symbol.comment.source == "/*\n    this is a test comment\n    that has indentation\n    */"
+        assert (
+            symbol.comment.source
+            == "/*\n    this is a test comment\n    that has indentation\n    */"
+        )
         assert symbol.comment.text == "this is a test comment\nthat has indentation"
         symbol.comment.edit_text("this is a new comment\nthat has indentation")
 
     # Check that the comment was edited
-    assert "    /*\n    this is a new comment\n    that has indentation\n    */" in file.source
+    assert (
+        "    /*\n    this is a new comment\n    that has indentation\n    */"
+        in file.source
+    )
 
 
 def test_comment_with_indentation_in_block_starred(tmpdir) -> None:
@@ -204,14 +279,24 @@ class A {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         A = file.get_symbol("A")
         symbol = A.get_method("symbol")
-        assert symbol.comment.source == "/**\n     * this is a test comment\n     * that has indentation\n     */"
+        assert (
+            symbol.comment.source
+            == "/**\n     * this is a test comment\n     * that has indentation\n     */"
+        )
         assert symbol.comment.text == "this is a test comment\nthat has indentation"
         symbol.comment.edit_text("this is a new comment\nthat has indentation")
 
     # Check that the comment was edited
-    assert "    /**\n     * this is a new comment\n     * that has indentation\n     */\n    symbol() {" in file.source
+    assert (
+        "    /**\n     * this is a new comment\n     * that has indentation\n     */\n    symbol() {"
+        in file.source
+    )

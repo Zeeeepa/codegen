@@ -33,7 +33,11 @@ export type PetOwner = {
 export const animalTypes = ["dog", "cat"] as const;
 export type AnimalType = typeof animalTypes[number];
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         # Test basic type dependencies

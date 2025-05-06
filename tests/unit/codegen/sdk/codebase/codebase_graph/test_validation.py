@@ -1,5 +1,8 @@
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
-from codegen.sdk.codebase.validation import PostInitValidationStatus, post_init_validation
+from codegen.sdk.codebase.validation import (
+    PostInitValidationStatus,
+    post_init_validation,
+)
 from codegen.sdk.enums import NodeType
 from codegen.sdk.extensions.utils import uncache_all
 
@@ -64,7 +67,17 @@ def f():
             "foo.py": foo_source,
         },
     ) as codebase:
-        num_resolved_imports = len([imp for imp in codebase.imports if imp.resolved_symbol and imp.resolved_symbol.node_type != NodeType.EXTERNAL])
+        num_resolved_imports = len(
+            [
+                imp
+                for imp in codebase.imports
+                if imp.resolved_symbol
+                and imp.resolved_symbol.node_type != NodeType.EXTERNAL
+            ]
+        )
         assert num_resolved_imports == 1
         assert len(codebase.imports) == 8
-        assert post_init_validation(codebase) == PostInitValidationStatus.LOW_IMPORT_RESOLUTION_RATE
+        assert (
+            post_init_validation(codebase)
+            == PostInitValidationStatus.LOW_IMPORT_RESOLUTION_RATE
+        )

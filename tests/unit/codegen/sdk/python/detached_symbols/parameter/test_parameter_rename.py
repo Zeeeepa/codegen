@@ -92,7 +92,9 @@ class MyClass:
         self.attr = foo(a=1, b=2) + foo(a=3, b=4)
 """
     # language=python
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         foo = file1.get_function("foo")
@@ -168,7 +170,9 @@ class MyClass:
     def __init__(self):
         self.attr = x.foo(a=1, b=2) + foo(a=3, b=4)
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         foo = file1.get_function("foo")

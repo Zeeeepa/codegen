@@ -1,12 +1,22 @@
 from collections.abc import Generator
 from typing import Any, Optional
 
-from langchain.schema import AIMessage, HumanMessage
+from langchain.schema import AIMessage
 from langchain.schema import FunctionMessage as LCFunctionMessage
+from langchain.schema import HumanMessage
 from langchain.schema import SystemMessage as LCSystemMessage
 from langchain_core.messages import ToolMessage as LCToolMessage
 
-from .data import AssistantMessage, BaseMessage, FunctionMessageData, SystemMessageData, ToolCall, ToolMessageData, UnknownMessage, UserMessage
+from .data import (
+    AssistantMessage,
+    BaseMessage,
+    FunctionMessageData,
+    SystemMessageData,
+    ToolCall,
+    ToolMessageData,
+    UnknownMessage,
+    UserMessage,
+)
 from .loggers import ExternalLogger
 
 
@@ -44,7 +54,9 @@ class MessageStreamTracer:
         if not messages and isinstance(chunk, dict):
             # Sometimes the message might be in a different format
             for key, value in chunk.items():
-                if isinstance(value, list) and all(hasattr(item, "type") for item in value if hasattr(item, "__dict__")):
+                if isinstance(value, list) and all(
+                    hasattr(item, "type") for item in value if hasattr(item, "__dict__")
+                ):
                     messages = value
                     break
 
@@ -68,8 +80,15 @@ class MessageStreamTracer:
             return SystemMessageData(type=message_type, content=content)
         elif message_type == "assistant":
             tool_calls_data = self._extract_tool_calls(latest_message)
-            tool_calls = [ToolCall(name=tc.get("name"), arguments=tc.get("arguments"), id=tc.get("id")) for tc in tool_calls_data]
-            return AssistantMessage(type=message_type, content=content, tool_calls=tool_calls)
+            tool_calls = [
+                ToolCall(
+                    name=tc.get("name"), arguments=tc.get("arguments"), id=tc.get("id")
+                )
+                for tc in tool_calls_data
+            ]
+            return AssistantMessage(
+                type=message_type, content=content, tool_calls=tool_calls
+            )
         elif message_type == "tool":
             return ToolMessageData(
                 type=message_type,
@@ -115,13 +134,25 @@ class MessageStreamTracer:
         tool_calls = []
 
         # Check different possible locations for tool calls
-        if hasattr(message, "additional_kwargs") and "tool_calls" in message.additional_kwargs:
+        if (
+            hasattr(message, "additional_kwargs")
+            and "tool_calls" in message.additional_kwargs
+        ):
             raw_tool_calls = message.additional_kwargs["tool_calls"]
             for tc in raw_tool_calls:
-                tool_calls.append({"name": tc.get("function", {}).get("name"), "arguments": tc.get("function", {}).get("arguments"), "id": tc.get("id")})
+                tool_calls.append(
+                    {
+                        "name": tc.get("function", {}).get("name"),
+                        "arguments": tc.get("function", {}).get("arguments"),
+                        "id": tc.get("id"),
+                    }
+                )
 
         # Also check for function_call which is used in some models
-        elif hasattr(message, "additional_kwargs") and "function_call" in message.additional_kwargs:
+        elif (
+            hasattr(message, "additional_kwargs")
+            and "function_call" in message.additional_kwargs
+        ):
             fc = message.additional_kwargs["function_call"]
             if isinstance(fc, dict):
                 tool_calls.append(

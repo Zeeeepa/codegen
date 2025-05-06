@@ -5,14 +5,21 @@ import pytest
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
 from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.core.file import File
-from tests.unit.codegen.sdk.python.utils.test_file_contents import file1_content, file2_content
+from tests.unit.codegen.sdk.python.utils.test_file_contents import (
+    file1_content,
+    file2_content,
+)
 
 
 @pytest.fixture(scope="function")
 def mock_codebase_setup(tmpdir) -> tuple[Codebase, File, File]:
     tmpdir.mkdir("test_reparse")
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}) as mock_code_base:
-        yield mock_code_base, mock_code_base.get_file("file1.py"), mock_code_base.get_file("file2.py")
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": file1_content, "file2.py": file2_content}
+    ) as mock_code_base:
+        yield mock_code_base, mock_code_base.get_file(
+            "file1.py"
+        ), mock_code_base.get_file("file2.py")
 
 
 def test_codebase_create_file(mock_codebase_setup: tuple[Codebase, File, File]) -> None:
@@ -51,7 +58,9 @@ def test_codebase_create_dir(mock_codebase_setup: tuple[Codebase, File, File]) -
         codebase.create_directory("test2/test3", exist_ok=False)
 
 
-def test_codebase_create_then_delete_file(mock_codebase_setup: tuple[Codebase, File, File]) -> None:
+def test_codebase_create_then_delete_file(
+    mock_codebase_setup: tuple[Codebase, File, File]
+) -> None:
     codebase, file1, file2 = mock_codebase_setup
 
     assert len(list(list(codebase.files))) == 2

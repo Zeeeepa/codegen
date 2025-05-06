@@ -12,7 +12,7 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
 
@@ -165,40 +165,40 @@ def format_markdown(results: Dict[str, Any]) -> str:
         return f"# Error Analyzing Pull Request\n\n{results['error']}"
 
     markdown = f"# Pull Request Analysis: #{results.get('pr_number', '')}\n\n"
-    
+
     if "is_properly_implemented" in results:
         if results["is_properly_implemented"]:
             markdown += "## ✅ Properly Implemented\n\n"
         else:
             markdown += "## ❌ Issues Detected\n\n"
-    
+
     if "quality_score" in results:
         markdown += f"**Quality Score:** {results['quality_score']}/10.0"
         if "overall_assessment" in results:
             markdown += f" - {results['overall_assessment']}"
         markdown += "\n\n"
-    
+
     if "summary" in results:
         markdown += "## Summary\n\n"
         markdown += results["summary"] + "\n\n"
-    
+
     if "issues" in results and results["issues"]:
         markdown += "## Issues\n\n"
         for issue in results["issues"]:
             markdown += f"- {issue}\n"
         markdown += "\n"
-    
+
     if "recommendations" in results and results["recommendations"]:
         markdown += "## Recommendations\n\n"
         for recommendation in results["recommendations"]:
             markdown += f"- {recommendation}\n"
         markdown += "\n"
-    
+
     if "file_content" in results:
         markdown += f"## Files Changed ({len(results['file_content'])})\n\n"
         for filename in results["file_content"]:
             markdown += f"- {filename}\n"
-    
+
     return markdown
 
 
@@ -217,41 +217,41 @@ def format_text(results: Dict[str, Any]) -> str:
 
     text = f"Pull Request Analysis: #{results.get('pr_number', '')}\n"
     text += f"=======================================\n\n"
-    
+
     if "is_properly_implemented" in results:
         if results["is_properly_implemented"]:
             text += "✅ Properly Implemented\n\n"
         else:
             text += "❌ Issues Detected\n\n"
-    
+
     if "quality_score" in results:
         text += f"Quality Score: {results['quality_score']}/10.0"
         if "overall_assessment" in results:
             text += f" - {results['overall_assessment']}"
         text += "\n\n"
-    
+
     if "summary" in results:
         text += "Summary\n-------\n\n"
         text += results["summary"] + "\n\n"
-    
+
     if "issues" in results and results["issues"]:
         text += "Issues\n------\n\n"
         for issue in results["issues"]:
             text += f"- {issue}\n"
         text += "\n"
-    
+
     if "recommendations" in results and results["recommendations"]:
         text += "Recommendations\n---------------\n\n"
         for recommendation in results["recommendations"]:
             text += f"- {recommendation}\n"
         text += "\n"
-    
+
     if "file_content" in results:
         text += f"Files Changed ({len(results['file_content'])})\n"
         text += f"------------------\n\n"
         for filename in results["file_content"]:
             text += f"- {filename}\n"
-    
+
     return text
 
 
@@ -288,4 +288,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

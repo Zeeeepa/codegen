@@ -19,7 +19,12 @@ return []
     TARGET_FILE = "target.ts"
     # language=typescript
     TARGET_FILE_CONTENT = """"""
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT, TARGET_FILE: TARGET_FILE_CONTENT}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT, TARGET_FILE: TARGET_FILE_CONTENT},
+        commit=True,
+    ) as codebase:
         file = codebase.get_file(FILE_NAME)
         target_file = codebase.get_file(TARGET_FILE)
         func = file.get_function("doAthing")
@@ -55,7 +60,12 @@ export function doAthing(): ReturnValue[] {
 return []
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT, TARGET_FILE: TARGET_FILE_CONTENT}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT, TARGET_FILE: TARGET_FILE_CONTENT},
+        commit=True,
+    ) as codebase:
         file = codebase.get_file(FILE_NAME)
         target_file = codebase.get_file(TARGET_FILE)
         func = file.get_function("doAthing")

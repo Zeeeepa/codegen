@@ -29,7 +29,9 @@ class MoveSymbolObservation(Observation):
         description="Information about the target file after move",
     )
 
-    str_template: ClassVar[str] = "Moved symbol {symbol_name} from {source_file} to {target_file}"
+    str_template: ClassVar[str] = (
+        "Moved symbol {symbol_name} from {source_file} to {target_file}"
+    )
 
 
 def move_symbol(
@@ -118,7 +120,9 @@ def move_symbol(
         )
 
     try:
-        symbol.move_to_file(target, include_dependencies=include_dependencies, strategy=strategy)
+        symbol.move_to_file(
+            target, include_dependencies=include_dependencies, strategy=strategy
+        )
         codebase.commit()
 
         return MoveSymbolObservation(

@@ -37,6 +37,7 @@ print "You entered: ", user_input
 
 # Itertools changes
 import itertools
+
 print "itertools.izip in Python 2: ", list(itertools.izip([1, 2], [3, 4]))
 # In Python 3, use zip directly: print("zip in Python 3: ", list(zip([1, 2], [3, 4])))
 

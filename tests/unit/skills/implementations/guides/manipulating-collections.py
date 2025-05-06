@@ -5,7 +5,11 @@ from codegen.sdk.core.symbol_groups.list import List
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 AddParameterToFunctionPyTestCase = SkillTestCase(
     [
@@ -53,7 +57,10 @@ class AddParameterToFunction(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[AddParameterToFunctionPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[AddParameterToFunctionPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         function = codebase.get_file("path/to/file.py").get_function("function_name")
@@ -62,7 +69,10 @@ class AddParameterToFunction(Skill, ABC):
         function.parameters.append("new_param: int")
 
     @staticmethod
-    @skill_impl(test_cases=[AddParameterToFunctionTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[AddParameterToFunctionTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         function = codebase.get_file("path/to/file.ts").get_function("functionName")
@@ -115,7 +125,10 @@ class ModifyDictionaryValue(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[ModifyDictionaryValuePyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[ModifyDictionaryValuePyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # var = {"example_key": "example_value"}
         # Find the symbol to modify
@@ -133,7 +146,10 @@ class ModifyDictionaryValue(Skill, ABC):
         var.value["example_key"] = '"xyz"'
 
     @staticmethod
-    @skill_impl(test_cases=[ModifyDictionaryValueTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[ModifyDictionaryValueTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # var = {"example_key": "example_value"}
         # Find the symbol to modify
@@ -181,13 +197,18 @@ class ConvertVariableToSchema(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[ConvertVariableToSchemaPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[ConvertVariableToSchemaPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         var = codebase.get_file("path/to/file.py").get_global_var("var_name")
 
         # Convert its assignment to a Schema and excludes certain keys
-        var.set_value(f"Schema({', '.join(f'{k}={v}' for k, v in var.value.items() if k != 'excluded')})")
+        var.set_value(
+            f"Schema({', '.join(f'{k}={v}' for k, v in var.value.items() if k != 'excluded')})"
+        )
 
 
 AppendToGlobalVariableListPyTestCase = SkillTestCase(
@@ -231,7 +252,10 @@ class AppendToGlobalVariableList(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[AppendToGlobalVariableListPyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[AppendToGlobalVariableListPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         var = codebase.get_file("path/to/file.py").get_global_var("foo")
@@ -245,7 +269,10 @@ class AppendToGlobalVariableList(Skill, ABC):
         var.value.append('"bar"')
 
     @staticmethod
-    @skill_impl(test_cases=[AppendToGlobalVariableListTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[AppendToGlobalVariableListTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         var = codebase.get_file("path/to/file.ts").get_global_var("foo")
@@ -291,7 +318,10 @@ class CheckFunctionDecoratorPresence(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CheckFunctionDecoratorPresencePyTestCase], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[CheckFunctionDecoratorPresencePyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         # Find the symbol to modify
         function = codebase.get_file("path/to/file.py").get_function("function_name")

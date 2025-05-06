@@ -10,7 +10,13 @@ def find_dirs_to_ignore(start_dir, prefix):
     for root, dirs, files in os.walk(start_dir):
         for dir in dirs:
             full_path = os.path.relpath(os.path.join(root, dir), start_dir)
-            if any(dd.startswith("original_input") or dd.startswith("output") or dd.startswith("input") or dd.startswith("expected") for dd in dir.split("/")):
+            if any(
+                dd.startswith("original_input")
+                or dd.startswith("output")
+                or dd.startswith("input")
+                or dd.startswith("expected")
+                for dd in dir.split("/")
+            ):
                 dirs_to_ignore.append(full_path)
     return dirs_to_ignore
 
@@ -54,15 +60,44 @@ def pytest_addoption(parser) -> None:
         default=False,
         help="Whether to test on extra repos",
     )
-    parser.addoption("--token", action="store", default=None, help="Read-only GHA token to access extra repos")
+    parser.addoption(
+        "--token",
+        action="store",
+        default=None,
+        help="Read-only GHA token to access extra repos",
+    )
 
-    parser.addoption("--codemod-id", action="store", type=int, default=None, help="Runs db skills test for a specific codemod")
+    parser.addoption(
+        "--codemod-id",
+        action="store",
+        type=int,
+        default=None,
+        help="Runs db skills test for a specific codemod",
+    )
 
-    parser.addoption("--repo-id", action="store", type=int, default=None, help="Runs db skills test for a specific repo")
+    parser.addoption(
+        "--repo-id",
+        action="store",
+        type=int,
+        default=None,
+        help="Runs db skills test for a specific repo",
+    )
 
-    parser.addoption("--base-commit", action="store", type=str, default=None, help="Runs db skills test for a specific commit. Argument can be the shortest unique substring.")
+    parser.addoption(
+        "--base-commit",
+        action="store",
+        type=str,
+        default=None,
+        help="Runs db skills test for a specific commit. Argument can be the shortest unique substring.",
+    )
 
-    parser.addoption("--cli-api-key", action="store", type=str, default=None, help="Token necessary to access skills.")
+    parser.addoption(
+        "--cli-api-key",
+        action="store",
+        type=str,
+        default=None,
+        help="Token necessary to access skills.",
+    )
 
 
 @pytest.hookimpl(hookwrapper=True)

@@ -18,7 +18,9 @@ class SymbolInfo(Observation):
     """Information about a symbol."""
 
     name: str = Field(description="Name of the symbol")
-    filepath: Optional[str] = Field(description="Path to the file containing the symbol")
+    filepath: Optional[str] = Field(
+        description="Path to the file containing the symbol"
+    )
     source: str = Field(description="Source code of the symbol")
 
     str_template: ClassVar[str] = "{name} in {filepath}"
@@ -44,7 +46,9 @@ class RevealSymbolObservation(Observation):
         description="List of valid filepaths when symbol is ambiguous",
     )
 
-    str_template: ClassVar[str] = "Symbol info: {dependencies_count} dependencies, {usages_count} usages"
+    str_template: ClassVar[str] = (
+        "Symbol info: {dependencies_count} dependencies, {usages_count} usages"
+    )
 
     def _get_details(self) -> dict[str, Any]:
         """Get details for string representation."""
@@ -98,7 +102,9 @@ def truncate_source(source: str, max_tokens: int) -> str:
     last_line = lines[-1]
     last_line_tokens = len(enc.encode(last_line))
 
-    remaining_tokens = max_tokens - current_tokens - truncation_tokens - last_line_tokens
+    remaining_tokens = (
+        max_tokens - current_tokens - truncation_tokens - last_line_tokens
+    )
 
     if remaining_tokens > 0:
         # Try to keep some middle content
@@ -137,7 +143,9 @@ def get_symbol_info(symbol: Symbol, max_tokens: Optional[int] = None) -> SymbolI
     )
 
 
-def hop_through_imports(symbol: Symbol, seen_imports: Optional[set[str]] = None) -> Symbol:
+def hop_through_imports(
+    symbol: Symbol, seen_imports: Optional[set[str]] = None
+) -> Symbol:
     """Follow import chain to find the root symbol, stopping at ExternalModule."""
     if seen_imports is None:
         seen_imports = set()
@@ -219,7 +227,16 @@ def get_extended_context(
                 total_tokens += symbol_tokens
 
                 if current_degree + 1 < degree:
-                    next_deps, next_uses, new_total = get_extended_context(dep, degree, max_tokens, seen_symbols, current_degree + 1, total_tokens, collect_dependencies, collect_usages)
+                    next_deps, next_uses, new_total = get_extended_context(
+                        dep,
+                        degree,
+                        max_tokens,
+                        seen_symbols,
+                        current_degree + 1,
+                        total_tokens,
+                        collect_dependencies,
+                        collect_usages,
+                    )
                     dependencies.extend(next_deps)
                     usages.extend(next_uses)
                     total_tokens = new_total
@@ -244,7 +261,16 @@ def get_extended_context(
                 total_tokens += symbol_tokens
 
                 if current_degree + 1 < degree:
-                    next_deps, next_uses, new_total = get_extended_context(usage, degree, max_tokens, seen_symbols, current_degree + 1, total_tokens, collect_dependencies, collect_usages)
+                    next_deps, next_uses, new_total = get_extended_context(
+                        usage,
+                        degree,
+                        max_tokens,
+                        seen_symbols,
+                        current_degree + 1,
+                        total_tokens,
+                        collect_dependencies,
+                        collect_usages,
+                    )
                     dependencies.extend(next_deps)
                     usages.extend(next_uses)
                     total_tokens = new_total
@@ -301,7 +327,13 @@ def reveal_symbol(
             )
 
     # Get dependencies and usages up to specified degree
-    dependencies, usages, total_tokens = get_extended_context(symbol, max_depth, max_tokens, collect_dependencies=collect_dependencies, collect_usages=collect_usages)
+    dependencies, usages, total_tokens = get_extended_context(
+        symbol,
+        max_depth,
+        max_tokens,
+        collect_dependencies=collect_dependencies,
+        collect_usages=collect_usages,
+    )
 
     was_truncated = max_tokens is not None and total_tokens >= max_tokens
 

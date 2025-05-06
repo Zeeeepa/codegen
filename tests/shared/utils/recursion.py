@@ -9,4 +9,6 @@ def set_recursion_limit():
     sys.setrecursionlimit(10**9)
     if sys.platform == "linux":
         logger.info(f"Setting stack limit to {resource.RLIM_INFINITY}")
-        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+        resource.setrlimit(
+            resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
+        )

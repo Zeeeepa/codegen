@@ -21,8 +21,14 @@ def programming_language(request):
 
 
 @pytest.fixture
-def codebase(tmp_path, original: dict[str, str], programming_language: ProgrammingLanguage = ProgrammingLanguage.PYTHON):
-    with get_codebase_session(files=original, programming_language=programming_language, tmpdir=tmp_path) as codebase:
+def codebase(
+    tmp_path,
+    original: dict[str, str],
+    programming_language: ProgrammingLanguage = ProgrammingLanguage.PYTHON,
+):
+    with get_codebase_session(
+        files=original, programming_language=programming_language, tmpdir=tmp_path
+    ) as codebase:
         yield codebase
 
 

@@ -74,7 +74,9 @@ def test_register_multiple_handlers(app):
     # Verify each handler is properly configured
     assert app.slack.registered_handlers["message"] is not None
     assert app.github.registered_handlers["push"] is not None
-    assert app.linear.registered_handlers[handle_linear.__qualname__].event_name == "Issue"
+    assert (
+        app.linear.registered_handlers[handle_linear.__qualname__].event_name == "Issue"
+    )
 
 
 def test_handler_registration_is_isolated(app):
@@ -87,4 +89,6 @@ def test_handler_registration_is_isolated(app):
     # Verify handler is only in Slack registry
     assert "message" in app.slack.registered_handlers
     assert "message" not in app.github.registered_handlers
-    assert not any(h.event_name == "message" for h in app.linear.registered_handlers.values())
+    assert not any(
+        h.event_name == "message" for h in app.linear.registered_handlers.values()
+    )

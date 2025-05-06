@@ -43,7 +43,9 @@ def view_pr_checks(codebase: Codebase, pr_number: int) -> PRCheckObservation:
         return PRCheckObservation(
             pr_number=pr_number,
             head_sha=pr.head.sha,
-            summary="\n".join([json.dumps(check_suite.raw_data) for check_suite in all_check_suites]),
+            summary="\n".join(
+                [json.dumps(check_suite.raw_data) for check_suite in all_check_suites]
+            ),
         )
 
     except Exception as e:

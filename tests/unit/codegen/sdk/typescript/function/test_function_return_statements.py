@@ -14,7 +14,11 @@ function foo(a: number): boolean {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         function_symbol = codebase.get_symbol("foo")
 
         assert len(function_symbol.return_statements) == 2

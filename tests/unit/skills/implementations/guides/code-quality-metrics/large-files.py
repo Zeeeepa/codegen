@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 CountLargeFilesPyTest = SkillTestCase(
     [
@@ -70,13 +74,17 @@ class CountLargeFiles(Skill, ABC):
 
     @staticmethod
     @skill_impl(test_cases=[CountLargeFilesPyTest], language=ProgrammingLanguage.PYTHON)
-    @skill_impl(test_cases=[CountLargeFilesTSTest], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        test_cases=[CountLargeFilesTSTest], language=ProgrammingLanguage.TYPESCRIPT
+    )
     def skill_func(codebase: CodebaseType):
         file_to_lines = {}
         for file in codebase.files:
             file_to_lines[file.filepath] = file.end_point[0]
 
         LINE_THRESHOLD = 1000
-        large_file_count = sum(1 for lines in file_to_lines.values() if lines > LINE_THRESHOLD)
+        large_file_count = sum(
+            1 for lines in file_to_lines.values() if lines > LINE_THRESHOLD
+        )
 
         print(f"Number of large files: {large_file_count}")

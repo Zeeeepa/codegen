@@ -25,16 +25,16 @@ from collections import defaultdict
 # Create a graph of file dependencies
 def create_dependency_graph():
     G = nx.DiGraph()
-    
+
     for file in codebase.files:
         # Add node for this file
         G.add_node(file.filepath)
-        
+
         # Add edges for each import
         for imp in file.imports:
             if imp.from_file:  # Skip external imports
                 G.add_edge(file.filepath, imp.from_file.filepath)
-    
+
     return G
 
 # Create and analyze the graph
@@ -63,18 +63,18 @@ def break_circular_dependency(cycle):
     # Get the first two files in the cycle
     file1 = codebase.get_file(cycle[0])
     file2 = codebase.get_file(cycle[1])
-    
+
     # Create a shared module for common code
     shared_dir = "shared"
     if not codebase.has_directory(shared_dir):
         codebase.create_directory(shared_dir)
-    
+
     # Find symbols used by both files
     shared_symbols = []
     for symbol in file1.symbols:
         if any(usage.file == file2 for usage in symbol.usages):
             shared_symbols.append(symbol)
-    
+
     # Move shared symbols to a new file
     if shared_symbols:
         shared_file = codebase.create_file(f"{shared_dir}/shared_types.py")
@@ -96,7 +96,7 @@ def organize_file_imports(file):
     std_lib_imports = []
     third_party_imports = []
     local_imports = []
-    
+
     for imp in file.imports:
         if imp.is_standard_library:
             std_lib_imports.append(imp)
@@ -104,26 +104,26 @@ def organize_file_imports(file):
             third_party_imports.append(imp)
         else:
             local_imports.append(imp)
-    
+
     # Sort each group
     for group in [std_lib_imports, third_party_imports, local_imports]:
         group.sort(key=lambda x: x.module_name)
-    
+
     # Remove all existing imports
     for imp in file.imports:
         imp.remove()
-    
+
     # Add imports back in organized groups
     if std_lib_imports:
         for imp in std_lib_imports:
             file.add_import(imp.source)
         file.insert_after_imports("")  # Add newline
-        
+
     if third_party_imports:
         for imp in third_party_imports:
             file.add_import(imp.source)
         file.insert_after_imports("")  # Add newline
-        
+
     if local_imports:
         for imp in local_imports:
             file.add_import(imp.source)
@@ -142,22 +142,22 @@ from collections import defaultdict
 
 def analyze_module_coupling():
     coupling_scores = defaultdict(int)
-    
+
     for file in codebase.files:
         # Count unique files imported from
         imported_files = {imp.from_file for imp in file.imports if imp.from_file}
         coupling_scores[file.filepath] = len(imported_files)
-        
+
         # Count files that import this file
-        importing_files = {usage.file for symbol in file.symbols 
+        importing_files = {usage.file for symbol in file.symbols
                          for usage in symbol.usages if usage.file != file}
         coupling_scores[file.filepath] += len(importing_files)
-    
+
     # Sort by coupling score
-    sorted_files = sorted(coupling_scores.items(), 
-                         key=lambda x: x[1], 
+    sorted_files = sorted(coupling_scores.items(),
+                         key=lambda x: x[1],
                          reverse=True)
-    
+
     print("\n🔍 Module Coupling Analysis:")
     print("\nMost coupled files:")
     for filepath, score in sorted_files[:5]:
@@ -175,9 +175,9 @@ def extract_shared_code(file, min_usages=3):
     # Find symbols used by multiple files
     for symbol in file.symbols:
         # Get unique files using this symbol
-        using_files = {usage.file for usage in symbol.usages 
+        using_files = {usage.file for usage in symbol.usages
                       if usage.file != file}
-        
+
         if len(using_files) >= min_usages:
             # Create appropriate shared module
             module_name = determine_shared_module(symbol)
@@ -185,7 +185,7 @@ def extract_shared_code(file, min_usages=3):
                 shared_file = codebase.create_file(f"shared/{module_name}.py")
             else:
                 shared_file = codebase.get_file(f"shared/{module_name}.py")
-            
+
             # Move symbol to shared module
             symbol.move_to_file(shared_file, strategy="update_all_imports")
 

@@ -22,7 +22,9 @@ class PRCommentObservation(Observation):
     str_template: ClassVar[str] = "Added comment to PR #{pr_number}"
 
 
-def create_pr_comment(codebase: Codebase, pr_number: int, body: str) -> PRCommentObservation:
+def create_pr_comment(
+    codebase: Codebase, pr_number: int, body: str
+) -> PRCommentObservation:
     """Create a general comment on a pull request.
 
     Args:

@@ -12,7 +12,12 @@ logger = get_logger(__name__)
 MIN_LANGUAGE_RATIO = 0.1
 
 
-def determine_project_language(folder_path: str, strategy: Literal["most_common", "git_most_common", "package_json"] = "git_most_common") -> ProgrammingLanguage:
+def determine_project_language(
+    folder_path: str,
+    strategy: Literal[
+        "most_common", "git_most_common", "package_json"
+    ] = "git_most_common",
+) -> ProgrammingLanguage:
     """Determines the primary programming language of a project.
 
     Args:
@@ -70,7 +75,10 @@ def _determine_language_by_file_count(folder_path: str) -> ProgrammingLanguage:
             continue
 
         # Skip common directories to ignore
-        if any(ignore in str(file_path) for ignore in [".git", "node_modules", "__pycache__", "venv", ".env"]):
+        if any(
+            ignore in str(file_path)
+            for ignore in [".git", "node_modules", "__pycache__", "venv", ".env"]
+        ):
             continue
 
         total_files += 1
@@ -87,7 +95,9 @@ def _determine_language_by_file_count(folder_path: str) -> ProgrammingLanguage:
     # Get the most common language and its count
     most_common_language, count = language_counts.most_common(1)[0]
 
-    logger.debug(f"Most common language: {most_common_language}, count: {count}, total files: {total_files}")
+    logger.debug(
+        f"Most common language: {most_common_language}, count: {count}, total files: {total_files}"
+    )
 
     # Check if the most common language makes up at least MIN_LANGUAGE_RATIO of all files
     if total_files > 0 and (count / total_files) < MIN_LANGUAGE_RATIO:
@@ -133,7 +143,9 @@ def _determine_language_by_git_file_count(folder_path: str) -> ProgrammingLangua
     repo_operator = RepoOperator(repo_config=repo_config)
 
     # Walk through the directory
-    for rel_path, _ in repo_operator.iter_files(subdirs=[base_path] if base_path else None, ignore_list=GLOBAL_FILE_IGNORE_LIST):
+    for rel_path, _ in repo_operator.iter_files(
+        subdirs=[base_path] if base_path else None, ignore_list=GLOBAL_FILE_IGNORE_LIST
+    ):
         # Convert to Path object
         file_path = Path(git_root) / Path(rel_path)
 
@@ -155,7 +167,9 @@ def _determine_language_by_git_file_count(folder_path: str) -> ProgrammingLangua
     # Get the most common language and its count
     most_common_language, count = language_counts.most_common(1)[0]
 
-    logger.debug(f"Most common language: {most_common_language}, count: {count}, total files: {total_files}")
+    logger.debug(
+        f"Most common language: {most_common_language}, count: {count}, total files: {total_files}"
+    )
 
     # Check if the most common language makes up at least MIN_LANGUAGE_RATIO of all files
     if total_files > 0 and (count / total_files) < MIN_LANGUAGE_RATIO:

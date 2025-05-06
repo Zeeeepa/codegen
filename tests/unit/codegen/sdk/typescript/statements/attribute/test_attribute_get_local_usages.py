@@ -21,7 +21,11 @@ class MyClass {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         cls = file.get_class("MyClass")
         attr1 = cls.get_attribute("attr1")

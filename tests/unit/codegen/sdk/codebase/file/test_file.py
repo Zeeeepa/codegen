@@ -12,7 +12,14 @@ def test_file(tmpdir) -> None:
     file1_source = "Hello world!"
     file2_source = "print(123)"
     file3_source = b"\x89PNG"
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.txt": file1_source, "file2.py": file2_source, "file3.bin": file3_source}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.txt": file1_source,
+            "file2.py": file2_source,
+            "file3.bin": file3_source,
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.txt")
         assert isinstance(file1, File)
         assert not isinstance(file1, SourceFile)
@@ -42,7 +49,15 @@ def test_file(tmpdir) -> None:
 
 
 def test_codebase_files(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": "print(123)", "file2.py": "print(456)", "file3.bin": b"\x89PNG", "file4": "Hello world!"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.py": "print(123)",
+            "file2.py": "print(456)",
+            "file3.bin": b"\x89PNG",
+            "file4": "Hello world!",
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         file3 = codebase.get_file("file3.bin")
@@ -52,7 +67,12 @@ def test_codebase_files(tmpdir) -> None:
         assert {f for f in codebase.files} == {file1, file2}
 
         assert len(codebase.files(extensions="*")) == 4
-        assert {f for f in codebase.files(extensions="*")} == {file1, file2, file3, file4}
+        assert {f for f in codebase.files(extensions="*")} == {
+            file1,
+            file2,
+            file3,
+            file4,
+        }
 
         assert len(codebase.files(extensions=[".py"])) == 2
         assert {f for f in codebase.files(extensions=[".py"])} == {file1, file2}
@@ -63,7 +83,14 @@ def test_codebase_files(tmpdir) -> None:
 
 def test_codebase_files_other_language(tmpdir) -> None:
     with get_codebase_session(
-        tmpdir=tmpdir, files={"file1.py": "print(123)", "file2.py": "print(456)", "file3.bin": b"\x89PNG", "file4": "Hello world!"}, programming_language=ProgrammingLanguage.OTHER
+        tmpdir=tmpdir,
+        files={
+            "file1.py": "print(123)",
+            "file2.py": "print(456)",
+            "file3.bin": b"\x89PNG",
+            "file4": "Hello world!",
+        },
+        programming_language=ProgrammingLanguage.OTHER,
     ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
@@ -74,7 +101,12 @@ def test_codebase_files_other_language(tmpdir) -> None:
         assert {f for f in codebase.files} == {file1, file2, file3, file4}
 
         assert len(codebase.files(extensions="*")) == 4
-        assert {f for f in codebase.files(extensions="*")} == {file1, file2, file3, file4}
+        assert {f for f in codebase.files(extensions="*")} == {
+            file1,
+            file2,
+            file3,
+            file4,
+        }
 
         assert len(codebase.files(extensions=[".py"])) == 2
         assert {f for f in codebase.files(extensions=[".py"])} == {file1, file2}
@@ -85,7 +117,15 @@ def test_codebase_files_other_language(tmpdir) -> None:
 
 @pytest.mark.skipif(sys.platform == "darwin", reason="macOS is case-insensitive")
 def test_file_extensions_ignore_case(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": "print(123)", "file2.py": "print(456)", "file3.bin": b"\x89PNG", "file4": "Hello world!"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.py": "print(123)",
+            "file2.py": "print(456)",
+            "file3.bin": b"\x89PNG",
+            "file4": "Hello world!",
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         file3 = codebase.get_file("file3.bin")
@@ -114,7 +154,14 @@ def test_file_extensions_ignore_case(tmpdir) -> None:
 
 @pytest.mark.skipif(sys.platform == "darwin", reason="macOS is case-insensitive")
 def test_file_case_sensitivity_has_file(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": "print(123)", "file2.py": "print(456)", "file3.bin": b"\x89PNG"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.py": "print(123)",
+            "file2.py": "print(456)",
+            "file3.bin": b"\x89PNG",
+        },
+    ) as codebase:
         # Test has_file with ignore_case=True
         assert codebase.has_file("file1.py", ignore_case=True)
         assert codebase.has_file("FILE1.PY", ignore_case=True)
@@ -140,7 +187,14 @@ def test_file_case_sensitivity_has_file(tmpdir) -> None:
 
 @pytest.mark.skipif(sys.platform == "darwin", reason="macOS is case-insensitive")
 def test_file_case_sensitivity_get_file(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": "print(123)", "file2.py": "print(456)", "file3.bin": b"\x89PNG"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.py": "print(123)",
+            "file2.py": "print(456)",
+            "file3.bin": b"\x89PNG",
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
         file3 = codebase.get_file("file3.bin")
@@ -164,7 +218,14 @@ def test_file_case_sensitivity_get_file(tmpdir) -> None:
 
 @pytest.mark.skipif(sys.platform == "darwin", reason="macOS is case-insensitive")
 def test_subdirectory_case_sensitivity(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"subdir/file1.py": "print(123)", "SUBDIR2/file2.py": "print(456)", "SubDir3/file3.py": "print(789)"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "subdir/file1.py": "print(123)",
+            "SUBDIR2/file2.py": "print(456)",
+            "SubDir3/file3.py": "print(789)",
+        },
+    ) as codebase:
         # Test has_subdirectory with ignore_case=True
         assert codebase.has_directory("subdir", ignore_case=True)
         assert codebase.has_directory("SUBDIR", ignore_case=True)
@@ -190,7 +251,14 @@ def test_subdirectory_case_sensitivity(tmpdir) -> None:
 
 @pytest.mark.skipif(sys.platform == "darwin", reason="macOS is case-insensitive")
 def test_files_in_subdirectories_case_sensitivity(tmpdir) -> None:
-    with get_codebase_session(tmpdir=tmpdir, files={"subdir/file1.py": "print(123)", "SUBDIR2/FILE2.py": "print(456)", "SubDir3/File3.py": "print(789)"}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "subdir/file1.py": "print(123)",
+            "SUBDIR2/FILE2.py": "print(456)",
+            "SubDir3/File3.py": "print(789)",
+        },
+    ) as codebase:
         # Test has_file with ignore_case=True for files in subdirectories
         assert codebase.has_file("subdir/file1.py", ignore_case=True)
         assert codebase.has_file("SUBDIR/FILE1.py", ignore_case=True)

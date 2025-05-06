@@ -60,7 +60,9 @@ async def test_did_open(
     )
 
     # Verify the file is in the workspace
-    document = await client.workspace_text_document_content_async(TextDocumentContentParams(uri=document_uri))
+    document = await client.workspace_text_document_content_async(
+        TextDocumentContentParams(uri=document_uri)
+    )
     assert document is not None
     assert document.text == original["test.py"]
 
@@ -126,7 +128,9 @@ async def test_did_change(
     )
 
     # Verify the changes were applied
-    document = await client.workspace_text_document_content_async(TextDocumentContentParams(uri=document_uri))
+    document = await client.workspace_text_document_content_async(
+        TextDocumentContentParams(uri=document_uri)
+    )
     assert document is not None
     assert document.text == expected_text
 
@@ -165,10 +169,16 @@ async def test_did_close(
     )
 
     # Send didClose notification
-    client.text_document_did_close(params=DidCloseTextDocumentParams(text_document=TextDocumentIdentifier(uri=document_uri)))
+    client.text_document_did_close(
+        params=DidCloseTextDocumentParams(
+            text_document=TextDocumentIdentifier(uri=document_uri)
+        )
+    )
 
     # Verify the document is removed from the workspace
-    document = await client.workspace_text_document_content_async(TextDocumentContentParams(uri=document_uri))
+    document = await client.workspace_text_document_content_async(
+        TextDocumentContentParams(uri=document_uri)
+    )
     assert document.text == original["test.py"]
 
 

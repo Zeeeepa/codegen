@@ -4,7 +4,11 @@ from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 # Test cases for appending to list
 test_cases_append_py = [
@@ -14,13 +18,26 @@ test_cases_append_py = [
 ]
 
 test_cases_append_ts = [
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [1];", output="const a = [1, 2];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [];", output="const a = [2];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [0, 1];", output="const a = [0, 1, 2];")]),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [1];", output="const a = [1, 2];")]
+    ),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [];", output="const a = [2];")]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input="const a = [0, 1];", output="const a = [0, 1, 2];"
+            )
+        ]
+    ),
 ]
 
 
-@skill(prompt="Append 2 to the assignment value of the global var a (which is a list)", uid="7eee6ffb-1e2a-488a-8a3e-fddee5d600b5")
+@skill(
+    prompt="Append 2 to the assignment value of the global var a (which is a list)",
+    uid="7eee6ffb-1e2a-488a-8a3e-fddee5d600b5",
+)
 class AppendToGlobalList(Skill, ABC):
     """Skill to append 2 to global list variable 'a'."""
 
@@ -43,15 +60,36 @@ test_cases_remove_py = [
 ]
 
 test_cases_remove_ts = [
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [1];", output="const a = [1];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [1, 3, 2];", output="const a = [1, 3];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [1, 2, 3];", output="const a = [1, 3];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [];", output="const a = [];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [2];", output="const a = [];")]),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [1];", output="const a = [1];")]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input="const a = [1, 3, 2];", output="const a = [1, 3];"
+            )
+        ]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(
+                input="const a = [1, 2, 3];", output="const a = [1, 3];"
+            )
+        ]
+    ),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [];", output="const a = [];")]
+    ),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [2];", output="const a = [];")]
+    ),
 ]
 
 
-@skill(prompt="Remove 2 from the assignment value of the global var a (which is a list)", uid="1d184606-7efb-4f29-84f8-5af3ad923a57")
+@skill(
+    prompt="Remove 2 from the assignment value of the global var a (which is a list)",
+    uid="1d184606-7efb-4f29-84f8-5af3ad923a57",
+)
 class RemoveFromGlobalList(Skill, ABC):
     """Skill to remove 2 from global list variable 'a'."""
 
@@ -74,13 +112,24 @@ test_cases_clear_py = [
 ]
 
 test_cases_clear_ts = [
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [1];", output="const a = [];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [1, 3, 2];", output="const a = [];")]),
-    SkillTestCase(files=[SkillTestCaseTSFile(input="const a = [];", output="const a = [];")]),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [1];", output="const a = [];")]
+    ),
+    SkillTestCase(
+        files=[
+            SkillTestCaseTSFile(input="const a = [1, 3, 2];", output="const a = [];")
+        ]
+    ),
+    SkillTestCase(
+        files=[SkillTestCaseTSFile(input="const a = [];", output="const a = [];")]
+    ),
 ]
 
 
-@skill(prompt="Clear the list stored in a symbol named `a`", uid="16ace5eb-b66c-43ef-8ed5-5726f0e02001")
+@skill(
+    prompt="Clear the list stored in a symbol named `a`",
+    uid="16ace5eb-b66c-43ef-8ed5-5726f0e02001",
+)
 class ClearGlobalList(Skill, ABC):
     """Skill to clear global list variable 'a'."""
 

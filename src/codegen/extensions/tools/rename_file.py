@@ -26,7 +26,9 @@ class RenameFileObservation(Observation):
     str_template: ClassVar[str] = "Renamed file from {old_filepath} to {new_filepath}"
 
 
-def rename_file(codebase: Codebase, filepath: str, new_filepath: str) -> RenameFileObservation:
+def rename_file(
+    codebase: Codebase, filepath: str, new_filepath: str
+) -> RenameFileObservation:
     """Rename a file and update all imports to point to the new location.
 
     Args:

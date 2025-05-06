@@ -29,7 +29,11 @@ function* numberGenerator(start: number, end: number): IterableIterator<number> 
 }
 """
     # =====[ Dependencies ]=====
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         add_function = file.get_function("add")
         func_dec_str = add_function.function_signature
@@ -49,8 +53,13 @@ function* numberGenerator(start: number, end: number): IterableIterator<number> 
 
         greet_function = file.get_function("greet")
         greet_dec_str = greet_function.function_signature
-        assert greet_dec_str == "function greet(name: string, greeting?: string): string"
+        assert (
+            greet_dec_str == "function greet(name: string, greeting?: string): string"
+        )
 
         number_generator = file.get_function("numberGenerator")
         number_dec_str = number_generator.function_signature
-        assert number_dec_str == "function* numberGenerator(start: number, end: number): IterableIterator<number>"
+        assert (
+            number_dec_str
+            == "function* numberGenerator(start: number, end: number): IterableIterator<number>"
+        )

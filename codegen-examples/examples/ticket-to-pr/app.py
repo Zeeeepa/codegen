@@ -1,21 +1,29 @@
-from codegen import Codebase, CodeAgent
+import logging
+import os
+
+import modal
+from fastapi import Request
+from helpers import (
+    create_codebase,
+    format_linear_message,
+    has_codegen_label,
+    process_update_event,
+)
+
+from codegen import CodeAgent, Codebase
 from codegen.extensions.clients.linear import LinearClient
 from codegen.extensions.events.app import CodegenApp
 from codegen.extensions.tools.github.create_pr import create_pr
 from codegen.shared.enums.programming_language import ProgrammingLanguage
-from helpers import create_codebase, format_linear_message, has_codegen_label, process_update_event
-
-from fastapi import Request
-
-import os
-import modal
-import logging
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen==v0.26.3")
+image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .apt_install("git")
+    .pip_install("fastapi[standard]", "codegen==v0.26.3")
+)
 
 app = CodegenApp("linear-bot", image=image, modal_api_key="")
 
@@ -26,7 +34,9 @@ class LinearApp:
 
     @modal.enter()
     def run_this_on_container_startup(self):
-        self.codebase = create_codebase("codegen-sh/codegen-sdk", ProgrammingLanguage.PYTHON)
+        self.codebase = create_codebase(
+            "codegen-sh/codegen-sdk", ProgrammingLanguage.PYTHON
+        )
 
         # Subscribe web endpoints as linear webhook callbacks
         app.linear.subscribe_all_handlers()
@@ -55,7 +65,10 @@ class LinearApp:
 
         logger.info(f"PR created: {create_pr_result.model_dump_json()}")
 
-        linear_client.comment_on_issue(event.issue_id, f"I've finished running, please review the PR: {create_pr_result.url}")
+        linear_client.comment_on_issue(
+            event.issue_id,
+            f"I've finished running, please review the PR: {create_pr_result.url}",
+        )
         self.codebase.reset()
 
         return {"status": "success"}

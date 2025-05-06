@@ -19,7 +19,11 @@ class Cube(ThreeDimensionalShape, Shape[TColor], ABC):
 
         assert all(isinstance(x, Editable) for x in parent_class_names)
         assert len(parent_class_names) == 3
-        assert [x.source for x in parent_class_names] == ["ThreeDimensionalShape", "Shape", "ABC"]
+        assert [x.source for x in parent_class_names] == [
+            "ThreeDimensionalShape",
+            "Shape",
+            "ABC",
+        ]
 
         parent_class_names[0].edit("TwoDimensionalShape")
         parent_class_names[1].edit("Toy")
@@ -27,5 +31,9 @@ class Cube(ThreeDimensionalShape, Shape[TColor], ABC):
         codebase.commit()
 
         cls = file.get_class("Cube")
-        assert [x.source for x in cls.parent_class_names] == ["TwoDimensionalShape", "Toy", "XYZ"]
+        assert [x.source for x in cls.parent_class_names] == [
+            "TwoDimensionalShape",
+            "Toy",
+            "XYZ",
+        ]
         assert "class Cube(TwoDimensionalShape, Toy[TColor], XYZ):" in file.content

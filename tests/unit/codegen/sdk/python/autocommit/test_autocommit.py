@@ -23,7 +23,10 @@ def bar():
 """
     file3_name = "file3.py"
     content3 = ""
-    with get_codebase_session(tmpdir=tmpdir, files={file1_name: content1, file2_name: content2, file3_name: content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={file1_name: content1, file2_name: content2, file3_name: content3},
+    ) as codebase:
         file1 = codebase.get_file(file1_name)
         file2 = codebase.get_file(file2_name)
         file3 = codebase.get_file(file3_name)
@@ -31,7 +34,9 @@ def bar():
         external_dep.rename("baz")
         bar = file2.get_function("bar")
         bar.rename("bar2")
-        bar.move_to_file(file3, strategy="update_all_imports", include_dependencies=True)
+        bar.move_to_file(
+            file3, strategy="update_all_imports", include_dependencies=True
+        )
 
     # language=python
     assert (
@@ -78,14 +83,19 @@ def bar():
 """
     file3_name = "file3.py"
     content3 = ""
-    with get_codebase_session(tmpdir=tmpdir, files={file1_name: content1, file2_name: content2, file3_name: content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={file1_name: content1, file2_name: content2, file3_name: content3},
+    ) as codebase:
         file1 = codebase.get_file(file1_name)
         file2 = codebase.get_file(file2_name)
         file3 = codebase.get_file(file3_name)
         external_dep = file1.get_function("external_dep")
         external_dep.rename("baz")
         bar = file2.get_function("bar")
-        bar.move_to_file(file3, strategy="update_all_imports", include_dependencies=True)
+        bar.move_to_file(
+            file3, strategy="update_all_imports", include_dependencies=True
+        )
         bar.rename("bar2")
 
     # language=python
@@ -295,7 +305,10 @@ def test_autocommit_outdated(tmpdir) -> None:
     """
     file3_name = "file3.py"
     content3 = ""
-    with get_codebase_session(tmpdir=tmpdir, files={file1_name: content1, file2_name: content2, file3_name: content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={file1_name: content1, file2_name: content2, file3_name: content3},
+    ) as codebase:
         file1 = codebase.get_file(file1_name)
         file2 = codebase.get_file(file2_name)
         file3 = codebase.get_file(file3_name)
@@ -303,7 +316,9 @@ def test_autocommit_outdated(tmpdir) -> None:
         external_dep.rename("baz")
         bar = file2.get_function("bar")
         statement = bar.code_block.statements[0]
-        bar.move_to_file(file3, strategy="update_all_imports", include_dependencies=True)
+        bar.move_to_file(
+            file3, strategy="update_all_imports", include_dependencies=True
+        )
         bar.rename("bar2")
         with pytest.raises(OutdatedNodeError):
             statement.remove()
@@ -319,7 +334,9 @@ def test_autocommit_nocommit_edit(tmpdir, caplog) -> None:
 def a():
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={file1_name: content1}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={file1_name: content1}, commit=True
+    ) as codebase:
         file1 = codebase.get_file(file1_name)
         fun = file1.get_function("a")
         assert "Running autocommit" not in caplog.text
@@ -377,7 +394,9 @@ def a():
     d = 3
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={file1_name: content1}, commit=True) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={file1_name: content1}, commit=True
+    ) as codebase:
         file1 = codebase.get_file(file1_name)
         fun = file1.get_function("a")
         b = fun.code_block.statements[0]

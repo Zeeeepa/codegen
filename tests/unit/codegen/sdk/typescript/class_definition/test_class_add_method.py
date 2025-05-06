@@ -24,7 +24,11 @@ static test(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.append(content2)
@@ -70,7 +74,11 @@ static test(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.append(content2)
@@ -122,7 +130,11 @@ static test2(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.append(content2)
@@ -177,7 +189,11 @@ static test4(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.insert(0, content2)
@@ -225,7 +241,11 @@ static test2(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.append(new_method)
@@ -273,7 +293,11 @@ static test4(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.append(content2)
@@ -331,7 +355,11 @@ static test4(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.append(content2)
@@ -389,7 +417,11 @@ static test4(): void {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         foo = file.get_class("Abc")
         foo.methods.insert(2, content2)
@@ -438,7 +470,11 @@ class Efg {
 }
 """
 
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.ts": content, "file2.ts": content2}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.ts": content, "file2.ts": content2},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file1: TSFile = codebase.get_file("file1.ts")
         file2: TSFile = codebase.get_file("file2.ts")
         abc = file1.get_class("Abc")

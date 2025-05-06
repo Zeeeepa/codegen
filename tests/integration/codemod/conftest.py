@@ -15,8 +15,19 @@ from codegen.git.repo_operator.repo_operator import RepoOperator
 from codegen.sdk.codebase.config import ProjectConfig
 from codegen.sdk.core.codebase import Codebase
 from tests.shared.codemod.constants import DIFF_FILEPATH
-from tests.shared.codemod.models import BASE_PATH, BASE_TMP_DIR, VERIFIED_CODEMOD_DIFFS, CodemodMetadata, Repo, Size
-from tests.shared.codemod.test_discovery import find_codemod_test_cases, find_repos, find_verified_codemod_cases
+from tests.shared.codemod.models import (
+    BASE_PATH,
+    BASE_TMP_DIR,
+    VERIFIED_CODEMOD_DIFFS,
+    CodemodMetadata,
+    Repo,
+    Size,
+)
+from tests.shared.codemod.test_discovery import (
+    find_codemod_test_cases,
+    find_repos,
+    find_verified_codemod_cases,
+)
 from tests.shared.utils.recursion import set_recursion_limit
 
 if TYPE_CHECKING:
@@ -40,7 +51,10 @@ def pytest_generate_tests(metafunc: Metafunc) -> None:
                     i.codemod_metadata,
                     i.repo,
                     i.test_dir,
-                    marks=[pytest.mark.xdist_group(i.repo.name), pytest.mark.skipif(i.should_skip, reason="file marked as skip")],
+                    marks=[
+                        pytest.mark.xdist_group(i.repo.name),
+                        pytest.mark.skipif(i.should_skip, reason="file marked as skip"),
+                    ],
                 )
                 for i in cases
             ],
@@ -71,7 +85,12 @@ def pytest_generate_tests(metafunc: Metafunc) -> None:
                         i.codemod_metadata.codemod,
                         i.repo,
                         i.test_dir,
-                        marks=[pytest.mark.xdist_group(i.repo.name), pytest.mark.skipif(i.should_skip, reason="file marked as skip")],
+                        marks=[
+                            pytest.mark.xdist_group(i.repo.name),
+                            pytest.mark.skipif(
+                                i.should_skip, reason="file marked as skip"
+                            ),
+                        ],
                     )
                     for i in cases
                 ],
@@ -83,7 +102,10 @@ def pytest_generate_tests(metafunc: Metafunc) -> None:
             to_test = {name: repo for name, repo in repos.items()}
             metafunc.parametrize(
                 "repo",
-                [pytest.param(repo, marks=pytest.mark.xdist_group(repo.name)) for repo in to_test.values()],
+                [
+                    pytest.param(repo, marks=pytest.mark.xdist_group(repo.name))
+                    for repo in to_test.values()
+                ],
                 indirect=["repo"],
                 ids=to_test.keys(),
                 scope="session",
@@ -144,7 +166,14 @@ def _codebase(repo: Repo, op: RepoOperator, request) -> YieldFixture[Codebase]:
     log_parse = request.config.getoption("log-parse").lower() == "true"
     configs = CodebaseConfig(verify_graph=sync, debug=log_parse)
     if repo.name not in Codebases:
-        projects = [ProjectConfig(repo_operator=op, programming_language=repo.language, subdirectories=repo.subdirectories, base_path=repo.base_path)]
+        projects = [
+            ProjectConfig(
+                repo_operator=op,
+                programming_language=repo.language,
+                subdirectories=repo.subdirectories,
+                base_path=repo.base_path,
+            )
+        ]
         Codebases[repo.name] = Codebase(projects=projects, config=configs)
     codebase = Codebases[repo.name]
     codebase.reset(git_reset=True)
@@ -192,7 +221,9 @@ def codemod(raw_codemod: type["Codemod"]):
 
 
 @pytest.fixture
-def verified_codemod(codemod_metadata: CodemodMetadata, expected: Path) -> YieldFixture["Codemod"]:
+def verified_codemod(
+    codemod_metadata: CodemodMetadata, expected: Path
+) -> YieldFixture["Codemod"]:
     # write the diff to the file
     diff_path = expected
     diff_path.parent.mkdir(parents=True, exist_ok=True)
@@ -208,6 +239,10 @@ def verified_codemod(codemod_metadata: CodemodMetadata, expected: Path) -> Yield
     # Ensure the execute method is added to the codemod
     assert hasattr(codemod, "execute"), "codemod has no execute method"
     yield codemod
-    if ONLY_STORE_CHANGED_DIFFS and diff_path.exists() and diff_path.read_text().strip() == codemod_metadata.diff.strip():
+    if (
+        ONLY_STORE_CHANGED_DIFFS
+        and diff_path.exists()
+        and diff_path.read_text().strip() == codemod_metadata.diff.strip()
+    ):
         logger.info(f"Removing diff {diff_path}")
         diff_path.unlink()

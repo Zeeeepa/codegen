@@ -99,7 +99,9 @@ def foo(bar: int) -> None:
 def bar():
     return 1
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.py": python_code}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"test.py": python_code}
+    ) as codebase:
         file = codebase.get_file("test.py")
         foo_func = file.get_function("foo")
         assert foo_func.function_signature == "def foo(bar: int) -> None:"
@@ -147,7 +149,9 @@ def test_function_comment(tmpdir) -> None:
 def foo():
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_function("foo")
 
@@ -167,7 +171,9 @@ def test_decorated_function_comment(tmpdir) -> None:
 def foo():
     pass
 """
-    with get_codebase_session(tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={FILENAME: FILE_CONTENT.strip()}
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         foo = file.get_function("foo")
 

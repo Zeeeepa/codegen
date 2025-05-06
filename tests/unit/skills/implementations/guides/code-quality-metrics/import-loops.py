@@ -86,7 +86,10 @@ class ImportCycleDetectionAndVisualization(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[ImportCycleDetectionAndVisualizationTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[ImportCycleDetectionAndVisualizationTest],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         ctx: DiGraph = networkx.DiGraph()
 
@@ -98,7 +101,9 @@ class ImportCycleDetectionAndVisualization(Skill, ABC):
                 ctx.add_edge(pyimport.from_file.file_path, pyimport.to_file.file_path)
 
         # Find strongly connected components
-        strongly_connected_components = list(networkx.strongly_connected_components(ctx))
+        strongly_connected_components = list(
+            networkx.strongly_connected_components(ctx)
+        )
 
         # Count the number of cycles (SCCs with more than one node)
         import_cycles = [scc for scc in strongly_connected_components if len(scc) > 1]
@@ -117,7 +122,9 @@ class ImportCycleDetectionAndVisualization(Skill, ABC):
                     cycle_graph.add_node(node)
                 # Add edges between the nodes in the cycle
                 for i in range(len(cycle)):
-                    cycle_graph.add_edge(cycle[i], cycle[(i + 1) % len(cycle)])  # Connect in a circular manner
+                    cycle_graph.add_edge(
+                        cycle[i], cycle[(i + 1) % len(cycle)]
+                    )  # Connect in a circular manner
                 # Depends on the size of the codebase and the number of cycles, this may take a while to run
                 # so we break after the first cycle it's found
                 break

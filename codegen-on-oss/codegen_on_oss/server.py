@@ -15,10 +15,7 @@ from typing import Any, Dict, List, Optional
 
 import uvicorn
 from codegen import Codebase
-from fastapi import (
-    BackgroundTasks,
-    FastAPI,
-)
+from fastapi import BackgroundTasks, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -319,9 +316,7 @@ async def analyze_repo(request: RepoAnalysisRequest):
 
 
 @app.post("/analyze_commit", response_model=CommitAnalysisResponse)
-async def analyze_commit(
-    request: CommitAnalysisRequest, background_tasks: BackgroundTasks
-):
+async def analyze_commit(request: CommitAnalysisRequest, background_tasks: BackgroundTasks):
     """
     Analyze a commit in a repository.
     """
@@ -431,9 +426,7 @@ async def analyze_commit(
 
 
 @app.post("/compare_branches", response_model=BranchComparisonResponse)
-async def compare_branches(
-    request: BranchComparisonRequest, background_tasks: BackgroundTasks
-):
+async def compare_branches(request: BranchComparisonRequest, background_tasks: BackgroundTasks):
     """
     Compare two branches in a repository.
     """
@@ -533,9 +526,7 @@ async def compare_branches(
 
 
 @app.post("/analyze_pr", response_model=PullRequestAnalysisResponse)
-async def analyze_pr(
-    request: PullRequestAnalysisRequest, background_tasks: BackgroundTasks
-):
+async def analyze_pr(request: PullRequestAnalysisRequest, background_tasks: BackgroundTasks):
     """
     Analyze a pull request in a repository.
     """
@@ -878,4 +869,3 @@ def run_server(host: str = "0.0.0.0", port: int = 8000):
 
 if __name__ == "__main__":
     run_server()
-

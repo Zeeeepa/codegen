@@ -6,7 +6,11 @@ def test_set_docstring(tmpdir) -> None:
     content = """
 export function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -21,7 +25,11 @@ def test_set_docstring_with_formatting(tmpdir) -> None:
     content = """
 export function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -36,7 +44,11 @@ def test_set_docstring_multiline(tmpdir) -> None:
     content = """
 function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -44,7 +56,10 @@ function symbol() {}
         symbol.set_docstring("this is a test docstring\nthat spans multiple lines")
 
     # Check that the docstring was added
-    assert "/**\n * this is a test docstring\n * that spans multiple lines\n */\nfunction symbol() {}" in file.source
+    assert (
+        "/**\n * this is a test docstring\n * that spans multiple lines\n */\nfunction symbol() {}"
+        in file.source
+    )
 
 
 def test_set_docstring_indented(tmpdir) -> None:
@@ -53,7 +68,11 @@ class A {
     foo() {}
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("A")
@@ -71,7 +90,11 @@ class A {
     foo() {}
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("A")
@@ -80,7 +103,10 @@ class A {
         foo.set_docstring("this is a test docstring\nthat spans multiple lines")
 
     # Check that the docstring was added
-    assert "    /**\n     * this is a test docstring\n     * that spans multiple lines\n     */\n    foo() {}" in file.source
+    assert (
+        "    /**\n     * this is a test docstring\n     * that spans multiple lines\n     */\n    foo() {}"
+        in file.source
+    )
 
 
 def test_insert_docstring_block(tmpdir) -> None:
@@ -88,7 +114,11 @@ def test_insert_docstring_block(tmpdir) -> None:
 /* this is a test docstring */
 function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -108,12 +138,22 @@ that spans multiple lines
 */
 function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.docstring.source == "/*\nthis is a test docstring\nthat spans multiple lines\n*/"
-        assert symbol.docstring.text == "this is a test docstring\nthat spans multiple lines"
+        assert (
+            symbol.docstring.source
+            == "/*\nthis is a test docstring\nthat spans multiple lines\n*/"
+        )
+        assert (
+            symbol.docstring.text
+            == "this is a test docstring\nthat spans multiple lines"
+        )
         symbol.set_docstring("this is a new docstring\nthat spans multiple lines")
 
     # Check that the docstring was edited
@@ -128,16 +168,29 @@ def test_docstring_multiline_block_starred(tmpdir) -> None:
  */
 function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
-        assert symbol.docstring.source == "/**\n * this is a test docstring\n * that spans multiple lines\n */"
-        assert symbol.docstring.text == "this is a test docstring\nthat spans multiple lines"
+        assert (
+            symbol.docstring.source
+            == "/**\n * this is a test docstring\n * that spans multiple lines\n */"
+        )
+        assert (
+            symbol.docstring.text
+            == "this is a test docstring\nthat spans multiple lines"
+        )
         symbol.set_docstring("this is a new docstring\nthat spans multiple lines")
 
     # Check that the docstring was edited
-    assert "/**\n * this is a new docstring\n * that spans multiple lines\n */" in file.source
+    assert (
+        "/**\n * this is a new docstring\n * that spans multiple lines\n */"
+        in file.source
+    )
 
 
 def test_docstring_surrounded_by_comments(tmpdir) -> None:
@@ -149,7 +202,11 @@ def test_docstring_surrounded_by_comments(tmpdir) -> None:
 // this is another test comment
 function symbol() {}
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
 
         symbol = file.get_symbol("symbol")
@@ -167,7 +224,11 @@ def test_docstring_arrow_function(tmpdir) -> None:
     content = """
 export const foo = () => {}
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as ctx:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as ctx:
         file = ctx.get_file("test.ts")
         foo = file.get_symbol("foo")
         foo.set_docstring("this is a new docstring")

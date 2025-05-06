@@ -36,9 +36,13 @@ u = 41 is 42
 v = 43 is not 44
 w = 45 in 46
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
-        assert all([isinstance(var.value, BinaryExpression) for var in file.global_vars])
+        assert all(
+            [isinstance(var.value, BinaryExpression) for var in file.global_vars]
+        )
 
         assert file.get_global_var("a").value.left.source == "1"
         assert file.get_global_var("a").value.right.source == "2"
@@ -140,19 +144,57 @@ a = 1 + 2 - 3 * 4 / 5 % 6 ** 7 // 8                                 # binary ope
 b = 9 == 10 != 11 < 12 > 13 <= 14 >= 15 is 16 is not 17 in 18       # comparison operators
 c = True and False or False and True or False                       # boolean operators
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
 
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "3", "4", "5", "6", "7", "8"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+        ]
         assert [x.source for x in a.operators] == ["+", "-", "*", "/", "%", "**", "//"]
 
         b = file.get_global_var("b").value
-        assert [x.source for x in b.elements] == ["9", "10", "11", "12", "13", "14", "15", "16", "17", "18"]
-        assert [x.source for x in b.operators] == ["==", "!=", "<", ">", "<=", ">=", "is", "is not", "in"]
+        assert [x.source for x in b.elements] == [
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+        ]
+        assert [x.source for x in b.operators] == [
+            "==",
+            "!=",
+            "<",
+            ">",
+            "<=",
+            ">=",
+            "is",
+            "is not",
+            "in",
+        ]
 
         c = file.get_global_var("c").value
-        assert [x.source for x in c.elements] == ["True", "False", "False", "True", "False"]
+        assert [x.source for x in c.elements] == [
+            "True",
+            "False",
+            "False",
+            "True",
+            "False",
+        ]
         assert [x.source for x in c.operators] == ["and", "or", "and", "or"]
 
 
@@ -169,19 +211,57 @@ c = (True and False
     or False
     and True or False)
      """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
 
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "3", "4", "5", "6", "7", "8"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+        ]
         assert [x.source for x in a.operators] == ["+", "-", "*", "/", "%", "**", "//"]
 
         b = file.get_global_var("b").value
-        assert [x.source for x in b.elements] == ["9", "10", "11", "12", "13", "14", "15", "16", "17", "18"]
-        assert [x.source for x in b.operators] == ["==", "!=", "<", ">", "<=", ">=", "is", "is not", "in"]
+        assert [x.source for x in b.elements] == [
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+        ]
+        assert [x.source for x in b.operators] == [
+            "==",
+            "!=",
+            "<",
+            ">",
+            "<=",
+            ">=",
+            "is",
+            "is not",
+            "in",
+        ]
 
         c = file.get_global_var("c").value
-        assert [x.source for x in c.elements] == ["True", "False", "False", "True", "False"]
+        assert [x.source for x in c.elements] == [
+            "True",
+            "False",
+            "False",
+            "True",
+            "False",
+        ]
         assert [x.source for x in c.operators] == ["and", "or", "and", "or"]
 
 
@@ -197,19 +277,57 @@ c = True and False \
     or False \
     and True or False
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
 
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "3", "4", "5", "6", "7", "8"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+        ]
         assert [x.source for x in a.operators] == ["+", "-", "*", "/", "%", "**", "//"]
 
         b = file.get_global_var("b").value
-        assert [x.source for x in b.elements] == ["9", "10", "11", "12", "13", "14", "15", "16", "17", "[18]"]
-        assert [x.source for x in b.operators] == ["==", "!=", "<", ">", "<=", ">=", "is", "is not", "in"]
+        assert [x.source for x in b.elements] == [
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "[18]",
+        ]
+        assert [x.source for x in b.operators] == [
+            "==",
+            "!=",
+            "<",
+            ">",
+            "<=",
+            ">=",
+            "is",
+            "is not",
+            "in",
+        ]
 
         c = file.get_global_var("c").value
-        assert [x.source for x in c.elements] == ["True", "False", "False", "True", "False"]
+        assert [x.source for x in c.elements] == [
+            "True",
+            "False",
+            "False",
+            "True",
+            "False",
+        ]
         assert [x.source for x in c.operators] == ["and", "or", "and", "or"]
 
 
@@ -221,15 +339,33 @@ a = 1 + 2 == True != False or True and False * 12
 b = 3 == (4 + 5 or False and True + (6 + 7))
 c = 45 < 12 + foo
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
 
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "True", "False", "True", "False", "12"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "True",
+            "False",
+            "True",
+            "False",
+            "12",
+        ]
         assert [x.source for x in a.operators] == ["+", "==", "!=", "or", "and", "*"]
 
         b = file.get_global_var("b").value
-        assert [x.source for x in b.elements] == ["3", "4", "5", "False", "True", "6", "7"]
+        assert [x.source for x in b.elements] == [
+            "3",
+            "4",
+            "5",
+            "False",
+            "True",
+            "6",
+            "7",
+        ]
         assert [x.source for x in b.operators] == ["==", "+", "or", "and", "+"]
 
         c = file.get_global_var("c").value
@@ -245,10 +381,20 @@ a = (1 + 2 == True
     != False or True
     and False * 12)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "True", "False", "True", "False", "12"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "True",
+            "False",
+            "True",
+            "False",
+            "12",
+        ]
         assert [x.source for x in a.operators] == ["+", "==", "!=", "or", "and", "*"]
 
 
@@ -260,8 +406,18 @@ a = 1 + 2 == True \
     != False or True \
     and False * 12
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         a = file.get_global_var("a").value
-        assert [x.source for x in a.elements] == ["1", "2", "True", "False", "True", "False", "12"]
+        assert [x.source for x in a.elements] == [
+            "1",
+            "2",
+            "True",
+            "False",
+            "True",
+            "False",
+            "12",
+        ]
         assert [x.source for x in a.operators] == ["+", "==", "!=", "or", "and", "*"]

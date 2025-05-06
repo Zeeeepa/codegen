@@ -4,8 +4,12 @@ from typing import Any, Optional
 from codegen.agents.client.openapi_client.api.agents_api import AgentsApi
 from codegen.agents.client.openapi_client.api_client import ApiClient
 from codegen.agents.client.openapi_client.configuration import Configuration
-from codegen.agents.client.openapi_client.models.agent_run_response import AgentRunResponse
-from codegen.agents.client.openapi_client.models.create_agent_run_input import CreateAgentRunInput
+from codegen.agents.client.openapi_client.models.agent_run_response import (
+    AgentRunResponse,
+)
+from codegen.agents.client.openapi_client.models.create_agent_run_input import (
+    CreateAgentRunInput,
+)
 from codegen.agents.constants import CODEGEN_BASE_API_URL
 
 
@@ -27,7 +31,9 @@ class AgentTask:
             return
 
         job_data = self._agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get(
-            agent_run_id=int(self.id), org_id=int(self.org_id), authorization=f"Bearer {self._api_client.configuration.access_token}"
+            agent_run_id=int(self.id),
+            org_id=int(self.org_id),
+            authorization=f"Bearer {self._api_client.configuration.access_token}",
         )
 
         # Convert API response to dict for attribute access
@@ -44,7 +50,12 @@ class AgentTask:
 class Agent:
     """API client for interacting with Codegen AI agents."""
 
-    def __init__(self, token: str, org_id: Optional[int] = None, base_url: Optional[str] = CODEGEN_BASE_API_URL):
+    def __init__(
+        self,
+        token: str,
+        org_id: Optional[int] = None,
+        base_url: Optional[str] = CODEGEN_BASE_API_URL,
+    ):
         """Initialize a new Agent client.
 
         Args:
@@ -52,7 +63,9 @@ class Agent:
             org_id: Optional organization ID. If not provided, default org will be used.
         """
         self.token = token
-        self.org_id = org_id or int(os.environ.get("CODEGEN_ORG_ID", "1"))  # Default to org ID 1 if not specified
+        self.org_id = org_id or int(
+            os.environ.get("CODEGEN_ORG_ID", "1")
+        )  # Default to org ID 1 if not specified
 
         # Configure API client
         config = Configuration(host=base_url, access_token=token)
@@ -72,8 +85,13 @@ class Agent:
             Job: A job object representing the agent run
         """
         run_input = CreateAgentRunInput(prompt=prompt)
-        agent_run_response = self.agents_api.create_agent_run_v1_organizations_org_id_agent_run_post(
-            org_id=int(self.org_id), create_agent_run_input=run_input, authorization=f"Bearer {self.token}", _headers={"Content-Type": "application/json"}
+        agent_run_response = (
+            self.agents_api.create_agent_run_v1_organizations_org_id_agent_run_post(
+                org_id=int(self.org_id),
+                create_agent_run_input=run_input,
+                authorization=f"Bearer {self.token}",
+                _headers={"Content-Type": "application/json"},
+            )
         )
         # Convert API response to dict for Job initialization
 
@@ -90,5 +108,10 @@ class Agent:
         """
         if self.current_job:
             self.current_job.refresh()
-            return {"id": self.current_job.id, "status": self.current_job.status, "result": self.current_job.result, "web_url": self.current_job.web_url}
+            return {
+                "id": self.current_job.id,
+                "status": self.current_job.status,
+                "result": self.current_job.result,
+                "web_url": self.current_job.web_url,
+            }
         return None

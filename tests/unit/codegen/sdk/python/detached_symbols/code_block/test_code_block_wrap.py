@@ -15,7 +15,9 @@ def foo(a: bool):
     else:
         print(b)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         function = file.get_function("foo")
         function.code_block.wrap(before_src="with open('test.txt', 'w') as f:")
@@ -41,7 +43,9 @@ if a:
 else:
     print(b)
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content}
+    ) as codebase:
         file: PyFile = codebase.get_file("dir/file1.py")
         file.code_block.wrap("def func(a, b):")
     # language=python

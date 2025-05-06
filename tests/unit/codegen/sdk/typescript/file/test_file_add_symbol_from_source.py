@@ -12,7 +12,11 @@ function add_symbol_to_file() {
     return x
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": file}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": file},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         file.add_symbol_from_source(source="export const c = 1")
 
@@ -57,7 +61,11 @@ def test_add_symbol_from_source_global_var(tmpdir) -> None:
         return bar;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file(FILENAME)
         file.add_symbol_from_source(source="export const c = 1;")
 

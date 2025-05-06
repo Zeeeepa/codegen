@@ -1,11 +1,15 @@
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel
+
 
 class PublisherBase(BaseModel):
     name: str
 
+
 class PublisherCreate(PublisherBase):
     pass
+
 
 class Publisher(PublisherBase):
     id: int
@@ -14,14 +18,17 @@ class Publisher(PublisherBase):
     class Config:
         orm_mode = True
 
+
 class BookBase(BaseModel):
     title: str
     author: str
     description: str
     publisher_id: Optional[int]
 
+
 class BookCreate(BookBase):
     pass
+
 
 class Book(BookBase):
     id: int

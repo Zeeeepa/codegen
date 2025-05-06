@@ -19,12 +19,12 @@ def generate_directory_readme(directory):
         'node_modules', 'venv', '.git', '__pycache__', 'build', 'dist'
     ]):
         return
-        
+
     # Collect directory contents for context
     files = [f for f in directory.files if f.is_source_file]
     functions = directory.functions
     classes = directory.classes
-    
+
     # Create context for AI
     context = {
         "Directory Name": directory.name,
@@ -32,7 +32,7 @@ def generate_directory_readme(directory):
         "Functions": [f.name for f in functions],
         "Classes": [c.name for c in classes]
     }
-    
+
     # Generate directory summary using AI
     readme_content = codebase.ai(
         prompt="""Generate a README section that explains this directory's:
@@ -40,12 +40,12 @@ def generate_directory_readme(directory):
         2. Key components and their roles
         3. How it fits into the larger codebase
         4. Important patterns or conventions
-        
+
         Keep it clear and concise.""",
         target=directory,
         context=context
     )
-    
+
     # Add file listing
     if files:
         readme_content += "\n\n## Files\n"
@@ -56,7 +56,7 @@ def generate_directory_readme(directory):
                 target=file
             )
             readme_content += f"\n### {file.name}\n{file_summary}\n"
-            
+
             # List key components
             if file.classes:
                 readme_content += "\nKey classes:\n"
@@ -66,7 +66,7 @@ def generate_directory_readme(directory):
                 readme_content += "\nKey functions:\n"
                 for func in file.functions:
                     readme_content += f"- `{func.name}`\n"
-    
+
     # Create or update README.md
     readme_path = f"{directory.path}/README.md"
     if codebase.has_file(readme_path):
@@ -75,7 +75,7 @@ def generate_directory_readme(directory):
     else:
         readme_file = codebase.create_file(readme_path)
         readme_file.edit(readme_content)
-    
+
     # Recursively process subdirectories
     for subdir in directory.subdirectories:
         generate_directory_readme(subdir)
@@ -125,7 +125,7 @@ You can customize the README generation by modifying the prompts and adding more
 def get_directory_patterns(directory):
     """Analyze common patterns in a directory"""
     patterns = []
-    
+
     # Check for common file patterns
     if any('test_' in f.name for f in directory.files):
         patterns.append("Contains unit tests")
@@ -133,14 +133,14 @@ def get_directory_patterns(directory):
         patterns.append("Uses interface-based design")
     if any(c.is_dataclass for c in directory.classes):
         patterns.append("Uses dataclasses for data models")
-        
+
     return patterns
 
 def generate_enhanced_readme(directory):
     # Get additional context
     patterns = get_directory_patterns(directory)
     dependencies = [imp.module for imp in directory.imports]
-    
+
     # Enhanced context for AI
     context = {
         "Common Patterns": patterns,
@@ -149,7 +149,7 @@ def generate_enhanced_readme(directory):
         "Child Directories": [d.name for d in directory.subdirectories],
         "Style": "technical but approachable"
     }
-    
+
     # Generate README with enhanced context
     # ... rest of the generation logic
 ```

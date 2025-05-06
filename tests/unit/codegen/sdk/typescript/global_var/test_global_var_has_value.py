@@ -9,7 +9,12 @@ let a: number = 1
 var b = "string"
 const c = {}
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT, verify_output=False) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        verify_output=False,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         assert len(file.global_vars) == 3
         a = file.get_global_var("a")
@@ -39,7 +44,11 @@ const c = {2.0}
 
 def test_global_var_multiple_assignments(tmpdir) -> None:
     content = "let a = b = c = 0;"
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         assert len(file.global_vars) == 3
         a = file.get_global_var("a")
@@ -59,7 +68,11 @@ def test_global_var_multiple_assignments(tmpdir) -> None:
 
 def test_global_var_multiple_in_line(tmpdir) -> None:
     content = "let x: number = 10, y: number = -1;"
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         assert len(file.global_vars) == 2
         x = file.get_global_var("x")
@@ -80,7 +93,11 @@ def test_global_var_no_value(tmpdir) -> None:
 let x: number;
 let a: number, b: string, c: boolean;
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         assert len(file.global_vars) == 4
         x = file.get_global_var("x")
@@ -112,7 +129,11 @@ let a: number = 20, b: string = "string", c: boolean = true;
 def test_global_var_destructuring_assignment(tmpdir) -> None:
     # language=typescript
     content = """let [a, b, c] = [1, "two", true];"""
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         assert len(file.global_vars) == 3
         a = file.get_global_var("a")

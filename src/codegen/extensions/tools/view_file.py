@@ -46,7 +46,9 @@ class ViewFileObservation(Observation):
         description="Maximum number of lines that can be viewed at once",
     )
 
-    str_template: ClassVar[str] = "File {filepath} (showing lines {start_line}-{end_line} of {line_count})"
+    str_template: ClassVar[str] = (
+        "File {filepath} (showing lines {start_line}-{end_line} of {line_count})"
+    )
 
     def render(self, tool_call_id: str) -> ToolMessage:
         """Render the file view with pagination information if applicable."""
@@ -83,7 +85,11 @@ class ViewFileObservation(Observation):
                 header += f" (more lines available, max {self.max_lines_per_page} lines per page)"
 
         return ToolMessage(
-            content=f"{header}\n\n{self.content}" if self.content else f"{header}\n<Empty Content>",
+            content=(
+                f"{header}\n\n{self.content}"
+                if self.content
+                else f"{header}\n<Empty Content>"
+            ),
             status=self.status,
             name="view_file",
             tool_call_id=tool_call_id,

@@ -97,7 +97,11 @@ symbol = {a: 1, b: 2, c: 3, d: 4}
 cases = list(product(range(2), repeat=2))
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_dict_interleaved(tmpdir, removes, inserts) -> None:
     ref_dict = {-1 + -i: -(i**2) for i in range(removes)}
     file = "test.py"
@@ -123,7 +127,11 @@ symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_dict_removes_first(tmpdir, removes, inserts) -> None:
     ref_dict = {-1 + -i: -(i**2) for i in range(removes)}
     file = "test.py"
@@ -148,7 +156,11 @@ symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("removes,inserts", cases, ids=[f"{removes=}-{inserts=}" for removes, inserts in cases])
+@pytest.mark.parametrize(
+    "removes,inserts",
+    cases,
+    ids=[f"{removes=}-{inserts=}" for removes, inserts in cases],
+)
 def test_dict_inserts_first(tmpdir, removes, inserts) -> None:
     ref_dict = {-1 + -i: -(i**2) for i in range(removes)}
     file = "test.py"
@@ -173,7 +185,11 @@ symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"{existing=}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"{existing=}-{inserts=}" for existing, inserts in cases],
+)
 def test_dict_append_existing(tmpdir, existing, inserts) -> None:
     ref_dict = {-1 + -i: -(i**2) for i in range(existing)}
     file = "test.py"
@@ -195,7 +211,9 @@ symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("existing", list(range(4)), ids=[f"existing={existing}" for existing in range(4)])
+@pytest.mark.parametrize(
+    "existing", list(range(4)), ids=[f"existing={existing}" for existing in range(4)]
+)
 def test_dict_set_existing(tmpdir, existing) -> None:
     ref_dict = {-1 + -i: -(i**2) for i in range(existing)}
     file = "test.py"
@@ -217,7 +235,11 @@ symbol = {ref_dict}
     )
 
 
-@pytest.mark.parametrize("existing,inserts", cases, ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases])
+@pytest.mark.parametrize(
+    "existing,inserts",
+    cases,
+    ids=[f"existing={existing + 1}-{inserts=}" for existing, inserts in cases],
+)
 def test_dict_set_existing_same(tmpdir, existing, inserts) -> None:
     ref_dict = {-1 + -i: -(i**2) for i in range(existing)}
     file = "test.py"

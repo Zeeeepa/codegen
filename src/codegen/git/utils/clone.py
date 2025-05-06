@@ -25,7 +25,12 @@ def clone_repo(
         delete_command = f"rm -rf {repo_path}"
         logger.info(f"Deleting existing clone with command: {delete_command}")
         subprocess.run(delete_command, shell=True, capture_output=True)
-    GitRepo.clone_from(url=clone_url, to_path=repo_path, depth=1 if shallow else None, progress=CustomRemoteProgress())
+    GitRepo.clone_from(
+        url=clone_url,
+        to_path=repo_path,
+        depth=1 if shallow else None,
+        progress=CustomRemoteProgress(),
+    )
     return repo_path
 
 
@@ -36,7 +41,9 @@ def clone_or_pull_repo(
     shallow: bool = True,
 ):
     if os.path.exists(repo_path) and os.listdir(repo_path):
-        logger.info(f"{repo_path} directory already exists. Pulling instead of cloning ...")
+        logger.info(
+            f"{repo_path} directory already exists. Pulling instead of cloning ..."
+        )
         pull_repo(clone_url=clone_url, repo_path=repo_path)
     else:
         logger.info(f"{repo_path} directory does not exist running git clone ...")
@@ -54,8 +61,17 @@ def pull_repo(
         return
 
     logger.info(f"Refreshing token for repo at {repo_path} ...")
-    subprocess.run(f"git -C {repo_path} remote set-url origin {clone_url}", shell=True, capture_output=True)
+    subprocess.run(
+        f"git -C {repo_path} remote set-url origin {clone_url}",
+        shell=True,
+        capture_output=True,
+    )
 
     pull_command = f"git -C {repo_path} pull {clone_url}"
     logger.info(f"Pulling with command: {pull_command} ...")
-    subprocess_with_stopwatch(command=pull_command, command_desc=f"pull {repo_path}", shell=True, capture_output=True)
+    subprocess_with_stopwatch(
+        command=pull_command,
+        command_desc=f"pull {repo_path}",
+        shell=True,
+        capture_output=True,
+    )

@@ -28,7 +28,11 @@ class PerformanceTest {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"decorator.ts": content}) as codebase:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"decorator.ts": content},
+    ) as codebase:
         file = codebase.get_file("decorator.ts")
         performance_test_class = file.get_class("PerformanceTest")
         do_something_method = performance_test_class.get_method("doSomething")
@@ -49,7 +53,11 @@ class PerformanceTest {
     }
 }
 """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"decorator.ts": content}) as codebase:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"decorator.ts": content},
+    ) as codebase:
         file = codebase.get_file("decorator.ts")
         performance_test_class = file.get_class("PerformanceTest")
         do_something_method = performance_test_class.get_method("doSomething")
@@ -70,7 +78,11 @@ class PerformanceTest {
     }
 }
     """
-    with get_codebase_graph_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"decorator.ts": content}) as codebase:
+    with get_codebase_graph_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"decorator.ts": content},
+    ) as codebase:
         file = codebase.get_file("decorator.ts")
         performance_test_class = file.get_class("PerformanceTest")
         do_something_method = performance_test_class.get_method("doSomething")

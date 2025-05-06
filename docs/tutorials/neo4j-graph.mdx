@@ -84,7 +84,7 @@ Match (s: Func )-[r: CALLS]-> (e:Func) RETURN s, e LIMIT 10
 
 ```cypher
 Match path = (:(Method|Func)) -[:CALLS*5..10]-> (:(Method|Func))
-Return path 
+Return path
 LIMIT 20
 ```
 

@@ -3,7 +3,12 @@ from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from codegen.sdk.core.codebase import Codebase, CodebaseType, PyCodebaseType, TSCodebaseType
+from codegen.sdk.core.codebase import (
+    Codebase,
+    CodebaseType,
+    PyCodebaseType,
+    TSCodebaseType,
+)
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
 if TYPE_CHECKING:
@@ -35,10 +40,19 @@ class Skill(ABC):
 
     @classmethod
     def implementations(cls) -> list["SkillImplementation"]:
-        return [impl for impl in [cls.python_skill_implementation, cls.typescript_skill_implementation] if impl is not None]
+        return [
+            impl
+            for impl in [
+                cls.python_skill_implementation,
+                cls.typescript_skill_implementation,
+            ]
+            if impl is not None
+        ]
 
     @classmethod
-    def language_to_skill_imp_dict(cls) -> dict[ProgrammingLanguage, "SkillImplementation"]:
+    def language_to_skill_imp_dict(
+        cls,
+    ) -> dict[ProgrammingLanguage, "SkillImplementation"]:
         return {skill_imp.language: skill_imp for skill_imp in cls.implementations()}
 
     @staticmethod
@@ -57,9 +71,13 @@ class Skill(ABC):
                 if skill_implementations[0].language == ProgrammingLanguage.PYTHON:
                     code_source = cls.python_skill_implementation.function_body
                     snippet = f"```python\n{cls.extract_code_snippet(code_source)}\n```"
-                elif skill_implementations[0].language == ProgrammingLanguage.TYPESCRIPT:
+                elif (
+                    skill_implementations[0].language == ProgrammingLanguage.TYPESCRIPT
+                ):
                     code_source = cls.typescript_skill_implementation.function_body
-                    snippet = f"```typescript\n{cls.extract_code_snippet(code_source)}\n```"
+                    snippet = (
+                        f"```typescript\n{cls.extract_code_snippet(code_source)}\n```"
+                    )
             case 2:
                 snippet = f"""<CodeGroup>
 ```python python

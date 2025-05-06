@@ -68,7 +68,11 @@ class AutoDocstringGenerator(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[AutoDocstringGeneratorTest], skip_test=True, language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[AutoDocstringGeneratorTest],
+        skip_test=True,
+        language=ProgrammingLanguage.PYTHON,
+    )
     def skill_func(codebase: CodebaseType):
         functions_without_docstring = 0
         # Iterate over all functions in the codebase
@@ -76,8 +80,13 @@ class AutoDocstringGenerator(Skill, ABC):
             # Check if the function has a docstring
             if function.docstring is None:
                 # Generate a docstring for the function
-                new_docstring = codebase.ai(f"Generate a docstring for the function {function.name} with the following content:\n{function.source}", target=function)
+                new_docstring = codebase.ai(
+                    f"Generate a docstring for the function {function.name} with the following content:\n{function.source}",
+                    target=function,
+                )
                 function.set_docstring(new_docstring)
                 functions_without_docstring += 1
 
-        print(f"Found and fixed {functions_without_docstring} functions without a docstring")
+        print(
+            f"Found and fixed {functions_without_docstring} functions without a docstring"
+        )

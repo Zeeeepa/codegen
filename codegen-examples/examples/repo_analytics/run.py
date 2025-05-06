@@ -1,15 +1,17 @@
-from typing import Dict, Any
+import math
+import re
+from typing import Any, Dict
+
+import requests
+
 from codegen import Codebase
+from codegen.sdk.core.expressions.binary_expression import BinaryExpression
+from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
+from codegen.sdk.core.expressions.unary_expression import UnaryExpression
 from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
 from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
 from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
 from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-import math
-import re
-import requests
 
 
 def calculate_cyclomatic_complexity(function):
@@ -28,7 +30,9 @@ def calculate_cyclomatic_complexity(function):
             complexity += len(getattr(statement, "except_blocks", []))
 
         if hasattr(statement, "condition") and isinstance(statement.condition, str):
-            complexity += statement.condition.count(" and ") + statement.condition.count(" or ")
+            complexity += statement.condition.count(
+                " and "
+            ) + statement.condition.count(" or ")
 
         if hasattr(statement, "nested_code_blocks"):
             for block in statement.nested_code_blocks:
@@ -41,7 +45,9 @@ def calculate_cyclomatic_complexity(function):
             return 0
         return sum(analyze_statement(stmt) for stmt in block.statements)
 
-    return 1 + analyze_block(function.code_block) if hasattr(function, "code_block") else 1
+    return (
+        1 + analyze_block(function.code_block) if hasattr(function, "code_block") else 1
+    )
 
 
 def cc_rank(complexity):
@@ -144,7 +150,9 @@ def count_lines(source: str):
                 if line[comment_start:].strip():
                     comments += 1
 
-        if ('"""' in line or "'''" in line) and not (line.count('"""') % 2 == 0 or line.count("'''") % 2 == 0):
+        if ('"""' in line or "'''" in line) and not (
+            line.count('"""') % 2 == 0 or line.count("'''") % 2 == 0
+        ):
             if in_multiline:
                 in_multiline = False
                 comments += 1
@@ -181,13 +189,20 @@ def count_lines(source: str):
     return loc, lloc, sloc, comments
 
 
-def calculate_maintainability_index(halstead_volume: float, cyclomatic_complexity: float, loc: int) -> int:
+def calculate_maintainability_index(
+    halstead_volume: float, cyclomatic_complexity: float, loc: int
+) -> int:
     """Calculate the normalized maintainability index for a given function."""
     if loc <= 0:
         return 100
 
     try:
-        raw_mi = 171 - 5.2 * math.log(max(1, halstead_volume)) - 0.23 * cyclomatic_complexity - 16.2 * math.log(max(1, loc))
+        raw_mi = (
+            171
+            - 5.2 * math.log(max(1, halstead_volume))
+            - 0.23 * cyclomatic_complexity
+            - 16.2 * math.log(max(1, loc))
+        )
         normalized_mi = max(0, min(100, raw_mi * 100 / 171))
         return int(normalized_mi)
     except (ValueError, TypeError):
@@ -259,7 +274,9 @@ def analyze_repo(repo_url: str) -> Dict[str, Any]:
                 "lloc": total_lloc,
                 "sloc": total_sloc,
                 "comments": total_comments,
-                "comment_density": (total_comments / total_loc * 100) if total_loc > 0 else 0,
+                "comment_density": (
+                    (total_comments / total_loc * 100) if total_loc > 0 else 0
+                ),
             },
         },
         "cyclomatic_complexity": {
@@ -270,7 +287,9 @@ def analyze_repo(repo_url: str) -> Dict[str, Any]:
         },
         "halstead_metrics": {
             "total_volume": int(total_volume),
-            "average_volume": int(total_volume / num_callables) if num_callables > 0 else 0,
+            "average_volume": (
+                int(total_volume / num_callables) if num_callables > 0 else 0
+            ),
         },
         "maintainability_index": {
             "average": int(total_mi / num_callables) if num_callables > 0 else 0,
@@ -306,8 +325,16 @@ if __name__ == "__main__":
     print(f"  • Comment Density: {line_metrics['comment_density']:.1f}%")
 
     print("\n🔄 Complexity Metrics:")
-    print(f"  • Average Cyclomatic Complexity: {results['cyclomatic_complexity']['average']:.1f}")
-    print(f"  • Average Maintainability Index: {results['maintainability_index']['average']}")
-    print(f"  • Average Depth of Inheritance: {results['depth_of_inheritance']['average']:.1f}")
+    print(
+        f"  • Average Cyclomatic Complexity: {results['cyclomatic_complexity']['average']:.1f}"
+    )
+    print(
+        f"  • Average Maintainability Index: {results['maintainability_index']['average']}"
+    )
+    print(
+        f"  • Average Depth of Inheritance: {results['depth_of_inheritance']['average']:.1f}"
+    )
     print(f"  • Total Halstead Volume: {results['halstead_metrics']['total_volume']:,}")
-    print(f"  • Average Halstead Volume: {results['halstead_metrics']['average_volume']:,}")
+    print(
+        f"  • Average Halstead Volume: {results['halstead_metrics']['average_volume']:,}"
+    )

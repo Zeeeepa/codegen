@@ -2,7 +2,10 @@ import pytest
 
 from codegen.sdk.codebase.config import SessionOptions
 from codegen.sdk.codebase.factory.get_session import get_codebase_session
-from codegen.sdk.codebase.transaction_manager import MaxPreviewTimeExceeded, MaxTransactionsExceeded
+from codegen.sdk.codebase.transaction_manager import (
+    MaxPreviewTimeExceeded,
+    MaxTransactionsExceeded,
+)
 from codegen.sdk.core.codebase import MaxAIRequestsError
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 

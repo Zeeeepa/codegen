@@ -126,7 +126,11 @@ class CodeIndex(ABC):
             return
 
         # Get content for changed items
-        items_with_content = [(item, content) for item, content in self._get_items_to_index() if item in changed_items]
+        items_with_content = [
+            (item, content)
+            for item, content in self._get_items_to_index()
+            if item in changed_items
+        ]
 
         if not items_with_content:
             return

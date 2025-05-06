@@ -79,7 +79,10 @@ def func_1():
 """
     with get_codebase_session(
         tmpdir=tmpdir,
-        files={src_filename: src_file_content, consumer_filename: consumer_file_content},
+        files={
+            src_filename: src_file_content,
+            consumer_filename: consumer_file_content,
+        },
     ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         consumer_file = codebase.get_file(consumer_filename)
@@ -109,7 +112,10 @@ def func_1():
 """
     with get_codebase_session(
         tmpdir=tmpdir,
-        files={src_filename: src_file_content, consumer_filename: consumer_file_content},
+        files={
+            src_filename: src_file_content,
+            consumer_filename: consumer_file_content,
+        },
     ) as codebase:
         src_file: SourceFile = codebase.get_file(src_filename)
         src_file_importers = src_file.importers

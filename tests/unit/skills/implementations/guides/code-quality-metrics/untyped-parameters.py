@@ -75,7 +75,9 @@ class CountUntypedParameters(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CountUntypedParametersTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[CountUntypedParametersTest], language=ProgrammingLanguage.PYTHON
+    )
     def skill_func(codebase: CodebaseType):
         untitled_parameters_count = 0
 
@@ -84,6 +86,8 @@ class CountUntypedParameters(Skill, ABC):
             # Iterate through all functions in the file
             for function in file.functions:
                 # Count the number of parameters that are not typed
-                untitled_parameters_count += sum(1 for param in function.parameters if not param.is_typed)
+                untitled_parameters_count += sum(
+                    1 for param in function.parameters if not param.is_typed
+                )
 
         print(f"Found {untitled_parameters_count} untyped parameters in the codebase.")

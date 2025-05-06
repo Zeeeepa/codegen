@@ -27,10 +27,29 @@ def visualize_graph(graph):
     )
 
     # Set node attributes for consistent sizing
-    A.node_attr.update({"shape": "circle", "fixedsize": "true", "width": "1.5", "height": "1.5", "style": "filled", "fillcolor": "lightblue", "fontsize": "11", "fontname": "Arial"})
+    A.node_attr.update(
+        {
+            "shape": "circle",
+            "fixedsize": "true",
+            "width": "1.5",
+            "height": "1.5",
+            "style": "filled",
+            "fillcolor": "lightblue",
+            "fontsize": "11",
+            "fontname": "Arial",
+        }
+    )
 
     # Set default edge attributes
-    A.edge_attr.update({"penwidth": "1.5", "arrowsize": "0.8", "len": "2.0", "weight": "1", "dir": "forward"})
+    A.edge_attr.update(
+        {
+            "penwidth": "1.5",
+            "arrowsize": "0.8",
+            "len": "2.0",
+            "weight": "1",
+            "dir": "forward",
+        }
+    )
 
     # Add nodes first
     for node in graph.nodes():

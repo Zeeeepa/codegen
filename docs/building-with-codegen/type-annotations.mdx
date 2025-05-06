@@ -107,7 +107,7 @@ for attr in class_def.attributes:
     # Each attribute has an assignment property
     attr_type = attr.assignment.type  # -> TypeAnnotation
     print(f"{attr.name}: {attr_type.source}")  # e.g. "x: int"
-    
+
     # Set attribute type
     attr.assignment.set_type("int")
 
@@ -124,7 +124,7 @@ Union types ([UnionType](/api-reference/core/UnionType)) can be manipulated as c
 
 ```python
 # Get union type
-union_type = function.return_type  # -> A | B 
+union_type = function.return_type  # -> A | B
 print(union_type.symbols)  # ["A", "B"]
 
 # Add/remove options

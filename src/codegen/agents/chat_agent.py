@@ -13,7 +13,15 @@ if TYPE_CHECKING:
 class ChatAgent:
     """Agent for interacting with a codebase."""
 
-    def __init__(self, codebase: "Codebase", model_provider: str = "anthropic", model_name: str = "claude-3-5-sonnet-latest", memory: bool = True, tools: Optional[list[BaseTool]] = None, **kwargs):
+    def __init__(
+        self,
+        codebase: "Codebase",
+        model_provider: str = "anthropic",
+        model_name: str = "claude-3-5-sonnet-latest",
+        memory: bool = True,
+        tools: Optional[list[BaseTool]] = None,
+        **kwargs,
+    ):
         """Initialize a CodeAgent.
 
         Args:
@@ -29,7 +37,14 @@ class ChatAgent:
                 - max_tokens: Maximum number of tokens to generate
         """
         self.codebase = codebase
-        self.agent = create_chat_agent(self.codebase, model_provider=model_provider, model_name=model_name, memory=memory, additional_tools=tools, **kwargs)
+        self.agent = create_chat_agent(
+            self.codebase,
+            model_provider=model_provider,
+            model_name=model_name,
+            memory=memory,
+            additional_tools=tools,
+            **kwargs,
+        )
 
     def run(self, prompt: str, thread_id: Optional[str] = None) -> str:
         """Run the agent with a prompt.
@@ -45,14 +60,22 @@ class ChatAgent:
             thread_id = str(uuid4())
 
         input = {"query": prompt}
-        stream = self.agent.stream(input, config={"configurable": {"thread_id": thread_id}}, stream_mode="values")
+        stream = self.agent.stream(
+            input,
+            config={"configurable": {"thread_id": thread_id}},
+            stream_mode="values",
+        )
 
         for s in stream:
             message = s["messages"][-1]
             if isinstance(message, tuple):
                 print(message)
             else:
-                if isinstance(message, AIMessage) and isinstance(message.content, list) and "text" in message.content[0]:
+                if (
+                    isinstance(message, AIMessage)
+                    and isinstance(message.content, list)
+                    and "text" in message.content[0]
+                ):
                     AIMessage(message.content[0]["text"]).pretty_print()
                 else:
                     message.pretty_print()

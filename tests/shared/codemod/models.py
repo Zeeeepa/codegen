@@ -61,7 +61,9 @@ class Repo(BaseModel):
         return cls.model_validate(json.loads(json_str))
 
     def to_op(self, name: str, token: str | None) -> RepoOperator:
-        base_path = BASE_TMP_DIR / ("extra_repos" if self.extra_repo else "oss_repos") / name
+        base_path = (
+            BASE_TMP_DIR / ("extra_repos" if self.extra_repo else "oss_repos") / name
+        )
         base_path.mkdir(exist_ok=True, parents=True)
         url = self.url
         if token:
@@ -70,7 +72,10 @@ class Repo(BaseModel):
             print("Setting up auth using the github cli")
             if not which("gh"):
                 os.system("brew install gh")
-            if '[credential "https://github.codegen.app"]' not in (Path.home() / ".gitconfig").read_text():
+            if (
+                '[credential "https://github.codegen.app"]'
+                not in (Path.home() / ".gitconfig").read_text()
+            ):
                 os.system("gh auth login -h github.codegen.app")
                 os.system("gh auth setup-git -h github.codegen.app")
         return RepoOperator.create_from_commit(str(base_path), self.commit, url)

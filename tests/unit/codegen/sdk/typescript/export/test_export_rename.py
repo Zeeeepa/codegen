@@ -13,7 +13,11 @@ def test_rename_export_simple(tmpdir) -> None:
 import { b }  from "./b";
 export default A =function() {b()};
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file: TSFile = codebase.get_file("file.ts")
         file.exports[0].rename("C")
     # language=typescript
@@ -66,7 +70,16 @@ export { default } from "./file";
     """
     with get_codebase_session(
         tmpdir=tmpdir,
-        files={"file.ts": content, "file_alt.ts": content_alt, "file2.ts": content2, "file3.ts": content3, "file4.ts": content4, "file5.ts": content5, "file6.ts": content6, "file7.ts": content7},
+        files={
+            "file.ts": content,
+            "file_alt.ts": content_alt,
+            "file2.ts": content2,
+            "file3.ts": content3,
+            "file4.ts": content4,
+            "file5.ts": content5,
+            "file6.ts": content6,
+            "file7.ts": content7,
+        },
         programming_language=ProgrammingLanguage.TYPESCRIPT,
     ) as codebase:
         file: TSFile = codebase.get_file("file.ts")

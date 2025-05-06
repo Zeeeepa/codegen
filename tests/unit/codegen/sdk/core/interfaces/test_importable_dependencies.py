@@ -86,7 +86,11 @@ function useC() {
     c.methodC();
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         use_c = file.get_function("useC")
         c_class = file.get_class("C")

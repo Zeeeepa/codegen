@@ -18,7 +18,11 @@ def test_namespace_add_symbol(tmpdir) -> None:
         export const x = 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         file = codebase.get_file("test.ts")
         namespace: TSNamespace = codebase.get_symbol("MyNamespace")
 
@@ -67,7 +71,11 @@ def test_namespace_remove_symbol(tmpdir) -> None:
         export const y = 2;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace: TSNamespace = codebase.get_symbol("MyNamespace")
 
         # Remove existing symbol
@@ -94,7 +102,11 @@ def test_namespace_rename(tmpdir) -> None:
         export const x = 1;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace: TSNamespace = codebase.get_symbol("OldName")
 
         # Rename namespace
@@ -118,7 +130,11 @@ def test_namespace_export_symbol(tmpdir) -> None:
         const internal = 123;
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         namespace: TSNamespace = codebase.get_symbol("ExportTest")
 
         # Export internal symbol
@@ -141,7 +157,9 @@ def test_namespace_export_symbol(tmpdir) -> None:
         assert external.is_exported
 
 
-@pytest.mark.skip("TODO: Symbol Animals is ambiguous in codebase - more than one instance")
+@pytest.mark.skip(
+    "TODO: Symbol Animals is ambiguous in codebase - more than one instance"
+)
 def test_namespace_merging(tmpdir) -> None:
     """Test TypeScript namespace merging functionality."""
     FILE_NAME = "test.ts"
@@ -159,7 +177,11 @@ def test_namespace_merging(tmpdir) -> None:
         export class Tree {}
     }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILE_NAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILE_NAME: FILE_CONTENT},
+    ) as codebase:
         animals = codebase.get_symbol("Animals")
         assert animals is not None
 

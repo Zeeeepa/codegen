@@ -1,5 +1,6 @@
-import codegen
 import networkx as nx
+
+import codegen
 from codegen import Codebase
 
 
@@ -21,7 +22,9 @@ def run(codebase: Codebase):
                     # Check if the import statement is importing an app
                     for imp in import_statement.imports:
                         # Assuming app imports follow a specific naming convention or structure
-                        if "app" in imp.name:  # Adjust this condition based on your app naming convention
+                        if (
+                            "app" in imp.name
+                        ):  # Adjust this condition based on your app naming convention
                             G.add_edge(app, imp.import_statement.source)
 
     nodes_to_remove = [node for node, degree in G.degree() if degree == 1]
@@ -34,5 +37,9 @@ def run(codebase: Codebase):
 
 
 if __name__ == "__main__":
-    codebase = Codebase.from_repo("getsentry/sentry", commit="fb0d53b2210cc896fc3e2cf32dae149ea8a8a45a", language="python")
+    codebase = Codebase.from_repo(
+        "getsentry/sentry",
+        commit="fb0d53b2210cc896fc3e2cf32dae149ea8a8a45a",
+        language="python",
+    )
     run(codebase)

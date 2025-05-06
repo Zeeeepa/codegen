@@ -20,7 +20,11 @@ export default function defaultFn() {}
 export const bar = 'bar';
 export type Type = string;
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": module_content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": module_content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         exports = file.exports
 
@@ -58,7 +62,11 @@ export { foo as fooz } from './m';  // direct re-export
 export const foo = 'foo';
 export const bar = 'bar';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"file.ts": content, "m.ts": module_content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file.ts": content, "m.ts": module_content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file.ts")
         exports = file.exports
 
@@ -90,7 +98,11 @@ export { default as name1, name2 as default } from './mixed';
 export * as ns from './ns1';
 export * as ns from './ns2';
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         exports = file.exports
 

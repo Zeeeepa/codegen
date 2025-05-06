@@ -87,7 +87,10 @@ def validate_command(command: str) -> tuple[bool, str]:
 
         # Check if base command is in whitelist
         if base_cmd not in ALLOWED_COMMANDS:
-            return False, f"Command '{base_cmd}' is not allowed. Allowed commands: {', '.join(sorted(ALLOWED_COMMANDS.keys()))}"
+            return (
+                False,
+                f"Command '{base_cmd}' is not allowed. Allowed commands: {', '.join(sorted(ALLOWED_COMMANDS.keys()))}",
+            )
 
         # Extract and split combined flags (e.g., -la -> -l -a)
         flags = set()
@@ -108,7 +111,10 @@ def validate_command(command: str) -> tuple[bool, str]:
         if allowed_flags:
             invalid_flags = flags - allowed_flags
             if invalid_flags:
-                return False, f"Flags {invalid_flags} are not allowed for command '{base_cmd}'. Allowed flags: {allowed_flags}"
+                return (
+                    False,
+                    f"Flags {invalid_flags} are not allowed for command '{base_cmd}'. Allowed flags: {allowed_flags}",
+                )
 
         return True, ""
 
@@ -116,7 +122,9 @@ def validate_command(command: str) -> tuple[bool, str]:
         return False, f"Failed to validate command: {e!s}"
 
 
-def run_bash_command(command: str, is_background: bool = False) -> RunBashCommandObservation:
+def run_bash_command(
+    command: str, is_background: bool = False
+) -> RunBashCommandObservation:
     """Run a bash command and return its output.
 
     Args:

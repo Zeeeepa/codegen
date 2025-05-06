@@ -4,12 +4,13 @@ import os
 from typing import Any
 
 import modal
-from codegen import Codebase
-from codegen.extensions import VectorIndex
 from fastapi import FastAPI, Request
 from openai import OpenAI
 from slack_bolt import App
 from slack_bolt.adapter.fastapi import SlackRequestHandler
+
+from codegen import Codebase
+from codegen.extensions import VectorIndex
 
 ########################################################
 # Core RAG logic
@@ -20,7 +21,9 @@ def format_response(answer: str, context: list[tuple[str, int]]) -> str:
     """Format the response for Slack with file links."""
     response = f"*Answer:*\n{answer}\n\n*Relevant Files:*\n"
     for filename, score in context:
-        github_link = f"https://github.com/codegen-sh/codegen-sdk/blob/develop/{filename}"
+        github_link = (
+            f"https://github.com/codegen-sh/codegen-sdk/blob/develop/{filename}"
+        )
         response += f"• <{github_link}|{filename}>\n"
     return response
 
@@ -28,7 +31,9 @@ def format_response(answer: str, context: list[tuple[str, int]]) -> str:
 def answer_question(query: str) -> tuple[str, list[tuple[str, int]]]:
     """Use RAG to answer a question about FastAPI."""
     # Initialize codebase. Smart about caching.
-    codebase = Codebase.from_repo("codegen-sh/codegen-sdk", language="python", tmp_dir="/root")
+    codebase = Codebase.from_repo(
+        "codegen-sh/codegen-sdk", language="python", tmp_dir="/root"
+    )
 
     # Initialize vector index
     index = VectorIndex(codebase)
@@ -70,7 +75,10 @@ Answer:"""
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You are a code expert. Answer questions about the given repo based on RAG'd results."},
+            {
+                "role": "system",
+                "content": "You are a code expert. Answer questions about the given repo based on RAG'd results.",
+            },
             {"role": "user", "content": prompt},
         ],
         temperature=0,

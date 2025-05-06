@@ -10,7 +10,11 @@ function foo() {
     const { a, b } = func();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         foo = codebase.get_function("foo")
         assignments = foo.code_block.assignments
         assert len(assignments) == 2
@@ -25,7 +29,11 @@ function foo() {
     const [ a, b ] = func();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         foo = codebase.get_function("foo")
         assignments = foo.code_block.assignments
         assert len(assignments) == 2
@@ -40,7 +48,11 @@ function foo() {
     const { a, b: c } = func();
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={FILENAME: FILE_CONTENT}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={FILENAME: FILE_CONTENT},
+    ) as codebase:
         foo = codebase.get_function("foo")
         assignments = foo.code_block.assignments
         assert len(assignments) == 2

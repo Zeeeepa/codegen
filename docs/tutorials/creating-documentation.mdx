@@ -85,11 +85,11 @@ for directory in codebase.directories:
     # Skip test, sql and alembic directories
     if any(x in directory.path.lower() for x in ['test', 'sql', 'alembic']):
         continue
-        
+
     # Get undecorated functions
     funcs = [f for f in directory.functions if not f.is_decorated]
     total = len(funcs)
-    
+
     # Only analyze dirs with >10 functions
     if total > 10:
         documented = sum(1 for f in funcs if f.docstring)
@@ -104,12 +104,12 @@ for directory in codebase.directories:
 if dir_stats:
     lowest_dir = min(dir_stats.items(), key=lambda x: x[1]['coverage'])
     path, stats = lowest_dir
-    
+
     print(f"📉 Lowest coverage directory: '{path}'")
     print(f"  • Total functions: {stats['total']}")
     print(f"  • Documented: {stats['documented']}")
     print(f"  • Coverage: {stats['coverage']:.1f}%")
-    
+
     # Print all directory stats for comparison
     print("\n📊 All directory coverage rates:")
     for path, stats in sorted(dir_stats.items(), key=lambda x: x[1]['coverage']):

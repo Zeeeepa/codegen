@@ -20,12 +20,24 @@ def top_level_function():
         file = codebase.get_file("file.py")
         function_calls = file.function_calls
         assert len(function_calls) == 7
-        assert set([fcall.name for fcall in function_calls]) == {"Logger", "get_logger", "error", "nested_function_call", "chained", "calls", "bar"}
+        assert set([fcall.name for fcall in function_calls]) == {
+            "Logger",
+            "get_logger",
+            "error",
+            "nested_function_call",
+            "chained",
+            "calls",
+            "bar",
+        }
 
         my_class = codebase.get_symbol("MyClass")
         class_fcalls = my_class.function_calls
         assert len(class_fcalls) == 3
-        assert set([fcall.name for fcall in class_fcalls]) == {"nested_function_call", "chained", "calls"}
+        assert set([fcall.name for fcall in class_fcalls]) == {
+            "nested_function_call",
+            "chained",
+            "calls",
+        }
 
         top_level = codebase.get_symbol("top_level_function")
         function_fcalls = top_level.function_calls

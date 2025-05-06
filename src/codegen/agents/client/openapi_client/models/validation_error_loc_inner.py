@@ -45,7 +45,9 @@ class ValidationErrorLocInner(BaseModel):
                 msg = "If a position argument is used, only 1 is allowed to set `actual_instance`"
                 raise ValueError(msg)
             if kwargs:
-                msg = "If a position argument is used, keyword arguments cannot be used."
+                msg = (
+                    "If a position argument is used, keyword arguments cannot be used."
+                )
                 raise ValueError(msg)
             super().__init__(actual_instance=args[0])
         else:
@@ -69,7 +71,10 @@ class ValidationErrorLocInner(BaseModel):
             error_messages.append(str(e))
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in ValidationErrorLocInner with anyOf schemas: int, str. Details: " + ", ".join(error_messages))
+            raise ValueError(
+                "No match found when setting the actual_instance in ValidationErrorLocInner with anyOf schemas: int, str. Details: "
+                + ", ".join(error_messages)
+            )
         else:
             return v
 
@@ -103,7 +108,10 @@ class ValidationErrorLocInner(BaseModel):
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into ValidationErrorLocInner with anyOf schemas: int, str. Details: " + ", ".join(error_messages))
+            raise ValueError(
+                "No match found when deserializing the JSON string into ValidationErrorLocInner with anyOf schemas: int, str. Details: "
+                + ", ".join(error_messages)
+            )
         else:
             return instance
 
@@ -112,7 +120,9 @@ class ValidationErrorLocInner(BaseModel):
         if self.actual_instance is None:
             return "null"
 
-        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+        if hasattr(self.actual_instance, "to_json") and callable(
+            self.actual_instance.to_json
+        ):
             return self.actual_instance.to_json()
         else:
             return json.dumps(self.actual_instance)
@@ -122,7 +132,9 @@ class ValidationErrorLocInner(BaseModel):
         if self.actual_instance is None:
             return None
 
-        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+        if hasattr(self.actual_instance, "to_dict") and callable(
+            self.actual_instance.to_dict
+        ):
             return self.actual_instance.to_dict()
         else:
             return self.actual_instance

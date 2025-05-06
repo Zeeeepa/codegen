@@ -26,9 +26,15 @@ function funcA(paramId: any): any {
     return varA;
 }
 """
-    with get_codebase_session(tmpdir=tmpdir, programming_language=ProgrammingLanguage.TYPESCRIPT, files={"test.ts": content}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+        files={"test.ts": content},
+    ) as codebase:
         for function in codebase.functions:
-            matching_vars = function.code_block.get_local_var_assignments("var", fuzzy_match=True)
+            matching_vars = function.code_block.get_local_var_assignments(
+                "var", fuzzy_match=True
+            )
             for local_var in matching_vars:
                 local_var.rename("newVar")
 

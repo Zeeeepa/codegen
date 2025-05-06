@@ -7,7 +7,11 @@ from codegen.sdk.core.statements.expression_statement import ExpressionStatement
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
 py_input = """
 def main():
@@ -79,12 +83,27 @@ if __name__ == "__main__":
 """
 
 
-@skill(eval_skill=False, prompt="Unwrap the body of all functions in the file", uid="22ce6b14-9cfa-4264-9da4-8b32d79684f4")
+@skill(
+    eval_skill=False,
+    prompt="Unwrap the body of all functions in the file",
+    uid="22ce6b14-9cfa-4264-9da4-8b32d79684f4",
+)
 class UnwrapFunctionBody(Skill, ABC):
     """Unwraps the body of all functions in the codebase, transforming each function's code block into a flat structure without nested scopes."""
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCasePyFile(input=py_input, output=py_output_unwrap_function)])], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCasePyFile(
+                        input=py_input, output=py_output_unwrap_function
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Unwraps the body of all functions in the file"""
         # iterate through all functions in the codebase
@@ -93,7 +112,18 @@ class UnwrapFunctionBody(Skill, ABC):
             function.code_block.unwrap()
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input, output=ts_output_unwrap_function)])], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCaseTSFile(
+                        input=ts_input, output=ts_output_unwrap_function
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         """Unwraps the body of all functions in the file"""
         # iterate through all functions in the codebase
@@ -138,13 +168,39 @@ main()
 """
 
 
-@skill(eval_skill=False, prompt="Unwrap the body of all if statements in the file", uid="77c97447-0580-46ee-b871-7ace7f3ee727")
+@skill(
+    eval_skill=False,
+    prompt="Unwrap the body of all if statements in the file",
+    uid="77c97447-0580-46ee-b871-7ace7f3ee727",
+)
 class UnwrapIfStatement(Skill, ABC):
     """Unwraps the body of all if statements in the file"""
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCasePyFile(input=py_input, output=py_output_unwrap_if_statement)])], language=ProgrammingLanguage.PYTHON)
-    @skill_impl([SkillTestCase(files=[SkillTestCaseTSFile(input=ts_input, output=ts_output_unwrap_if_statement)])], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCasePyFile(
+                        input=py_input, output=py_output_unwrap_if_statement
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCaseTSFile(
+                        input=ts_input, output=ts_output_unwrap_if_statement
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def skill_func(codebase: CodebaseType):
         for file in codebase.files:
             for if_block in file.code_block.if_blocks:
@@ -168,12 +224,27 @@ if __name__ == "__main__":
 """
 
 
-@skill(eval_skill=False, prompt="Unwrap the body of all with statements in the file", uid="e52ce1d7-1e96-4884-ab2f-c8c20933b299")
+@skill(
+    eval_skill=False,
+    prompt="Unwrap the body of all with statements in the file",
+    uid="e52ce1d7-1e96-4884-ab2f-c8c20933b299",
+)
 class UnwrapWithStatement(Skill, ABC):
     """This unwraps a `with` statement"""
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCasePyFile(input=py_input, output=py_output_unwrap_with_statement)])], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCasePyFile(
+                        input=py_input, output=py_output_unwrap_with_statement
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Unwraps the body of all with statements in the file"""
         # for all functions in the codebase
@@ -369,14 +440,30 @@ function testHttpTransactions(uuid: string, client: Client, model: Model, db: DB
 """
 
 
-@skill(eval_skill=False, prompt="Convert test assertion to an argument a call to test function.", uid="a4f2c5dc-46a0-45b8-960b-826c8238239c")
+@skill(
+    eval_skill=False,
+    prompt="Convert test assertion to an argument a call to test function.",
+    uid="a4f2c5dc-46a0-45b8-960b-826c8238239c",
+)
 class ConvertStatementToArgument(Skill, ABC):
     """Converts http status code assertion statements into an `expect_status` argument
     for test functions that make a call to a http method.
     """
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCasePyFile(input=py_convert_test_assertion_input, output=py_convert_test_assertion_output)])], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCasePyFile(
+                        input=py_convert_test_assertion_input,
+                        output=py_convert_test_assertion_output,
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.PYTHON,
+    )
     def python_skill_func(codebase: CodebaseType):
         """Transform test assertion statements into an argument to test functions that make a call to a http method."""
         methods = ["post", "get", "put", "delete", "patch"]
@@ -392,29 +479,54 @@ class ConvertStatementToArgument(Skill, ABC):
             if not isinstance(assignment_value, FunctionCall):
                 continue
             name = assignment_value.get_name()
-            if isinstance(name, ChainedAttribute) and name.object == client_name and name.attribute.source in methods:
+            if (
+                isinstance(name, ChainedAttribute)
+                and name.object == client_name
+                and name.attribute.source in methods
+            ):
                 test_call_assignments.append(assignment_var)
 
         for i, test_call_assignment in enumerate(test_call_assignments):
             # Search for the closest subsequent statement that uses the response variable in an assert statement
             search_start = test_call_assignment.index + 1
-            search_end = len(code_block.statements) if i == len(test_call_assignments) - 1 else test_call_assignments[i + 1].index
+            search_end = (
+                len(code_block.statements)
+                if i == len(test_call_assignments) - 1
+                else test_call_assignments[i + 1].index
+            )
 
             for statement in code_block.statements[search_start:search_end]:
                 # Found the assertion statement using the response variable
-                if f"assert {test_call_assignment.left.source}.status_code ==" in statement.source:
+                if (
+                    f"assert {test_call_assignment.left.source}.status_code =="
+                    in statement.source
+                ):
                     # Add the expect_error argument to the function call
                     assertion_value = statement.source.split("==")[-1].strip()
                     expected_status_code = assertion_value.split(",")[0].strip()
                     last_arg = test_call_assignment.value.args[-1]
                     last_arg.insert_after(",", newline=False)
-                    last_arg.insert_after(f"expect_status={expected_status_code}", fix_indentation=True)
+                    last_arg.insert_after(
+                        f"expect_status={expected_status_code}", fix_indentation=True
+                    )
 
                     # Remove the assertion statement
                     statement.remove()
 
     @staticmethod
-    @skill_impl([SkillTestCase(files=[SkillTestCaseTSFile(input=ts_convert_test_assertion_input, output=ts_convert_test_assertion_output)])], language=ProgrammingLanguage.TYPESCRIPT)
+    @skill_impl(
+        [
+            SkillTestCase(
+                files=[
+                    SkillTestCaseTSFile(
+                        input=ts_convert_test_assertion_input,
+                        output=ts_convert_test_assertion_output,
+                    )
+                ]
+            )
+        ],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
     def typescript_skill_func(codebase: CodebaseType):
         """Transform test assertion statements into an argument to test functions that make a call to a http method."""
         methods = ["post", "get", "put", "delete", "patch"]
@@ -430,25 +542,42 @@ class ConvertStatementToArgument(Skill, ABC):
             if not isinstance(assignment_value, FunctionCall):
                 continue
             name = assignment_value.get_name()
-            if isinstance(name, ChainedAttribute) and name.object == client_name and name.attribute.source in methods:
+            if (
+                isinstance(name, ChainedAttribute)
+                and name.object == client_name
+                and name.attribute.source in methods
+            ):
                 test_call_assignments.append(assignment_var)
 
         for i, test_call_assignment in enumerate(test_call_assignments):
             # Search for the closest subsequent statement that uses the response variable in an assert statement
             search_start = test_call_assignment.index + 1
-            search_end = len(code_block.statements) if i == len(test_call_assignments) - 1 else test_call_assignments[i + 1].index
+            search_end = (
+                len(code_block.statements)
+                if i == len(test_call_assignments) - 1
+                else test_call_assignments[i + 1].index
+            )
 
             for statement in code_block.statements[search_start:search_end]:
-                if not isinstance(statement, ExpressionStatement) or not isinstance(statement.value, FunctionCall):
+                if not isinstance(statement, ExpressionStatement) or not isinstance(
+                    statement.value, FunctionCall
+                ):
                     continue
 
                 # Found the assertion statement using the response variable
-                if f"expect({test_call_assignment.left.source}.status)" in statement.extended_source:
+                if (
+                    f"expect({test_call_assignment.left.source}.status)"
+                    in statement.extended_source
+                ):
                     # Add the expect_error argument to the function call
-                    expected_status_code = statement.source.split(".")[-1].lstrip("toBe(").rstrip(");")
+                    expected_status_code = (
+                        statement.source.split(".")[-1].lstrip("toBe(").rstrip(");")
+                    )
                     last_arg = test_call_assignment.value.args[-1]
                     last_arg.insert_after(",", newline=False)
-                    last_arg.insert_after(f"expect_status={expected_status_code}", fix_indentation=True)
+                    last_arg.insert_after(
+                        f"expect_status={expected_status_code}", fix_indentation=True
+                    )
 
                     # Remove the assertion statement
                     statement.remove()

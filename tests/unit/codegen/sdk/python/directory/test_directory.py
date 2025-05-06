@@ -7,14 +7,23 @@ def test_directory_creation(tmpdir) -> None:
 def a():
     pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir_a/dir_b/dir_c/file1.py": content1}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir_a/dir_b/dir_c/file1.py": content1}
+    ) as codebase:
         assert codebase.get_directory("", optional=True) is not None
         assert codebase.get_directory("dir_a", optional=True) is not None
         assert codebase.get_directory("dir_a/dir_b", optional=True) is not None
         assert codebase.get_directory("dir_a/dir_b/dir_c", optional=True) is not None
         assert codebase.get_directory("dir_something_else", optional=True) is None
-        assert codebase.get_directory("dir_a/dir_b/dir_c/file1.py", optional=True) is None
-        assert {d.dirpath for d in codebase.directories} == {"", "dir_a", "dir_a/dir_b", "dir_a/dir_b/dir_c"}
+        assert (
+            codebase.get_directory("dir_a/dir_b/dir_c/file1.py", optional=True) is None
+        )
+        assert {d.dirpath for d in codebase.directories} == {
+            "",
+            "dir_a",
+            "dir_a/dir_b",
+            "dir_a/dir_b/dir_c",
+        }
 
 
 def test_directory_simple(tmpdir) -> None:
@@ -42,13 +51,24 @@ def c():
 class C:
     pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2, "dir/file3.py": content3}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "dir/file1.py": content1,
+            "dir/file2.py": content2,
+            "dir/file3.py": content3,
+        },
+    ) as codebase:
         directory = codebase.get_directory("dir")
         assert directory.name == "dir"
         assert directory.parent == codebase.get_directory("")
         assert len(directory.files) == 3
         assert len(directory.subdirectories) == 0
-        assert {f.filepath for f in directory.files} == {"dir/file1.py", "dir/file2.py", "dir/file3.py"}
+        assert {f.filepath for f in directory.files} == {
+            "dir/file1.py",
+            "dir/file2.py",
+            "dir/file3.py",
+        }
         assert directory.symbols == codebase.symbols
         assert directory.global_vars == codebase.global_vars
         assert directory.classes == codebase.classes
@@ -95,7 +115,9 @@ def b():
 class B:
     pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/subdir/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/subdir/file2.py": content2}
+    ) as codebase:
         directory = codebase.get_directory("dir")
         assert directory.name == "dir"
         assert directory.parent == codebase.get_directory("")
@@ -104,7 +126,10 @@ class B:
         assert len(directory.files(recursive=True)) == 2
         assert len(directory.tree) == 3
         assert {f.filepath for f in directory.files} == {"dir/file1.py"}
-        assert {f.filepath for f in directory.files(recursive=True)} == {"dir/file1.py", "dir/subdir/file2.py"}
+        assert {f.filepath for f in directory.files(recursive=True)} == {
+            "dir/file1.py",
+            "dir/subdir/file2.py",
+        }
         assert directory.symbols == codebase.symbols
         assert directory.global_vars == codebase.global_vars
         assert directory.classes == codebase.classes
@@ -137,7 +162,9 @@ def b():
 class B:
     pass
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir1/file1.py": content1, "dir2/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir1/file1.py": content1, "dir2/file2.py": content2}
+    ) as codebase:
         directory1 = codebase.get_directory("dir1")
         file1 = codebase.get_file("dir1/file1.py")
         assert directory1.name == "dir1"

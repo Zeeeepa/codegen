@@ -9,7 +9,11 @@ import a from 'b';  // test one
 import { d } from 'b/c';  // test two
 import { h as g, j as i } from 'd/f';  // test three
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         # =====[ Remove a ]=====
@@ -44,7 +48,11 @@ import {
     four,
 } from 'package';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imp = file.get_import("one")
         assert imp is not None
@@ -75,7 +83,11 @@ import {
     four,
 } from 'package';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imp = file.get_import("alias")
         assert imp is not None
@@ -104,7 +116,11 @@ import {
     four,
 } from 'package';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
 
         for name in ["one", "two", "three", "four"]:
@@ -128,7 +144,11 @@ import { function1, function2 } from 'package1/module2';
 import { Class1 } from 'package2/module3';
 import { Class2 as Alias } from 'package3';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imp = file.get_import("function1")
         assert imp is not None
@@ -156,7 +176,11 @@ import {
 } from 'package1/module1';
 import { module1 } from 'package2';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imp2 = file.get_import("function2")
         imp3 = file.get_import("function3")
@@ -186,7 +210,11 @@ import {
 } from 'package1/module1';
 import { module1 } from 'package2';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         imp1 = file.get_import("function1")
         imp2 = file.get_import("function2")
@@ -210,7 +238,11 @@ def test_remove_single_reexport(tmpdir) -> None:
 export { one, two, three } from 'module1';
 export { four, five } from 'module2';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         exp = file.get_export("two")
         assert exp is not None
@@ -236,7 +268,11 @@ export {
 } from 'module1';
 export { five } from 'module2';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         exp2 = file.get_export("two")
         exp3 = file.get_export("three")
@@ -266,7 +302,11 @@ export {
 } from 'module1';
 export { four } from 'module2';
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         exp1 = file.get_export("one")
         exp2 = file.get_export("two")

@@ -16,7 +16,11 @@ let c = true;
 let d = [1, 2, 3];
 let e = {"a": 1, "b": 2};
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"test.ts": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"test.ts": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("test.ts")
         # Test Number
         a = file.get_global_var("a")

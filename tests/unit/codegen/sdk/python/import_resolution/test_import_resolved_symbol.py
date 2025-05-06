@@ -15,7 +15,9 @@ from file1 import foo
 def bar():
     foo()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file2 = codebase.get_file("file2.py")
 
@@ -52,7 +54,9 @@ from dir import file1
 def bar():
     file1.foo()
 """
-    with get_codebase_session(tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir, files={"dir/file1.py": content1, "dir/file2.py": content2}
+    ) as codebase:
         file1 = codebase.get_file("dir/file1.py")
         file2 = codebase.get_file("dir/file2.py")
         assert file2.get_import("file1").resolved_symbol == file1
@@ -85,7 +89,15 @@ from file3 import foo
 def qux():
     foo()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2, "file3.py": content3, "file4.py": content4}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.py": content1,
+            "file2.py": content2,
+            "file3.py": content3,
+            "file4.py": content4,
+        },
+    ) as codebase:
         file1 = codebase.get_file("file1.py")
         file4 = codebase.get_file("file4.py")
 
@@ -120,7 +132,15 @@ from file3 import foo
 def qux():
     foo()
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.py": content1, "file2.py": content2, "file3.py": content3, "file4.py": content4}) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={
+            "file1.py": content1,
+            "file2.py": content2,
+            "file3.py": content3,
+            "file4.py": content4,
+        },
+    ) as codebase:
         file2 = codebase.get_file("file2.py")
         file3 = codebase.get_file("file3.py")
         file4 = codebase.get_file("file4.py")

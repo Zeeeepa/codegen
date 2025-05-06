@@ -14,7 +14,11 @@ function funcA(a) {
     }
 }
     """
-    with get_codebase_session(tmpdir=tmpdir, files={"file1.tsx": content}, programming_language=ProgrammingLanguage.TYPESCRIPT) as codebase:
+    with get_codebase_session(
+        tmpdir=tmpdir,
+        files={"file1.tsx": content},
+        programming_language=ProgrammingLanguage.TYPESCRIPT,
+    ) as codebase:
         file = codebase.get_file("file1.tsx")
         function = file.get_function("funcA")
         function.code_block.wrap(before_src="if (undefined) {", after_src="}")

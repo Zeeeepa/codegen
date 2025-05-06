@@ -34,7 +34,9 @@ class SearchFilesByNameResultObservation(Observation):
         description="Number of files shown per page",
     )
 
-    str_template: ClassVar[str] = "Found {total_files} files matching pattern: {pattern} (page {page}/{total_pages})"
+    str_template: ClassVar[str] = (
+        "Found {total_files} files matching pattern: {pattern} (page {page}/{total_pages})"
+    )
 
     @property
     def total(self) -> int:
@@ -69,7 +71,14 @@ def search_files_by_name(
                 cwd=codebase.repo_path,
                 timeout=30,
             )
-            all_files = [path.removeprefix("./") for path in results.decode("utf-8").strip().split("\n")] if results.strip() else []
+            all_files = (
+                [
+                    path.removeprefix("./")
+                    for path in results.decode("utf-8").strip().split("\n")
+                ]
+                if results.strip()
+                else []
+            )
 
         else:
             logger.info(f"Searching for files with pattern: {pattern}")
@@ -78,7 +87,9 @@ def search_files_by_name(
                 cwd=codebase.repo_path,
                 timeout=30,
             )
-            all_files = results.decode("utf-8").strip().split("\n") if results.strip() else []
+            all_files = (
+                results.decode("utf-8").strip().split("\n") if results.strip() else []
+            )
 
         # Sort files for consistent pagination
         all_files.sort()
@@ -89,7 +100,11 @@ def search_files_by_name(
             files_per_page = total_files
             total_pages = 1
         else:
-            total_pages = (total_files + files_per_page - 1) // files_per_page if total_files > 0 else 1
+            total_pages = (
+                (total_files + files_per_page - 1) // files_per_page
+                if total_files > 0
+                else 1
+            )
 
         # Ensure page is within valid range
         page = min(page, total_pages)

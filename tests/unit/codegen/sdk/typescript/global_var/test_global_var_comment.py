@@ -58,7 +58,10 @@ const foo = 1;
         file = codebase.get_file(FILENAME)
         foo = file.get_symbol("foo")
 
-        assert foo.comment.source == "// This is comment 1\n// This is comment 2\n// This is comment 3"
+        assert (
+            foo.comment.source
+            == "// This is comment 1\n// This is comment 2\n// This is comment 3"
+        )
         assert "// This is comment 1" in foo.extended_source
         assert "// This is comment 2" in foo.extended_source
         assert "// This is comment 3" in foo.extended_source
@@ -88,7 +91,10 @@ const foo = 1;
         file = codebase.get_file(FILENAME)
         foo = file.get_symbol("foo")
 
-        assert foo.comment.source == "/**\n* This is comment 1\n* This is comment 2\n* This is comment 3\n*/"
+        assert (
+            foo.comment.source
+            == "/**\n* This is comment 1\n* This is comment 2\n* This is comment 3\n*/"
+        )
         assert "* This is comment 1" in foo.extended_source
         assert "* This is comment 2" in foo.extended_source
         assert "* This is comment 3" in foo.extended_source

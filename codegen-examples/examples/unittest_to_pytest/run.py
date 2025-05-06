@@ -31,7 +31,9 @@ def convert_to_pytest_fixtures(file):
         setup_method = cls.get_method("setUp")
         if setup_method:
             fixture_name = f"setup_{cls.name.lower()}"
-            fixture_body = "\n".join([line.replace("self.", "") for line in setup_method.body.split("\n")])
+            fixture_body = "\n".join(
+                [line.replace("self.", "") for line in setup_method.body.split("\n")]
+            )
             fixture_code = f"""
 @pytest.fixture
 def {fixture_name}():
@@ -46,9 +48,16 @@ def {fixture_name}():
                     print(f"🔧 Created fixture {fixture_name} for class {cls.name}")
                 elif method.name.startswith("test_"):
                     new_signature = f"def {method.name}({fixture_name}, {model_class}):"
-                    method_body = "\n".join([line.replace("self.", "") for line in method.source.split("\n")[1:]])
+                    method_body = "\n".join(
+                        [
+                            line.replace("self.", "")
+                            for line in method.source.split("\n")[1:]
+                        ]
+                    )
                     method.edit(f"{new_signature}\n{method_body}")
-                    print(f"🔄 Updated test method {method.name} signature and removed self references")
+                    print(
+                        f"🔄 Updated test method {method.name} signature and removed self references"
+                    )
             setup_method.remove()
             print(f"🗑️ Removed setUp method from class {cls.name}")
 
