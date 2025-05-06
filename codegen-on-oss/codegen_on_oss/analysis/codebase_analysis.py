@@ -1,11 +1,11 @@
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.codebase import Codebase
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_resolution import Import
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
+from graph_sitter.core.class_definition import Class
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.external_module import ExternalModule
+from graph_sitter.core.file import SourceFile
+from graph_sitter.core.function import Function
+from graph_sitter.core.import_resolution import Import
+from graph_sitter.core.symbol import Symbol
+from graph_sitter.enums import EdgeType, SymbolType
 
 
 def get_codebase_summary(codebase: Codebase) -> str:
@@ -21,7 +21,8 @@ def get_codebase_summary(codebase: Codebase) -> str:
 """
     edge_summary = f"""Contains {len(codebase.ctx.edges)} edges
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_USAGE])} symbol -> used symbol
-- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} import -> used symbol
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} \
+import -> used symbol
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.EXPORT])} export -> exported symbol
     """
 
@@ -71,17 +72,59 @@ def get_symbol_summary(symbol: Symbol) -> str:
     usages = symbol.symbol_usages
     imported_symbols = [x.imported_symbol for x in usages if isinstance(x, Import)]
 
+    # Count different types of symbols
+    func_count = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function
+    ])
+    class_count = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class
+    ])
+    var_count = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar
+    ])
+    interface_count = len([
+        x for x in usages 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface
+    ])
+    
+    # Count different types of imported symbols
+    imported_func_count = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function
+    ])
+    imported_class_count = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class
+    ])
+    imported_var_count = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar
+    ])
+    imported_interface_count = len([
+        x for x in imported_symbols 
+        if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface
+    ])
+    imported_module_count = len([
+        x for x in imported_symbols if isinstance(x, ExternalModule)
+    ])
+    imported_file_count = len([
+        x for x in imported_symbols if isinstance(x, SourceFile)
+    ])
+
     return f"""==== [ `{symbol.name}` ({type(symbol).__name__}) Usage Summary ] ====
 - {len(usages)} usages
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
-\t- {len([x for x in usages if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
+\t- {func_count} functions
+\t- {class_count} classes
+\t- {var_count} global variables
+\t- {interface_count} interfaces
 \t- {len(imported_symbols)} imports
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.Function])} functions
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.Class])} classes
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.GlobalVar])} global variables
-\t\t- {len([x for x in imported_symbols if isinstance(x, Symbol) and x.symbol_type == SymbolType.Interface])} interfaces
-\t\t- {len([x for x in imported_symbols if isinstance(x, ExternalModule)])} external modules
-\t\t- {len([x for x in imported_symbols if isinstance(x, SourceFile)])} files
+\t\t- {imported_func_count} functions
+\t\t- {imported_class_count} classes
+\t\t- {imported_var_count} global variables
+\t\t- {imported_interface_count} interfaces
+\t\t- {imported_module_count} external modules
+\t\t- {imported_file_count} files
     """

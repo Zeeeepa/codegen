@@ -14,9 +14,8 @@ import tempfile
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from codegen import Codebase
-from codegen.configs.models.secrets import SecretsConfig
-from codegen.sdk.core.function import Function
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.function import Function
 
 logger = logging.getLogger(__name__)
 

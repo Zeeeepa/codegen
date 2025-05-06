@@ -15,19 +15,19 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import uvicorn
-from codegen import Codebase
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.expressions.binary_expression import BinaryExpression
-from codegen.sdk.core.expressions.comparison_expression import ComparisonExpression
-from codegen.sdk.core.expressions.unary_expression import UnaryExpression
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.statements.for_loop_statement import ForLoopStatement
-from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
-from codegen.sdk.core.statements.while_statement import WhileStatement
-from codegen.sdk.core.symbol import Symbol
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.class_definition import Class
+from graph_sitter.core.expressions.binary_expression import BinaryExpression
+from graph_sitter.core.expressions.comparison_expression import ComparisonExpression
+from graph_sitter.core.expressions.unary_expression import UnaryExpression
+from graph_sitter.core.external_module import ExternalModule
+from graph_sitter.core.file import SourceFile
+from graph_sitter.core.function import Function
+from graph_sitter.core.statements.for_loop_statement import ForLoopStatement
+from graph_sitter.core.statements.if_block_statement import IfBlockStatement
+from graph_sitter.core.statements.try_catch_statement import TryCatchStatement
+from graph_sitter.core.statements.while_statement import WhileStatement
+from graph_sitter.core.symbol import Symbol
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -37,7 +37,7 @@ from codegen_on_oss.analysis.analysis_import import (
     find_import_cycles,
     find_problematic_import_loops,
 )
-from codegen_on_oss.analysis.codebase_analysis import (
+from graph_sitter.codebase.codebase_analysis import (
     get_class_summary,
     get_codebase_summary,
     get_file_summary,
@@ -46,7 +46,7 @@ from codegen_on_oss.analysis.codebase_analysis import (
 )
 
 # Import from other analysis modules
-from codegen_on_oss.analysis.codebase_context import CodebaseContext
+from graph_sitter.codebase.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalysisResult,
 )
@@ -54,10 +54,8 @@ from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
 # Import new analysis modules
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
-from codegen_on_oss.analysis.document_functions import (
-    document_function,
-)
-from codegen_on_oss.analysis.module_dependencies import (
+from graph_sitter.code_generation.doc_utils.utils import document_function
+from graph_sitter.codebase.module_dependencies import (
     visualize_module_dependencies,
 )
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
