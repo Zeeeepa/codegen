@@ -1,8 +1,4 @@
-"""
-Setup script for the PR static analysis system.
-"""
-
-from setuptools import find_packages, setup
+from setuptools import setup, find_packages
 
 setup(
     name="pr-static-analysis",
@@ -12,18 +8,18 @@ setup(
     author_email="info@codegen.sh",
     packages=find_packages(),
     install_requires=[
-        "pyyaml>=5.1",
+        "pyyaml>=6.0",
     ],
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.11",
     ],
-    python_requires=">=3.7",
 )
+

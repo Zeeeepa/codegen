@@ -4,13 +4,13 @@
 global:
   # Maximum number of issues to report per file
   max_issues_per_file: 10
-  
+
   # Maximum number of issues to report per rule
   max_issues_per_rule: 20
-  
+
   # Whether to include code snippets in the report
   include_code_snippets: true
-  
+
   # Whether to include fix suggestions in the report
   include_fix_suggestions: true
 
@@ -20,42 +20,31 @@ rules:
   syntax-error:
     enabled: true
     severity: error
-  
+
   code-smell:
     enabled: true
     severity: warning
     max_function_length: 50
     max_nesting_depth: 3
-    ignore_magic_numbers: [-1, 0, 1, 2, 100, 1000]
-    min_duplicate_lines: 3
-  
+    ignore_magic_numbers: [-1, 0, 1, 2, 100]
+    min_duplicate_lines: 5
+
   # Parameter validation rules
   unused-parameter:
     enabled: true
     severity: warning
-    ignore_self: true
-    ignore_cls: true
-    ignore_unused_args: true
-    ignore_unused_kwargs: true
-    ignore_private_methods: true
-    ignore_special_methods: true
-  
+
   # Implementation validation rules
   missing-edge-case:
     enabled: true
     severity: warning
-    check_division_by_zero: true
-    check_array_bounds: true
-    check_file_operations: true
-    check_null_references: true
 
-# List of explicitly enabled rules (in addition to those enabled in the rules section)
+# List of explicitly enabled rules
 enabled_rules:
   - syntax-error
   - code-smell
   - unused-parameter
   - missing-edge-case
 
-# List of explicitly disabled rules (overrides enabled settings in the rules section)
+# List of explicitly disabled rules
 disabled_rules: []
-

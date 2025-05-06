@@ -15,10 +15,10 @@ class BaseParameterValidationRule(BaseRule):
     Base class for parameter validation rules.
     
     These rules check for issues related to parameter validation, such as:
-    - Parameter type checking
-    - Parameter usage validation
     - Unused parameters
-    - Parameter naming issues
+    - Parameter type checking
+    - Parameter usage
+    - Parameter naming
     """
     
     @property

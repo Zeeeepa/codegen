@@ -18,7 +18,8 @@ class UnusedParameterRule(BaseParameterValidationRule):
     """
     Rule for detecting unused parameters in functions.
     
-    This rule checks for parameters that are defined but never used within a function.
+    This rule checks for parameters that are defined in a function signature
+    but are not used in the function body.
     """
     
     @property
@@ -34,7 +35,10 @@ class UnusedParameterRule(BaseParameterValidationRule):
     @property
     def description(self) -> str:
         """Get the detailed description of what the rule checks for."""
-        return "Detects parameters that are defined but never used within a function."
+        return (
+            "Detects parameters that are defined in a function signature "
+            "but are not used in the function body."
+        )
     
     @property
     def severity(self) -> RuleSeverity:
@@ -88,8 +92,8 @@ class UnusedParameterRule(BaseParameterValidationRule):
             try:
                 tree = ast.parse(content)
                 
-                # Check for unused parameters
-                results.extend(self._check_unused_parameters(tree, filepath, content))
+                # Find unused parameters
+                results.extend(self._find_unused_parameters(tree, filepath, content))
             
             except SyntaxError:
                 # Skip files with syntax errors (they will be caught by the syntax error rule)
@@ -97,11 +101,11 @@ class UnusedParameterRule(BaseParameterValidationRule):
         
         return results
     
-    def _check_unused_parameters(
+    def _find_unused_parameters(
         self, tree: ast.AST, filepath: str, content: str
     ) -> List[RuleResult]:
         """
-        Check for unused parameters in functions.
+        Find unused parameters in functions.
         
         Args:
             tree: AST of the file
@@ -113,31 +117,23 @@ class UnusedParameterRule(BaseParameterValidationRule):
         """
         results = []
         
-        class FunctionVisitor(ast.NodeVisitor):
-            def __init__(self, rule_config):
-                self.functions_with_unused_params = []
-                self.rule_config = rule_config
+        class UnusedParameterVisitor(ast.NodeVisitor):
+            def __init__(self, rule_config: Dict[str, Any]):
+                self.unused_parameters = []
+                self.config = rule_config
             
             def visit_FunctionDef(self, node):
-                self._check_function(node)
-                self.generic_visit(node)
-            
-            def visit_AsyncFunctionDef(self, node):
-                self._check_function(node)
-                self.generic_visit(node)
-            
-            def _check_function(self, node):
-                # Skip special methods if configured to do so
+                # Skip special methods if configured
                 if (
-                    self.rule_config.get("ignore_special_methods", True)
+                    self.config.get("ignore_special_methods", True)
                     and node.name.startswith("__")
                     and node.name.endswith("__")
                 ):
                     return
                 
-                # Skip private methods if configured to do so
+                # Skip private methods if configured
                 if (
-                    self.rule_config.get("ignore_private_methods", False)
+                    self.config.get("ignore_private_methods", False)
                     and node.name.startswith("_")
                     and not node.name.startswith("__")
                 ):
@@ -146,26 +142,30 @@ class UnusedParameterRule(BaseParameterValidationRule):
                 # Get all parameter names
                 param_names = set()
                 for arg in node.args.args:
-                    # Skip 'self' and 'cls' if configured to do so
+                    # Skip 'self' and 'cls' if configured
                     if (
                         arg.arg == "self"
-                        and self.rule_config.get("ignore_self", True)
+                        and self.config.get("ignore_self", True)
                     ) or (
                         arg.arg == "cls"
-                        and self.rule_config.get("ignore_cls", True)
+                        and self.config.get("ignore_cls", True)
                     ):
                         continue
-                    
                     param_names.add(arg.arg)
                 
-                # Skip *args and **kwargs if configured to do so
-                if not self.rule_config.get("ignore_unused_args", True) and node.args.vararg:
+                # Skip *args and **kwargs if configured
+                if (
+                    node.args.vararg
+                    and not self.config.get("ignore_unused_args", True)
+                ):
                     param_names.add(node.args.vararg.arg)
-                
-                if not self.rule_config.get("ignore_unused_kwargs", True) and node.args.kwarg:
+                if (
+                    node.args.kwarg
+                    and not self.config.get("ignore_unused_kwargs", True)
+                ):
                     param_names.add(node.args.kwarg.arg)
                 
-                # Find all used names in the function body
+                # Find used names in the function body
                 used_names = set()
                 
                 class NameVisitor(ast.NodeVisitor):
@@ -178,31 +178,32 @@ class UnusedParameterRule(BaseParameterValidationRule):
                     NameVisitor().visit(stmt)
                 
                 # Find unused parameters
-                unused_params = param_names - used_names
+                for param in param_names:
+                    if param not in used_names:
+                        self.unused_parameters.append((node, param))
                 
-                if unused_params:
-                    self.functions_with_unused_params.append((node, unused_params))
+                # Continue visiting the function body
+                self.generic_visit(node)
         
-        visitor = FunctionVisitor(self.config)
+        visitor = UnusedParameterVisitor(self.config)
         visitor.visit(tree)
         
-        for node, unused_params in visitor.functions_with_unused_params:
-            for param in unused_params:
-                results.append(
-                    RuleResult(
-                        rule_id=self.id,
-                        severity=self.severity,
-                        message=f"Unused parameter '{param}' in function '{node.name}'",
-                        filepath=filepath,
-                        line=node.lineno,
-                        code_snippet=ast.get_source_segment(content, node),
-                        fix_suggestions=[
-                            f"Remove the unused parameter '{param}'",
-                            f"Rename the parameter to '_{param}' to indicate it's unused",
-                            "Use the parameter in the function body",
-                        ],
-                    )
+        for node, param in visitor.unused_parameters:
+            results.append(
+                RuleResult(
+                    rule_id=self.id,
+                    severity=self.severity,
+                    message=f"Unused parameter '{param}' in function '{node.name}'",
+                    filepath=filepath,
+                    line=node.lineno,
+                    code_snippet=ast.get_source_segment(content, node),
+                    fix_suggestions=[
+                        f"Remove the unused parameter '{param}'",
+                        f"Rename the parameter to '_{param}' to indicate it's unused",
+                        "Use the parameter in the function body",
+                    ],
                 )
+            )
         
         return results
 

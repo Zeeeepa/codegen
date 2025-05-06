@@ -6,9 +6,9 @@ A flexible rule-based system for analyzing pull requests and identifying potenti
 
 The PR Static Analysis System is designed to analyze pull requests for various issues, including:
 
-- **Code Integrity Issues**: Syntax errors, logical issues, code smells, potential bugs
-- **Parameter Validation Issues**: Parameter type checking, parameter usage, unused parameters, parameter naming
-- **Implementation Validation Issues**: Implementation completeness, validation against requirements, missing edge cases, performance issues
+- Code integrity issues (syntax errors, logical issues, code smells, potential bugs)
+- Parameter validation issues (parameter type checking, parameter usage, unused parameters, parameter naming)
+- Implementation validation issues (implementation completeness, validation against requirements, missing edge cases, performance issues)
 
 The system is built around a flexible rule-based architecture that allows for easy customization and extension.
 
@@ -78,4 +78,3 @@ For more detailed documentation, see the [PR Static Analysis README](pr_static_a
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

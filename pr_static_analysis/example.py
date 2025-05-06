@@ -1,152 +1,116 @@
+#!/usr/bin/env python
 """
 Example script for using the PR static analysis system.
-
-This script demonstrates how to use the PR static analysis system to analyze a PR.
 """
 
 import argparse
 import json
-import logging
 import os
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+import yaml
 
 from pr_static_analysis import PRStaticAnalyzer
 from pr_static_analysis.rules import rule_config
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
 
-
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="PR static analysis example")
-    parser.add_argument(
-        "--config",
-        type=str,
-        help="Path to configuration file",
-    )
     parser.add_argument(
         "--pr",
         type=str,
         required=True,
-        help="Path to PR directory or URL",
+        help="Path to the PR directory",
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Path to the configuration file",
     )
     parser.add_argument(
         "--output",
         type=str,
-        help="Path to output file (JSON)",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose logging",
+        default="report.json",
+        help="Path to the output file",
     )
     return parser.parse_args()
 
 
-def load_pr_files(pr_path: str) -> List[Dict]:
-    """
-    Load files from a PR directory.
-    
-    Args:
-        pr_path: Path to PR directory
-    
-    Returns:
-        List of file information dictionaries
-    """
+def load_pr(pr_path: str) -> Dict:
+    """Load PR information from a directory."""
+    # In a real implementation, this would load PR information from a VCS API
+    pr_info = {
+        "title": os.path.basename(pr_path),
+        "description": f"PR in {pr_path}",
+        "author": "example-user",
+        "branch": "feature/example",
+    }
+
+    # Load files
     files = []
-    
-    if os.path.isdir(pr_path):
-        # Load files from directory
-        for root, _, filenames in os.walk(pr_path):
-            for filename in filenames:
-                filepath = os.path.join(root, filename)
-                rel_filepath = os.path.relpath(filepath, pr_path)
-                
-                try:
-                    with open(filepath, "r", encoding="utf-8") as f:
-                        content = f.read()
-                    
-                    files.append(
-                        {
-                            "filepath": rel_filepath,
-                            "content": content,
-                        }
-                    )
-                except Exception as e:
-                    logger.warning(f"Error reading file {filepath}: {e}")
-    else:
-        # Assume it's a URL or other format
-        # In a real implementation, this would fetch the PR from a Git provider
-        logger.error(f"Unsupported PR path: {pr_path}")
-        sys.exit(1)
-    
-    return files
+    for root, _, filenames in os.walk(pr_path):
+        for filename in filenames:
+            filepath = os.path.join(root, filename)
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+            files.append({
+                "filepath": os.path.relpath(filepath, pr_path),
+                "content": content,
+            })
+
+    return {
+        "pr": pr_info,
+        "files": files,
+    }
 
 
-def main():
-    """Run the example script."""
+def main() -> int:
+    """Run the example."""
     args = parse_args()
-    
-    # Configure logging
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    
+
     # Load configuration
-    if args.config:
-        rule_config.load_config_file(args.config)
-    
+    if not os.path.exists(args.config):
+        print(f"Configuration file '{args.config}' does not exist")
+        return 1
+
+    rule_config.load_config_file(args.config)
+
+    # Load PR information
+    if not os.path.exists(args.pr):
+        print(f"PR directory '{args.pr}' does not exist")
+        return 1
+
+    pr_info = load_pr(args.pr)
+
     # Create analyzer
     analyzer = PRStaticAnalyzer()
-    
-    # Load PR files
-    files = load_pr_files(args.pr)
-    logger.info(f"Loaded {len(files)} files from PR")
-    
+
     # Create context
     context = {
-        "files": files,
-        "pr": {
-            "title": "Example PR",
-            "description": "This is an example PR for testing the static analysis system.",
-            "author": "example-user",
-            "branch": "feature/example",
-        },
+        "files": pr_info["files"],
+        "pr": pr_info["pr"],
         "config": rule_config.global_config,
     }
-    
+
     # Analyze PR
-    logger.info("Analyzing PR...")
     results = analyzer.analyze(context)
-    logger.info(f"Found {len(results)} issues")
-    
+
     # Generate report
     report = analyzer.generate_report(results)
-    
-    # Output report
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2)
-        logger.info(f"Report written to {args.output}")
-    else:
-        # Print summary to console
-        print(f"Total issues: {report['summary']['total_issues']}")
-        print("Issues by severity:")
-        for severity, count in report["summary"]["issues_by_severity"].items():
-            print(f"  {severity}: {count}")
-        print("Issues by rule:")
-        for rule_id, count in report["summary"]["issues_by_rule"].items():
-            print(f"  {rule_id}: {count}")
-        print("Issues by file:")
-        for filepath, count in report["summary"]["issues_by_file"].items():
-            print(f"  {filepath}: {count}")
+
+    # Write report to file
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2)
+
+    print(f"Report written to {args.output}")
+    print(f"Found {len(results)} issues")
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 

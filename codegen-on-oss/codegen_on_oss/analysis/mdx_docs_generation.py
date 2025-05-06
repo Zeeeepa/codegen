@@ -1,21 +1,14 @@
-import os
-import re
-from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from codegen import Codebase
+    pass
 
 from codegen.sdk.code_generation.doc_utils.schemas import (
     ClassDoc,
-    MethodDoc,
-    ParameterDoc,
 )
 from codegen.sdk.code_generation.doc_utils.utils import (
-    sanitize_html_for_mdx,
     sanitize_mdx_mintlify_description,
 )
-from codegen.sdk.core.class_definition import Class
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)

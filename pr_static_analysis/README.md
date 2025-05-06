@@ -97,7 +97,7 @@ rules:
   syntax-error:
     enabled: true
     severity: error
-  
+
   code-smell:
     enabled: true
     severity: warning
@@ -118,8 +118,8 @@ disabled_rules: []
 To create a custom rule, follow these steps:
 
 1. Create a new rule class that inherits from `BaseRule` or one of the category-specific base classes.
-2. Implement the required properties and methods.
-3. Register the rule with the rule registry.
+1. Implement the required properties and methods.
+1. Register the rule with the rule registry.
 
 Example:
 
@@ -160,4 +160,3 @@ rule_registry.register(MyCustomRule)
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

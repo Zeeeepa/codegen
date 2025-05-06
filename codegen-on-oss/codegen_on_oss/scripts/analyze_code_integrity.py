@@ -16,7 +16,6 @@ This script analyzes code integrity in a repository, including:
 import argparse
 import json
 import logging
-import os
 import sys
 from typing import Any, Dict, Optional
 
@@ -498,7 +497,7 @@ def generate_html_report(results: Dict[str, Any], output_file: str) -> None:
                 <div class="error-item {severity_class}" data-type="{error.get("type", "")}" data-severity="{error.get("severity", "error")}">
                     <h4>{error.get("error_type", "Unknown Error").replace("_", " ").title()} - {severity_text}</h4>
                     <p>{error.get("message", "No message")}</p>
-                    <p class="location">File: {error.get("filepath", "Unknown")} 
+                    <p class="location">File: {error.get("filepath", "Unknown")}
                         (Line {error.get("line", "N/A")})</p>
                 </div>
         """

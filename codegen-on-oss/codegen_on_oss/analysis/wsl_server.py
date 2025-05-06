@@ -10,7 +10,7 @@ import logging
 import os
 import tempfile
 import traceback
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import uvicorn
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
@@ -62,13 +62,15 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_id = str(uuid.uuid4())  # Generate unique error ID
     logger.error(f"Error ID {error_id}: {str(exc)}")
     logger.error(traceback.format_exc())
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal Server Error",
             "error_id": error_id,
-            "message": str(exc) if os.getenv("DEBUG", "false").lower() == "true" else "An unexpected error occurred",
+            "message": str(exc)
+            if os.getenv("DEBUG", "false").lower() == "true"
+            else "An unexpected error occurred",
         },
     )
 
@@ -208,11 +210,13 @@ async def validate_code(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
+            SnapshotManager(temp_dir)
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshot from repository
-            logger.info(f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})")
+            logger.info(
+                f"Creating snapshot from repository: {request.repo_url} (branch: {request.branch})"
+            )
             snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.repo_url,
                 branch=request.branch,
@@ -277,7 +281,7 @@ async def validate_code(
     except Exception as e:
         logger.error(f"Error validating code: {str(e)}")
         logger.error(traceback.format_exc())
-        
+
         # Return a response with error information
         return CodeValidationResponse(
             repo_url=request.repo_url,
@@ -305,11 +309,13 @@ async def compare_repositories(
         # Create temporary directory for analysis
         with tempfile.TemporaryDirectory() as temp_dir:
             # Initialize snapshot manager
-            snapshot_manager = SnapshotManager(temp_dir)
+            SnapshotManager(temp_dir)
             logger.info(f"Initialized snapshot manager in {temp_dir}")
 
             # Create snapshots from repositories
-            logger.info(f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})")
+            logger.info(
+                f"Creating base snapshot from repository: {request.base_repo_url} (branch: {request.base_branch})"
+            )
             base_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.base_repo_url,
                 branch=request.base_branch,
@@ -317,7 +323,9 @@ async def compare_repositories(
             )
             logger.info(f"Base snapshot created with {len(base_snapshot.files)} files")
 
-            logger.info(f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})")
+            logger.info(
+                f"Creating head snapshot from repository: {request.head_repo_url} (branch: {request.head_branch})"
+            )
             head_snapshot = CodebaseSnapshot.create_from_repo(
                 repo_url=request.head_repo_url,
                 branch=request.head_branch,
@@ -333,11 +341,11 @@ async def compare_repositories(
             logger.info("Analyzing file changes")
             file_changes = diff_analyzer.analyze_file_changes()
             logger.info(f"Found {len(file_changes)} file changes")
-            
+
             logger.info("Analyzing function changes")
             function_changes = diff_analyzer.analyze_function_changes()
             logger.info(f"Found {len(function_changes)} function changes")
-            
+
             logger.info("Analyzing complexity changes")
             complexity_changes = diff_analyzer.analyze_complexity_changes()
             logger.info(f"Found {len(complexity_changes)} complexity changes")
@@ -373,7 +381,7 @@ async def compare_repositories(
     except Exception as e:
         logger.error(f"Error comparing repositories: {str(e)}")
         logger.error(traceback.format_exc())
-        
+
         # Return a response with error information
         return RepoComparisonResponse(
             base_repo_url=request.base_repo_url,
@@ -401,11 +409,15 @@ async def analyze_pull_request(
     """
     try:
         # Initialize SWE harness agent
-        logger.info(f"Initializing SWE harness agent for PR analysis: {request.repo_url}#{request.pr_number}")
+        logger.info(
+            f"Initializing SWE harness agent for PR analysis: {request.repo_url}#{request.pr_number}"
+        )
         agent = SWEHarnessAgent(github_token=request.github_token)
 
         # Analyze pull request
-        logger.info(f"Analyzing pull request: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})")
+        logger.info(
+            f"Analyzing pull request: {request.repo_url}#{request.pr_number} (detailed: {request.detailed})"
+        )
         analysis_results = agent.analyze_pr(
             repo=request.repo_url,
             pr_number=request.pr_number,
@@ -428,7 +440,7 @@ async def analyze_pull_request(
         issues_found = analysis_results.get("issues", [])
         recommendations = analysis_results.get("recommendations", [])
         summary = analysis_results.get("summary", "")
-        
+
         # Get file content if requested
         file_content = None
         if request.include_file_content:
@@ -453,7 +465,7 @@ async def analyze_pull_request(
     except Exception as e:
         logger.error(f"Error analyzing pull request: {str(e)}")
         logger.error(traceback.format_exc())
-        
+
         # Return a response with error information
         return PRAnalysisResponse(
             repo_url=request.repo_url,

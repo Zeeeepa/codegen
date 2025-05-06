@@ -297,6 +297,7 @@ class CodeAnalyzer:
         Convert all function call arguments to keyword arguments.
         """
         from codegen_on_oss.analysis.code_transformations import convert_all_calls_to_kwargs
+
         convert_all_calls_to_kwargs(self.codebase)
 
     def visualize_module_dependencies(self) -> None:
@@ -315,13 +316,16 @@ class CodeAnalyzer:
         Returns:
             MDX documentation as a string
         """
-        from codegen_on_oss.analysis.mdx_docs_generation import create_class_doc, render_mdx_page_for_class
-        
+        from codegen_on_oss.analysis.mdx_docs_generation import (
+            create_class_doc,
+            render_mdx_page_for_class,
+        )
+
         for cls in self.codebase.classes:
             if cls.name == class_name:
                 cls_doc = create_class_doc(cls, self.codebase)
                 return render_mdx_page_for_class(cls_doc)
-        
+
         return f"Class not found: {class_name}"
 
     def print_symbol_attribution(self) -> None:
@@ -439,6 +443,7 @@ class CodeAnalyzer:
             A dictionary with complexity metrics
         """
         from codegen_on_oss.analysis.complexity_analyzer import analyze_codebase_complexity
+
         return analyze_codebase_complexity(self.codebase)
 
     def get_file_dependencies(self, file_path: str) -> Dict[str, List[str]]:
@@ -586,6 +591,7 @@ class CodeAnalyzer:
             A CommitAnalysisResult object
         """
         from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_repo_and_commit
+
         return analyze_commit_from_repo_and_commit(repo_url, commit_hash, base_commit)
 
     @classmethod
@@ -603,6 +609,7 @@ class CodeAnalyzer:
             A CommitAnalysisResult object
         """
         from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_paths
+
         return analyze_commit_from_paths(original_path, commit_path)
 
     def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:

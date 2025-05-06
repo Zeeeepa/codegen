@@ -15,9 +15,9 @@ class BaseImplementationValidationRule(BaseRule):
     Base class for implementation validation rules.
     
     These rules check for issues related to implementation validation, such as:
-    - Implementation completeness
-    - Validation against requirements
     - Missing edge cases
+    - Incomplete implementation
+    - Validation against requirements
     - Performance issues
     """
     

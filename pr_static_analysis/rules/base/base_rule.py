@@ -1,5 +1,4 @@
-"""
-Base rule class for PR static analysis.
+"""Base rule class for PR static analysis.
 
 This module defines the BaseRule abstract class that all rules will inherit from,
 as well as supporting classes and enums for rule configuration and management.
@@ -7,11 +6,12 @@ as well as supporting classes and enums for rule configuration and management.
 
 import abc
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Type, Union
+from typing import Any, Optional
 
 
 class RuleSeverity(str, Enum):
     """Enum for rule severity levels."""
+
     ERROR = "error"
     WARNING = "warning"
     INFO = "info"
@@ -20,6 +20,7 @@ class RuleSeverity(str, Enum):
 
 class RuleCategory(str, Enum):
     """Enum for rule categories."""
+
     CODE_INTEGRITY = "code_integrity"
     PARAMETER_VALIDATION = "parameter_validation"
     IMPLEMENTATION_VALIDATION = "implementation_validation"
@@ -27,9 +28,8 @@ class RuleCategory(str, Enum):
 
 
 class RuleResult:
-    """
-    Class representing the result of a rule analysis.
-    
+    """Class representing the result of a rule analysis.
+
     Attributes:
         rule_id (str): The ID of the rule that produced this result
         severity (RuleSeverity): The severity level of the issue
@@ -41,7 +41,7 @@ class RuleResult:
         fix_suggestions (Optional[List[str]]): Suggestions for fixing the issue
         metadata (Optional[Dict[str, Any]]): Additional metadata about the issue
     """
-    
+
     def __init__(
         self,
         rule_id: str,
@@ -51,8 +51,8 @@ class RuleResult:
         line: Optional[int] = None,
         column: Optional[int] = None,
         code_snippet: Optional[str] = None,
-        fix_suggestions: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        fix_suggestions: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ):
         self.rule_id = rule_id
         self.severity = severity
@@ -63,8 +63,8 @@ class RuleResult:
         self.code_snippet = code_snippet
         self.fix_suggestions = fix_suggestions or []
         self.metadata = metadata or {}
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert the result to a dictionary."""
         return {
             "rule_id": self.rule_id,
@@ -77,9 +77,9 @@ class RuleResult:
             "fix_suggestions": self.fix_suggestions,
             "metadata": self.metadata,
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RuleResult":
+    def from_dict(cls, data: dict[str, Any]) -> "RuleResult":
         """Create a RuleResult from a dictionary."""
         return cls(
             rule_id=data["rule_id"],
@@ -95,11 +95,10 @@ class RuleResult:
 
 
 class BaseRule(abc.ABC):
-    """
-    Abstract base class for all PR static analysis rules.
-    
+    """Abstract base class for all PR static analysis rules.
+
     All rules must inherit from this class and implement the required methods.
-    
+
     Attributes:
         id (str): Unique identifier for the rule
         name (str): Human-readable name for the rule
@@ -110,71 +109,68 @@ class BaseRule(abc.ABC):
         dependencies (Set[str]): IDs of rules that this rule depends on
         config (Dict[str, Any]): Configuration options for the rule
     """
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        """
-        Initialize the rule.
-        
+
+    def __init__(self, config: Optional[dict[str, Any]] = None):
+        """Initialize the rule.
+
         Args:
             config: Optional configuration options to override defaults
         """
         self.config = self.get_default_config()
         if config:
             self.config.update(config)
-    
+
     @property
     @abc.abstractmethod
     def id(self) -> str:
         """Get the unique identifier for the rule."""
         pass
-    
+
     @property
     @abc.abstractmethod
     def name(self) -> str:
         """Get the human-readable name for the rule."""
         pass
-    
+
     @property
     @abc.abstractmethod
     def description(self) -> str:
         """Get the detailed description of what the rule checks for."""
         pass
-    
+
     @property
     @abc.abstractmethod
     def category(self) -> RuleCategory:
         """Get the category of the rule."""
         pass
-    
+
     @property
     def severity(self) -> RuleSeverity:
         """Get the default severity level for issues found by this rule."""
         return RuleSeverity.WARNING
-    
+
     @property
     def enabled(self) -> bool:
         """Get whether the rule is enabled by default."""
         return True
-    
+
     @property
-    def dependencies(self) -> Set[str]:
+    def dependencies(self) -> set[str]:
         """Get the IDs of rules that this rule depends on."""
         return set()
-    
-    def get_default_config(self) -> Dict[str, Any]:
-        """
-        Get the default configuration options for the rule.
-        
+
+    def get_default_config(self) -> dict[str, Any]:
+        """Get the default configuration options for the rule.
+
         Returns:
             A dictionary of configuration options
         """
         return {}
-    
+
     @abc.abstractmethod
-    def analyze(self, context: Dict[str, Any]) -> List[RuleResult]:
-        """
-        Analyze the PR for issues.
-        
+    def analyze(self, context: dict[str, Any]) -> list[RuleResult]:
+        """Analyze the PR for issues.
+
         Args:
             context: Context information for the analysis, including:
                 - codebase: The codebase object
@@ -183,21 +179,19 @@ class BaseRule(abc.ABC):
                 - diff: The diff of the PR
                 - config: Global configuration options
                 - results: Results from dependent rules
-        
+
         Returns:
             A list of RuleResult objects representing issues found
         """
         pass
-    
-    def is_applicable(self, context: Dict[str, Any]) -> bool:
-        """
-        Check if the rule is applicable to the given context.
-        
+
+    def is_applicable(self, context: dict[str, Any]) -> bool:
+        """Check if the rule is applicable to the given context.
+
         Args:
             context: Context information for the analysis
-        
+
         Returns:
             True if the rule is applicable, False otherwise
         """
         return True
-

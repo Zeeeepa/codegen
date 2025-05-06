@@ -2,127 +2,140 @@
 Tests for the PR static analysis rules.
 """
 
-import unittest
+import ast
 from typing import Dict, List
 
-from pr_static_analysis import PRStaticAnalyzer
-from pr_static_analysis.rules import (
-    CodeSmellRule,
-    MissingEdgeCaseRule,
-    SyntaxErrorRule,
-    UnusedParameterRule,
-)
+import pytest
+
+from pr_static_analysis.rules.code_integrity import CodeSmellRule, SyntaxErrorRule
+from pr_static_analysis.rules.implementation_validation import MissingEdgeCaseRule
+from pr_static_analysis.rules.parameter_validation import UnusedParameterRule
 
 
-class TestRules(unittest.TestCase):
-    """Tests for the PR static analysis rules."""
+class TestSyntaxErrorRule:
+    """Tests for the SyntaxErrorRule."""
     
-    def setUp(self):
-        """Set up the test case."""
-        self.analyzer = PRStaticAnalyzer()
-    
-    def test_syntax_error_rule(self):
-        """Test the syntax error rule."""
-        # Create a file with a syntax error
-        context = self._create_context(
-            [
+    def test_valid_syntax(self):
+        """Test that valid syntax doesn't trigger the rule."""
+        rule = SyntaxErrorRule()
+        context = {
+            "files": [
                 {
-                    "filepath": "syntax_error.py",
-                    "content": "def foo(x, y)\n    return x + y",  # Missing colon
+                    "filepath": "test.py",
+                    "content": "def foo():\n    return 42\n",
                 }
             ]
-        )
-        
-        # Analyze the context
-        results = self.analyzer.analyze(context)
-        
-        # Check that the syntax error was detected
-        self.assertGreaterEqual(len(results), 1)
-        self.assertEqual(results[0].rule_id, "syntax-error")
-        self.assertEqual(results[0].filepath, "syntax_error.py")
-    
-    def test_code_smell_rule(self):
-        """Test the code smell rule."""
-        # Create a file with a code smell (long function)
-        context = self._create_context(
-            [
-                {
-                    "filepath": "code_smell.py",
-                    "content": "def foo(x, y):\n" + "    print(x + y)\n" * 101,
-                }
-            ]
-        )
-        
-        # Analyze the context
-        results = self.analyzer.analyze(context)
-        
-        # Check that the code smell was detected
-        self.assertGreaterEqual(len(results), 1)
-        self.assertEqual(results[0].rule_id, "code-smell")
-        self.assertEqual(results[0].filepath, "code_smell.py")
-    
-    def test_unused_parameter_rule(self):
-        """Test the unused parameter rule."""
-        # Create a file with an unused parameter
-        context = self._create_context(
-            [
-                {
-                    "filepath": "unused_parameter.py",
-                    "content": "def foo(x, y):\n    return x",  # y is unused
-                }
-            ]
-        )
-        
-        # Analyze the context
-        results = self.analyzer.analyze(context)
-        
-        # Check that the unused parameter was detected
-        self.assertGreaterEqual(len(results), 1)
-        self.assertEqual(results[0].rule_id, "unused-parameter")
-        self.assertEqual(results[0].filepath, "unused_parameter.py")
-    
-    def test_missing_edge_case_rule(self):
-        """Test the missing edge case rule."""
-        # Create a file with a missing edge case (division by zero)
-        context = self._create_context(
-            [
-                {
-                    "filepath": "missing_edge_case.py",
-                    "content": "def foo(x, y):\n    return x / y",  # No check for y == 0
-                }
-            ]
-        )
-        
-        # Analyze the context
-        results = self.analyzer.analyze(context)
-        
-        # Check that the missing edge case was detected
-        self.assertGreaterEqual(len(results), 1)
-        self.assertEqual(results[0].rule_id, "missing-edge-case")
-        self.assertEqual(results[0].filepath, "missing_edge_case.py")
-    
-    def _create_context(self, files: List[Dict]) -> Dict:
-        """
-        Create a context for testing.
-        
-        Args:
-            files: List of file information dictionaries
-        
-        Returns:
-            A context dictionary
-        """
-        return {
-            "files": files,
-            "pr": {
-                "title": "Test PR",
-                "description": "This is a test PR.",
-                "author": "test-user",
-                "branch": "feature/test",
-            },
-            "config": {},
         }
+        results = rule.analyze(context)
+        assert len(results) == 0
+    
+    def test_invalid_syntax(self):
+        """Test that invalid syntax triggers the rule."""
+        rule = SyntaxErrorRule()
+        context = {
+            "files": [
+                {
+                    "filepath": "test.py",
+                    "content": "def foo()\n    return 42\n",
+                }
+            ]
+        }
+        results = rule.analyze(context)
+        assert len(results) == 1
+        assert results[0].rule_id == "syntax-error"
+        assert results[0].filepath == "test.py"
+        assert results[0].line == 1
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestCodeSmellRule:
+    """Tests for the CodeSmellRule."""
+    
+    def test_long_function(self):
+        """Test that long functions trigger the rule."""
+        rule = CodeSmellRule({"max_function_length": 3})
+        context = {
+            "files": [
+                {
+                    "filepath": "test.py",
+                    "content": "def foo():\n    a = 1\n    b = 2\n    c = 3\n    d = 4\n    return a + b + c + d\n",
+                }
+            ]
+        }
+        results = rule.analyze(context)
+        assert any(
+            result.rule_id == "code-smell" and "too long" in result.message
+            for result in results
+        )
+    
+    def test_magic_numbers(self):
+        """Test that magic numbers trigger the rule."""
+        rule = CodeSmellRule({"ignore_magic_numbers": [0, 1]})
+        context = {
+            "files": [
+                {
+                    "filepath": "test.py",
+                    "content": "def foo():\n    return 42\n",
+                }
+            ]
+        }
+        results = rule.analyze(context)
+        assert any(
+            result.rule_id == "code-smell" and "Magic number: 42" in result.message
+            for result in results
+        )
+
+
+class TestUnusedParameterRule:
+    """Tests for the UnusedParameterRule."""
+    
+    def test_used_parameter(self):
+        """Test that used parameters don't trigger the rule."""
+        rule = UnusedParameterRule()
+        context = {
+            "files": [
+                {
+                    "filepath": "test.py",
+                    "content": "def foo(x):\n    return x\n",
+                }
+            ]
+        }
+        results = rule.analyze(context)
+        assert len(results) == 0
+    
+    def test_unused_parameter(self):
+        """Test that unused parameters trigger the rule."""
+        rule = UnusedParameterRule()
+        context = {
+            "files": [
+                {
+                    "filepath": "test.py",
+                    "content": "def foo(x, y):\n    return x\n",
+                }
+            ]
+        }
+        results = rule.analyze(context)
+        assert len(results) == 1
+        assert results[0].rule_id == "unused-parameter"
+        assert "y" in results[0].message
+
+
+class TestMissingEdgeCaseRule:
+    """Tests for the MissingEdgeCaseRule."""
+    
+    def test_division_by_zero(self):
+        """Test that potential division by zero triggers the rule."""
+        rule = MissingEdgeCaseRule()
+        context = {
+            "files": [
+                {
+                    "filepath": "test.py",
+                    "content": "def foo(x, y):\n    return x / y\n",
+                }
+            ]
+        }
+        results = rule.analyze(context)
+        assert any(
+            result.rule_id == "missing-edge-case" and "division by zero" in result.message.lower()
+            for result in results
+        )
 

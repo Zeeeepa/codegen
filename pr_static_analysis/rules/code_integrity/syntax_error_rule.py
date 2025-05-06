@@ -1,5 +1,5 @@
 """
-Rule for detecting syntax errors in code.
+Rule for detecting syntax errors.
 
 This module provides a rule for detecting syntax errors in code.
 """
@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 class SyntaxErrorRule(BaseCodeIntegrityRule):
     """
-    Rule for detecting syntax errors in Python code.
+    Rule for detecting syntax errors in code.
     
-    This rule parses Python files to detect syntax errors.
+    This rule checks for syntax errors in Python files.
     """
     
     @property
@@ -34,7 +34,7 @@ class SyntaxErrorRule(BaseCodeIntegrityRule):
     @property
     def description(self) -> str:
         """Get the detailed description of what the rule checks for."""
-        return "Detects syntax errors in Python code by attempting to parse the files."
+        return "Detects syntax errors in Python files."
     
     @property
     def severity(self) -> RuleSeverity:
@@ -72,20 +72,31 @@ class SyntaxErrorRule(BaseCodeIntegrityRule):
             try:
                 ast.parse(content)
             except SyntaxError as e:
-                # Create a result for the syntax error
+                # Get the line with the syntax error
+                lines = content.split("\n")
+                line_index = e.lineno - 1
+                line = lines[line_index] if 0 <= line_index < len(lines) else ""
+                
+                # Create a code snippet with context
+                start_line = max(0, line_index - 2)
+                end_line = min(len(lines), line_index + 3)
+                code_snippet = "\n".join(lines[start_line:end_line])
+                
+                # Add a result for the syntax error
                 results.append(
                     RuleResult(
                         rule_id=self.id,
                         severity=self.severity,
-                        message=f"Syntax error: {str(e)}",
+                        message=f"Syntax error: {e.msg}",
                         filepath=filepath,
                         line=e.lineno,
                         column=e.offset,
-                        code_snippet=e.text,
+                        code_snippet=code_snippet,
                         fix_suggestions=[
-                            "Check for missing parentheses, brackets, or quotes",
-                            "Ensure proper indentation",
-                            "Verify that all keywords are spelled correctly",
+                            "Fix the syntax error according to Python syntax rules",
+                            "Check for missing or extra parentheses, brackets, or braces",
+                            "Check for indentation issues",
+                            "Check for missing colons in control flow statements",
                         ],
                     )
                 )

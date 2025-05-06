@@ -1,4 +1,1 @@
-"""
-Codegen package initialization.
-"""
-
+"""Codegen package initialization."""

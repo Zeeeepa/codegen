@@ -1,7 +1,7 @@
 """
-Base package for PR static analysis rules.
+Base classes and utilities for PR static analysis rules.
 
-This package provides the base classes and utilities for PR static analysis rules.
+This module provides the base classes and utilities for defining and managing rules.
 """
 
 from pr_static_analysis.rules.base.base_rule import (
@@ -10,17 +10,15 @@ from pr_static_analysis.rules.base.base_rule import (
     RuleResult,
     RuleSeverity,
 )
-from pr_static_analysis.rules.base.rule_config import RuleConfig, rule_config
-from pr_static_analysis.rules.base.rule_registry import RuleRegistry, rule_registry
+from pr_static_analysis.rules.base.rule_config import rule_config
+from pr_static_analysis.rules.base.rule_registry import rule_registry
 
 __all__ = [
     "BaseRule",
     "RuleCategory",
     "RuleResult",
     "RuleSeverity",
-    "RuleRegistry",
-    "rule_registry",
-    "RuleConfig",
     "rule_config",
+    "rule_registry",
 ]
 

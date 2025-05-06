@@ -11,10 +11,9 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, Any, Optional
 
-from codegen_on_oss.analysis.wsl_server import run_server
 from codegen_on_oss.analysis.wsl_deployment import WSLDeployment
+from codegen_on_oss.analysis.wsl_server import run_server
 
 # Configure logging
 logging.basicConfig(
@@ -77,13 +76,17 @@ def parse_args() -> argparse.Namespace:
         help="Stop the server if it's running",
     )
     return parser.parse_args()
+
+
 from typing import Protocol
+
 
 class Deployer(Protocol):
     def check_wsl_installed(self) -> bool: ...
     def check_distro_installed(self) -> bool: ...
     def install_dependencies(self) -> bool: ...
     def deploy_server(self) -> bool: ...
+
 
 def deploy_server(args: argparse.Namespace, deployer_class: Type[Deployer] = WSLDeployment) -> bool:
     try:
@@ -210,4 +213,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

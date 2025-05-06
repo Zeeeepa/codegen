@@ -1,4 +1,4 @@
 """
-Tests package initialization.
+Tests for the PR static analysis system.
 """
 

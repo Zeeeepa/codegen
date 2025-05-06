@@ -585,7 +585,7 @@ class CodeIntegrityAnalyzer:
                                             "line": call.line_range[0],
                                             "message": (
                                                 f"Function '{func.name}' passes "
-                                                f"\"{callback_func.name}\" as a callback, "
+                                                f'"{callback_func.name}" as a callback, '
                                                 f"but it has no parameters"
                                             ),
                                         }
