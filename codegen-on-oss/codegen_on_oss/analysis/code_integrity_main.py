@@ -7,7 +7,7 @@ main CodeAnalyzer class, allowing for seamless code integrity analysis.
 
 from typing import Any, Dict, Optional
 
-from codegen import Codebase
+from graph_sitter.core.codebase import Codebase
 
 from codegen_on_oss.analysis.analysis import CodeAnalyzer
 from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer

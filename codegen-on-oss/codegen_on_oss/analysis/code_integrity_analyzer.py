@@ -13,14 +13,14 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.codebase import Codebase
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_statement import Import
-from codegen.sdk.core.source_file import SourceFile
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
+from graph_sitter.core.class_definition import Class
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.external_module import ExternalModule
+from graph_sitter.core.function import Function
+from graph_sitter.core.import_statement import Import
+from graph_sitter.core.file import SourceFile
+from graph_sitter.core.symbol import Symbol
+from graph_sitter.core.enums import EdgeType, SymbolType
 
 logger = logging.getLogger(__name__)
 
