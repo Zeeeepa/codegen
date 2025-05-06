@@ -513,9 +513,9 @@ class CodebaseContext:
                 # Reparse dependencies during syncs if the flag is set
                 logger.info("> Reparsing dependencies")
                 self.dependency_manager.reparse(async_start=False)
- 
+
         # Start the language engine. This may or may not run asynchronously, \
- 
+
         # depending on the implementation
         if self.language_engine is not None:
             # Check if its inital start or a reparse
@@ -526,7 +526,10 @@ class CodebaseContext:
                 logger.info("> Reparsing language engine")
                 self.language_engine.reparse(async_start=False)
 
-        # Step 1: Wait for dependency manager and language engines to finish before graph construction
+ 
+        # Step 1: Wait for dependency manager and language engines to finish \
+ 
+        # before graph construction
         if self.dependency_manager is not None:
             self.dependency_manager.wait_until_ready(ignore_error=self.config.ignore_process_errors)
         if self.language_engine is not None:
