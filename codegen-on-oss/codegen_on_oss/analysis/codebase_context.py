@@ -268,7 +268,9 @@ class CodebaseContext:
             ):
                 syncs[SyncType.ADD].append(self.to_absolute(filepath))
         logger.info(
-            f"> Parsing {len(syncs[SyncType.ADD])} files in {self.projects[0].subdirectories or 'ALL'} subdirectories with {self.extensions} extensions"
+            f"> Parsing {len(syncs[SyncType.ADD])} files in "
+            f"{self.projects[0].subdirectories or 'ALL'} subdirectories with "
+            f"{self.extensions} extensions"
         )
         self._process_diff_files(syncs, incremental=False)
         files: list[SourceFile] = self.get_nodes(NodeType.FILE)
