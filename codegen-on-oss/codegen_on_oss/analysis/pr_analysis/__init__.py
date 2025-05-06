@@ -1,26 +1,24 @@
 """
-PR Static Analysis System
+PR static analysis system.
 
-This package provides a comprehensive system for analyzing pull requests
-and providing feedback on code quality, potential issues, and suggested improvements.
+This package provides a system for static analysis of pull requests.
+It includes components for analyzing code changes, applying rules,
+and generating reports.
 
-The system is organized into several modules:
-- core: Core components for PR analysis orchestration
-- git: Git integration components for repository and PR data access
-- rules: Analysis rules that can be applied to PRs
-- reporting: Components for generating and formatting analysis reports
-- utils: Utility functions for diff analysis and configuration management
+The system is designed to be extensible, allowing for the addition of
+new rules, report formats, and Git providers.
+
+Main components:
+- Core: Main orchestration components
+- Git: Git integration components
+- Reporting: Report generation and formatting components
+- Rules: Analysis rules
+- Utils: Utility functions
 """
 
-from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
-from codegen_on_oss.analysis.pr_analysis.core.analysis_context import AnalysisContext
-from codegen_on_oss.analysis.pr_analysis.core.rule_engine import RuleEngine
+from codegen_on_oss.analysis.pr_analysis.core import PRAnalyzer
 
 __all__ = [
     'PRAnalyzer',
-    'AnalysisContext',
-    'RuleEngine',
 ]
-
-__version__ = '0.1.0'
 

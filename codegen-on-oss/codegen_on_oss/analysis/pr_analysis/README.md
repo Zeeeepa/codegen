@@ -1,254 +1,123 @@
 # PR Static Analysis System
 
-This package provides a comprehensive system for analyzing pull requests and providing feedback on code quality, potential issues, and suggested improvements.
+This directory contains the PR static analysis system, which is designed to analyze pull requests and provide feedback on code quality, implementation, and potential issues.
 
-## Overview
+## System Overview
 
-The PR Static Analysis System is designed to analyze pull requests and provide feedback on various aspects of code quality, including:
+The PR static analysis system is designed to analyze pull requests and provide feedback on code quality, implementation, and potential issues. It is built with extensibility in mind, allowing for the addition of new rules, report formats, and Git providers.
 
-- Code style and formatting
-- Test coverage
-- Security vulnerabilities
-- Parameter types and validation
-- Performance issues
-- Error handling
-- Documentation
+The system works by:
 
-The system is modular and extensible, allowing for easy addition of new analysis rules and customization of existing ones.
+1. Retrieving pull request information from GitHub
+1. Cloning the repository and checking out the PR branch
+1. Analyzing the code changes using a set of rules
+1. Generating a report with findings and recommendations
+1. Posting the report as a comment on the PR
 
-## Architecture
+## Directory Structure
 
-The system is organized into several modules:
+The system is organized into the following directories:
 
-- **core**: Core components for PR analysis orchestration
-  - `pr_analyzer.py`: Main PR analysis orchestrator
-  - `rule_engine.py`: Engine for applying analysis rules
-  - `analysis_context.py`: Context for PR analysis
+- `core/`: Core components for orchestrating the analysis process
+- `git/`: Git integration components for interacting with repositories and GitHub
+- `reporting/`: Components for generating and formatting reports
+- `rules/`: Analysis rules for evaluating code changes
+- `utils/`: Utility functions for configuration, diff analysis, etc.
 
-- **git**: Git integration components
-  - `repo_operator.py`: Wrapper around GitPython
-  - `github_client.py`: Wrapper around PyGithub
-  - `models.py`: PR data models
+## Core Components
 
-- **rules**: Analysis rules
-  - `base_rule.py`: Base class for analysis rules
-  - `code_integrity_rules.py`: Rules for code integrity
-  - `parameter_rules.py`: Rules for parameter validation
-  - `implementation_rules.py`: Rules for implementation validation
+The core components are responsible for orchestrating the analysis process:
 
-- **reporting**: Reporting components
-  - `report_generator.py`: Generator for analysis reports
-  - `report_formatter.py`: Formatter for analysis reports
-  - `visualization.py`: Visualization components
+- `PRAnalyzer`: Main orchestrator for PR analysis
+- `RuleEngine`: Engine for loading and running analysis rules
+- `AnalysisContext`: Context object for PR analysis
 
-- **utils**: Utility functions
-  - `diff_utils.py`: Utilities for diff analysis
-  - `config_utils.py`: Utilities for configuration management
+## Git Components
 
-## Component Interfaces
+The Git components are responsible for interacting with repositories and GitHub:
 
-### Core and Git Interface
+- `GitHubClient`: Client for interacting with GitHub API
+- `RepoOperator`: Operator for Git repository operations
+- `Models`: Data models for Git entities
 
-The PR analyzer interacts with Git components through the following interfaces:
+## Reporting Components
 
-```python
-# In pr_analyzer.py
-self.github_client = GitHubClient(token=token, api_url=api_url)
-repository = self.github_client.get_repository(repo_url)
-pull_request = self.github_client.get_pull_request(repository, pr_number)
-self.repo_operator = RepoOperator(repository, git_config)
-self.repo_operator.prepare_repository()
-self.repo_operator.checkout_pull_request(pull_request)
-```
+The reporting components are responsible for generating and formatting reports:
 
-### Core and Rules Interface
+- `ReportGenerator`: Generator for analysis reports
+- `ReportFormatter`: Formatter for analysis reports
 
-The rule engine loads and applies rules through the following interfaces:
+## Rules
 
-```python
-# In pr_analyzer.py
-self.rule_engine = RuleEngine(self.context)
-self.rule_engine.load_rules_from_config(rules_config)
-rule_results = self.rule_engine.run_all_rules()
+The rules are responsible for evaluating code changes:
 
-# In rule_engine.py
-def load_rule(self, rule_class: Type[BaseRule]) -> BaseRule:
-    rule = rule_class(self.context)
-    self.rules[rule.rule_id] = rule
-    return rule
+- `BaseRule`: Base class for all rules
 
-def run_all_rules(self) -> Dict[str, Dict[str, Any]]:
-    results = {}
-    for rule_id, rule in self.rules.items():
-        results[rule_id] = rule.run()
-    return results
-```
+## Utilities
 
-### Core and Reporting Interface
+The utilities provide common functionality:
 
-Analysis results are passed to reporting components through the following interfaces:
-
-```python
-# In pr_analyzer.py
-self.report_generator = ReportGenerator(self.context)
-report = self.report_generator.generate_report(rule_results)
-report_markdown = self.report_generator.format_report_for_github(report)
-```
-
-### Git and Reporting Interface
-
-Git data is used in reports through the analysis context:
-
-```python
-# In report_generator.py
-def generate_report(self, rule_results: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-    # Access repository and PR data from context
-    repo_name = self.context.repository.full_name
-    pr_number = self.context.pull_request.number
-    pr_title = self.context.pull_request.title
-    # Generate report using this data
-```
-
-## Configuration Management
-
-The system supports multiple configuration sources:
-
-1. **Default Configuration**: Provided by `get_default_config()` in `config_utils.py`
-2. **Configuration Files**: JSON or YAML files loaded with `load_config()`
-3. **Environment Variables**: Loaded with `get_config_from_env()`
-4. **User-defined Overrides**: Merged with `merge_configs()`
-
-Configuration options include:
-
-- **GitHub API Access**: Token and API URL
-- **Analysis Rules**: Which rules to apply and their configurations
-- **Reporting**: Format and destination for reports
-- **Performance Settings**: Timeouts and concurrency
-
-Example configuration file (YAML):
-
-```yaml
-github:
-  token: your-github-token
-  api_url: https://api.github.com
-
-git:
-  repo_path: /path/to/repos
-
-rules:
-  - rule_path: codegen_on_oss.analysis.pr_analysis.rules.code_integrity_rules.CodeStyleRule
-    config:
-      severity: medium
-      include_patterns:
-        - '.*\.(py|js|ts|tsx|jsx)$'
-      exclude_patterns:
-        - '.*\.(json|md|txt|csv|yml|yaml)$'
-      max_line_length: 100
-      check_trailing_whitespace: true
-      check_final_newline: true
-      warning_threshold: 5
-
-reporting:
-  format: markdown
-  post_to_github: true
-
-performance:
-  timeout: 300
-  concurrency: 4
-```
-
-## Dependency Management
-
-### Internal Dependencies
-
-- **Core** depends on **Git**, **Rules**, and **Reporting**
-- **Rules** depend on **Core** (for context) and **Utils**
-- **Reporting** depends on **Core** (for context)
-- **Utils** has no dependencies on other modules
-
-### External Dependencies
-
-The system depends on the following external libraries:
-
-- **PyGithub**: For GitHub API integration
-- **GitPython**: For Git operations
-- **PyYAML**: For YAML configuration file support
-
-These dependencies are listed in `requirements.txt`.
+- `ConfigUtils`: Utilities for configuration management
+- `DiffUtils`: Utilities for diff analysis
 
 ## Usage
 
-### Basic Usage
+To use the PR static analysis system, you can use the `PRAnalyzer` class:
 
 ```python
-from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
+from codegen_on_oss.analysis.pr_analysis import PRAnalyzer
 
-# Create PR analyzer
+# Create a PR analyzer
 analyzer = PRAnalyzer()
 
-# Run analysis
-analyzer.initialize("https://github.com/owner/repo", 123)
-results = analyzer.analyze()
+# Run analysis on a PR
+results = analyzer.run("owner/repo", 123)
 
-# Post results to GitHub
-analyzer.post_results(results)
+# Print the report
+print(results["report"])
 ```
 
-### With Configuration
-
-```python
-from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
-
-# Create PR analyzer with configuration file
-analyzer = PRAnalyzer("config.yaml")
-
-# Run analysis
-analyzer.initialize("https://github.com/owner/repo", 123)
-results = analyzer.analyze()
-```
-
-## Adding New Rules
-
-To add a new analysis rule:
-
-1. Create a new rule class that inherits from `BaseRule`:
-
-```python
-from codegen_on_oss.analysis.pr_analysis.rules.base_rule import BaseRule
-
-class MyRule(BaseRule):
-    rule_id = 'my_rule'
-    name = 'My Rule'
-    description = 'My custom analysis rule'
-    
-    def run(self):
-        # Implement rule logic
-        return self.success("Rule passed successfully")
-```
-
-2. Add the rule to your configuration:
-
-```yaml
-rules:
-  - rule_path: path.to.your.module.MyRule
-    config:
-      severity: medium
-      # Other rule-specific configuration
-```
-
-## End-to-End Testing
-
-The system includes an end-to-end test in `test_e2e.py` that demonstrates how to use the PR analysis system:
+You can also use the `test_e2e.py` script to run analysis from the command line:
 
 ```bash
-# Set GitHub token
-export GITHUB_TOKEN=your-github-token
-
-# Run test
-python -m codegen_on_oss.analysis.pr_analysis.test_e2e https://github.com/owner/repo 123
+python -m codegen_on_oss.analysis.pr_analysis.test_e2e owner/repo 123
 ```
+
+## Configuration
+
+The system can be configured using a configuration file or environment variables. The configuration includes:
+
+- GitHub API token and URL
+- Git repository path
+- Rules to apply
+- Reporting format and options
+- Performance settings
+
+See `utils/config_utils.py` for more details on configuration options.
+
+## Extending the System
+
+The system is designed to be extensible. You can:
+
+- Add new rules by subclassing `BaseRule`
+- Add new report formats by extending `ReportFormatter`
+- Add new Git providers by implementing similar interfaces to `GitHubClient`
+- Add new visualizations by extending the reporting components
+
+See `EXTENDING.md` for more details on extending the system.
+
+## Dependencies
+
+The system depends on the following external libraries:
+
+- `PyGithub`: For interacting with the GitHub API
+- `GitPython`: For Git operations
+- `PyYAML`: For configuration file parsing
+
+## Testing
+
+The system includes a simple end-to-end test in `test_e2e.py` that demonstrates how to use the system.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
+This code is licensed under the same license as the parent project.

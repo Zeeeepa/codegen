@@ -2,27 +2,14 @@
 Utility functions for PR analysis.
 
 This module provides utility functions for PR analysis:
-- diff_utils: Utilities for diff analysis
-- config_utils: Utilities for configuration management
+- ConfigUtils: Utilities for configuration management
+- DiffUtils: Utilities for diff analysis
 """
 
-from codegen_on_oss.analysis.pr_analysis.utils.diff_utils import (
-    parse_diff,
-    get_changed_lines,
-    get_file_diff,
-)
-from codegen_on_oss.analysis.pr_analysis.utils.config_utils import (
-    load_config,
-    save_config,
-    merge_configs,
-)
+from codegen_on_oss.analysis.pr_analysis.utils.config_utils import load_config, get_default_config
 
 __all__ = [
-    'parse_diff',
-    'get_changed_lines',
-    'get_file_diff',
     'load_config',
-    'save_config',
-    'merge_configs',
+    'get_default_config',
 ]
 

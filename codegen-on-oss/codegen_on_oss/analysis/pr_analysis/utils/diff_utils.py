@@ -1,227 +1,176 @@
 """
-Utilities for diff analysis.
+Diff utilities for PR analysis.
 
-This module provides utility functions for analyzing diffs, including
-parsing diffs, extracting changed lines, and getting file diffs.
+This module provides utilities for analyzing code diffs.
 """
 
+import difflib
 import logging
-import re
-from typing import Dict, List, Optional, Any, Tuple, Set
-
+from typing import Dict, List, Tuple, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
-def parse_diff(diff: str) -> Dict[str, Dict[str, Any]]:
+def parse_diff(diff_text: str) -> Dict[str, Dict[str, Any]]:
     """
-    Parse a Git diff.
-    
+    Parse a diff text into a structured format.
+
     Args:
-        diff: Git diff string
-        
+        diff_text: Diff text
+
     Returns:
-        Dictionary of file diffs by filename
+        Dictionary mapping file paths to diff information
     """
-    logger.debug("Parsing diff")
-    
-    file_diffs = {}
+    result = {}
     current_file = None
     current_hunks = []
-    
-    # Split diff into lines
-    lines = diff.splitlines()
-    
-    # Parse diff
-    for line in lines:
-        # Check for file header
-        file_header_match = re.match(r'^diff --git a/(.*) b/(.*)$', line)
-        if file_header_match:
-            # Save previous file diff
+    current_hunk = None
+    current_hunk_lines = []
+
+    for line in diff_text.splitlines():
+        if line.startswith("diff --git"):
+            # Start of a new file
             if current_file:
-                file_diffs[current_file] = {
-                    'hunks': current_hunks,
-                    'binary': False,
-                }
-            
-            # Start new file diff
-            current_file = file_header_match.group(1)
-            current_hunks = []
-            continue
-        
-        # Check for binary file
-        if line.startswith('Binary files '):
-            if current_file:
-                file_diffs[current_file] = {
-                    'hunks': [],
-                    'binary': True,
-                }
-            continue
-        
-        # Check for hunk header
-        hunk_header_match = re.match(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', line)
-        if hunk_header_match:
-            old_start = int(hunk_header_match.group(1))
-            old_count = int(hunk_header_match.group(2) or 1)
-            new_start = int(hunk_header_match.group(3))
-            new_count = int(hunk_header_match.group(4) or 1)
-            
-            current_hunks.append({
-                'old_start': old_start,
-                'old_count': old_count,
-                'new_start': new_start,
-                'new_count': new_count,
-                'lines': [],
-            })
-            continue
-        
-        # Add line to current hunk
-        if current_hunks:
-            current_hunks[-1]['lines'].append(line)
-    
-    # Save last file diff
-    if current_file:
-        file_diffs[current_file] = {
-            'hunks': current_hunks,
-            'binary': False,
-        }
-    
-    return file_diffs
+                # Save the previous file
+                result[current_file]["hunks"] = current_hunks
+                current_hunks = []
+
+            # Extract the file path
+            parts = line.split(" ")
+            a_file = parts[2][2:]  # Remove "a/"
+            b_file = parts[3][2:]  # Remove "b/"
+            current_file = b_file
+
+            result[current_file] = {
+                "a_file": a_file,
+                "b_file": b_file,
+                "hunks": [],
+            }
+        elif line.startswith("@@"):
+            # Start of a new hunk
+            if current_hunk:
+                # Save the previous hunk
+                current_hunk["lines"] = current_hunk_lines
+                current_hunks.append(current_hunk)
+                current_hunk_lines = []
+
+            # Parse the hunk header
+            parts = line.split(" ")
+            a_range = parts[1]
+            b_range = parts[2]
+
+            a_start = int(a_range.split(",")[0][1:])
+            a_count = int(a_range.split(",")[1]) if "," in a_range else 1
+
+            b_start = int(b_range.split(",")[0][1:])
+            b_count = int(b_range.split(",")[1]) if "," in b_range else 1
+
+            current_hunk = {
+                "a_start": a_start,
+                "a_count": a_count,
+                "b_start": b_start,
+                "b_count": b_count,
+                "lines": [],
+            }
+        elif current_hunk is not None:
+            # Add the line to the current hunk
+            current_hunk_lines.append(line)
+
+    # Save the last file and hunk
+    if current_file and current_hunk:
+        current_hunk["lines"] = current_hunk_lines
+        current_hunks.append(current_hunk)
+        result[current_file]["hunks"] = current_hunks
+
+    return result
 
 
-def get_changed_lines(diff: str) -> Dict[str, Dict[str, Set[int]]]:
+def get_changed_lines(diff_info: Dict[str, Dict[str, Any]]) -> Dict[str, List[int]]:
     """
-    Get changed lines from a Git diff.
-    
+    Get the lines that were changed in a diff.
+
     Args:
-        diff: Git diff string
-        
+        diff_info: Diff information from parse_diff
+
     Returns:
-        Dictionary of changed lines by filename
+        Dictionary mapping file paths to lists of changed line numbers
     """
-    logger.debug("Getting changed lines from diff")
-    
-    changed_lines = {}
-    
-    # Parse diff
-    file_diffs = parse_diff(diff)
-    
-    # Extract changed lines
-    for filename, file_diff in file_diffs.items():
-        if file_diff['binary']:
-            continue
-        
-        added_lines = set()
-        removed_lines = set()
-        
-        for hunk in file_diff['hunks']:
-            old_line = hunk['old_start']
-            new_line = hunk['new_start']
-            
-            for line in hunk['lines']:
-                if line.startswith('+'):
-                    added_lines.add(new_line)
-                    new_line += 1
-                elif line.startswith('-'):
-                    removed_lines.add(old_line)
-                    old_line += 1
+    result = {}
+
+    for file_path, file_diff in diff_info.items():
+        changed_lines = []
+
+        for hunk in file_diff["hunks"]:
+            b_line = hunk["b_start"]
+
+            for line in hunk["lines"]:
+                if line.startswith("+"):
+                    changed_lines.append(b_line)
+                    b_line += 1
+                elif line.startswith("-"):
+                    # Line was removed, don't increment b_line
+                    pass
                 else:
-                    old_line += 1
-                    new_line += 1
-        
-        changed_lines[filename] = {
-            'added': added_lines,
-            'removed': removed_lines,
+                    b_line += 1
+
+        result[file_path] = changed_lines
+
+    return result
+
+
+def get_diff_stats(diff_info: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    """
+    Get statistics for a diff.
+
+    Args:
+        diff_info: Diff information from parse_diff
+
+    Returns:
+        Dictionary mapping file paths to diff statistics
+    """
+    result = {}
+
+    for file_path, file_diff in diff_info.items():
+        additions = 0
+        deletions = 0
+
+        for hunk in file_diff["hunks"]:
+            for line in hunk["lines"]:
+                if line.startswith("+"):
+                    additions += 1
+                elif line.startswith("-"):
+                    deletions += 1
+
+        result[file_path] = {
+            "additions": additions,
+            "deletions": deletions,
+            "changes": additions + deletions,
         }
-    
-    return changed_lines
+
+    return result
 
 
-def get_file_diff(diff: str, filename: str) -> Optional[str]:
+def generate_diff(original_text: str, modified_text: str, context_lines: int = 3) -> str:
     """
-    Get the diff for a specific file.
-    
+    Generate a diff between two texts.
+
     Args:
-        diff: Git diff string
-        filename: Filename to get diff for
-        
+        original_text: Original text
+        modified_text: Modified text
+        context_lines: Number of context lines to include
+
     Returns:
-        File diff or None if not found
+        Diff text
     """
-    logger.debug(f"Getting diff for file: {filename}")
-    
-    # Split diff into file diffs
-    file_diffs = diff.split('diff --git ')
-    
-    # Find the diff for the specified file
-    for file_diff in file_diffs:
-        if not file_diff:
-            continue
-        
-        # Check if this is the diff for the specified file
-        file_match = re.match(r'^a/(.*) b/(.*)$', file_diff.splitlines()[0])
-        if file_match and (file_match.group(1) == filename or file_match.group(2) == filename):
-            return 'diff --git ' + file_diff
-    
-    return None
+    original_lines = original_text.splitlines()
+    modified_lines = modified_text.splitlines()
 
+    diff = difflib.unified_diff(
+        original_lines,
+        modified_lines,
+        n=context_lines,
+        lineterm="",
+    )
 
-def get_line_ranges_from_diff(diff: str) -> Dict[str, List[Tuple[int, int]]]:
-    """
-    Get line ranges from a Git diff.
-    
-    Args:
-        diff: Git diff string
-        
-    Returns:
-        Dictionary of line ranges by filename
-    """
-    logger.debug("Getting line ranges from diff")
-    
-    line_ranges = {}
-    
-    # Parse diff
-    file_diffs = parse_diff(diff)
-    
-    # Extract line ranges
-    for filename, file_diff in file_diffs.items():
-        if file_diff['binary']:
-            continue
-        
-        ranges = []
-        
-        for hunk in file_diff['hunks']:
-            new_start = hunk['new_start']
-            new_count = hunk['new_count']
-            
-            if new_count > 0:
-                ranges.append((new_start, new_start + new_count - 1))
-        
-        line_ranges[filename] = ranges
-    
-    return line_ranges
-
-
-def get_context_lines(content: str, line_number: int, context_lines: int = 3) -> Tuple[int, int, List[str]]:
-    """
-    Get context lines around a specific line.
-    
-    Args:
-        content: File content
-        line_number: Line number to get context for
-        context_lines: Number of context lines before and after
-        
-    Returns:
-        Tuple of (start_line, end_line, context_lines)
-    """
-    logger.debug(f"Getting context lines for line {line_number}")
-    
-    lines = content.splitlines()
-    
-    start_line = max(1, line_number - context_lines)
-    end_line = min(len(lines), line_number + context_lines)
-    
-    context = lines[start_line - 1:end_line]
-    
-    return start_line, end_line, context
+    return "\n".join(diff)
 
