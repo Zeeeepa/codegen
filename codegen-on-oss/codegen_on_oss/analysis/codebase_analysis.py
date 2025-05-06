@@ -1,11 +1,11 @@
-from codegen.sdk.core.class_definition import Class
-from codegen.sdk.core.codebase import Codebase
-from codegen.sdk.core.external_module import ExternalModule
-from codegen.sdk.core.file import SourceFile
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.import_resolution import Import
-from codegen.sdk.core.symbol import Symbol
-from codegen.sdk.enums import EdgeType, SymbolType
+from graph_sitter.core.class_definition import Class
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.external_module import ExternalModule
+from graph_sitter.core.file import SourceFile
+from graph_sitter.core.function import Function
+from graph_sitter.core.import_resolution import Import
+from graph_sitter.core.symbol import Symbol
+from graph_sitter.enums import EdgeType, SymbolType
 
 
 def get_codebase_summary(codebase: Codebase) -> str:
@@ -21,7 +21,8 @@ def get_codebase_summary(codebase: Codebase) -> str:
 """
     edge_summary = f"""Contains {len(codebase.ctx.edges)} edges
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.SYMBOL_USAGE])} symbol -> used symbol
-- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} import -> used symbol
+- {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.IMPORT_SYMBOL_RESOLUTION])} \
+import -> used symbol
 - {len([x for x in codebase.ctx.edges if x[2].type == EdgeType.EXPORT])} export -> exported symbol
     """
 
