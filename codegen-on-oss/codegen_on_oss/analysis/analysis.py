@@ -47,10 +47,10 @@ from graph_sitter.codebase.codebase_analysis import (
 
 # Import from other analysis modules
 from graph_sitter.codebase.codebase_context import CodebaseContext
-from codegen_on_oss.analysis.commit_analysis import (
+from codegen_on_oss.analysis.commit_analyzer import (
+    CommitAnalyzer,
     CommitAnalysisResult,
 )
-from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
 # Import new analysis modules
 from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
@@ -566,7 +566,16 @@ class CodeAnalyzer:
         analyzer = CommitAnalyzer(original_codebase=self.codebase, commit_codebase=commit_codebase)
 
         # Analyze the commit
-        return analyzer.analyze_commit()
+        results = analyzer.analyze_commit()
+        return CommitAnalysisResult(
+            is_properly_implemented=results["quality_assessment"]["is_properly_implemented"],
+            issues=[],  # Convert issues from dict to CommitAnalysisIssue objects
+            metrics_diff=results["metrics_diff"],
+            files_added=results["files_added"],
+            files_modified=results["files_modified"],
+            files_removed=results["files_removed"],
+            summary=None,  # Will be generated when get_summary is called
+        )
 
     @classmethod
     def analyze_commit_from_repo_and_commit(

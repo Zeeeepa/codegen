@@ -394,7 +394,8 @@ class CodeIntegrityAnalyzer:
                     )
 
             # Check for too many parameters
-            if len(func.parameters) > self.config["max_function_parameters"]:  # Arbitrary threshold
+            max_params = int(str(self.config["max_function_parameters"]))
+            if len(func.parameters) > max_params:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "function_error",
@@ -408,8 +409,9 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many return statements
+            max_returns = int(str(self.config["max_function_returns"]))
             if (
-                len(func.return_statements) > self.config["max_function_returns"]
+                len(func.return_statements) > max_returns
             ):  # Arbitrary threshold
                 errors.append(
                     {
@@ -465,7 +467,8 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many methods
-            if len(cls.methods) > self.config["max_class_methods"]:  # Arbitrary threshold
+            max_methods = int(str(self.config["max_class_methods"]))
+            if len(cls.methods) > max_methods:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "class_error",
@@ -478,7 +481,8 @@ class CodeIntegrityAnalyzer:
                 )
 
             # Check for too many attributes
-            if len(cls.attributes) > self.config["max_class_attributes"]:  # Arbitrary threshold
+            max_attrs = int(str(self.config["max_class_attributes"]))
+            if len(cls.attributes) > max_attrs:  # Arbitrary threshold
                 errors.append(
                     {
                         "type": "class_error",
@@ -664,7 +668,8 @@ class CodeIntegrityAnalyzer:
                             complexity += 1
 
             # Check if complexity exceeds threshold
-            if complexity > self.config["max_function_complexity"]:
+            max_complexity = int(str(self.config["max_function_complexity"]))
+            if complexity > max_complexity:
                 errors.append(
                     {
                         "type": "complexity_error",

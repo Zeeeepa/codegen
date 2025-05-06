@@ -529,8 +529,8 @@ def analyze_commit_from_repo_and_commit(
             ],
             metrics_diff=results["metrics_diff"],
             files_added=results["files_added"],
-            files_modified=results["files_modified"],
-            files_removed=results["files_removed"],
+            files_modified=files_modified,
+            files_removed=files_removed,
             summary=None,  # Will be generated when get_summary is called
         )
 
@@ -601,5 +601,3 @@ def analyze_commit_from_paths(
             files_removed=files_removed,
             summary=None,  # Will be generated when get_summary is called
         )
-"""
-
