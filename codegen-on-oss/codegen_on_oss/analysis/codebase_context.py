@@ -282,7 +282,8 @@ class CodebaseContext:
     @stopwatch
     @commiter
     def apply_diffs(self, diff_list: list[DiffLite]) -> None:
-        """Applies the given set of diffs to the graph in order to match the current file system content"""
+        """Applies the given set of diffs to the graph in order to match 
+        the current file system content"""
         if self.session_options:
             self.session_options = self.session_options.model_copy(update={"max_seconds": None})
         logger.info(f"Applying {len(diff_list)} diffs to graph")
