@@ -6,27 +6,14 @@ It serves as the central analysis engine for the codebase analysis system.
 """
 
 import logging
-import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 
-from codegen import Codebase
 from graph_sitter.codebase.codebase_analysis import (
-    get_class_summary,
     get_codebase_summary,
-    get_file_summary,
-    get_function_summary,
-    get_symbol_summary,
 )
-from graph_sitter.codebase.codebase_context import CodebaseContext
-from graph_sitter.core.codebase import Codebase as GraphSitterCodebase
-from graph_sitter.core.class_definition import Class
-from graph_sitter.core.function import Function
-from graph_sitter.core.file import SourceFile
-from graph_sitter.enums import SymbolType, EdgeType
-from graph_sitter.shared.enums.programming_language import ProgrammingLanguage
+from graph_sitter.core.codebase import Codebase
 
 from codegen_on_oss.analysis.code_integrity import validate_code_integrity
-from codegen_on_oss.analysis.commit_analysis import analyze_commit_history
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +39,9 @@ def analyze_codebase(codebase: Codebase) -> Dict[str, Any]:
     return results
 
 
-def analyze_commit(repo_url: str, commit_hash: str, base_commit: Optional[str] = None) -> Dict[str, Any]:
+def analyze_commit(
+    repo_url: str, commit_hash: str, base_commit: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Analyze a commit in a repository.
 

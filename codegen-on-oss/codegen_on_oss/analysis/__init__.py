@@ -16,41 +16,42 @@ from codegen_on_oss.analysis.analysis import (
 
 # Code integrity and validation
 from codegen_on_oss.analysis.code_integrity import (
-    validate_code_integrity,
-    check_code_quality,
-    validate_dependencies,
     CodeIntegrityAnalyzer,
+    check_code_quality,
+    validate_code_integrity,
+    validate_dependencies,
 )
 
 # Code transformations
 from codegen_on_oss.analysis.code_transformations import (
-    apply_transformation,
-    refactor_code,
-    optimize_imports,
-)
-
-# Symbol analysis
-from codegen_on_oss.analysis.symbolattr import (
-    get_symbol_attributes,
-    analyze_symbol_usage,
-)
-
-# Project management
-from codegen_on_oss.analysis.project_manager import (
-    analyze_project_structure,
-    get_project_metrics,
+    convert_all_calls_to_kwargs,
+    convert_call_to_kwargs,
 )
 
 # Commit analysis
 from codegen_on_oss.analysis.commit_analysis import (
-    analyze_commit_history,
-    get_commit_stats,
+    CommitAnalysisOptions,
+    CommitAnalysisResult,
+    CommitComparisonResult,
+    FileChange,
+)
+
+# Project management
+from codegen_on_oss.analysis.project_manager import (
+    Project,
+    ProjectManager,
+)
+
+# Symbol analysis
+from codegen_on_oss.analysis.symbolattr import (
+    get_file_attribution,
+    get_symbol_attribution,
 )
 
 # WSL integration
 from codegen_on_oss.analysis.wsl_integration import (
-    setup_wsl_environment,
-    run_in_wsl,
+    CtrlplaneIntegration,
+    WeaveIntegration,
 )
 
 __all__ = [
@@ -68,23 +69,24 @@ __all__ = [
     "CodeIntegrityAnalyzer",
     
     # Code transformations
-    "apply_transformation",
-    "refactor_code",
-    "optimize_imports",
+    "convert_call_to_kwargs",
+    "convert_all_calls_to_kwargs",
     
     # Symbol analysis
-    "get_symbol_attributes",
-    "analyze_symbol_usage",
+    "get_symbol_attribution",
+    "get_file_attribution",
     
     # Project management
-    "analyze_project_structure",
-    "get_project_metrics",
+    "Project",
+    "ProjectManager",
     
     # Commit analysis
-    "analyze_commit_history",
-    "get_commit_stats",
+    "CommitAnalysisOptions",
+    "FileChange",
+    "CommitAnalysisResult",
+    "CommitComparisonResult",
     
     # WSL integration
-    "setup_wsl_environment",
-    "run_in_wsl",
+    "CtrlplaneIntegration",
+    "WeaveIntegration",
 ]
