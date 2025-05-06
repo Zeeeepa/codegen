@@ -49,11 +49,10 @@ from graph_sitter.codebase.codebase_analysis import (
 from graph_sitter.codebase.codebase_context import CodebaseContext
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalysisResult,
+    DiffAnalyzer,
 )
-from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
 
 # Import new analysis modules
-from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
 from graph_sitter.code_generation.doc_utils.utils import (
     document_function,
 )
@@ -586,7 +585,7 @@ class CodeAnalyzer:
         Returns:
             A CommitAnalysisResult object
         """
-        from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_repo_and_commit
+        from codegen_on_oss.analysis.commit_analysis import analyze_commit_from_repo_and_commit
         return analyze_commit_from_repo_and_commit(repo_url, commit_hash, base_commit)
 
     @classmethod
@@ -603,7 +602,7 @@ class CodeAnalyzer:
         Returns:
             A CommitAnalysisResult object
         """
-        from codegen_on_oss.analysis.commit_analyzer import analyze_commit_from_paths
+        from codegen_on_oss.analysis.commit_analysis import analyze_commit_from_paths
         return analyze_commit_from_paths(original_path, commit_path)
 
     def get_commit_diff(self, commit_codebase: Codebase, file_path: str) -> str:

@@ -20,8 +20,8 @@ from codegen_on_oss.analysis.code_integrity import (
 )
 from codegen_on_oss.analysis.commit_analysis import (
     CommitAnalyzer,
-    DiffAnalyzer,
     CommitAnalysisResult,
+    DiffAnalyzer,
 )
 
 __all__ = [
@@ -39,4 +39,3 @@ __all__ = [
     "compare_branches",
     "analyze_pr",
 ]
-
