@@ -7,11 +7,11 @@ converting positional arguments to keyword arguments in function calls.
 
 from typing import Dict, List, Optional, Tuple, Union
 
-from codegen import Codebase
-from codegen.sdk.core.function import Function
-from codegen.sdk.core.function_call import FunctionCall
-from codegen.sdk.core.parameter import Parameter
-from codegen.shared.logging.get_logger import get_logger
+from graph_sitter.core.codebase import Codebase
+from graph_sitter.core.function import Function
+from graph_sitter.core.detached_symbols.function_call import FunctionCall
+from graph_sitter.core.detached_symbols.parameter import Parameter
+from codegen_on_oss.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
 
