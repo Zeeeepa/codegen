@@ -10,7 +10,8 @@ import inspect
 from typing import Dict, List, Optional, Any, Type, Set, Callable
 import logging
 
-from ..core.analysis_context import AnalysisContext, AnalysisResult
+# Fix circular import
+from .analysis_context import AnalysisContext, AnalysisResult
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -446,4 +447,3 @@ class RuleEngine:
             List of analysis results in the specified category
         """
         return context.get_results_by_category(category)
-

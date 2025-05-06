@@ -12,9 +12,10 @@ from typing import List
 # Add the parent directory to the path so we can import the modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.pr_analyzer import PRAnalyzer
-from core.analysis_context import AnalysisContext, AnalysisResult
-from core.rule_engine import BaseRule
+# Fix imports to use absolute imports
+from codegen_on_oss.analysis.pr_analysis.core.pr_analyzer import PRAnalyzer
+from codegen_on_oss.analysis.pr_analysis.core.analysis_context import AnalysisContext, AnalysisResult
+from codegen_on_oss.analysis.pr_analysis.core.rule_engine import BaseRule
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -92,4 +93,3 @@ def test_pr_analyzer():
 
 if __name__ == "__main__":
     test_pr_analyzer()
-

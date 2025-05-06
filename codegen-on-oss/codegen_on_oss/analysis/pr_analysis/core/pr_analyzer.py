@@ -8,8 +8,9 @@ import os
 import logging
 from typing import Dict, List, Optional, Any, Union, Tuple, Set, Callable
 
-from ..core.analysis_context import AnalysisContext, AnalysisResult
-from ..core.rule_engine import RuleEngine, BaseRule
+# Fix circular imports
+from .analysis_context import AnalysisContext, AnalysisResult
+from .rule_engine import RuleEngine, BaseRule
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -342,4 +343,3 @@ class PRAnalyzer:
             True if there are warnings, False otherwise
         """
         return context.has_warnings()
-
