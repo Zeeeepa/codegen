@@ -15,7 +15,7 @@ import tempfile
 import traceback
 from typing import Dict, Any, Optional
 
-from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+from codegen_on_oss.analysis.commit_analysis import DiffAnalyzer
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 
 # Configure logging
@@ -337,4 +337,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

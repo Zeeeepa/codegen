@@ -19,8 +19,8 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
-from codegen_on_oss.analysis.code_integrity_analyzer import CodeIntegrityAnalyzer
-from codegen_on_oss.analysis.diff_analyzer import DiffAnalyzer
+from codegen_on_oss.analysis.code_integrity import CodeIntegrityAnalyzer
+from codegen_on_oss.analysis.commit_analysis import DiffAnalyzer
 from codegen_on_oss.analysis.swe_harness_agent import SWEHarnessAgent
 from codegen_on_oss.snapshot.codebase_snapshot import CodebaseSnapshot, SnapshotManager
 

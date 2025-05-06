@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 import requests
 from github import Github, GithubException
 
-from codegen_on_oss.analysis.commit_analyzer import CommitAnalyzer
+from codegen_on_oss.analysis.commit_analysis import CommitAnalyzer
 from codegen_on_oss.snapshot.codebase_snapshot import SnapshotManager
 
 logger = logging.getLogger(__name__)
