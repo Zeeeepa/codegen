@@ -771,6 +771,12 @@ class CodebaseAnalyzer:
         return parameter_stats
     
     def get_return_type_analysis(self) -> Dict[str, Any]:
+        """Analyze return types across the codebase.
+        
+        Returns:
+            Dict containing statistics about return type usage.
+        """
+        return {}  # Placeholder implementation
     def analyze_type_resolution(self, symbol_name: str) -> Dict[str, Any]:
         """Resolve a symbol's type to its actual definition.
         
