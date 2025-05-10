@@ -29,8 +29,48 @@ try:
     from codegen.sdk.core.codebase import Codebase
     from codegen.sdk.core.placeholder.placeholder import Placeholder
     from codegen.sdk.core.placeholder.placeholder_type import TypePlaceholder
-    from codegen.sdk.codebase.codebase_analysis import get_codebase_summary, analyze_codebase_quality
-    from codegen.sdk.codebase.codebase_context import DiffLite, CodebaseContext
+    from codegen.sdk.codebase.codebase_analysis import (
+        get_codebase_summary, 
+        analyze_codebase_quality,
+        analyze_code_complexity,
+        analyze_type_coverage,
+        analyze_dependency_structure,
+        analyze_code_duplication,
+        analyze_naming_conventions,
+        analyze_documentation_quality,
+        analyze_error_handling,
+        analyze_performance_issues,
+        analyze_security_vulnerabilities,
+        analyze_test_coverage
+    )
+    from codegen.sdk.codebase.codebase_context import (
+        DiffLite, 
+        CodebaseContext,
+        SymbolContext,
+        FileContext,
+        ImportContext,
+        DependencyContext,
+        CallGraphContext,
+        TypeContext
+    )
+    from codegen.sdk.codebase.dependency_trace import (
+        trace_dependencies,
+        visualize_dependency_trace,
+        calculate_blast_radius,
+        find_import_cycles
+    )
+    from codegen.sdk.codebase.method_relationships import (
+        analyze_method_relationships,
+        visualize_method_relationships,
+        find_related_methods,
+        analyze_method_coupling
+    )
+    from codegen.sdk.codebase.call_trace import (
+        trace_function_calls,
+        visualize_call_trace,
+        analyze_call_hierarchy,
+        find_entry_points
+    )
     from codegen.shared.enums.programming_language import ProgrammingLanguage
 except ImportError:
     print("Codegen SDK not found. Please install it first.")
@@ -1165,31 +1205,67 @@ class CodebaseAnalyzer:
             return {"error": str(e)}
             
     def get_codebase_summary(self) -> Dict[str, Any]:
-        """Get a summary of the codebase using the SDK's codebase_analysis module.
-
+        """Get a comprehensive summary of the codebase.
+        
         Returns:
-            Dict containing the codebase summary
+            A dictionary containing summary information about the codebase.
         """
-        if not self.codebase:
-            return {"error": "Codebase not initialized"}
-            
         try:
+            if not self.codebase:
+                return {"error": "Codebase not initialized"}
+                
+            # Use the SDK's get_codebase_summary function
             summary = get_codebase_summary(self.codebase)
+            
+            # Add additional information from the codebase context
+            if self.codebase_context:
+                # Get file statistics
+                file_stats = self.codebase_context.get_file_statistics()
+                summary["file_statistics"] = file_stats
+                
+                # Get symbol statistics
+                symbol_stats = self.codebase_context.get_symbol_statistics()
+                summary["symbol_statistics"] = symbol_stats
+                
+                # Get import statistics
+                import_stats = self.codebase_context.get_import_statistics()
+                summary["import_statistics"] = import_stats
+                
+                # Get dependency statistics
+                dependency_stats = self.codebase_context.get_dependency_statistics()
+                summary["dependency_statistics"] = dependency_stats
+            
             return summary
         except Exception as e:
             return {"error": str(e)}
             
     def analyze_codebase_quality(self) -> Dict[str, Any]:
-        """Analyze the quality of the codebase using the SDK's codebase_analysis module.
-
+        """Analyze the quality of the codebase.
+        
         Returns:
-            Dict containing the codebase quality metrics
+            A dictionary containing quality metrics for the codebase.
         """
-        if not self.codebase:
-            return {"error": "Codebase not initialized"}
-            
         try:
+            if not self.codebase:
+                return {"error": "Codebase not initialized"}
+                
+            # Use the SDK's analyze_codebase_quality function
             quality_metrics = analyze_codebase_quality(self.codebase)
+            
+            # Add additional quality metrics
+            quality_metrics.update({
+                "code_complexity": analyze_code_complexity(self.codebase),
+                "type_coverage": analyze_type_coverage(self.codebase),
+                "dependency_structure": analyze_dependency_structure(self.codebase),
+                "code_duplication": analyze_code_duplication(self.codebase),
+                "naming_conventions": analyze_naming_conventions(self.codebase),
+                "documentation_quality": analyze_documentation_quality(self.codebase),
+                "error_handling": analyze_error_handling(self.codebase),
+                "performance_issues": analyze_performance_issues(self.codebase),
+                "security_vulnerabilities": analyze_security_vulnerabilities(self.codebase),
+                "test_coverage": analyze_test_coverage(self.codebase)
+            })
+            
             return quality_metrics
         except Exception as e:
             return {"error": str(e)}
@@ -1383,6 +1459,33 @@ class CodebaseAnalyzer:
         except Exception as e:
             return {"error": str(e)}
             
+    def analyze_dependency_trace(self, symbol_name: str) -> Dict[str, Any]:
+        """Analyze the dependency trace for a specific symbol.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            A dictionary containing dependency trace information.
+        """
+        try:
+            if not self.codebase:
+                return {"error": "Codebase not initialized"}
+                
+            # Use the SDK's trace_dependencies function
+            dependencies = trace_dependencies(self.codebase, symbol_name)
+            
+            # Calculate blast radius
+            blast_radius = calculate_blast_radius(self.codebase, symbol_name)
+            
+            return {
+                "dependencies": dependencies,
+                "blast_radius": blast_radius,
+                "visualization": visualize_dependency_trace(self.codebase, symbol_name)
+            }
+        except Exception as e:
+            return {"error": str(e)}
+            
     def _generate_html_report(self, output_file: str) -> None:
         """Generate an HTML report of the analysis results."""
         if not output_file:
@@ -1512,7 +1615,7 @@ class CodebaseAnalyzer:
             return {"error": str(e)}
 
 
-def main():
+def main_old():
     """Main entry point for the codebase analyzer."""
     parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
 
@@ -1610,3 +1713,222 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    def analyze_call_trace(self, function_name: str) -> Dict[str, Any]:
+        """Analyze the call trace for a specific function.
+        
+        Args:
+            function_name: Name of the function to analyze
+            
+        Returns:
+            A dictionary containing call trace information.
+        """
+        try:
+            if not self.codebase:
+                return {"error": "Codebase not initialized"}
+                
+            # Use the SDK's trace_function_calls function
+            calls = trace_function_calls(self.codebase, function_name)
+            
+            # Analyze call hierarchy
+            hierarchy = analyze_call_hierarchy(self.codebase, function_name)
+            
+            return {
+                "calls": calls,
+                "hierarchy": hierarchy,
+                "visualization": visualize_call_trace(self.codebase, function_name)
+            }
+        except Exception as e:
+            return {"error": str(e)}
+            
+    def find_import_cycles(self) -> Dict[str, Any]:
+        """Find import cycles in the codebase.
+        
+        Returns:
+            A dictionary containing import cycle information.
+        """
+        try:
+            if not self.codebase:
+                return {"error": "Codebase not initialized"}
+                
+            # Use the SDK's find_import_cycles function
+            cycles = find_import_cycles(self.codebase)
+            
+            return {
+                "cycles": cycles,
+                "visualization": self.visualize_import_cycles()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+def main():
+    """Main entry point for the codebase analyzer."""
+    parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
+
+    # Repository source
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--repo-url", help="URL of the repository to analyze")
+    source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
+
+    # Analysis options
+    parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
+    parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
+
+    # PR comparison options
+    parser.add_argument("--compare-commit", help="Commit SHA to compare with the current codebase")
+    parser.add_argument("--pr-number", type=int, help="PR number to analyze")
+
+    # Output options
+    parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
+    parser.add_argument("--output-file", help="Path to the output file")
+
+    # Visualization options
+    parser.add_argument("--visualize", choices=["call-graph", "dependency-map", "directory-tree", "import-cycles"], help="Generate visualization")
+    parser.add_argument("--function-name", help="Function name for call graph visualization")
+    parser.add_argument("--symbol-name", help="Symbol name for dependency trace visualization")
+    parser.add_argument("--class-name", help="Class name for method relationships visualization")
+    
+    # Type analysis options
+    parser.add_argument("--analyze-types", action="store_true", help="Analyze untyped code in the codebase")
+    parser.add_argument("--summary", action="store_true", help="Get a summary of the codebase")
+    parser.add_argument("--quality", action="store_true", help="Analyze code quality")
+    parser.add_argument("--dependency-trace", action="store_true", help="Analyze dependency trace")
+    parser.add_argument("--method-relationships", action="store_true", help="Analyze method relationships")
+    parser.add_argument("--call-trace", action="store_true", help="Analyze call trace")
+    parser.add_argument("--import-cycles", action="store_true", help="Find import cycles")
+
+    args = parser.parse_args()
+
+    try:
+        # Initialize the analyzer
+        analyzer = CodebaseAnalyzer(repo_url=args.repo_url, repo_path=args.repo_path, language=args.language)
+
+        # Handle PR analysis
+        if args.pr_number:
+            pr_analysis = analyzer.get_pr_diff_analysis(args.pr_number)
+            print(json.dumps(pr_analysis, indent=2))
+            return
+
+        # Handle comparison
+        if args.compare_commit:
+            analyzer.init_comparison_codebase(args.compare_commit)
+            comparison = analyzer.compare_codebases()
+            print(json.dumps(comparison, indent=2))
+            return
+
+        # Handle visualization
+        if args.visualize:
+            if args.visualize == "call-graph":
+                visualization = analyzer.visualize_call_graph(args.function_name)
+            elif args.visualize == "dependency-map":
+                visualization = analyzer.visualize_dependency_map()
+            elif args.visualize == "directory-tree":
+                visualization = analyzer.visualize_directory_tree()
+            elif args.visualize == "import-cycles":
+                visualization = analyzer.visualize_import_cycles()
+            
+            print(json.dumps(visualization, indent=2))
+            return
+            
+        # Handle type analysis
+        if args.analyze_types:
+            type_analysis = {
+                "untyped_return_statements": analyzer.count_untyped_return_statements(),
+                "untyped_parameters": analyzer.count_untyped_parameters(),
+                "untyped_attributes": analyzer.count_untyped_attributes(),
+                "unnamed_keyword_arguments": analyzer.count_unnamed_keyword_arguments(),
+            }
+            print(json.dumps(type_analysis, indent=2))
+            return
+            
+        # Handle codebase summary
+        if args.summary:
+            summary = analyzer.get_codebase_summary()
+            print(json.dumps(summary, indent=2))
+            return
+            
+        # Handle code quality analysis
+        if args.quality:
+            quality = analyzer.analyze_codebase_quality()
+            print(json.dumps(quality, indent=2))
+            return
+            
+        # Handle dependency trace analysis
+        if args.dependency_trace:
+            if not args.symbol_name:
+                print("Error: --symbol-name is required for dependency trace analysis")
+                return
+            dependency_trace = analyzer.analyze_dependency_trace(args.symbol_name)
+            print(json.dumps(dependency_trace, indent=2))
+            return
+            
+        # Handle method relationships analysis
+        if args.method_relationships:
+            if not args.class_name:
+                print("Error: --class-name is required for method relationships analysis")
+                return
+            method_relationships = analyzer.analyze_method_relationships(args.class_name)
+            print(json.dumps(method_relationships, indent=2))
+            return
+            
+        # Handle call trace analysis
+        if args.call_trace:
+            if not args.function_name:
+                print("Error: --function-name is required for call trace analysis")
+                return
+            call_trace = analyzer.analyze_call_trace(args.function_name)
+            print(json.dumps(call_trace, indent=2))
+            return
+            
+        # Handle import cycles analysis
+        if args.import_cycles:
+            import_cycles = analyzer.find_import_cycles()
+            print(json.dumps(import_cycles, indent=2))
+            return
+
+        # Perform the analysis
+        results = analyzer.analyze(categories=args.categories, output_format=args.output_format, output_file=args.output_file)
+
+        # Print success message
+        if args.output_format == "json" and args.output_file:
+            print(f"Analysis results saved to {args.output_file}")
+        elif args.output_format == "html":
+            print(f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+
+    def analyze_method_relationships(self, class_name: str) -> Dict[str, Any]:
+        """Analyze the relationships between methods in a class.
+        
+        Args:
+            class_name: Name of the class to analyze
+            
+        Returns:
+            A dictionary containing method relationship information.
+        """
+        try:
+            if not self.codebase:
+                return {"error": "Codebase not initialized"}
+                
+            # Use the SDK's analyze_method_relationships function
+            relationships = analyze_method_relationships(self.codebase, class_name)
+            
+            # Find related methods
+            related_methods = find_related_methods(self.codebase, class_name)
+            
+            # Analyze method coupling
+            method_coupling = analyze_method_coupling(self.codebase, class_name)
+            
+            return {
+                "relationships": relationships,
+                "related_methods": related_methods,
+                "method_coupling": method_coupling,
+                "visualization": visualize_method_relationships(self.codebase, class_name)
+            }
+        except Exception as e:
+            return {"error": str(e)}
