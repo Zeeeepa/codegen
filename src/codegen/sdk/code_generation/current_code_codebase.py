@@ -4,11 +4,13 @@ import importlib
 from pathlib import Path
 from typing import TypedDict
 
-from codegen.configs.models.codebase import CodebaseConfig
+from codegen.configs.models.codebase import CodebaseConfig, PinkMode
 from codegen.configs.models.secrets import SecretsConfig
 from codegen.git.repo_operator.repo_operator import RepoOperator
 from codegen.git.schemas.repo_config import RepoConfig
-from codegen.sdk.codebase.config import ProjectConfig
+from codegen.sdk.codebase.config import ProjectConfig, SessionOptions
+from codegen.sdk.codebase.codebase_analysis import get_codebase_summary
+from codegen.sdk.codebase.codebase_context import DiffLite, ChangeType
 from codegen.sdk.core.codebase import Codebase, CodebaseType
 from codegen.shared.decorators.docs import DocumentedObject, apidoc_objects, no_apidoc_objects, py_apidoc_objects, ts_apidoc_objects
 from codegen.shared.enums.programming_language import ProgrammingLanguage
@@ -49,6 +51,11 @@ def get_current_code_codebase(config: CodebaseConfig | None = None, secrets: Sec
     projects = [ProjectConfig(repo_operator=op, programming_language=ProgrammingLanguage.PYTHON, subdirectories=subdirectories, base_path=base_dir)]
     codebase = Codebase(projects=projects, config=config, secrets=secrets)
     return codebase
+
+
+def get_codebase_analysis_summary(codebase: CodebaseType) -> str:
+    """Get a summary of the codebase using the codebase_analysis module"""
+    return get_codebase_summary(codebase)
 
 
 def import_all_codegen_sdk_modules():
