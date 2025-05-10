@@ -23,8 +23,24 @@ from codegen.extensions.langchain.tools import (
     RevealSymbolTool,
     RipGrepTool,
     SearchFilesByNameTool,
-    # SemanticEditTool,
+    SemanticEditTool,
+    SemanticSearchTool,
     ViewFileTool,
+    # GitHub tools
+    GithubCheckoutPRTool,
+    GithubCreatePRTool,
+    GithubCreatePRCommentTool,
+    GithubCreatePRReviewCommentTool,
+    GithubViewPRTool,
+    GithubViewPRChecksTool,
+    GithubSearchIssuesTool,
+    # Linear tools
+    LinearGetIssueTool,
+    LinearGetIssueCommentsTool,
+    LinearCommentOnIssueTool,
+    LinearSearchIssuesTool,
+    LinearCreateIssueTool,
+    LinearGetTeamsTool,
 )
 
 from .graph import create_react_agent
@@ -72,14 +88,30 @@ def create_codebase_agent(
         CreateFileTool(codebase),
         DeleteFileTool(codebase),
         RenameFileTool(codebase),
-        # MoveSymbolTool(codebase),
-        # RevealSymbolTool(codebase),
-        # SemanticEditTool(codebase),
+        MoveSymbolTool(codebase),
+        RevealSymbolTool(codebase),
+        SemanticEditTool(codebase),
         ReplacementEditTool(codebase),
         RelaceEditTool(codebase),
         ReflectionTool(codebase),
         SearchFilesByNameTool(codebase),
         GlobalReplacementEditTool(codebase),
+        SemanticSearchTool(codebase),
+        # GitHub tools
+        GithubCheckoutPRTool(codebase),
+        GithubCreatePRTool(codebase),
+        GithubCreatePRCommentTool(codebase),
+        GithubCreatePRReviewCommentTool(codebase),
+        GithubViewPRTool(codebase),
+        GithubViewPRChecksTool(codebase),
+        GithubSearchIssuesTool(codebase),
+        # Linear tools
+        LinearGetIssueTool(codebase),
+        LinearGetIssueCommentsTool(codebase),
+        LinearCommentOnIssueTool(codebase),
+        LinearSearchIssuesTool(codebase),
+        LinearCreateIssueTool(codebase),
+        LinearGetTeamsTool(codebase),
     ]
 
     if additional_tools:
@@ -134,6 +166,27 @@ def create_chat_agent(
         MoveSymbolTool(codebase),
         RevealSymbolTool(codebase),
         RelaceEditTool(codebase),
+        SemanticEditTool(codebase),
+        ReplacementEditTool(codebase),
+        GlobalReplacementEditTool(codebase),
+        ReflectionTool(codebase),
+        SearchFilesByNameTool(codebase),
+        SemanticSearchTool(codebase),
+        # GitHub tools
+        GithubCheckoutPRTool(codebase),
+        GithubCreatePRTool(codebase),
+        GithubCreatePRCommentTool(codebase),
+        GithubCreatePRReviewCommentTool(codebase),
+        GithubViewPRTool(codebase),
+        GithubViewPRChecksTool(codebase),
+        GithubSearchIssuesTool(codebase),
+        # Linear tools
+        LinearGetIssueTool(codebase),
+        LinearGetIssueCommentsTool(codebase),
+        LinearCommentOnIssueTool(codebase),
+        LinearSearchIssuesTool(codebase),
+        LinearCreateIssueTool(codebase),
+        LinearGetTeamsTool(codebase),
     ]
 
     if additional_tools:
@@ -174,8 +227,10 @@ def create_codebase_inspector_agent(
         ViewFileTool(codebase),
         ListDirectoryTool(codebase),
         RipGrepTool(codebase),
-        DeleteFileTool(codebase),
         RevealSymbolTool(codebase),
+        SearchFilesByNameTool(codebase),
+        SemanticSearchTool(codebase),
+        ReflectionTool(codebase),
     ]
 
     memory = MemorySaver() if memory else None
