@@ -1,7 +1,7 @@
 name: pre-commit
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - "develop"
   push:
@@ -21,6 +21,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ env.REPO_SCOPED_TOKEN || github.token }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup environment
         uses: ./.github/actions/setup-environment
@@ -38,7 +39,8 @@ jobs:
         shell: bash
 
       - uses: stefanzweifel/git-auto-commit-action@v5
-        if: ${{ always() && env.REPO_SCOPED_TOKEN && github.event_name == 'pull_request' }}
+        if: ${{ always() && env.REPO_SCOPED_TOKEN && github.event_name == 'pull_request_target' }}
         with:
           commit_message: "Automated pre-commit update"
           push_options: "--no-verify"
+
