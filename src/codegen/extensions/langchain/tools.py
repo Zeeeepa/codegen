@@ -13,7 +13,12 @@ from pydantic import BaseModel, Field
 from codegen.extensions.linear.linear_client import LinearClient
 from codegen.extensions.tools.bash import run_bash_command
 from codegen.extensions.tools.github.checkout_pr import checkout_pr
+from codegen.extensions.tools.github.create_pr import create_pr
+from codegen.extensions.tools.github.create_pr_comment import create_pr_comment
+from codegen.extensions.tools.github.create_pr_review_comment import create_pr_review_comment
+from codegen.extensions.tools.github.view_pr import view_pr
 from codegen.extensions.tools.github.view_pr_checks import view_pr_checks
+from codegen.extensions.tools.github.search import search_issues
 from codegen.extensions.tools.global_replacement_edit import replacement_edit_global
 from codegen.extensions.tools.linear.linear import (
     linear_comment_on_issue_tool,
@@ -37,16 +42,12 @@ from codegen.sdk.core.codebase import Codebase
 from ..tools import (
     commit,
     create_file,
-    create_pr,
-    create_pr_comment,
-    create_pr_review_comment,
     delete_file,
     edit_file,
     list_directory,
     move_symbol,
     rename_file,
     view_file,
-    view_pr,
 )
 from ..tools.relace_edit_prompts import RELACE_EDIT_PROMPT
 from ..tools.semantic_edit_prompts import FILE_EDIT_PROMPT
@@ -462,9 +463,70 @@ class SemanticSearchTool(BaseTool):
         return result.render()
 
 
-########################################################################################################################
-# BASH
-########################################################################################################################
+class SemanticSearchInput(BaseModel):
+    """Input for semantic search."""
+
+    query: str = Field(..., description="The search query to find semantically similar code")
+    file_extensions: list[str] | None = Field(default=None, description="Optional list of file extensions to search (e.g. ['.py', '.ts'])")
+    page: int = Field(default=1, description="Page number to return (1-based, default: 1)")
+    files_per_page: int = Field(default=10, description="Number of files to return per page (default: 10)")
+    target_directories: list[str] | None = Field(default=None, description="Optional list of directories to search within")
+
+
+class SemanticSearchTool(BaseTool):
+    """Tool for semantic code search."""
+
+    name: ClassVar[str] = "semantic_search"
+    description: ClassVar[str] = """Search the codebase for semantically similar code using embeddings.
+This tool is useful for finding code that has similar meaning or functionality, even if it doesn't contain the exact search terms."""
+    args_schema: ClassVar[type[BaseModel]] = SemanticSearchInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(
+        self,
+        query: str,
+        file_extensions: Optional[list[str]] = None,
+        page: int = 1,
+        files_per_page: int = 10,
+        target_directories: Optional[list[str]] = None,
+    ) -> str:
+        result = semantic_search(
+            self.codebase,
+            query,
+            file_extensions=file_extensions,
+            page=page,
+            files_per_page=files_per_page,
+            target_directories=target_directories,
+        )
+        return result.render()
+
+
+class SemanticEditInput(BaseModel):
+    """Input for semantic editing."""
+
+    filepath: str = Field(..., description="Path of the file relative to workspace root")
+    edit_instruction: str = Field(..., description=FILE_EDIT_PROMPT)
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
+
+class SemanticEditTool(BaseTool):
+    """Tool for semantic code editing."""
+
+    name: ClassVar[str] = "semantic_edit"
+    description: ClassVar[str] = """Edit a file using semantic understanding of the code.
+This tool analyzes the code structure and makes changes based on your high-level instructions."""
+    args_schema: ClassVar[type[BaseModel]] = SemanticEditInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, filepath: str, edit_instruction: str, tool_call_id: str) -> ToolMessage:
+        result = semantic_edit(self.codebase, filepath, edit_instruction)
+        return result.render(tool_call_id=tool_call_id)
 
 
 class RunBashCommandInput(BaseModel):
@@ -486,16 +548,40 @@ class RunBashCommandTool(BaseTool):
         return result.render()
 
 
-########################################################################################################################
-# GITHUB
-########################################################################################################################
+class GithubCheckoutPRInput(BaseModel):
+    """Input for checking out a PR."""
+
+    pr_number: int = Field(..., description="The PR number to checkout")
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
+
+class GithubCheckoutPRTool(BaseTool):
+    """Tool for checking out a PR."""
+
+    name: ClassVar[str] = "checkout_pr"
+    description: ClassVar[str] = "Checkout a PR to your local workspace"
+    args_schema: ClassVar[type[BaseModel]] = GithubCheckoutPRInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, pr_number: int, tool_call_id: str) -> ToolMessage:
+        result = checkout_pr(self.codebase, pr_number)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class GithubCreatePRInput(BaseModel):
-    """Input for creating a PR"""
+    """Input for creating a PR."""
 
     title: str = Field(..., description="The title of the PR")
     body: str = Field(..., description="The body of the PR")
+    head_branch: str | None = Field(default=None, description="The branch that the changes have been pushed to")
+    base_branch: str | None = Field(default=None, description="The branch that the changes will be merged into")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class GithubCreatePRTool(BaseTool):
@@ -509,15 +595,133 @@ class GithubCreatePRTool(BaseTool):
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, title: str, body: str) -> str:
-        result = create_pr(self.codebase, title, body)
-        return result.render()
+    def _run(self, title: str, body: str, head_branch: str | None = None, base_branch: str | None = None, tool_call_id: str = None) -> ToolMessage:
+        result = create_pr(self.codebase, title, body, head_branch, base_branch)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
+
+
+class GithubCreatePRCommentInput(BaseModel):
+    """Input for creating a PR comment."""
+
+    pr_number: int = Field(..., description="The PR number to comment on")
+    body: str = Field(..., description="The comment text")
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
+
+class GithubCreatePRCommentTool(BaseTool):
+    """Tool for creating a PR comment."""
+
+    name: ClassVar[str] = "create_pr_comment"
+    description: ClassVar[str] = "Create a general comment on a pull request"
+    args_schema: ClassVar[type[BaseModel]] = GithubCreatePRCommentInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, pr_number: int, body: str, tool_call_id: str) -> ToolMessage:
+        result = create_pr_comment(self.codebase, pr_number, body)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
+
+
+class GithubCreatePRReviewCommentInput(BaseModel):
+    """Input for creating a PR review comment."""
+
+    pr_number: int = Field(..., description="The PR number to comment on")
+    body: str = Field(..., description="The comment text")
+    commit_sha: str = Field(..., description="The commit SHA to attach the comment to")
+    path: str = Field(..., description="The file path to comment on")
+    line: int = Field(..., description="The line number to comment on")
+    start_line: int | None = Field(default=None, description="For multi-line comments, the starting line")
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
+
+class GithubCreatePRReviewCommentTool(BaseTool):
+    """Tool for creating a PR review comment."""
+
+    name: ClassVar[str] = "create_pr_review_comment"
+    description: ClassVar[str] = "Create an inline review comment on a specific line in a pull request"
+    args_schema: ClassVar[type[BaseModel]] = GithubCreatePRReviewCommentInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, pr_number: int, body: str, commit_sha: str, path: str, line: int, start_line: int | None = None, tool_call_id: str = None) -> ToolMessage:
+        result = create_pr_review_comment(self.codebase, pr_number, body, commit_sha, path, line, start_line)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
+
+
+class GithubViewPRInput(BaseModel):
+    """Input for viewing a PR."""
+
+    pr_id: int = Field(..., description="Number of the PR to get the contents for")
+    page: int = Field(default=1, description="Page number to indicate which page of diff hunks to retrieve, page number starts from 1")
+    diff_hunks_per_page: int = Field(default=10, description="Number of diff hunks per page")
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
+
+class GithubViewPRTool(BaseTool):
+    """Tool for viewing a PR."""
+
+    name: ClassVar[str] = "view_pr"
+    description: ClassVar[str] = "View the diff and associated context for a pull request on Github"
+    args_schema: ClassVar[type[BaseModel]] = GithubViewPRInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, pr_id: int, page: int = 1, diff_hunks_per_page: int = 10, tool_call_id: str = None) -> ToolMessage:
+        result = view_pr(self.codebase, pr_id, page, diff_hunks_per_page)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
+
+
+class GithubViewPRChecksInput(BaseModel):
+    """Input for viewing PR checks."""
+
+    pr_number: int = Field(..., description="The PR number to view checks for")
+    page: int = Field(default=1, description="Page number to indicate which page of check suites to retrieve, page number starts from 1")
+    page_size: int = Field(default=10, description="Number of check suites per page")
+    tool_call_id: Annotated[str, InjectedToolCallId]
+
+
+class GithubViewPRChecksTool(BaseTool):
+    """Tool for viewing PR checks."""
+
+    name: ClassVar[str] = "view_pr_checks"
+    description: ClassVar[str] = "List the check suites for a PR"
+    args_schema: ClassVar[type[BaseModel]] = GithubViewPRChecksInput
+    codebase: Codebase = Field(exclude=True)
+
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
+
+    def _run(self, pr_number: int, page: int = 1, page_size: int = 10, tool_call_id: str = None) -> ToolMessage:
+        result = view_pr_checks(self.codebase, pr_number, page, page_size)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class GithubSearchIssuesInput(BaseModel):
     """Input for searching GitHub issues."""
 
     query: str = Field(..., description="Search query string to find issues")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class GithubSearchIssuesTool(BaseTool):
@@ -531,173 +735,45 @@ class GithubSearchIssuesTool(BaseTool):
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, query: str) -> str:
-        result = search(self.codebase, query)
-        return result.render()
-
-
-class GithubViewPRInput(BaseModel):
-    """Input for getting PR contents."""
-
-    pr_id: int = Field(..., description="Number of the PR to get the contents for")
-
-
-class GithubViewPRTool(BaseTool):
-    """Tool for getting PR data."""
-
-    name: ClassVar[str] = "view_pr"
-    description: ClassVar[str] = "View the diff and associated context for a pull request"
-    args_schema: ClassVar[type[BaseModel]] = GithubViewPRInput
-    codebase: Codebase = Field(exclude=True)
-
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(self, pr_id: int) -> str:
-        result = view_pr(self.codebase, pr_id)
-        return result.render()
-
-
-class GithubCheckoutPRInput(BaseModel):
-    """Input for checkout out a PR head branch."""
-
-    pr_number: int = Field(..., description="Number of the PR to checkout")
-
-
-class GithubCheckoutPRTool(BaseTool):
-    """Tool for checking out a PR head branch."""
-
-    name: ClassVar[str] = "checkout_pr"
-    description: ClassVar[str] = "Checkout out a PR head branch"
-    args_schema: ClassVar[type[BaseModel]] = GithubCheckoutPRInput
-    codebase: Codebase = Field(exclude=True)
-
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(self, pr_number: int) -> str:
-        result = checkout_pr(self.codebase, pr_number)
-        return result.render()
-
-
-class GithubCreatePRCommentInput(BaseModel):
-    """Input for creating a PR comment"""
-
-    pr_number: int = Field(..., description="The PR number to comment on")
-    body: str = Field(..., description="The comment text")
-
-
-class GithubCreatePRCommentTool(BaseTool):
-    """Tool for creating a general PR comment."""
-
-    name: ClassVar[str] = "create_pr_comment"
-    description: ClassVar[str] = "Create a general comment on a pull request"
-    args_schema: ClassVar[type[BaseModel]] = GithubCreatePRCommentInput
-    codebase: Codebase = Field(exclude=True)
-
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(self, pr_number: int, body: str) -> str:
-        result = create_pr_comment(self.codebase, pr_number, body)
-        return result.render()
-
-
-class GithubCreatePRReviewCommentInput(BaseModel):
-    """Input for creating an inline PR review comment"""
-
-    pr_number: int = Field(..., description="The PR number to comment on")
-    body: str = Field(..., description="The comment text")
-    commit_sha: str = Field(..., description="The commit SHA to attach the comment to")
-    path: str = Field(..., description="The file path to comment on")
-    line: int = Field(..., description="The line number to comment on use the indices from the diff")
-    start_line: int | None = Field(None, description="For multi-line comments, the starting line")
-
-
-class GithubCreatePRReviewCommentTool(BaseTool):
-    """Tool for creating inline PR review comments."""
-
-    name: ClassVar[str] = "create_pr_review_comment"
-    description: ClassVar[str] = "Create an inline review comment on a specific line in a pull request"
-    args_schema: ClassVar[type[BaseModel]] = GithubCreatePRReviewCommentInput
-    codebase: Codebase = Field(exclude=True)
-
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(
-        self,
-        pr_number: int,
-        body: str,
-        commit_sha: str,
-        path: str,
-        line: int,
-        start_line: int | None = None,
-    ) -> str:
-        result = create_pr_review_comment(
-            self.codebase,
-            pr_number=pr_number,
-            body=body,
-            commit_sha=commit_sha,
-            path=path,
-            line=line,
+    def _run(self, query: str, tool_call_id: str = None) -> ToolMessage:
+        result = search_issues(self.codebase, query)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
         )
-        return result.render()
-
-
-class GithubViewPRCheckInput(BaseModel):
-    """Input for viewing PR checks"""
-
-    pr_number: int = Field(..., description="The PR number to view checks for")
-
-
-class GithubViewPRCheckTool(BaseTool):
-    """Tool for viewing PR checks."""
-
-    name: ClassVar[str] = "view_pr_checks"
-    description: ClassVar[str] = "View the check suites for a PR"
-    args_schema: ClassVar[type[BaseModel]] = GithubCreatePRReviewCommentInput
-    codebase: Codebase = Field(exclude=True)
-
-    def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(self, pr_number: int) -> str:
-        result = view_pr_checks(self.codebase, pr_number=pr_number)
-        return result.render()
-
-
-########################################################################################################################
-# LINEAR
-########################################################################################################################
 
 
 class LinearGetIssueInput(BaseModel):
     """Input for getting a Linear issue."""
 
     issue_id: str = Field(..., description="ID of the Linear issue to retrieve")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearGetIssueTool(BaseTool):
-    """Tool for getting Linear issue details."""
+    """Tool for getting a Linear issue."""
 
     name: ClassVar[str] = "linear_get_issue"
     description: ClassVar[str] = "Get details of a Linear issue by its ID"
     args_schema: ClassVar[type[BaseModel]] = LinearGetIssueInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
 
-    def _run(self, issue_id: str) -> str:
-        result = linear_get_issue_tool(self.client, issue_id)
-        return result.render()
+    def _run(self, issue_id: str, tool_call_id: str = None) -> ToolMessage:
+        result = linear_get_issue_tool(issue_id)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearGetIssueCommentsInput(BaseModel):
     """Input for getting Linear issue comments."""
 
     issue_id: str = Field(..., description="ID of the Linear issue to get comments for")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearGetIssueCommentsTool(BaseTool):
@@ -706,14 +782,17 @@ class LinearGetIssueCommentsTool(BaseTool):
     name: ClassVar[str] = "linear_get_issue_comments"
     description: ClassVar[str] = "Get all comments on a Linear issue"
     args_schema: ClassVar[type[BaseModel]] = LinearGetIssueCommentsInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
 
-    def _run(self, issue_id: str) -> str:
-        result = linear_get_issue_comments_tool(self.client, issue_id)
-        return result.render()
+    def _run(self, issue_id: str, tool_call_id: str = None) -> ToolMessage:
+        result = linear_get_issue_comments_tool(issue_id)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearCommentOnIssueInput(BaseModel):
@@ -721,69 +800,129 @@ class LinearCommentOnIssueInput(BaseModel):
 
     issue_id: str = Field(..., description="ID of the Linear issue to comment on")
     body: str = Field(..., description="The comment text")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearCommentOnIssueTool(BaseTool):
-    """Tool for commenting on Linear issues."""
+    """Tool for commenting on a Linear issue."""
 
     name: ClassVar[str] = "linear_comment_on_issue"
     description: ClassVar[str] = "Add a comment to a Linear issue"
     args_schema: ClassVar[type[BaseModel]] = LinearCommentOnIssueInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
 
-    def _run(self, issue_id: str, body: str) -> str:
-        result = linear_comment_on_issue_tool(self.client, issue_id, body)
-        return result.render()
+    def _run(self, issue_id: str, body: str, tool_call_id: str = None) -> ToolMessage:
+        result = linear_comment_on_issue_tool(issue_id, body)
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearSearchIssuesInput(BaseModel):
     """Input for searching Linear issues."""
 
-    query: str = Field(..., description="Search query string")
+    title: str | None = Field(default=None, description="String to search in issue titles")
+    description: str | None = Field(default=None, description="String to search in issue descriptions")
+    assignee_id: str | None = Field(default=None, description="Assignee user ID to filter by")
+    team_id: str | None = Field(default=None, description="Team ID to filter by")
+    project_id: str | None = Field(default=None, description="Project ID to filter by")
+    state_id: str | None = Field(default=None, description="State ID to filter by")
     limit: int = Field(default=10, description="Maximum number of issues to return")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearSearchIssuesTool(BaseTool):
     """Tool for searching Linear issues."""
 
     name: ClassVar[str] = "linear_search_issues"
-    description: ClassVar[str] = "Search for Linear issues using a query string"
+    description: ClassVar[str] = "Search for Linear issues with flexible filtering options"
     args_schema: ClassVar[type[BaseModel]] = LinearSearchIssuesInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
 
-    def _run(self, query: str, limit: int = 10) -> str:
-        result = linear_search_issues_tool(self.client, query, limit)
-        return result.render()
+    def _run(
+        self,
+        title: str | None = None,
+        description: str | None = None,
+        assignee_id: str | None = None,
+        team_id: str | None = None,
+        project_id: str | None = None,
+        state_id: str | None = None,
+        limit: int = 10,
+        tool_call_id: str = None,
+    ) -> ToolMessage:
+        result = linear_search_issues_tool(
+            title=title,
+            description=description,
+            assignee_id=assignee_id,
+            team_id=team_id,
+            project_id=project_id,
+            state_id=state_id,
+            limit=limit,
+        )
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearCreateIssueInput(BaseModel):
     """Input for creating a Linear issue."""
 
     title: str = Field(..., description="Title of the issue")
-    description: str | None = Field(None, description="Optional description of the issue")
-    team_id: str | None = Field(None, description="Optional team ID. If not provided, uses the default team_id (recommended)")
+    description: str | None = Field(default=None, description="Optional description of the issue")
+    assignee_id: str | None = Field(default=None, description="Assignee ID. If not provided behaves according to the value of self_assign")
+    team_id: str | None = Field(default=None, description="Optional team ID. If not provided, uses the default team_id (recommended)")
+    parent_issue_id: str | None = Field(default=None, description="Parent issue ID. If provided, the new issue will be a sub-issue of the parent issue")
+    self_assign: bool = Field(default=False, description="If True, assigns the issue to the bot using CODEGEN_BOT_EMAIL. Will be ignored if assignee_id is set")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearCreateIssueTool(BaseTool):
-    """Tool for creating Linear issues."""
+    """Tool for creating a Linear issue."""
 
     name: ClassVar[str] = "linear_create_issue"
     description: ClassVar[str] = "Create a new Linear issue"
     args_schema: ClassVar[type[BaseModel]] = LinearCreateIssueInput
-    client: LinearClient = Field(exclude=True)
+    codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
 
-    def _run(self, title: str, description: str | None = None, team_id: str | None = None) -> str:
-        result = linear_create_issue_tool(self.client, title, description, team_id)
-        return result.render()
+    def _run(
+        self,
+        title: str,
+        description: str | None = None,
+        assignee_id: str | None = None,
+        team_id: str | None = None,
+        parent_issue_id: str | None = None,
+        self_assign: bool = False,
+        tool_call_id: str = None,
+    ) -> ToolMessage:
+        result = linear_create_issue_tool(
+            title=title,
+            description=description,
+            assignee_id=assignee_id,
+            team_id=team_id,
+            parent_issue_id=parent_issue_id,
+            self_assign=self_assign,
+        )
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
+
+
+class LinearGetTeamsInput(BaseModel):
+    """Input for getting Linear teams."""
+
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearGetTeamsTool(BaseTool):
@@ -791,19 +930,18 @@ class LinearGetTeamsTool(BaseTool):
 
     name: ClassVar[str] = "linear_get_teams"
     description: ClassVar[str] = "Get all Linear teams the authenticated user has access to"
-    client: LinearClient = Field(exclude=True)
+    args_schema: ClassVar[type[BaseModel]] = LinearGetTeamsInput
+    codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, client: LinearClient) -> None:
-        super().__init__(client=client)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(codebase=codebase)
 
-    def _run(self) -> str:
-        result = linear_get_teams_tool(self.client)
-        return result.render()
-
-
-########################################################################################################################
-# SLACK
-########################################################################################################################
+    def _run(self, tool_call_id: str = None) -> ToolMessage:
+        result = linear_get_teams_tool()
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class SlackSendMessageInput(BaseModel):
@@ -837,56 +975,6 @@ class SlackSendMessageTool(BaseTool):
         print("> Sending message to Slack")
         self.say(content_formatted)
         return "✅ Message sent successfully"
-
-
-########################################################################################################################
-# EXPORT
-########################################################################################################################
-
-
-def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
-    """Get all workspace tools initialized with a codebase.
-
-    Args:
-        codebase: The codebase to operate on
-
-    Returns:
-        List of initialized Langchain tools
-    """
-    return [
-        CommitTool(codebase),
-        CreateFileTool(codebase),
-        DeleteFileTool(codebase),
-        EditFileTool(codebase),
-        GithubViewPRTool(codebase),
-        ListDirectoryTool(codebase),
-        MoveSymbolTool(codebase),
-        RenameFileTool(codebase),
-        ReplacementEditTool(codebase),
-        RevealSymbolTool(codebase),
-        GlobalReplacementEditTool(codebase),
-        RunBashCommandTool(),  # Note: This tool doesn't need the codebase
-        RipGrepTool(codebase),
-        SearchFilesByNameTool(codebase),
-        # SemanticEditTool(codebase),
-        # SemanticSearchTool(codebase),
-        ViewFileTool(codebase),
-        RelaceEditTool(codebase),
-        ReflectionTool(codebase),
-        # Github
-        GithubCreatePRTool(codebase),
-        GithubCreatePRCommentTool(codebase),
-        GithubCreatePRReviewCommentTool(codebase),
-        GithubViewPRTool(codebase),
-        GithubSearchIssuesTool(codebase),
-        # Linear
-        LinearGetIssueTool(codebase),
-        LinearGetIssueCommentsTool(codebase),
-        LinearCommentOnIssueTool(codebase),
-        LinearSearchIssuesTool(codebase),
-        LinearCreateIssueTool(codebase),
-        LinearGetTeamsTool(codebase),
-    ]
 
 
 class GlobalReplacementEditInput(BaseModel):
@@ -1128,3 +1216,47 @@ Search for files and directories by glob pattern (with pagination) across the ac
     def _run(self, pattern: str, page: int = 1, files_per_page: int | float = 10) -> str:
         """Execute the glob pattern search using fd."""
         return search_files_by_name(self.codebase, pattern, page=page, files_per_page=files_per_page).render()
+
+
+def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
+    """Get all workspace tools initialized with a codebase.
+
+    Args:
+        codebase: The codebase to operate on
+
+    Returns:
+        List of initialized Langchain tools
+    """
+    return [
+        CommitTool(codebase),
+        CreateFileTool(codebase),
+        DeleteFileTool(codebase),
+        EditFileTool(codebase),
+        GithubViewPRTool(codebase),
+        ListDirectoryTool(codebase),
+        MoveSymbolTool(codebase),
+        RenameFileTool(codebase),
+        ReplacementEditTool(codebase),
+        RevealSymbolTool(codebase),
+        GlobalReplacementEditTool(codebase),
+        RunBashCommandTool(),  # Note: This tool doesn't need the codebase
+        RipGrepTool(codebase),
+        SearchFilesByNameTool(codebase),
+        SemanticSearchTool(codebase),
+        ViewFileTool(codebase),
+        RelaceEditTool(codebase),
+        ReflectionTool(codebase),
+        # Github
+        GithubCreatePRTool(codebase),
+        GithubCreatePRCommentTool(codebase),
+        GithubCreatePRReviewCommentTool(codebase),
+        GithubViewPRTool(codebase),
+        GithubSearchIssuesTool(codebase),
+        # Linear
+        LinearGetIssueTool(codebase),
+        LinearGetIssueCommentsTool(codebase),
+        LinearCommentOnIssueTool(codebase),
+        LinearSearchIssuesTool(codebase),
+        LinearCreateIssueTool(codebase),
+        LinearGetTeamsTool(codebase),
+    ]
