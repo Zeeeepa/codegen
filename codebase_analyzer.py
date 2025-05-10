@@ -102,6 +102,7 @@ METRICS_CATEGORIES = {
         "get_usage_frequency_metrics",
         "get_cross_file_symbol_usage",
         "get_call_chain_analysis",  # Added new function
+        "get_dead_code_detection_with_filtering",  # Added new function
     ],
     "code_quality": [
         "get_unused_functions",
@@ -1919,6 +1920,12 @@ class CodebaseAnalyzer:
                     self.console.print(str(metric_value))
     
     def get_call_chain_analysis(self) -> Dict[str, Any]:
+    def get_dead_code_detection_with_filtering(self, exclude_patterns: List[str] = None) -> Dict[str, Any]:
+        """Detect dead code in the codebase with filtering options."""
+        # Implementation from dead_code_detection.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
         """Analyze call chains between functions."""
         # Implementation from call_chain_analysis.py
         # This is a placeholder that will be replaced with the full implementation
