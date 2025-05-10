@@ -18,7 +18,7 @@ from codegen.extensions.tools.github.create_pr_comment import create_pr_comment
 from codegen.extensions.tools.github.create_pr_review_comment import create_pr_review_comment
 from codegen.extensions.tools.github.view_pr import view_pr
 from codegen.extensions.tools.github.view_pr_checks import view_pr_checks
-from codegen.extensions.tools.github.search import search_issues
+from codegen.extensions.tools.github.search import search as search_issues
 from codegen.extensions.tools.global_replacement_edit import replacement_edit_global
 from codegen.extensions.tools.linear.linear import (
     linear_comment_on_issue_tool,
@@ -65,37 +65,29 @@ class ViewFileInput(BaseModel):
 
 
 class ViewFileTool(BaseTool):
-    """Tool for viewing file contents and metadata."""
+    """Tool for viewing file contents."""
 
-    name: ClassVar[str] = "view_file"
-    description: ClassVar[str] = """View the contents and metadata of a file in the codebase.
-For large files (>500 lines), content will be paginated. Use start_line and end_line to navigate through the file.
-The response will indicate if there are more lines available to view."""
-    args_schema: ClassVar[type[BaseModel]] = ViewFileInput
+    name: str = "view_file"
+    description: str = "View the content of a file"
+    args_schema: type[BaseModel] = ViewFileInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
-
-    def _run(
-        self,
-        tool_call_id: str,
-        filepath: str,
-        start_line: Optional[int] = None,
-        end_line: Optional[int] = None,
-        max_lines: Optional[int] = None,
-        line_numbers: Optional[bool] = True,
-    ) -> ToolMessage:
-        result = view_file(
-            self.codebase,
-            filepath,
-            line_numbers=line_numbers if line_numbers is not None else True,
-            start_line=start_line,
-            end_line=end_line,
-            max_lines=max_lines if max_lines is not None else 500,
+        super().__init__(
+            name="view_file",
+            description="View the content of a file",
+            args_schema=ViewFileInput,
+            codebase=codebase,
         )
 
-        return result.render(tool_call_id)
+    def _run(self, filepath: str, tool_call_id: str | None = None) -> str:
+        result = view_file(self.codebase, filepath)
+        if tool_call_id:
+            return str(ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+            ))
+        return result.render_as_string()
 
 
 class ListDirectoryInput(BaseModel):
@@ -109,17 +101,27 @@ class ListDirectoryInput(BaseModel):
 class ListDirectoryTool(BaseTool):
     """Tool for listing directory contents."""
 
-    name: ClassVar[str] = "list_directory"
-    description: ClassVar[str] = "List contents of a directory in the codebase"
-    args_schema: ClassVar[type[BaseModel]] = ListDirectoryInput
+    name: str = "list_directory"
+    description: str = "List the contents of a directory"
+    args_schema: type[BaseModel] = ListDirectoryInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
+        super().__init__(
+            name="list_directory",
+            description="List the contents of a directory",
+            args_schema=ListDirectoryInput,
+            codebase=codebase,
+        )
 
-    def _run(self, tool_call_id: str, dirpath: str = "./", depth: int = 1) -> ToolMessage:
-        result = list_directory(self.codebase, dirpath, depth)
-        return result.render(tool_call_id)
+    def _run(self, directory: str, tool_call_id: str | None = None) -> str:
+        result = list_directory(self.codebase, directory)
+        if tool_call_id:
+            return str(ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+            ))
+        return result.render_as_string()
 
 
 class SearchInput(BaseModel):
@@ -136,20 +138,50 @@ class SearchInput(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-class RipGrepTool(BaseTool):
-    """Tool for searching the codebase via RipGrep."""
+class RipGrepInput(BaseModel):
+    """Input for searching code using ripgrep."""
 
-    name: ClassVar[str] = "search"
-    description: ClassVar[str] = "Search the codebase using `ripgrep` or regex pattern matching"
-    args_schema: ClassVar[type[BaseModel]] = SearchInput
+    query: str = Field(..., description="ripgrep query to run")
+    use_regex: bool = Field(default=False, description="Whether to treat query as a regex pattern")
+    file_extensions: list[str] | None = Field(default=None, description="Optional list of file extensions to search")
+    page: int = Field(default=1, description="Page number to return (1-based)")
+    files_per_page: int = Field(default=10, description="Number of files to return per page (default: 10)")
+
+
+class RipGrepTool(BaseTool):
+    """Tool for searching code using ripgrep."""
+
+    name: str = "ripgrep_search"
+    description: str = "Search the codebase using `ripgrep` or regex pattern matching"
+    args_schema: type[BaseModel] = RipGrepInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
+        super().__init__(
+            name="ripgrep_search",
+            description="Search the codebase using `ripgrep` or regex pattern matching",
+            args_schema=RipGrepInput,
+            codebase=codebase,
+        )
 
-    def _run(self, tool_call_id: str, query: str, file_extensions: Optional[list[str]] = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False) -> ToolMessage:
-        result = search(self.codebase, query, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex)
-        return result.render(tool_call_id)
+    def _run(
+        self,
+        query: str,
+        use_regex: bool = False,
+        file_extensions: list[str] | None = None,
+        page: int = 1,
+        files_per_page: int = 10,
+        tool_call_id: str | None = None,
+    ) -> str:
+        result = ripgrep_search(
+            self.codebase, query, use_regex, file_extensions, page, files_per_page
+        )
+        if tool_call_id:
+            return str(ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+            ))
+        return result.render_as_string()
 
 
 class EditFileInput(BaseModel):
@@ -163,8 +195,8 @@ class EditFileInput(BaseModel):
 class EditFileTool(BaseTool):
     """Tool for editing files."""
 
-    name: ClassVar[str] = "edit_file"
-    description: ClassVar[str] = r"""
+    name: str = "edit_file"
+    description: str = r"""
 Edit a file by replacing its entire content. This tool should only be used for replacing entire file contents.
 Input for searching the codebase.
 
@@ -184,7 +216,7 @@ Input for searching the codebase.
     2. Regex: "def.*calculate.*\(.*\)" (with use_regex=True)
     3. File-specific: "TODO" with file_extensions=[".py", ".ts"]
     """
-    args_schema: ClassVar[type[BaseModel]] = EditFileInput
+    args_schema: type[BaseModel] = EditFileInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
@@ -192,7 +224,7 @@ Input for searching the codebase.
 
     def _run(self, filepath: str, content: str, tool_call_id: str) -> str:
         result = edit_file(self.codebase, filepath, content)
-        return result.render(tool_call_id)
+        return result.render()
 
 
 class CreateFileInput(BaseModel):
@@ -524,17 +556,22 @@ class GithubSearchIssuesInput(BaseModel):
 class GithubSearchIssuesTool(BaseTool):
     """Tool for searching GitHub issues."""
 
-    name: ClassVar[str] = "search_issues"
-    description: ClassVar[str] = "Search for GitHub issues/PRs using a query string from pygithub, e.g. 'is:pr is:open test_query'"
-    args_schema: ClassVar[type[BaseModel]] = GithubSearchIssuesInput
+    name: str = "search_issues"
+    description: str = "Search for GitHub issues/PRs using a query string from pygithub, e.g. 'is:pr is:open test_query'"
+    args_schema: type[BaseModel] = GithubSearchIssuesInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
-        super().__init__(codebase=codebase)
+        super().__init__(
+            name="search_issues",
+            description="Search for GitHub issues/PRs using a query string from pygithub, e.g. 'is:pr is:open test_query'",
+            args_schema=GithubSearchIssuesInput,
+            codebase=codebase,
+        )
 
     def _run(self, query: str) -> str:
         result = search_issues(self.codebase, query)
-        return result.render()
+        return result.render_as_string()
 
 
 class GithubViewPRInput(BaseModel):
@@ -1123,7 +1160,7 @@ class RelaceEditInput(BaseModel):
 
     filepath: str = Field(..., description="Path of the file relative to workspace root")
     edit_snippet: str = Field(..., description=RELACE_EDIT_PROMPT)
-    tool_call_id: Annotated[str, InjectedToolCallId]
+    tool_call_id: Annotated[str, InjectedToolCallId] | None = Field(default=None)
 
 
 class RelaceEditTool(BaseTool):
@@ -1181,27 +1218,39 @@ class ReflectionTool(BaseTool):
 class SearchFilesByNameInput(BaseModel):
     """Input for searching files by name pattern."""
 
-    pattern: str = Field(..., description="`fd`-compatible glob pattern to search for (e.g. '*.py', 'test_*.py')")
-    page: int = Field(default=1, description="Page number to return (1-based)")
-    files_per_page: int | float = Field(default=10, description="Number of files per page to return, use math.inf to return all files")
+    pattern: str = Field(..., description="Glob pattern to search for (e.g. '*.py', 'test_*.py')")
+    page: int = Field(default=1, description="Page number to return (1-based, default: 1)")
+    max_results: int = Field(default=10, description="Number of files to return per page (default: 10)")
+    tool_call_id: Annotated[str, InjectedToolCallId] | None = Field(default=None)
 
 
 class SearchFilesByNameTool(BaseTool):
     """Tool for searching files by filename across a codebase."""
 
-    name: ClassVar[str] = "search_files_by_name"
-    description: ClassVar[str] = """
-Search for files and directories by glob pattern (with pagination) across the active codebase. This is useful when you need to:
-- Find specific file types (e.g., '*.py', '*.tsx')
-- Locate configuration files (e.g., 'package.json', 'requirements.txt')
-- Find files with specific names (e.g., 'README.md', 'Dockerfile')
-"""
-    args_schema: ClassVar[type[BaseModel]] = SearchFilesByNameInput
+    name: str = "search_files_by_name"
+    description: str = "Search for files by name pattern"
+    args_schema: type[BaseModel] = SearchFilesByNameInput
     codebase: Codebase = Field(exclude=True)
 
-    def __init__(self, codebase: Codebase):
-        super().__init__(codebase=codebase)
+    def __init__(self, codebase: Codebase) -> None:
+        super().__init__(
+            name="search_files_by_name",
+            description="Search for files by name pattern",
+            args_schema=SearchFilesByNameInput,
+            codebase=codebase,
+        )
 
-    def _run(self, pattern: str, page: int = 1, files_per_page: int | float = 10) -> str:
-        """Execute the glob pattern search using fd."""
-        return search_files_by_name(self.codebase, pattern, page=page, files_per_page=files_per_page).render()
+    def _run(
+        self,
+        pattern: str,
+        page: int = 1,
+        max_results: int = 10,
+        tool_call_id: str | None = None,
+    ) -> str:
+        result = search_files_by_name(self.codebase, pattern, page, max_results)
+        if tool_call_id:
+            return str(ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+            ))
+        return result.render_as_string()
