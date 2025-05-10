@@ -44,8 +44,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Constants
-        "calculate_cyclomatic_complexity",
-# Constants
 METRICS_CATEGORIES = {
     "codebase_structure": [
         "get_file_count",
@@ -172,14 +170,6 @@ METRICS_CATEGORIES = {
     ]
 }
 
-        "cc_rank",
-        "get_operators_and_operands",
-        "calculate_halstead_volume",
-        "count_lines",
-        "calculate_maintainability_index",
-        "get_maintainability_rank",
-    ]
-}
 
 class CodebaseAnalyzer:
     """
@@ -1942,8 +1932,9 @@ class CodebaseAnalyzer:
                         self.console.print(str(metric_value))
                 else:
                     self.console.print(str(metric_value))
-    
     def get_monthly_commits(self) -> Dict[str, int]:
+        pass
+
     def get_call_chain_analysis(self) -> Dict[str, Any]:
         """
         Analyze call chains between functions.
@@ -3766,8 +3757,9 @@ class CodebaseAnalyzer:
             return {"error": str(e)}
 
 
-            repo_url=args.repo_url,
+n
 def main():
+    """Main entry point for the codebase analyzer."""
     """Main entry point for the codebase analyzer."""
     parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
     
