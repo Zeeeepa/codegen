@@ -1,5 +1,12 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Generic,
+    List,
+    Optional,
+    TypeVar,
+)
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -61,5 +68,45 @@ class RepoSource(Generic[SettingsType]):
     def __iter__(self) -> Iterator[tuple[str, str | None]]:
         """
         Yields URL and optional commit hash of repositories.
+        """
+        raise NotImplementedError
+
+
+class Source:
+    """Base class for all sources."""
+
+    def get_file_content(self, file_path: str) -> Optional[str]:
+        """
+        Get the content of a file.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            Content of the file or None if the file does not exist
+        """
+        raise NotImplementedError
+
+    def get_files(self, pattern: Optional[str] = None) -> List[str]:
+        """
+        Get a list of files in the source.
+
+        Args:
+            pattern: Optional pattern to filter files
+
+        Returns:
+            List of file paths
+        """
+        raise NotImplementedError
+
+    def get_directories(self, pattern: Optional[str] = None) -> List[str]:
+        """
+        Get a list of directories in the source.
+
+        Args:
+            pattern: Optional pattern to filter directories
+
+        Returns:
+            List of directory paths
         """
         raise NotImplementedError

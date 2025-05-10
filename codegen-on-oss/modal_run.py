@@ -33,12 +33,14 @@ except modal.exception.NotFoundError:
     if Path(".env").exists():
         aws_secrets = modal.Secret.from_dotenv()
     else:
-        aws_secrets = modal.Secret.from_dict({
-            "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID"),
-            "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY"),
-            "BUCKET_NAME": os.getenv("BUCKET_NAME"),
-            "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
-        })
+        aws_secrets = modal.Secret.from_dict(
+            {
+                "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID"),
+                "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY"),
+                "BUCKET_NAME": os.getenv("BUCKET_NAME"),
+                "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
+            }
+        )
 
 
 @parse_app.function(
