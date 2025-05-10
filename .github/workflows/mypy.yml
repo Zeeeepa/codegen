@@ -13,6 +13,8 @@ jobs:
   mypy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Skip the check if the actor is codegen-sh[bot]
+    if: github.actor != 'codegen-sh[bot]'
 
     steps:
       - name: Checkout Code
@@ -33,7 +35,7 @@ jobs:
           python_files=()
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             if [[ $file == *.py ]]; then
-              python_files+=("${file}")
+              python_files+=(\"${file}\")
             fi
           done
           echo "python_files=${python_files[*]}" >> $GITHUB_ENV
@@ -46,3 +48,4 @@ jobs:
         run: |
           echo "Running mypy on changed files: ${{ env.python_files }}"
           uv run mypy --no-pretty --show-absolute-path ${{ env.python_files }}
+

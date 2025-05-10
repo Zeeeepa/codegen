@@ -28,6 +28,8 @@ jobs:
   build:
     name: Build 3.${{ matrix.python }} ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    # Skip the check if the actor is codegen-sh[bot]
+    if: github.actor != 'codegen-sh[bot]'
     strategy:
       fail-fast: false
       matrix:
@@ -121,3 +123,4 @@ jobs:
         with:
           release-tag: ${{ inputs.release-tag || github.ref_name }}
           slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+
