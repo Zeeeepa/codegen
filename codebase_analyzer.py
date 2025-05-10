@@ -85,6 +85,7 @@ METRICS_CATEGORIES = {
         "get_generic_type_usage",
         "get_type_consistency_checking",
         "get_union_intersection_type_analysis",
+        "get_symbol_import_analysis",  # Added new function
     ],
     "dependency_flow": [
         "get_function_call_relationships",
@@ -1925,6 +1926,12 @@ class CodebaseAnalyzer:
     def get_dead_code_detection_with_filtering(self, exclude_patterns: List[str] = None) -> Dict[str, Any]:
     def get_path_finding_in_call_graphs(self, source_function: str = None, target_function: str = None, max_depth: int = 10) -> Dict[str, Any]:
     def get_dead_symbol_detection(self) -> Dict[str, Any]:
+    def get_symbol_import_analysis(self) -> Dict[str, Any]:
+        """Analyze symbol imports in the codebase."""
+        # Implementation from symbol_import_analysis.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
         """Detect dead symbols in the codebase."""
         # Implementation from dead_symbol_detection.py
         # This is a placeholder that will be replaced with the full implementation
