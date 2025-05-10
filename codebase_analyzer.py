@@ -14,7 +14,7 @@ import math
 import re
 import sys
 import tempfile
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 import networkx as nx
 from rich.console import Console
@@ -80,9 +80,6 @@ METRICS_CATEGORIES = {
     "dependency_flow": [
         "get_function_call_relationships",
         "get_call_hierarchy_visualization",
-        "find_max_call_chain",
-        "detect_dead_code",
-        "find_paths_between_functions",
         "get_entry_point_analysis",
         "get_dead_code_detection",
         "get_variable_usage_tracking",
@@ -1799,6 +1796,216 @@ class CodebaseAnalyzer:
                 else:
                     self.console.print(str(metric_value))
 
+    def analyze_type_coverage(self) -> Dict[str, Any]:
+        """Analyze type coverage across parameters, return types, and class attributes.
+        
+        Returns:
+            Dict containing comprehensive type coverage analysis with percentages.
+        """
+        # Initialize counters for parameters
+        total_parameters = 0
+        typed_parameters = 0
+        
+        # Initialize counters for return types
+        total_functions = 0
+        typed_returns = 0
+        
+        # Initialize counters for class attributes
+        total_attributes = 0
+        typed_attributes = 0
+        
+        # Count parameter and return type coverage
+        for function in self.codebase.functions:
+            # Count parameters
+            total_parameters += len(function.parameters)
+            typed_parameters += sum(1 for param in function.parameters if hasattr(param, "is_typed") and param.is_typed)
+            
+            # Count return types
+            total_functions += 1
+            if hasattr(function, "return_type") and function.return_type and hasattr(function.return_type, "is_typed") and function.return_type.is_typed:
+                typed_returns += 1
+        
+        # Count class attribute coverage
+        for cls in self.codebase.classes:
+            for attr in cls.attributes:
+                total_attributes += 1
+                if hasattr(attr, "is_typed") and attr.is_typed:
+                    typed_attributes += 1
+        
+        # Calculate percentages
+        param_percentage = (typed_parameters / total_parameters * 100) if total_parameters > 0 else 0
+        return_percentage = (typed_returns / total_functions * 100) if total_functions > 0 else 0
+        attr_percentage = (typed_attributes / total_attributes * 100) if total_attributes > 0 else 0
+        
+        # Prepare results
+        results = {
+            "parameters": {
+                "percentage": param_percentage,
+                "typed_count": typed_parameters,
+                "total_count": total_parameters
+            },
+            "return_types": {
+                "percentage": return_percentage,
+                "typed_count": typed_returns,
+                "total_count": total_functions
+            },
+            "class_attributes": {
+                "percentage": attr_percentage,
+                "typed_count": typed_attributes,
+                "total_count": total_attributes
+            },
+            "overall_percentage": (param_percentage + return_percentage + attr_percentage) / 3 if (total_parameters > 0 and total_functions > 0 and total_attributes > 0) else 0
+        }
+        
+        return results
+    
+    def find_functions_without_return_statements(self) -> List[Dict[str, str]]:
+        """Find functions that don't have any return statements.
+        
+        Returns:
+            List of dictionaries containing function name and file path.
+        """
+        functions_without_return = []
+        
+        for function in self.codebase.functions:
+            # Skip if it's a constructor, abstract method, or interface method
+            if function.name in ["__init__", "constructor"] or hasattr(function, "is_abstract") and function.is_abstract:
+                continue
+                
+            # Check if the function has no return statements
+            if not hasattr(function, "return_statements") or len(function.return_statements) == 0:
+                file_path = function.file.file_path if hasattr(function, "file") else "Unknown"
+                functions_without_return.append({
+                    "name": function.name,
+                    "file": file_path,
+                    "line": function.start_position.line if hasattr(function, "start_position") else 0
+                })
+        
+        return functions_without_return
+    
+    def integrate_with_type_checkers(self, checker: str = "mypy") -> Dict[str, Any]:
+        """Interface with type checkers like mypy and tsc for precise type inference.
+        
+        Args:
+            checker: The type checker to use ('mypy' or 'tsc')
+            
+        Returns:
+            Dict containing the type checker results and analysis.
+        """
+        results = {
+            "checker": checker,
+            "success": False,
+            "errors": [],
+            "type_issues": [],
+            "summary": {}
+        }
+        
+        try:
+            if checker.lower() == "mypy":
+                # Check if mypy is installed
+                try:
+                    subprocess.run(["mypy", "--version"], capture_output=True, check=True)
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    results["errors"].append("mypy is not installed or not in PATH")
+                    return results
+                
+                # Run mypy on the codebase
+                repo_path = self.codebase.ctx.repo_path
+                cmd = ["mypy", "--show-column-numbers", "--show-error-codes", "--no-error-summary", repo_path]
+                process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                # Parse mypy output
+                if process.returncode != 0:
+                    error_lines = process.stdout.strip().split("\n")
+                    type_issues = []
+                    
+                    for line in error_lines:
+                        if line and ":" in line:
+                            parts = line.split(":", 3)
+                            if len(parts) >= 4:
+                                file_path, line_num, col_num, error_msg = parts
+                                type_issues.append({
+                                    "file": file_path,
+                                    "line": int(line_num),
+                                    "column": int(col_num) if col_num.strip().isdigit() else 0,
+                                    "message": error_msg.strip(),
+                                    "error_code": error_msg.split("[")[-1].split("]")[0] if "[" in error_msg and "]" in error_msg else ""
+                                })
+                    
+                    results["type_issues"] = type_issues
+                    
+                    # Generate summary
+                    error_types = {}
+                    for issue in type_issues:
+                        error_code = issue.get("error_code", "unknown")
+                        if error_code in error_types:
+                            error_types[error_code] += 1
+                        else:
+                            error_types[error_code] = 1
+                    
+                    results["summary"] = {
+                        "total_issues": len(type_issues),
+                        "error_types": error_types
+                    }
+                
+                results["success"] = True
+                
+            elif checker.lower() == "tsc":
+                # Check if tsc is installed
+                try:
+                    subprocess.run(["tsc", "--version"], capture_output=True, check=True)
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    results["errors"].append("TypeScript compiler (tsc) is not installed or not in PATH")
+                    return results
+                
+                # Run tsc on the codebase
+                repo_path = self.codebase.ctx.repo_path
+                cmd = ["tsc", "--noEmit", "--pretty", "false", "--project", repo_path]
+                process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                # Parse tsc output
+                if process.returncode != 0:
+                    error_lines = process.stdout.strip().split("\n")
+                    type_issues = []
+                    
+                    for line in error_lines:
+                        if line and ":" in line and "error TS" in line:
+                            # Parse TypeScript error format: file(line,col): error TSxxxx: message
+                            match = re.match(r"(.+)\((\d+),(\d+)\): error (TS\d+): (.+)", line)
+                            if match:
+                                file_path, line_num, col_num, error_code, error_msg = match.groups()
+                                type_issues.append({
+                                    "file": file_path,
+                                    "line": int(line_num),
+                                    "column": int(col_num),
+                                    "message": error_msg.strip(),
+                                    "error_code": error_code
+                                })
+                    
+                    results["type_issues"] = type_issues
+                    
+                    # Generate summary
+                    error_types = {}
+                    for issue in type_issues:
+                        error_code = issue.get("error_code", "unknown")
+                        if error_code in error_types:
+                            error_types[error_code] += 1
+                        else:
+                            error_types[error_code] = 1
+                    
+                    results["summary"] = {
+                        "total_issues": len(type_issues),
+                        "error_types": error_types
+                    }
+                
+                results["success"] = True
+            else:
+                results["errors"].append(f"Unsupported type checker: {checker}. Supported checkers are 'mypy' and 'tsc'.")
+        
+        except Exception as e:
+            results["errors"].append(str(e))
+        
+        return results
     def get_monthly_commits(self) -> dict[str, int]:
         """Get the number of commits per month."""
         try:
@@ -1867,243 +2074,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    def find_max_call_chain(self, function_name: str) -> Dict[str, Any]:
-        """Find the longest call chain starting from a specific function.
-        
-        This function builds a directed graph of function calls starting from the specified
-        function and finds the longest path in the resulting graph.
-        
-        Args:
-            function_name: Name of the function to start the call chain analysis from
-            
-        Returns:
-            Dict containing the longest call chain information, including:
-                - chain_length: Length of the longest call chain
-                - call_chain: List of function names in the call chain
-                - visualization_data: Data for visualizing the call chain
-        """
-        # Find the starting function
-        start_function = None
-        for func in self.codebase.functions:
-            if func.name == function_name:
-                start_function = func
-                break
-                
-        if not start_function:
-            return {
-                "error": f"Function '{function_name}' not found in the codebase",
-                "chain_length": 0,
-                "call_chain": [],
-                "visualization_data": {}
-            }
-            
-        # Create a directed graph
-        G = nx.DiGraph()
-        
-        # Track visited functions to avoid infinite recursion
-        visited = set()
-        
-        def build_graph(func, depth=0, max_depth=10):
-            """Recursively build the call graph."""
-            if depth > max_depth or func in visited:
-                return
-                
-            visited.add(func)
-            
-            # Add the current function as a node
-            G.add_node(func.name, file=func.file.file_path if hasattr(func, "file") else "Unknown")
-            
-            # Process all function calls
-            for call in func.function_calls:
-                called_func = call.function_definition
-                
-                # Skip if the called function is external or the same as the caller
-                if not hasattr(called_func, "name") or called_func.name == func.name:
-                    continue
-                    
-                # Add the called function as a node
-                G.add_node(called_func.name, file=called_func.file.file_path if hasattr(called_func, "file") else "Unknown")
-                
-                # Add an edge from the current function to the called function
-                G.add_edge(func.name, called_func.name)
-                
-                # Recursively process the called function
-                build_graph(called_func, depth + 1, max_depth)
-        
-        # Build the graph starting from the specified function
-        build_graph(start_function)
-        
-        # Find the longest path in the graph
-        longest_path = []
-        try:
-            # If the graph is a DAG (no cycles), use dag_longest_path
-            longest_path = nx.dag_longest_path(G)
-        except nx.NetworkXError:
-            # If the graph has cycles, find the longest simple path
-            longest_paths = []
-            for node in G.nodes():
-                for target in G.nodes():
-                    if node != target:
-                        try:
-                            paths = list(nx.all_simple_paths(G, node, target))
-                            if paths:
-                                longest_paths.extend(paths)
-                        except nx.NetworkXNoPath:
-                            continue
-            
-            if longest_paths:
-                longest_path = max(longest_paths, key=len)
-        
-        # Prepare the result
-        result = {
-            "chain_length": len(longest_path),
-            "call_chain": longest_path,
-            "visualization_data": {
-                "nodes": [{"id": node, "file": G.nodes[node]["file"]} for node in G.nodes()],
-                "edges": [{"source": u, "target": v} for u, v in G.edges()]
-            }
-        }
-        
-        return result
-    
-    def detect_dead_code(self) -> List[Dict[str, Any]]:
-        """Detect unused (dead) functions in the codebase.
-        
-        This function identifies functions that are never called by any other function
-        in the codebase and are not entry points or exported functions.
-        
-        Returns:
-            List of dictionaries containing information about unused functions:
-                - name: Name of the unused function
-                - file: File path where the function is defined
-                - line: Line number where the function is defined
-                - is_public: Whether the function is public (not prefixed with _)
-                - is_test: Whether the function appears to be a test function
-        """
-        # Get all functions in the codebase
-        all_functions = list(self.codebase.functions)
-        
-        # Create a set of all called functions
-        called_functions = set()
-        for func in all_functions:
-            for call in func.function_calls:
-                called_func = call.function_definition
-                if hasattr(called_func, "name"):
-                    called_functions.add(called_func.name)
-        
-        # Find functions that are never called
-        dead_functions = []
-        for func in all_functions:
-            # Skip if the function is called by another function
-            if func.name in called_functions:
-                continue
-                
-            # Check if the function might be an entry point or test
-            is_test = False
-            if func.name.startswith("test_") or "test" in func.name.lower():
-                is_test = True
-                
-            # Check if the function is public (not prefixed with _)
-            is_public = not func.name.startswith("_")
-            
-            # Get the file and line number
-            file_path = func.file.file_path if hasattr(func, "file") else "Unknown"
-            line_number = func.span.start.line if hasattr(func, "span") else 0
-            
-            # Add to the list of dead functions
-            dead_functions.append({
-                "name": func.name,
-                "file": file_path,
-                "line": line_number,
-                "is_public": is_public,
-                "is_test": is_test
-            })
-        
-        # Sort by file path and line number
-        dead_functions.sort(key=lambda x: (x["file"], x["line"]))
-        
-        return dead_functions
-    
-    def find_paths_between_functions(self, start_function: str, end_function: str) -> Dict[str, Any]:
-        """Find all paths between two functions in the call graph.
-        
-        This function builds a directed graph of function calls and finds all possible
-        paths between the specified start and end functions.
-        
-        Args:
-            start_function: Name of the starting function
-            end_function: Name of the target function
-            
-        Returns:
-            Dict containing information about the paths:
-                - paths_count: Number of paths found
-                - paths: List of paths, each represented as a list of function names
-                - visualization_data: Data for visualizing the paths
-        """
-        # Find the start and end functions
-        start_func = None
-        end_func = None
-        
-        for func in self.codebase.functions:
-            if func.name == start_function:
-                start_func = func
-            if func.name == end_function:
-                end_func = func
-                
-        if not start_func or not end_func:
-            missing = []
-            if not start_func:
-                missing.append(f"Start function '{start_function}'")
-            if not end_func:
-                missing.append(f"End function '{end_function}'")
-                
-            return {
-                "error": f"Function(s) not found: {', '.join(missing)}",
-                "paths_count": 0,
-                "paths": [],
-                "visualization_data": {}
-            }
-            
-        # Create a directed graph
-        G = nx.DiGraph()
-        
-        # Build the complete call graph
-        for func in self.codebase.functions:
-            # Add the current function as a node
-            G.add_node(func.name, file=func.file.file_path if hasattr(func, "file") else "Unknown")
-            
-            # Process all function calls
-            for call in func.function_calls:
-                called_func = call.function_definition
-                
-                # Skip if the called function is external
-                if not hasattr(called_func, "name"):
-                    continue
-                    
-                # Add the called function as a node
-                G.add_node(called_func.name, file=called_func.file.file_path if hasattr(called_func, "file") else "Unknown")
-                
-                # Add an edge from the current function to the called function
-                G.add_edge(func.name, called_func.name)
-        
-        # Find all simple paths between the start and end functions
-        paths = []
-        try:
-            paths = list(nx.all_simple_paths(G, start_function, end_function, cutoff=10))
-        except (nx.NetworkXNoPath, nx.NodeNotFound):
-            # No path exists or node not found
-            pass
-        
-        # Prepare the result
-        result = {
-            "paths_count": len(paths),
-            "paths": paths,
-            "visualization_data": {
-                "nodes": [{"id": node, "file": G.nodes[node]["file"]} for node in G.nodes()],
-                "edges": [{"source": u, "target": v} for u, v in G.edges()],
-                "highlighted_paths": paths
-            }
-        }
-        
-        return result
-
