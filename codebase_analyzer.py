@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import networkx as nx
 """
 Comprehensive Codebase Analyzer
 
@@ -85,6 +86,10 @@ METRICS_CATEGORIES = {
         "get_generic_type_usage",
         "get_type_consistency_checking",
         "get_union_intersection_type_analysis",
+        "analyze_type_resolution",
+        "analyze_generic_types",
+        "analyze_union_types",
+        "track_type_dependencies",
     ],
     "dependency_flow": [
         "get_function_call_relationships",
@@ -766,6 +771,428 @@ class CodebaseAnalyzer:
         return parameter_stats
     
     def get_return_type_analysis(self) -> Dict[str, Any]:
+    def analyze_type_resolution(self, symbol_name: str) -> Dict[str, Any]:
+        """Resolve a symbol's type to its actual definition.
+        
+        This function takes a symbol name and resolves it to its actual type definition,
+        following imports, aliases, and handling complex cases like forward references.
+        
+        Args:
+            symbol_name: Name of the symbol to resolve
+            
+        Returns:
+            Dictionary containing resolved type information
+        """
+        result = {
+            "symbol_name": symbol_name,
+            "resolved_types": [],
+            "resolution_path": [],
+            "is_resolved": False,
+            "source_locations": [],
+            "dependencies": [],
+        }
+        
+        try:
+            # Find the symbol in the codebase
+            symbols = list(self.codebase.find_symbols(symbol_name))
+            
+            if not symbols:
+                return result
+                
+            # Get the first matching symbol
+            symbol = symbols[0]
+            result["is_resolved"] = True
+            
+            # Add source location
+            if hasattr(symbol, "file") and hasattr(symbol, "start_position"):
+                result["source_locations"].append({
+                    "file": symbol.file.file_path,
+                    "line": symbol.start_position.line,
+                    "column": symbol.start_position.column,
+                })
+            
+            # Handle different symbol types
+            if hasattr(symbol, "type") and symbol.type:
+                type_info = {
+                    "name": str(symbol.type.source) if hasattr(symbol.type, "source") else str(symbol.type),
+                    "kind": type(symbol.type).__name__,
+                }
+                result["resolved_types"].append(type_info)
+                
+                # Add resolution path
+                if hasattr(symbol.type, "resolved_types"):
+                    for resolved_type in symbol.type.resolved_types:
+                        resolved_name = str(resolved_type)
+                        result["resolution_path"].append(resolved_name)
+                        
+                        # Add dependencies
+                        if hasattr(resolved_type, "file"):
+                            result["dependencies"].append({
+                                "name": resolved_name,
+                                "file": resolved_type.file.file_path if hasattr(resolved_type.file, "file_path") else "Unknown",
+                            })
+            
+            # For class/function symbols, add their own info
+            if hasattr(symbol, "name"):
+                type_info = {
+                    "name": symbol.name,
+                    "kind": type(symbol).__name__,
+                }
+                result["resolved_types"].append(type_info)
+                
+        except Exception as e:
+            result["error"] = str(e)
+            
+        return result
+    
+    def analyze_generic_types(self) -> Dict[str, Any]:
+        """Analyze generic type usage across the codebase.
+        
+        This function scans the codebase for generic type usage and provides
+        statistics and details about how generic types are used.
+        
+        Returns:
+            Dictionary containing generic type analysis results
+        """
+        result = {
+            "generic_type_count": 0,
+            "files_with_generics": 0,
+            "common_generic_bases": {},
+            "parameter_count_distribution": {
+                "single": 0,      # List[T]
+                "double": 0,      # Dict[K, V]
+                "multiple": 0,    # Tuple[T, U, V, ...]
+            },
+            "nested_generics_count": 0,  # List[Dict[str, int]]
+            "complex_examples": [],
+        }
+        
+        try:
+            files_with_generics = set()
+            generic_bases = {}
+            
+            # Analyze functions with return types
+            for func in self.codebase.functions:
+                if hasattr(func, "return_type") and func.return_type:
+                    self._analyze_generic_type(func.return_type, result, files_with_generics, generic_bases, func)
+            
+            # Analyze function parameters
+            for func in self.codebase.functions:
+                if hasattr(func, "parameters"):
+                    for param in func.parameters:
+                        if hasattr(param, "type") and param.type:
+                            self._analyze_generic_type(param.type, result, files_with_generics, generic_bases, func)
+            
+            # Analyze variable assignments
+            for file in self.codebase.files:
+                for assignment in file.assignments:
+                    if hasattr(assignment, "type") and assignment.type:
+                        self._analyze_generic_type(assignment.type, result, files_with_generics, generic_bases, assignment)
+            
+            # Update summary statistics
+            result["files_with_generics"] = len(files_with_generics)
+            
+            # Get most common generic bases
+            sorted_bases = sorted(generic_bases.items(), key=lambda x: x[1], reverse=True)
+            result["common_generic_bases"] = dict(sorted_bases[:10])  # Top 10
+            
+        except Exception as e:
+            result["error"] = str(e)
+            
+        return result
+    
+    def _analyze_generic_type(self, type_obj, result, files_with_generics, generic_bases, parent_obj):
+        """Helper method to analyze a generic type object."""
+        if not hasattr(type_obj, "source"):
+            return
+            
+        # Check if it's a generic type
+        is_generic = False
+        if hasattr(type_obj, "parameters") and type_obj.parameters:
+            is_generic = True
+            result["generic_type_count"] += 1
+            
+            # Add file to set of files with generics
+            if hasattr(parent_obj, "file") and parent_obj.file:
+                files_with_generics.add(parent_obj.file.file_path)
+            
+            # Count parameters
+            param_count = len(type_obj.parameters)
+            if param_count == 1:
+                result["parameter_count_distribution"]["single"] += 1
+            elif param_count == 2:
+                result["parameter_count_distribution"]["double"] += 1
+            else:
+                result["parameter_count_distribution"]["multiple"] += 1
+            
+            # Track generic base
+            base_name = type_obj.base if hasattr(type_obj, "base") else str(type_obj.source).split("[")[0]
+            generic_bases[base_name] = generic_bases.get(base_name, 0) + 1
+            
+            # Check for nested generics
+            has_nested = False
+            for param in type_obj.parameters:
+                if hasattr(param, "parameters") and param.parameters:
+                    has_nested = True
+                    result["nested_generics_count"] += 1
+                    
+                    # Recursively analyze nested generic
+                    self._analyze_generic_type(param, result, files_with_generics, generic_bases, parent_obj)
+            
+            # Add complex examples
+            if has_nested or param_count > 2:
+                if len(result["complex_examples"]) < 10:  # Limit to 10 examples
+                    example = {
+                        "type": str(type_obj.source),
+                        "location": f"{parent_obj.file.file_path}:{parent_obj.start_position.line}" if hasattr(parent_obj, "file") and hasattr(parent_obj, "start_position") else "Unknown",
+                    }
+                    result["complex_examples"].append(example)
+    
+    def analyze_union_types(self) -> Dict[str, Any]:
+        """Analyze union type usage across the codebase.
+        
+        This function scans the codebase for union type usage and provides
+        statistics and details about how union types are used.
+        
+        Returns:
+            Dictionary containing union type analysis results
+        """
+        result = {
+            "union_type_count": 0,
+            "files_with_unions": 0,
+            "option_count_distribution": {
+                "binary": 0,       # A | B
+                "ternary": 0,      # A | B | C
+                "multiple": 0,     # A | B | C | D ...
+            },
+            "common_union_patterns": {},
+            "optional_type_count": 0,  # T | None
+            "complex_examples": [],
+        }
+        
+        try:
+            files_with_unions = set()
+            union_patterns = {}
+            
+            # Analyze functions with return types
+            for func in self.codebase.functions:
+                if hasattr(func, "return_type") and func.return_type:
+                    self._analyze_union_type(func.return_type, result, files_with_unions, union_patterns, func)
+            
+            # Analyze function parameters
+            for func in self.codebase.functions:
+                if hasattr(func, "parameters"):
+                    for param in func.parameters:
+                        if hasattr(param, "type") and param.type:
+                            self._analyze_union_type(param.type, result, files_with_unions, union_patterns, func)
+            
+            # Analyze variable assignments
+            for file in self.codebase.files:
+                for assignment in file.assignments:
+                    if hasattr(assignment, "type") and assignment.type:
+                        self._analyze_union_type(assignment.type, result, files_with_unions, union_patterns, assignment)
+            
+            # Update summary statistics
+            result["files_with_unions"] = len(files_with_unions)
+            
+            # Get most common union patterns
+            sorted_patterns = sorted(union_patterns.items(), key=lambda x: x[1], reverse=True)
+            result["common_union_patterns"] = dict(sorted_patterns[:10])  # Top 10
+            
+        except Exception as e:
+            result["error"] = str(e)
+            
+        return result
+    
+    def _analyze_union_type(self, type_obj, result, files_with_unions, union_patterns, parent_obj):
+        """Helper method to analyze a union type object."""
+        if not hasattr(type_obj, "source"):
+            return
+            
+        # Check if it's a union type
+        is_union = False
+        if hasattr(type_obj, "options") and type_obj.options:
+            is_union = True
+            result["union_type_count"] += 1
+            
+            # Add file to set of files with unions
+            if hasattr(parent_obj, "file") and parent_obj.file:
+                files_with_unions.add(parent_obj.file.file_path)
+            
+            # Count options
+            option_count = len(type_obj.options)
+            if option_count == 2:
+                result["option_count_distribution"]["binary"] += 1
+                
+                # Check for Optional type pattern (T | None)
+                has_none = any(str(opt.source) == "None" for opt in type_obj.options if hasattr(opt, "source"))
+                if has_none:
+                    result["optional_type_count"] += 1
+                    
+            elif option_count == 3:
+                result["option_count_distribution"]["ternary"] += 1
+            else:
+                result["option_count_distribution"]["multiple"] += 1
+            
+            # Track union pattern
+            pattern = str(type_obj.source)
+            union_patterns[pattern] = union_patterns.get(pattern, 0) + 1
+            
+            # Add complex examples
+            if option_count > 2:
+                if len(result["complex_examples"]) < 10:  # Limit to 10 examples
+                    example = {
+                        "type": str(type_obj.source),
+                        "location": f"{parent_obj.file.file_path}:{parent_obj.start_position.line}" if hasattr(parent_obj, "file") and hasattr(parent_obj, "start_position") else "Unknown",
+                    }
+                    result["complex_examples"].append(example)
+    
+    def track_type_dependencies(self, symbol_name: str) -> Dict[str, Any]:
+        """Track dependencies for a given symbol's type.
+        
+        This function analyzes a symbol and tracks all the types it depends on,
+        building a dependency graph that shows how types are related.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            Dictionary containing type dependency information
+        """
+        result = {
+            "symbol_name": symbol_name,
+            "direct_dependencies": [],
+            "all_dependencies": [],
+            "dependency_graph": {},
+            "import_dependencies": [],
+            "circular_dependencies": [],
+        }
+        
+        try:
+            # Find the symbol in the codebase
+            symbols = list(self.codebase.find_symbols(symbol_name))
+            
+            if not symbols:
+                return result
+                
+            # Get the first matching symbol
+            symbol = symbols[0]
+            
+            # Create a directed graph for dependencies
+            dependency_graph = nx.DiGraph()
+            visited = set()
+            
+            # Start the recursive dependency tracking
+            self._track_type_dependencies_recursive(symbol, dependency_graph, visited, result, direct=True)
+            
+            # Convert the graph to a dictionary representation
+            for node in dependency_graph.nodes():
+                result["dependency_graph"][node] = list(dependency_graph.successors(node))
+            
+            # Find circular dependencies
+            try:
+                cycles = list(nx.simple_cycles(dependency_graph))
+                for cycle in cycles:
+                    if len(cycle) > 1:  # Only include cycles with more than one node
+                        result["circular_dependencies"].append(cycle)
+            except nx.NetworkXNoCycle:
+                pass  # No cycles found
+                
+            # Get all dependencies (all nodes except the original symbol)
+            all_deps = list(dependency_graph.nodes())
+            if symbol_name in all_deps:
+                all_deps.remove(symbol_name)
+            result["all_dependencies"] = all_deps
+            
+        except Exception as e:
+            result["error"] = str(e)
+            
+        return result
+    
+    def _track_type_dependencies_recursive(self, symbol, graph, visited, result, direct=False):
+        """Recursively track type dependencies for a symbol."""
+        if not symbol or not hasattr(symbol, "name"):
+            return
+            
+        symbol_name = symbol.name
+        
+        # Avoid cycles in the recursion
+        if symbol_name in visited:
+            return
+            
+        visited.add(symbol_name)
+        
+        # Add the symbol to the graph
+        if symbol_name not in graph:
+            graph.add_node(symbol_name)
+        
+        # Process type annotation if available
+        if hasattr(symbol, "type") and symbol.type:
+            self._process_type_dependencies(symbol, symbol.type, graph, visited, result, direct)
+            
+        # For functions, process return type and parameters
+        if hasattr(symbol, "return_type") and symbol.return_type:
+            self._process_type_dependencies(symbol, symbol.return_type, graph, visited, result, direct)
+            
+        if hasattr(symbol, "parameters"):
+            for param in symbol.parameters:
+                if hasattr(param, "type") and param.type:
+                    self._process_type_dependencies(symbol, param.type, graph, visited, result, direct)
+                    
+        # For classes, process attributes
+        if hasattr(symbol, "attributes"):
+            for attr in symbol.attributes:
+                if hasattr(attr, "assignment") and hasattr(attr.assignment, "type") and attr.assignment.type:
+                    self._process_type_dependencies(symbol, attr.assignment.type, graph, visited, result, direct)
+    
+    def _process_type_dependencies(self, symbol, type_obj, graph, visited, result, direct):
+        """Process dependencies for a specific type object."""
+        symbol_name = symbol.name
+        
+        # Handle resolved types
+        if hasattr(type_obj, "resolved_types"):
+            for resolved_type in type_obj.resolved_types:
+                if hasattr(resolved_type, "name"):
+                    dep_name = resolved_type.name
+                    
+                    # Add edge to the graph
+                    graph.add_edge(symbol_name, dep_name)
+                    
+                    # Add to direct dependencies if this is a direct dependency
+                    if direct and dep_name not in result["direct_dependencies"]:
+                        dep_info = {
+                            "name": dep_name,
+                            "kind": type(resolved_type).__name__,
+                        }
+                        
+                        # Add file information if available
+                        if hasattr(resolved_type, "file") and resolved_type.file:
+                            dep_info["file"] = resolved_type.file.file_path
+                            
+                            # Check if this is an import dependency
+                            if hasattr(symbol, "file") and symbol.file and symbol.file.file_path != resolved_type.file.file_path:
+                                import_dep = {
+                                    "from": symbol.file.file_path,
+                                    "to": resolved_type.file.file_path,
+                                    "symbol": dep_name,
+                                }
+                                if import_dep not in result["import_dependencies"]:
+                                    result["import_dependencies"].append(import_dep)
+                        
+                        result["direct_dependencies"].append(dep_info)
+                    
+                    # Recursively process this dependency
+                    self._track_type_dependencies_recursive(resolved_type, graph, visited, result)
+        
+        # Handle generic types
+        if hasattr(type_obj, "parameters"):
+            for param in type_obj.parameters:
+                self._process_type_dependencies(symbol, param, graph, visited, result, direct)
+                
+        # Handle union types
+        if hasattr(type_obj, "options"):
+            for option in type_obj.options:
+                self._process_type_dependencies(symbol, option, graph, visited, result, direct)
         """Analyze function return types."""
         functions = list(self.codebase.functions)
         return_type_stats = {
