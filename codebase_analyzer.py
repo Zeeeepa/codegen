@@ -101,6 +101,7 @@ METRICS_CATEGORIES = {
         "get_symbol_reference_tracking",
         "get_usage_frequency_metrics",
         "get_cross_file_symbol_usage",
+        "get_call_chain_analysis",  # Added new function
     ],
     "code_quality": [
         "get_unused_functions",
@@ -1917,6 +1918,12 @@ class CodebaseAnalyzer:
                 else:
                     self.console.print(str(metric_value))
     
+    def get_call_chain_analysis(self) -> Dict[str, Any]:
+        """Analyze call chains between functions."""
+        # Implementation from call_chain_analysis.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
     def get_monthly_commits(self) -> Dict[str, int]:
         """Get the number of commits per month."""
         try:
