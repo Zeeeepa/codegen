@@ -13,7 +13,12 @@ from pydantic import BaseModel, Field
 from codegen.extensions.linear.linear_client import LinearClient
 from codegen.extensions.tools.bash import run_bash_command
 from codegen.extensions.tools.github.checkout_pr import checkout_pr
+from codegen.extensions.tools.github.create_pr import create_pr
+from codegen.extensions.tools.github.create_pr_comment import create_pr_comment
+from codegen.extensions.tools.github.create_pr_review_comment import create_pr_review_comment
+from codegen.extensions.tools.github.view_pr import view_pr
 from codegen.extensions.tools.github.view_pr_checks import view_pr_checks
+from codegen.extensions.tools.github.search import search_issues
 from codegen.extensions.tools.global_replacement_edit import replacement_edit_global
 from codegen.extensions.tools.linear.linear import (
     linear_comment_on_issue_tool,
@@ -37,16 +42,12 @@ from codegen.sdk.core.codebase import Codebase
 from ..tools import (
     commit,
     create_file,
-    create_pr,
-    create_pr_comment,
-    create_pr_review_comment,
     delete_file,
     edit_file,
     list_directory,
     move_symbol,
     rename_file,
     view_file,
-    view_pr,
 )
 from ..tools.relace_edit_prompts import RELACE_EDIT_PROMPT
 from ..tools.semantic_edit_prompts import FILE_EDIT_PROMPT
@@ -532,7 +533,7 @@ class GithubSearchIssuesTool(BaseTool):
         super().__init__(codebase=codebase)
 
     def _run(self, query: str) -> str:
-        result = search(self.codebase, query)
+        result = search_issues(self.codebase, query)
         return result.render()
 
 
@@ -559,25 +560,29 @@ class GithubViewPRTool(BaseTool):
 
 
 class GithubCheckoutPRInput(BaseModel):
-    """Input for checkout out a PR head branch."""
+    """Input for checking out a PR."""
 
-    pr_number: int = Field(..., description="Number of the PR to checkout")
+    pr_number: int = Field(..., description="The PR number to checkout")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class GithubCheckoutPRTool(BaseTool):
-    """Tool for checking out a PR head branch."""
+    """Tool for checking out a PR."""
 
     name: ClassVar[str] = "checkout_pr"
-    description: ClassVar[str] = "Checkout out a PR head branch"
+    description: ClassVar[str] = "Checkout a PR to your local workspace"
     args_schema: ClassVar[type[BaseModel]] = GithubCheckoutPRInput
     codebase: Codebase = Field(exclude=True)
 
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, pr_number: int) -> str:
+    def _run(self, pr_number: int, tool_call_id: str) -> ToolMessage:
         result = checkout_pr(self.codebase, pr_number)
-        return result.render()
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class GithubCreatePRCommentInput(BaseModel):
@@ -676,6 +681,7 @@ class LinearGetIssueInput(BaseModel):
     """Input for getting a Linear issue."""
 
     issue_id: str = Field(..., description="ID of the Linear issue to retrieve")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearGetIssueTool(BaseTool):
@@ -689,15 +695,19 @@ class LinearGetIssueTool(BaseTool):
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self, issue_id: str) -> str:
+    def _run(self, issue_id: str, tool_call_id: str = None) -> ToolMessage:
         result = linear_get_issue_tool(self.client, issue_id)
-        return result.render()
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearGetIssueCommentsInput(BaseModel):
     """Input for getting Linear issue comments."""
 
     issue_id: str = Field(..., description="ID of the Linear issue to get comments for")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearGetIssueCommentsTool(BaseTool):
@@ -711,9 +721,12 @@ class LinearGetIssueCommentsTool(BaseTool):
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self, issue_id: str) -> str:
+    def _run(self, issue_id: str, tool_call_id: str = None) -> ToolMessage:
         result = linear_get_issue_comments_tool(self.client, issue_id)
-        return result.render()
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearCommentOnIssueInput(BaseModel):
@@ -721,6 +734,7 @@ class LinearCommentOnIssueInput(BaseModel):
 
     issue_id: str = Field(..., description="ID of the Linear issue to comment on")
     body: str = Field(..., description="The comment text")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearCommentOnIssueTool(BaseTool):
@@ -734,40 +748,74 @@ class LinearCommentOnIssueTool(BaseTool):
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self, issue_id: str, body: str) -> str:
+    def _run(self, issue_id: str, body: str, tool_call_id: str = None) -> ToolMessage:
         result = linear_comment_on_issue_tool(self.client, issue_id, body)
-        return result.render()
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearSearchIssuesInput(BaseModel):
     """Input for searching Linear issues."""
 
-    query: str = Field(..., description="Search query string")
+    title: str | None = Field(default=None, description="String to search in issue titles")
+    description: str | None = Field(default=None, description="String to search in issue descriptions")
+    assignee_id: str | None = Field(default=None, description="Assignee user ID to filter by")
+    team_id: str | None = Field(default=None, description="Team ID to filter by")
+    project_id: str | None = Field(default=None, description="Project ID to filter by")
+    state_id: str | None = Field(default=None, description="State ID to filter by")
     limit: int = Field(default=10, description="Maximum number of issues to return")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearSearchIssuesTool(BaseTool):
     """Tool for searching Linear issues."""
 
     name: ClassVar[str] = "linear_search_issues"
-    description: ClassVar[str] = "Search for Linear issues using a query string"
+    description: ClassVar[str] = "Search for Linear issues with flexible filtering options"
     args_schema: ClassVar[type[BaseModel]] = LinearSearchIssuesInput
     client: LinearClient = Field(exclude=True)
 
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self, query: str, limit: int = 10) -> str:
-        result = linear_search_issues_tool(self.client, query, limit)
-        return result.render()
+    def _run(
+        self,
+        title: str | None = None,
+        description: str | None = None,
+        assignee_id: str | None = None,
+        team_id: str | None = None,
+        project_id: str | None = None,
+        state_id: str | None = None,
+        limit: int = 10,
+        tool_call_id: str = None,
+    ) -> ToolMessage:
+        result = linear_search_issues_tool(
+            title=title,
+            description=description,
+            assignee_id=assignee_id,
+            team_id=team_id,
+            project_id=project_id,
+            state_id=state_id,
+            limit=limit,
+        )
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 class LinearCreateIssueInput(BaseModel):
     """Input for creating a Linear issue."""
 
     title: str = Field(..., description="Title of the issue")
-    description: str | None = Field(None, description="Optional description of the issue")
-    team_id: str | None = Field(None, description="Optional team ID. If not provided, uses the default team_id (recommended)")
+    description: str | None = Field(default=None, description="Optional description of the issue")
+    assignee_id: str | None = Field(default=None, description="Assignee ID. If not provided behaves according to the value of self_assign")
+    team_id: str | None = Field(default=None, description="Optional team ID. If not provided, uses the default team_id (recommended)")
+    parent_issue_id: str | None = Field(default=None, description="Parent issue ID. If provided, the new issue will be a sub-issue of the parent issue")
+    self_assign: bool = Field(default=False, description="If True, assigns the issue to the bot using CODEGEN_BOT_EMAIL. Will be ignored if assignee_id is set")
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearCreateIssueTool(BaseTool):
@@ -781,9 +829,34 @@ class LinearCreateIssueTool(BaseTool):
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self, title: str, description: str | None = None, team_id: str | None = None) -> str:
-        result = linear_create_issue_tool(self.client, title, description, team_id)
-        return result.render()
+    def _run(
+        self,
+        title: str,
+        description: str | None = None,
+        assignee_id: str | None = None,
+        team_id: str | None = None,
+        parent_issue_id: str | None = None,
+        self_assign: bool = False,
+        tool_call_id: str = None,
+    ) -> ToolMessage:
+        result = linear_create_issue_tool(
+            title=title,
+            description=description,
+            assignee_id=assignee_id,
+            team_id=team_id,
+            parent_issue_id=parent_issue_id,
+            self_assign=self_assign,
+        )
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
+
+
+class LinearGetTeamsInput(BaseModel):
+    """Input for getting Linear teams."""
+
+    tool_call_id: Annotated[str, InjectedToolCallId]
 
 
 class LinearGetTeamsTool(BaseTool):
@@ -791,14 +864,18 @@ class LinearGetTeamsTool(BaseTool):
 
     name: ClassVar[str] = "linear_get_teams"
     description: ClassVar[str] = "Get all Linear teams the authenticated user has access to"
+    args_schema: ClassVar[type[BaseModel]] = LinearGetTeamsInput
     client: LinearClient = Field(exclude=True)
 
     def __init__(self, client: LinearClient) -> None:
         super().__init__(client=client)
 
-    def _run(self) -> str:
-        result = linear_get_teams_tool(self.client)
-        return result.render()
+    def _run(self, tool_call_id: str = None) -> ToolMessage:
+        result = linear_get_teams_tool()
+        return ToolMessage(
+            content=str(result),
+            tool_call_id=tool_call_id,
+        )
 
 
 ########################################################################################################################
