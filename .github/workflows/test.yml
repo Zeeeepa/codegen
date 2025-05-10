@@ -19,7 +19,8 @@ jobs:
           require: write
           username: ${{ github.triggering_actor }}
           error-if-missing: true
-          bypass-users: codegen-sh[bot]
+          bypass-users: |
+            codegen-sh[bot]
 
   unit-tests:
     needs: access-check
@@ -187,4 +188,3 @@ jobs:
         with:
           flag: integration-tests
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
-
