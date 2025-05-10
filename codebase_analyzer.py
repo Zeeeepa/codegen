@@ -104,6 +104,7 @@ METRICS_CATEGORIES = {
         "get_call_chain_analysis",  # Added new function
         "get_dead_code_detection_with_filtering",  # Added new function
         "get_path_finding_in_call_graphs",  # Added new function
+        "get_dead_symbol_detection",  # Added new function
     ],
     "code_quality": [
         "get_unused_functions",
@@ -1923,6 +1924,12 @@ class CodebaseAnalyzer:
     def get_call_chain_analysis(self) -> Dict[str, Any]:
     def get_dead_code_detection_with_filtering(self, exclude_patterns: List[str] = None) -> Dict[str, Any]:
     def get_path_finding_in_call_graphs(self, source_function: str = None, target_function: str = None, max_depth: int = 10) -> Dict[str, Any]:
+    def get_dead_symbol_detection(self) -> Dict[str, Any]:
+        """Detect dead symbols in the codebase."""
+        # Implementation from dead_symbol_detection.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
         """Find paths between functions in the call graph."""
         # Implementation from path_finding.py
         # This is a placeholder that will be replaced with the full implementation
