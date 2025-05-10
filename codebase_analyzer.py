@@ -14,8 +14,8 @@ import math
 import re
 import sys
 import tempfile
-from typing import Any, Optional, Dict, List, Set, Tuple
 from collections import defaultdict
+from typing import Any, Optional
 
 import networkx as nx
 from rich.console import Console
@@ -1823,15 +1823,15 @@ class CodebaseAnalyzer:
             return {"error": str(e)}
 
 
-    def create_dependency_graph(self) -> Dict[str, Any]:
-            """Create a graph of file dependencies.
-        
-            This function analyzes the codebase and creates a directed graph representing
+    def create_dependency_graph(self) -> dict[str, Any]:
+        """Create a graph of file dependencies.
+
+        This function analyzes the codebase and creates a directed graph representing
         file dependencies based on imports. Each node in the graph represents a file,
         and each edge represents an import relationship.
-    
+
         Returns:
-            Dict containing the dependency graph data and metrics
+        Dict containing the dependency graph data and metrics
         """
         # Initialize results dictionary
         result = {
@@ -1851,77 +1851,77 @@ class CodebaseAnalyzer:
                 "adjacency_list": {},
             },
         }
-    
+
         try:
             # Create a directed graph
             G = nx.DiGraph()
-            
+
             # Track import counts
             import_counts = defaultdict(int)  # Files importing others
             imported_counts = defaultdict(int)  # Files being imported
-            
+
             # Add nodes and edges
             for file in self.codebase.files:
                 file_path = file.file_path if hasattr(file, "file_path") else str(file)
                 G.add_node(file_path)
                 result["graph_data"]["nodes"].append({"id": file_path, "label": file_path})
-                
+
                 # Process imports
                 imports = []
                 if hasattr(file, "imports"):
                     imports = file.imports
-                
+
                 for imp in imports:
                     if hasattr(imp, "from_file") and imp.from_file:
                         target_path = imp.from_file.file_path if hasattr(imp.from_file, "file_path") else str(imp.from_file)
                         G.add_edge(file_path, target_path)
                         result["graph_data"]["edges"].append({"source": file_path, "target": target_path})
-                        
+
                         # Update counts
                         import_counts[file_path] += 1
                         imported_counts[target_path] += 1
-            
+
             # Calculate metrics
             result["metrics"]["total_files"] = len(G.nodes)
             result["metrics"]["total_imports"] = len(G.edges)
-            
+
             if len(G.nodes) > 0:
                 result["metrics"]["avg_imports_per_file"] = len(G.edges) / len(G.nodes)
-            
+
             # Find max imports
             if import_counts:
                 result["metrics"]["max_imports"] = max(import_counts.values()) if import_counts else 0
-                
+
                 # Files with most imports (outgoing dependencies)
                 most_imports = sorted(import_counts.items(), key=lambda x: x[1], reverse=True)[:10]
                 result["metrics"]["files_with_most_imports"] = [
                     {"file": file, "import_count": count} for file, count in most_imports
                 ]
-                
+
                 # Files most imported by others (incoming dependencies)
                 most_imported = sorted(imported_counts.items(), key=lambda x: x[1], reverse=True)[:10]
                 result["metrics"]["files_most_imported"] = [
                     {"file": file, "imported_count": count} for file, count in most_imported
                 ]
-            
+
             # Create adjacency list for visualization
             for node in G.nodes:
                 result["visualization_data"]["adjacency_list"][node] = list(G.successors(node))
-            
+
             # Add the NetworkX graph object for further analysis
             result["nx_graph"] = G
-            
+
             return result
-        
+
         except Exception as e:
             return {"error": str(e)}
-    
-    def suggest_circular_dependency_fixes(self) -> Dict[str, Any]:
+
+    def suggest_circular_dependency_fixes(self) -> dict[str, Any]:
         """Suggest fixes for circular dependencies in the codebase.
-    
+
         This function identifies circular dependencies in the codebase and suggests
         strategies to break them, such as creating shared modules or refactoring code.
-    
+
         Returns:
             Dict containing circular dependencies and suggested fixes
         """
@@ -1934,19 +1934,19 @@ class CodebaseAnalyzer:
                 "largest_cycle_size": 0,
             },
         }
-    
+
         try:
             # First create the dependency graph
             graph_data = self.create_dependency_graph()
             if "error" in graph_data:
                 return {"error": graph_data["error"]}
-            
+
             G = graph_data["nx_graph"]
-            
+
             # Find all simple cycles (circular dependencies)
             cycles = list(nx.simple_cycles(G))
             result["summary"]["total_cycles"] = len(cycles)
-            
+
             # Process each cycle
             for cycle in cycles:
                 cycle_info = {
@@ -1954,13 +1954,13 @@ class CodebaseAnalyzer:
                     "size": len(cycle),
                 }
                 result["circular_dependencies"].append(cycle_info)
-                
+
                 # Track affected files and largest cycle
                 result["summary"]["affected_files"].update(cycle)
                 result["summary"]["largest_cycle_size"] = max(
                     result["summary"]["largest_cycle_size"], len(cycle)
                 )
-                
+
                 # Generate suggested fix
                 if len(cycle) == 2:
                     # For direct circular dependency between two files
@@ -1969,10 +1969,10 @@ class CodebaseAnalyzer:
                         "strategy": "extract_shared_code",
                         "description": f"Extract shared code used by both {cycle[0]} and {cycle[1]} into a common module.",
                         "implementation_steps": [
-                            f"1. Create a new shared module (e.g., shared/common.py)",
-                            f"2. Identify symbols used by both files",
-                            f"3. Move these shared symbols to the new module",
-                            f"4. Update imports in both files to use the shared module",
+                            "1. Create a new shared module (e.g., shared/common.py)",
+                            "2. Identify symbols used by both files",
+                            "3. Move these shared symbols to the new module",
+                            "4. Update imports in both files to use the shared module",
                         ],
                     }
                 else:
@@ -1982,30 +1982,30 @@ class CodebaseAnalyzer:
                         "strategy": "refactor_dependencies",
                         "description": f"Refactor the dependency structure among these {len(cycle)} files.",
                         "implementation_steps": [
-                            f"1. Identify the core responsibilities of each file",
-                            f"2. Reorganize code to follow a more hierarchical structure",
-                            f"3. Consider introducing interfaces or dependency injection",
-                            f"4. Extract shared functionality into utility modules",
+                            "1. Identify the core responsibilities of each file",
+                            "2. Reorganize code to follow a more hierarchical structure",
+                            "3. Consider introducing interfaces or dependency injection",
+                            "4. Extract shared functionality into utility modules",
                         ],
                     }
-                
+
                 result["suggested_fixes"].append(fix)
-            
+
             # Convert affected_files set to list for JSON serialization
             result["summary"]["affected_files"] = list(result["summary"]["affected_files"])
             result["summary"]["affected_file_count"] = len(result["summary"]["affected_files"])
-            
+
             return result
-        
+
         except Exception as e:
             return {"error": str(e)}
-    
-    def analyze_import_organization(self) -> Dict[str, Any]:
+
+    def analyze_import_organization(self) -> dict[str, Any]:
         """Analyze and suggest improvements for import organization.
-    
+
         This function examines import statements across the codebase and provides
         metrics and suggestions for better organization.
-    
+
         Returns:
             Dict containing import organization analysis and suggestions
         """
@@ -2021,35 +2021,35 @@ class CodebaseAnalyzer:
             "import_organization_issues": [],
             "suggestions": [],
         }
-    
+
         try:
             # Track import counts and organization issues
             file_import_counts = {}
             organization_issues = []
-            
+
             for file in self.codebase.files:
                 file_path = file.file_path if hasattr(file, "file_path") else str(file)
-                
+
                 # Skip if file has no imports attribute
                 if not hasattr(file, "imports"):
                     continue
-                
+
                 # Count different types of imports
                 std_lib = 0
                 third_party = 0
                 local = 0
                 import_order_issues = []
-                
+
                 # Track the last seen import of each type for order checking
                 last_std_lib_pos = -1
                 last_third_party_pos = -1
                 last_local_pos = -1
-                
+
                 for i, imp in enumerate(file.imports):
                     # Determine import type
                     is_std_lib = hasattr(imp, "is_standard_library") and imp.is_standard_library
                     is_third_party = hasattr(imp, "is_third_party") and imp.is_third_party
-                    
+
                     # Count by type
                     if is_std_lib:
                         std_lib += 1
@@ -2060,48 +2060,48 @@ class CodebaseAnalyzer:
                     else:
                         local += 1
                         last_local_pos = i
-                    
+
                     # Check for order issues
                     if is_std_lib and last_third_party_pos > -1 and last_third_party_pos < i:
                         import_order_issues.append({
                             "issue": "std_lib_after_third_party",
-                            "description": f"Standard library import after third-party import",
+                            "description": "Standard library import after third-party import",
                             "import_statement": str(imp),
                         })
-                    
+
                     if (is_std_lib or is_third_party) and last_local_pos > -1 and last_local_pos < i:
                         import_order_issues.append({
                             "issue": "external_after_local",
-                            "description": f"External import after local import",
+                            "description": "External import after local import",
                             "import_statement": str(imp),
                         })
-                
+
                 # Update overall metrics
                 result["overall_metrics"]["total_imports"] += std_lib + third_party + local
                 result["overall_metrics"]["std_lib_imports"] += std_lib
                 result["overall_metrics"]["third_party_imports"] += third_party
                 result["overall_metrics"]["local_imports"] += local
                 result["overall_metrics"]["files_analyzed"] += 1
-                
+
                 # Store file-specific metrics
                 file_import_counts[file_path] = std_lib + third_party + local
-                
+
                 # Record organization issues if any
                 if import_order_issues:
                     organization_issues.append({
                         "file": file_path,
                         "issues": import_order_issues,
                     })
-            
+
             # Find files with most imports
             most_imports = sorted(file_import_counts.items(), key=lambda x: x[1], reverse=True)[:10]
             result["files_with_most_imports"] = [
                 {"file": file, "import_count": count} for file, count in most_imports
             ]
-            
+
             # Add organization issues
             result["import_organization_issues"] = organization_issues
-            
+
             # Generate overall suggestions
             result["suggestions"] = [
                 {
@@ -2125,18 +2125,18 @@ class CodebaseAnalyzer:
                     "benefit": "Ensures consistent import formatting across the codebase",
                 },
             ]
-            
+
             return result
-        
+
         except Exception as e:
             return {"error": str(e)}
-    
-    def analyze_module_coupling(self) -> Dict[str, Any]:
+
+    def analyze_module_coupling(self) -> dict[str, Any]:
         """Analyze module coupling to identify highly coupled modules.
-    
+
         This function examines the relationships between modules to identify those
         that are highly coupled and might benefit from refactoring.
-    
+
         Returns:
             Dict containing module coupling analysis and suggestions
         """
@@ -2150,49 +2150,49 @@ class CodebaseAnalyzer:
             "highly_coupled_modules": [],
             "suggestions": [],
         }
-    
+
         try:
             # First create the dependency graph
             graph_data = self.create_dependency_graph()
             if "error" in graph_data:
                 return {"error": graph_data["error"]}
-            
+
             G = graph_data["nx_graph"]
-            
+
             # Calculate coupling metrics for each file
             for node in G.nodes():
                 # Afferent coupling (incoming dependencies)
                 incoming = list(G.predecessors(node))
                 afferent = len(incoming)
-                
+
                 # Efferent coupling (outgoing dependencies)
                 outgoing = list(G.successors(node))
                 efferent = len(outgoing)
-                
+
                 # Total coupling
                 total = afferent + efferent
-                
+
                 # Instability (0 = stable, 1 = unstable)
                 instability = efferent / total if total > 0 else 0
-                
+
                 # Store metrics
                 result["coupling_metrics"]["afferent_coupling"][node] = afferent
                 result["coupling_metrics"]["efferent_coupling"][node] = efferent
                 result["coupling_metrics"]["total_coupling"][node] = total
                 result["coupling_metrics"]["instability"][node] = instability
-            
+
             # Identify highly coupled modules (top 10 by total coupling)
             highly_coupled = sorted(
                 result["coupling_metrics"]["total_coupling"].items(),
                 key=lambda x: x[1],
                 reverse=True
             )[:10]
-            
+
             for file, coupling in highly_coupled:
                 afferent = result["coupling_metrics"]["afferent_coupling"][file]
                 efferent = result["coupling_metrics"]["efferent_coupling"][file]
                 instability = result["coupling_metrics"]["instability"][file]
-                
+
                 module_info = {
                     "file": file,
                     "total_coupling": coupling,
@@ -2201,7 +2201,7 @@ class CodebaseAnalyzer:
                     "instability": instability,
                     "coupling_type": "balanced" if 0.3 <= instability <= 0.7 else ("stable" if instability < 0.3 else "unstable"),
                 }
-                
+
                 # Add specific suggestions based on coupling type
                 if coupling > 10:  # Arbitrary threshold for high coupling
                     if afferent > efferent * 2:  # Much more incoming than outgoing
@@ -2210,9 +2210,9 @@ class CodebaseAnalyzer:
                         module_info["suggestion"] = "This module depends on many other modules. Consider reducing dependencies or extracting functionality into separate modules."
                     else:  # Balanced but high coupling
                         module_info["suggestion"] = "This module has high coupling in both directions. Consider refactoring to reduce overall coupling."
-                
+
                 result["highly_coupled_modules"].append(module_info)
-            
+
             # Generate general suggestions
             result["suggestions"] = [
                 {
@@ -2236,18 +2236,18 @@ class CodebaseAnalyzer:
                     "benefit": "Improves modularity by grouping related functionality",
                 },
             ]
-            
+
             return result
-        
+
         except Exception as e:
             return {"error": str(e)}
-    
-    def identify_shared_code(self) -> Dict[str, Any]:
+
+    def identify_shared_code(self) -> dict[str, Any]:
         """Identify code that could be extracted into shared modules.
-    
+
         This function analyzes the codebase to find code patterns, functions, or classes
         that are used across multiple modules and could be extracted into shared modules.
-    
+
         Returns:
             Dict containing identified shared code patterns and extraction suggestions
         """
@@ -2260,35 +2260,35 @@ class CodebaseAnalyzer:
                 "total_duplicate_patterns": 0,
             },
         }
-    
+
         try:
             # Track symbols used across multiple files
             symbol_usages = defaultdict(set)
-            
+
             # Analyze symbol usage across files
             for file in self.codebase.files:
                 file_path = file.file_path if hasattr(file, "file_path") else str(file)
-                
+
                 # Skip if file has no symbols attribute
                 if not hasattr(file, "symbols"):
                     continue
-                
+
                 for symbol in file.symbols:
                     symbol_name = symbol.name if hasattr(symbol, "name") else str(symbol)
                     symbol_type = getattr(symbol, "type", "unknown")
-                    
+
                     # Skip if symbol has no usages attribute
                     if not hasattr(symbol, "usages"):
                         continue
-                    
+
                     # Track files using this symbol
                     for usage in symbol.usages:
                         usage_file = usage.file.file_path if hasattr(usage, "file") and hasattr(usage.file, "file_path") else str(usage.file)
-                        
+
                         # Only count external usages (not in the same file)
                         if usage_file != file_path:
                             symbol_usages[(file_path, symbol_name, symbol_type)].add(usage_file)
-            
+
             # Find symbols used across multiple files
             for (source_file, symbol_name, symbol_type), usage_files in symbol_usages.items():
                 if len(usage_files) >= 2:  # Used in at least 2 other files
@@ -2299,7 +2299,7 @@ class CodebaseAnalyzer:
                         "used_in": list(usage_files),
                         "usage_count": len(usage_files),
                     }
-                    
+
                     # Determine appropriate shared module
                     if symbol_type in ["class", "interface", "type", "enum"]:
                         shared_symbol["suggested_module"] = "shared/types.py"
@@ -2309,22 +2309,22 @@ class CodebaseAnalyzer:
                         shared_symbol["suggested_module"] = "shared/utils.py"
                     else:
                         shared_symbol["suggested_module"] = "shared/common.py"
-                    
+
                     result["shared_symbols"].append(shared_symbol)
-            
+
             # Sort by usage count
             result["shared_symbols"] = sorted(result["shared_symbols"], key=lambda x: x["usage_count"], reverse=True)
-            
+
             # Update summary
             result["summary"]["total_shared_symbols"] = len(result["shared_symbols"])
-            
+
             # Generate extraction suggestions
             if result["shared_symbols"]:
                 # Group by suggested module
                 by_module = defaultdict(list)
                 for symbol in result["shared_symbols"]:
                     by_module[symbol["suggested_module"]].append(symbol["symbol_name"])
-                
+
                 # Create suggestions for each module
                 for module, symbols in by_module.items():
                     suggestion = {
@@ -2333,17 +2333,17 @@ class CodebaseAnalyzer:
                         "total_symbols": len(symbols),
                         "implementation_steps": [
                             f"1. Create {module} if it doesn't exist",
-                            f"2. Move the identified symbols to this module",
-                            f"3. Update imports in all files using these symbols",
-                            f"4. Add appropriate documentation to the shared module",
+                            "2. Move the identified symbols to this module",
+                            "3. Update imports in all files using these symbols",
+                            "4. Add appropriate documentation to the shared module",
                         ],
                     }
                     result["extraction_suggestions"].append(suggestion)
-            
-            return result
-        
-    except Exception as e:
-        return {"error": str(e)}
+
+                return result
+
+        except Exception as e:
+            return {"error": str(e)}
 
 def main():
     """Main entry point for the codebase analyzer."""
