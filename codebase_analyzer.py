@@ -267,16 +267,13 @@ class CodebaseAnalyzer:
             self.console.print(f"[bold red]Error initializing codebase from path: {e}[/bold red]")
             raise
 
-    def analyze(self, categories: Optional[list[str]] = None, output_format: str = "json", output_file: Optional[str] = None):
+    def analyze(self, categories: Optional[List[str]] = None, output_format: str = "json", output_file: Optional[str] = None):
         """Perform a comprehensive analysis of the codebase.
 
         Args:
             categories: List of categories to analyze. If None, all categories are analyzed.
             output_format: Format of the output (json, html, console)
             output_file: Path to the output file
-
-        Returns:
-            Dict containing the analysis results
         """
         if not self.codebase:
             msg = "Codebase not initialized. Please initialize the codebase first."
@@ -1545,6 +1542,11 @@ class CodebaseAnalyzer:
             traceback.print_exc()
             sys.exit(1)
 
+
+def main() -> None:
+    """Main entry point for the codebase analyzer."""
+    analyzer = CodebaseAnalyzer()
+    analyzer.main()
 
 if __name__ == "__main__":
     main()
