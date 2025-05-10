@@ -33,6 +33,8 @@ This analyzer provides comprehensive analysis of your codebase, including:
 - Code Duplication Analysis
 - Complexity Metrics
 - Style and Convention Analysis
+- Untyped Code Detection (return statements, parameters, attributes)
+- Unnamed Keyword Arguments Detection
 
 ### 5. Visualization Capabilities
 
@@ -40,6 +42,8 @@ This analyzer provides comprehensive analysis of your codebase, including:
 - Call Graphs
 - Symbol Trees
 - Heat Maps
+- Directory Tree Visualization
+- Import Cycle Visualization
 
 ### 6. Language-Specific Analysis
 
@@ -52,6 +56,12 @@ This analyzer provides comprehensive analysis of your codebase, including:
 - Cyclomatic Complexity
 - Halstead Volume
 - Maintainability Index
+
+### 8. PR and Commit Comparison
+
+- Compare codebases between commits
+- Analyze PR changes
+- Get PR quality metrics
 
 ## Installation
 
@@ -99,6 +109,46 @@ python codebase_analyzer.py --repo-url https://github.com/username/repo --output
 python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format console
 ```
 
+### Visualization
+
+```bash
+# Generate call graph visualization
+python codebase_analyzer.py --repo-url https://github.com/username/repo --visualize call-graph --function-name main
+
+# Generate dependency map visualization
+python codebase_analyzer.py --repo-url https://github.com/username/repo --visualize dependency-map
+
+# Generate directory tree visualization
+python codebase_analyzer.py --repo-url https://github.com/username/repo --visualize directory-tree
+
+# Generate import cycles visualization
+python codebase_analyzer.py --repo-url https://github.com/username/repo --visualize import-cycles
+```
+
+### Type Analysis
+
+```bash
+# Analyze untyped code in the codebase
+python codebase_analyzer.py --repo-url https://github.com/username/repo --analyze-types
+```
+
+### Codebase Summary
+
+```bash
+# Get a summary of the codebase
+python codebase_analyzer.py --repo-url https://github.com/username/repo --summary
+```
+
+### PR and Commit Comparison
+
+```bash
+# Compare with a specific commit
+python codebase_analyzer.py --repo-url https://github.com/username/repo --compare-commit abc123
+
+# Analyze a PR
+python codebase_analyzer.py --repo-url https://github.com/username/repo --pr-number 123
+```
+
 ## Available Analysis Categories
 
 - `codebase_structure`: File statistics, symbol tree, import/export analysis, module organization
@@ -108,6 +158,8 @@ python codebase_analyzer.py --repo-url https://github.com/username/repo --output
 - `visualization`: Dependency graphs, call graphs, symbol trees, heat maps
 - `language_specific`: Language-specific analysis features
 - `code_metrics`: Commits, complexity, volume, maintainability
+- `import_analysis`: Import cycle detection and visualization
+- `pr_comparison`: PR diff analysis and quality metrics
 
 ## Requirements
 
@@ -116,6 +168,7 @@ python codebase_analyzer.py --repo-url https://github.com/username/repo --output
 - NetworkX
 - Matplotlib
 - Rich
+- Plotly
 
 ## License
 
