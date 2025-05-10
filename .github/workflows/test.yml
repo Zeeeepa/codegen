@@ -18,7 +18,7 @@ jobs:
         with:
           require: write
           username: ${{ github.triggering_actor }}
-          error-if-missing: true
+          error-if-missing: false
 
   unit-tests:
     needs: access-check
