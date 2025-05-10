@@ -46,13 +46,16 @@ METRICS_CATEGORIES = {
         "get_symbol_hierarchy",
         "get_top_level_vs_nested_symbols",
         "get_import_dependency_map",
+        "analyze_symbol_imports",
         "get_external_vs_internal_dependencies",
         "get_circular_imports",
+        "detect_cyclic_dependencies",
         "get_unused_imports",
         "get_module_coupling_metrics",
         "get_module_cohesion_analysis",
         "get_package_structure",
         "get_module_dependency_graph",
+        "traverse_dependency_graph",
     ],
     "symbol_level": [
         "get_function_parameter_analysis",
@@ -62,6 +65,7 @@ METRICS_CATEGORIES = {
         "get_async_function_detection",
         "get_function_overload_analysis",
         "get_inheritance_hierarchy",
+        "analyze_class_inheritance",
         "get_method_analysis",
         "get_attribute_analysis",
         "get_constructor_analysis",
@@ -82,6 +86,7 @@ METRICS_CATEGORIES = {
         "get_call_hierarchy_visualization",
         "get_entry_point_analysis",
         "get_dead_code_detection",
+        "detect_dead_symbols",
         "get_variable_usage_tracking",
         "get_data_transformation_paths",
         "get_input_output_parameter_analysis",
@@ -1820,6 +1825,386 @@ class CodebaseAnalyzer:
             return sorted_commits
         except Exception as e:
             return {"error": str(e)}
+
+
+def main():
+    """Main entry point for the codebase analyzer."""
+    parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
+
+    # Repository source
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--repo-url", help="URL of the repository to analyze")
+    source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
+
+    # Analysis options
+    parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
+    parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
+
+    # Output options
+    parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
+    parser.add_argument("--output-file", help="Path to the output file")
+
+    args = parser.parse_args()
+
+    try:
+        # Initialize the analyzer
+        analyzer = CodebaseAnalyzer(repo_url=args.repo_url, repo_path=args.repo_path, language=args.language)
+
+        # Perform the analysis
+        results = analyzer.analyze(categories=args.categories, output_format=args.output_format, output_file=args.output_file)
+
+        # Print success message
+        if args.output_format == "json" and args.output_file:
+            print(f"Analysis results saved to {args.output_file}")
+        elif args.output_format == "html":
+            print(f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+
+
+
+    def detect_dead_symbols(self) -> List[str]:
+        """Detect symbols that are not used anywhere in the codebase.
+        
+        This function identifies symbols (functions, classes, variables) that are defined
+        but not used anywhere in the codebase, which could be candidates for removal.
+        
+        Returns:
+            List[str]: A list of dead symbol names with their locations
+        """
+        dead_symbols = []
+        
+        # Check all symbols in the codebase
+        for symbol in self.codebase.symbols:
+            # Skip imported symbols as they might be used outside the analyzed codebase
+            if hasattr(symbol, "is_imported") and symbol.is_imported:
+                continue
+                
+            # Check if the symbol has any usages
+            if not symbol.usages:
+                # Get file path if available
+                file_path = getattr(symbol, "file", None)
+                file_path = file_path.file_path if file_path else "Unknown"
+                
+                dead_symbols.append({
+                    "name": symbol.name,
+                    "type": symbol.__class__.__name__,
+                    "file": file_path,
+                    "line": getattr(symbol, "line", "Unknown")
+                })
+        
+        return dead_symbols
+    
+    def analyze_symbol_imports(self, symbol_name: str) -> Dict[str, Any]:
+        """Analyze all imports that a symbol uses.
+        
+        This function identifies all imports that a given symbol depends on,
+        categorized by usage type (direct, indirect, chained, aliased).
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            Dict[str, Any]: A dictionary containing import analysis information
+        """
+        result = {
+            "symbol": symbol_name,
+            "imports": {
+                "direct": [],
+                "indirect": [],
+                "chained": [],
+                "aliased": [],
+                "all": []
+            },
+            "total_imports": 0
+        }
+        
+        # Get the symbol
+        symbol = self.codebase.get_symbol(symbol_name)
+        if not symbol:
+            return {"error": f"Symbol '{symbol_name}' not found"}
+        
+        # Analyze direct imports
+        direct_deps = symbol.dependencies(UsageType.DIRECT)
+        for dep in direct_deps:
+            if hasattr(dep, "is_import") and dep.is_import:
+                result["imports"]["direct"].append({
+                    "name": dep.name,
+                    "file": dep.file.file_path if hasattr(dep, "file") else "Unknown"
+                })
+        
+        # Analyze indirect imports
+        indirect_deps = symbol.dependencies(UsageType.INDIRECT)
+        for dep in indirect_deps:
+            if hasattr(dep, "is_import") and dep.is_import:
+                result["imports"]["indirect"].append({
+                    "name": dep.name,
+                    "file": dep.file.file_path if hasattr(dep, "file") else "Unknown"
+                })
+        
+        # Analyze chained imports
+        chained_deps = symbol.dependencies(UsageType.CHAINED)
+        for dep in chained_deps:
+            if hasattr(dep, "is_import") and dep.is_import:
+                result["imports"]["chained"].append({
+                    "name": dep.name,
+                    "file": dep.file.file_path if hasattr(dep, "file") else "Unknown"
+                })
+        
+        # Analyze aliased imports
+        aliased_deps = symbol.dependencies(UsageType.ALIASED)
+        for dep in aliased_deps:
+            if hasattr(dep, "is_import") and dep.is_import:
+                result["imports"]["aliased"].append({
+                    "name": dep.name,
+                    "file": dep.file.file_path if hasattr(dep, "file") else "Unknown"
+                })
+        
+        # Get all imports
+        all_deps = symbol.dependencies(UsageType.DIRECT | UsageType.INDIRECT | 
+                                      UsageType.CHAINED | UsageType.ALIASED)
+        for dep in all_deps:
+            if hasattr(dep, "is_import") and dep.is_import:
+                result["imports"]["all"].append({
+                    "name": dep.name,
+                    "file": dep.file.file_path if hasattr(dep, "file") else "Unknown"
+                })
+        
+        # Calculate totals
+        result["total_imports"] = len(result["imports"]["all"])
+        
+        return result
+    
+    def traverse_dependency_graph(self, symbol_name: str, max_depth: int = 5) -> Dict[str, Any]:
+        """Traverse the dependency graph starting from a symbol up to a specified depth.
+        
+        This function analyzes the dependency graph of a symbol, showing all dependencies
+        up to a certain depth level, which helps understand complex dependency chains.
+        
+        Args:
+            symbol_name: Name of the symbol to start traversal from
+            max_depth: Maximum depth to traverse (default: 5)
+            
+        Returns:
+            Dict[str, Any]: A dictionary containing the dependency graph information
+        """
+        result = {
+            "symbol": symbol_name,
+            "max_depth": max_depth,
+            "dependency_graph": {},
+            "dependency_counts": {},
+            "total_dependencies": 0,
+            "unique_dependencies": 0
+        }
+        
+        # Get the symbol
+        symbol = self.codebase.get_symbol(symbol_name)
+        if not symbol:
+            return {"error": f"Symbol '{symbol_name}' not found"}
+        
+        # Create a directed graph to track dependencies
+        graph = nx.DiGraph()
+        
+        # Helper function to recursively traverse dependencies
+        def traverse_deps(sym, current_depth=0, visited=None):
+            if visited is None:
+                visited = set()
+                
+            if current_depth > max_depth or sym.name in visited:
+                return
+                
+            visited.add(sym.name)
+            
+            # Get direct dependencies
+            direct_deps = sym.dependencies()
+            dep_list = []
+            
+            for dep in direct_deps:
+                dep_name = dep.name
+                dep_list.append({
+                    "name": dep_name,
+                    "type": dep.__class__.__name__
+                })
+                
+                # Add edge to graph
+                graph.add_edge(sym.name, dep_name)
+                
+                # Recursively traverse dependencies
+                traverse_deps(dep, current_depth + 1, visited)
+            
+            # Store dependencies for this symbol
+            result["dependency_graph"][sym.name] = dep_list
+        
+        # Start traversal
+        traverse_deps(symbol)
+        
+        # Calculate dependency counts
+        for node in graph.nodes():
+            result["dependency_counts"][node] = len(list(graph.successors(node)))
+        
+        # Calculate totals
+        result["total_dependencies"] = graph.number_of_edges()
+        result["unique_dependencies"] = graph.number_of_nodes() - 1  # Exclude the starting symbol
+        
+        # Check for cycles
+        try:
+            cycles = list(nx.simple_cycles(graph))
+            result["has_cycles"] = len(cycles) > 0
+            result["cycles"] = [list(cycle) for cycle in cycles]
+        except nx.NetworkXNoCycle:
+            result["has_cycles"] = False
+            result["cycles"] = []
+        
+        return result
+    
+    def analyze_class_inheritance(self, class_name: str) -> Dict[str, Any]:
+        """Analyze the inheritance hierarchy of a class.
+        
+        This function identifies all parent classes and subclasses of a given class,
+        showing the complete inheritance hierarchy.
+        
+        Args:
+            class_name: Name of the class to analyze
+            
+        Returns:
+            Dict[str, Any]: A dictionary containing inheritance hierarchy information
+        """
+        result = {
+            "class": class_name,
+            "parents": [],
+            "subclasses": [],
+            "inheritance_depth": 0,
+            "inheritance_chain": [],
+            "multiple_inheritance": False
+        }
+        
+        # Get the class
+        cls = self.codebase.get_class(class_name)
+        if not cls:
+            return {"error": f"Class '{class_name}' not found"}
+        
+        # Get parent classes
+        parent_classes = []
+        if hasattr(cls, "bases"):
+            for base in cls.bases:
+                parent_classes.append({
+                    "name": base.name,
+                    "file": base.file.file_path if hasattr(base, "file") else "Unknown"
+                })
+        
+        result["parents"] = parent_classes
+        result["multiple_inheritance"] = len(parent_classes) > 1
+        
+        # Get subclasses
+        subclasses = []
+        for symbol in cls.usages:
+            if hasattr(symbol, "is_class") and symbol.is_class:
+                if hasattr(symbol, "bases") and any(base.name == class_name for base in symbol.bases):
+                    subclasses.append({
+                        "name": symbol.name,
+                        "file": symbol.file.file_path if hasattr(symbol, "file") else "Unknown"
+                    })
+        
+        result["subclasses"] = subclasses
+        
+        # Build inheritance chain
+        inheritance_chain = [class_name]
+        current_class = cls
+        depth = 0
+        
+        while hasattr(current_class, "bases") and current_class.bases:
+            # For simplicity, follow only the first parent in case of multiple inheritance
+            parent = current_class.bases[0]
+            inheritance_chain.append(parent.name)
+            current_class = parent
+            depth += 1
+        
+        result["inheritance_depth"] = depth
+        result["inheritance_chain"] = inheritance_chain
+        
+        return result
+    
+    def detect_cyclic_dependencies(self) -> Dict[str, Any]:
+        """Detect cyclic dependencies between symbols in the codebase.
+        
+        This function identifies circular dependencies between symbols, which can
+        lead to maintenance issues and potential bugs.
+        
+        Returns:
+            Dict[str, Any]: A dictionary containing cyclic dependency information
+        """
+        result = {
+            "symbol_cycles": [],
+            "module_cycles": [],
+            "total_cycles": 0
+        }
+        
+        # Create a directed graph to represent symbol dependencies
+        symbol_graph = nx.DiGraph()
+        
+        # Create a directed graph to represent module dependencies
+        module_graph = nx.DiGraph()
+        
+        # Build the dependency graphs
+        for symbol in self.codebase.symbols:
+            symbol_name = symbol.name
+            
+            # Skip symbols without a file (e.g., built-ins)
+            if not hasattr(symbol, "file") or not symbol.file:
+                continue
+                
+            module_name = symbol.file.file_path
+            
+            # Add nodes to graphs
+            symbol_graph.add_node(symbol_name)
+            module_graph.add_node(module_name)
+            
+            # Add edges for dependencies
+            for dep in symbol.dependencies():
+                if hasattr(dep, "name"):
+                    symbol_graph.add_edge(symbol_name, dep.name)
+                    
+                    # Add module dependency if the dependent symbol is from a different file
+                    if hasattr(dep, "file") and dep.file and dep.file.file_path != module_name:
+                        module_graph.add_edge(module_name, dep.file.file_path)
+        
+        # Find cycles in symbol dependencies
+        try:
+            symbol_cycles = list(nx.simple_cycles(symbol_graph))
+            # Filter out self-loops
+            symbol_cycles = [cycle for cycle in symbol_cycles if len(cycle) > 1]
+            
+            for cycle in symbol_cycles:
+                result["symbol_cycles"].append({
+                    "symbols": cycle,
+                    "length": len(cycle)
+                })
+        except nx.NetworkXNoCycle:
+            pass
+        
+        # Find cycles in module dependencies
+        try:
+            module_cycles = list(nx.simple_cycles(module_graph))
+            # Filter out self-loops
+            module_cycles = [cycle for cycle in module_cycles if len(cycle) > 1]
+            
+            for cycle in module_cycles:
+                result["module_cycles"].append({
+                    "modules": cycle,
+                    "length": len(cycle)
+                })
+        except nx.NetworkXNoCycle:
+            pass
+        
+        # Calculate totals
+        result["total_cycles"] = len(result["symbol_cycles"]) + len(result["module_cycles"])
+        
+        return result
 
 
 def main():
