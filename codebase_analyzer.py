@@ -14,8 +14,7 @@ import math
 import re
 import sys
 import tempfile
-from typing import Any, Optional, Dict, List, Set, Tuple
-from collections import defaultdict
+from typing import Any, Dict, List, Optional
 
 import networkx as nx
 from rich.console import Console
@@ -1823,528 +1822,6 @@ class CodebaseAnalyzer:
             return {"error": str(e)}
 
 
-    def create_dependency_graph(self) -> Dict[str, Any]:
-            """Create a graph of file dependencies.
-        
-            This function analyzes the codebase and creates a directed graph representing
-        file dependencies based on imports. Each node in the graph represents a file,
-        and each edge represents an import relationship.
-    
-        Returns:
-            Dict containing the dependency graph data and metrics
-        """
-        # Initialize results dictionary
-        result = {
-            "graph_data": {
-                "nodes": [],
-                "edges": [],
-            },
-            "metrics": {
-                "total_files": 0,
-                "total_imports": 0,
-                "avg_imports_per_file": 0,
-                "max_imports": 0,
-                "files_with_most_imports": [],
-                "files_most_imported": [],
-            },
-            "visualization_data": {
-                "adjacency_list": {},
-            },
-        }
-    
-        try:
-            # Create a directed graph
-            G = nx.DiGraph()
-            
-            # Track import counts
-            import_counts = defaultdict(int)  # Files importing others
-            imported_counts = defaultdict(int)  # Files being imported
-            
-            # Add nodes and edges
-            for file in self.codebase.files:
-                file_path = file.file_path if hasattr(file, "file_path") else str(file)
-                G.add_node(file_path)
-                result["graph_data"]["nodes"].append({"id": file_path, "label": file_path})
-                
-                # Process imports
-                imports = []
-                if hasattr(file, "imports"):
-                    imports = file.imports
-                
-                for imp in imports:
-                    if hasattr(imp, "from_file") and imp.from_file:
-                        target_path = imp.from_file.file_path if hasattr(imp.from_file, "file_path") else str(imp.from_file)
-                        G.add_edge(file_path, target_path)
-                        result["graph_data"]["edges"].append({"source": file_path, "target": target_path})
-                        
-                        # Update counts
-                        import_counts[file_path] += 1
-                        imported_counts[target_path] += 1
-            
-            # Calculate metrics
-            result["metrics"]["total_files"] = len(G.nodes)
-            result["metrics"]["total_imports"] = len(G.edges)
-            
-            if len(G.nodes) > 0:
-                result["metrics"]["avg_imports_per_file"] = len(G.edges) / len(G.nodes)
-            
-            # Find max imports
-            if import_counts:
-                result["metrics"]["max_imports"] = max(import_counts.values()) if import_counts else 0
-                
-                # Files with most imports (outgoing dependencies)
-                most_imports = sorted(import_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-                result["metrics"]["files_with_most_imports"] = [
-                    {"file": file, "import_count": count} for file, count in most_imports
-                ]
-                
-                # Files most imported by others (incoming dependencies)
-                most_imported = sorted(imported_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-                result["metrics"]["files_most_imported"] = [
-                    {"file": file, "imported_count": count} for file, count in most_imported
-                ]
-            
-            # Create adjacency list for visualization
-            for node in G.nodes:
-                result["visualization_data"]["adjacency_list"][node] = list(G.successors(node))
-            
-            # Add the NetworkX graph object for further analysis
-            result["nx_graph"] = G
-            
-            return result
-        
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def suggest_circular_dependency_fixes(self) -> Dict[str, Any]:
-        """Suggest fixes for circular dependencies in the codebase.
-    
-        This function identifies circular dependencies in the codebase and suggests
-        strategies to break them, such as creating shared modules or refactoring code.
-    
-        Returns:
-            Dict containing circular dependencies and suggested fixes
-        """
-        result = {
-            "circular_dependencies": [],
-            "suggested_fixes": [],
-            "summary": {
-                "total_cycles": 0,
-                "affected_files": set(),
-                "largest_cycle_size": 0,
-            },
-        }
-    
-        try:
-            # First create the dependency graph
-            graph_data = self.create_dependency_graph()
-            if "error" in graph_data:
-                return {"error": graph_data["error"]}
-            
-            G = graph_data["nx_graph"]
-            
-            # Find all simple cycles (circular dependencies)
-            cycles = list(nx.simple_cycles(G))
-            result["summary"]["total_cycles"] = len(cycles)
-            
-            # Process each cycle
-            for cycle in cycles:
-                cycle_info = {
-                    "files": cycle,
-                    "size": len(cycle),
-                }
-                result["circular_dependencies"].append(cycle_info)
-                
-                # Track affected files and largest cycle
-                result["summary"]["affected_files"].update(cycle)
-                result["summary"]["largest_cycle_size"] = max(
-                    result["summary"]["largest_cycle_size"], len(cycle)
-                )
-                
-                # Generate suggested fix
-                if len(cycle) == 2:
-                    # For direct circular dependency between two files
-                    fix = {
-                        "cycle": cycle,
-                        "strategy": "extract_shared_code",
-                        "description": f"Extract shared code used by both {cycle[0]} and {cycle[1]} into a common module.",
-                        "implementation_steps": [
-                            f"1. Create a new shared module (e.g., shared/common.py)",
-                            f"2. Identify symbols used by both files",
-                            f"3. Move these shared symbols to the new module",
-                            f"4. Update imports in both files to use the shared module",
-                        ],
-                    }
-                else:
-                    # For larger cycles
-                    fix = {
-                        "cycle": cycle,
-                        "strategy": "refactor_dependencies",
-                        "description": f"Refactor the dependency structure among these {len(cycle)} files.",
-                        "implementation_steps": [
-                            f"1. Identify the core responsibilities of each file",
-                            f"2. Reorganize code to follow a more hierarchical structure",
-                            f"3. Consider introducing interfaces or dependency injection",
-                            f"4. Extract shared functionality into utility modules",
-                        ],
-                    }
-                
-                result["suggested_fixes"].append(fix)
-            
-            # Convert affected_files set to list for JSON serialization
-            result["summary"]["affected_files"] = list(result["summary"]["affected_files"])
-            result["summary"]["affected_file_count"] = len(result["summary"]["affected_files"])
-            
-            return result
-        
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def analyze_import_organization(self) -> Dict[str, Any]:
-        """Analyze and suggest improvements for import organization.
-    
-        This function examines import statements across the codebase and provides
-        metrics and suggestions for better organization.
-    
-        Returns:
-            Dict containing import organization analysis and suggestions
-        """
-        result = {
-            "overall_metrics": {
-                "total_imports": 0,
-                "std_lib_imports": 0,
-                "third_party_imports": 0,
-                "local_imports": 0,
-                "files_analyzed": 0,
-            },
-            "files_with_most_imports": [],
-            "import_organization_issues": [],
-            "suggestions": [],
-        }
-    
-        try:
-            # Track import counts and organization issues
-            file_import_counts = {}
-            organization_issues = []
-            
-            for file in self.codebase.files:
-                file_path = file.file_path if hasattr(file, "file_path") else str(file)
-                
-                # Skip if file has no imports attribute
-                if not hasattr(file, "imports"):
-                    continue
-                
-                # Count different types of imports
-                std_lib = 0
-                third_party = 0
-                local = 0
-                import_order_issues = []
-                
-                # Track the last seen import of each type for order checking
-                last_std_lib_pos = -1
-                last_third_party_pos = -1
-                last_local_pos = -1
-                
-                for i, imp in enumerate(file.imports):
-                    # Determine import type
-                    is_std_lib = hasattr(imp, "is_standard_library") and imp.is_standard_library
-                    is_third_party = hasattr(imp, "is_third_party") and imp.is_third_party
-                    
-                    # Count by type
-                    if is_std_lib:
-                        std_lib += 1
-                        last_std_lib_pos = i
-                    elif is_third_party:
-                        third_party += 1
-                        last_third_party_pos = i
-                    else:
-                        local += 1
-                        last_local_pos = i
-                    
-                    # Check for order issues
-                    if is_std_lib and last_third_party_pos > -1 and last_third_party_pos < i:
-                        import_order_issues.append({
-                            "issue": "std_lib_after_third_party",
-                            "description": f"Standard library import after third-party import",
-                            "import_statement": str(imp),
-                        })
-                    
-                    if (is_std_lib or is_third_party) and last_local_pos > -1 and last_local_pos < i:
-                        import_order_issues.append({
-                            "issue": "external_after_local",
-                            "description": f"External import after local import",
-                            "import_statement": str(imp),
-                        })
-                
-                # Update overall metrics
-                result["overall_metrics"]["total_imports"] += std_lib + third_party + local
-                result["overall_metrics"]["std_lib_imports"] += std_lib
-                result["overall_metrics"]["third_party_imports"] += third_party
-                result["overall_metrics"]["local_imports"] += local
-                result["overall_metrics"]["files_analyzed"] += 1
-                
-                # Store file-specific metrics
-                file_import_counts[file_path] = std_lib + third_party + local
-                
-                # Record organization issues if any
-                if import_order_issues:
-                    organization_issues.append({
-                        "file": file_path,
-                        "issues": import_order_issues,
-                    })
-            
-            # Find files with most imports
-            most_imports = sorted(file_import_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-            result["files_with_most_imports"] = [
-                {"file": file, "import_count": count} for file, count in most_imports
-            ]
-            
-            # Add organization issues
-            result["import_organization_issues"] = organization_issues
-            
-            # Generate overall suggestions
-            result["suggestions"] = [
-                {
-                    "suggestion": "group_imports_by_type",
-                    "description": "Group imports by type: standard library, third-party, and local",
-                    "benefit": "Improves code readability and organization",
-                },
-                {
-                    "suggestion": "order_imports_properly",
-                    "description": "Order imports: standard library first, then third-party, then local",
-                    "benefit": "Follows PEP 8 conventions and improves consistency",
-                },
-                {
-                    "suggestion": "alphabetize_imports",
-                    "description": "Alphabetize imports within each group",
-                    "benefit": "Makes imports easier to scan and find",
-                },
-                {
-                    "suggestion": "use_import_tools",
-                    "description": "Use tools like isort or Black to automatically organize imports",
-                    "benefit": "Ensures consistent import formatting across the codebase",
-                },
-            ]
-            
-            return result
-        
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def analyze_module_coupling(self) -> Dict[str, Any]:
-        """Analyze module coupling to identify highly coupled modules.
-    
-        This function examines the relationships between modules to identify those
-        that are highly coupled and might benefit from refactoring.
-    
-        Returns:
-            Dict containing module coupling analysis and suggestions
-        """
-        result = {
-            "coupling_metrics": {
-                "afferent_coupling": {},  # Incoming dependencies (files that import this file)
-                "efferent_coupling": {},  # Outgoing dependencies (files imported by this file)
-                "instability": {},        # Ratio of efferent to total coupling (0-1)
-                "total_coupling": {},     # Total dependencies (incoming + outgoing)
-            },
-            "highly_coupled_modules": [],
-            "suggestions": [],
-        }
-    
-        try:
-            # First create the dependency graph
-            graph_data = self.create_dependency_graph()
-            if "error" in graph_data:
-                return {"error": graph_data["error"]}
-            
-            G = graph_data["nx_graph"]
-            
-            # Calculate coupling metrics for each file
-            for node in G.nodes():
-                # Afferent coupling (incoming dependencies)
-                incoming = list(G.predecessors(node))
-                afferent = len(incoming)
-                
-                # Efferent coupling (outgoing dependencies)
-                outgoing = list(G.successors(node))
-                efferent = len(outgoing)
-                
-                # Total coupling
-                total = afferent + efferent
-                
-                # Instability (0 = stable, 1 = unstable)
-                instability = efferent / total if total > 0 else 0
-                
-                # Store metrics
-                result["coupling_metrics"]["afferent_coupling"][node] = afferent
-                result["coupling_metrics"]["efferent_coupling"][node] = efferent
-                result["coupling_metrics"]["total_coupling"][node] = total
-                result["coupling_metrics"]["instability"][node] = instability
-            
-            # Identify highly coupled modules (top 10 by total coupling)
-            highly_coupled = sorted(
-                result["coupling_metrics"]["total_coupling"].items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:10]
-            
-            for file, coupling in highly_coupled:
-                afferent = result["coupling_metrics"]["afferent_coupling"][file]
-                efferent = result["coupling_metrics"]["efferent_coupling"][file]
-                instability = result["coupling_metrics"]["instability"][file]
-                
-                module_info = {
-                    "file": file,
-                    "total_coupling": coupling,
-                    "afferent_coupling": afferent,
-                    "efferent_coupling": efferent,
-                    "instability": instability,
-                    "coupling_type": "balanced" if 0.3 <= instability <= 0.7 else ("stable" if instability < 0.3 else "unstable"),
-                }
-                
-                # Add specific suggestions based on coupling type
-                if coupling > 10:  # Arbitrary threshold for high coupling
-                    if afferent > efferent * 2:  # Much more incoming than outgoing
-                        module_info["suggestion"] = "This module is used by many other modules. Consider if it should be split into smaller, more focused modules."
-                    elif efferent > afferent * 2:  # Much more outgoing than incoming
-                        module_info["suggestion"] = "This module depends on many other modules. Consider reducing dependencies or extracting functionality into separate modules."
-                    else:  # Balanced but high coupling
-                        module_info["suggestion"] = "This module has high coupling in both directions. Consider refactoring to reduce overall coupling."
-                
-                result["highly_coupled_modules"].append(module_info)
-            
-            # Generate general suggestions
-            result["suggestions"] = [
-                {
-                    "suggestion": "extract_common_functionality",
-                    "description": "Extract common functionality used by multiple modules into shared utility modules",
-                    "benefit": "Reduces coupling and improves code reuse",
-                },
-                {
-                    "suggestion": "use_dependency_injection",
-                    "description": "Use dependency injection to decouple modules",
-                    "benefit": "Makes modules more independent and easier to test",
-                },
-                {
-                    "suggestion": "apply_interface_segregation",
-                    "description": "Apply the Interface Segregation Principle to break up large interfaces",
-                    "benefit": "Reduces coupling by ensuring clients only depend on methods they use",
-                },
-                {
-                    "suggestion": "reorganize_package_structure",
-                    "description": "Reorganize package structure to better reflect domain boundaries",
-                    "benefit": "Improves modularity by grouping related functionality",
-                },
-            ]
-            
-            return result
-        
-        except Exception as e:
-            return {"error": str(e)}
-    
-    def identify_shared_code(self) -> Dict[str, Any]:
-        """Identify code that could be extracted into shared modules.
-    
-        This function analyzes the codebase to find code patterns, functions, or classes
-        that are used across multiple modules and could be extracted into shared modules.
-    
-        Returns:
-            Dict containing identified shared code patterns and extraction suggestions
-        """
-        result = {
-            "shared_symbols": [],
-            "duplicate_code_patterns": [],
-            "extraction_suggestions": [],
-            "summary": {
-                "total_shared_symbols": 0,
-                "total_duplicate_patterns": 0,
-            },
-        }
-    
-        try:
-            # Track symbols used across multiple files
-            symbol_usages = defaultdict(set)
-            
-            # Analyze symbol usage across files
-            for file in self.codebase.files:
-                file_path = file.file_path if hasattr(file, "file_path") else str(file)
-                
-                # Skip if file has no symbols attribute
-                if not hasattr(file, "symbols"):
-                    continue
-                
-                for symbol in file.symbols:
-                    symbol_name = symbol.name if hasattr(symbol, "name") else str(symbol)
-                    symbol_type = getattr(symbol, "type", "unknown")
-                    
-                    # Skip if symbol has no usages attribute
-                    if not hasattr(symbol, "usages"):
-                        continue
-                    
-                    # Track files using this symbol
-                    for usage in symbol.usages:
-                        usage_file = usage.file.file_path if hasattr(usage, "file") and hasattr(usage.file, "file_path") else str(usage.file)
-                        
-                        # Only count external usages (not in the same file)
-                        if usage_file != file_path:
-                            symbol_usages[(file_path, symbol_name, symbol_type)].add(usage_file)
-            
-            # Find symbols used across multiple files
-            for (source_file, symbol_name, symbol_type), usage_files in symbol_usages.items():
-                if len(usage_files) >= 2:  # Used in at least 2 other files
-                    shared_symbol = {
-                        "symbol_name": symbol_name,
-                        "symbol_type": symbol_type,
-                        "defined_in": source_file,
-                        "used_in": list(usage_files),
-                        "usage_count": len(usage_files),
-                    }
-                    
-                    # Determine appropriate shared module
-                    if symbol_type in ["class", "interface", "type", "enum"]:
-                        shared_symbol["suggested_module"] = "shared/types.py"
-                    elif symbol_type in ["constant", "enum_value"]:
-                        shared_symbol["suggested_module"] = "shared/constants.py"
-                    elif symbol_type in ["function", "method"] and any(util in symbol_name.lower() for util in ["util", "helper", "format", "convert", "parse"]):
-                        shared_symbol["suggested_module"] = "shared/utils.py"
-                    else:
-                        shared_symbol["suggested_module"] = "shared/common.py"
-                    
-                    result["shared_symbols"].append(shared_symbol)
-            
-            # Sort by usage count
-            result["shared_symbols"] = sorted(result["shared_symbols"], key=lambda x: x["usage_count"], reverse=True)
-            
-            # Update summary
-            result["summary"]["total_shared_symbols"] = len(result["shared_symbols"])
-            
-            # Generate extraction suggestions
-            if result["shared_symbols"]:
-                # Group by suggested module
-                by_module = defaultdict(list)
-                for symbol in result["shared_symbols"]:
-                    by_module[symbol["suggested_module"]].append(symbol["symbol_name"])
-                
-                # Create suggestions for each module
-                for module, symbols in by_module.items():
-                    suggestion = {
-                        "module": module,
-                        "symbols": symbols[:5],  # Show top 5 symbols
-                        "total_symbols": len(symbols),
-                        "implementation_steps": [
-                            f"1. Create {module} if it doesn't exist",
-                            f"2. Move the identified symbols to this module",
-                            f"3. Update imports in all files using these symbols",
-                            f"4. Add appropriate documentation to the shared module",
-                        ],
-                    }
-                    result["extraction_suggestions"].append(suggestion)
-            
-            return result
-        
-    except Exception as e:
-        return {"error": str(e)}
-
 def main():
     """Main entry point for the codebase analyzer."""
     parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
@@ -2387,3 +1864,401 @@ def main():
 
 if __name__ == "__main__":
     main()
+    def visualize_blast_radius(self, symbol_name: str) -> Dict[str, Any]:
+        """Create a visualization of the blast radius for a given symbol.
+        
+        The blast radius shows how changes to one function might affect other parts 
+        of the codebase by tracing usage relationships.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            Dict containing the visualization data
+        """
+        if not self.codebase:
+            msg = "Codebase not initialized. Please initialize the codebase first."
+            raise ValueError(msg)
+            
+        # Create a directed graph for the blast radius
+        G = nx.DiGraph()
+        
+        # Find the target symbol
+        symbol = None
+        for func in self.codebase.functions:
+            if func.name == symbol_name:
+                symbol = func
+                break
+                
+        if not symbol:
+            return {"error": f"Symbol '{symbol_name}' not found in codebase"}
+            
+        # Add the root node
+        G.add_node(symbol, name=symbol_name, color="#9cdcfe")  # Light blue for root node
+        
+        # Define HTTP methods for detection
+        HTTP_METHODS = ["get", "put", "patch", "post", "head", "delete"]
+        
+        # Define color palette
+        COLOR_PALETTE = {
+            "PyFunction": "#a277ff",        # Soft purple
+            "PyClass": "#ffca85",           # Warm peach/orange
+            "HTTP_METHOD": "#ff6e6e",       # Red for HTTP methods
+            "ExternalModule": "#f694ff"     # Bright magenta/pink
+        }
+        
+        # Helper function to check if a symbol is an HTTP method
+        def is_http_method(sym):
+            if hasattr(sym, "is_method") and sym.is_method and hasattr(sym, "name"):
+                return sym.name.lower() in HTTP_METHODS
+            return False
+            
+        # Helper function to generate edge metadata
+        def generate_edge_meta(usage):
+            return {
+                "name": usage.match.source if hasattr(usage, "match") and hasattr(usage.match, "source") else "usage",
+                "file_path": usage.match.filepath if hasattr(usage, "match") and hasattr(usage.match, "filepath") else "",
+                "symbol_name": usage.match.__class__.__name__ if hasattr(usage, "match") else ""
+            }
+            
+        # Recursive function to build the blast radius visualization
+        def build_blast_radius(sym, depth=0, max_depth=5):
+            if depth >= max_depth:
+                return
+                
+            if hasattr(sym, "usages"):
+                for usage in sym.usages:
+                    if hasattr(usage, "usage_symbol"):
+                        usage_symbol = usage.usage_symbol
+                        
+                        # Determine node color based on type
+                        if is_http_method(usage_symbol):
+                            color = COLOR_PALETTE.get("HTTP_METHOD")
+                        else:
+                            color = COLOR_PALETTE.get(usage_symbol.__class__.__name__, "#f694ff")
+                            
+                        # Add node and edge to graph
+                        G.add_node(usage_symbol, color=color)
+                        G.add_edge(sym, usage_symbol, **generate_edge_meta(usage))
+                        
+                        # Recursively process usage symbol
+                        build_blast_radius(usage_symbol, depth + 1, max_depth)
+        
+        # Build the blast radius visualization
+        build_blast_radius(symbol)
+        
+        # Convert the graph to a serializable format
+        nodes = []
+        for node in G.nodes():
+            node_data = G.nodes[node]
+            nodes.append({
+                "id": str(id(node)),
+                "name": node.name if hasattr(node, "name") else str(node),
+                "color": node_data.get("color", "#cccccc"),
+                "type": node.__class__.__name__ if hasattr(node, "__class__") else "Unknown"
+            })
+            
+        edges = []
+        for source, target in G.edges():
+            edge_data = G.edges[source, target]
+            edges.append({
+                "source": str(id(source)),
+                "target": str(id(target)),
+                "name": edge_data.get("name", ""),
+                "file_path": edge_data.get("file_path", "")
+            })
+            
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "root_node": str(id(symbol)),
+            "symbol_name": symbol_name
+        }
+        
+    def detect_http_methods(self) -> List[str]:
+        """Detect HTTP endpoint methods in the codebase.
+        
+        Returns:
+            List of HTTP endpoint methods found in the codebase
+        """
+        if not self.codebase:
+            msg = "Codebase not initialized. Please initialize the codebase first."
+            raise ValueError(msg)
+            
+        http_methods = []
+        HTTP_METHOD_NAMES = ["get", "put", "patch", "post", "head", "delete", "options"]
+        
+        for func in self.codebase.functions:
+            if hasattr(func, "is_method") and func.is_method and hasattr(func, "name"):
+                if func.name.lower() in HTTP_METHOD_NAMES:
+                    # Check for common API/endpoint patterns
+                    is_endpoint = False
+                    
+                    # Check if parent class has View, Controller, API, Endpoint, etc. in name
+                    if hasattr(func, "parent_class") and hasattr(func.parent_class, "name"):
+                        parent_name = func.parent_class.name.lower()
+                        if any(pattern in parent_name for pattern in ["view", "controller", "api", "endpoint", "resource", "handler"]):
+                            is_endpoint = True
+                    
+                    # Check for common decorators
+                    if hasattr(func, "decorators"):
+                        for decorator in func.decorators:
+                            decorator_name = str(decorator).lower()
+                            if any(pattern in decorator_name for pattern in ["route", "api", "endpoint", "http", "get", "post", "put", "delete"]):
+                                is_endpoint = True
+                                break
+                    
+                    if is_endpoint:
+                        parent_class_name = func.parent_class.name if hasattr(func, "parent_class") and hasattr(func.parent_class, "name") else "Unknown"
+                        http_methods.append({
+                            "name": func.name,
+                            "parent_class": parent_class_name,
+                            "file_path": func.file.file_path if hasattr(func, "file") and hasattr(func.file, "file_path") else "Unknown",
+                            "method_type": func.name.upper()
+                        })
+        
+        return http_methods
+        
+    def visualize_usage_relationships(self, symbol_name: str) -> Dict[str, Any]:
+        """Create a visualization of usage relationships for a given symbol.
+        
+        This shows how a symbol is used throughout the codebase and the relationships
+        between different usages.
+        
+        Args:
+            symbol_name: Name of the symbol to analyze
+            
+        Returns:
+            Dict containing the visualization data
+        """
+        if not self.codebase:
+            msg = "Codebase not initialized. Please initialize the codebase first."
+            raise ValueError(msg)
+            
+        # Create a directed graph for the usage relationships
+        G = nx.DiGraph()
+        
+        # Find the target symbol
+        symbol = None
+        for func in self.codebase.functions:
+            if func.name == symbol_name:
+                symbol = func
+                break
+                
+        if not symbol:
+            for cls in self.codebase.classes:
+                if cls.name == symbol_name:
+                    symbol = cls
+                    break
+                    
+        if not symbol:
+            return {"error": f"Symbol '{symbol_name}' not found in codebase"}
+            
+        # Add the root node
+        G.add_node(symbol, name=symbol_name, color="#9cdcfe")  # Light blue for root node
+        
+        # Define color palette
+        COLOR_PALETTE = {
+            "PyFunction": "#a277ff",        # Soft purple
+            "PyClass": "#ffca85",           # Warm peach/orange
+            "PyVariable": "#61afef",        # Blue
+            "ExternalModule": "#f694ff"     # Bright magenta/pink
+        }
+        
+        # Helper function to generate edge metadata
+        def generate_edge_meta(usage_type, location=""):
+            return {
+                "usage_type": usage_type,
+                "location": location
+            }
+            
+        # Process direct usages
+        if hasattr(symbol, "usages"):
+            for usage in symbol.usages:
+                if hasattr(usage, "usage_symbol"):
+                    usage_symbol = usage.usage_symbol
+                    
+                    # Add node with appropriate styling
+                    G.add_node(
+                        usage_symbol, 
+                        name=usage_symbol.name if hasattr(usage_symbol, "name") else str(usage_symbol),
+                        color=COLOR_PALETTE.get(usage_symbol.__class__.__name__, "#cccccc")
+                    )
+                    
+                    # Add edge with usage information
+                    G.add_edge(
+                        symbol, 
+                        usage_symbol, 
+                        **generate_edge_meta(
+                            "direct_usage",
+                            usage.match.filepath if hasattr(usage, "match") and hasattr(usage.match, "filepath") else ""
+                        )
+                    )
+        
+        # Process imports of the symbol
+        if hasattr(symbol, "imports"):
+            for imp in symbol.imports:
+                if hasattr(imp, "resolved_symbol") and imp.resolved_symbol:
+                    # Add node with appropriate styling
+                    G.add_node(
+                        imp.resolved_symbol,
+                        name=imp.resolved_symbol.name if hasattr(imp.resolved_symbol, "name") else str(imp.resolved_symbol),
+                        color=COLOR_PALETTE.get(imp.resolved_symbol.__class__.__name__, "#cccccc")
+                    )
+                    
+                    # Add edge with import information
+                    G.add_edge(
+                        symbol,
+                        imp.resolved_symbol,
+                        **generate_edge_meta("import", imp.file.file_path if hasattr(imp, "file") and hasattr(imp.file, "file_path") else "")
+                    )
+        
+        # Convert the graph to a serializable format
+        nodes = []
+        for node in G.nodes():
+            node_data = G.nodes[node]
+            nodes.append({
+                "id": str(id(node)),
+                "name": node_data.get("name", str(node)),
+                "color": node_data.get("color", "#cccccc"),
+                "type": node.__class__.__name__ if hasattr(node, "__class__") else "Unknown"
+            })
+            
+        edges = []
+        for source, target in G.edges():
+            edge_data = G.edges[source, target]
+            edges.append({
+                "source": str(id(source)),
+                "target": str(id(target)),
+                "usage_type": edge_data.get("usage_type", "unknown"),
+                "location": edge_data.get("location", "")
+            })
+            
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "root_node": str(id(symbol)),
+            "symbol_name": symbol_name
+        }
+        
+    def track_symbol_usages(self, symbol_name: str) -> Dict[str, Any]:
+        """Track all usages of a symbol across the codebase.
+        
+        This provides detailed information about where and how a symbol is used.
+        
+        Args:
+            symbol_name: Name of the symbol to track
+            
+        Returns:
+            Dict containing usage information
+        """
+        if not self.codebase:
+            msg = "Codebase not initialized. Please initialize the codebase first."
+            raise ValueError(msg)
+            
+        # Find the target symbol
+        symbol = None
+        for func in self.codebase.functions:
+            if func.name == symbol_name:
+                symbol = func
+                break
+                
+        if not symbol:
+            for cls in self.codebase.classes:
+                if cls.name == symbol_name:
+                    symbol = cls
+                    break
+                    
+        if not symbol:
+            return {"error": f"Symbol '{symbol_name}' not found in codebase"}
+            
+        # Collect usage information
+        usages = []
+        
+        if hasattr(symbol, "usages"):
+            for usage in symbol.usages:
+                usage_info = {
+                    "type": "reference",
+                    "location": {
+                        "file": usage.match.filepath if hasattr(usage, "match") and hasattr(usage.match, "filepath") else "Unknown",
+                        "line": usage.match.start_point[0] if hasattr(usage, "match") and hasattr(usage.match, "start_point") else 0,
+                        "column": usage.match.start_point[1] if hasattr(usage, "match") and hasattr(usage.match, "start_point") else 0
+                    },
+                    "context": usage.match.source if hasattr(usage, "match") and hasattr(usage.match, "source") else "",
+                    "using_symbol": {
+                        "name": usage.usage_symbol.name if hasattr(usage, "usage_symbol") and hasattr(usage.usage_symbol, "name") else "Unknown",
+                        "type": usage.usage_symbol.__class__.__name__ if hasattr(usage, "usage_symbol") and hasattr(usage.usage_symbol, "__class__") else "Unknown"
+                    }
+                }
+                usages.append(usage_info)
+        
+        # Collect import information
+        imports = []
+        
+        for file in self.codebase.files:
+            for imp in file.imports:
+                if hasattr(imp, "resolved_symbol") and imp.resolved_symbol == symbol:
+                    import_info = {
+                        "type": "import",
+                        "location": {
+                            "file": file.file_path,
+                            "line": imp.start_point[0] if hasattr(imp, "start_point") else 0,
+                            "column": imp.start_point[1] if hasattr(imp, "start_point") else 0
+                        },
+                        "import_statement": imp.source if hasattr(imp, "source") else "Unknown"
+                    }
+                    imports.append(import_info)
+        
+        # Collect inheritance information if it's a class
+        inheritance = []
+        
+        if hasattr(symbol, "__class__") and symbol.__class__.__name__ == "PyClass":
+            for cls in self.codebase.classes:
+                if hasattr(cls, "bases") and symbol in cls.bases:
+                    inheritance_info = {
+                        "type": "inheritance",
+                        "subclass": cls.name,
+                        "location": {
+                            "file": cls.file.file_path if hasattr(cls, "file") and hasattr(cls.file, "file_path") else "Unknown",
+                            "line": cls.start_point[0] if hasattr(cls, "start_point") else 0,
+                            "column": cls.start_point[1] if hasattr(cls, "start_point") else 0
+                        }
+                    }
+                    inheritance.append(inheritance_info)
+        
+        # Collect function call information if it's a function
+        calls = []
+        
+        if hasattr(symbol, "__class__") and symbol.__class__.__name__ == "PyFunction":
+            for func in self.codebase.functions:
+                if hasattr(func, "function_calls"):
+                    for call in func.function_calls:
+                        if hasattr(call, "function_definition") and call.function_definition == symbol:
+                            call_info = {
+                                "type": "call",
+                                "caller": func.name,
+                                "location": {
+                                    "file": func.file.file_path if hasattr(func, "file") and hasattr(func.file, "file_path") else "Unknown",
+                                    "line": call.start_point[0] if hasattr(call, "start_point") else 0,
+                                    "column": call.start_point[1] if hasattr(call, "start_point") else 0
+                                },
+                                "call_statement": call.source if hasattr(call, "source") else "Unknown"
+                            }
+                            calls.append(call_info)
+        
+        return {
+            "symbol": {
+                "name": symbol_name,
+                "type": symbol.__class__.__name__ if hasattr(symbol, "__class__") else "Unknown",
+                "file": symbol.file.file_path if hasattr(symbol, "file") and hasattr(symbol.file, "file_path") else "Unknown"
+            },
+            "usage_count": len(usages),
+            "import_count": len(imports),
+            "inheritance_count": len(inheritance),
+            "call_count": len(calls),
+            "usages": usages,
+            "imports": imports,
+            "inheritance": inheritance,
+            "calls": calls
+        }
+
