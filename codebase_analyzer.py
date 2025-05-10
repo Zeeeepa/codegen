@@ -3757,11 +3757,9 @@ class CodebaseAnalyzer:
             return {"error": str(e)}
 
 
-n
 def main():
     """Main entry point for the codebase analyzer."""
     """Main entry point for the codebase analyzer."""
-    parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
     
     # Repository source
     source_group = parser.add_mutually_exclusive_group(required=True)
