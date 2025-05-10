@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class CodebaseAnalyzer:
     """Comprehensive codebase analyzer using the Codegen SDK."""
 
-    def __init__(self, codebase_path: str):
+    def __init__(self, codebase_path: str) -> None:
         """Initialize the codebase analyzer.
 
         Args:
