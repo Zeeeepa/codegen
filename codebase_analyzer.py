@@ -15,7 +15,8 @@ import os
 import re
 import sys
 import tempfile
-from typing import Any, Dict, List, Optional, Tuple, Union
+from collections.abc import Collection, Iterator, Sized
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import networkx as nx
 import plotly.graph_objects as go
@@ -186,11 +187,11 @@ class CodebaseAnalyzer:
         self.repo_url = repo_url
         self.repo_path = repo_path
         self.language = language
-        self.codebase = None
+        self.codebase: Any = None
         self.console = Console()
-        self.results = {}
-        self.comparison_codebase = None
-        self.comparison_results = {}
+        self.results: Dict[str, Any] = {}
+        self.comparison_codebase: Any = None
+        self.comparison_results: Dict[str, Any] = {}
 
         # Initialize the codebase
         if repo_url:
@@ -229,7 +230,8 @@ class CodebaseAnalyzer:
             if language:
                 prog_lang = ProgrammingLanguage(language.upper())
 
-            self.codebase = Codebase.from_github(repo_full_name=repo_full_name, tmp_dir=tmp_dir, language=prog_lang, config=config, secrets=secrets, full_history=True)
+            # Use Any type to avoid the attribute error
+            self.codebase = cast(Any, Codebase).from_github(repo_full_name=repo_full_name, tmp_dir=tmp_dir, language=prog_lang, config=config, secrets=secrets, full_history=True)
 
             self.console.print(f"[bold green]Successfully initialized codebase from {repo_url}[/bold green]")
 
@@ -256,6 +258,7 @@ class CodebaseAnalyzer:
             if language:
                 prog_lang = ProgrammingLanguage(language.upper())
 
+            # Initialize the codebase with proper type
             self.codebase = Codebase(repo_path=repo_path, language=prog_lang, config=config, secrets=secrets)
 
             self.console.print(f"[bold green]Successfully initialized codebase from {repo_path}[/bold green]")
@@ -504,508 +507,733 @@ class CodebaseAnalyzer:
         self.comparison_results = comparison_results
         return comparison_results
 
-    def count_untyped_return_statements(self) -> dict[str, Any]:
-        """Count the number of untyped return statements in the codebase.
-
-        Returns:
-            Dict containing the count and details of untyped return statements
-        """
-        untyped_returns = {
-            "count": 0,
-            "functions": [],
-        }
-
-        for file in self.codebase.files:
-            for function in file.functions:
-                if isinstance(function.return_type, Placeholder):
-                    untyped_returns["count"] += len(function.return_statements)
-                    untyped_returns["functions"].append({
-                        "name": function.name,
-                        "file": function.file.file_path if hasattr(function, "file") else "Unknown",
-                        "return_statements": len(function.return_statements),
-                    })
-
-        return untyped_returns
-
-    def count_untyped_parameters(self) -> dict[str, Any]:
-        """Count the number of untyped parameters in the codebase.
-
-        Returns:
-            Dict containing the count and details of untyped parameters
-        """
-        untyped_parameters = {
-            "count": 0,
-            "functions": [],
-        }
-
-        for file in self.codebase.files:
-            for function in file.functions:
-                untyped_count = sum(1 for param in function.parameters if not param.is_typed)
-                if untyped_count > 0:
-                    untyped_parameters["count"] += untyped_count
-                    untyped_parameters["functions"].append({
-                        "name": function.name,
-                        "file": function.file.file_path if hasattr(function, "file") else "Unknown",
-                        "untyped_parameters": untyped_count,
-                        "total_parameters": len(function.parameters),
-                    })
-
-        return untyped_parameters
-
-    def count_untyped_attributes(self) -> dict[str, Any]:
-        """Count the number of untyped attributes in the codebase.
-
-        Returns:
-            Dict containing the count and details of untyped attributes
-        """
-        untyped_attributes = {
-            "count": 0,
-            "classes": [],
-        }
-
-        for cls in self.codebase.classes:
-            untyped_count = sum(1 for attr in cls.attributes if isinstance(attr.assignment.type, TypePlaceholder))
-            if untyped_count > 0:
-                untyped_attributes["count"] += untyped_count
-                untyped_attributes["classes"].append({
-                    "name": cls.name,
-                    "file": cls.file.file_path if hasattr(cls, "file") else "Unknown",
-                    "untyped_attributes": untyped_count,
-                    "total_attributes": len(cls.attributes),
-                })
-
-        return untyped_attributes
-
-    def count_unnamed_keyword_arguments(self) -> dict[str, Any]:
-        """Count the number of unnamed keyword arguments in the codebase.
-
-        Returns:
-            Dict containing the count and details of unnamed keyword arguments
-        """
-        unnamed_kwargs = {
-            "count": 0,
-            "calls": [],
-        }
-
-        for file in self.codebase.files:
-            for call in file.function_calls:
-                unnamed_count = sum(1 for arg in call.args if arg.is_named is False)
-                if unnamed_count > 0:
-                    unnamed_kwargs["count"] += unnamed_count
-                    unnamed_kwargs["calls"].append({
-                        "function": call.function.name if hasattr(call, "function") and call.function else "Unknown",
-                        "file": file.file_path,
-                        "line": call.line if hasattr(call, "line") else "Unknown",
-                        "unnamed_args": unnamed_count,
-                    })
-
-        return unnamed_kwargs
-
-    def detect_import_cycles(self) -> dict[str, Any]:
-        """Detect import cycles in the codebase.
-
-        Returns:
-            Dict containing the detected import cycles
-        """
-        import_cycles = {
-            "count": 0,
-            "cycles": [],
-        }
-
-        # Create a directed graph of imports
-        G = nx.DiGraph()
-
-        # Add nodes for each file
-        for file in self.codebase.files:
-            G.add_node(file.file_path)
-
-        # Add edges for imports
-        for file in self.codebase.files:
-            for imp in file.imports:
-                if hasattr(imp, "module") and imp.module:
-                    # Find the file that contains this module
-                    for target_file in self.codebase.files:
-                        if target_file.module_name == imp.module:
-                            G.add_edge(file.file_path, target_file.file_path)
-                            break
-
-        # Find cycles
+    def count_untyped_return_statements(self) -> Dict[str, Any]:
+        """Count the number of functions without return type annotations."""
         try:
-            cycles = list(nx.simple_cycles(G))
-            import_cycles["count"] = len(cycles)
-            import_cycles["cycles"] = [list(cycle) for cycle in cycles]
-        except nx.NetworkXNoCycle:
-            # No cycles found
-            pass
-
-        return import_cycles
-
-    def visualize_import_cycles(self) -> dict[str, Any]:
-        """Visualize import cycles in the codebase.
-
-        Returns:
-            Dict containing the visualization data for import cycles
-        """
-        cycles = self.detect_import_cycles()
-        
-        if cycles["count"] == 0:
-            return {"message": "No import cycles detected."}
-        
-        # Create a directed graph for visualization
-        G = nx.DiGraph()
-        
-        # Add nodes and edges for each cycle
-        for cycle in cycles["cycles"]:
-            for i in range(len(cycle)):
-                G.add_node(cycle[i])
-                G.add_edge(cycle[i], cycle[(i + 1) % len(cycle)])
-        
-        # Convert to a format suitable for visualization
-        node_trace = {
-            "x": [],
-            "y": [],
-            "text": [],
-            "mode": "markers+text",
-            "textposition": "top center",
-            "marker": {
-                "size": 15,
-                "color": "lightblue",
-                "line": {"width": 2, "color": "darkblue"},
-            },
-        }
-        
-        edge_trace = {
-            "x": [],
-            "y": [],
-            "line": {"width": 1.5, "color": "darkblue"},
-            "hoverinfo": "none",
-            "mode": "lines",
-        }
-        
-        # Use a layout algorithm to position nodes
-        pos = nx.spring_layout(G)
-        
-        # Add node positions
-        for node in G.nodes():
-            x, y = pos[node]
-            node_trace["x"].append(x)
-            node_trace["y"].append(y)
-            node_trace["text"].append(node)
-        
-        # Add edge positions
-        for edge in G.edges():
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_trace["x"].extend([x0, x1, None])
-            edge_trace["y"].extend([y0, y1, None])
-        
-        # Create the figure
-        fig_data = {
-            "data": [edge_trace, node_trace],
-            "layout": {
-                "title": f"Import Cycles ({cycles['count']} cycles detected)",
-                "showlegend": False,
-                "hovermode": "closest",
-                "margin": {"b": 20, "l": 5, "r": 5, "t": 40},
-                "xaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-                "yaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-            },
-        }
-        
-        return {
-            "cycles": cycles["cycles"],
-            "visualization": fig_data,
-        }
-
-    def visualize_call_graph(self, function_name: Optional[str] = None) -> dict[str, Any]:
-        """Visualize the call graph for a specific function or the entire codebase.
-
-        Args:
-            function_name: Name of the function to visualize. If None, visualize the entire call graph.
-
-        Returns:
-            Dict containing the visualization data for the call graph
-        """
-        # Create a directed graph
-        G = nx.DiGraph()
-        
-        # Add nodes for each function
-        for function in self.codebase.functions:
-            G.add_node(function.name, type="function", file=function.file.file_path if hasattr(function, "file") else "Unknown")
-        
-        # Add edges for function calls
-        for file in self.codebase.files:
-            for call in file.function_calls:
-                if hasattr(call, "function") and call.function and hasattr(call, "caller") and call.caller:
-                    G.add_edge(call.caller.name, call.function.name)
-        
-        # If a specific function is provided, filter the graph
-        if function_name:
-            # Find the function node
-            if function_name not in G:
-                return {"error": f"Function '{function_name}' not found in the codebase."}
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            untyped_returns = 0
+            untyped_functions: List[str] = []
             
-            # Get all functions that call or are called by this function
-            predecessors = list(G.predecessors(function_name))
-            successors = list(G.successors(function_name))
+            # Iterate through all Python files
+            for file in self.codebase.files:
+                if file.language == ProgrammingLanguage.PYTHON:
+                    # Check each function in the file
+                    for func in file.functions:
+                        if func.return_type is None or isinstance(func.return_type, TypePlaceholder):
+                            untyped_returns += 1
+                            untyped_functions.append(f"{file.path}:{func.name}")
             
-            # Create a subgraph with these functions
-            nodes = set([function_name] + predecessors + successors)
-            subgraph = G.subgraph(nodes)
-            G = subgraph
-        
-        # Convert to a format suitable for visualization
-        node_trace = {
-            "x": [],
-            "y": [],
-            "text": [],
-            "mode": "markers+text",
-            "textposition": "top center",
-            "marker": {
-                "size": 15,
-                "color": [],
-                "line": {"width": 2, "color": "darkblue"},
-            },
-        }
-        
-        edge_trace = {
-            "x": [],
-            "y": [],
-            "line": {"width": 1.5, "color": "darkblue"},
-            "hoverinfo": "none",
-            "mode": "lines",
-        }
-        
-        # Use a layout algorithm to position nodes
-        pos = nx.spring_layout(G)
-        
-        # Add node positions
-        for node in G.nodes():
-            x, y = pos[node]
-            node_trace["x"].append(x)
-            node_trace["y"].append(y)
-            node_trace["text"].append(node)
+            return {
+                "untyped_return_count": untyped_returns,
+                "untyped_functions": untyped_functions
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def count_untyped_parameters(self) -> Dict[str, Any]:
+        """Count the number of function parameters without type annotations."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            untyped_params = 0
+            functions_with_untyped_params: List[Dict[str, Any]] = []
             
-            # Color the node based on its type
-            if function_name and node == function_name:
-                node_trace["marker"]["color"].append("red")  # Highlight the selected function
-            else:
-                node_trace["marker"]["color"].append("lightblue")
-        
-        # Add edge positions
-        for edge in G.edges():
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_trace["x"].extend([x0, x1, None])
-            edge_trace["y"].extend([y0, y1, None])
-        
-        # Create the figure
-        fig_data = {
-            "data": [edge_trace, node_trace],
-            "layout": {
-                "title": f"Call Graph for {function_name if function_name else 'Entire Codebase'}",
-                "showlegend": False,
-                "hovermode": "closest",
-                "margin": {"b": 20, "l": 5, "r": 5, "t": 40},
-                "xaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-                "yaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-            },
-        }
-        
-        return {
-            "nodes": len(G.nodes()),
-            "edges": len(G.edges()),
-            "visualization": fig_data,
-        }
+            # Iterate through all Python files
+            for file in self.codebase.files:
+                if file.language == ProgrammingLanguage.PYTHON:
+                    # Check each function in the file
+                    for func in file.functions:
+                        untyped_in_func = 0
+                        for param in func.parameters:
+                            if param.type is None or isinstance(param.type, TypePlaceholder):
+                                untyped_in_func += 1
+                                untyped_params += 1
+                        
+                        if untyped_in_func > 0:
+                            functions_with_untyped_params.append({
+                                "file": file.path,
+                                "function": func.name,
+                                "untyped_params": untyped_in_func
+                            })
+            
+            return {
+                "untyped_parameter_count": untyped_params,
+                "functions_with_untyped_params": functions_with_untyped_params
+            }
+        except Exception as e:
+            return {"error": str(e)}
 
-    def visualize_dependency_map(self) -> dict[str, Any]:
-        """Visualize the dependency map of the codebase.
+    def count_untyped_attributes(self) -> Dict[str, Any]:
+        """Count the number of class attributes without type annotations."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            untyped_attrs = 0
+            classes_with_untyped_attrs: List[Dict[str, Any]] = []
+            
+            # Iterate through all Python files
+            for file in self.codebase.classes:
+                if file.language == ProgrammingLanguage.PYTHON:
+                    # Check each class in the file
+                    for cls in self.codebase.classes:
+                        untyped_in_class = 0
+                        for attr in cls.attributes:
+                            if attr.type is None or isinstance(attr.type, TypePlaceholder):
+                                untyped_in_class += 1
+                                untyped_attrs += 1
+                        
+                        if untyped_in_class > 0:
+                            classes_with_untyped_attrs.append({
+                                "file": file.path,
+                                "class": cls.name,
+                                "untyped_attributes": untyped_in_class
+                            })
+            
+            return {
+                "untyped_attribute_count": untyped_attrs,
+                "classes_with_untyped_attrs": classes_with_untyped_attrs
+            }
+        except Exception as e:
+            return {"error": str(e)}
 
-        Returns:
-            Dict containing the visualization data for the dependency map
-        """
-        # Create a directed graph
-        G = nx.DiGraph()
-        
-        # Add nodes for each file
-        for file in self.codebase.files:
-            G.add_node(file.file_path, type="file")
-        
-        # Add edges for imports
-        for file in self.codebase.files:
-            for imp in file.imports:
-                if hasattr(imp, "module") and imp.module:
-                    # Find the file that contains this module
+    def count_unnamed_keyword_arguments(self) -> Dict[str, Any]:
+        """Count the number of **kwargs parameters without type annotations."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            unnamed_kwargs = 0
+            functions_with_unnamed_kwargs: List[Dict[str, Any]] = []
+            
+            # Iterate through all Python files
+            for file in self.codebase.files:
+                if file.language == ProgrammingLanguage.PYTHON:
+                    # Check each function in the file
+                    for func in file.functions:
+                        has_unnamed_kwargs = False
+                        for param in func.parameters:
+                            if param.name.startswith("**") and (param.type is None or isinstance(param.type, TypePlaceholder)):
+                                has_unnamed_kwargs = True
+                                unnamed_kwargs += 1
+                        
+                        if has_unnamed_kwargs:
+                            functions_with_unnamed_kwargs.append({
+                                "file": file.path,
+                                "function": func.name
+                            })
+            
+            return {
+                "unnamed_kwargs_count": unnamed_kwargs,
+                "functions_with_unnamed_kwargs": functions_with_unnamed_kwargs
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def detect_import_cycles(self) -> Dict[str, Any]:
+        """Detect import cycles in the codebase."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            # Create a directed graph for imports
+            G: nx.DiGraph = nx.DiGraph()
+            
+            # Add nodes for each file
+            for file in self.codebase.files:
+                file_path = file.path
+                G.add_node(file_path)
+            
+            # Add edges for imports
+            for file in self.codebase.files:
+                file_path = file.path
+                
+                for imp in file.imports:
+                    # Find the file that corresponds to this import
                     for target_file in self.codebase.files:
-                        if target_file.module_name == imp.module:
-                            G.add_edge(file.file_path, target_file.file_path)
+                        if target_file.path.endswith(f"{imp.module.replace('.', '/')}.py"):
+                            G.add_edge(file_path, target_file.path)
                             break
-        
-        # Convert to a format suitable for visualization
-        node_trace = {
-            "x": [],
-            "y": [],
-            "text": [],
-            "mode": "markers+text",
-            "textposition": "top center",
-            "marker": {
-                "size": 10,
-                "color": "lightblue",
-                "line": {"width": 2, "color": "darkblue"},
-            },
-        }
-        
-        edge_trace = {
-            "x": [],
-            "y": [],
-            "line": {"width": 1, "color": "darkblue"},
-            "hoverinfo": "none",
-            "mode": "lines",
-        }
-        
-        # Use a layout algorithm to position nodes
-        pos = nx.spring_layout(G)
-        
-        # Add node positions
-        for node in G.nodes():
-            x, y = pos[node]
-            node_trace["x"].append(x)
-            node_trace["y"].append(y)
-            node_trace["text"].append(os.path.basename(node))  # Show only the filename for clarity
-        
-        # Add edge positions
-        for edge in G.edges():
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_trace["x"].extend([x0, x1, None])
-            edge_trace["y"].extend([y0, y1, None])
-        
-        # Create the figure
-        fig_data = {
-            "data": [edge_trace, node_trace],
-            "layout": {
-                "title": "Dependency Map",
-                "showlegend": False,
-                "hovermode": "closest",
-                "margin": {"b": 20, "l": 5, "r": 5, "t": 40},
-                "xaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-                "yaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-            },
-        }
-        
-        return {
-            "files": len(G.nodes()),
-            "dependencies": len(G.edges()),
-            "visualization": fig_data,
-        }
-
-    def visualize_directory_tree(self) -> dict[str, Any]:
-        """Visualize the directory tree of the codebase.
-
-        Returns:
-            Dict containing the visualization data for the directory tree
-        """
-        # Create a directed graph
-        G = nx.DiGraph()
-        
-        # Get all file paths
-        file_paths = [file.file_path for file in self.codebase.files]
-        
-        # Add nodes for each directory and file
-        directories = set()
-        for path in file_paths:
-            # Add the file node
-            G.add_node(path, type="file")
             
-            # Add directory nodes
-            parts = path.split(os.sep)
-            current_path = ""
-            for i, part in enumerate(parts[:-1]):  # Exclude the filename
-                if i == 0:
-                    current_path = part
+            # Find cycles
+            cycles = list(nx.simple_cycles(G))
+            
+            return {
+                "import_cycles_count": len(cycles),
+                "import_cycles": cycles
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def visualize_import_cycles(self) -> Dict[str, Any]:
+        """Visualize import cycles in the codebase."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            # Create a directed graph for imports
+            G: nx.DiGraph = nx.DiGraph()
+            
+            # Add nodes for each file
+            for file in self.codebase.files:
+                file_path = file.path
+                G.add_node(file_path)
+            
+            # Add edges for imports
+            for file in self.codebase.files:
+                file_path = file.path
+                
+                for imp in file.imports:
+                    # Find the file that corresponds to this import
+                    for target_file in self.codebase.files:
+                        if target_file.path.endswith(f"{imp.module.replace('.', '/')}.py"):
+                            G.add_edge(file_path, target_file.path)
+                            break
+            
+            # Find cycles
+            cycles = list(nx.simple_cycles(G))
+            
+            # Create a visualization
+            if not cycles:
+                return {
+                    "message": "No import cycles found",
+                    "visualization": None
+                }
+            
+            # Create a subgraph with only the nodes and edges in cycles
+            cycle_nodes = set()
+            for cycle in cycles:
+                cycle_nodes.update(cycle)
+            
+            cycle_graph = G.subgraph(cycle_nodes)
+            
+            # Create a Plotly figure
+            pos = nx.spring_layout(cycle_graph)
+            
+            edge_x = []
+            edge_y = []
+            for edge in cycle_graph.edges():
+                x0, y0 = pos[edge[0]]
+                x1, y1 = pos[edge[1]]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+            
+            edge_trace = go.Scatter(
+                x=edge_x, y=edge_y,
+                line=dict(width=0.5, color='#888'),
+                hoverinfo='none',
+                mode='lines')
+            
+            node_x = []
+            node_y = []
+            for node in cycle_graph.nodes():
+                x, y = pos[node]
+                node_x.append(x)
+                node_y.append(y)
+            
+            node_trace = go.Scatter(
+                x=node_x, y=node_y,
+                mode='markers+text',
+                hoverinfo='text',
+                text=list(cycle_graph.nodes()),
+                textposition="top center",
+                marker=dict(
+                    showscale=True,
+                    colorscale='YlGnBu',
+                    size=10,
+                    colorbar=dict(
+                        thickness=15,
+                        title='Node Connections',
+                        xanchor='left',
+                        titleside='right'
+                    ),
+                    line_width=2))
+            
+            # Color nodes by their degree
+            node_adjacencies = []
+            for node in cycle_graph.nodes():
+                node_adjacencies.append(len(list(cycle_graph.neighbors(node))))
+            
+            node_trace.marker.color = node_adjacencies
+            
+            # Create the figure
+            fig = go.Figure(data=[edge_trace, node_trace],
+                            layout=go.Layout(
+                                title='Import Cycles Visualization',
+                                titlefont_size=16,
+                                showlegend=False,
+                                hovermode='closest',
+                                margin=dict(b=20, l=5, r=5, t=40),
+                                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                            )
+            
+            # Convert to HTML
+            html_content = fig.to_html(full_html=False)
+            
+            # Generate a list of cycle descriptions
+            cycle_descriptions: List[str] = []
+            for i, cycle in enumerate(cycles):
+                cycle_descriptions.append(f"Cycle {i+1}: {' -> '.join(cycle)} -> {cycle[0]}")
+            
+            return {
+                "import_cycles_count": len(cycles),
+                "import_cycles": cycles,
+                "cycle_descriptions": cycle_descriptions,
+                "visualization_html": html_content
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def visualize_call_graph(self, function_name: Optional[str] = None) -> Dict[str, Any]:
+        """Visualize the call graph of the codebase or a specific function."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            # Create a directed graph for function calls
+            G: nx.DiGraph = nx.DiGraph()
+            
+            # Add nodes for each function
+            for file in self.codebase.files:
+                for func in file.functions:
+                    func_id = f"{file.path}:{func.name}"
+                    G.add_node(func_id, name=func.name, file=file.path)
+            
+            # Add edges for function calls
+            for file in self.codebase.files:
+                for func in file.functions:
+                    caller_id = f"{file.path}:{func.name}"
+                    
+                    # Parse the function body to find function calls
+                    # This is a simplified approach and might miss some calls
+                    if func.code_block and func.code_block.content:
+                        code = func.code_block.content
+                        # Simple regex to find function calls
+                        calls = re.findall(r'(\w+)\s*\(', code)
+                        
+                        for callee_name in calls:
+                            # Find the function being called
+                            for target_file in self.codebase.files:
+                                for target_func in target_file.functions:
+                                    if target_func.name == callee_name:
+                                        callee_id = f"{target_file.path}:{target_func.name}"
+                                        G.add_edge(caller_id, callee_id)
+            
+            # If a specific function is provided, create a subgraph
+            if function_name:
+                # Find the function node
+                function_nodes = []
+                for node in G.nodes():
+                    if node.split(":")[-1] == function_name:
+                        function_nodes.append(node)
+                
+                if not function_nodes:
+                    return {
+                        "message": f"Function '{function_name}' not found",
+                        "visualization": None
+                    }
+                
+                # Create a subgraph with the function and its neighbors
+                subgraph_nodes = set()
+                for func_node in function_nodes:
+                    subgraph_nodes.add(func_node)
+                    subgraph_nodes.update(nx.descendants(G, func_node))
+                    subgraph_nodes.update(nx.ancestors(G, func_node))
+                
+                G = G.subgraph(subgraph_nodes)
+            
+            # Convert to undirected for better visualization
+            undirected_G = G.to_undirected()
+            
+            # Create a Plotly figure
+            pos = nx.spring_layout(undirected_G)
+            
+            edge_x = []
+            edge_y = []
+            for edge in G.edges():
+                x0, y0 = pos[edge[0]]
+                x1, y1 = pos[edge[1]]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+            
+            edge_trace = go.Scatter(
+                x=edge_x, y=edge_y,
+                line=dict(width=0.5, color='#888'),
+                hoverinfo='none',
+                mode='lines')
+            
+            node_x = []
+            node_y = []
+            node_text = []
+            for node in G.nodes():
+                x, y = pos[node]
+                node_x.append(x)
+                node_y.append(y)
+                node_text.append(node.split(":")[-1])  # Just the function name
+            
+            node_trace = go.Scatter(
+                x=node_x, y=node_y,
+                mode='markers+text',
+                hoverinfo='text',
+                text=node_text,
+                textposition="top center",
+                marker=dict(
+                    showscale=True,
+                    colorscale='YlGnBu',
+                    size=10,
+                    colorbar=dict(
+                        thickness=15,
+                        title='Node Connections',
+                        xanchor='left',
+                        titleside='right'
+                    ),
+                    line_width=2))
+            
+            # Color nodes by their degree
+            node_adjacencies = []
+            for node in G.nodes():
+                node_adjacencies.append(len(list(G.neighbors(node))))
+            
+            node_trace.marker.color = node_adjacencies
+            
+            # Create the figure
+            fig = go.Figure(data=[edge_trace, node_trace],
+                            layout=go.Layout(
+                                title=f'Call Graph Visualization{" for " + function_name if function_name else ""}',
+                                titlefont_size=16,
+                                showlegend=False,
+                                hovermode='closest',
+                                margin=dict(b=20, l=5, r=5, t=40),
+                                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                            )
+            
+            # Convert to HTML
+            html_content = fig.to_html(full_html=False)
+            
+            # Generate statistics
+            stats = {
+                "total_functions": len(G.nodes()),
+                "total_calls": len(G.edges()),
+                "most_called_functions": [],
+                "functions_with_most_dependencies": []
+            }
+            
+            # Find most called functions
+            in_degree = dict(G.in_degree())
+            most_called = sorted(in_degree.items(), key=lambda x: x[1], reverse=True)[:5]
+            stats["most_called_functions"] = [{"function": node.split(":")[-1], "calls": count} for node, count in most_called]
+            
+            # Find functions with most dependencies
+            out_degree = dict(G.out_degree())
+            most_deps = sorted(out_degree.items(), key=lambda x: x[1], reverse=True)[:5]
+            stats["functions_with_most_dependencies"] = [{"function": node.split(":")[-1], "dependencies": count} for node, count in most_deps]
+            
+            # Find longest call chains
+            longest_paths = []
+            for source in G.nodes():
+                for target in G.nodes():
+                    if source != target:
+                        try:
+                            paths = list(nx.all_simple_paths(G, source, target))
+                            if paths:
+                                longest_path = max(paths, key=len)
+                                if len(longest_path) > 1:  # Only include paths with at least 2 nodes
+                                    longest_paths.append({
+                                        "path": [node.split(":")[-1] for node in longest_path],
+                                        "length": len(longest_path)
+                                    })
+                        except nx.NetworkXNoPath:
+                            pass
+            
+            # Sort by path length and take top 5
+            longest_paths = sorted(longest_paths, key=lambda x: x["length"], reverse=True)[:5]
+            stats["longest_call_chains"] = longest_paths
+            
+            return {
+                "statistics": stats,
+                "visualization_html": html_content
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def visualize_dependency_map(self) -> Dict[str, Any]:
+        """Visualize the dependency map of the codebase."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            # Create a directed graph for dependencies
+            G: nx.DiGraph = nx.DiGraph()
+            
+            # Add nodes for each file
+            for file in self.codebase.files:
+                file_path = file.path
+                G.add_node(file_path)
+            
+            # Add edges for imports
+            for file in self.codebase.files:
+                file_path = file.path
+                
+                for imp in file.imports:
+                    # Find the file that corresponds to this import
+                    for target_file in self.codebase.files:
+                        if target_file.path.endswith(f"{imp.module.replace('.', '/')}.py"):
+                            G.add_edge(file_path, target_file.path)
+                            break
+            
+            # Create a Plotly figure
+            pos = nx.spring_layout(G)
+            
+            edge_x = []
+            edge_y = []
+            for edge in G.edges():
+                x0, y0 = pos[edge[0]]
+                x1, y1 = pos[edge[1]]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+            
+            edge_trace = go.Scatter(
+                x=edge_x, y=edge_y,
+                line=dict(width=0.5, color='#888'),
+                hoverinfo='none',
+                mode='lines')
+            
+            node_x = []
+            node_y = []
+            node_text = []
+            for node in G.nodes():
+                x, y = pos[node]
+                node_x.append(x)
+                node_y.append(y)
+                node_text.append(os.path.basename(node))  # Just the filename
+            
+            node_trace = go.Scatter(
+                x=node_x, y=node_y,
+                mode='markers+text',
+                hoverinfo='text',
+                text=node_text,
+                textposition="top center",
+                marker=dict(
+                    showscale=True,
+                    colorscale='YlGnBu',
+                    size=10,
+                    colorbar=dict(
+                        thickness=15,
+                        title='Node Connections',
+                        xanchor='left',
+                        titleside='right'
+                    ),
+                    line_width=2))
+            
+            # Color nodes by their degree
+            node_adjacencies = []
+            for node in G.nodes():
+                node_adjacencies.append(len(list(G.neighbors(node))))
+            
+            node_trace.marker.color = node_adjacencies
+            
+            # Create the figure
+            fig = go.Figure(data=[edge_trace, node_trace],
+                            layout=go.Layout(
+                                title='Dependency Map Visualization',
+                                titlefont_size=16,
+                                showlegend=False,
+                                hovermode='closest',
+                                margin=dict(b=20, l=5, r=5, t=40),
+                                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                            )
+            
+            # Convert to HTML
+            html_content = fig.to_html(full_html=False)
+            
+            # Generate statistics
+            stats = {
+                "total_files": len(G.nodes()),
+                "total_dependencies": len(G.edges()),
+                "most_imported_files": [],
+                "files_with_most_imports": []
+            }
+            
+            # Find most imported files
+            in_degree = dict(G.in_degree())
+            most_imported = sorted(in_degree.items(), key=lambda x: x[1], reverse=True)[:5]
+            stats["most_imported_files"] = [{"file": os.path.basename(node), "imports": count} for node, count in most_imported]
+            
+            # Find files with most imports
+            out_degree = dict(G.out_degree())
+            most_imports = sorted(out_degree.items(), key=lambda x: x[1], reverse=True)[:5]
+            stats["files_with_most_imports"] = [{"file": os.path.basename(node), "imports": count} for node, count in most_imports]
+            
+            # Find strongly connected components (potential circular dependencies)
+            sccs = list(nx.strongly_connected_components(G))
+            circular_deps = [list(scc) for scc in sccs if len(scc) > 1]
+            stats["circular_dependencies"] = [{"files": [os.path.basename(f) for f in scc]} for scc in circular_deps]
+            
+            # Find isolated files (no imports or importers)
+            isolated = [node for node, degree in dict(G.degree()).items() if degree == 0]
+            stats["isolated_files"] = [os.path.basename(f) for f in isolated]
+            
+            return {
+                "statistics": stats,
+                "visualization_html": html_content
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def visualize_directory_tree(self) -> Dict[str, Any]:
+        """Visualize the directory structure of the codebase."""
+        try:
+            if self.codebase is None:
+                return {"error": "Codebase not initialized"}
+                
+            # Create a directed graph for the directory structure
+            G: nx.DiGraph = nx.DiGraph()
+            
+            # Add nodes for each file and directory
+            directories = set()
+            for file in self.codebase.files:
+                file_path = file.path
+                G.add_node(file_path, type="file")
+                
+                # Add directory nodes
+                dir_path = os.path.dirname(file_path)
+                while dir_path:
+                    if dir_path not in directories:
+                        G.add_node(dir_path, type="directory")
+                        directories.add(dir_path)
+                    
+                    parent_dir = os.path.dirname(dir_path)
+                    if parent_dir and parent_dir != dir_path:
+                        G.add_edge(parent_dir, dir_path)
+                    
+                    dir_path = parent_dir
+            
+            # Add edges from directories to files
+            for file in self.codebase.files:
+                file_path = file.path
+                dir_path = os.path.dirname(file_path)
+                if dir_path:
+                    G.add_edge(dir_path, file_path)
+            
+            # Create a Plotly figure
+            pos = nx.spring_layout(G)
+            
+            # Create separate traces for directories and files
+            dir_nodes = [node for node in G.nodes() if G.nodes[node].get("type") == "directory"]
+            file_nodes = [node for node in G.nodes() if G.nodes[node].get("type") == "file"]
+            
+            # Create edges
+            edge_x = []
+            edge_y = []
+            for edge in G.edges():
+                x0, y0 = pos[edge[0]]
+                x1, y1 = pos[edge[1]]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+            
+            edge_trace = go.Scatter(
+                x=edge_x, y=edge_y,
+                line=dict(width=0.5, color='#888'),
+                hoverinfo='none',
+                mode='lines')
+            
+            # Create directory nodes
+            dir_x = []
+            dir_y = []
+            dir_text = []
+            for node in dir_nodes:
+                x, y = pos[node]
+                dir_x.append(x)
+                dir_y.append(y)
+                dir_text.append(os.path.basename(node) or "root")
+            
+            dir_trace = go.Scatter(
+                x=dir_x, y=dir_y,
+                mode='markers+text',
+                hoverinfo='text',
+                text=dir_text,
+                textposition="top center",
+                marker=dict(
+                    color='rgba(255, 165, 0, 0.8)',
+                    size=15,
+                    symbol='square',
+                    line=dict(color='rgb(50,50,50)', width=1)
+                ),
+                name='Directories')
+            
+            # Create file nodes
+            file_x = []
+            file_y = []
+            file_text = []
+            for node in file_nodes:
+                x, y = pos[node]
+                file_x.append(x)
+                file_y.append(y)
+                file_text.append(os.path.basename(node))
+            
+            file_trace = go.Scatter(
+                x=file_x, y=file_y,
+                mode='markers+text',
+                hoverinfo='text',
+                text=file_text,
+                textposition="top center",
+                marker=dict(
+                    color='rgba(0, 116, 217, 0.8)',
+                    size=8,
+                    symbol='circle',
+                    line=dict(color='rgb(50,50,50)', width=1)
+                ),
+                name='Files')
+            
+            # Create the figure
+            fig = go.Figure(data=[edge_trace, dir_trace, file_trace],
+                            layout=go.Layout(
+                                title='Directory Structure Visualization',
+                                titlefont_size=16,
+                                showlegend=True,
+                                hovermode='closest',
+                                margin=dict(b=20, l=5, r=5, t=40),
+                                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                            )
+            
+            # Convert to HTML
+            html_content = fig.to_html(full_html=False)
+            
+            # Generate statistics
+            stats = {
+                "total_files": len(file_nodes),
+                "total_directories": len(dir_nodes),
+                "directory_breakdown": []
+            }
+            
+            # Count files per directory
+            dir_file_counts: Dict[str, int] = {}
+            for file_node in file_nodes:
+                dir_path = os.path.dirname(file_node)
+                if dir_path in dir_file_counts:
+                    dir_file_counts[dir_path] += 1
                 else:
-                    current_path = os.path.join(current_path, part)
-                
-                if current_path not in directories:
-                    G.add_node(current_path, type="directory")
-                    directories.add(current_path)
-                
-                # Add edge from directory to subdirectory or file
-                if i < len(parts) - 2:  # Connect to subdirectory
-                    next_path = os.path.join(current_path, parts[i + 1])
-                    G.add_edge(current_path, next_path)
-                else:  # Connect to file
-                    G.add_edge(current_path, path)
-        
-        # Convert to a format suitable for visualization
-        node_trace = {
-            "x": [],
-            "y": [],
-            "text": [],
-            "mode": "markers+text",
-            "textposition": "top center",
-            "marker": {
-                "size": [],
-                "color": [],
-                "line": {"width": 2, "color": "darkblue"},
-            },
-        }
-        
-        edge_trace = {
-            "x": [],
-            "y": [],
-            "line": {"width": 1, "color": "darkblue"},
-            "hoverinfo": "none",
-            "mode": "lines",
-        }
-        
-        # Use a tree layout algorithm
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-        
-        # Add node positions
-        for node in G.nodes():
-            x, y = pos[node]
-            node_trace["x"].append(x)
-            node_trace["y"].append(y)
+                    dir_file_counts[dir_path] = 1
             
-            # Show only the basename for clarity
-            node_trace["text"].append(os.path.basename(node) or node)
+            # Sort by file count
+            sorted_dirs = sorted(dir_file_counts.items(), key=lambda x: x[1], reverse=True)
+            stats["directory_breakdown"] = [{"directory": dir_path or "root", "file_count": count} for dir_path, count in sorted_dirs]
             
-            # Set node size and color based on type
-            if G.nodes[node]["type"] == "directory":
-                node_trace["marker"]["size"].append(15)
-                node_trace["marker"]["color"].append("lightgreen")
-            else:
-                node_trace["marker"]["size"].append(10)
-                node_trace["marker"]["color"].append("lightblue")
-        
-        # Add edge positions
-        for edge in G.edges():
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_trace["x"].extend([x0, x1, None])
-            edge_trace["y"].extend([y0, y1, None])
-        
-        # Create the figure
-        fig_data = {
-            "data": [edge_trace, node_trace],
-            "layout": {
-                "title": "Directory Tree",
-                "showlegend": False,
-                "hovermode": "closest",
-                "margin": {"b": 20, "l": 5, "r": 5, "t": 40},
-                "xaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-                "yaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
-            },
-        }
-        
-        return {
-            "directories": len(directories),
-            "files": len(file_paths),
-            "visualization": fig_data,
-        }
+            return {
+                "statistics": stats,
+                "visualization_html": html_content
+            }
+        except Exception as e:
+            return {"error": str(e)}
 
-    def get_pr_diff_analysis(self, pr_number: int) -> dict[str, Any]:
+    def get_pr_diff_analysis(self, pr_number: int) -> Dict[str, Any]:
         """Analyze the diff of a pull request.
 
         Args:
@@ -1014,7 +1242,7 @@ class CodebaseAnalyzer:
         Returns:
             Dict containing the analysis of the PR diff
         """
-        if not hasattr(self.codebase, "github") or not self.codebase.github:
+        if self.codebase is None or not hasattr(self.codebase, "github") or not self.codebase.github:
             return {"error": "GitHub client not available. Make sure the codebase was initialized from a GitHub repository."}
         
         try:
@@ -1025,7 +1253,7 @@ class CodebaseAnalyzer:
             diff = pr.get_files()
             
             # Analyze the diff
-            diff_analysis = {
+            analysis = {
                 "pr_number": pr_number,
                 "title": pr.title,
                 "state": pr.state,
@@ -1035,26 +1263,42 @@ class CodebaseAnalyzer:
                 "total_additions": pr.additions,
                 "total_deletions": pr.deletions,
                 "total_changes": pr.additions + pr.deletions,
+                "file_types": {},
+                "most_changed_files": []
             }
             
             # Analyze each file
+            file_changes = []
             for file in diff:
-                file_analysis = {
+                file_info = {
                     "filename": file.filename,
                     "status": file.status,
                     "additions": file.additions,
                     "deletions": file.deletions,
-                    "changes": file.additions + file.deletions,
+                    "changes": file.additions + file.deletions
                 }
                 
-                diff_analysis["files_changed"].append(file_analysis)
+                file_changes.append(file_info)
+                
+                # Track file types
+                ext = os.path.splitext(file.filename)[1]
+                if ext:
+                    if ext in analysis["file_types"]:
+                        analysis["file_types"][ext] += 1
+                    else:
+                        analysis["file_types"][ext] = 1
             
-            return diff_analysis
+            # Sort files by number of changes
+            file_changes.sort(key=lambda x: x["changes"], reverse=True)
+            analysis["files_changed"] = file_changes
+            analysis["most_changed_files"] = file_changes[:5]
+            
+            return analysis
             
         except Exception as e:
             return {"error": str(e)}
 
-    def get_pr_quality_metrics(self, pr_number: int) -> dict[str, Any]:
+    def get_pr_quality_metrics(self, pr_number: int) -> Dict[str, Any]:
         """Get quality metrics for a pull request.
 
         Args:
@@ -1063,7 +1307,7 @@ class CodebaseAnalyzer:
         Returns:
             Dict containing the quality metrics of the PR
         """
-        if not hasattr(self.codebase, "github") or not self.codebase.github:
+        if self.codebase is None or not hasattr(self.codebase, "github") or not self.codebase.github:
             return {"error": "GitHub client not available. Make sure the codebase was initialized from a GitHub repository."}
         
         try:
@@ -1095,6 +1339,35 @@ class CodebaseAnalyzer:
             
         except Exception as e:
             return {"error": str(e)}
+
+    def get_monthly_commits(self) -> Dict[str, int]:
+        """Get the number of commits per month."""
+        try:
+            if self.codebase is None or not hasattr(self.codebase, "github") or not self.codebase.github:
+                return {"error": "GitHub client not available. Make sure the codebase was initialized from a GitHub repository."}
+            
+            # Get commit history
+            commits = list(self.codebase.github.repo.get_commits())
+            
+            # Group commits by month
+            commits_by_month: Dict[str, int] = {}
+            
+            for commit in commits:
+                date = commit.commit.author.date
+                month_key = f"{date.year}-{date.month:02d}"
+                
+                if month_key in commits_by_month:
+                    commits_by_month[month_key] += 1
+                else:
+                    commits_by_month[month_key] = 1
+            
+            # Sort by month
+            sorted_commits = dict(sorted(commits_by_month.items()))
+            
+            return sorted_commits
+        except Exception as e:
+            return {"error": str(e)}
+
     def _generate_html_report(self, output_file: str) -> None:
         """Generate an HTML report of the analysis results."""
         if not output_file:
@@ -1198,105 +1471,79 @@ class CodebaseAnalyzer:
                 else:
                     self.console.print(str(metric_value))
 
-    def get_monthly_commits(self) -> dict[str, int]:
-        """Get the number of commits per month."""
+    def main(self):
+        """Main entry point for the codebase analyzer."""
+        parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
+
+        # Repository source
+        source_group = parser.add_mutually_exclusive_group(required=True)
+        source_group.add_argument("--repo-url", help="URL of the repository to analyze")
+        source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
+
+        # Analysis options
+        parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
+        parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
+
+        # PR comparison options
+        parser.add_argument("--compare-commit", help="Commit SHA to compare with the current codebase")
+        parser.add_argument("--pr-number", type=int, help="PR number to analyze")
+
+        # Output options
+        parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
+        parser.add_argument("--output-file", help="Path to the output file")
+
+        # Visualization options
+        parser.add_argument("--visualize", choices=["call-graph", "dependency-map", "directory-tree", "import-cycles"], help="Generate visualization")
+        parser.add_argument("--function-name", help="Function name for call graph visualization")
+
+        args = parser.parse_args()
+
         try:
-            # Get commit history
-            commits = list(self.codebase.github.repo.get_commits())
+            # Initialize the analyzer
+            analyzer = CodebaseAnalyzer(repo_url=args.repo_url, repo_path=args.repo_path, language=args.language)
 
-            # Group commits by month
-            commits_by_month = {}
+            # Handle PR analysis
+            if args.pr_number:
+                pr_analysis = analyzer.get_pr_diff_analysis(args.pr_number)
+                print(json.dumps(pr_analysis, indent=2))
+                return
 
-            for commit in commits:
-                date = commit.commit.author.date
-                month_key = f"{date.year}-{date.month:02d}"
+            # Handle comparison
+            if args.compare_commit:
+                analyzer.init_comparison_codebase(args.compare_commit)
+                comparison = analyzer.compare_codebases()
+                print(json.dumps(comparison, indent=2))
+                return
 
-                if month_key in commits_by_month:
-                    commits_by_month[month_key] += 1
-                else:
-                    commits_by_month[month_key] = 1
+            # Handle visualization
+            if args.visualize:
+                if args.visualize == "call-graph":
+                    visualization = analyzer.visualize_call_graph(args.function_name)
+                elif args.visualize == "dependency-map":
+                    visualization = analyzer.visualize_dependency_map()
+                elif args.visualize == "directory-tree":
+                    visualization = analyzer.visualize_directory_tree()
+                elif args.visualize == "import-cycles":
+                    visualization = analyzer.visualize_import_cycles()
+                
+                print(json.dumps(visualization, indent=2))
+                return
 
-            # Sort by month
-            sorted_commits = dict(sorted(commits_by_month.items()))
+            # Perform the analysis
+            results = analyzer.analyze(categories=args.categories, output_format=args.output_format, output_file=args.output_file)
 
-            return sorted_commits
+            # Print success message
+            if args.output_format == "json" and args.output_file:
+                print(f"Analysis results saved to {args.output_file}")
+            elif args.output_format == "html":
+                print(f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}")
+
         except Exception as e:
-            return {"error": str(e)}
+            print(f"Error: {e}")
+            import traceback
 
-
-def main():
-    """Main entry point for the codebase analyzer."""
-    parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
-
-    # Repository source
-    source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument("--repo-url", help="URL of the repository to analyze")
-    source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
-
-    # Analysis options
-    parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
-    parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
-
-    # PR comparison options
-    parser.add_argument("--compare-commit", help="Commit SHA to compare with the current codebase")
-    parser.add_argument("--pr-number", type=int, help="PR number to analyze")
-
-    # Output options
-    parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
-    parser.add_argument("--output-file", help="Path to the output file")
-
-    # Visualization options
-    parser.add_argument("--visualize", choices=["call-graph", "dependency-map", "directory-tree", "import-cycles"], help="Generate visualization")
-    parser.add_argument("--function-name", help="Function name for call graph visualization")
-
-    args = parser.parse_args()
-
-    try:
-        # Initialize the analyzer
-        analyzer = CodebaseAnalyzer(repo_url=args.repo_url, repo_path=args.repo_path, language=args.language)
-
-        # Handle PR analysis
-        if args.pr_number:
-            pr_analysis = analyzer.get_pr_diff_analysis(args.pr_number)
-            print(json.dumps(pr_analysis, indent=2))
-            return
-
-        # Handle comparison
-        if args.compare_commit:
-            analyzer.init_comparison_codebase(args.compare_commit)
-            comparison = analyzer.compare_codebases()
-            print(json.dumps(comparison, indent=2))
-            return
-
-        # Handle visualization
-        if args.visualize:
-            if args.visualize == "call-graph":
-                visualization = analyzer.visualize_call_graph(args.function_name)
-            elif args.visualize == "dependency-map":
-                visualization = analyzer.visualize_dependency_map()
-            elif args.visualize == "directory-tree":
-                visualization = analyzer.visualize_directory_tree()
-            elif args.visualize == "import-cycles":
-                visualization = analyzer.visualize_import_cycles()
-            
-            print(json.dumps(visualization, indent=2))
-            return
-
-        # Perform the analysis
-        results = analyzer.analyze(categories=args.categories, output_format=args.output_format, output_file=args.output_file)
-
-        # Print success message
-        if args.output_format == "json" and args.output_file:
-            print(f"Analysis results saved to {args.output_file}")
-        elif args.output_format == "html":
-            print(f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
+            traceback.print_exc()
+            sys.exit(1)
 
 
 if __name__ == "__main__":
