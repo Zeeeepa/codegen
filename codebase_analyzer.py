@@ -98,6 +98,23 @@ METRICS_CATEGORIES = {
         "get_module_coupling_metrics",
         "get_module_cohesion_analysis",
         "get_package_structure",
+METRICS_CATEGORIES = {
+    "codebase_structure": [
+        "get_file_count",
+        "get_files_by_language",
+        "get_file_size_distribution",
+        "get_directory_structure",
+        "get_symbol_count",
+        "get_symbol_type_distribution",
+        "get_symbol_hierarchy",
+        "get_top_level_vs_nested_symbols",
+        "get_import_dependency_map",
+        "get_external_vs_internal_dependencies",
+        "get_circular_imports",
+        "get_unused_imports",
+        "get_module_coupling_metrics",
+        "get_module_cohesion_analysis",
+        "get_package_structure",
         "get_module_dependency_graph",
     ],
     "symbol_level": [
@@ -122,6 +139,7 @@ METRICS_CATEGORIES = {
         "get_generic_type_usage",
         "get_type_consistency_checking",
         "get_union_intersection_type_analysis",
+        "get_symbol_import_analysis",  # Added new function
     ],
     "dependency_flow": [
         "get_function_call_relationships",
@@ -138,76 +156,13 @@ METRICS_CATEGORIES = {
         "get_symbol_reference_tracking",
         "get_usage_frequency_metrics",
         "get_cross_file_symbol_usage",
+        "get_call_chain_analysis",  # Added new function
+        "get_dead_code_detection_with_filtering",  # Added new function
+        "get_path_finding_in_call_graphs",  # Added new function
+        "get_dead_symbol_detection",  # Added new function
     ],
-    "code_quality": [
-        "get_unused_functions",
-        "get_unused_classes",
-        "get_unused_variables",
-        "get_unused_imports",
-        "get_similar_function_detection",
-        "get_repeated_code_patterns",
-        "get_refactoring_opportunities",
-        "get_cyclomatic_complexity",
-        "get_cognitive_complexity",
-        "get_nesting_depth_analysis",
-        "get_function_size_metrics",
-        "get_naming_convention_consistency",
-        "get_comment_coverage",
-        "get_documentation_completeness",
-        "get_code_formatting_consistency",
-        "count_untyped_return_statements",
-        "count_untyped_parameters",
-        "count_untyped_attributes",
-        "count_unnamed_keyword_arguments",
-    ],
-    "visualization": [
-        "get_module_dependency_visualization",
-        "get_symbol_dependency_visualization",
-        "get_import_relationship_graphs",
-        "get_function_call_visualization",
-        "get_call_hierarchy_trees",
-        "get_entry_point_flow_diagrams",
-        "get_class_hierarchy_visualization",
-        "get_symbol_relationship_diagrams",
-        "get_package_structure_visualization",
-        "get_code_complexity_heat_maps",
-        "get_usage_frequency_visualization",
-        "get_change_frequency_analysis",
-        "visualize_call_graph",
-        "visualize_dependency_map",
-        "visualize_directory_tree",
-    ],
-    "language_specific": [
-        "get_decorator_usage_analysis",
-        "get_dynamic_attribute_access_detection",
-        "get_type_hint_coverage",
-        "get_magic_method_usage",
-        "get_interface_implementation_verification",
-        "get_type_definition_completeness",
-        "get_jsx_tsx_component_analysis",
-        "get_type_narrowing_pattern_detection",
-    ],
-    "code_metrics": [
-        "get_monthly_commits",
-        "calculate_cyclomatic_complexity",
-        "cc_rank",
-        "get_operators_and_operands",
-        "calculate_halstead_volume",
-        "count_lines",
-        "calculate_maintainability_index",
-        "get_maintainability_rank",
-    ],
-    "import_analysis": [
-        "detect_import_cycles",
-        "visualize_import_cycles",
-    ],
-    "pr_comparison": [
-        "compare_codebases",
-        "get_pr_diff_analysis",
-        "get_pr_quality_metrics",
-    ],
+    # ... rest of the categories ...
 }
-
 class CodebaseAnalyzer:
     """Comprehensive codebase analyzer using Codegen SDK.
 
@@ -1208,414 +1163,88 @@ class CodebaseAnalyzer:
         """Get a comprehensive summary of the codebase.
         
         Returns:
-            A dictionary containing summary information about the codebase.
+    def get_call_chain_analysis(self) -> Dict[str, Any]:
         """
-        try:
-            if not self.codebase:
-                return {"error": "Codebase not initialized"}
-                
-            # Use the SDK's get_codebase_summary function
-            summary = get_codebase_summary(self.codebase)
-            
-            # Add additional information from the codebase context
-            if self.codebase_context:
-                # Get file statistics
-                file_stats = self.codebase_context.get_file_statistics()
-                summary["file_statistics"] = file_stats
-                
-                # Get symbol statistics
-                symbol_stats = self.codebase_context.get_symbol_statistics()
-                summary["symbol_statistics"] = symbol_stats
-                
-                # Get import statistics
-                import_stats = self.codebase_context.get_import_statistics()
-                summary["import_statistics"] = import_stats
-                
-                # Get dependency statistics
-                dependency_stats = self.codebase_context.get_dependency_statistics()
-                summary["dependency_statistics"] = dependency_stats
-            
-            return summary
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def analyze_codebase_quality(self) -> Dict[str, Any]:
-        """Analyze the quality of the codebase.
+        Analyze call chains between functions.
+        
+        This function traces and analyzes function call chains in the codebase,
+        identifying the longest chains, most called functions, and complex call patterns.
         
         Returns:
-            A dictionary containing quality metrics for the codebase.
+            Dict containing call chain analysis results
         """
-        try:
-            if not self.codebase:
-                return {"error": "Codebase not initialized"}
-                
-            # Use the SDK's analyze_codebase_quality function
-            quality_metrics = analyze_codebase_quality(self.codebase)
+        if not self.codebase:
+            return {"error": "Codebase not initialized"}
             
-            # Add additional quality metrics
-            quality_metrics.update({
-                "code_complexity": analyze_code_complexity(self.codebase),
-                "type_coverage": analyze_type_coverage(self.codebase),
-                "dependency_structure": analyze_dependency_structure(self.codebase),
-                "code_duplication": analyze_code_duplication(self.codebase),
-                "naming_conventions": analyze_naming_conventions(self.codebase),
-                "documentation_quality": analyze_documentation_quality(self.codebase),
-                "error_handling": analyze_error_handling(self.codebase),
-                "performance_issues": analyze_performance_issues(self.codebase),
-                "security_vulnerabilities": analyze_security_vulnerabilities(self.codebase),
-                "test_coverage": analyze_test_coverage(self.codebase)
-            })
-            
-            return quality_metrics
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def get_codebase_diff(self, other_codebase: Optional[Codebase] = None) -> Dict[str, Any]:
-        """Get the diff between the current codebase and another codebase.
-
-        Args:
-            other_codebase: The other codebase to compare with. If None, uses the comparison_codebase.
-
-        Returns:
-            Dict containing the diff information
+        return get_call_chain_analysis(self.codebase)
+        
+    def get_dead_code_detection_with_filtering(self, exclude_patterns: List[str] = None) -> Dict[str, Any]:
         """
-        if not self.codebase_context:
-            return {"error": "Codebase context not initialized"}
-            
-        if not other_codebase and not self.comparison_codebase:
-            return {"error": "No comparison codebase available"}
-            
-        try:
-            target_codebase = other_codebase if other_codebase else self.comparison_codebase
-            diff = self.codebase_context.diff(target_codebase)
-            
-            # Convert the diff to a serializable format
-            diff_dict = {
-                "added_files": [f for f in diff.added_files],
-                "removed_files": [f for f in diff.removed_files],
-                "modified_files": [f for f in diff.modified_files],
-                "renamed_files": [{
-                    "old_path": item[0],
-                    "new_path": item[1]
-                } for item in diff.renamed_files],
-            }
-            
-            return diff_dict
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def count_untyped_return_statements(self) -> Dict[str, Any]:
-        """Count untyped return statements in the codebase.
-
-        Returns:
-            Dict containing the count of untyped return statements by file
-        """
-        if not self.codebase or not self.codebase_context:
-            return {"error": "Codebase or codebase context not initialized"}
-            
-        try:
-            # Get all Python files
-            python_files = [f for f in self.codebase.get_all_files() if f.endswith(".py")]
-            
-            results = {}
-            for file_path in python_files:
-                try:
-                    file_content = self.codebase.get_file_content(file_path)
-                    
-                    # Use regex to find function definitions with return statements but no return type
-                    # This is a simplified approach and might not catch all cases
-                    pattern = r"def\s+(\w+)\s*\([^)]*\)\s*(?!->):"
-                    matches = re.findall(pattern, file_content)
-                    
-                    if matches:
-                        results[file_path] = len(matches)
-                except Exception as e:
-                    logger.warning(f"Error processing file {file_path}: {e}")
-            
-            return {
-                "total_count": sum(results.values()),
-                "files": results
-            }
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def count_untyped_parameters(self) -> Dict[str, Any]:
-        """Count untyped parameters in function definitions.
-
-        Returns:
-            Dict containing the count of untyped parameters by file
-        """
-        if not self.codebase or not self.codebase_context:
-            return {"error": "Codebase or codebase context not initialized"}
-            
-        try:
-            # Get all Python files
-            python_files = [f for f in self.codebase.get_all_files() if f.endswith(".py")]
-            
-            results = {}
-            for file_path in python_files:
-                try:
-                    file_content = self.codebase.get_file_content(file_path)
-                    
-                    # Use regex to find function parameters without type annotations
-                    # This is a simplified approach and might not catch all cases
-                    pattern = r"def\s+\w+\s*\((.*?)\)"
-                    param_blocks = re.findall(pattern, file_content, re.DOTALL)
-                    
-                    untyped_params_count = 0
-                    for param_block in param_blocks:
-                        params = [p.strip() for p in param_block.split(",") if p.strip()]
-                        for param in params:
-                            # Check if parameter has no type annotation
-                            if param and ":" not in param and param != "self" and param != "cls":
-                                untyped_params_count += 1
-                    
-                    if untyped_params_count > 0:
-                        results[file_path] = untyped_params_count
-                except Exception as e:
-                    logger.warning(f"Error processing file {file_path}: {e}")
-            
-            return {
-                "total_count": sum(results.values()),
-                "files": results
-            }
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def count_untyped_attributes(self) -> Dict[str, Any]:
-        """Count untyped class attributes in the codebase.
-
-        Returns:
-            Dict containing the count of untyped class attributes by file
-        """
-        if not self.codebase or not self.codebase_context:
-            return {"error": "Codebase or codebase context not initialized"}
-            
-        try:
-            # Get all Python files
-            python_files = [f for f in self.codebase.get_all_files() if f.endswith(".py")]
-            
-            results = {}
-            for file_path in python_files:
-                try:
-                    file_content = self.codebase.get_file_content(file_path)
-                    
-                    # Use regex to find class attribute definitions without type annotations
-                    # This is a simplified approach and might not catch all cases
-                    pattern = r"class\s+\w+.*?:\s*(.*?)(?=\n\S|\Z)"
-                    class_bodies = re.findall(pattern, file_content, re.DOTALL)
-                    
-                    untyped_attrs_count = 0
-                    for body in class_bodies:
-                        # Find attribute assignments in class body
-                        attr_pattern = r"^\s+self\.(\w+)\s*="
-                        attrs = re.findall(attr_pattern, body, re.MULTILINE)
-                        untyped_attrs_count += len(attrs)
-                    
-                    if untyped_attrs_count > 0:
-                        results[file_path] = untyped_attrs_count
-                except Exception as e:
-                    logger.warning(f"Error processing file {file_path}: {e}")
-            
-            return {
-                "total_count": sum(results.values()),
-                "files": results
-            }
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def count_unnamed_keyword_arguments(self) -> Dict[str, Any]:
-        """Count unnamed keyword arguments in function calls.
-
-        Returns:
-            Dict containing the count of unnamed keyword arguments by file
-        """
-        if not self.codebase or not self.codebase_context:
-            return {"error": "Codebase or codebase context not initialized"}
-            
-        try:
-            # Get all Python files
-            python_files = [f for f in self.codebase.get_all_files() if f.endswith(".py")]
-            
-            results = {}
-            for file_path in python_files:
-                try:
-                    file_content = self.codebase.get_file_content(file_path)
-                    
-                    # Use regex to find function calls with unnamed keyword arguments (**kwargs)
-                    # This is a simplified approach and might not catch all cases
-                    pattern = r"\w+\s*\(.*?\*\*\w+.*?\)"
-                    matches = re.findall(pattern, file_content)
-                    
-                    if matches:
-                        results[file_path] = len(matches)
-                except Exception as e:
-                    logger.warning(f"Error processing file {file_path}: {e}")
-            
-            return {
-                "total_count": sum(results.values()),
-                "files": results
-            }
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def analyze_dependency_trace(self, symbol_name: str) -> Dict[str, Any]:
-        """Analyze the dependency trace for a specific symbol.
+        Detect dead code in the codebase with filtering options.
+        
+        This function identifies functions, classes, and methods that are defined but never used
+        in the codebase, with the ability to exclude certain patterns from analysis.
         
         Args:
-            symbol_name: Name of the symbol to analyze
+            exclude_patterns: List of regex patterns to exclude from dead code detection
             
         Returns:
-            A dictionary containing dependency trace information.
+            Dict containing dead code analysis results with filtering
         """
-        try:
-            if not self.codebase:
-                return {"error": "Codebase not initialized"}
-                
-            # Use the SDK's trace_dependencies function
-            dependencies = trace_dependencies(self.codebase, symbol_name)
+        if not self.codebase:
+            return {"error": "Codebase not initialized"}
             
-            # Calculate blast radius
-            blast_radius = calculate_blast_radius(self.codebase, symbol_name)
-            
-            return {
-                "dependencies": dependencies,
-                "blast_radius": blast_radius,
-                "visualization": visualize_dependency_trace(self.codebase, symbol_name)
-            }
-        except Exception as e:
-            return {"error": str(e)}
-            
-    def _generate_html_report(self, output_file: str) -> None:
-        """Generate an HTML report of the analysis results."""
-        if not output_file:
-            output_file = "codebase_analysis_report.html"
-
-        # Simple HTML template
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Codebase Analysis Report</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                h1, h2, h3 {{ color: #333; }}
-                .section {{ margin-bottom: 30px; }}
-                .metric {{ margin-bottom: 20px; }}
-                .metric-title {{ font-weight: bold; }}
-                pre {{ background-color: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }}
-                table {{ border-collapse: collapse; width: 100%; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #f2f2f2; }}
-                tr:nth-child(even) {{ background-color: #f9f9f9; }}
-            </style>
-        </head>
-        <body>
-            <h1>Codebase Analysis Report</h1>
-            <div class="section">
-                <h2>Metadata</h2>
-                <p><strong>Repository:</strong> {self.results["metadata"]["repo_name"]}</p>
-                <p><strong>Analysis Time:</strong> {self.results["metadata"]["analysis_time"]}</p>
-                <p><strong>Language:</strong> {self.results["metadata"]["language"]}</p>
-            </div>
+        return get_dead_code_detection_with_filtering(self.codebase, exclude_patterns)
+        
+    def get_path_finding_in_call_graphs(self, source_function: str = None, target_function: str = None, max_depth: int = 10) -> Dict[str, Any]:
         """
-
-        # Add each category
-        for category, metrics in self.results["categories"].items():
-            html += f"""
-            <div class="section">
-                <h2>{category.replace("_", " ").title()}</h2>
-            """
-
-            for metric_name, metric_value in metrics.items():
-                html += f"""
-                <div class="metric">
-                    <h3 class="metric-title">{metric_name.replace("_", " ").title()}</h3>
-                    <pre>{json.dumps(metric_value, indent=2)}</pre>
-                </div>
-                """
-
-            html += "</div>"
-
-        html += """
-        </body>
-        </html>
+        Find paths between functions in the call graph.
+        
+        This function identifies all possible paths between a source function and a target function
+        in the call graph, with options to limit the search depth.
+        
+        Args:
+            source_function: Name of the source function (if None, all entry points are considered)
+            target_function: Name of the target function (if None, all functions are considered)
+            max_depth: Maximum depth of the search
+            
+        Returns:
+            Dict containing path finding results
         """
-
-        with open(output_file, "w") as f:
-            f.write(html)
-
-        self.console.print(f"[bold green]HTML report saved to {output_file}[/bold green]")
-
-    def _print_console_report(self) -> None:
-        """Print a summary report to the console."""
-        self.console.print(f"[bold blue]Codebase Analysis Report for {self.results['metadata']['repo_name']}[/bold blue]")
-        self.console.print(f"[bold]Analysis Time:[/bold] {self.results['metadata']['analysis_time']}")
-        self.console.print(f"[bold]Language:[/bold] {self.results['metadata']['language']}")
-
-        for category, metrics in self.results["categories"].items():
-            self.console.print(f"\n[bold green]{category.replace('_', ' ').title()}[/bold green]")
-
-            for metric_name, metric_value in metrics.items():
-                self.console.print(f"[bold]{metric_name.replace('_', ' ').title()}:[/bold]")
-
-                if isinstance(metric_value, dict):
-                    table = Table(show_header=True)
-                    table.add_column("Key")
-                    table.add_column("Value")
-
-                    for k, v in metric_value.items():
-                        if isinstance(v, dict):
-                            table.add_row(k, str(v))
-                        else:
-                            table.add_row(str(k), str(v))
-
-                    self.console.print(table)
-                elif isinstance(metric_value, list):
-                    if len(metric_value) > 0 and isinstance(metric_value[0], dict):
-                        if len(metric_value) > 0:
-                            table = Table(show_header=True)
-                            for key in metric_value[0].keys():
-                                table.add_column(key)
-
-                            for item in metric_value[:10]:  # Show only first 10 items
-                                table.add_row(*[str(v) for v in item.values()])
-
-                            self.console.print(table)
-                            if len(metric_value) > 10:
-                                self.console.print(f"... and {len(metric_value) - 10} more items")
-                    else:
-                        self.console.print(str(metric_value))
-                else:
-                    self.console.print(str(metric_value))
-
-    def get_monthly_commits(self) -> Dict[str, int]:
-        """Get the number of commits per month."""
-        try:
-            # Get commit history
-            commits = list(self.codebase.github.repo.get_commits())
-
-            # Group commits by month
-            commits_by_month = {}
-
-            for commit in commits:
-                date = commit.commit.author.date
-                month_key = f"{date.year}-{date.month:02d}"
-
-                if month_key in commits_by_month:
-                    commits_by_month[month_key] += 1
-                else:
-                    commits_by_month[month_key] = 1
-
-            # Sort by month
-            sorted_commits = dict(sorted(commits_by_month.items()))
-
-            return sorted_commits
-        except Exception as e:
-            return {"error": str(e)}
-
-
-def main_old():
+        if not self.codebase:
+            return {"error": "Codebase not initialized"}
+            
+        return get_path_finding_in_call_graphs(self.codebase, source_function, target_function, max_depth)
+        
+    def get_dead_symbol_detection(self) -> Dict[str, Any]:
+        """
+        Detect dead symbols in the codebase.
+        
+        This function identifies symbols (functions, classes, variables) that are defined
+        but never used in the codebase.
+        
+        Returns:
+            Dict containing dead symbol analysis results
+        """
+        if not self.codebase:
+            return {"error": "Codebase not initialized"}
+            
+        return get_dead_symbol_detection(self.codebase)
+        
+    def get_symbol_import_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze symbol imports in the codebase.
+        
+        This function analyzes how symbols are imported and used across the codebase,
+        identifying patterns, potential issues, and optimization opportunities.
+        
+        Returns:
+            Dict containing symbol import analysis results
+        """
+        if not self.codebase:
+            return {"error": "Codebase not initialized"}
+            
+        return get_symbol_import_analysis(self.codebase)
     """Main entry point for the codebase analyzer."""
     parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
 
@@ -1932,3 +1561,195 @@ def main():
             }
         except Exception as e:
             return {"error": str(e)}
+def main():
+    """Main entry point for the codebase analyzer."""
+    parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
+
+    # Repository source
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--repo-url", help="URL of the repository to analyze")
+    source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
+
+    # Analysis options
+    parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
+    parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
+
+    # PR comparison options
+    parser.add_argument("--compare-commit", help="Commit SHA to compare with the current codebase")
+    parser.add_argument("--pr-number", type=int, help="PR number to analyze")
+
+    # Output options
+    parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
+    parser.add_argument("--output-file", help="Path to the output file")
+
+    # Visualization options
+    parser.add_argument("--visualize", choices=["call-graph", "dependency-map", "directory-tree", "import-cycles"], help="Generate visualization")
+    parser.add_argument("--function-name", help="Function name for call graph visualization")
+    parser.add_argument("--symbol-name", help="Symbol name for dependency trace visualization")
+    parser.add_argument("--class-name", help="Class name for method relationships visualization")
+    
+    # Type analysis options
+    parser.add_argument("--analyze-types", action="store_true", help="Analyze untyped code in the codebase")
+    parser.add_argument("--summary", action="store_true", help="Get a summary of the codebase")
+    parser.add_argument("--quality", action="store_true", help="Analyze code quality")
+    parser.add_argument("--dependency-trace", action="store_true", help="Analyze dependency trace")
+    parser.add_argument("--method-relationships", action="store_true", help="Analyze method relationships")
+    parser.add_argument("--call-trace", action="store_true", help="Analyze call trace")
+    parser.add_argument("--import-cycles", action="store_true", help="Find import cycles")
+    
+    # New analysis options
+    parser.add_argument("--call-chain", action="store_true", help="Analyze call chains between functions")
+    parser.add_argument("--dead-code", action="store_true", help="Detect dead code with filtering")
+    parser.add_argument("--exclude-patterns", nargs="+", help="Patterns to exclude from dead code detection")
+    parser.add_argument("--path-finding", action="store_true", help="Find paths between functions in call graphs")
+    parser.add_argument("--source-function", help="Source function for path finding")
+    parser.add_argument("--target-function", help="Target function for path finding")
+    parser.add_argument("--max-depth", type=int, default=10, help="Maximum depth for path finding")
+    parser.add_argument("--dead-symbols", action="store_true", help="Detect dead symbols in the codebase")
+    parser.add_argument("--import-analysis", action="store_true", help="Analyze symbol imports in the codebase")
+
+    args = parser.parse_args()
+
+    try:
+        # Initialize the analyzer
+        analyzer = CodebaseAnalyzer(repo_url=args.repo_url, repo_path=args.repo_path, language=args.language)
+
+        # Handle PR analysis
+        if args.pr_number:
+            pr_analysis = analyzer.get_pr_diff_analysis(args.pr_number)
+            print(json.dumps(pr_analysis, indent=2))
+            return
+
+        # Handle comparison
+        if args.compare_commit:
+            analyzer.init_comparison_codebase(args.compare_commit)
+            comparison = analyzer.compare_codebases()
+            print(json.dumps(comparison, indent=2))
+            return
+
+        # Handle visualization
+        if args.visualize:
+            if args.visualize == "call-graph":
+                visualization = analyzer.visualize_call_graph(args.function_name)
+            elif args.visualize == "dependency-map":
+                visualization = analyzer.visualize_dependency_map()
+            elif args.visualize == "directory-tree":
+                visualization = analyzer.visualize_directory_tree()
+            elif args.visualize == "import-cycles":
+                visualization = analyzer.visualize_import_cycles()
+            
+            print(json.dumps(visualization, indent=2))
+            return
+            
+        # Handle type analysis
+        if args.analyze_types:
+            type_analysis = {
+                "untyped_return_statements": analyzer.count_untyped_return_statements(),
+                "untyped_parameters": analyzer.count_untyped_parameters(),
+                "untyped_attributes": analyzer.count_untyped_attributes(),
+                "unnamed_keyword_arguments": analyzer.count_unnamed_keyword_arguments(),
+            }
+            print(json.dumps(type_analysis, indent=2))
+            return
+            
+        # Handle codebase summary
+        if args.summary:
+            summary = analyzer.get_codebase_summary()
+            print(json.dumps(summary, indent=2))
+            return
+            
+        # Handle code quality analysis
+        if args.quality:
+            quality = analyzer.analyze_codebase_quality()
+            print(json.dumps(quality, indent=2))
+            return
+            
+        # Handle dependency trace analysis
+        if args.dependency_trace:
+            if not args.symbol_name:
+                print("Error: --symbol-name is required for dependency trace analysis")
+                return
+            dependency_trace = analyzer.analyze_dependency_trace(args.symbol_name)
+            print(json.dumps(dependency_trace, indent=2))
+            return
+            
+        # Handle method relationships analysis
+        if args.method_relationships:
+            if not args.class_name:
+                print("Error: --class-name is required for method relationships analysis")
+                return
+            method_relationships = analyzer.analyze_method_relationships(args.class_name)
+            print(json.dumps(method_relationships, indent=2))
+            return
+            
+        # Handle call trace analysis
+        if args.call_trace:
+            if not args.function_name:
+                print("Error: --function-name is required for call trace analysis")
+                return
+            call_trace = analyzer.analyze_call_trace(args.function_name)
+            print(json.dumps(call_trace, indent=2))
+            return
+            
+        # Handle import cycles analysis
+        if args.import_cycles:
+            import_cycles = analyzer.find_import_cycles()
+            print(json.dumps(import_cycles, indent=2))
+            return
+            
+        # Handle call chain analysis
+        if args.call_chain:
+            call_chain = analyzer.get_call_chain_analysis()
+            print(json.dumps(call_chain, indent=2))
+            return
+            
+        # Handle dead code detection
+        if args.dead_code:
+            dead_code = analyzer.get_dead_code_detection_with_filtering(args.exclude_patterns)
+            print(json.dumps(dead_code, indent=2))
+            return
+            
+        # Handle path finding
+        if args.path_finding:
+            path_finding = analyzer.get_path_finding_in_call_graphs(args.source_function, args.target_function, args.max_depth)
+            print(json.dumps(path_finding, indent=2))
+            return
+            
+        # Handle dead symbol detection
+        if args.dead_symbols:
+            dead_symbols = analyzer.get_dead_symbol_detection()
+            print(json.dumps(dead_symbols, indent=2))
+            return
+            
+        # Handle import analysis
+        if args.import_analysis:
+            import_analysis = analyzer.get_symbol_import_analysis()
+            print(json.dumps(import_analysis, indent=2))
+            return
+
+        # Perform the analysis
+        results = analyzer.analyze(categories=args.categories, output_format=args.output_format, output_file=args.output_file)
+
+        # Print success message
+        if args.output_format == "json" and args.output_file:
+            print(f"Analysis results saved to {args.output_file}")
+        elif args.output_format == "html":
+            print(f"HTML report saved to {args.output_file or 'codebase_analysis_report.html'}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+if __name__ == "__main__":
+    main()
+
+    def analyze_call_trace(self, function_name: str) -> Dict[str, Any]:
+        """Analyze the call trace for a specific function.
+        
+        Args:
+            function_name: Name of the function to analyze
+            
+        Returns:
+            A dictionary containing call trace information.
