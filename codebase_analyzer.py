@@ -14,7 +14,7 @@ import math
 import re
 import sys
 import tempfile
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 from rich.console import Console
@@ -80,6 +80,9 @@ METRICS_CATEGORIES = {
     "dependency_flow": [
         "get_function_call_relationships",
         "get_call_hierarchy_visualization",
+        "find_max_call_chain",
+        "detect_dead_code",
+        "find_paths_between_functions",
         "get_entry_point_analysis",
         "get_dead_code_detection",
         "get_variable_usage_tracking",
@@ -123,10 +126,6 @@ METRICS_CATEGORIES = {
         "get_code_complexity_heat_maps",
         "get_usage_frequency_visualization",
         "get_change_frequency_analysis",
-        "visualize_component_tree",
-        "visualize_inheritance_hierarchy",
-        "visualize_module_dependencies",
-        "analyze_function_modularity",
     ],
     "language_specific": [
         "get_decorator_usage_analysis",
@@ -1868,407 +1867,243 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
-Visualization functions for codebase_analyzer.py
-
-This module contains the implementation of visualization functions mentioned in the
-codebase-visualization.mdx documentation but not yet implemented in codebase_analyzer.py.
-"""
-
-from typing import Dict, Any
-import networkx as nx
-
-    def visualize_component_tree(self, root_component: str) -> Dict[str, Any]:
-    """Visualize the hierarchy of React components.
-    
-    This function creates a directed graph representing the hierarchy of React components,
-    starting from a root component and traversing through its children.
-    
-    Args:
-        root_component: The name of the root component to start visualization from
+    def find_max_call_chain(self, function_name: str) -> Dict[str, Any]:
+        """Find the longest call chain starting from a specific function.
         
-    Returns:
-        A dictionary containing the component tree visualization data
-    """
-    result = {
-        "nodes": [],
-        "edges": [],
-        "metadata": {
-            "root_component": root_component,
-            "component_count": 0,
-            "max_depth": 0,
-            "visualization_type": "component_tree"
-        }
-    }
-    
-    try:
-        # Get the root component class
-        root = None
-        for cls in self.codebase.classes:
-            if cls.name == root_component:
-                root = cls
+        This function builds a directed graph of function calls starting from the specified
+        function and finds the longest path in the resulting graph.
+        
+        Args:
+            function_name: Name of the function to start the call chain analysis from
+            
+        Returns:
+            Dict containing the longest call chain information, including:
+                - chain_length: Length of the longest call chain
+                - call_chain: List of function names in the call chain
+                - visualization_data: Data for visualizing the call chain
+        """
+        # Find the starting function
+        start_function = None
+        for func in self.codebase.functions:
+            if func.name == function_name:
+                start_function = func
                 break
                 
-        if not root:
-            return {"error": f"Root component '{root_component}' not found"}
+        if not start_function:
+            return {
+                "error": f"Function '{function_name}' not found in the codebase",
+                "chain_length": 0,
+                "call_chain": [],
+                "visualization_data": {}
+            }
             
         # Create a directed graph
-        graph = nx.DiGraph()
+        G = nx.DiGraph()
         
-        # Track visited components to avoid cycles
+        # Track visited functions to avoid infinite recursion
         visited = set()
         
-        # Track depth for metadata
-        max_depth = 0
-        
-        def add_children(component, depth=0):
-            nonlocal max_depth
-            
-            if depth > max_depth:
-                max_depth = depth
-                
-            if component.name in visited:
+        def build_graph(func, depth=0, max_depth=10):
+            """Recursively build the call graph."""
+            if depth > max_depth or func in visited:
                 return
                 
-            visited.add(component.name)
+            visited.add(func)
             
-            # Add the component as a node
-            if component not in graph:
-                graph.add_node(component)
+            # Add the current function as a node
+            G.add_node(func.name, file=func.file.file_path if hasattr(func, "file") else "Unknown")
+            
+            # Process all function calls
+            for call in func.function_calls:
+                called_func = call.function_definition
                 
-            # Look for child components in the source code
-            for usage in component.usages:
-                # Check if the usage is within a React component
-                if hasattr(usage, 'parent') and usage.parent and hasattr(usage.parent, 'bases'):
-                    parent = usage.parent
-                    if "Component" in parent.bases or "React.Component" in parent.bases:
-                        if parent not in graph:
-                            graph.add_node(parent)
-                        graph.add_edge(component, parent)
-                        add_children(parent, depth + 1)
-        
-        # Start building the tree from the root
-        add_children(root)
-        
-        # Convert graph to result format
-        for node in graph.nodes():
-            result["nodes"].append({
-                "id": node.name,
-                "label": node.name,
-                "file": node.file.file_path if hasattr(node, "file") else "Unknown"
-            })
-            
-        for edge in graph.edges():
-            result["edges"].append({
-                "source": edge[0].name,
-                "target": edge[1].name
-            })
-            
-        # Update metadata
-        result["metadata"]["component_count"] = len(graph.nodes())
-        result["metadata"]["max_depth"] = max_depth
-        
-        return result
-        
-    except Exception as e:
-        return {"error": str(e)}
-
-    def visualize_inheritance_hierarchy(self, base_class: str) -> Dict[str, Any]:
-    """Visualize class inheritance hierarchies.
-    
-    This function creates a directed graph representing the inheritance hierarchy,
-    starting from a base class and recursively adding all subclasses.
-    
-    Args:
-        base_class: The name of the base class to start visualization from
-        
-    Returns:
-        A dictionary containing the inheritance hierarchy visualization data
-    """
-    result = {
-        "nodes": [],
-        "edges": [],
-        "metadata": {
-            "base_class": base_class,
-            "class_count": 0,
-            "max_depth": 0,
-            "visualization_type": "inheritance_hierarchy"
-        }
-    }
-    
-    try:
-        # Get the base class
-        base = None
-        for cls in self.codebase.classes:
-            if cls.name == base_class:
-                base = cls
-                break
+                # Skip if the called function is external or the same as the caller
+                if not hasattr(called_func, "name") or called_func.name == func.name:
+                    continue
+                    
+                # Add the called function as a node
+                G.add_node(called_func.name, file=called_func.file.file_path if hasattr(called_func, "file") else "Unknown")
                 
-        if not base:
-            return {"error": f"Base class '{base_class}' not found"}
-            
-        # Create a directed graph
-        graph = nx.DiGraph()
-        
-        # Track depth for metadata
-        max_depth = 0
-        
-        def add_subclasses(cls, depth=0):
-            nonlocal max_depth
-            
-            if depth > max_depth:
-                max_depth = depth
-            
-            # Add the class as a node
-            if cls not in graph:
-                graph.add_node(cls)
-            
-            # Find all subclasses
-            for subclass in self.codebase.classes:
-                if hasattr(subclass, 'bases') and cls.name in subclass.bases:
-                    if subclass not in graph:
-                        graph.add_node(subclass)
-                    graph.add_edge(cls, subclass)
-                    add_subclasses(subclass, depth + 1)
-        
-        # Start building the hierarchy from the base class
-        add_subclasses(base)
-        
-        # Convert graph to result format
-        for node in graph.nodes():
-            result["nodes"].append({
-                "id": node.name,
-                "label": node.name,
-                "file": node.file.file_path if hasattr(node, "file") else "Unknown"
-            })
-            
-        for edge in graph.edges():
-            result["edges"].append({
-                "source": edge[0].name,
-                "target": edge[1].name
-            })
-            
-        # Update metadata
-        result["metadata"]["class_count"] = len(graph.nodes())
-        result["metadata"]["max_depth"] = max_depth
-        
-        return result
-        
-    except Exception as e:
-        return {"error": str(e)}
-
-    def visualize_module_dependencies(self, start_file: str) -> Dict[str, Any]:
-    """Visualize dependencies between modules.
-    
-    This function creates a directed graph representing the dependencies between modules,
-    starting from a specific file and following all import relationships.
-    
-    Args:
-        start_file: The path to the file to start visualization from
-        
-    Returns:
-        A dictionary containing the module dependency visualization data
-    """
-    result = {
-        "nodes": [],
-        "edges": [],
-        "metadata": {
-            "start_file": start_file,
-            "module_count": 0,
-            "external_dependencies": 0,
-            "internal_dependencies": 0,
-            "visualization_type": "module_dependencies"
-        }
-    }
-    
-    try:
-        # Get the starting file
-        file_obj = None
-        for file in self.codebase.files:
-            if file.file_path == start_file or file.file_path.endswith(start_file):
-                file_obj = file
-                break
+                # Add an edge from the current function to the called function
+                G.add_edge(func.name, called_func.name)
                 
-        if not file_obj:
-            return {"error": f"Start file '{start_file}' not found"}
-            
-        # Create a directed graph
-        graph = nx.DiGraph()
+                # Recursively process the called function
+                build_graph(called_func, depth + 1, max_depth)
         
-        # Track visited files to avoid cycles
-        visited = set()
+        # Build the graph starting from the specified function
+        build_graph(start_function)
         
-        # Count internal and external dependencies
-        internal_deps = 0
-        external_deps = 0
-        
-        def add_imports(file):
-            nonlocal internal_deps, external_deps
-            
-            if file.file_path in visited:
-                return
-                
-            visited.add(file.file_path)
-            
-            # Add the file as a node
-            if file not in graph:
-                graph.add_node(file)
-            
-            # Process all imports in the file
-            if hasattr(file, 'imports'):
-                for imp in file.imports:
-                    # Check if the import resolves to a file in the codebase
-                    if hasattr(imp, 'resolved_symbol') and imp.resolved_symbol and hasattr(imp.resolved_symbol, 'file'):
-                        target_file = imp.resolved_symbol.file
-                        
-                        # Skip if it's the same file
-                        if target_file.file_path == file.file_path:
+        # Find the longest path in the graph
+        longest_path = []
+        try:
+            # If the graph is a DAG (no cycles), use dag_longest_path
+            longest_path = nx.dag_longest_path(G)
+        except nx.NetworkXError:
+            # If the graph has cycles, find the longest simple path
+            longest_paths = []
+            for node in G.nodes():
+                for target in G.nodes():
+                    if node != target:
+                        try:
+                            paths = list(nx.all_simple_paths(G, node, target))
+                            if paths:
+                                longest_paths.extend(paths)
+                        except nx.NetworkXNoPath:
                             continue
-                            
-                        if target_file not in graph:
-                            graph.add_node(target_file)
-                            
-                        # Add the dependency edge
-                        graph.add_edge(file, target_file)
-                        
-                        # Count as internal dependency
-                        internal_deps += 1
-                        
-                        # Recursively process the imported file
-                        add_imports(target_file)
-                    else:
-                        # This is an external dependency
-                        external_deps += 1
-        
-        # Start building the dependency graph from the start file
-        add_imports(file_obj)
-        
-        # Convert graph to result format
-        for node in graph.nodes():
-            result["nodes"].append({
-                "id": node.file_path,
-                "label": node.file_path.split("/")[-1],
-                "file_path": node.file_path
-            })
             
-        for edge in graph.edges():
-            result["edges"].append({
-                "source": edge[0].file_path,
-                "target": edge[1].file_path
-            })
-            
-        # Update metadata
-        result["metadata"]["module_count"] = len(graph.nodes())
-        result["metadata"]["internal_dependencies"] = internal_deps
-        result["metadata"]["external_dependencies"] = external_deps
+            if longest_paths:
+                longest_path = max(longest_paths, key=len)
+        
+        # Prepare the result
+        result = {
+            "chain_length": len(longest_path),
+            "call_chain": longest_path,
+            "visualization_data": {
+                "nodes": [{"id": node, "file": G.nodes[node]["file"]} for node in G.nodes()],
+                "edges": [{"source": u, "target": v} for u, v in G.edges()]
+            }
+        }
         
         return result
-        
-    except Exception as e:
-        return {"error": str(e)}
-
-    def analyze_function_modularity(self) -> Dict[str, Any]:
-    """Analyze function groupings by modularity.
     
-    This function creates an undirected graph representing the relationships between functions
-    based on shared dependencies, then applies community detection to identify modules.
-    
-    Returns:
-        A dictionary containing the function modularity analysis data
-    """
-    result = {
-        "modules": [],
-        "function_count": 0,
-        "module_count": 0,
-        "modularity_score": 0.0,
-        "visualization_type": "function_modularity"
-    }
-    
-    try:
-        # Get all functions
-        functions = list(self.codebase.functions)
+    def detect_dead_code(self) -> List[Dict[str, Any]]:
+        """Detect unused (dead) functions in the codebase.
         
-        if not functions:
-            return {"error": "No functions found in the codebase"}
-            
-        # Create an undirected graph
-        graph = nx.Graph()
+        This function identifies functions that are never called by any other function
+        in the codebase and are not entry points or exported functions.
         
-        # Add all functions as nodes
-        for func in functions:
-            graph.add_node(func)
+        Returns:
+            List of dictionaries containing information about unused functions:
+                - name: Name of the unused function
+                - file: File path where the function is defined
+                - line: Line number where the function is defined
+                - is_public: Whether the function is public (not prefixed with _)
+                - is_test: Whether the function appears to be a test function
+        """
+        # Get all functions in the codebase
+        all_functions = list(self.codebase.functions)
         
-        # Connect functions based on shared dependencies
-        for i, func1 in enumerate(functions):
-            func1_deps = set()
-            
-            # Collect dependencies of func1
-            if hasattr(func1, 'dependencies'):
-                func1_deps = set(func1.dependencies)
-            elif hasattr(func1, 'call_sites'):
-                func1_deps = {call.resolved_symbol for call in func1.call_sites if call.resolved_symbol}
-            
-            for j in range(i + 1, len(functions)):
-                func2 = functions[j]
-                func2_deps = set()
+        # Create a set of all called functions
+        called_functions = set()
+        for func in all_functions:
+            for call in func.function_calls:
+                called_func = call.function_definition
+                if hasattr(called_func, "name"):
+                    called_functions.add(called_func.name)
+        
+        # Find functions that are never called
+        dead_functions = []
+        for func in all_functions:
+            # Skip if the function is called by another function
+            if func.name in called_functions:
+                continue
                 
-                # Collect dependencies of func2
-                if hasattr(func2, 'dependencies'):
-                    func2_deps = set(func2.dependencies)
-                elif hasattr(func2, 'call_sites'):
-                    func2_deps = {call.resolved_symbol for call in func2.call_sites if call.resolved_symbol}
+            # Check if the function might be an entry point or test
+            is_test = False
+            if func.name.startswith("test_") or "test" in func.name.lower():
+                is_test = True
                 
-                # Calculate shared dependencies
-                shared_deps = len(func1_deps.intersection(func2_deps))
-                
-                # Add edge if there are shared dependencies
-                if shared_deps > 0:
-                    graph.add_edge(func1, func2, weight=shared_deps)
-        
-        # Apply community detection to identify modules
-        # Using Louvain method for community detection
-        try:
-            from community import best_partition
-            partition = best_partition(graph)
-        except ImportError:
-            # Fallback to connected components if community detection is not available
-            partition = {}
-            for i, component in enumerate(nx.connected_components(graph)):
-                for node in component:
-                    partition[node] = i
-        
-        # Calculate modularity score
-        try:
-            modularity = nx.algorithms.community.modularity(graph, 
-                                                          [list(nodes) for nodes in nx.community.label_propagation.asyn_lpa_communities(graph)])
-        except:
-            modularity = 0.0
-        
-        # Group functions by module
-        modules = {}
-        for func, module_id in partition.items():
-            if module_id not in modules:
-                modules[module_id] = []
-            modules[module_id].append({
+            # Check if the function is public (not prefixed with _)
+            is_public = not func.name.startswith("_")
+            
+            # Get the file and line number
+            file_path = func.file.file_path if hasattr(func, "file") else "Unknown"
+            line_number = func.span.start.line if hasattr(func, "span") else 0
+            
+            # Add to the list of dead functions
+            dead_functions.append({
                 "name": func.name,
-                "file": func.file.file_path if hasattr(func, "file") else "Unknown"
+                "file": file_path,
+                "line": line_number,
+                "is_public": is_public,
+                "is_test": is_test
             })
         
-        # Convert modules to result format
-        for module_id, funcs in modules.items():
-            result["modules"].append({
-                "id": module_id,
-                "functions": funcs,
-                "size": len(funcs)
-            })
+        # Sort by file path and line number
+        dead_functions.sort(key=lambda x: (x["file"], x["line"]))
         
-        # Update metadata
-        result["function_count"] = len(functions)
-        result["module_count"] = len(modules)
-        result["modularity_score"] = modularity
+        return dead_functions
+    
+    def find_paths_between_functions(self, start_function: str, end_function: str) -> Dict[str, Any]:
+        """Find all paths between two functions in the call graph.
+        
+        This function builds a directed graph of function calls and finds all possible
+        paths between the specified start and end functions.
+        
+        Args:
+            start_function: Name of the starting function
+            end_function: Name of the target function
+            
+        Returns:
+            Dict containing information about the paths:
+                - paths_count: Number of paths found
+                - paths: List of paths, each represented as a list of function names
+                - visualization_data: Data for visualizing the paths
+        """
+        # Find the start and end functions
+        start_func = None
+        end_func = None
+        
+        for func in self.codebase.functions:
+            if func.name == start_function:
+                start_func = func
+            if func.name == end_function:
+                end_func = func
+                
+        if not start_func or not end_func:
+            missing = []
+            if not start_func:
+                missing.append(f"Start function '{start_function}'")
+            if not end_func:
+                missing.append(f"End function '{end_function}'")
+                
+            return {
+                "error": f"Function(s) not found: {', '.join(missing)}",
+                "paths_count": 0,
+                "paths": [],
+                "visualization_data": {}
+            }
+            
+        # Create a directed graph
+        G = nx.DiGraph()
+        
+        # Build the complete call graph
+        for func in self.codebase.functions:
+            # Add the current function as a node
+            G.add_node(func.name, file=func.file.file_path if hasattr(func, "file") else "Unknown")
+            
+            # Process all function calls
+            for call in func.function_calls:
+                called_func = call.function_definition
+                
+                # Skip if the called function is external
+                if not hasattr(called_func, "name"):
+                    continue
+                    
+                # Add the called function as a node
+                G.add_node(called_func.name, file=called_func.file.file_path if hasattr(called_func, "file") else "Unknown")
+                
+                # Add an edge from the current function to the called function
+                G.add_edge(func.name, called_func.name)
+        
+        # Find all simple paths between the start and end functions
+        paths = []
+        try:
+            paths = list(nx.all_simple_paths(G, start_function, end_function, cutoff=10))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            # No path exists or node not found
+            pass
+        
+        # Prepare the result
+        result = {
+            "paths_count": len(paths),
+            "paths": paths,
+            "visualization_data": {
+                "nodes": [{"id": node, "file": G.nodes[node]["file"]} for node in G.nodes()],
+                "edges": [{"source": u, "target": v} for u, v in G.edges()],
+                "highlighted_paths": paths
+            }
+        }
         
         return result
-        
-    except Exception as e:
-        return {"error": str(e)}
 
