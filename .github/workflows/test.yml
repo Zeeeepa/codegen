@@ -14,17 +14,27 @@ jobs:
   access-check:
     runs-on: ubuntu-latest
     steps:
+      # First check if the triggering actor is the bot
+      - name: Check if bot user
+        id: check-bot
+        run: |
+          if [[ "${{ github.triggering_actor }}" == "codegen-sh[bot]" ]]; then
+            echo "is_bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bot=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Only run permission check if not the bot
       - uses: actions-cool/check-user-permission@v2
+        if: steps.check-bot.outputs.is_bot != 'true'
         with:
           require: write
           username: ${{ github.triggering_actor }}
           error-if-missing: true
-        # Skip permission check for codegen-sh[bot]
-        if: ${{ github.triggering_actor != 'codegen-sh[bot]' }}
       
       # Add a step that always succeeds for the bot
       - name: Skip permission check for codegen-sh[bot]
-        if: ${{ github.triggering_actor == 'codegen-sh[bot]' }}
+        if: steps.check-bot.outputs.is_bot == 'true'
         run: echo "Skipping permission check for codegen-sh[bot]"
 
   unit-tests:
