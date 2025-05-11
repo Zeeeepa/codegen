@@ -4,7 +4,9 @@ from typing import Annotated, Optional
 from mcp.server.fastmcp import FastMCP
 
 from codegen.extensions.tools import reveal_symbol
+from codegen.extensions.tools.relace_edit import relace_edit
 from codegen.extensions.tools.search import search
+from codegen.extensions.tools.semantic_search import semantic_search
 from codegen.sdk.core.codebase import Codebase
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 
@@ -51,6 +53,38 @@ def search_codebase_tool(
     codebase = Codebase(repo_path=codebase_dir, language=codebase_language)
     result = search(codebase, query, target_directories=target_directories, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex)
     return json.dumps(result, indent=2)
+
+
+@mcp.tool(name="semantic_search_codebase", description="Search the codebase for semantically similar code using embeddings")
+def semantic_search_codebase_tool(
+    query: Annotated[str, "The search query to find semantically similar code"],
+    codebase_dir: Annotated[str, "The root directory of your codebase"],
+    codebase_language: Annotated[ProgrammingLanguage, "The language the codebase is written in"],
+    target_directories: Annotated[Optional[list[str]], "list of directories to search within"] = None,
+    file_extensions: Annotated[Optional[list[str]], "list of file extensions to search (e.g. ['.py', '.ts'])"] = None,
+    page: Annotated[int, "page number to return (1-based)"] = 1,
+    files_per_page: Annotated[int, "number of files to return per page"] = 10,
+):
+    codebase = Codebase(repo_path=codebase_dir, language=codebase_language)
+    result = semantic_search(codebase, query, target_directories=target_directories, file_extensions=file_extensions, page=page, files_per_page=files_per_page)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool(name="relace_edit", description="Edit a file using the Relace Instant Apply API")
+def relace_edit_tool(
+    filepath: Annotated[str, "Path of the file relative to workspace root"],
+    edit_snippet: Annotated[str, "The code snippet containing the modifications"],
+    codebase_dir: Annotated[str, "The root directory of your codebase"],
+    codebase_language: Annotated[ProgrammingLanguage, "The language the codebase is written in"],
+):
+    codebase = Codebase(repo_path=codebase_dir, language=codebase_language)
+    result = relace_edit(codebase, filepath, edit_snippet)
+    return json.dumps({
+        "status": result.status,
+        "filepath": result.filepath,
+        "diff": result.diff,
+        "error": result.error,
+    }, indent=2)
 
 
 if __name__ == "__main__":
