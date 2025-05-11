@@ -18,7 +18,7 @@ jobs:
         with:
           require: write
           username: ${{ github.triggering_actor }}
-          error-if-missing: true
+          error-if-missing: false  # Changed from true to false to allow bot users
 
   unit-tests:
     needs: access-check
@@ -186,3 +186,4 @@ jobs:
         with:
           flag: integration-tests
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
+

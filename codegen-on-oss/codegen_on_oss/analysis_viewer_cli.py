@@ -24,6 +24,112 @@ except ImportError:
         sys.exit(1)
 
 
+def create_parser():
+    """
+    Create the command-line argument parser for the analysis viewer CLI.
+    """
+    parser = argparse.ArgumentParser(description="Codebase Analysis Viewer CLI")
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    
+    # Analyze command
+    analyze_parser = subparsers.add_parser("analyze", help="Analyze a codebase")
+    source_group = analyze_parser.add_mutually_exclusive_group()
+    source_group.add_argument("--repo-url", help="URL of the repository to analyze")
+    source_group.add_argument("--repo-path", help="Local path to the repository to analyze")
+    
+    # Analysis options
+    analyze_parser.add_argument(
+        "--language", 
+        help="Programming language of the codebase (auto-detected if not provided)"
+    )
+    analyze_parser.add_argument(
+        "--categories", 
+        nargs="+", 
+        help="Categories to analyze (default: all)"
+    )
+    analyze_parser.add_argument(
+        "--depth", 
+        type=int, 
+        choices=[1, 2, 3], 
+        default=2, 
+        help="Depth of analysis (1-3, where 3 is most detailed)"
+    )
+    
+    # Output options
+    analyze_parser.add_argument(
+        "--output-format", 
+        choices=["json", "html", "console"], 
+        default="console", 
+        help="Output format"
+    )
+    analyze_parser.add_argument("--output-file", help="Path to the output file")
+    
+    # Compare command
+    compare_parser = subparsers.add_parser("compare", help="Compare two codebases")
+    base_group = compare_parser.add_mutually_exclusive_group()
+    base_group.add_argument("--base-repo-url", help="URL of the base repository")
+    base_group.add_argument("--base-repo-path", help="Local path to the base repository")
+    
+    compare_group = compare_parser.add_mutually_exclusive_group()
+    compare_group.add_argument(
+        "--compare-repo-url", 
+        help="URL of the repository to compare against the base"
+    )
+    compare_group.add_argument(
+        "--compare-repo-path", 
+        help="Local path to the repository to compare against the base"
+    )
+    
+    # Branch options
+    compare_parser.add_argument(
+        "--base-branch", 
+        help="Branch of the base repository to compare"
+    )
+    compare_parser.add_argument(
+        "--compare-branch", 
+        help="Branch of the repository to compare against the base"
+    )
+    
+    # Comparison options
+    compare_parser.add_argument(
+        "--language", 
+        help="Programming language of the codebases (auto-detected if not provided)"
+    )
+    compare_parser.add_argument(
+        "--categories", 
+        nargs="+", 
+        help="Categories to compare (default: all)"
+    )
+    compare_parser.add_argument(
+        "--depth", 
+        type=int, 
+        choices=[1, 2, 3], 
+        default=2, 
+        help="Depth of comparison (1-3, where 3 is most detailed)"
+    )
+    
+    # Output options
+    compare_parser.add_argument(
+        "--output-format", 
+        choices=["json", "html", "console"], 
+        default="console", 
+        help="Output format"
+    )
+    compare_parser.add_argument("--output-file", help="Path to the output file")
+    
+    # Interactive command
+    interactive_parser = subparsers.add_parser(
+        "interactive", 
+        help="Run in interactive mode"
+    )
+    interactive_parser.add_argument(
+        "--repo-path", 
+        help="Path to the codebase to analyze initially"
+    )
+    
+    return parser
+
+
 class AnalysisViewerCLI:
     """
     Command-line interface for the codebase analysis viewer.
@@ -43,58 +149,7 @@ class AnalysisViewerCLI:
         Returns:
             argparse.ArgumentParser: The configured argument parser.
         """
-        parser = argparse.ArgumentParser(
-            description="Codebase Analysis Viewer - Analyze and compare codebases"
-        )
-        subparsers = parser.add_subparsers(dest="command", help="Command to run")
-        
-        # Analyze command
-        analyze_parser = subparsers.add_parser("analyze", help="Analyze a single codebase")
-        
-        # Repository source for analyze
-        analyze_source = analyze_parser.add_mutually_exclusive_group(required=True)
-        analyze_source.add_argument("--repo-url", help="URL of the repository to analyze")
-        analyze_source.add_argument("--repo-path", help="Local path to the repository to analyze")
-        
-        # Analysis options
-        analyze_parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
-        analyze_parser.add_argument("--categories", nargs="+", help="Categories to analyze (default: all)")
-        analyze_parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=2, help="Depth of analysis (1-3, where 3 is most detailed)")
-        
-        # Output options
-        analyze_parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
-        analyze_parser.add_argument("--output-file", help="Path to the output file")
-        
-        # Compare command
-        compare_parser = subparsers.add_parser("compare", help="Compare two codebases")
-        
-        # Repository sources for compare
-        base_group = compare_parser.add_mutually_exclusive_group(required=True)
-        base_group.add_argument("--base-repo-url", help="URL of the base repository to compare")
-        base_group.add_argument("--base-repo-path", help="Local path to the base repository to compare")
-        
-        compare_group = compare_parser.add_mutually_exclusive_group(required=True)
-        compare_group.add_argument("--compare-repo-url", help="URL of the repository to compare against the base")
-        compare_group.add_argument("--compare-repo-path", help="Local path to the repository to compare against the base")
-        
-        # Branch options
-        compare_parser.add_argument("--base-branch", help="Branch of the base repository to compare")
-        compare_parser.add_argument("--compare-branch", help="Branch of the repository to compare against the base")
-        
-        # Comparison options
-        compare_parser.add_argument("--language", help="Programming language of the codebases (auto-detected if not provided)")
-        compare_parser.add_argument("--categories", nargs="+", help="Categories to compare (default: all)")
-        compare_parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=2, help="Depth of comparison (1-3, where 3 is most detailed)")
-        
-        # Output options
-        compare_parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
-        compare_parser.add_argument("--output-file", help="Path to the output file")
-        
-        # Interactive command
-        interactive_parser = subparsers.add_parser("interactive", help="Run in interactive mode")
-        interactive_parser.add_argument("--repo-path", help="Path to the codebase to analyze initially")
-        
-        return parser
+        return create_parser()
     
     def run(self, args=None):
         """
@@ -212,8 +267,9 @@ class AnalysisViewerCLI:
             
             def do_analyze(self, arg):
                 """
-                Analyze a codebase: analyze [--repo-url URL | --repo-path PATH] [--categories cat1 cat2]
-                [--language lang] [--depth 1-3] [--output-format format] [--output-file file]
+                Analyze a codebase: analyze [--repo-url URL | --repo-path PATH] 
+                [--categories cat1 cat2] [--language lang] [--depth 1-3] 
+                [--output-format format] [--output-file file]
                 """
                 parser = argparse.ArgumentParser(description="Analyze a codebase")
                 source = parser.add_mutually_exclusive_group()
@@ -221,8 +277,19 @@ class AnalysisViewerCLI:
                 source.add_argument("--repo-path", help="Local path to the repository to analyze")
                 parser.add_argument("--language", help="Programming language of the codebase")
                 parser.add_argument("--categories", nargs="+", help="Categories to analyze")
-                parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=2, help="Depth of analysis")
-                parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
+                parser.add_argument(
+                    "--depth", 
+                    type=int, 
+                    choices=[1, 2, 3], 
+                    default=2, 
+                    help="Depth of analysis"
+                )
+                parser.add_argument(
+                    "--output-format", 
+                    choices=["json", "html", "console"], 
+                    default="console", 
+                    help="Output format"
+                )
                 parser.add_argument("--output-file", help="Path to the output file")
                 
                 try:
@@ -273,17 +340,19 @@ class AnalysisViewerCLI:
                 parser = argparse.ArgumentParser(description="Compare two codebases")
                 base_group = parser.add_mutually_exclusive_group()
                 base_group.add_argument("--base-repo-url", help="URL of the base repository")
-                base_group.add_argument("--base-repo-path", help="Local path to the base repository")
+                base_group.add_argument(
+                    "--base-repo-path", 
+                    help="Local path to the base repository"
+                )
                 compare_group = parser.add_mutually_exclusive_group()
-                compare_group.add_argument("--compare-repo-url", help="URL of the compare repository")
-                compare_group.add_argument("--compare-repo-path", help="Local path to the compare repository")
-                parser.add_argument("--base-branch", help="Branch of the base repository")
-                parser.add_argument("--compare-branch", help="Branch of the compare repository")
-                parser.add_argument("--language", help="Programming language of the codebases")
-                parser.add_argument("--categories", nargs="+", help="Categories to compare")
-                parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=2, help="Depth of comparison")
-                parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
-                parser.add_argument("--output-file", help="Path to the output file")
+                compare_group.add_argument(
+                    "--compare-repo-url", 
+                    help="URL of the compare repository"
+                )
+                compare_group.add_argument(
+                    "--compare-repo-path", 
+                    help="Local path to the compare repository"
+                )
                 
                 try:
                     args = parser.parse_args(arg.split())
