@@ -7,40 +7,47 @@ A powerful static code analysis system that provides extensive information about
 This analyzer provides comprehensive analysis of your codebase, including:
 
 ### 1. Codebase Structure Analysis
+
 - File Statistics (count, language, size)
 - Symbol Tree Analysis
 - Import/Export Analysis
 - Module Organization
 
 ### 2. Symbol-Level Analysis
+
 - Function Analysis (parameters, return types, complexity)
 - Class Analysis (methods, attributes, inheritance)
 - Variable Analysis
 - Type Analysis
 
 ### 3. Dependency and Flow Analysis
+
 - Call Graph Generation
 - Data Flow Analysis
 - Control Flow Analysis
 - Symbol Usage Analysis
 
 ### 4. Code Quality Analysis
+
 - Unused Code Detection
 - Code Duplication Analysis
 - Complexity Metrics
 - Style and Convention Analysis
 
 ### 5. Visualization Capabilities
+
 - Dependency Graphs
 - Call Graphs
 - Symbol Trees
 - Heat Maps
 
 ### 6. Language-Specific Analysis
+
 - Python-Specific Analysis
 - TypeScript-Specific Analysis
 
 ### 7. Code Metrics
+
 - Monthly Commits
 - Cyclomatic Complexity
 - Halstead Volume
@@ -49,12 +56,14 @@ This analyzer provides comprehensive analysis of your codebase, including:
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/codebase-analyzer.git
 cd codebase-analyzer
 ```
 
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -111,4 +120,3 @@ python codebase_analyzer.py --repo-url https://github.com/username/repo --output
 ## License
 
 MIT
-

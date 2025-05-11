@@ -30,9 +30,7 @@ class CodegenParser:
         self.metrics_profiler = metrics_profiler
         sys.setrecursionlimit(10000000)
 
-    def parse(
-        self, url: str, language: str | None = None, commit_hash: str | None = None
-    ):
+    def parse(self, url: str, language: str | None = None, commit_hash: str | None = None):
         """
         Parse the repository at the given URL. MetricsProfiler is used to profile the parse and
         post_init_validation.
@@ -59,9 +57,7 @@ class CodegenParser:
                     # Since Codebase is performing git ops, we need to extract commit if it wasn't explicitly provided.
                     profile.revision = (
                         profile.revision
-                        or projects[
-                            0
-                        ].repo_operator.head_commit  # assume projects is not empty
+                        or projects[0].repo_operator.head_commit  # assume projects is not empty
                     )
                     # from_repo would have performed any repo initialization necessary
                     # It could pull or use cached
