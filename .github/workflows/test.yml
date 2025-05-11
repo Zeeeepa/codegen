@@ -19,6 +19,13 @@ jobs:
           require: write
           username: ${{ github.triggering_actor }}
           error-if-missing: true
+        # Skip this check for bot users
+        if: ${{ !endsWith(github.triggering_actor, '[bot]') }}
+      
+      # Add a step that always succeeds for bot users
+      - name: Allow bot users
+        if: ${{ endsWith(github.triggering_actor, '[bot]') }}
+        run: echo "Bot user detected, skipping permission check"
 
   unit-tests:
     needs: access-check
