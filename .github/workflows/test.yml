@@ -14,7 +14,18 @@ jobs:
   access-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions-cool/check-user-permission@v2
+      - name: Check if user is bot
+        id: check-bot
+        run: |
+          if [[ "${{ github.triggering_actor }}" == *"[bot]" ]]; then
+            echo "is_bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bot=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check user permission
+        if: steps.check-bot.outputs.is_bot != 'true'
+        uses: actions-cool/check-user-permission@v2
         with:
           require: write
           username: ${{ github.triggering_actor }}
@@ -186,3 +197,4 @@ jobs:
         with:
           flag: integration-tests
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
+
