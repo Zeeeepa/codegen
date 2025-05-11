@@ -62,6 +62,7 @@ METRICS_CATEGORIES = {
         "get_module_cohesion_analysis",
         "get_package_structure",
         "get_module_dependency_graph",
+        "get_dependency_graph_creation",  # Added new function
     ],
     "symbol_level": [
         "get_function_parameter_analysis",
@@ -85,6 +86,12 @@ METRICS_CATEGORIES = {
         "get_generic_type_usage",
         "get_type_consistency_checking",
         "get_union_intersection_type_analysis",
+        "get_symbol_import_analysis",  # Added new function
+        "get_type_resolution",  # Added new function
+        "get_generic_type_analysis",  # Added new function
+        "get_union_type_analysis",  # Added new function
+        "get_comprehensive_type_coverage_analysis",  # Added new function
+        "get_enhanced_return_type_analysis",  # Added new function
     ],
     "dependency_flow": [
         "get_function_call_relationships",
@@ -101,6 +108,12 @@ METRICS_CATEGORIES = {
         "get_symbol_reference_tracking",
         "get_usage_frequency_metrics",
         "get_cross_file_symbol_usage",
+        "get_call_chain_analysis",  # Added new function
+        "get_path_finding_in_call_graphs",  # Added new function
+        "get_dead_symbol_detection",  # Added new function
+        "get_dependency_graph_traversal",  # Added new function
+        "get_dead_code_detection_with_filtering",  # Added new function
+        "get_unused_variable_detection",  # Added new function
     ],
     "code_quality": [
         "get_unused_functions",
@@ -118,6 +131,8 @@ METRICS_CATEGORIES = {
         "get_comment_coverage",
         "get_documentation_completeness",
         "get_code_formatting_consistency",
+        "get_circular_dependency_breaking",  # Added new function
+        "get_module_coupling_analysis",  # Added new function
     ],
     "visualization": [
         "get_module_dependency_visualization",
@@ -154,6 +169,7 @@ METRICS_CATEGORIES = {
         "get_maintainability_rank",
     ]
 }
+
 
 class CodebaseAnalyzer:
     """
@@ -1916,8 +1932,1806 @@ class CodebaseAnalyzer:
                         self.console.print(str(metric_value))
                 else:
                     self.console.print(str(metric_value))
-    
     def get_monthly_commits(self) -> Dict[str, int]:
+        pass
+
+    def get_call_chain_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze call chains between functions.
+        
+        This function traces and analyzes function call chains in the codebase,
+        identifying the longest chains, most called functions, and complex call patterns.
+        
+        Returns:
+            Dict containing call chain analysis results
+        """
+        call_chain_analysis = {
+            "longest_chains": [],
+            "most_called_functions": [],
+            "complex_call_patterns": [],
+            "average_chain_length": 0,
+            "max_chain_length": 0,
+            "total_chains": 0
+        }
+        
+        try:
+            # Create a directed graph of function calls
+            G = nx.DiGraph()
+            
+            # Map to store function objects by their qualified name
+            function_map = {}
+            
+            # Add nodes and edges to the graph
+            for function in self.codebase.functions:
+                function_name = f"{function.file.file_path}::{function.name}"
+                G.add_node(function_name)
+                function_map[function_name] = function
+                
+                # Add edges for each function call
+                for call in function.function_calls:
+                    if hasattr(call, "function_definition") and call.function_definition:
+                        called_func = call.function_definition
+                        called_name = f"{called_func.file.file_path if hasattr(called_func, 'file') else 'external'}::{called_func.name}"
+                        G.add_node(called_name)
+                        G.add_edge(function_name, called_name)
+                        function_map[called_name] = called_func
+            
+            # Find all simple paths in the graph
+            all_chains = []
+            for source in G.nodes():
+                for target in G.nodes():
+                    if source != target:
+                        try:
+                            paths = list(nx.all_simple_paths(G, source, target, cutoff=10))
+                            all_chains.extend(paths)
+                        except (nx.NetworkXNoPath, nx.NodeNotFound):
+                            continue
+            
+            # Calculate chain statistics
+            if all_chains:
+                call_chain_analysis["total_chains"] = len(all_chains)
+                chain_lengths = [len(chain) for chain in all_chains]
+                call_chain_analysis["average_chain_length"] = sum(chain_lengths) / len(chain_lengths)
+                call_chain_analysis["max_chain_length"] = max(chain_lengths)
+                
+                # Find the longest chains
+                longest_chains = sorted(all_chains, key=len, reverse=True)[:5]  # Top 5 longest chains
+                for chain in longest_chains:
+                    call_chain_analysis["longest_chains"].append({
+                        "length": len(chain),
+                        "path": [node.split("::")[-1] for node in chain],
+                        "files": [node.split("::")[0] for node in chain]
+                    })
+                
+                # Find most called functions
+                in_degree = dict(G.in_degree())
+                most_called = sorted(in_degree.items(), key=lambda x: x[1], reverse=True)[:10]  # Top 10 most called
+                for func_name, call_count in most_called:
+                    if call_count > 0:  # Only include functions that are actually called
+                        call_chain_analysis["most_called_functions"].append({
+                            "function": func_name.split("::")[-1],
+                            "file": func_name.split("::")[0],
+                            "call_count": call_count
+                        })
+                
+                # Identify complex call patterns (cycles, etc.)
+                try:
+                    cycles = list(nx.simple_cycles(G))
+                    for cycle in cycles:
+                        call_chain_analysis["complex_call_patterns"].append({
+                            "type": "cycle",
+                            "length": len(cycle),
+                            "functions": [node.split("::")[-1] for node in cycle],
+                            "files": [node.split("::")[0] for node in cycle]
+                        })
+                except nx.NetworkXNoCycle:
+                    pass
+            
+        except Exception as e:
+            call_chain_analysis["error"] = str(e)
+        
+        return call_chain_analysis
+    
+    def get_dead_code_detection_with_filtering(self, exclude_patterns: List[str] = None) -> Dict[str, Any]:
+        """
+        Detect unused code with configurable filters.
+        
+        This function identifies dead code (unused functions, classes, etc.) in the codebase
+        while allowing for customizable filters to exclude certain patterns.
+        
+        Args:
+            exclude_patterns: List of regex patterns to exclude from dead code detection
+                             (e.g., ["test_", ".*Controller", ".*Handler"])
+        
+        Returns:
+            Dict containing dead code analysis results with filtering
+        """
+        if exclude_patterns is None:
+            exclude_patterns = ["test_", ".*Test", ".*test", ".*Handler", ".*Controller", ".*Route"]
+        
+        dead_code_results = {
+            "unused_functions": [],
+            "unused_classes": [],
+            "unused_methods": [],
+            "total_unused_symbols": 0,
+            "excluded_symbols": [],
+            "filters_applied": exclude_patterns
+        }
+        
+        try:
+            # Compile regex patterns
+            compiled_patterns = [re.compile(pattern) for pattern in exclude_patterns]
+            
+            # Check for unused functions
+            for function in self.codebase.functions:
+                # Skip if function matches any exclude pattern
+                if any(pattern.search(function.name) for pattern in compiled_patterns):
+                    dead_code_results["excluded_symbols"].append({
+                        "type": "function",
+                        "name": function.name,
+                        "file": function.file.file_path if hasattr(function, "file") else "Unknown",
+                        "reason": "Matched exclude pattern"
+                    })
+                    continue
+                
+                # Skip if function has decorators (might be used indirectly)
+                if hasattr(function, "decorators") and function.decorators:
+                    dead_code_results["excluded_symbols"].append({
+                        "type": "function",
+                        "name": function.name,
+                        "file": function.file.file_path if hasattr(function, "file") else "Unknown",
+                        "reason": "Has decorators"
+                    })
+                    continue
+                
+                # Check if function has no usages
+                if not function.usages:
+                    dead_code_results["unused_functions"].append({
+                        "name": function.name,
+                        "file": function.file.file_path if hasattr(function, "file") else "Unknown",
+                        "line": function.span.start.line if hasattr(function, "span") else 0
+                    })
+            
+            # Check for unused classes
+            for cls in self.codebase.classes:
+                # Skip if class matches any exclude pattern
+                if any(pattern.search(cls.name) for pattern in compiled_patterns):
+                    dead_code_results["excluded_symbols"].append({
+                        "type": "class",
+                        "name": cls.name,
+                        "file": cls.file.file_path if hasattr(cls, "file") else "Unknown",
+                        "reason": "Matched exclude pattern"
+                    })
+                    continue
+                
+                # Check if class has no usages
+                if not cls.usages:
+                    dead_code_results["unused_classes"].append({
+                        "name": cls.name,
+                        "file": cls.file.file_path if hasattr(cls, "file") else "Unknown",
+                        "line": cls.span.start.line if hasattr(cls, "span") else 0
+                    })
+                
+                # Check for unused methods in the class
+                if hasattr(cls, "methods"):
+                    for method in cls.methods:
+                        # Skip if method matches any exclude pattern
+                        if any(pattern.search(method.name) for pattern in compiled_patterns):
+                            continue
+                        
+                        # Skip special methods (e.g., __init__, __str__)
+                        if method.name.startswith("__") and method.name.endswith("__"):
+                            continue
+                        
+                        # Check if method has no usages
+                        if not method.usages:
+                            dead_code_results["unused_methods"].append({
+                                "name": f"{cls.name}.{method.name}",
+                                "file": cls.file.file_path if hasattr(cls, "file") else "Unknown",
+                                "line": method.span.start.line if hasattr(method, "span") else 0
+                            })
+            
+            # Calculate total unused symbols
+            dead_code_results["total_unused_symbols"] = (
+                len(dead_code_results["unused_functions"]) +
+                len(dead_code_results["unused_classes"]) +
+                len(dead_code_results["unused_methods"])
+            )
+            
+        except Exception as e:
+            dead_code_results["error"] = str(e)
+        
+        return dead_code_results
+    
+    def get_path_finding_in_call_graphs(self, source_function: str = None, target_function: str = None, max_depth: int = 10) -> Dict[str, Any]:
+        """
+        Find paths between functions in the call graph.
+        
+        This function analyzes the call graph to find paths between specified functions,
+        or identifies interesting paths if no specific functions are provided.
+        
+        Args:
+            source_function: Name of the source function (optional)
+            target_function: Name of the target function (optional)
+            max_depth: Maximum depth for path finding (default: 10)
+        
+        Returns:
+            Dict containing path analysis results
+        """
+        path_finding_results = {
+            "paths": [],
+            "total_paths_found": 0,
+            "average_path_length": 0,
+            "max_path_length": 0,
+            "source_function": source_function,
+            "target_function": target_function
+        }
+        
+        try:
+            # Create a directed graph of function calls
+            G = nx.DiGraph()
+            
+            # Map to store function objects by their name
+            function_map = {}
+            
+            # Add nodes and edges to the graph
+            for function in self.codebase.functions:
+                function_name = function.name
+                G.add_node(function_name)
+                function_map[function_name] = function
+                
+                # Add edges for each function call
+                for call in function.function_calls:
+                    if hasattr(call, "function_definition") and call.function_definition:
+                        called_func = call.function_definition
+                        G.add_node(called_func.name)
+                        G.add_edge(function_name, called_func.name)
+                        function_map[called_func.name] = called_func
+            
+            # Find paths between specified functions
+            if source_function and target_function:
+                if source_function in G.nodes() and target_function in G.nodes():
+                    try:
+                        all_paths = list(nx.all_simple_paths(G, source_function, target_function, cutoff=max_depth))
+                        path_finding_results["total_paths_found"] = len(all_paths)
+                        
+                        if all_paths:
+                            path_lengths = [len(path) for path in all_paths]
+                            path_finding_results["average_path_length"] = sum(path_lengths) / len(path_lengths)
+                            path_finding_results["max_path_length"] = max(path_lengths)
+                            
+                            # Store the paths
+                            for path in all_paths:
+                                path_info = {
+                                    "length": len(path),
+                                    "path": path,
+                                    "files": [function_map[func].file.file_path if hasattr(function_map[func], "file") else "Unknown" for func in path]
+                                }
+                                path_finding_results["paths"].append(path_info)
+                    except (nx.NetworkXNoPath, nx.NodeNotFound):
+                        path_finding_results["error"] = f"No path found between {source_function} and {target_function}"
+                else:
+                    missing = []
+                    if source_function not in G.nodes():
+                        missing.append(source_function)
+                    if target_function not in G.nodes():
+                        missing.append(target_function)
+                    path_finding_results["error"] = f"Function(s) not found in codebase: {', '.join(missing)}"
+            else:
+                # If no specific functions provided, find interesting paths
+                # (e.g., longest paths, paths between entry points and leaf functions)
+                
+                # Find entry points (functions with no incoming edges)
+                entry_points = [node for node, in_degree in G.in_degree() if in_degree == 0]
+                
+                # Find leaf functions (functions with no outgoing edges)
+                leaf_functions = [node for node, out_degree in G.out_degree() if out_degree == 0]
+                
+                # Find paths from entry points to leaf functions
+                all_paths = []
+                for entry in entry_points[:5]:  # Limit to first 5 entry points for performance
+                    for leaf in leaf_functions[:5]:  # Limit to first 5 leaf functions for performance
+                        if entry != leaf:
+                            try:
+                                paths = list(nx.all_simple_paths(G, entry, leaf, cutoff=max_depth))
+                                all_paths.extend(paths)
+                            except (nx.NetworkXNoPath, nx.NodeNotFound):
+                                continue
+                
+                # Sort paths by length and take the top 10
+                all_paths.sort(key=len, reverse=True)
+                top_paths = all_paths[:10]
+                
+                path_finding_results["total_paths_found"] = len(top_paths)
+                
+                if top_paths:
+                    path_lengths = [len(path) for path in top_paths]
+                    path_finding_results["average_path_length"] = sum(path_lengths) / len(path_lengths)
+                    path_finding_results["max_path_length"] = max(path_lengths)
+                    
+                    # Store the paths
+                    for path in top_paths:
+                        path_info = {
+                            "length": len(path),
+                            "path": path,
+                            "files": [function_map[func].file.file_path if hasattr(function_map[func], "file") else "Unknown" for func in path]
+                        }
+                        path_finding_results["paths"].append(path_info)
+        
+        except Exception as e:
+            path_finding_results["error"] = str(e)
+        
+        return path_finding_results
+    
+    def get_dead_symbol_detection(self) -> Dict[str, Any]:
+        """
+        Detect unused symbols in the codebase.
+        
+        This function identifies unused symbols (variables, functions, classes, etc.)
+        across the entire codebase.
+        
+        Returns:
+            Dict containing dead symbol analysis results
+        """
+        dead_symbol_results = {
+            "unused_symbols": [],
+            "unused_by_type": {},
+            "total_unused": 0,
+            "total_symbols": 0,
+            "unused_percentage": 0
+        }
+        
+        try:
+            # Count total symbols
+            all_symbols = list(self.codebase.symbols)
+            dead_symbol_results["total_symbols"] = len(all_symbols)
+            
+            # Initialize counters for each symbol type
+            symbol_type_counts = defaultdict(int)
+            unused_type_counts = defaultdict(int)
+            
+            # Check each symbol for usages
+            unused_symbols = []
+            for symbol in all_symbols:
+                symbol_type = type(symbol).__name__
+                symbol_type_counts[symbol_type] += 1
+                
+                # Skip certain symbols that might appear unused but are actually used
+                # (e.g., entry points, special methods, etc.)
+                if (hasattr(symbol, "name") and symbol.name.startswith("__") and symbol.name.endswith("__")):
+                    continue
+                
+                # Check if symbol has no usages
+                if not symbol.usages:
+                    unused_type_counts[symbol_type] += 1
+                    
+                    # Get file and line information if available
+                    file_path = "Unknown"
+                    line_number = 0
+                    if hasattr(symbol, "file") and symbol.file:
+                        file_path = symbol.file.file_path
+                    if hasattr(symbol, "span") and symbol.span:
+                        line_number = symbol.span.start.line
+                    
+                    unused_symbols.append({
+                        "name": symbol.name if hasattr(symbol, "name") else "Unknown",
+                        "type": symbol_type,
+                        "file": file_path,
+                        "line": line_number
+                    })
+            
+            # Store results
+            dead_symbol_results["unused_symbols"] = unused_symbols
+            dead_symbol_results["unused_by_type"] = dict(unused_type_counts)
+            dead_symbol_results["total_unused"] = len(unused_symbols)
+            
+            # Calculate percentage
+            if dead_symbol_results["total_symbols"] > 0:
+                dead_symbol_results["unused_percentage"] = (
+                    dead_symbol_results["total_unused"] / dead_symbol_results["total_symbols"] * 100
+                )
+            
+        except Exception as e:
+            dead_symbol_results["error"] = str(e)
+        
+        return dead_symbol_results
+    
+    def get_symbol_import_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze how symbols are imported and used.
+        
+        This function analyzes import patterns across the codebase, identifying
+        how symbols are imported and used.
+        
+        Returns:
+            Dict containing symbol import analysis results
+        """
+        import_analysis = {
+            "import_patterns": {},
+            "most_imported_symbols": [],
+            "import_style_distribution": {},
+            "cross_file_imports": [],
+            "import_chains": [],
+            "total_imports": 0
+        }
+        
+        try:
+            # Analyze all imports in the codebase
+            all_imports = []
+            for file in self.codebase.files:
+                for imp in file.imports:
+                    all_imports.append(imp)
+            
+            import_analysis["total_imports"] = len(all_imports)
+            
+            # Analyze import styles
+            import_styles = defaultdict(int)
+            for imp in all_imports:
+                if hasattr(imp, "import_type"):
+                    import_styles[str(imp.import_type)] += 1
+                elif "from" in imp.source:
+                    import_styles["from_import"] += 1
+                else:
+                    import_styles["direct_import"] += 1
+            
+            import_analysis["import_style_distribution"] = dict(import_styles)
+            
+            # Track imported symbols and their usage
+            imported_symbols = defaultdict(list)
+            for file in self.codebase.files:
+                for symbol in file.symbols:
+                    if hasattr(symbol, "usages"):
+                        # Find usages in other files
+                        for usage in symbol.usages:
+                            if hasattr(usage, "file") and usage.file != file:
+                                imported_symbols[symbol.name].append({
+                                    "symbol": symbol.name,
+                                    "defined_in": file.file_path,
+                                    "used_in": usage.file.file_path if hasattr(usage.file, "file_path") else "Unknown",
+                                    "usage_type": str(usage.usage_type) if hasattr(usage, "usage_type") else "Unknown"
+                                })
+            
+            # Find most imported symbols
+            symbol_import_counts = {symbol: len(usages) for symbol, usages in imported_symbols.items()}
+            most_imported = sorted(symbol_import_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            
+            import_analysis["most_imported_symbols"] = [
+                {"symbol": symbol, "import_count": count} for symbol, count in most_imported
+            ]
+            
+            # Analyze import patterns
+            import_patterns = defaultdict(int)
+            for imp in all_imports:
+                pattern = "unknown"
+                if hasattr(imp, "module_name") and imp.module_name:
+                    if "." in imp.module_name:
+                        pattern = "nested_module"
+                    else:
+                        pattern = "top_level_module"
+                
+                if hasattr(imp, "symbols") and imp.symbols:
+                    if len(imp.symbols) == 1:
+                        pattern += "_single_symbol"
+                    else:
+                        pattern += "_multiple_symbols"
+                
+                import_patterns[pattern] += 1
+            
+            import_analysis["import_patterns"] = dict(import_patterns)
+            
+            # Find cross-file imports (files that import from many other files)
+            file_import_counts = defaultdict(int)
+            for file in self.codebase.files:
+                unique_imported_files = set()
+                for imp in file.imports:
+                    if hasattr(imp, "from_file") and imp.from_file:
+                        unique_imported_files.add(imp.from_file.file_path)
+                
+                file_import_counts[file.file_path] = len(unique_imported_files)
+            
+            # Get top 10 files with most imports
+            top_importing_files = sorted(file_import_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            import_analysis["cross_file_imports"] = [
+                {"file": file, "imports_from_unique_files": count} for file, count in top_importing_files
+            ]
+            
+            # Analyze import chains (A imports B imports C)
+            # This is a simplified version - a full analysis would be more complex
+            import_chains = []
+            for file in self.codebase.files:
+                for imp in file.imports:
+                    if hasattr(imp, "from_file") and imp.from_file:
+                        imported_file = imp.from_file
+                        if hasattr(imported_file, "imports") and imported_file.imports:
+                            for second_level_imp in imported_file.imports:
+                                if hasattr(second_level_imp, "from_file") and second_level_imp.from_file:
+                                    import_chains.append({
+                                        "chain": [file.file_path, imported_file.file_path, second_level_imp.from_file.file_path],
+                                        "length": 3
+                                    })
+            
+            # Limit to top 10 chains
+            import_analysis["import_chains"] = import_chains[:10]
+            
+        except Exception as e:
+            import_analysis["error"] = str(e)
+        
+        return import_analysis
+    
+    def get_dependency_graph_traversal(self, start_symbol: str = None, max_depth: int = 5) -> Dict[str, Any]:
+        """
+        Traverse and analyze dependency graphs.
+        
+        This function traverses the dependency graph starting from a specified symbol
+        (or from key entry points if no symbol is specified) and analyzes the relationships.
+        
+        Args:
+            start_symbol: Name of the symbol to start traversal from (optional)
+            max_depth: Maximum depth for traversal (default: 5)
+        
+        Returns:
+            Dict containing dependency graph traversal results
+        """
+        traversal_results = {
+            "dependencies": {},
+            "dependency_counts": {},
+            "max_depth_reached": 0,
+            "total_dependencies": 0,
+            "start_symbol": start_symbol
+        }
+        
+        try:
+            # Find the starting symbol if specified
+            start_symbols = []
+            if start_symbol:
+                for symbol in self.codebase.symbols:
+                    if hasattr(symbol, "name") and symbol.name == start_symbol:
+                        start_symbols.append(symbol)
+                        break
+                
+                if not start_symbols:
+                    traversal_results["error"] = f"Symbol '{start_symbol}' not found in codebase"
+                    return traversal_results
+            else:
+                # If no start symbol specified, use entry points or important symbols
+                # (e.g., main functions, public classes, etc.)
+                for symbol in self.codebase.symbols:
+                    if (hasattr(symbol, "name") and 
+                        (symbol.name == "main" or 
+                         symbol.name.startswith("public") or 
+                         (hasattr(symbol, "is_public") and symbol.is_public))):
+                        start_symbols.append(symbol)
+                
+                # Limit to top 5 symbols for performance
+                start_symbols = start_symbols[:5]
+                
+                if not start_symbols:
+                    # If still no symbols found, just use the first 5 symbols
+                    start_symbols = list(self.codebase.symbols)[:5]
+            
+            # Traverse the dependency graph for each start symbol
+            all_dependencies = {}
+            dependency_counts = {}
+            max_depth_reached = 0
+            
+            for start in start_symbols:
+                visited = set()
+                current_depth = 0
+                
+                def traverse(symbol, depth):
+                    nonlocal current_depth, max_depth_reached
+                    
+                    if depth > max_depth or symbol in visited:
+                        return
+                    
+                    visited.add(symbol)
+                    current_depth = max(current_depth, depth)
+                    max_depth_reached = max(max_depth_reached, depth)
+                    
+                    # Get symbol name and file
+                    symbol_name = symbol.name if hasattr(symbol, "name") else "Unknown"
+                    symbol_file = symbol.file.file_path if hasattr(symbol, "file") and symbol.file else "Unknown"
+                    symbol_key = f"{symbol_file}::{symbol_name}"
+                    
+                    # Initialize dependency list for this symbol
+                    if symbol_key not in all_dependencies:
+                        all_dependencies[symbol_key] = []
+                    
+                    # Get direct dependencies
+                    direct_deps = []
+                    if hasattr(symbol, "dependencies"):
+                        direct_deps = list(symbol.dependencies)
+                    
+                    # Record dependencies
+                    for dep in direct_deps:
+                        dep_name = dep.name if hasattr(dep, "name") else "Unknown"
+                        dep_file = dep.file.file_path if hasattr(dep, "file") and dep.file else "Unknown"
+                        dep_key = f"{dep_file}::{dep_name}"
+                        
+                        # Add to dependencies list
+                        all_dependencies[symbol_key].append({
+                            "name": dep_name,
+                            "file": dep_file,
+                            "type": type(dep).__name__
+                        })
+                        
+                        # Update dependency count
+                        if dep_key not in dependency_counts:
+                            dependency_counts[dep_key] = 0
+                        dependency_counts[dep_key] += 1
+                        
+                        # Continue traversal
+                        traverse(dep, depth + 1)
+                
+                # Start traversal from this symbol
+                traverse(start, 0)
+            
+            # Store results
+            traversal_results["dependencies"] = all_dependencies
+            traversal_results["dependency_counts"] = dependency_counts
+            traversal_results["max_depth_reached"] = max_depth_reached
+            traversal_results["total_dependencies"] = sum(len(deps) for deps in all_dependencies.values())
+            
+        except Exception as e:
+            traversal_results["error"] = str(e)
+        
+        return traversal_results
+
+    def get_type_resolution(self) -> Dict[str, Any]:
+        """
+        Resolve and analyze type annotations.
+        
+        This function analyzes type annotations across the codebase, resolving
+        types to their actual definitions and providing insights into type usage.
+        
+        Returns:
+            Dict containing type resolution analysis results
+        """
+        type_resolution = {
+            "resolved_types": [],
+            "unresolved_types": [],
+            "resolution_success_rate": 0,
+            "type_distribution": {},
+            "complex_type_examples": []
+        }
+        
+        try:
+            # Track all type annotations
+            all_types = []
+            resolved_count = 0
+            unresolved_count = 0
+            type_distribution = defaultdict(int)
+            
+            # Analyze function return types
+            for function in self.codebase.functions:
+                if hasattr(function, "return_type") and function.return_type:
+                    return_type = function.return_type
+                    all_types.append(return_type)
+                    
+                    # Get type name and kind
+                    type_name = return_type.source if hasattr(return_type, "source") else "Unknown"
+                    type_kind = type(return_type).__name__
+                    type_distribution[type_kind] += 1
+                    
+                    # Try to resolve the type
+                    resolved = False
+                    resolved_value = None
+                    if hasattr(return_type, "resolved_value"):
+                        resolved_value = return_type.resolved_value
+                        resolved = resolved_value is not None
+                    
+                    if resolved:
+                        resolved_count += 1
+                        type_resolution["resolved_types"].append({
+                            "context": f"Return type of {function.name}",
+                            "type": type_name,
+                            "kind": type_kind,
+                            "file": function.file.file_path if hasattr(function, "file") else "Unknown"
+                        })
+                    else:
+                        unresolved_count += 1
+                        type_resolution["unresolved_types"].append({
+                            "context": f"Return type of {function.name}",
+                            "type": type_name,
+                            "kind": type_kind,
+                            "file": function.file.file_path if hasattr(function, "file") else "Unknown"
+                        })
+                    
+                    # Check for complex types (generic, union, etc.)
+                    is_complex = False
+                    if hasattr(return_type, "parameters") or hasattr(return_type, "options"):
+                        is_complex = True
+                    
+                    if is_complex:
+                        type_resolution["complex_type_examples"].append({
+                            "context": f"Return type of {function.name}",
+                            "type": type_name,
+                            "kind": type_kind,
+                            "file": function.file.file_path if hasattr(function, "file") else "Unknown"
+                        })
+            
+            # Analyze parameter types
+            for function in self.codebase.functions:
+                for param in function.parameters:
+                    if hasattr(param, "type") and param.type:
+                        param_type = param.type
+                        all_types.append(param_type)
+                        
+                        # Get type name and kind
+                        type_name = param_type.source if hasattr(param_type, "source") else "Unknown"
+                        type_kind = type(param_type).__name__
+                        type_distribution[type_kind] += 1
+                        
+                        # Try to resolve the type
+                        resolved = False
+                        resolved_value = None
+                        if hasattr(param_type, "resolved_value"):
+                            resolved_value = param_type.resolved_value
+                            resolved = resolved_value is not None
+                        
+                        if resolved:
+                            resolved_count += 1
+                            type_resolution["resolved_types"].append({
+                                "context": f"Parameter {param.name} of {function.name}",
+                                "type": type_name,
+                                "kind": type_kind,
+                                "file": function.file.file_path if hasattr(function, "file") else "Unknown"
+                            })
+                        else:
+                            unresolved_count += 1
+                            type_resolution["unresolved_types"].append({
+                                "context": f"Parameter {param.name} of {function.name}",
+                                "type": type_name,
+                                "kind": type_kind,
+                                "file": function.file.file_path if hasattr(function, "file") else "Unknown"
+                            })
+                        
+                        # Check for complex types (generic, union, etc.)
+                        is_complex = False
+                        if hasattr(param_type, "parameters") or hasattr(param_type, "options"):
+                            is_complex = True
+                        
+                        if is_complex:
+                            type_resolution["complex_type_examples"].append({
+                                "context": f"Parameter {param.name} of {function.name}",
+                                "type": type_name,
+                                "kind": type_kind,
+                                "file": function.file.file_path if hasattr(function, "file") else "Unknown"
+                            })
+            
+            # Calculate resolution success rate
+            total_types = resolved_count + unresolved_count
+            if total_types > 0:
+                type_resolution["resolution_success_rate"] = (resolved_count / total_types) * 100
+            
+            # Store type distribution
+            type_resolution["type_distribution"] = dict(type_distribution)
+            
+            # Limit the number of examples to avoid excessive output
+            type_resolution["resolved_types"] = type_resolution["resolved_types"][:20]
+            type_resolution["unresolved_types"] = type_resolution["unresolved_types"][:20]
+            type_resolution["complex_type_examples"] = type_resolution["complex_type_examples"][:20]
+            
+        except Exception as e:
+            type_resolution["error"] = str(e)
+        
+        return type_resolution
+    
+    def get_generic_type_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze generic type usage.
+        
+        This function analyzes how generic types (e.g., List[T], Dict[K, V]) are used
+        across the codebase, identifying patterns and potential issues.
+        
+        Returns:
+            Dict containing generic type analysis results
+        """
+        generic_analysis = {
+            "generic_types": [],
+            "most_common_generics": [],
+            "nested_generics": [],
+            "generic_type_distribution": {},
+            "total_generic_types": 0
+        }
+        
+        try:
+            # Track all generic types
+            all_generics = []
+            generic_counts = defaultdict(int)
+            
+            # Helper function to process a type annotation
+            def process_type(type_annotation, context):
+                if hasattr(type_annotation, "parameters"):  # It's a generic type
+                    # Get base type and parameters
+                    base_type = type_annotation.base if hasattr(type_annotation, "base") else "Unknown"
+                    params = []
+                    if hasattr(type_annotation, "parameters"):
+                        params = [param.source if hasattr(param, "source") else "Unknown" 
+                                 for param in type_annotation.parameters]
+                    
+                    # Create generic type info
+                    generic_info = {
+                        "base": base_type,
+                        "parameters": params,
+                        "source": type_annotation.source if hasattr(type_annotation, "source") else "Unknown",
+                        "context": context,
+                        "is_nested": any("List" in p or "Dict" in p or "Set" in p or "Tuple" in p for p in params)
+                    }
+                    
+                    all_generics.append(generic_info)
+                    generic_counts[base_type] += 1
+                    
+                    # Check for nested generics
+                    if generic_info["is_nested"]:
+                        generic_analysis["nested_generics"].append(generic_info)
+            
+            # Analyze function return types
+            for function in self.codebase.functions:
+                if hasattr(function, "return_type") and function.return_type:
+                    process_type(function.return_type, 
+                                f"Return type of {function.name} in {function.file.file_path if hasattr(function, 'file') else 'Unknown'}")
+            
+            # Analyze parameter types
+            for function in self.codebase.functions:
+                for param in function.parameters:
+                    if hasattr(param, "type") and param.type:
+                        process_type(param.type, 
+                                    f"Parameter {param.name} of {function.name} in {function.file.file_path if hasattr(function, 'file') else 'Unknown'}")
+            
+            # Analyze variable types
+            for file in self.codebase.files:
+                for assignment in file.assignments:
+                    if hasattr(assignment, "type") and assignment.type:
+                        process_type(assignment.type, 
+                                    f"Variable {assignment.name if hasattr(assignment, 'name') else 'Unknown'} in {file.file_path}")
+            
+            # Store results
+            generic_analysis["generic_types"] = all_generics[:50]  # Limit to 50 examples
+            generic_analysis["total_generic_types"] = len(all_generics)
+            generic_analysis["generic_type_distribution"] = dict(generic_counts)
+            
+            # Get most common generic types
+            most_common = sorted(generic_counts.items(), key=lambda x: x[1], reverse=True)
+            generic_analysis["most_common_generics"] = [
+                {"base": base, "count": count} for base, count in most_common[:10]
+            ]
+            
+        except Exception as e:
+            generic_analysis["error"] = str(e)
+        
+        return generic_analysis
+    
+    def get_union_type_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze union type usage.
+        
+        This function analyzes how union types (e.g., A | B, Union[X, Y]) are used
+        across the codebase, identifying patterns and potential issues.
+        
+        Returns:
+            Dict containing union type analysis results
+        """
+        union_analysis = {
+            "union_types": [],
+            "common_union_patterns": [],
+            "optional_types": [],  # Union with None/undefined
+            "complex_unions": [],  # Unions with more than 2 types
+            "total_union_types": 0
+        }
+        
+        try:
+            # Track all union types
+            all_unions = []
+            union_patterns = defaultdict(int)
+            optional_types = []
+            complex_unions = []
+            
+            # Helper function to process a type annotation
+            def process_type(type_annotation, context):
+                if hasattr(type_annotation, "options"):  # It's a union type
+                    # Get options
+                    options = []
+                    if hasattr(type_annotation, "options"):
+                        options = [opt.source if hasattr(opt, "source") else "Unknown" 
+                                  for opt in type_annotation.options]
+                    
+                    # Create union type info
+                    union_info = {
+                        "options": options,
+                        "source": type_annotation.source if hasattr(type_annotation, "source") else "Unknown",
+                        "context": context,
+                        "is_optional": any(opt in ["None", "null", "undefined"] for opt in options),
+                        "is_complex": len(options) > 2
+                    }
+                    
+                    all_unions.append(union_info)
+                    
+                    # Track union pattern
+                    pattern = "|".join(sorted(options))
+                    union_patterns[pattern] += 1
+                    
+                    # Track optional types
+                    if union_info["is_optional"]:
+                        optional_types.append(union_info)
+                    
+                    # Track complex unions
+                    if union_info["is_complex"]:
+                        complex_unions.append(union_info)
+            
+            # Analyze function return types
+            for function in self.codebase.functions:
+                if hasattr(function, "return_type") and function.return_type:
+                    process_type(function.return_type, 
+                                f"Return type of {function.name} in {function.file.file_path if hasattr(function, 'file') else 'Unknown'}")
+            
+            # Analyze parameter types
+            for function in self.codebase.functions:
+                for param in function.parameters:
+                    if hasattr(param, "type") and param.type:
+                        process_type(param.type, 
+                                    f"Parameter {param.name} of {function.name} in {function.file.file_path if hasattr(function, 'file') else 'Unknown'}")
+            
+            # Analyze variable types
+            for file in self.codebase.files:
+                for assignment in file.assignments:
+                    if hasattr(assignment, "type") and assignment.type:
+                        process_type(assignment.type, 
+                                    f"Variable {assignment.name if hasattr(assignment, 'name') else 'Unknown'} in {file.file_path}")
+            
+            # Store results
+            union_analysis["union_types"] = all_unions[:50]  # Limit to 50 examples
+            union_analysis["total_union_types"] = len(all_unions)
+            union_analysis["optional_types"] = optional_types[:20]  # Limit to 20 examples
+            union_analysis["complex_unions"] = complex_unions[:20]  # Limit to 20 examples
+            
+            # Get common union patterns
+            common_patterns = sorted(union_patterns.items(), key=lambda x: x[1], reverse=True)
+            union_analysis["common_union_patterns"] = [
+                {"pattern": pattern, "count": count} for pattern, count in common_patterns[:10]
+            ]
+            
+        except Exception as e:
+            union_analysis["error"] = str(e)
+        
+        return union_analysis
+    
+    def get_comprehensive_type_coverage_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze type coverage across the codebase.
+        
+        This function provides a comprehensive analysis of type coverage,
+        including statistics by file, module, and symbol type.
+        
+        Returns:
+            Dict containing comprehensive type coverage analysis results
+        """
+        coverage_analysis = {
+            "overall_coverage": {
+                "total_symbols": 0,
+                "typed_symbols": 0,
+                "coverage_percentage": 0
+            },
+            "coverage_by_file": [],
+            "coverage_by_module": {},
+            "coverage_by_symbol_type": {},
+            "untyped_symbols": [],
+            "partially_typed_functions": []
+        }
+        
+        try:
+            # Initialize counters
+            total_symbols = 0
+            typed_symbols = 0
+            file_coverage = {}
+            module_coverage = defaultdict(lambda: {"total": 0, "typed": 0})
+            symbol_type_coverage = defaultdict(lambda: {"total": 0, "typed": 0})
+            untyped_symbols = []
+            partially_typed_functions = []
+            
+            # Analyze function return types and parameters
+            for function in self.codebase.functions:
+                function_file = function.file.file_path if hasattr(function, "file") else "Unknown"
+                module_name = function_file.split("/")[0] if "/" in function_file else "root"
+                
+                # Initialize file coverage if needed
+                if function_file not in file_coverage:
+                    file_coverage[function_file] = {"total": 0, "typed": 0}
+                
+                # Check return type
+                total_symbols += 1
+                file_coverage[function_file]["total"] += 1
+                module_coverage[module_name]["total"] += 1
+                symbol_type_coverage["function_return"]["total"] += 1
+                
+                has_return_type = hasattr(function, "return_type") and function.return_type and function.return_type.is_typed
+                if has_return_type:
+                    typed_symbols += 1
+                    file_coverage[function_file]["typed"] += 1
+                    module_coverage[module_name]["typed"] += 1
+                    symbol_type_coverage["function_return"]["typed"] += 1
+                else:
+                    untyped_symbols.append({
+                        "name": function.name,
+                        "type": "function_return",
+                        "file": function_file
+                    })
+                
+                # Check parameter types
+                param_count = len(function.parameters)
+                typed_param_count = sum(1 for param in function.parameters if hasattr(param, "type") and param.type and param.type.is_typed)
+                
+                total_symbols += param_count
+                file_coverage[function_file]["total"] += param_count
+                module_coverage[module_name]["total"] += param_count
+                symbol_type_coverage["function_parameter"]["total"] += param_count
+                
+                typed_symbols += typed_param_count
+                file_coverage[function_file]["typed"] += typed_param_count
+                module_coverage[module_name]["typed"] += typed_param_count
+                symbol_type_coverage["function_parameter"]["typed"] += typed_param_count
+                
+                # Track partially typed functions
+                if 0 < typed_param_count < param_count or (not has_return_type and typed_param_count > 0):
+                    partially_typed_functions.append({
+                        "name": function.name,
+                        "file": function_file,
+                        "total_parameters": param_count,
+                        "typed_parameters": typed_param_count,
+                        "has_return_type": has_return_type
+                    })
+                
+                # Track untyped parameters
+                for param in function.parameters:
+                    if not (hasattr(param, "type") and param.type and param.type.is_typed):
+                        untyped_symbols.append({
+                            "name": f"{function.name}.{param.name}",
+                            "type": "function_parameter",
+                            "file": function_file
+                        })
+            
+            # Analyze variable types
+            for file in self.codebase.files:
+                file_path = file.file_path
+                module_name = file_path.split("/")[0] if "/" in file_path else "root"
+                
+                # Initialize file coverage if needed
+                if file_path not in file_coverage:
+                    file_coverage[file_path] = {"total": 0, "typed": 0}
+                
+                for assignment in file.assignments:
+                    total_symbols += 1
+                    file_coverage[file_path]["total"] += 1
+                    module_coverage[module_name]["total"] += 1
+                    symbol_type_coverage["variable"]["total"] += 1
+                    
+                    if hasattr(assignment, "type") and assignment.type and assignment.type.is_typed:
+                        typed_symbols += 1
+                        file_coverage[file_path]["typed"] += 1
+                        module_coverage[module_name]["typed"] += 1
+                        symbol_type_coverage["variable"]["typed"] += 1
+                    else:
+                        untyped_symbols.append({
+                            "name": assignment.name if hasattr(assignment, "name") else "Unknown",
+                            "type": "variable",
+                            "file": file_path
+                        })
+            
+            # Analyze class attribute types
+            for cls in self.codebase.classes:
+                class_file = cls.file.file_path if hasattr(cls, "file") else "Unknown"
+                module_name = class_file.split("/")[0] if "/" in class_file else "root"
+                
+                # Initialize file coverage if needed
+                if class_file not in file_coverage:
+                    file_coverage[class_file] = {"total": 0, "typed": 0}
+                
+                if hasattr(cls, "attributes"):
+                    for attr in cls.attributes:
+                        total_symbols += 1
+                        file_coverage[class_file]["total"] += 1
+                        module_coverage[module_name]["total"] += 1
+                        symbol_type_coverage["class_attribute"]["total"] += 1
+                        
+                        if hasattr(attr, "is_typed") and attr.is_typed:
+                            typed_symbols += 1
+                            file_coverage[class_file]["typed"] += 1
+                            module_coverage[module_name]["typed"] += 1
+                            symbol_type_coverage["class_attribute"]["typed"] += 1
+                        else:
+                            untyped_symbols.append({
+                                "name": f"{cls.name}.{attr.name if hasattr(attr, 'name') else 'Unknown'}",
+                                "type": "class_attribute",
+                                "file": class_file
+                            })
+            
+            # Calculate overall coverage
+            coverage_analysis["overall_coverage"]["total_symbols"] = total_symbols
+            coverage_analysis["overall_coverage"]["typed_symbols"] = typed_symbols
+            if total_symbols > 0:
+                coverage_analysis["overall_coverage"]["coverage_percentage"] = (typed_symbols / total_symbols) * 100
+            
+            # Calculate file coverage percentages and sort by coverage
+            file_coverage_list = []
+            for file_path, counts in file_coverage.items():
+                if counts["total"] > 0:
+                    percentage = (counts["typed"] / counts["total"]) * 100
+                    file_coverage_list.append({
+                        "file": file_path,
+                        "total_symbols": counts["total"],
+                        "typed_symbols": counts["typed"],
+                        "coverage_percentage": percentage
+                    })
+            
+            # Sort by coverage percentage (ascending, so lowest coverage first)
+            file_coverage_list.sort(key=lambda x: x["coverage_percentage"])
+            coverage_analysis["coverage_by_file"] = file_coverage_list
+            
+            # Calculate module coverage percentages
+            for module, counts in module_coverage.items():
+                if counts["total"] > 0:
+                    percentage = (counts["typed"] / counts["total"]) * 100
+                    coverage_analysis["coverage_by_module"][module] = {
+                        "total_symbols": counts["total"],
+                        "typed_symbols": counts["typed"],
+                        "coverage_percentage": percentage
+                    }
+            
+            # Calculate symbol type coverage percentages
+            for symbol_type, counts in symbol_type_coverage.items():
+                if counts["total"] > 0:
+                    percentage = (counts["typed"] / counts["total"]) * 100
+                    coverage_analysis["coverage_by_symbol_type"][symbol_type] = {
+                        "total_symbols": counts["total"],
+                        "typed_symbols": counts["typed"],
+                        "coverage_percentage": percentage
+                    }
+            
+            # Limit the number of untyped symbols to avoid excessive output
+            coverage_analysis["untyped_symbols"] = untyped_symbols[:100]
+            coverage_analysis["partially_typed_functions"] = partially_typed_functions[:50]
+            
+        except Exception as e:
+            coverage_analysis["error"] = str(e)
+        
+        return coverage_analysis
+    
+    def get_enhanced_return_type_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze return type patterns.
+        
+        This function provides an enhanced analysis of return type patterns
+        across the codebase, identifying common patterns and potential issues.
+        
+        Returns:
+            Dict containing enhanced return type analysis results
+        """
+        return_type_analysis = {
+            "return_type_distribution": {},
+            "return_type_by_module": {},
+            "functions_without_return_types": [],
+            "inconsistent_return_types": [],
+            "return_type_suggestions": [],
+            "total_functions": 0,
+            "functions_with_return_types": 0
+        }
+        
+        try:
+            # Initialize counters
+            total_functions = 0
+            functions_with_return_types = 0
+            return_type_counts = defaultdict(int)
+            module_return_types = defaultdict(lambda: defaultdict(int))
+            functions_without_return_types = []
+            inconsistent_return_types = []
+            return_type_suggestions = []
+            
+            # Analyze all functions
+            for function in self.codebase.functions:
+                total_functions += 1
+                function_file = function.file.file_path if hasattr(function, "file") else "Unknown"
+                module_name = function_file.split("/")[0] if "/" in function_file else "root"
+                
+                # Check if function has a return type
+                has_return_type = hasattr(function, "return_type") and function.return_type and function.return_type.is_typed
+                
+                if has_return_type:
+                    functions_with_return_types += 1
+                    return_type = function.return_type.source if hasattr(function.return_type, "source") else "Unknown"
+                    return_type_counts[return_type] += 1
+                    module_return_types[module_name][return_type] += 1
+                else:
+                    # Track functions without return types
+                    functions_without_return_types.append({
+                        "name": function.name,
+                        "file": function_file,
+                        "has_return_statements": len(function.return_statements) > 0 if hasattr(function, "return_statements") else "Unknown"
+                    })
+                    
+                    # Try to suggest a return type based on return statements
+                    if hasattr(function, "return_statements") and function.return_statements:
+                        return_values = []
+                        for ret_stmt in function.return_statements:
+                            if hasattr(ret_stmt, "value") and ret_stmt.value:
+                                return_values.append(ret_stmt.value.source if hasattr(ret_stmt.value, "source") else "Unknown")
+                        
+                        if return_values:
+                            suggested_type = "Any"  # Default suggestion
+                            
+                            # Simple heuristic for suggesting types
+                            if all("None" in val or val == "None" for val in return_values):
+                                suggested_type = "None"
+                            elif all(val.startswith('"') or val.startswith("'") for val in return_values):
+                                suggested_type = "str"
+                            elif all(val.isdigit() for val in return_values):
+                                suggested_type = "int"
+                            elif all("." in val and all(part.isdigit() for part in val.split(".")) for val in return_values):
+                                suggested_type = "float"
+                            elif all(val in ["True", "False"] for val in return_values):
+                                suggested_type = "bool"
+                            elif all("[" in val and "]" in val for val in return_values):
+                                suggested_type = "List"
+                            elif all("{" in val and "}" in val for val in return_values):
+                                if all(":" in val for val in return_values):
+                                    suggested_type = "Dict"
+                                else:
+                                    suggested_type = "Set"
+                            
+                            return_type_suggestions.append({
+                                "function": function.name,
+                                "file": function_file,
+                                "return_values": return_values[:3],  # Limit to first 3 for brevity
+                                "suggested_type": suggested_type
+                            })
+                
+                # Check for inconsistent return types
+                if hasattr(function, "return_statements") and len(function.return_statements) > 1:
+                    return_values = []
+                    for ret_stmt in function.return_statements:
+                        if hasattr(ret_stmt, "value") and ret_stmt.value:
+                            return_values.append(ret_stmt.value.source if hasattr(ret_stmt.value, "source") else "Unknown")
+                    
+                    # Check if return values appear to be of different types
+                    value_types = set()
+                    for val in return_values:
+                        if val.startswith('"') or val.startswith("'"):
+                            value_types.add("str")
+                        elif val.isdigit():
+                            value_types.add("int")
+                        elif "." in val and all(part.isdigit() for part in val.split(".")):
+                            value_types.add("float")
+                        elif val in ["True", "False"]:
+                            value_types.add("bool")
+                        elif val == "None":
+                            value_types.add("None")
+                        elif "[" in val and "]" in val:
+                            value_types.add("List")
+                        elif "{" in val and "}" in val:
+                            if ":" in val:
+                                value_types.add("Dict")
+                            else:
+                                value_types.add("Set")
+                        else:
+                            value_types.add("Other")
+                    
+                    if len(value_types) > 1:
+                        inconsistent_return_types.append({
+                            "function": function.name,
+                            "file": function_file,
+                            "return_values": return_values[:3],  # Limit to first 3 for brevity
+                            "apparent_types": list(value_types),
+                            "has_return_type": has_return_type,
+                            "return_type": function.return_type.source if has_return_type and hasattr(function.return_type, "source") else None
+                        })
+            
+            # Store results
+            return_type_analysis["total_functions"] = total_functions
+            return_type_analysis["functions_with_return_types"] = functions_with_return_types
+            return_type_analysis["return_type_distribution"] = dict(return_type_counts)
+            return_type_analysis["return_type_by_module"] = {module: dict(types) for module, types in module_return_types.items()}
+            
+            # Limit the number of items to avoid excessive output
+            return_type_analysis["functions_without_return_types"] = functions_without_return_types[:50]
+            return_type_analysis["inconsistent_return_types"] = inconsistent_return_types[:30]
+            return_type_analysis["return_type_suggestions"] = return_type_suggestions[:50]
+            
+        except Exception as e:
+            return_type_analysis["error"] = str(e)
+        
+        return return_type_analysis
+
+    def get_unused_variable_detection(self) -> Dict[str, Any]:
+        """
+        Detect unused variables.
+        
+        This function identifies unused variables across the codebase,
+        helping to clean up dead code and improve code quality.
+        
+        Returns:
+            Dict containing unused variable analysis results
+        """
+        unused_var_results = {
+            "unused_local_variables": [],
+            "unused_global_variables": [],
+            "unused_class_attributes": [],
+            "total_unused_variables": 0,
+            "by_file": {}
+        }
+        
+        try:
+            # Track unused variables by file
+            file_unused_vars = defaultdict(int)
+            
+            # Check for unused local variables in functions
+            for function in self.codebase.functions:
+                function_file = function.file.file_path if hasattr(function, "file") else "Unknown"
+                
+                if hasattr(function, "code_block") and hasattr(function.code_block, "local_var_assignments"):
+                    for var_assignment in function.code_block.local_var_assignments:
+                        # Check if variable has no usages
+                        if hasattr(var_assignment, "local_usages") and not var_assignment.local_usages:
+                            unused_var_results["unused_local_variables"].append({
+                                "name": var_assignment.name if hasattr(var_assignment, "name") else "Unknown",
+                                "function": function.name,
+                                "file": function_file,
+                                "line": var_assignment.span.start.line if hasattr(var_assignment, "span") else 0
+                            })
+                            file_unused_vars[function_file] += 1
+            
+            # Check for unused global variables
+            for file in self.codebase.files:
+                for assignment in file.assignments:
+                    # Skip function and class definitions
+                    if not (hasattr(assignment, "is_function") and assignment.is_function) and \
+                       not (hasattr(assignment, "is_class") and assignment.is_class):
+                        # Check if variable has no usages
+                        if hasattr(assignment, "usages") and not assignment.usages:
+                            unused_var_results["unused_global_variables"].append({
+                                "name": assignment.name if hasattr(assignment, "name") else "Unknown",
+                                "file": file.file_path,
+                                "line": assignment.span.start.line if hasattr(assignment, "span") else 0
+                            })
+                            file_unused_vars[file.file_path] += 1
+            
+            # Check for unused class attributes
+            for cls in self.codebase.classes:
+                class_file = cls.file.file_path if hasattr(cls, "file") else "Unknown"
+                
+                if hasattr(cls, "attributes"):
+                    for attr in cls.attributes:
+                        # Skip special attributes (e.g., __init__, __dict__)
+                        if hasattr(attr, "name") and attr.name.startswith("__") and attr.name.endswith("__"):
+                            continue
+                        
+                        # Check if attribute has no usages
+                        if hasattr(attr, "usages") and not attr.usages:
+                            unused_var_results["unused_class_attributes"].append({
+                                "name": attr.name if hasattr(attr, "name") else "Unknown",
+                                "class": cls.name,
+                                "file": class_file,
+                                "line": attr.span.start.line if hasattr(attr, "span") else 0
+                            })
+                            file_unused_vars[class_file] += 1
+            
+            # Calculate total unused variables
+            unused_var_results["total_unused_variables"] = (
+                len(unused_var_results["unused_local_variables"]) +
+                len(unused_var_results["unused_global_variables"]) +
+                len(unused_var_results["unused_class_attributes"])
+            )
+            
+            # Store unused variables by file
+            unused_var_results["by_file"] = dict(file_unused_vars)
+            
+        except Exception as e:
+            unused_var_results["error"] = str(e)
+        
+        return unused_var_results
+    
+    def get_dependency_graph_creation(self) -> Dict[str, Any]:
+        """
+        Create dependency graphs.
+        
+        This function creates and analyzes dependency graphs for the codebase,
+        providing insights into module relationships and dependencies.
+        
+        Returns:
+            Dict containing dependency graph analysis results
+        """
+        dependency_graph_results = {
+            "module_graph": {},
+            "file_graph": {},
+            "symbol_graph": {},
+            "stats": {
+                "total_nodes": 0,
+                "total_edges": 0,
+                "avg_dependencies": 0,
+                "max_dependencies": 0,
+                "most_dependent_modules": []
+            }
+        }
+        
+        try:
+            # Create module-level dependency graph
+            module_graph = defaultdict(set)
+            file_graph = defaultdict(set)
+            symbol_graph = defaultdict(set)
+            
+            # Track dependencies at file level
+            for file in self.codebase.files:
+                file_path = file.file_path
+                module_name = file_path.split("/")[0] if "/" in file_path else "root"
+                
+                # Track file dependencies through imports
+                for imp in file.imports:
+                    if hasattr(imp, "from_file") and imp.from_file:
+                        imported_file = imp.from_file.file_path
+                        imported_module = imported_file.split("/")[0] if "/" in imported_file else "root"
+                        
+                        # Add to file graph
+                        file_graph[file_path].add(imported_file)
+                        
+                        # Add to module graph
+                        if imported_module != module_name:
+                            module_graph[module_name].add(imported_module)
+            
+            # Track dependencies at symbol level
+            for symbol in self.codebase.symbols:
+                if hasattr(symbol, "name") and hasattr(symbol, "file") and symbol.file:
+                    symbol_name = symbol.name
+                    symbol_file = symbol.file.file_path
+                    symbol_key = f"{symbol_file}::{symbol_name}"
+                    
+                    # Track dependencies
+                    if hasattr(symbol, "dependencies"):
+                        for dep in symbol.dependencies:
+                            if hasattr(dep, "name") and hasattr(dep, "file") and dep.file:
+                                dep_name = dep.name
+                                dep_file = dep.file.file_path
+                                dep_key = f"{dep_file}::{dep_name}"
+                                
+                                symbol_graph[symbol_key].add(dep_key)
+            
+            # Convert to serializable format
+            module_graph_dict = {module: list(deps) for module, deps in module_graph.items()}
+            file_graph_dict = {file: list(deps) for file, deps in file_graph.items()}
+            
+            # For symbol graph, limit to most connected symbols to avoid excessive output
+            symbol_deps_count = {symbol: len(deps) for symbol, deps in symbol_graph.items()}
+            top_symbols = sorted(symbol_deps_count.items(), key=lambda x: x[1], reverse=True)[:100]
+            symbol_graph_dict = {symbol: list(symbol_graph[symbol]) for symbol, _ in top_symbols}
+            
+            # Calculate statistics
+            all_modules = set(module_graph.keys()) | {dep for deps in module_graph.values() for dep in deps}
+            all_files = set(file_graph.keys()) | {dep for deps in file_graph.values() for dep in deps}
+            
+            total_nodes = len(all_modules) + len(all_files)
+            total_edges = sum(len(deps) for deps in module_graph.values()) + sum(len(deps) for deps in file_graph.values())
+            
+            module_dep_counts = {module: len(deps) for module, deps in module_graph.items()}
+            max_dependencies = max(module_dep_counts.values()) if module_dep_counts else 0
+            avg_dependencies = sum(module_dep_counts.values()) / len(module_dep_counts) if module_dep_counts else 0
+            
+            most_dependent = sorted(module_dep_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+            
+            # Store results
+            dependency_graph_results["module_graph"] = module_graph_dict
+            dependency_graph_results["file_graph"] = file_graph_dict
+            dependency_graph_results["symbol_graph"] = symbol_graph_dict
+            
+            dependency_graph_results["stats"]["total_nodes"] = total_nodes
+            dependency_graph_results["stats"]["total_edges"] = total_edges
+            dependency_graph_results["stats"]["avg_dependencies"] = avg_dependencies
+            dependency_graph_results["stats"]["max_dependencies"] = max_dependencies
+            dependency_graph_results["stats"]["most_dependent_modules"] = [
+                {"module": module, "dependencies": count} for module, count in most_dependent
+            ]
+            
+        except Exception as e:
+            dependency_graph_results["error"] = str(e)
+        
+        return dependency_graph_results
+    
+    def get_circular_dependency_breaking(self) -> Dict[str, Any]:
+        """
+        Identify and suggest fixes for circular dependencies.
+        
+        This function analyzes the codebase for circular dependencies and
+        provides suggestions for breaking them.
+        
+        Returns:
+            Dict containing circular dependency analysis and fix suggestions
+        """
+        circular_dep_results = {
+            "circular_dependencies": [],
+            "suggested_fixes": [],
+            "total_cycles": 0,
+            "affected_modules": set(),
+            "affected_files": set()
+        }
+        
+        try:
+            # Create file-level dependency graph
+            G = nx.DiGraph()
+            
+            # Add nodes and edges
+            for file in self.codebase.files:
+                file_path = file.file_path
+                G.add_node(file_path)
+                
+                for imp in file.imports:
+                    if hasattr(imp, "from_file") and imp.from_file:
+                        imported_file = imp.from_file.file_path
+                        G.add_edge(file_path, imported_file)
+            
+            # Find circular dependencies (cycles in the graph)
+            try:
+                cycles = list(nx.simple_cycles(G))
+                circular_dep_results["total_cycles"] = len(cycles)
+                
+                for cycle in cycles:
+                    # Track affected modules and files
+                    for file_path in cycle:
+                        module = file_path.split("/")[0] if "/" in file_path else "root"
+                        circular_dep_results["affected_modules"].add(module)
+                        circular_dep_results["affected_files"].add(file_path)
+                    
+                    # Create cycle info
+                    cycle_info = {
+                        "files": cycle,
+                        "length": len(cycle),
+                        "modules": [file_path.split("/")[0] if "/" in file_path else "root" for file_path in cycle]
+                    }
+                    
+                    circular_dep_results["circular_dependencies"].append(cycle_info)
+                    
+                    # Generate suggested fixes
+                    suggested_fix = self._suggest_circular_dependency_fix(cycle)
+                    circular_dep_results["suggested_fixes"].append(suggested_fix)
+                
+                # Convert sets to lists for JSON serialization
+                circular_dep_results["affected_modules"] = list(circular_dep_results["affected_modules"])
+                circular_dep_results["affected_files"] = list(circular_dep_results["affected_files"])
+                
+            except nx.NetworkXNoCycle:
+                circular_dep_results["total_cycles"] = 0
+            
+        except Exception as e:
+            circular_dep_results["error"] = str(e)
+        
+        return circular_dep_results
+    
+    def _suggest_circular_dependency_fix(self, cycle: List[str]) -> Dict[str, Any]:
+        """
+        Generate suggestions for breaking a circular dependency.
+        
+        Args:
+            cycle: List of files forming a circular dependency
+            
+        Returns:
+            Dict containing suggested fixes
+        """
+        suggested_fix = {
+            "cycle": cycle,
+            "strategies": []
+        }
+        
+        try:
+            # Strategy 1: Create a shared module
+            shared_symbols = self._find_shared_symbols_between_files(cycle)
+            if shared_symbols:
+                suggested_fix["strategies"].append({
+                    "type": "create_shared_module",
+                    "description": "Create a shared module for common code",
+                    "shared_symbols": shared_symbols[:5],  # Limit to 5 symbols
+                    "suggested_module_name": "shared" if len(cycle) > 2 else f"shared_{cycle[0].split('/')[-1].split('.')[0]}_{cycle[1].split('/')[-1].split('.')[0]}"
+                })
+            
+            # Strategy 2: Use dependency inversion
+            suggested_fix["strategies"].append({
+                "type": "dependency_inversion",
+                "description": "Apply dependency inversion principle",
+                "steps": [
+                    "Create an interface/abstract class that defines the required functionality",
+                    f"Implement the interface in {cycle[-1]}",
+                    f"Update {cycle[0]} to depend on the interface instead of the concrete implementation"
+                ]
+            })
+            
+            # Strategy 3: Merge files
+            if len(cycle) == 2:
+                suggested_fix["strategies"].append({
+                    "type": "merge_files",
+                    "description": "Merge the files if they are closely related",
+                    "merged_file_name": f"{cycle[0].split('/')[-1].split('.')[0]}_{cycle[1].split('/')[-1].split('.')[0]}.{cycle[0].split('.')[-1]}"
+                })
+            
+            # Strategy 4: Restructure code
+            suggested_fix["strategies"].append({
+                "type": "restructure",
+                "description": "Restructure the code to eliminate circular dependencies",
+                "steps": [
+                    "Identify the specific symbols causing the circular dependency",
+                    "Move these symbols to break the cycle",
+                    "Consider if the circular dependency indicates a design issue"
+                ]
+            })
+            
+        except Exception as e:
+            suggested_fix["error"] = str(e)
+        
+        return suggested_fix
+    
+    def _find_shared_symbols_between_files(self, files: List[str]) -> List[Dict[str, str]]:
+        """
+        Find symbols that are shared between files in a cycle.
+        
+        Args:
+            files: List of file paths
+            
+        Returns:
+            List of shared symbols with their details
+        """
+        shared_symbols = []
+        
+        try:
+            # Get all symbols in each file
+            file_symbols = {}
+            for file_path in files:
+                file_obj = None
+                for f in self.codebase.files:
+                    if f.file_path == file_path:
+                        file_obj = f
+                        break
+                
+                if file_obj:
+                    file_symbols[file_path] = list(file_obj.symbols)
+            
+            # Find symbols used across multiple files
+            all_symbols = [symbol for symbols in file_symbols.values() for symbol in symbols]
+            symbol_usage_count = defaultdict(int)
+            
+            for symbol in all_symbols:
+                if hasattr(symbol, "usages"):
+                    for usage in symbol.usages:
+                        if hasattr(usage, "file") and usage.file and usage.file.file_path in files:
+                            symbol_usage_count[symbol] += 1
+            
+            # Get symbols used in multiple files
+            for symbol, count in symbol_usage_count.items():
+                if count > 1 and hasattr(symbol, "name") and hasattr(symbol, "file") and symbol.file:
+                    shared_symbols.append({
+                        "name": symbol.name,
+                        "type": type(symbol).__name__,
+                        "defined_in": symbol.file.file_path,
+                        "used_in_count": count
+                    })
+            
+            # Sort by usage count
+            shared_symbols.sort(key=lambda x: x["used_in_count"], reverse=True)
+            
+        except Exception:
+            pass
+        
+        return shared_symbols
+    
+    def get_module_coupling_analysis(self) -> Dict[str, Any]:
+        """
+        Analyze module coupling.
+        
+        This function analyzes the coupling between modules in the codebase,
+        identifying tightly coupled modules and suggesting improvements.
+        
+        Returns:
+            Dict containing module coupling analysis results
+        """
+        coupling_results = {
+            "module_coupling_scores": {},
+            "highly_coupled_modules": [],
+            "coupling_matrix": {},
+            "suggested_improvements": [],
+            "overall_coupling_score": 0
+        }
+        
+        try:
+            # Create module-level dependency graph
+            module_dependencies = defaultdict(set)
+            module_dependents = defaultdict(set)
+            
+            # Track all modules
+            all_modules = set()
+            
+            # Analyze file dependencies
+            for file in self.codebase.files:
+                file_path = file.file_path
+                module_name = file_path.split("/")[0] if "/" in file_path else "root"
+                all_modules.add(module_name)
+                
+                # Track module dependencies through imports
+                for imp in file.imports:
+                    if hasattr(imp, "from_file") and imp.from_file:
+                        imported_file = imp.from_file.file_path
+                        imported_module = imported_file.split("/")[0] if "/" in imported_file else "root"
+                        
+                        if imported_module != module_name:
+                            module_dependencies[module_name].add(imported_module)
+                            module_dependents[imported_module].add(module_name)
+            
+            # Calculate coupling scores
+            coupling_scores = {}
+            coupling_matrix = {module: {} for module in all_modules}
+            
+            for module in all_modules:
+                # Calculate afferent coupling (incoming dependencies)
+                ca = len(module_dependents[module])
+                
+                # Calculate efferent coupling (outgoing dependencies)
+                ce = len(module_dependencies[module])
+                
+                # Calculate instability (I = Ce / (Ca + Ce))
+                instability = ce / (ca + ce) if (ca + ce) > 0 else 0
+                
+                # Calculate coupling score (higher is worse)
+                coupling_score = (ca * ce) / len(all_modules) if len(all_modules) > 0 else 0
+                
+                coupling_scores[module] = {
+                    "afferent_coupling": ca,
+                    "efferent_coupling": ce,
+                    "instability": instability,
+                    "coupling_score": coupling_score,
+                    "dependencies": list(module_dependencies[module]),
+                    "dependents": list(module_dependents[module])
+                }
+                
+                # Fill coupling matrix
+                for other_module in all_modules:
+                    if other_module in module_dependencies[module]:
+                        coupling_matrix[module][other_module] = 1
+                    else:
+                        coupling_matrix[module][other_module] = 0
+            
+            # Identify highly coupled modules
+            sorted_modules = sorted(coupling_scores.items(), key=lambda x: x[1]["coupling_score"], reverse=True)
+            highly_coupled = sorted_modules[:5]  # Top 5 most coupled modules
+            
+            # Generate suggested improvements
+            for module, metrics in highly_coupled:
+                suggestions = []
+                
+                if metrics["afferent_coupling"] > 5:
+                    suggestions.append(f"High afferent coupling ({metrics['afferent_coupling']}): Consider breaking this module into smaller, more focused modules")
+                
+                if metrics["efferent_coupling"] > 5:
+                    suggestions.append(f"High efferent coupling ({metrics['efferent_coupling']}): Consider using dependency injection or interfaces to reduce direct dependencies")
+                
+                if metrics["instability"] > 0.7:
+                    suggestions.append(f"High instability ({metrics['instability']:.2f}): This module depends on many others but few depend on it, making it volatile")
+                
+                if metrics["instability"] < 0.3:
+                    suggestions.append(f"Low instability ({metrics['instability']:.2f}): This module is highly depended upon, changes could have wide impact")
+                
+                coupling_results["suggested_improvements"].append({
+                    "module": module,
+                    "coupling_score": metrics["coupling_score"],
+                    "suggestions": suggestions
+                })
+            
+            # Calculate overall coupling score
+            overall_score = sum(metrics["coupling_score"] for metrics in coupling_scores.values()) / len(coupling_scores) if coupling_scores else 0
+            
+            # Store results
+            coupling_results["module_coupling_scores"] = coupling_scores
+            coupling_results["highly_coupled_modules"] = [
+                {"module": module, "metrics": metrics} for module, metrics in highly_coupled
+            ]
+            coupling_results["coupling_matrix"] = coupling_matrix
+            coupling_results["overall_coupling_score"] = overall_score
+            
+        except Exception as e:
+            coupling_results["error"] = str(e)
+        
+        return coupling_results
+
         """Get the number of commits per month."""
         try:
             # Get commit history
@@ -1945,7 +3759,7 @@ class CodebaseAnalyzer:
 
 def main():
     """Main entry point for the codebase analyzer."""
-    parser = argparse.ArgumentParser(description="Comprehensive Codebase Analyzer")
+    """Main entry point for the codebase analyzer."""
     
     # Repository source
     source_group = parser.add_mutually_exclusive_group(required=True)
@@ -1960,12 +3774,19 @@ def main():
     parser.add_argument("--output-format", choices=["json", "html", "console"], default="console", help="Output format")
     parser.add_argument("--output-file", help="Path to the output file")
     
+    # New function-specific options
+    parser.add_argument("--call-chain-source", help="Source function for call chain analysis")
+    parser.add_argument("--call-chain-target", help="Target function for call chain analysis")
+    parser.add_argument("--exclude-patterns", nargs="+", help="Patterns to exclude in dead code detection")
+    parser.add_argument("--max-depth", type=int, default=5, help="Maximum depth for graph traversal")
+    parser.add_argument("--type-coverage-threshold", type=float, default=80.0, help="Threshold for type coverage warnings")
+    
     args = parser.parse_args()
     
     try:
         # Initialize the analyzer
         analyzer = CodebaseAnalyzer(
-            repo_url=args.repo_url,
+
             repo_path=args.repo_path,
             language=args.language
         )
