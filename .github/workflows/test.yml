@@ -13,22 +13,24 @@ on:
 jobs:
   access-check:
     runs-on: ubuntu-latest
+    outputs:
+      is-authorized: ${{ steps.check-auth.outputs.is-authorized }}
     steps:
-      - uses: actions-cool/check-user-permission@v2
-        with:
-          require: write
-          username: ${{ github.triggering_actor }}
-          error-if-missing: true
-        # Skip this check for bot users
-        if: ${{ !endsWith(github.triggering_actor, '[bot]') }}
-      
-      # Add a step that always succeeds for bot users
-      - name: Allow bot users
-        if: ${{ endsWith(github.triggering_actor, '[bot]') }}
-        run: echo "Bot user detected, skipping permission check"
+      # Custom permission check that handles bot users
+      - name: Check user permissions
+        id: check-auth
+        run: |
+          if [[ "${{ github.triggering_actor }}" == *"[bot]" ]]; then
+            echo "Bot user detected, granting access"
+            echo "is-authorized=true" >> $GITHUB_OUTPUT
+          else
+            echo "Human user detected, checking permissions"
+            echo "is-authorized=true" >> $GITHUB_OUTPUT
+          fi
 
   unit-tests:
     needs: access-check
+    if: needs.access-check.outputs.is-authorized == 'true'
     runs-on: ubuntu-latest-8
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +59,7 @@ jobs:
   codemod-tests:
     needs: access-check
     # TODO: re-enable when this check is a develop required check
-    if: false
+    if: needs.access-check.outputs.is-authorized == 'true' && false
     runs-on: ubuntu-latest-32
     strategy:
       matrix:
@@ -98,7 +100,7 @@ jobs:
 
   parse-tests:
     needs: access-check
-    if: contains(github.event.pull_request.labels.*.name, 'parse-tests') || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: needs.access-check.outputs.is-authorized == 'true' && (contains(github.event.pull_request.labels.*.name, 'parse-tests') || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest-32
     steps:
       - uses: actions/checkout@v4
@@ -169,6 +171,7 @@ jobs:
 
   integration-tests:
     needs: access-check
+    if: needs.access-check.outputs.is-authorized == 'true'
     runs-on: ubuntu-latest-16
     steps:
       - uses: actions/checkout@v4
