@@ -25,8 +25,26 @@ permissions:
   contents: read
 
 jobs:
+  # Add a check to skip the build for bot PRs
+  check-bot:
+    runs-on: ubuntu-latest
+    outputs:
+      is_bot: ${{ steps.check-bot.outputs.is_bot }}
+    steps:
+      - name: Check if user is bot
+        id: check-bot
+        run: |
+          if [[ "${{ github.triggering_actor }}" == *"[bot]" ]]; then
+            echo "is_bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bot=false" >> $GITHUB_OUTPUT
+          fi
+
   build:
     name: Build 3.${{ matrix.python }} ${{ matrix.os }}
+    needs: check-bot
+    # Skip this job if the PR is from a bot
+    if: needs.check-bot.outputs.is_bot != 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
