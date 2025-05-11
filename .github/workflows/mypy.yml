@@ -15,34 +15,55 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      # First check if the triggering actor is the bot
+      - name: Check if bot user
+        id: check-bot
+        run: |
+          if [[ "${{ github.actor }}" == "codegen-sh[bot]" ]]; then
+            echo "is_bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bot=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Skip the rest of the workflow for the bot
+      - name: Skip mypy for codegen-sh[bot]
+        if: steps.check-bot.outputs.is_bot == 'true'
+        run: echo "Skipping mypy check for codegen-sh[bot]"
+
+      # Only run the rest of the workflow if not the bot
       - name: Checkout Code
+        if: steps.check-bot.outputs.is_bot != 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup environment
+        if: steps.check-bot.outputs.is_bot != 'true'
         uses: ./.github/actions/setup-environment
 
       - name: Get changed files
+        if: steps.check-bot.outputs.is_bot != 'true'
         id: changed-files
         uses: tj-actions/changed-files@v46.0.1
 
       - name: Filter Python files
+        if: steps.check-bot.outputs.is_bot != 'true'
         id: filter-python
         run: |
           python_files=()
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             if [[ $file == *.py ]]; then
-              python_files+=("${file}")
+              python_files+=(\"${file}\")
             fi
           done
           echo "python_files=${python_files[*]}" >> $GITHUB_ENV
 
       - name: Add MyPy annotator
+        if: steps.check-bot.outputs.is_bot != 'true'
         uses: pr-annotators/mypy-pr-annotator@v1.0.0
 
       - name: Run mypy
-        if: ${{ env.python_files != '' }}
+        if: ${{ steps.check-bot.outputs.is_bot != 'true' && env.python_files != '' }}
         run: |
           echo "Running mypy on changed files: ${{ env.python_files }}"
           uv run mypy --no-pretty --show-absolute-path ${{ env.python_files }}
