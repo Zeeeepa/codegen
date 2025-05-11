@@ -9,6 +9,7 @@ from codegen_on_oss.metrics import MetricsProfiler
 from codegen_on_oss.outputs.csv_output import CSVOutput
 from codegen_on_oss.parser import CodegenParser
 from codegen_on_oss.sources import RepoSource, all_sources
+from codegen_on_oss.analysis_viewer_cli import analyze, compare, interactive, list_categories
 
 logger.remove(0)
 
@@ -122,6 +123,13 @@ def run(
     parser = CodegenParser(Path(cache_dir) / "repositories", metrics_profiler)
     for repo_url, commit_hash in repo_source:
         parser.parse(repo_url, commit_hash)
+
+
+# Add analysis viewer commands
+cli.add_command(analyze)
+cli.add_command(compare)
+cli.add_command(interactive)
+cli.add_command(list_categories)
 
 
 if __name__ == "__main__":
