@@ -16,29 +16,50 @@ jobs:
       REPO_SCOPED_TOKEN: ${{ secrets.REPO_SCOPED_TOKEN }}
 
     steps:
+      # First check if the triggering actor is the bot
+      - name: Check if bot user
+        id: check-bot
+        run: |
+          if [[ "${{ github.actor }}" == "codegen-sh[bot]" ]]; then
+            echo "is_bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bot=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Skip the rest of the workflow for the bot
+      - name: Skip pre-commit for codegen-sh[bot]
+        if: steps.check-bot.outputs.is_bot == 'true'
+        run: echo "Skipping pre-commit check for codegen-sh[bot]"
+
+      # Only run the rest of the workflow if not the bot
       - name: Check out the repo
+        if: steps.check-bot.outputs.is_bot != 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ env.REPO_SCOPED_TOKEN || github.token }}
 
       - name: Setup environment
+        if: steps.check-bot.outputs.is_bot != 'true'
         uses: ./.github/actions/setup-environment
 
       - name: Setup-pre-commit
+        if: steps.check-bot.outputs.is_bot != 'true'
         run: uv tool install pre-commit --with pre-commit-uv --force-reinstall
 
       - uses: actions/cache@v4
+        if: steps.check-bot.outputs.is_bot != 'true'
         with:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: pre-commit
 
       - run: uv run --frozen pre-commit run --show-diff-on-failure --color=always --all-files --source ${{ github.event.pull_request.base.sha || github.event.before }} --origin ${{ github.event.pull_request.head.sha || github.event.after }}
+        if: steps.check-bot.outputs.is_bot != 'true'
         shell: bash
 
       - uses: stefanzweifel/git-auto-commit-action@v5
-        if: ${{ always() && env.REPO_SCOPED_TOKEN && github.event_name == 'pull_request' }}
+        if: ${{ always() && env.REPO_SCOPED_TOKEN && github.event_name == 'pull_request' && steps.check-bot.outputs.is_bot != 'true' }}
         with:
           commit_message: "Automated pre-commit update"
           push_options: "--no-verify"
