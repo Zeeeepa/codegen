@@ -129,8 +129,8 @@ class SpecificCodebaseOrganizer:
         }
         
         # Store functions found in the codebase
-        self.functions = {}  # Maps function name to (file_path, code) tuple
-        self.duplicate_functions = defaultdict(list)  # Maps function signature to list of file paths
+        self.functions: Dict[str, Tuple[str, str]] = {}  # Maps function name to (file_path, code) tuple
+        self.duplicate_functions: defaultdict[str, List[str]] = defaultdict(list)  # Maps function signature to list of file paths
 
     def create_directory_structure(self):
         """Create the directory structure if it doesn't exist."""
@@ -388,4 +388,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

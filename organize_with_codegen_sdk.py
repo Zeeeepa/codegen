@@ -24,7 +24,7 @@ from collections import defaultdict
 
 try:
     from codegen.sdk import Codebase
-    from codegen.sdk.codebase import Symbol, File
+    from codegen.sdk.codebase import File, Symbol  # type: ignore
 except ImportError:
     print("Error: Codegen SDK not found. Please install it with:")
     print("pip install codegen-sdk")
@@ -303,4 +303,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

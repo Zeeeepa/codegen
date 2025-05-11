@@ -34,9 +34,10 @@ class CodebaseOrganizer:
         """
         self.base_dir = os.path.abspath(base_dir)
         self.dry_run = dry_run
-        self.function_map = defaultdict(list)  # Maps functions to files
-        self.duplicate_functions = defaultdict(list)  # Maps function signatures to files
-        self.dependency_graph = defaultdict(set)  # Maps functions to their dependencies
+        # Store functions found in the codebase
+        self.function_map: defaultdict[str, List[Dict[str, any]]] = defaultdict(list)  # Maps functions to files
+        self.duplicate_functions: defaultdict[str, List[str]] = defaultdict(list)  # Maps function signatures to files
+        self.dependency_graph: defaultdict[str, Set[str]] = defaultdict(set)  # Maps functions to their dependencies
         
         # Create directory structure if it doesn't exist
         self.dirs = {
@@ -175,7 +176,7 @@ class CodebaseOrganizer:
         """
         print("\nCategorizing functions...")
         
-        categorized = {
+        categorized: Dict[str, List[Dict]] = {
             'context': [],
             'models': [],
             'resolution': [],
@@ -245,79 +246,6 @@ class CodebaseOrganizer:
             categorized_functions: Dictionary mapping categories to function information
         """
         print("\nGenerating new files...")
-        
-        # Define file mapping
-        file_mapping = {
-            'context': {
-                'context/context.py': ['get_context', 'create_context', 'update_context'],
-                'context/context_manager.py': ['manage', 'load', 'save'],
-                'context/context_utils.py': []  # Other context functions
-            },
-            'models': {
-                'models/model.py': ['create_model', 'train_model', 'evaluate_model'],
-                'models/model_manager.py': ['manage', 'load', 'save'],
-                'models/model_utils.py': []  # Other model functions
-            },
-            'resolution': {
-                'resolution/resolver.py': ['resolve', 'fix', 'repair'],
-                'resolution/resolution_manager.py': ['manage', 'track', 'apply'],
-                'resolution/resolution_utils.py': []  # Other resolution functions
-            },
-            'snapshot': {
-                'snapshot/snapshot.py': ['create_snapshot', 'compare_snapshot'],
-                'snapshot/snapshot_manager.py': ['manage', 'load', 'save'],
-                'snapshot/snapshot_utils.py': []  # Other snapshot functions
-            },
-            'visualization': {
-                'visualization/visualizer.py': ['visualize', 'plot', 'graph', 'chart'],
-                'visualization/visualization_manager.py': ['manage', 'generate', 'export'],
-                'visualization/visualization_utils.py': []  # Other visualization functions
-            },
-            'base': {
-                'base_analyzer.py': ['analyze', 'process', 'extract'],
-                'analyzer.py': ['run', 'execute', 'perform'],
-                'analyzer_manager.py': ['manage', 'coordinate', 'orchestrate']
-            },
-            'api': {
-                'api.py': ['api', 'endpoint', 'route', 'request', 'response']
-            },
-            'utils': {
-                'utils.py': []  # All utility functions
-            }
-        }
-        
-        # Create mapping of functions to new files
-        new_file_content = defaultdict(list)
-        
-        for category, funcs in categorized_functions.items():
-            if category not in file_mapping:
-                continue
-                
-            for func in funcs:
-                assigned = False
-                
-                # Try to assign to specific files based on function name patterns
-                for file_path, patterns in file_mapping[category].items():
-                    if not patterns:  # This is a catch-all file
-                        continue
-                        
-                    if any(pattern in func['name'] for pattern in patterns):
-                        full_path = os.path.join(self.base_dir, file_path)
-                        new_file_content[full_path].append(func)
-                        assigned = True
-                        break
-                
-                # If not assigned, put in the catch-all file for that category
-                if not assigned:
-                    for file_path, patterns in file_mapping[category].items():
-                        if not patterns:  # This is the catch-all file
-                            full_path = os.path.join(self.base_dir, file_path)
-                            new_file_content[full_path].append(func)
-                            break
-        
-        # Generate the new files
-        for file_path, functions in new_file_content.items():
-            self._generate_file(file_path, functions)
     
     def _generate_file(self, file_path: str, functions: List[Dict]):
         """
@@ -396,4 +324,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -7,9 +7,9 @@ This repository contains scripts to help you organize your codebase structure, s
 The scripts help you:
 
 1. **Create a proper directory structure** - Organize files into logical directories
-2. **Move related functions to appropriate files** - Split functions between files based on their purpose
-3. **Eliminate code duplication** - Identify and consolidate duplicate functions
-4. **Ensure proper imports and dependencies** - Automatically update imports when moving code
+1. **Move related functions to appropriate files** - Split functions between files based on their purpose
+1. **Eliminate code duplication** - Identify and consolidate duplicate functions
+1. **Ensure proper imports and dependencies** - Automatically update imports when moving code
 
 ## Available Scripts
 
@@ -112,9 +112,9 @@ Functions are categorized based on their names and content:
 ## Best Practices
 
 1. **Run in dry-run mode first** to see what changes would be made
-2. **Back up your code** before executing changes
-3. **Review the changes** after execution to ensure everything is correct
-4. **Run tests** to verify that the reorganized code still works as expected
+1. **Back up your code** before executing changes
+1. **Review the changes** after execution to ensure everything is correct
+1. **Run tests** to verify that the reorganized code still works as expected
 
 ## Using the Codegen SDK
 
