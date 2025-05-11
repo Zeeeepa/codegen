@@ -163,7 +163,7 @@ class CodebaseAnalyzer:
     about its structure, dependencies, code quality, and more.
     """
     
-    def __init__(self, repo_url: str = None, repo_path: str = None, language: str = None):
+    def __init__(self, repo_url: Optional[str] = None, repo_path: Optional[str] = None, language: Optional[str] = None):
         """
         Initialize the CodebaseAnalyzer.
         
@@ -177,7 +177,7 @@ class CodebaseAnalyzer:
         self.language = language
         self.codebase = None
         self.console = Console()
-        self.results = {}
+        self.results: Dict[str, Any] = {}
         
         # Initialize the codebase
         if repo_url:
@@ -185,7 +185,7 @@ class CodebaseAnalyzer:
         elif repo_path:
             self._init_from_path(repo_path, language)
     
-    def _init_from_url(self, repo_url: str, language: str = None):
+    def _init_from_url(self, repo_url: str, language: Optional[str] = None):
         """Initialize codebase from a repository URL."""
         try:
             # Extract owner and repo name from URL
@@ -216,9 +216,8 @@ class CodebaseAnalyzer:
             if language:
                 prog_lang = ProgrammingLanguage(language.upper())
             
-            self.codebase = Codebase.from_github(
-                repo_full_name=repo_full_name,
-                tmp_dir=tmp_dir,
+            self.codebase = Codebase(
+                repo_path=tmp_dir, # Using tmp_dir instead of repo_full_name=repo_full_name,
                 language=prog_lang,
                 config=config,
                 secrets=secrets,
@@ -231,7 +230,7 @@ class CodebaseAnalyzer:
             self.console.print(f"[bold red]Error initializing codebase from URL: {e}[/bold red]")
             raise
     
-    def _init_from_path(self, repo_path: str, language: str = None):
+    def _init_from_path(self, repo_path: str, language: Optional[str] = None):
         """Initialize codebase from a local repository path."""
         try:
             # Configure the codebase
