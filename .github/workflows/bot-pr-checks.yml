@@ -1,0 +1,50 @@
+name: Bot PR Checks
+
+on:
+  pull_request_target:
+    types: [ opened, synchronize, reopened, labeled ]
+    branches:
+      - "develop"
+
+jobs:
+  bot-check:
+    runs-on: ubuntu-latest
+    if: contains(github.triggering_actor, '[bot]')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+
+      - name: Run tests
+        timeout-minutes: 5
+        run: |
+          uv run pytest \
+            -n auto \
+            --cov src \
+            --timeout 15 \
+            -o junit_suite_name="bot-unit-tests" \
+            tests/unit
+
+      - uses: ./.github/actions/report
+        with:
+          flag: bot-unit-tests
+          codecov_token: ${{ secrets.CODECOV_TOKEN }}
+          
+  # Add a job to handle the Build & Release workflow for bot PRs
+  bot-build:
+    runs-on: ubuntu-latest
+    if: contains(github.triggering_actor, '[bot]')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          
+      - name: Skip build for bot PRs
+        run: echo "Skipping build for bot PRs"
