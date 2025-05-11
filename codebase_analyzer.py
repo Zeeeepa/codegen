@@ -85,6 +85,7 @@ METRICS_CATEGORIES = {
         "get_generic_type_usage",
         "get_type_consistency_checking",
         "get_union_intersection_type_analysis",
+        "get_symbol_import_analysis",  # Added new function
     ],
     "dependency_flow": [
         "get_function_call_relationships",
@@ -101,6 +102,10 @@ METRICS_CATEGORIES = {
         "get_symbol_reference_tracking",
         "get_usage_frequency_metrics",
         "get_cross_file_symbol_usage",
+        "get_call_chain_analysis",  # Added new function
+        "get_dead_code_detection_with_filtering",  # Added new function
+        "get_path_finding_in_call_graphs",  # Added new function
+        "get_dead_symbol_detection",  # Added new function
     ],
     "code_quality": [
         "get_unused_functions",
@@ -1917,6 +1922,36 @@ class CodebaseAnalyzer:
                 else:
                     self.console.print(str(metric_value))
     
+    def get_call_chain_analysis(self) -> Dict[str, Any]:
+    def get_dead_code_detection_with_filtering(self, exclude_patterns: List[str] = None) -> Dict[str, Any]:
+    def get_path_finding_in_call_graphs(self, source_function: str = None, target_function: str = None, max_depth: int = 10) -> Dict[str, Any]:
+    def get_dead_symbol_detection(self) -> Dict[str, Any]:
+    def get_symbol_import_analysis(self) -> Dict[str, Any]:
+        """Analyze symbol imports in the codebase."""
+        # Implementation from symbol_import_analysis.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
+        """Detect dead symbols in the codebase."""
+        # Implementation from dead_symbol_detection.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
+        """Find paths between functions in the call graph."""
+        # Implementation from path_finding.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
+        """Detect dead code in the codebase with filtering options."""
+        # Implementation from dead_code_detection.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
+        """Analyze call chains between functions."""
+        # Implementation from call_chain_analysis.py
+        # This is a placeholder that will be replaced with the full implementation
+        pass
+
     def get_monthly_commits(self) -> Dict[str, int]:
         """Get the number of commits per month."""
         try:
