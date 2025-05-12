@@ -13,7 +13,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 try:
     import matplotlib.pyplot as plt
@@ -83,20 +83,29 @@ class VisualizationConfig:
 
 class BaseVisualizer:
     """
-    Base visualizer providing common functionality for different visualization types.
+    Base class for all visualizers.
 
-    This class implements the core operations needed for visualization, including
-    graph creation, node and edge management, and output generation.
+    This class provides common functionality for all visualizers, including
+    configuration, graph creation, and visualization output.
     """
 
-    def __init__(self, config: VisualizationConfig | None = None):
+    def __init__(self, config: Optional[VisualizationConfig] = None, **kwargs):
         """
-        Initialize the BaseVisualizer.
+        Initialize the base visualizer.
 
         Args:
-            config: Visualization configuration options
+            config: Visualization configuration
+            **kwargs: Additional configuration options
         """
         self.config = config or VisualizationConfig()
+        self.graph: Optional[nx.Graph] = None
+        self.current_visualization_type: Optional[VisualizationType] = None
+        self.current_entity_name: Optional[str] = None
+
+        # Apply any additional configuration options
+        for key, value in kwargs.items():
+            if hasattr(self.config, key):
+                setattr(self.config, key, value)
 
         # Create visualization directory if specified
         if self.config.output_directory:
@@ -104,10 +113,6 @@ class BaseVisualizer:
 
         # Initialize graph for visualization
         self.graph = nx.DiGraph()
-
-        # Tracking current visualization
-        self.current_visualization_type = None
-        self.current_entity_name = None
 
     def _initialize_graph(self):
         """Initialize a fresh graph for visualization."""

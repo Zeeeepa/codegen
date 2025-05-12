@@ -8,7 +8,7 @@ dead code (code that is only used by other dead code).
 """
 
 import logging
-from typing import Any, Optional, List
+from typing import Any, Dict, List, Optional, Set, cast
 
 import networkx as nx
 
@@ -91,6 +91,9 @@ class DeadCodeVisualizer(BaseVisualizer):
                                 if not (skip_test_files and "test" in usage_symbol.name):
                                     G.add_edge(usage_symbol, dep)
 
+        # Set the graph for visualization
+        self.graph = G
+
         # Generate visualization data
         if self.config.output_format == OutputFormat.JSON:
             data = self._convert_graph_to_json()
@@ -102,4 +105,3 @@ class DeadCodeVisualizer(BaseVisualizer):
             return self._save_visualization(
                 VisualizationType.DEAD_CODE, "codebase_dead_code", fig
             )
-

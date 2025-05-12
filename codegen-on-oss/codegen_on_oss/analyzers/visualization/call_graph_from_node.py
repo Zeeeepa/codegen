@@ -7,7 +7,7 @@ starting from a specific function or method.
 """
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import networkx as nx
 
@@ -116,6 +116,9 @@ class CallGraphFromNode(BaseVisualizer):
         # Start the recursive traversal
         create_downstream_call_trace(function_to_trace)
 
+        # Set the graph for visualization
+        self.graph = G
+
         # Generate visualization data
         if self.config.output_format == OutputFormat.JSON:
             data = self._convert_graph_to_json()
@@ -148,7 +151,7 @@ class CallGraphFilter(BaseVisualizer):
         super().__init__(**kwargs)
         self.codebase = codebase
 
-    def visualize(self, class_name: str, method_filters: list[str] = None, 
+    def visualize(self, class_name: str, method_filters: List[str] = None, 
                   skip_test_files: bool = True, max_depth: int = 5):
         """
         Generate a filtered call graph visualization.
@@ -222,7 +225,7 @@ class CallGraphFilter(BaseVisualizer):
                 # If the function being called is not from an external module and is not defined in a test file
                 if not isinstance(func, ExternalModule) and not (skip_test_files and func.file.filepath.startswith("test")):
                     # Add `call` to the graph and an edge from `src_call` to `call`
-                    metadata = {}
+                    metadata: Dict[str, Any] = {}
                     if isinstance(func, Function) and func.is_method and func.parent_class == cls:
                         # Only include methods that match the filter
                         if method_filters and func.name not in method_filters:
@@ -239,6 +242,9 @@ class CallGraphFilter(BaseVisualizer):
 
         # Start the recursive traversal
         create_filtered_downstream_call_trace(func_to_trace, 1, max_depth)
+
+        # Set the graph for visualization
+        self.graph = G
 
         # Generate visualization data
         if self.config.output_format == OutputFormat.JSON:
@@ -365,6 +371,9 @@ class CallPathsBetweenNodes(BaseVisualizer):
         except nx.NetworkXNoPath:
             logger.warning(f"No path found between {start_func_name} and {end_func_name}")
 
+        # Set the graph for visualization
+        self.graph = G
+
         # Generate visualization data
         if self.config.output_format == OutputFormat.JSON:
             data = self._convert_graph_to_json()
@@ -376,4 +385,3 @@ class CallPathsBetweenNodes(BaseVisualizer):
             return self._save_visualization(
                 VisualizationType.CALL_GRAPH, f"{start_func_name}_to_{end_func_name}", fig
             )
-
