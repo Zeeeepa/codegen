@@ -16,11 +16,11 @@ import os
 import re
 import tempfile
 from enum import Enum
-from typing import Optional, Union
 from urllib.parse import quote
+from multiprocessing.pool import ThreadPool
 
-from dateutil.parser import parse
-from pydantic import SecretStr
+# Import for date parsing
+from datetime import datetime as dt
 
 import codegen.agents.client.openapi_client as openapi_client
 from codegen.agents.client.openapi_client import rest
@@ -29,7 +29,7 @@ from codegen.agents.client.openapi_client.api_response import T as ApiResponseT
 from codegen.agents.client.openapi_client.configuration import Configuration
 from codegen.agents.client.openapi_client.exceptions import ApiException, ApiValueError
 
-RequestSerialized = tuple[str, str, dict[str, str], Optional[str], list[str]]
+RequestSerialized = tuple[str, str, dict[str, str], str | None, list[str]]
 
 
 class ApiClient:
@@ -42,8 +42,8 @@ class ApiClient:
 
     :param configuration: .Configuration object for this client
     :param header_name: a header to pass when making calls to the API.
-    :param header_value: a header value to pass when making calls to
-        the API.
+    :param header_value: a header value to pass when making calls
+        to the API.
     :param cookie: a cookie to include in the header when making calls
         to the API
     """
@@ -227,7 +227,7 @@ class ApiClient:
 
         return response_data
 
-    def response_deserialize(self, response_data: rest.RESTResponse, response_types_map: Optional[dict[str, ApiResponseT]] = None) -> ApiResponse[ApiResponseT]:
+    def response_deserialize(self, response_data: rest.RESTResponse, response_types_map: dict[str, ApiResponseT] | None = None) -> ApiResponse[ApiResponseT]:
         """Deserializes response into an object.
         :param response_data: RESTResponse object to be deserialized.
         :param response_types_map: dict of response types.
@@ -295,7 +295,7 @@ class ApiClient:
             return [self.sanitize_for_serialization(sub_obj) for sub_obj in obj]
         elif isinstance(obj, tuple):
             return tuple(self.sanitize_for_serialization(sub_obj) for sub_obj in obj)
-        elif isinstance(obj, (datetime.datetime, datetime.date)):
+        elif isinstance(obj, datetime.datetime | datetime.date):
             return obj.isoformat()
         elif isinstance(obj, decimal.Decimal):
             return str(obj)
@@ -315,7 +315,7 @@ class ApiClient:
 
         return {key: self.sanitize_for_serialization(val) for key, val in obj_dict.items()}
 
-    def deserialize(self, response_text: str, response_type: str, content_type: Optional[str]):
+    def deserialize(self, response_text: str, response_type: str, content_type: str | None):
         """Deserializes response into an object.
 
         :param response: RESTResponse object to be deserialized.
@@ -430,7 +430,7 @@ class ApiClient:
         for k, v in params.items() if isinstance(params, dict) else params:
             if isinstance(v, bool):
                 v = str(v).lower()
-            if isinstance(v, (int, float)):
+            if isinstance(v, int | float):
                 v = str(v)
             if isinstance(v, dict):
                 v = json.dumps(v)
@@ -456,7 +456,7 @@ class ApiClient:
 
     def files_parameters(
         self,
-        files: dict[str, Union[str, bytes, list[str], list[bytes], tuple[str, bytes]]],
+        files: dict[str, str | bytes | list[str] | list[bytes] | tuple[str, bytes]],
     ):
         """Builds form parameters.
 
@@ -485,7 +485,7 @@ class ApiClient:
             params.append(tuple([k, tuple([filename, filedata, mimetype])]))
         return params
 
-    def select_header_accept(self, accepts: list[str]) -> Optional[str]:
+    def select_header_accept(self, accepts: list[str]) -> str | None:
         """Returns `Accept` based on an array of accepts provided.
 
         :param accepts: List of headers.
@@ -618,7 +618,8 @@ class ApiClient:
         :return: date.
         """
         try:
-            return parse(string).date()
+            # Use datetime's own parsing instead of dateutil
+            return dt.fromisoformat(string.replace('Z', '+00:00')).date()
         except ImportError:
             return string
         except ValueError:
@@ -633,7 +634,8 @@ class ApiClient:
         :return: datetime.
         """
         try:
-            return parse(string)
+            # Use datetime's own parsing instead of dateutil
+            return dt.fromisoformat(string.replace('Z', '+00:00'))
         except ImportError:
             return string
         except ValueError:
