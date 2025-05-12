@@ -224,7 +224,7 @@ class CodegenAnalyzerAPI:
         repo_path: str | None = None,
         module_path: str | None = None,
         layout: str = "hierarchical",
-        output_output_format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a dependency graph for the codebase.
@@ -233,7 +233,7 @@ class CodegenAnalyzerAPI:
             repo_path: Path to the repository (optional, uses self.repo_path if not provided)
             module_path: Path to the specific module to analyze (optional)
             layout: Graph layout algorithm (hierarchical, force, circular)
-            output_output_format: Output format (json, dot, graphml)
+            output_format: Output format (json, dot, graphml)
 
         Returns:
             Dictionary containing the dependency graph data
@@ -298,7 +298,7 @@ class CodegenAnalyzerAPI:
         file_path: str | None = None,
         depth: int = 2,
         layout: str = "hierarchical",
-        output_output_format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a call graph for a specific function or file.
@@ -308,7 +308,7 @@ class CodegenAnalyzerAPI:
             file_path: Path to the file containing the function
             depth: Maximum depth of the call graph
             layout: Graph layout algorithm (hierarchical, force, circular)
-            output_output_format: Output format (json, dot, graphml)
+            output_format: Output format (json, dot, graphml)
 
         Returns:
             Dictionary containing the call graph data
@@ -552,7 +552,7 @@ class CodegenAnalyzerAPI:
         module_name: str | None = None,
         include_methods: bool = True,
         include_attributes: bool = True,
-        output_output_format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a class diagram for the codebase.
@@ -562,7 +562,7 @@ class CodegenAnalyzerAPI:
             module_name: Name of the module containing the class (optional)
             include_methods: Whether to include methods in the diagram
             include_attributes: Whether to include attributes in the diagram
-            output_output_format: Output format (json, dot, graphml, plantuml)
+            output_format: Output format (json, dot, graphml, plantuml)
 
         Returns:
             Dictionary containing the class diagram data
@@ -591,7 +591,7 @@ class CodegenAnalyzerAPI:
         function_name: str,
         file_path: str | None = None,
         max_depth: int = 3,
-        output_output_format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a sequence diagram for a specific function.
@@ -600,7 +600,7 @@ class CodegenAnalyzerAPI:
             function_name: Name of the function to analyze
             file_path: Path to the file containing the function (optional)
             max_depth: Maximum depth of the sequence diagram
-            output_output_format: Output format (json, plantuml)
+            output_format: Output format (json, plantuml)
 
         Returns:
             Dictionary containing the sequence diagram data
