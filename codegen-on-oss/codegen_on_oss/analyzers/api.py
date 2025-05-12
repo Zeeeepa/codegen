@@ -214,7 +214,7 @@ class CodegenAnalyzerAPI:
         )
 
         # Export if needed
-        if format != "json":
+        if output_format != "json":
             return self.visualizer.export(viz, format=output_format)
 
         return viz
@@ -287,7 +287,7 @@ class CodegenAnalyzerAPI:
         )
 
         # Export if needed
-        if format != "json":
+        if output_format != "json":
             return self.visualizer.export(viz, format=output_format)
 
         return viz
@@ -360,7 +360,7 @@ class CodegenAnalyzerAPI:
         )
 
         # Export if needed
-        if format != "json":
+        if output_format != "json":
             return self.visualizer.export(viz, format=output_format)
 
         return viz
