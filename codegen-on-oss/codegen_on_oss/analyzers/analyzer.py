@@ -609,16 +609,16 @@ class AnalyzerManager:
             <h1>Codebase Analysis Report</h1>
             <div class="section">
                 <h2>Summary</h2>
-                <p>Repository: {self.results['metadata'].get("repo_name", "Unknown")}</p>
-                <p>Language: {self.results['metadata'].get("language", "Unknown")}</p>
-                <p>Analysis Time: {self.results['metadata'].get("analysis_time", "Unknown")}</p>
-                <p>Analysis Types: {", ".join(self.results['metadata'].get("analysis_types", []))}</p>
+                <p>Repository: {self.results["metadata"].get("repo_name", "Unknown")}</p>
+                <p>Language: {self.results["metadata"].get("language", "Unknown")}</p>
+                <p>Analysis Time: {self.results["metadata"].get("analysis_time", "Unknown")}</p>
+                <p>Analysis Types: {", ".join(self.results["metadata"].get("analysis_types", []))}</p>
                 <p>Total Issues: {len(self.issues)}</p>
                 <ul>
-                    <li class="critical">Critical: {self.results['issue_stats']['by_severity'].get("critical", 0)}</li>
-                    <li class="error">Errors: {self.results['issue_stats']['by_severity'].get("error", 0)}</li>
-                    <li class="warning">Warnings: {self.results['issue_stats']['by_severity'].get("warning", 0)}</li>
-                    <li class="info">Info: {self.results['issue_stats']['by_severity'].get("info", 0)}</li>
+                    <li class="critical">Critical: {self.results["issue_stats"]["by_severity"].get("critical", 0)}</li>
+                    <li class="error">Errors: {self.results["issue_stats"]["by_severity"].get("error", 0)}</li>
+                    <li class="warning">Warnings: {self.results["issue_stats"]["by_severity"].get("warning", 0)}</li>
+                    <li class="info">Info: {self.results["issue_stats"]["by_severity"].get("info", 0)}</li>
                 </ul>
             </div>
         """
