@@ -20,11 +20,20 @@ This tool is particularly useful for:
 
 ## Features
 
-- **Function Extraction**: Extracts all functions from your codebase
+- **Function Extraction**: Extracts all functions from your codebase using Codegen SDK
 - **Duplicate Detection**: Identifies exact and near-duplicate functions
 - **Functionality Grouping**: Groups functions based on their purpose
 - **Module Restructuring**: Generates new modules organized by functionality
 - **Comprehensive Reporting**: Provides detailed reports in multiple formats
+
+## Codegen SDK Integration
+
+This tool leverages the Codegen SDK to provide advanced code analysis capabilities:
+
+- **Symbol Extraction**: Uses the SDK to extract functions, classes, and other symbols
+- **Dependency Analysis**: Analyzes function call relationships using the SDK's call graph
+- **Type Information**: Leverages the SDK's type inference capabilities
+- **Semantic Understanding**: Benefits from the SDK's semantic code understanding
 
 ## Installation
 
@@ -48,45 +57,48 @@ python module_disassembler.py --repo-path /path/to/your/repo --output-dir /path/
 ### Command Line Options
 
 - `--repo-path`: Path to the repository to analyze (required)
-- `--output-dir`: Directory to output restructured modules (optional)
-- `--output-format`: Output format for the report (`console` or `json`, default: `console`)
-- `--output-file`: File to write the report to (for JSON format, optional)
+- `--output-dir`: Directory to output restructured modules (required)
+- `--report-file`: File to write the report to (default: disassembler_report.json)
+- `--similarity-threshold`: Threshold for considering functions similar (0.0-1.0, default: 0.8)
+- `--language`: Programming language of the codebase (auto-detected if not provided)
 
-### Example
+### Example Usage
 
 ```bash
 # Analyze a repository and generate restructured modules
 python module_disassembler.py --repo-path ./src/codegen --output-dir ./restructured
 
-# Generate a JSON report
-python module_disassembler.py --repo-path ./src/codegen --output-format json --output-file report.json
+# Focus on a specific directory
+python example_usage.py --repo-path . --focus-dir codegen-on-oss --output-dir ./restructured
+
+# Specify a language and similarity threshold
+python module_disassembler.py --repo-path ./src/codegen --output-dir ./restructured --language python --similarity-threshold 0.7
 ```
 
 ## How It Works
 
-1. **Function Extraction**: The tool scans your codebase and extracts all functions using regex pattern matching (a more sophisticated implementation would use AST parsing).
+1. **Function Extraction**: The tool uses Codegen SDK to extract all functions from your codebase, with a fallback to AST parsing if needed.
 
 2. **Duplicate Detection**: Functions are compared to identify exact duplicates (same hash) and near-duplicates (similarity above a threshold).
 
-3. **Functionality Grouping**: Functions are grouped based on their names and purposes using predefined patterns.
+3. **Dependency Analysis**: The tool builds a dependency graph showing which functions call other functions, using the SDK's call graph capabilities.
 
-4. **Module Restructuring**: New modules are generated for each function group, with proper imports and documentation.
+4. **Functionality Grouping**: Functions are grouped based on their names and purposes using predefined patterns.
 
-## Function Groups
+5. **Module Restructuring**: New modules are generated for each function group, with proper imports and documentation.
+
+## Function Categories
 
 Functions are grouped into the following categories:
 
-- **validation**: Functions related to validating data
-- **data_processing**: Functions for processing or transforming data
-- **io_operations**: Functions for reading/writing data
-- **api_calls**: Functions for making API requests
-- **authentication**: Functions related to user authentication
-- **database**: Functions for database operations
+- **analysis**: Functions for analyzing, extracting, parsing, or processing data
+- **visualization**: Functions for visualizing, plotting, or displaying data
 - **utility**: Helper and utility functions
-- **configuration**: Functions for handling configuration
-- **logging**: Functions for logging
-- **testing**: Functions related to testing
-- **misc**: Functions that don't fit into other categories
+- **io**: Functions for reading/writing data
+- **validation**: Functions for validating or checking data
+- **metrics**: Functions for measuring, calculating, or computing metrics
+- **core**: Core functionality like initialization, main functions, etc.
+- **other**: Functions that don't fit into other categories
 
 ## Output
 
@@ -95,6 +107,14 @@ The tool generates:
 1. **Restructured Modules**: Python files organized by functionality
 2. **Package Structure**: An `__init__.py` file that imports all modules
 3. **Analysis Report**: A detailed report of the analysis results
+
+## Fallback Mechanisms
+
+The tool is designed to work even if the Codegen SDK is not fully functional:
+
+- If SDK function extraction fails, it falls back to AST-based extraction
+- If SDK dependency analysis fails, it falls back to AST-based dependency analysis
+- All core functionality works without the SDK, but with reduced capabilities
 
 ## Limitations
 
@@ -114,4 +134,3 @@ The tool generates:
 ## License
 
 This tool is part of the Codegen SDK and is subject to the same license terms.
-

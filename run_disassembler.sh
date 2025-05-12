@@ -21,3 +21,5 @@ echo "Module disassembler completed!"
 echo "Restructured modules are in: $OUTPUT_DIR"
 echo "Report file: $REPORT_FILE"
 
+# Optionally, you can run tests to verify the restructured modules
+# python -m unittest test_module_disassembler.py

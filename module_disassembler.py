@@ -30,17 +30,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import Codegen SDK
+try:
+    from codegen.sdk.core.codebase import Codebase
+    from codegen.sdk.core.symbol import Function, Class, Symbol
+    from codegen.configs.models.codebase import CodebaseConfig
+    from codegen.configs.models.secrets import SecretsConfig
+    from codegen.shared.enums.programming_language import ProgrammingLanguage
+except ImportError:
+    logger.error("Codegen SDK not found. Please install it first.")
+    sys.exit(1)
+
 class FunctionInfo:
     """Represents information about a function extracted from the codebase."""
     
     def __init__(self, name: str, source: str, file_path: str, 
-                 start_line: int, end_line: int, ast_node: ast.FunctionDef):
+                 start_line: int, end_line: int, ast_node: ast.FunctionDef = None,
+                 symbol: Function = None):
         self.name = name
         self.source = source
         self.file_path = file_path
         self.start_line = start_line
         self.end_line = end_line
         self.ast_node = ast_node
+        self.symbol = symbol  # Store the Codegen SDK Function object
         self.hash = self._compute_hash()
         self.normalized_hash = self._compute_normalized_hash()
         self.dependencies = set()
@@ -113,19 +126,57 @@ class ModuleDisassembler:
         "core": ["init", "main", "run", "execute", "start", "stop", "create", "build"]
     }
     
-    def __init__(self, repo_path: str):
+    def __init__(self, repo_path: str, language: str = None):
         """
         Initialize the ModuleDisassembler.
         
         Args:
             repo_path: Path to the repository to analyze
+            language: Programming language of the codebase (auto-detected if not provided)
         """
         self.repo_path = Path(repo_path)
+        self.language = language
         self.functions: Dict[str, FunctionInfo] = {}
         self.duplicate_groups: List[List[FunctionInfo]] = []
         self.similar_groups: List[List[FunctionInfo]] = []
         self.dependency_graph = nx.DiGraph()
         self.categorized_functions: Dict[str, List[FunctionInfo]] = defaultdict(list)
+        
+        # Initialize Codegen SDK codebase
+        self.codebase = self._init_codebase()
+        
+    def _init_codebase(self) -> Codebase:
+        """Initialize the Codegen SDK codebase."""
+        try:
+            # Configure the codebase
+            config = CodebaseConfig(
+                debug=False,
+                allow_external=True,
+                py_resolve_syspath=True,
+            )
+            
+            secrets = SecretsConfig()
+            
+            # Initialize the codebase
+            logger.info(f"Initializing codebase from {self.repo_path}...")
+            
+            prog_lang = None
+            if self.language:
+                prog_lang = ProgrammingLanguage(self.language.upper())
+            
+            codebase = Codebase(
+                repo_path=str(self.repo_path),
+                language=prog_lang,
+                config=config,
+                secrets=secrets
+            )
+            
+            logger.info(f"Successfully initialized codebase from {self.repo_path}")
+            return codebase
+            
+        except Exception as e:
+            logger.error(f"Error initializing codebase: {e}")
+            raise
         
     def analyze(self, similarity_threshold: float = 0.8):
         """
@@ -136,8 +187,8 @@ class ModuleDisassembler:
         """
         logger.info(f"Starting analysis of repository at {self.repo_path}")
         
-        # Extract all functions from the codebase
-        self._extract_functions()
+        # Extract all functions from the codebase using Codegen SDK
+        self._extract_functions_with_sdk()
         logger.info(f"Extracted {len(self.functions)} functions from the codebase")
         
         # Identify duplicate and similar functions
@@ -145,15 +196,52 @@ class ModuleDisassembler:
         logger.info(f"Identified {len(self.duplicate_groups)} duplicate groups and {len(self.similar_groups)} similar groups")
         
         # Build dependency graph
-        self._build_dependency_graph()
+        self._build_dependency_graph_with_sdk()
         logger.info(f"Built dependency graph with {self.dependency_graph.number_of_nodes()} nodes and {self.dependency_graph.number_of_edges()} edges")
         
         # Categorize functions by purpose
         self._categorize_functions()
         logger.info(f"Categorized functions into {len(self.categorized_functions)} categories")
         
-    def _extract_functions(self):
-        """Extract all functions from Python files in the codebase."""
+    def _extract_functions_with_sdk(self):
+        """Extract all functions from the codebase using Codegen SDK."""
+        try:
+            # Get all functions from the codebase
+            sdk_functions = list(self.codebase.functions)
+            logger.info(f"Found {len(sdk_functions)} functions using Codegen SDK")
+            
+            for func in sdk_functions:
+                try:
+                    # Get function source and location information
+                    source = func.source
+                    file_path = func.file.file_path if hasattr(func, "file") else "Unknown"
+                    start_line = func.start_line if hasattr(func, "start_line") else 0
+                    end_line = func.end_line if hasattr(func, "end_line") else 0
+                    
+                    # Create a FunctionInfo object
+                    function_info = FunctionInfo(
+                        name=func.name,
+                        source=source,
+                        file_path=file_path,
+                        start_line=start_line,
+                        end_line=end_line,
+                        symbol=func
+                    )
+                    
+                    # Add to the functions dictionary
+                    self.functions[f"{function_info.file_path}:{function_info.name}"] = function_info
+                    
+                except Exception as e:
+                    logger.warning(f"Error processing function {func.name}: {e}")
+                    
+        except Exception as e:
+            logger.error(f"Error extracting functions with SDK: {e}")
+            # Fall back to AST-based extraction if SDK fails
+            logger.info("Falling back to AST-based function extraction")
+            self._extract_functions_with_ast()
+    
+    def _extract_functions_with_ast(self):
+        """Extract all functions from Python files using AST (fallback method)."""
         python_files = list(self.repo_path.glob("**/*.py"))
         
         for file_path in python_files:
@@ -240,28 +328,72 @@ class ModuleDisassembler:
         # If we get here, neither function is in a group yet
         self.similar_groups.append([func1, func2])
     
-    def _build_dependency_graph(self):
-        """Build a dependency graph of functions."""
-        # Add all functions as nodes
-        for func in self.functions.values():
-            self.dependency_graph.add_node(func.name, function=func)
-        
-        # Analyze function calls to build edges
-        for func in self.functions.values():
-            # Parse the function to find calls
-            try:
-                tree = ast.parse(func.source)
-                for node in ast.walk(tree):
-                    if isinstance(node, ast.Call) and hasattr(node.func, 'id'):
-                        called_name = node.func.id
-                        # Check if this is a call to another function we know about
-                        for potential_target in self.functions.values():
-                            if potential_target.name == called_name:
+    def _build_dependency_graph_with_sdk(self):
+        """Build a dependency graph of functions using Codegen SDK."""
+        try:
+            # Add all functions as nodes
+            for func in self.functions.values():
+                self.dependency_graph.add_node(func.name)
+            
+            # Use SDK to get function calls
+            for func in self.functions.values():
+                if func.symbol:
+                    # Get all calls made by this function
+                    try:
+                        # Use SDK's call graph if available
+                        calls = func.symbol.calls if hasattr(func.symbol, "calls") else []
+                        
+                        for call in calls:
+                            called_name = call.name if hasattr(call, "name") else str(call)
+                            # Check if this is a call to another function we know about
+                            if called_name in [f.name for f in self.functions.values()]:
                                 # Add an edge from caller to callee
                                 self.dependency_graph.add_edge(func.name, called_name)
                                 func.dependencies.add(called_name)
+                    except Exception as e:
+                        logger.warning(f"Error getting calls for {func.name}: {e}")
+                else:
+                    # Fall back to AST-based dependency analysis
+                    self._analyze_function_dependencies_with_ast(func)
+        except Exception as e:
+            logger.error(f"Error building dependency graph with SDK: {e}")
+            # Fall back to AST-based dependency analysis
+            logger.info("Falling back to AST-based dependency analysis")
+            self._build_dependency_graph_with_ast()
+    
+    def _build_dependency_graph_with_ast(self):
+        """Build a dependency graph of functions using AST (fallback method)."""
+        # Add all functions as nodes
+        for func in self.functions.values():
+            self.dependency_graph.add_node(func.name)
+        
+        # Analyze dependencies for each function
+        for func in self.functions.values():
+            self._analyze_function_dependencies_with_ast(func)
+    
+    def _analyze_function_dependencies_with_ast(self, func: FunctionInfo):
+        """Analyze function dependencies using AST."""
+        if not func.ast_node:
+            try:
+                # Parse the function to get its AST
+                func.ast_node = ast.parse(func.source).body[0]
             except Exception as e:
-                logger.warning(f"Error analyzing dependencies in {func.name}: {e}")
+                logger.warning(f"Error parsing function {func.name}: {e}")
+                return
+        
+        try:
+            # Find all function calls in the AST
+            for node in ast.walk(func.ast_node):
+                if isinstance(node, ast.Call) and hasattr(node.func, 'id'):
+                    called_name = node.func.id
+                    # Check if this is a call to another function we know about
+                    for potential_target in self.functions.values():
+                        if potential_target.name == called_name:
+                            # Add an edge from caller to callee
+                            self.dependency_graph.add_edge(func.name, called_name)
+                            func.dependencies.add(called_name)
+        except Exception as e:
+            logger.warning(f"Error analyzing dependencies in {func.name}: {e}")
     
     def _categorize_functions(self):
         """Categorize functions by their purpose based on naming patterns."""
@@ -305,12 +437,14 @@ class ModuleDisassembler:
                 
                 # Add imports for all functions in this category
                 for func in self.categorized_functions[category]:
-                    f.write(f"from .{func.name} import {func.name}\n")
+                    if not func.is_duplicate:
+                        f.write(f"from .{func.name} import {func.name}\n")
                 
                 # Export all functions
                 f.write("\n__all__ = [\n")
                 for func in self.categorized_functions[category]:
-                    f.write(f"    '{func.name}',\n")
+                    if not func.is_duplicate:
+                        f.write(f"    '{func.name}',\n")
                 f.write("]\n")
             
             # Create a file for each function
@@ -322,6 +456,10 @@ class ModuleDisassembler:
                 with open(category_dir / f"{func.name}.py", "w") as f:
                     # Add imports
                     f.write("import os\nimport sys\nfrom typing import Dict, List, Set, Tuple, Any, Optional, Union\n\n")
+                    
+                    # Add Codegen SDK imports if needed
+                    f.write("from codegen.sdk.core.codebase import Codebase\n")
+                    f.write("from codegen.sdk.core.symbol import Function, Class, Symbol\n\n")
                     
                     # Add dependencies
                     for dep in func.dependencies:
@@ -460,12 +598,13 @@ def main():
     parser.add_argument("--output-dir", required=True, help="Directory to output the restructured modules")
     parser.add_argument("--report-file", default="disassembler_report.json", help="Path to the output report file")
     parser.add_argument("--similarity-threshold", type=float, default=0.8, help="Threshold for considering functions similar (0.0-1.0)")
+    parser.add_argument("--language", help="Programming language of the codebase (auto-detected if not provided)")
     
     args = parser.parse_args()
     
     try:
         # Initialize the disassembler
-        disassembler = ModuleDisassembler(repo_path=args.repo_path)
+        disassembler = ModuleDisassembler(repo_path=args.repo_path, language=args.language)
         
         # Perform the analysis
         disassembler.analyze(similarity_threshold=args.similarity_threshold)
@@ -488,4 +627,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

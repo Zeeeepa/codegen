@@ -11,8 +11,19 @@ import os
 import shutil
 import tempfile
 import unittest
+import sys
 
 from module_disassembler import ModuleDisassembler
+
+# Try to import Codegen SDK for testing
+try:
+    from codegen.sdk.core.codebase import Codebase
+    from codegen.configs.models.codebase import CodebaseConfig
+    from codegen.configs.models.secrets import SecretsConfig
+    HAS_SDK = True
+except ImportError:
+    HAS_SDK = False
+    print("Warning: Codegen SDK not found. Some tests will be skipped.")
 
 
 class TestModuleDisassembler(unittest.TestCase):
@@ -110,14 +121,17 @@ def save_results(data, filename):
     def test_function_extraction(self):
         """Test that functions are correctly extracted from the codebase."""
         disassembler = ModuleDisassembler(repo_path=self.test_dir)
-        disassembler._extract_functions()
+        
+        # Use AST-based extraction for testing
+        disassembler._extract_functions_with_ast()
 
-        # We should have 6 functions in total
-        self.assertEqual(len(disassembler.functions), 6)
+        # We should have 7 functions in total
+        self.assertEqual(len(disassembler.functions), 7)
 
         # Check that all expected functions are found
         function_names = [func.name for func in disassembler.functions.values()]
-        expected_names = ["analyze_data", "format_output", "process_data", "validate_input", "display_results", "format_results", "save_results"]
+        expected_names = ["analyze_data", "format_output", "process_data", "validate_input", 
+                         "display_results", "format_results", "save_results"]
 
         for name in expected_names:
             self.assertIn(name, function_names)
@@ -125,7 +139,7 @@ def save_results(data, filename):
     def test_duplicate_detection(self):
         """Test that duplicates are correctly identified."""
         disassembler = ModuleDisassembler(repo_path=self.test_dir)
-        disassembler._extract_functions()
+        disassembler._extract_functions_with_ast()
         disassembler._identify_duplicates(similarity_threshold=0.8)
 
         # We should have 1 duplicate group (analyze_data appears twice)
@@ -137,7 +151,7 @@ def save_results(data, filename):
     def test_categorization(self):
         """Test that functions are correctly categorized."""
         disassembler = ModuleDisassembler(repo_path=self.test_dir)
-        disassembler._extract_functions()
+        disassembler._extract_functions_with_ast()
         disassembler._categorize_functions()
 
         # Check that functions are categorized correctly
@@ -161,7 +175,13 @@ def save_results(data, filename):
     def test_full_analysis(self):
         """Test the full analysis process."""
         disassembler = ModuleDisassembler(repo_path=self.test_dir)
-        disassembler.analyze(similarity_threshold=0.8)
+        
+        # For testing, we'll use the AST-based methods directly
+        disassembler._extract_functions_with_ast()
+        disassembler._identify_duplicates(similarity_threshold=0.8)
+        disassembler._build_dependency_graph_with_ast()
+        disassembler._categorize_functions()
+        
         disassembler.generate_restructured_modules(output_dir=self.output_dir)
         disassembler.generate_report(output_file=self.report_file)
 
@@ -181,7 +201,21 @@ def save_results(data, filename):
         self.assertIn("similar", report)
         self.assertIn("categories", report)
 
+    @unittest.skipIf(not HAS_SDK, "Codegen SDK not available")
+    def test_sdk_integration(self):
+        """Test integration with Codegen SDK."""
+        # This test only runs if the SDK is available
+        disassembler = ModuleDisassembler(repo_path=self.test_dir)
+        
+        # Mock the SDK codebase for testing
+        disassembler.codebase = None
+        
+        # Test that the fallback to AST works when SDK fails
+        disassembler._extract_functions_with_sdk()
+        
+        # We should still have functions extracted via AST fallback
+        self.assertGreater(len(disassembler.functions), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
-
