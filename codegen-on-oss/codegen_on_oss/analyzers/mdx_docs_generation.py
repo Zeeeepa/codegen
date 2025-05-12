@@ -6,7 +6,7 @@ formatting parameters and return types, and sanitizing HTML and MDX content.
 """
 
 import re
-from typing import Optional
+from typing import Optional, List, Union
 
 from codegen_on_oss.analyzers.doc_utils.schemas import ClassDoc, MethodDoc, ParameterDoc
 from codegen_on_oss.analyzers.doc_utils.utils import sanitize_html_for_mdx, sanitize_mdx_mintlify_description
@@ -125,8 +125,8 @@ def render_mdx_for_attribute(attribute: MethodDoc) -> str:
     Returns:
         The MDX content for the attribute.
     """
-    attribute_docstring = sanitize_mdx_mintlify_description(attribute.description)
-    if len(attribute.return_type) > 0:
+    attribute_docstring = sanitize_mdx_mintlify_description(attribute.description or "")
+    if attribute.return_type and len(attribute.return_type) > 0:
         return_type = f"{resolve_type_string(attribute.return_type[0])}"
     else:
         return_type = ""
@@ -163,7 +163,7 @@ def format_parameter_for_mdx(parameter: ParameterDoc) -> str:
 """.strip()
 
 
-def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
+def format_parameters_for_mdx(parameters: List[ParameterDoc]) -> str:
     """Format a list of parameters for MDX documentation.
     
     Args:
@@ -175,7 +175,7 @@ def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
     return "\n".join([format_parameter_for_mdx(parameter) for parameter in parameters])
 
 
-def format_return_for_mdx(return_type: list[str], return_description: str) -> str:
+def format_return_for_mdx(return_type: List[str], return_description: Optional[str] = None) -> str:
     """Format a return type for MDX documentation.
     
     Args:
@@ -186,10 +186,10 @@ def format_return_for_mdx(return_type: list[str], return_description: str) -> st
         The MDX content for the return type.
     """
     description = sanitize_html_for_mdx(return_description) if return_description else ""
-    return_type = resolve_type_string(return_type[0])
+    return_type_str = resolve_type_string(return_type[0]) if return_type and len(return_type) > 0 else ""
 
     return f"""
-<Return return_type={{ {return_type} }} description="{description}"/>
+<Return return_type={{ {return_type_str} }} description="{description}"/>
 """
 
 
@@ -202,7 +202,7 @@ def render_mdx_for_method(method: MethodDoc) -> str:
     Returns:
         The MDX content for the method.
     """
-    description = sanitize_mdx_mintlify_description(method.description)
+    description = sanitize_mdx_mintlify_description(method.description or "")
     # =====[ RENDER ]=====
     mdx_string = f"""### <span className="text-primary">{method.name}</span>
 {description}
@@ -251,8 +251,8 @@ def format_type_string(type_string: str) -> str:
     Returns:
         The formatted type string.
     """
-    type_string = type_string.split("|")
-    return " | ".join([type_str.strip() for type_str in type_string])
+    type_parts = type_string.split("|")
+    return " | ".join([type_str.strip() for type_str in type_parts])
 
 
 def resolve_type_string(type_string: str) -> str:
@@ -331,4 +331,3 @@ def parse_link(type_string: str, href: bool = False) -> str:
                 result.append(part.strip())
 
     return " ".join(result)
-

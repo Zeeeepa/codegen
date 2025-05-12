@@ -2,9 +2,10 @@
 
 import re
 import textwrap
+from typing import Optional
 
 
-def sanitize_docstring_for_markdown(docstring: str | None) -> str:
+def sanitize_docstring_for_markdown(docstring: Optional[str]) -> str:
     """Sanitize the docstring for MDX.
     
     Args:
@@ -78,4 +79,3 @@ def extract_class_description(docstring: str) -> str:
     # Normalize whitespace
     lines = [line.strip() for line in description.strip().splitlines()]
     return " ".join(filter(None, lines))
-
