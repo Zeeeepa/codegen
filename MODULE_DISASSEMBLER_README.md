@@ -1,117 +1,118 @@
-# Module Disassembler and Restructurer
+# Module Disassembler for Codegen
 
-A powerful tool for analyzing codebases, identifying duplicate and redundant code, and restructuring modules based on their functionality.
-
-## Overview
-
-The Module Disassembler is designed to help you:
-
-1. **Analyze** your codebase to understand its structure
-2. **Identify** duplicate and redundant code
-3. **Group** functions by their functionality
-4. **Restructure** your codebase into more logical modules
-
-This tool is particularly useful for:
-- Refactoring large codebases
-- Understanding unfamiliar code
-- Improving code organization
-- Reducing technical debt
-- Preparing for architectural changes
+This tool analyzes, restructures, and deduplicates code in the Codegen codebase, particularly focusing on analysis modules. It extracts functions, identifies duplicates, and reorganizes code based on functionality.
 
 ## Features
 
-- **Function Extraction**: Extracts all functions from your codebase
-- **Duplicate Detection**: Identifies exact and near-duplicate functions
-- **Functionality Grouping**: Groups functions based on their purpose
-- **Module Restructuring**: Generates new modules organized by functionality
-- **Comprehensive Reporting**: Provides detailed reports in multiple formats
+- **Function Extraction**: Extracts all functions from Python files in the codebase
+- **Duplicate Detection**: Identifies exact duplicates and similar functions
+- **Functional Categorization**: Categorizes functions by their purpose (analysis, visualization, utility, etc.)
+- **Dependency Analysis**: Builds a dependency graph to understand function relationships
+- **Code Restructuring**: Generates a new, more maintainable module structure
+- **Detailed Reporting**: Provides comprehensive reports on duplicates and code organization
 
 ## Installation
 
-The Module Disassembler requires the Codegen SDK to be installed:
-
-```bash
-# Clone the repository
-git clone https://github.com/Zeeeepa/codegen.git
-cd codegen
-
-# Install dependencies
-pip install -e .
-```
+No additional installation is required beyond the standard Codegen dependencies. The tool is designed to work with the existing codebase.
 
 ## Usage
 
 ```bash
-python module_disassembler.py --repo-path /path/to/your/repo --output-dir /path/to/output
+python module_disassembler.py --repo-path /path/to/codegen --output-dir /path/to/output
 ```
 
-### Command Line Options
+### Arguments
 
 - `--repo-path`: Path to the repository to analyze (required)
-- `--output-dir`: Directory to output restructured modules (optional)
-- `--output-format`: Output format for the report (`console` or `json`, default: `console`)
-- `--output-file`: File to write the report to (for JSON format, optional)
+- `--output-dir`: Directory to output the restructured modules (required)
+- `--report-file`: Path to the output report file (default: `disassembler_report.json`)
+- `--similarity-threshold`: Threshold for considering functions similar (0.0-1.0, default: 0.8)
 
-### Example
+## Output Structure
 
-```bash
-# Analyze a repository and generate restructured modules
-python module_disassembler.py --repo-path ./src/codegen --output-dir ./restructured
+The tool generates a restructured module hierarchy organized by function category:
 
-# Generate a JSON report
-python module_disassembler.py --repo-path ./src/codegen --output-format json --output-file report.json
+```
+output_dir/
+├── __init__.py
+├── README.md
+├── analysis/
+│   ├── __init__.py
+│   ├── analyze_codebase.py
+│   ├── extract_functions.py
+│   └── ...
+├── visualization/
+│   ├── __init__.py
+│   ├── plot_dependency_graph.py
+│   └── ...
+├── utility/
+│   ├── __init__.py
+│   ├── format_output.py
+│   └── ...
+└── ...
 ```
 
-## How It Works
+Each function is placed in its own file, with proper imports for dependencies. Duplicate functions are eliminated, with references pointing to the primary implementation.
 
-1. **Function Extraction**: The tool scans your codebase and extracts all functions using regex pattern matching (a more sophisticated implementation would use AST parsing).
+## Function Categories
 
-2. **Duplicate Detection**: Functions are compared to identify exact duplicates (same hash) and near-duplicates (similarity above a threshold).
+Functions are categorized based on naming patterns:
 
-3. **Functionality Grouping**: Functions are grouped based on their names and purposes using predefined patterns.
+- **analysis**: Functions that analyze, extract, parse, or process data
+- **visualization**: Functions that visualize, plot, or display information
+- **utility**: Helper functions, formatters, converters
+- **io**: Functions for reading, writing, loading, or saving data
+- **validation**: Functions that validate, check, or verify data
+- **metrics**: Functions that calculate, measure, or compute metrics
+- **core**: Core functionality like initialization, main execution, etc.
+- **other**: Functions that don't fit into the above categories
 
-4. **Module Restructuring**: New modules are generated for each function group, with proper imports and documentation.
+## Report Format
 
-## Function Groups
+The tool generates a JSON report with the following structure:
 
-Functions are grouped into the following categories:
+```json
+{
+  "summary": {
+    "total_functions": 150,
+    "duplicate_groups": 5,
+    "similar_groups": 8,
+    "categories": {
+      "analysis": 45,
+      "visualization": 20,
+      "utility": 30,
+      "io": 15,
+      "validation": 10,
+      "metrics": 25,
+      "core": 5
+    }
+  },
+  "duplicates": [...],
+  "similar": [...],
+  "categories": {...}
+}
+```
 
-- **validation**: Functions related to validating data
-- **data_processing**: Functions for processing or transforming data
-- **io_operations**: Functions for reading/writing data
-- **api_calls**: Functions for making API requests
-- **authentication**: Functions related to user authentication
-- **database**: Functions for database operations
-- **utility**: Helper and utility functions
-- **configuration**: Functions for handling configuration
-- **logging**: Functions for logging
-- **testing**: Functions related to testing
-- **misc**: Functions that don't fit into other categories
+## Example
 
-## Output
+```bash
+# Analyze the codegen repository and output restructured modules
+python module_disassembler.py --repo-path ./codegen --output-dir ./restructured_modules
 
-The tool generates:
+# Analyze with a higher similarity threshold
+python module_disassembler.py --repo-path ./codegen --output-dir ./restructured_modules --similarity-threshold 0.9
+```
 
-1. **Restructured Modules**: Python files organized by functionality
-2. **Package Structure**: An `__init__.py` file that imports all modules
-3. **Analysis Report**: A detailed report of the analysis results
+## Use Cases
+
+1. **Code Cleanup**: Identify and eliminate duplicate code
+2. **Refactoring**: Restructure code into a more maintainable organization
+3. **Code Understanding**: Gain insights into the codebase structure and dependencies
+4. **Technical Debt Reduction**: Identify areas for improvement and consolidation
 
 ## Limitations
 
-- The current implementation uses regex for function extraction, which may not handle all edge cases correctly. A more robust implementation would use AST parsing.
-- Function grouping is based on name patterns, which may not always accurately reflect the function's purpose.
-- The tool currently only supports Python code, but could be extended to support other languages.
-
-## Future Improvements
-
-- Use AST parsing for more accurate function extraction
-- Implement more sophisticated code similarity algorithms
-- Add support for additional programming languages
-- Improve function grouping using NLP techniques
-- Add visualization of code dependencies
-- Implement interactive mode for manual grouping
-
-## License
-
-This tool is part of the Codegen SDK and is subject to the same license terms.
+- The tool currently only analyzes Python files
+- Function similarity detection may produce false positives with very generic functions
+- Dependency analysis is based on static analysis and may miss dynamic dependencies
 

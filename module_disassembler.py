@@ -1,48 +1,28 @@
 #!/usr/bin/env python3
 """
-Module Disassembler and Restructurer
+Module Disassembler for Codegen
 
-This tool analyzes a codebase, identifies duplicate and redundant code,
-and restructures modules based on their functionality.
-
-It builds on the existing CodebaseAnalyzer from codegen-on-oss to provide
-additional functionality for deduplication and module restructuring.
+This tool analyzes, restructures, and deduplicates code in the Codegen codebase,
+particularly focusing on analysis modules. It extracts functions, identifies duplicates,
+and reorganizes code based on functionality.
 """
 
 import os
 import sys
-import json
-import time
-import logging
+import ast
 import argparse
-import tempfile
-import re
+import difflib
 import hashlib
+import re
+import json
+import shutil
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, Any, Optional, Union, Callable
-from collections import Counter, defaultdict
+from collections import defaultdict
 import networkx as nx
-import matplotlib.pyplot as plt
-from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
-
-try:
-    from codegen.sdk.core.codebase import Codebase
-    from codegen.configs.models.codebase import CodebaseConfig
-    from codegen.configs.models.secrets import SecretsConfig
-    from codegen.shared.enums.programming_language import ProgrammingLanguage
-    # Import the CodebaseAnalyzer if available
-    try:
-        from codegen_on_oss.error_analyzer import CodebaseAnalyzer
-        HAS_ANALYZER = True
-    except ImportError:
-        HAS_ANALYZER = False
-except ImportError:
-    print("Codegen SDK not found. Please install it first.")
-    sys.exit(1)
 
 # Configure logging
+import logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -50,431 +30,461 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Rich console for pretty output
-console = Console()
-
-class FunctionSignature:
-    """Represents a function signature for comparison purposes."""
+class FunctionInfo:
+    """Represents information about a function extracted from the codebase."""
     
-    def __init__(self, name: str, params: List[str], body: str, file_path: str, start_line: int, end_line: int):
+    def __init__(self, name: str, source: str, file_path: str, 
+                 start_line: int, end_line: int, ast_node: ast.FunctionDef):
         self.name = name
-        self.params = params
-        self.body = self._normalize_body(body)
+        self.source = source
         self.file_path = file_path
         self.start_line = start_line
         self.end_line = end_line
+        self.ast_node = ast_node
         self.hash = self._compute_hash()
+        self.normalized_hash = self._compute_normalized_hash()
+        self.dependencies = set()
+        self.category = None
+        self.is_duplicate = False
+        self.duplicate_of = None
+        self.similarity_scores = {}
         
-    def _normalize_body(self, body: str) -> str:
-        """Normalize function body for comparison by removing whitespace and comments."""
-        # Remove comments
-        body = re.sub(r'#.*$', '', body, flags=re.MULTILINE)
-        # Remove docstrings (simple approach)
-        body = re.sub(r'""".*?"""', '', body, flags=re.DOTALL)
-        body = re.sub(r"'''.*?'''", '', body, flags=re.DOTALL)
-        # Normalize whitespace
-        body = re.sub(r'\s+', ' ', body).strip()
-        return body
-    
     def _compute_hash(self) -> str:
-        """Compute a hash of the normalized function body for quick comparison."""
-        return hashlib.md5(self.body.encode()).hexdigest()
+        """Compute a hash of the function source code."""
+        return hashlib.md5(self.source.encode('utf-8')).hexdigest()
     
-    def is_similar_to(self, other: 'FunctionSignature', threshold: float = 0.8) -> bool:
-        """Check if this function is similar to another function."""
-        # Quick check using hash
-        if self.hash == other.hash:
-            return True
+    def _compute_normalized_hash(self) -> str:
+        """Compute a hash of the normalized function source code (ignoring whitespace, comments, etc.)."""
+        # Parse the function to AST
+        tree = ast.parse(self.source)
+        # Remove docstrings and comments
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Str):
+                node.value.s = ""
+        # Convert back to source and normalize whitespace
+        normalized_source = ast.unparse(tree)
+        normalized_source = re.sub(r'\s+', ' ', normalized_source)
+        return hashlib.md5(normalized_source.encode('utf-8')).hexdigest()
+    
+    def compute_similarity(self, other: 'FunctionInfo') -> float:
+        """Compute similarity between this function and another function."""
+        # If we've already computed this, return the cached value
+        if other.name in self.similarity_scores:
+            return self.similarity_scores[other.name]
         
-        # More detailed comparison for near-duplicates
-        # This is a simple implementation - could be improved with more sophisticated
-        # code similarity algorithms
+        # If the normalized hashes match, they're identical (after normalization)
+        if self.normalized_hash == other.normalized_hash:
+            similarity = 1.0
+        else:
+            # Use difflib to compute similarity
+            seq_matcher = difflib.SequenceMatcher(None, self.source, other.source)
+            similarity = seq_matcher.ratio()
         
-        # Simple approach: count common substrings
-        common_chars = sum(1 for a, b in zip(self.body, other.body) if a == b)
-        max_length = max(len(self.body), len(other.body))
-        if max_length == 0:
-            return False
+        # Cache the result
+        self.similarity_scores[other.name] = similarity
+        other.similarity_scores[self.name] = similarity
         
-        similarity = common_chars / max_length
-        return similarity >= threshold
+        return similarity
+    
+    def __str__(self) -> str:
+        return f"{self.name} ({self.file_path}:{self.start_line}-{self.end_line})"
+    
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 class ModuleDisassembler:
     """
-    Analyzes a codebase, identifies duplicate and redundant code,
-    and restructures modules based on their functionality.
+    Analyzes, restructures, and deduplicates code in the Codegen codebase.
+    
+    This class provides methods to extract functions, identify duplicates,
+    categorize functions by purpose, and reorganize code into a more
+    maintainable structure.
     """
     
-    def __init__(self, repo_path: str, output_dir: Optional[str] = None):
-        self.repo_path = Path(repo_path).resolve()
-        self.output_dir = Path(output_dir) if output_dir else self.repo_path / "restructured"
-        self.functions: List[FunctionSignature] = []
-        self.modules: Dict[str, List[FunctionSignature]] = defaultdict(list)
-        self.duplicates: List[Tuple[FunctionSignature, FunctionSignature]] = []
-        self.function_groups: Dict[str, List[FunctionSignature]] = {}
-        
-        # Initialize the codebase
-        self.codebase_config = CodebaseConfig(
-            path=str(self.repo_path),
-            languages=[ProgrammingLanguage.PYTHON],  # Can be extended for other languages
-        )
-        self.codebase = Codebase(self.codebase_config)
-        
-        # Use the existing analyzer if available
-        if HAS_ANALYZER:
-            self.analyzer = CodebaseAnalyzer(
-                repo_path=str(self.repo_path),
-                languages=["python"],  # Can be extended
-                categories=["codebase_structure", "code_quality", "dependencies"]
-            )
-        else:
-            self.analyzer = None
-            logger.warning("CodebaseAnalyzer not available. Some functionality will be limited.")
+    # Function categories based on purpose
+    CATEGORIES = {
+        "analysis": ["analyze", "extract", "parse", "process", "get_", "find_", "detect", "identify"],
+        "visualization": ["visualize", "plot", "draw", "render", "display", "show", "graph"],
+        "utility": ["util", "helper", "format", "convert", "transform", "normalize"],
+        "io": ["read", "write", "load", "save", "import", "export", "serialize", "deserialize"],
+        "validation": ["validate", "check", "verify", "ensure", "assert", "is_", "has_"],
+        "metrics": ["measure", "calculate", "compute", "count", "metric", "score", "rank"],
+        "core": ["init", "main", "run", "execute", "start", "stop", "create", "build"]
+    }
     
-    def analyze(self) -> Dict[str, Any]:
+    def __init__(self, repo_path: str):
         """
-        Analyze the codebase and return the results.
-        """
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TimeElapsedColumn(),
-        ) as progress:
-            # Step 1: Extract all functions from the codebase
-            task1 = progress.add_task("[green]Extracting functions...", total=1)
-            self._extract_functions()
-            progress.update(task1, completed=1)
-            
-            # Step 2: Identify duplicate functions
-            task2 = progress.add_task("[yellow]Identifying duplicates...", total=1)
-            self._identify_duplicates()
-            progress.update(task2, completed=1)
-            
-            # Step 3: Group functions by functionality
-            task3 = progress.add_task("[blue]Grouping functions...", total=1)
-            self._group_functions_by_functionality()
-            progress.update(task3, completed=1)
-            
-            # Step 4: Generate restructured modules
-            task4 = progress.add_task("[magenta]Generating restructured modules...", total=1)
-            self._generate_restructured_modules()
-            progress.update(task4, completed=1)
+        Initialize the ModuleDisassembler.
         
-        # Return the analysis results
-        return {
-            "total_functions": len(self.functions),
-            "total_modules": len(self.modules),
-            "duplicate_functions": len(self.duplicates),
-            "function_groups": {name: len(funcs) for name, funcs in self.function_groups.items()},
-            "restructured_modules": len(self.function_groups)
-        }
-    
+        Args:
+            repo_path: Path to the repository to analyze
+        """
+        self.repo_path = Path(repo_path)
+        self.functions: Dict[str, FunctionInfo] = {}
+        self.duplicate_groups: List[List[FunctionInfo]] = []
+        self.similar_groups: List[List[FunctionInfo]] = []
+        self.dependency_graph = nx.DiGraph()
+        self.categorized_functions: Dict[str, List[FunctionInfo]] = defaultdict(list)
+        
+    def analyze(self, similarity_threshold: float = 0.8):
+        """
+        Perform a complete analysis of the codebase.
+        
+        Args:
+            similarity_threshold: Threshold for considering functions similar (0.0-1.0)
+        """
+        logger.info(f"Starting analysis of repository at {self.repo_path}")
+        
+        # Extract all functions from the codebase
+        self._extract_functions()
+        logger.info(f"Extracted {len(self.functions)} functions from the codebase")
+        
+        # Identify duplicate and similar functions
+        self._identify_duplicates(similarity_threshold)
+        logger.info(f"Identified {len(self.duplicate_groups)} duplicate groups and {len(self.similar_groups)} similar groups")
+        
+        # Build dependency graph
+        self._build_dependency_graph()
+        logger.info(f"Built dependency graph with {self.dependency_graph.number_of_nodes()} nodes and {self.dependency_graph.number_of_edges()} edges")
+        
+        # Categorize functions by purpose
+        self._categorize_functions()
+        logger.info(f"Categorized functions into {len(self.categorized_functions)} categories")
+        
     def _extract_functions(self):
-        """Extract all functions from the codebase."""
-        logger.info("Extracting functions from codebase...")
-        
-        # Use the codebase to get all Python files
-        python_files = [f for f in self.repo_path.glob("**/*.py") 
-                       if not any(part.startswith('.') for part in f.parts)]
+        """Extract all functions from Python files in the codebase."""
+        python_files = list(self.repo_path.glob("**/*.py"))
         
         for file_path in python_files:
-            rel_path = file_path.relative_to(self.repo_path)
-            module_name = str(rel_path).replace('/', '.').replace('\\', '.').replace('.py', '')
-            
+            # Skip virtual environments, tests, and other non-core code
+            if any(part in str(file_path) for part in ["venv", "env", "node_modules", "__pycache__"]):
+                continue
+                
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
+                    source = f.read()
                 
-                # Simple function extraction using regex
-                # This is a basic implementation - the real implementation would use AST parsing
-                function_matches = re.finditer(
-                    r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)(?:\s*->.*?)?\s*:(?:\s*""".*?""")?(?:\s*\'\'\'.*?\'\'\')?(.+?)(?=\n\S|$)',
-                    content,
-                    re.DOTALL
-                )
+                # Parse the file
+                tree = ast.parse(source)
                 
-                for match in function_matches:
-                    name = match.group(1)
-                    params = [p.strip() for p in match.group(2).split(',') if p.strip()]
-                    body = match.group(3)
-                    
-                    # Calculate line numbers
-                    start_pos = match.start()
-                    end_pos = match.end()
-                    start_line = content[:start_pos].count('\n') + 1
-                    end_line = start_line + content[start_pos:end_pos].count('\n')
-                    
-                    func_sig = FunctionSignature(
-                        name=name,
-                        params=params,
-                        body=body,
-                        file_path=str(rel_path),
-                        start_line=start_line,
-                        end_line=end_line
-                    )
-                    
-                    self.functions.append(func_sig)
-                    self.modules[module_name].append(func_sig)
-            
+                # Extract functions
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.FunctionDef):
+                        # Get the function source code
+                        start_line = node.lineno
+                        end_line = node.end_lineno
+                        function_source = "\n".join(source.splitlines()[start_line-1:end_line])
+                        
+                        # Create a FunctionInfo object
+                        function_info = FunctionInfo(
+                            name=node.name,
+                            source=function_source,
+                            file_path=str(file_path.relative_to(self.repo_path)),
+                            start_line=start_line,
+                            end_line=end_line,
+                            ast_node=node
+                        )
+                        
+                        # Add to the functions dictionary
+                        self.functions[f"{function_info.file_path}:{function_info.name}"] = function_info
+                        
             except Exception as e:
-                logger.error(f"Error processing file {file_path}: {e}")
-        
-        logger.info(f"Extracted {len(self.functions)} functions from {len(self.modules)} modules")
+                logger.warning(f"Error processing file {file_path}: {e}")
     
-    def _identify_duplicates(self):
-        """Identify duplicate functions in the codebase."""
-        logger.info("Identifying duplicate functions...")
+    def _identify_duplicates(self, similarity_threshold: float):
+        """
+        Identify duplicate and similar functions.
         
-        # Group functions by hash for quick exact duplicate detection
-        functions_by_hash = defaultdict(list)
-        for func in self.functions:
-            functions_by_hash[func.hash].append(func)
+        Args:
+            similarity_threshold: Threshold for considering functions similar (0.0-1.0)
+        """
+        # Group functions by their normalized hash to find exact duplicates
+        hash_groups = defaultdict(list)
+        for func in self.functions.values():
+            hash_groups[func.normalized_hash].append(func)
         
-        # Find exact duplicates
-        exact_duplicates = []
-        for hash_val, funcs in functions_by_hash.items():
-            if len(funcs) > 1:
-                for i in range(len(funcs)):
-                    for j in range(i + 1, len(funcs)):
-                        exact_duplicates.append((funcs[i], funcs[j]))
+        # Extract duplicate groups (more than one function with the same hash)
+        self.duplicate_groups = [group for group in hash_groups.values() if len(group) > 1]
         
-        # Find near-duplicates (more computationally expensive)
-        near_duplicates = []
-        for i in range(len(self.functions)):
-            for j in range(i + 1, len(self.functions)):
-                func1 = self.functions[i]
-                func2 = self.functions[j]
-                
-                # Skip if they're already identified as exact duplicates
-                if any((func1 == pair[0] and func2 == pair[1]) or 
-                       (func1 == pair[1] and func2 == pair[0]) for pair in exact_duplicates):
-                    continue
-                
-                if func1.is_similar_to(func2, threshold=0.8):
-                    near_duplicates.append((func1, func2))
+        # Mark duplicate functions
+        for group in self.duplicate_groups:
+            primary = group[0]  # Consider the first one as the primary
+            for duplicate in group[1:]:
+                duplicate.is_duplicate = True
+                duplicate.duplicate_of = primary
         
-        self.duplicates = exact_duplicates + near_duplicates
-        logger.info(f"Found {len(exact_duplicates)} exact duplicates and {len(near_duplicates)} near-duplicates")
+        # Find similar functions (not exact duplicates)
+        remaining_funcs = [f for f in self.functions.values() if not f.is_duplicate]
+        
+        # Compute similarity matrix
+        for i, func1 in enumerate(remaining_funcs):
+            for func2 in remaining_funcs[i+1:]:
+                similarity = func1.compute_similarity(func2)
+                if similarity >= similarity_threshold and similarity < 1.0:
+                    # They're similar but not identical
+                    self._add_to_similar_group(func1, func2)
     
-    def _group_functions_by_functionality(self):
-        """Group functions by their functionality."""
-        logger.info("Grouping functions by functionality...")
+    def _add_to_similar_group(self, func1: FunctionInfo, func2: FunctionInfo):
+        """Add two similar functions to a similarity group."""
+        # Check if either function is already in a group
+        for group in self.similar_groups:
+            if func1 in group:
+                if func2 not in group:
+                    group.append(func2)
+                return
+            elif func2 in group:
+                group.append(func1)
+                return
         
-        # This is a simplified implementation
-        # A more sophisticated approach would use NLP or other techniques to identify function purpose
+        # If we get here, neither function is in a group yet
+        self.similar_groups.append([func1, func2])
+    
+    def _build_dependency_graph(self):
+        """Build a dependency graph of functions."""
+        # Add all functions as nodes
+        for func in self.functions.values():
+            self.dependency_graph.add_node(func.name, function=func)
         
-        # Group by name patterns
-        name_patterns = {
-            "validation": r"(validate|check|verify|is_valid|assert)",
-            "data_processing": r"(process|transform|convert|parse|format)",
-            "io_operations": r"(read|write|load|save|open|close|import|export)",
-            "api_calls": r"(api|request|fetch|get|post|put|delete|http)",
-            "authentication": r"(auth|login|logout|register|password|user)",
-            "database": r"(db|database|query|sql|table|record|row|column)",
-            "utility": r"(util|helper|common|shared)",
-            "configuration": r"(config|setting|option|preference|env)",
-            "logging": r"(log|debug|info|warning|error|exception)",
-            "testing": r"(test|assert|mock|stub|fixture)",
-        }
-        
-        # Initialize groups
-        for group_name in name_patterns:
-            self.function_groups[group_name] = []
-        
-        # Assign functions to groups based on name patterns
-        for func in self.functions:
-            assigned = False
-            for group_name, pattern in name_patterns.items():
-                if re.search(pattern, func.name, re.IGNORECASE):
-                    self.function_groups[group_name].append(func)
-                    assigned = True
+        # Analyze function calls to build edges
+        for func in self.functions.values():
+            # Parse the function to find calls
+            try:
+                tree = ast.parse(func.source)
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Call) and hasattr(node.func, 'id'):
+                        called_name = node.func.id
+                        # Check if this is a call to another function we know about
+                        for potential_target in self.functions.values():
+                            if potential_target.name == called_name:
+                                # Add an edge from caller to callee
+                                self.dependency_graph.add_edge(func.name, called_name)
+                                func.dependencies.add(called_name)
+            except Exception as e:
+                logger.warning(f"Error analyzing dependencies in {func.name}: {e}")
+    
+    def _categorize_functions(self):
+        """Categorize functions by their purpose based on naming patterns."""
+        for func in self.functions.values():
+            # Skip duplicates
+            if func.is_duplicate:
+                continue
+                
+            # Try to categorize based on name
+            categorized = False
+            for category, patterns in self.CATEGORIES.items():
+                if any(pattern in func.name.lower() for pattern in patterns):
+                    self.categorized_functions[category].append(func)
+                    func.category = category
+                    categorized = True
                     break
             
-            if not assigned:
-                # Default group for unmatched functions
-                if "misc" not in self.function_groups:
-                    self.function_groups["misc"] = []
-                self.function_groups["misc"].append(func)
-        
-        # Log the results
-        for group_name, funcs in self.function_groups.items():
-            logger.info(f"Group '{group_name}': {len(funcs)} functions")
+            # If not categorized, put in "other"
+            if not categorized:
+                self.categorized_functions["other"].append(func)
+                func.category = "other"
     
-    def _generate_restructured_modules(self):
-        """Generate restructured modules based on function groups."""
-        logger.info("Generating restructured modules...")
+    def generate_restructured_modules(self, output_dir: str):
+        """
+        Generate restructured modules based on the analysis.
         
-        # Create output directory if it doesn't exist
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        Args:
+            output_dir: Directory to output the restructured modules
+        """
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
         
-        # Create a module for each function group
-        for group_name, funcs in self.function_groups.items():
-            if not funcs:
-                continue
+        # Create a directory for each category
+        for category in self.categorized_functions.keys():
+            category_dir = output_path / category
+            category_dir.mkdir(exist_ok=True)
             
-            module_path = self.output_dir / f"{group_name}.py"
+            # Create an __init__.py file
+            with open(category_dir / "__init__.py", "w") as f:
+                f.write(f"# {category.capitalize()} module\n")
+                
+                # Add imports for all functions in this category
+                for func in self.categorized_functions[category]:
+                    f.write(f"from .{func.name} import {func.name}\n")
+                
+                # Export all functions
+                f.write("\n__all__ = [\n")
+                for func in self.categorized_functions[category]:
+                    f.write(f"    '{func.name}',\n")
+                f.write("]\n")
             
-            with open(module_path, 'w', encoding='utf-8') as f:
-                # Write module header
-                f.write(f'"""\n{group_name.replace("_", " ").title()} Module\n\n')
-                f.write(f'This module contains functions related to {group_name.replace("_", " ")}.\n')
-                f.write('Generated by Module Disassembler.\n"""\n\n')
-                
-                # Write imports (simplified)
-                f.write('import os\nimport sys\nimport re\n')
-                f.write('from typing import Any, Dict, List, Optional, Tuple, Union\n\n')
-                
-                # Write functions
-                for func in funcs:
-                    # Add original location as a comment
-                    f.write(f'# Original location: {func.file_path}:{func.start_line}-{func.end_line}\n')
+            # Create a file for each function
+            for func in self.categorized_functions[category]:
+                # Skip duplicates
+                if func.is_duplicate:
+                    continue
                     
-                    # Extract the function definition from the original file
-                    try:
-                        with open(self.repo_path / func.file_path, 'r', encoding='utf-8') as src_file:
-                            lines = src_file.readlines()
-                            func_lines = lines[func.start_line - 1:func.end_line]
-                            func_text = ''.join(func_lines)
-                            
-                            # Write the function
-                            f.write(func_text)
-                            f.write('\n\n')
-                    except Exception as e:
-                        logger.error(f"Error extracting function {func.name} from {func.file_path}: {e}")
-                        # Fallback: write a placeholder
-                        f.write(f'def {func.name}({", ".join(func.params)}):\n')
-                        f.write('    """Function could not be extracted properly."""\n')
-                        f.write('    pass\n\n')
+                with open(category_dir / f"{func.name}.py", "w") as f:
+                    # Add imports
+                    f.write("import os\nimport sys\nfrom typing import Dict, List, Set, Tuple, Any, Optional, Union\n\n")
+                    
+                    # Add dependencies
+                    for dep in func.dependencies:
+                        # Find the category of the dependency
+                        dep_category = None
+                        for cat, funcs in self.categorized_functions.items():
+                            if any(f.name == dep for f in funcs):
+                                dep_category = cat
+                                break
+                        
+                        if dep_category:
+                            f.write(f"from ..{dep_category} import {dep}\n")
+                    
+                    f.write("\n\n")
+                    
+                    # Write the function
+                    f.write(func.source)
         
-        # Generate an __init__.py file that imports all modules
-        init_path = self.output_dir / "__init__.py"
-        with open(init_path, 'w', encoding='utf-8') as f:
-            f.write('"""\nRestructured modules package\n\n')
-            f.write('This package contains restructured modules based on functionality.\n')
-            f.write('Generated by Module Disassembler.\n"""\n\n')
+        # Create a main __init__.py file
+        with open(output_path / "__init__.py", "w") as f:
+            f.write("# Restructured analysis modules\n\n")
             
-            for group_name in self.function_groups:
-                if self.function_groups[group_name]:
-                    f.write(f'from . import {group_name}\n')
+            # Import each category
+            for category in self.categorized_functions.keys():
+                f.write(f"from . import {category}\n")
+            
+            # Export all categories
+            f.write("\n__all__ = [\n")
+            for category in self.categorized_functions.keys():
+                f.write(f"    '{category}',\n")
+            f.write("]\n")
         
-        logger.info(f"Generated {len(self.function_groups)} restructured modules in {self.output_dir}")
+        # Create a README.md file
+        with open(output_path / "README.md", "w") as f:
+            f.write("# Restructured Analysis Modules\n\n")
+            f.write("This directory contains restructured and deduplicated analysis modules.\n\n")
+            
+            f.write("## Categories\n\n")
+            for category, funcs in self.categorized_functions.items():
+                non_duplicate_funcs = [func for func in funcs if not func.is_duplicate]
+                f.write(f"### {category.capitalize()} ({len(non_duplicate_funcs)} functions)\n\n")
+                for func in non_duplicate_funcs:
+                    f.write(f"- `{func.name}`: From `{func.file_path}`\n")
+                f.write("\n")
+            
+            f.write("## Duplicate Functions\n\n")
+            if self.duplicate_groups:
+                for i, group in enumerate(self.duplicate_groups):
+                    f.write(f"### Group {i+1}\n\n")
+                    for func in group:
+                        f.write(f"- `{func.name}` in `{func.file_path}`\n")
+                    f.write("\n")
+            else:
+                f.write("No duplicate functions found.\n\n")
+            
+            f.write("## Similar Functions\n\n")
+            if self.similar_groups:
+                for i, group in enumerate(self.similar_groups):
+                    f.write(f"### Group {i+1}\n\n")
+                    for func in group:
+                        f.write(f"- `{func.name}` in `{func.file_path}`\n")
+                    f.write("\n")
+            else:
+                f.write("No similar functions found.\n\n")
     
-    def generate_report(self, output_format: str = "console", output_file: Optional[str] = None):
-        """Generate a report of the analysis results."""
-        logger.info(f"Generating {output_format} report...")
+    def generate_report(self, output_file: str):
+        """
+        Generate a detailed report of the analysis.
         
-        if output_format == "json":
-            report = {
-                "analysis_timestamp": datetime.datetime.now().isoformat(),
-                "repo_path": str(self.repo_path),
-                "output_dir": str(self.output_dir),
+        Args:
+            output_file: Path to the output file
+        """
+        report = {
+            "summary": {
                 "total_functions": len(self.functions),
-                "total_modules": len(self.modules),
-                "modules": {name: len(funcs) for name, funcs in self.modules.items()},
-                "duplicates": [
-                    {
-                        "function1": {
-                            "name": dup[0].name,
-                            "file": dup[0].file_path,
-                            "lines": f"{dup[0].start_line}-{dup[0].end_line}"
-                        },
-                        "function2": {
-                            "name": dup[1].name,
-                            "file": dup[1].file_path,
-                            "lines": f"{dup[1].start_line}-{dup[1].end_line}"
-                        }
-                    }
-                    for dup in self.duplicates
-                ],
-                "function_groups": {
-                    name: [
+                "duplicate_groups": len(self.duplicate_groups),
+                "similar_groups": len(self.similar_groups),
+                "categories": {category: len(funcs) for category, funcs in self.categorized_functions.items()}
+            },
+            "duplicates": [
+                {
+                    "group_id": i,
+                    "functions": [
                         {
                             "name": func.name,
-                            "file": func.file_path,
-                            "lines": f"{func.start_line}-{func.end_line}"
+                            "file_path": func.file_path,
+                            "start_line": func.start_line,
+                            "end_line": func.end_line
                         }
-                        for func in funcs
+                        for func in group
                     ]
-                    for name, funcs in self.function_groups.items()
                 }
+                for i, group in enumerate(self.duplicate_groups)
+            ],
+            "similar": [
+                {
+                    "group_id": i,
+                    "functions": [
+                        {
+                            "name": func.name,
+                            "file_path": func.file_path,
+                            "similarity_scores": {
+                                other.name: score for other, score in 
+                                [(other, func.compute_similarity(other)) for other in group if other != func]
+                            }
+                        }
+                        for func in group
+                    ]
+                }
+                for i, group in enumerate(self.similar_groups)
+            ],
+            "categories": {
+                category: [
+                    {
+                        "name": func.name,
+                        "file_path": func.file_path,
+                        "is_duplicate": func.is_duplicate,
+                        "duplicate_of": func.duplicate_of.name if func.duplicate_of else None,
+                        "dependencies": list(func.dependencies)
+                    }
+                    for func in funcs
+                ]
+                for category, funcs in self.categorized_functions.items()
             }
-            
-            if output_file:
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    json.dump(report, f, indent=2)
-            else:
-                print(json.dumps(report, indent=2))
+        }
         
-        elif output_format == "console":
-            console.print("\n[bold green]Module Disassembler Report[/bold green]")
-            console.print(f"Repository: [cyan]{self.repo_path}[/cyan]")
-            console.print(f"Output directory: [cyan]{self.output_dir}[/cyan]")
-            console.print(f"Total functions: [cyan]{len(self.functions)}[/cyan]")
-            console.print(f"Total modules: [cyan]{len(self.modules)}[/cyan]")
-            console.print(f"Duplicate functions: [cyan]{len(self.duplicates)}[/cyan]")
-            
-            # Show duplicates
-            if self.duplicates:
-                console.print("\n[bold yellow]Duplicate Functions:[/bold yellow]")
-                table = Table(show_header=True, header_style="bold magenta")
-                table.add_column("Function 1")
-                table.add_column("Location 1")
-                table.add_column("Function 2")
-                table.add_column("Location 2")
-                
-                for dup in self.duplicates[:20]:  # Limit to 20 for readability
-                    table.add_row(
-                        dup[0].name,
-                        f"{dup[0].file_path}:{dup[0].start_line}-{dup[0].end_line}",
-                        dup[1].name,
-                        f"{dup[1].file_path}:{dup[1].start_line}-{dup[1].end_line}"
-                    )
-                
-                console.print(table)
-                if len(self.duplicates) > 20:
-                    console.print(f"... and {len(self.duplicates) - 20} more duplicates")
-            
-            # Show function groups
-            console.print("\n[bold blue]Function Groups:[/bold blue]")
-            table = Table(show_header=True, header_style="bold magenta")
-            table.add_column("Group")
-            table.add_column("Count")
-            
-            for name, funcs in self.function_groups.items():
-                table.add_row(name, str(len(funcs)))
-            
-            console.print(table)
-            
-            console.print("\n[bold green]Restructured modules generated successfully![/bold green]")
-        
-        else:
-            logger.error(f"Unsupported output format: {output_format}")
+        with open(output_file, "w") as f:
+            json.dump(report, f, indent=2)
+
 
 def main():
     """Main entry point for the module disassembler."""
-    parser = argparse.ArgumentParser(description="Module Disassembler and Restructurer")
+    parser = argparse.ArgumentParser(description="Module Disassembler for Codegen")
+    
     parser.add_argument("--repo-path", required=True, help="Path to the repository to analyze")
-    parser.add_argument("--output-dir", help="Directory to output restructured modules")
-    parser.add_argument("--output-format", choices=["console", "json"], default="console", help="Output format for the report")
-    parser.add_argument("--output-file", help="File to write the report to (for JSON format)")
+    parser.add_argument("--output-dir", required=True, help="Directory to output the restructured modules")
+    parser.add_argument("--report-file", default="disassembler_report.json", help="Path to the output report file")
+    parser.add_argument("--similarity-threshold", type=float, default=0.8, help="Threshold for considering functions similar (0.0-1.0)")
     
     args = parser.parse_args()
     
-    # Initialize the disassembler
-    disassembler = ModuleDisassembler(
-        repo_path=args.repo_path,
-        output_dir=args.output_dir
-    )
-    
-    # Run the analysis
-    disassembler.analyze()
-    
-    # Generate the report
-    disassembler.generate_report(
-        output_format=args.output_format,
-        output_file=args.output_file
-    )
+    try:
+        # Initialize the disassembler
+        disassembler = ModuleDisassembler(repo_path=args.repo_path)
+        
+        # Perform the analysis
+        disassembler.analyze(similarity_threshold=args.similarity_threshold)
+        
+        # Generate restructured modules
+        disassembler.generate_restructured_modules(output_dir=args.output_dir)
+        
+        # Generate report
+        disassembler.generate_report(output_file=args.report_file)
+        
+        logger.info(f"Analysis complete. Restructured modules saved to {args.output_dir}")
+        logger.info(f"Report saved to {args.report_file}")
+        
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
