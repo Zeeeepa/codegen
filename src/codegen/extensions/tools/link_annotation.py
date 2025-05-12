@@ -1,8 +1,8 @@
 """Tool for viewing PR contents and modified symbols."""
 
 import re
+from collections.abc import Callable
 from enum import StrEnum
-from typing import Callable
 
 from codegen.sdk.core.codebase import Codebase
 

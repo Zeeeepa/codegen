@@ -2,7 +2,7 @@
 
 import difflib
 import re
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -18,23 +18,23 @@ class ReplacementEditObservation(Observation):
     filepath: str = Field(
         description="Path to the edited file",
     )
-    diff: Optional[str] = Field(
+    diff: str | None = Field(
         default=None,
         description="Unified diff showing the changes made",
     )
-    new_content: Optional[str] = Field(
+    new_content: str | None = Field(
         default=None,
         description="New content with line numbers",
     )
-    message: Optional[str] = Field(
+    message: str | None = Field(
         default=None,
         description="Message describing the result",
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         description="Error message if an error occurred",
     )
-    error_pattern: Optional[str] = Field(
+    error_pattern: str | None = Field(
         default=None,
         description="Regex pattern that failed to compile",
     )
@@ -101,7 +101,7 @@ def replacement_edit(
     replacement: str,
     start: int = 1,
     end: int = -1,
-    count: Optional[int] = None,
+    count: int | None = None,
     flags: re.RegexFlag = re.MULTILINE,
 ) -> ReplacementEditObservation:
     """Replace text in a file using regex pattern matching.

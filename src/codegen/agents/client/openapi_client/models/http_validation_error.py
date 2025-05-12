@@ -13,10 +13,9 @@ from __future__ import annotations
 import json
 import pprint
 import re  # noqa: F401
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import Self
 
 from codegen.agents.client.openapi_client.models.validation_error import ValidationError
 

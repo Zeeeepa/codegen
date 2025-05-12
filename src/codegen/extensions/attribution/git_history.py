@@ -1,7 +1,6 @@
 import time
 from collections import defaultdict, deque
 from datetime import datetime
-from typing import Optional
 
 import pygit2
 from intervaltree import IntervalTree
@@ -16,7 +15,7 @@ from codegen.sdk.core.symbol import Symbol
 class GitAttributionTracker:
     """Tracks attribution information for code symbols based on git history."""
 
-    def __init__(self, codebase: Codebase, ai_authors: Optional[list[str]] = None):
+    def __init__(self, codebase: Codebase, ai_authors: list[str] | None = None):
         """Initialize the attribution tracker.
 
         Args:
@@ -43,7 +42,7 @@ class GitAttributionTracker:
 
         self._commits: deque[Commit]
 
-    def build_history(self, max_commits: Optional[int] = None) -> None:
+    def build_history(self, max_commits: int | None = None) -> None:
         """Build the git history for the codebase.
 
         Args:
@@ -325,7 +324,7 @@ class GitAttributionTracker:
         symbol_id = f"{symbol.filepath}:{symbol.name}"
         return self._symbol_history.get(symbol_id, [])
 
-    def get_symbol_last_editor(self, symbol: Symbol) -> Optional[str]:
+    def get_symbol_last_editor(self, symbol: Symbol) -> str | None:
         """Get the last person who edited a symbol.
 
         Args:

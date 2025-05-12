@@ -1,6 +1,6 @@
 """Tool for editing file contents."""
 
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 from langchain_core.messages import ToolMessage
 from pydantic import Field
@@ -20,7 +20,7 @@ class EditFileObservation(Observation):
     filepath: str = Field(
         description="Path to the edited file",
     )
-    diff: Optional[str] = Field(
+    diff: str | None = Field(
         default=None,
         description="Unified diff showing the changes made",
     )

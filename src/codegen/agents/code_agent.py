@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from langchain.tools import BaseTool
@@ -32,7 +32,7 @@ class CodeAgent:
     run_id: str | None = None
     instance_id: str | None = None
     difficulty: int | None = None
-    logger: Optional[ExternalLogger] = None
+    logger: ExternalLogger | None = None
 
     def __init__(
         self,
@@ -40,12 +40,12 @@ class CodeAgent:
         model_provider: str = "anthropic",
         model_name: str = "claude-3-7-sonnet-latest",
         memory: bool = True,
-        tools: Optional[list[BaseTool]] = None,
-        tags: Optional[list[str]] = [],
-        metadata: Optional[dict] = {},
-        agent_config: Optional[AgentConfig] = None,
-        thread_id: Optional[str] = None,
-        logger: Optional[ExternalLogger] = None,
+        tools: list[BaseTool] | None = None,
+        tags: list[str] | None = [],
+        metadata: dict | None = {},
+        agent_config: AgentConfig | None = None,
+        thread_id: str | None = None,
+        logger: ExternalLogger | None = None,
         **kwargs,
     ):
         """Initialize a CodeAgent.
@@ -106,7 +106,7 @@ class CodeAgent:
             **metadata,
         }
 
-    def run(self, prompt: str, image_urls: Optional[list[str]] = None) -> str:
+    def run(self, prompt: str, image_urls: list[str] | None = None) -> str:
         """Run the agent with a prompt and optional images.
 
         Args:

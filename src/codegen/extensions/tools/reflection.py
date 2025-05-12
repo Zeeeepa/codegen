@@ -1,6 +1,6 @@
 """Tool for agent self-reflection and planning."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
@@ -27,8 +27,8 @@ class ReflectionObservation(Observation):
 
     context_summary: str = Field(description="Summary of the current context")
     findings: str = Field(description="Key information and insights gathered")
-    challenges: Optional[str] = Field(None, description="Current obstacles or questions")
-    focus: Optional[str] = Field(None, description="Specific aspect focused on")
+    challenges: str | None = Field(None, description="Current obstacles or questions")
+    focus: str | None = Field(None, description="Specific aspect focused on")
     sections: list[ReflectionSection] = Field(description="Structured reflection sections")
 
     str_template: ClassVar[str] = "Reflection on: {focus}"
@@ -128,8 +128,8 @@ def perform_reflection(
     context_summary: str,
     findings_so_far: str,
     current_challenges: str = "",
-    reflection_focus: Optional[str] = None,
-    codebase: Optional[Codebase] = None,
+    reflection_focus: str | None = None,
+    codebase: Codebase | None = None,
 ) -> ReflectionObservation:
     """Perform agent reflection to organize thoughts and plan next steps.
 

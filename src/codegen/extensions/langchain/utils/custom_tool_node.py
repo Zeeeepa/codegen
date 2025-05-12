@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 from langchain_core.messages import (
     AIMessage,
@@ -15,12 +15,8 @@ class CustomToolNode(ToolNode):
 
     def _parse_input(
         self,
-        input: Union[
-            list[AnyMessage],
-            dict[str, Any],
-            BaseModel,
-        ],
-        store: Optional[InMemoryBaseStore],
+        input: list[AnyMessage] | dict[str, Any] | BaseModel,
+        store: InMemoryBaseStore | None,
     ) -> tuple[list[ToolCall], Literal["list", "dict", "tool_calls"]]:
         """Parse the input and check for truncated tool calls."""
         messages = input.get("messages", [])

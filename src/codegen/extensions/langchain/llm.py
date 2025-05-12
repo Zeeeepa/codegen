@@ -2,7 +2,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.callbacks import CallbackManagerForLLMRun
@@ -26,11 +26,11 @@ class LLM(BaseChatModel):
 
     temperature: float = Field(default=0, description="Temperature parameter for the model.", ge=0, le=1)
 
-    top_p: Optional[float] = Field(default=None, description="Top-p sampling parameter.", ge=0, le=1)
+    top_p: float | None = Field(default=None, description="Top-p sampling parameter.", ge=0, le=1)
 
-    top_k: Optional[int] = Field(default=None, description="Top-k sampling parameter.", ge=1)
+    top_k: int | None = Field(default=None, description="Top-k sampling parameter.", ge=1)
 
-    max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.", ge=1)
+    max_tokens: int | None = Field(default=None, description="Maximum number of tokens to generate.", ge=1)
 
     def __init__(self, model_provider: str = "anthropic", model_name: str = "claude-3-5-sonnet-latest", **kwargs: Any) -> None:
         """Initialize the LLM.
@@ -110,8 +110,8 @@ class LLM(BaseChatModel):
     def _generate(
         self,
         messages: list[BaseMessage],
-        stop: Optional[list[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
         """Generate chat completion using the underlying model.

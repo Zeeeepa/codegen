@@ -25,6 +25,7 @@ analyzers/
 ### 1. API Interface (`api.py`)
 
 The main entry point for frontend applications. Provides REST-like endpoints for:
+
 - Codebase analysis
 - PR analysis
 - Dependency visualization
@@ -34,6 +35,7 @@ The main entry point for frontend applications. Provides REST-like endpoints for
 ### 2. Analyzer System (`analyzer.py`)
 
 Plugin-based system that coordinates different types of analysis:
+
 - Code quality analysis (complexity, maintainability)
 - Dependency analysis (imports, cycles, coupling)
 - PR impact analysis
@@ -42,6 +44,7 @@ Plugin-based system that coordinates different types of analysis:
 ### 3. Issue Tracking (`issues.py`)
 
 Comprehensive issue model with:
+
 - Severity levels (critical, error, warning, info)
 - Categories (dead code, complexity, dependency, etc.)
 - Location information and suggestions
@@ -50,6 +53,7 @@ Comprehensive issue model with:
 ### 4. Dependency Analysis (`dependencies.py`)
 
 Analysis of codebase dependencies:
+
 - Import dependencies between modules
 - Circular dependency detection
 - Module coupling analysis
@@ -59,6 +63,7 @@ Analysis of codebase dependencies:
 ### 5. Code Quality Analysis (`code_quality.py`)
 
 Analysis of code quality aspects:
+
 - Dead code detection (unused functions, variables)
 - Complexity metrics (cyclomatic, cognitive)
 - Parameter checking (types, usage)
@@ -121,11 +126,7 @@ dependency_issues = api.get_issues(category="dependency_cycle")
 module_deps = api.get_module_dependencies(format="json")
 
 # Get function call graph
-call_graph = api.get_function_call_graph(
-    function_name="main", 
-    depth=3,
-    format="json"
-)
+call_graph = api.get_function_call_graph(function_name="main", depth=3, format="json")
 
 # Export visualization to file
 api.export_visualization(call_graph, format="html", filename="call_graph.html")
@@ -197,51 +198,41 @@ For a web application exposing these endpoints with Flask:
 
 ```python
 from flask import Flask, request, jsonify
-from codegen_on_oss.analyzers.api import (
-    api_analyze_codebase,
-    api_analyze_pr,
-    api_get_visualization,
-    api_get_static_errors
-)
+from codegen_on_oss.analyzers.api import api_analyze_codebase, api_analyze_pr, api_get_visualization, api_get_static_errors
 
 app = Flask(__name__)
+
 
 @app.route("/api/analyze/codebase", methods=["POST"])
 def analyze_codebase():
     data = request.json
-    result = api_analyze_codebase(
-        repo_path=data.get("repo_path"),
-        analysis_types=data.get("analysis_types")
-    )
+    result = api_analyze_codebase(repo_path=data.get("repo_path"), analysis_types=data.get("analysis_types"))
     return jsonify(result)
+
 
 @app.route("/api/analyze/pr", methods=["POST"])
 def analyze_pr():
     data = request.json
-    result = api_analyze_pr(
-        repo_path=data.get("repo_path"),
-        pr_number=data.get("pr_number")
-    )
+    result = api_analyze_pr(repo_path=data.get("repo_path"), pr_number=data.get("pr_number"))
     return jsonify(result)
+
 
 @app.route("/api/visualize", methods=["POST"])
 def visualize():
     data = request.json
-    result = api_get_visualization(
-        repo_path=data.get("repo_path"),
-        viz_type=data.get("viz_type"),
-        params=data.get("params", {})
-    )
+    result = api_get_visualization(repo_path=data.get("repo_path"), viz_type=data.get("viz_type"), params=data.get("params", {}))
     return jsonify(result)
+
 
 @app.route("/api/issues", methods=["GET"])
 def get_issues():
     repo_path = request.args.get("repo_path")
     severity = request.args.get("severity")
     category = request.args.get("category")
-    
+
     api = create_api(repo_path=repo_path)
     return jsonify(api.get_issues(severity=severity, category=category))
+
 
 if __name__ == "__main__":
     app.run(debug=True)

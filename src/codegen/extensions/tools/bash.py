@@ -3,7 +3,7 @@
 import re
 import shlex
 import subprocess
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -29,18 +29,18 @@ ALLOWED_COMMANDS = {
 class RunBashCommandObservation(Observation):
     """Response from running a bash command."""
 
-    stdout: Optional[str] = Field(
+    stdout: str | None = Field(
         default=None,
         description="Standard output from the command",
     )
-    stderr: Optional[str] = Field(
+    stderr: str | None = Field(
         default=None,
         description="Standard error from the command",
     )
     command: str = Field(
         description="The command that was executed",
     )
-    pid: Optional[int] = Field(
+    pid: int | None = Field(
         default=None,
         description="Process ID for background commands",
     )

@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import Any, Optional
+from typing import Any
 
 from langchain.schema import AIMessage, HumanMessage
 from langchain.schema import FunctionMessage as LCFunctionMessage
@@ -11,7 +11,7 @@ from .loggers import ExternalLogger
 
 
 class MessageStreamTracer:
-    def __init__(self, logger: Optional[ExternalLogger] = None):
+    def __init__(self, logger: ExternalLogger | None = None):
         self.traces = []
         self.logger = logger
 
@@ -34,7 +34,7 @@ class MessageStreamTracer:
             # Pass through the chunk to maintain the original stream behavior
             yield chunk
 
-    def extract_structured_data(self, chunk: dict[str, Any]) -> Optional[BaseMessage]:
+    def extract_structured_data(self, chunk: dict[str, Any]) -> BaseMessage | None:
         """Extract structured data from a message chunk.
         Returns None if the chunk doesn't contain useful information.
         Returns a BaseMessage subclass instance based on the message type.

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Literal, Optional, Union
+from typing import Literal
 
 
 # Base dataclass for all message types
@@ -31,9 +31,9 @@ class SystemMessageData(BaseMessage):
 class ToolCall:
     """Represents a tool call within an assistant message."""
 
-    name: Optional[str] = None
-    arguments: Optional[str] = None
-    id: Optional[str] = None
+    name: str | None = None
+    arguments: str | None = None
+    id: str | None = None
 
 
 @dataclass
@@ -49,10 +49,10 @@ class ToolMessageData(BaseMessage):
     """Represents a tool response message."""
 
     type: Literal["tool"] = field(default="tool")
-    tool_name: Optional[str] = None
-    tool_response: Optional[str] = None
-    tool_id: Optional[str] = None
-    status: Optional[str] = None
+    tool_name: str | None = None
+    tool_response: str | None = None
+    tool_id: str | None = None
+    status: str | None = None
 
 
 @dataclass
@@ -69,4 +69,4 @@ class UnknownMessage(BaseMessage):
     type: Literal["unknown"] = field(default="unknown")
 
 
-type AgentRunMessage = Union[UserMessage, SystemMessageData, AssistantMessage, ToolMessageData, FunctionMessageData, UnknownMessage]
+type AgentRunMessage = UserMessage | SystemMessageData | AssistantMessage | ToolMessageData | FunctionMessageData | UnknownMessage

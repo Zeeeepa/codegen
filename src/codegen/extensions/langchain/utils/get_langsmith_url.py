@@ -1,10 +1,9 @@
 import datetime
-from typing import Optional
 
 from langsmith import Client
 
 
-def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] = None) -> str:
+def get_langsmith_url(client: Client, run_id: str, project_name: str | None = None) -> str:
     """Get the URL for a run in LangSmith.
 
     Args:
@@ -35,7 +34,7 @@ def get_langsmith_url(client: Client, run_id: str, project_name: Optional[str] =
         return f"{host_url}/o/{tenant_id}/r/{run_id}?poll=true"
 
 
-def find_and_print_langsmith_run_url(client: Client, project_name: Optional[str] = None) -> Optional[str]:
+def find_and_print_langsmith_run_url(client: Client, project_name: str | None = None) -> str | None:
     """Find the most recent LangSmith run and print its URL.
 
     Args:

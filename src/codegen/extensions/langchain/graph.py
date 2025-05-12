@@ -1,7 +1,7 @@
 """Demo implementation of an agent with Codegen tools."""
 
 import uuid
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Any, Literal
 
 import anthropic
 import openai
@@ -27,7 +27,7 @@ from codegen.extensions.langchain.utils.custom_tool_node import CustomToolNode
 from codegen.extensions.langchain.utils.utils import get_max_model_input_tokens
 
 
-def manage_messages(existing: list[AnyMessage], updates: Union[list[AnyMessage], dict]) -> list[AnyMessage]:
+def manage_messages(existing: list[AnyMessage], updates: list[AnyMessage] | dict) -> list[AnyMessage]:
     """Custom reducer for managing message history with summarization.
 
     Args:
@@ -229,7 +229,7 @@ class AgentGraph:
         return END
 
     # =================================== COMPILE GRAPH ====================================
-    def create(self, checkpointer: Optional[MemorySaver] = None, debug: bool = False) -> CompiledGraph:
+    def create(self, checkpointer: MemorySaver | None = None, debug: bool = False) -> CompiledGraph:
         """Create and compile the graph."""
         builder = StateGraph(GraphState)
 
@@ -507,9 +507,9 @@ def create_react_agent(
     model: "LLM",
     tools: list[BaseTool],
     system_message: SystemMessage,
-    checkpointer: Optional[MemorySaver] = None,
+    checkpointer: MemorySaver | None = None,
     debug: bool = False,
-    config: Optional[dict[str, Any]] = None,
+    config: dict[str, Any] | None = None,
 ) -> CompiledGraph:
     """Create a reactive agent graph."""
     graph = AgentGraph(model, tools, system_message, config=config)

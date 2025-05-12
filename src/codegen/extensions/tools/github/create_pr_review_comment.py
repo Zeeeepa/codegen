@@ -1,6 +1,6 @@
 """Tool for creating PR review comments."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -37,7 +37,7 @@ def create_pr_review_comment(
     commit_sha: str,
     path: str,
     line: int,
-    start_line: Optional[int] = None,
+    start_line: int | None = None,
 ) -> PRReviewCommentObservation:
     """Create an inline review comment on a specific line in a pull request.
 

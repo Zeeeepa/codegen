@@ -1,6 +1,6 @@
 """Tool for revealing symbol dependencies and usages."""
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import tiktoken
 from pydantic import Field
@@ -18,7 +18,7 @@ class SymbolInfo(Observation):
     """Information about a symbol."""
 
     name: str = Field(description="Name of the symbol")
-    filepath: Optional[str] = Field(description="Path to the file containing the symbol")
+    filepath: str | None = Field(description="Path to the file containing the symbol")
     source: str = Field(description="Source code of the symbol")
 
     str_template: ClassVar[str] = "{name} in {filepath}"
@@ -27,11 +27,11 @@ class SymbolInfo(Observation):
 class RevealSymbolObservation(Observation):
     """Response from revealing symbol dependencies and usages."""
 
-    dependencies: Optional[list[SymbolInfo]] = Field(
+    dependencies: list[SymbolInfo] | None = Field(
         default=None,
         description="List of symbols this symbol depends on",
     )
-    usages: Optional[list[SymbolInfo]] = Field(
+    usages: list[SymbolInfo] | None = Field(
         default=None,
         description="List of symbols that use this symbol",
     )
@@ -39,7 +39,7 @@ class RevealSymbolObservation(Observation):
         default=False,
         description="Whether results were truncated due to token limit",
     )
-    valid_filepaths: Optional[list[str]] = Field(
+    valid_filepaths: list[str] | None = Field(
         default=None,
         description="List of valid filepaths when symbol is ambiguous",
     )
@@ -115,7 +115,7 @@ def truncate_source(source: str, max_tokens: int) -> str:
     return "".join(result)
 
 
-def get_symbol_info(symbol: Symbol, max_tokens: Optional[int] = None) -> SymbolInfo:
+def get_symbol_info(symbol: Symbol, max_tokens: int | None = None) -> SymbolInfo:
     """Get relevant information about a symbol.
 
     Args:
@@ -137,7 +137,7 @@ def get_symbol_info(symbol: Symbol, max_tokens: Optional[int] = None) -> SymbolI
     )
 
 
-def hop_through_imports(symbol: Symbol, seen_imports: Optional[set[str]] = None) -> Symbol:
+def hop_through_imports(symbol: Symbol, seen_imports: set[str] | None = None) -> Symbol:
     """Follow import chain to find the root symbol, stopping at ExternalModule."""
     if seen_imports is None:
         seen_imports = set()
@@ -162,8 +162,8 @@ def hop_through_imports(symbol: Symbol, seen_imports: Optional[set[str]] = None)
 def get_extended_context(
     symbol: Symbol,
     degree: int,
-    max_tokens: Optional[int] = None,
-    seen_symbols: Optional[set[Symbol]] = None,
+    max_tokens: int | None = None,
+    seen_symbols: set[Symbol] | None = None,
     current_degree: int = 0,
     total_tokens: int = 0,
     collect_dependencies: bool = True,
@@ -255,11 +255,11 @@ def get_extended_context(
 def reveal_symbol(
     codebase: Codebase,
     symbol_name: str,
-    filepath: Optional[str] = None,
-    max_depth: Optional[int] = 1,
-    max_tokens: Optional[int] = None,
-    collect_dependencies: Optional[bool] = True,
-    collect_usages: Optional[bool] = True,
+    filepath: str | None = None,
+    max_depth: int | None = 1,
+    max_tokens: int | None = None,
+    collect_dependencies: bool | None = True,
+    collect_usages: bool | None = True,
 ) -> RevealSymbolObservation:
     """Reveal the dependencies and usages of a symbol up to N degrees.
 
