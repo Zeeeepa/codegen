@@ -14,11 +14,7 @@ The `codebase_ai.py` module provides AI-powered code analysis and generation cap
 ### Basic Usage
 
 ```python
-from codegen_on_oss.analyzers.codebase_ai import (
-    CodebaseAI,
-    generate_system_prompt,
-    generate_context
-)
+from codegen_on_oss.analyzers.codebase_ai import CodebaseAI, generate_system_prompt, generate_context
 
 # Create a CodebaseAI instance
 codebase_ai = CodebaseAI()
@@ -47,15 +43,16 @@ The `codebase_ai.py` module can be integrated with other analyzers to provide AI
 from codegen_on_oss.analyzers.codebase_ai import CodebaseAI
 from codegen_on_oss.analyzers.codebase_analyzer import CodebaseAnalyzer
 
+
 class AICodebaseAnalyzer(CodebaseAnalyzer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.codebase_ai = CodebaseAI()
-    
+
     def analyze_with_ai(self, file):
         # Generate a system prompt for the file
         system_prompt = self.codebase_ai.generate_system_prompt(target=file)
-        
+
         # Use the system prompt with an AI model
         # ...
 ```
@@ -95,4 +92,3 @@ The `codebase_ai.py` module includes comprehensive tests in the `tests/analyzers
 ```bash
 pytest tests/analyzers/test_codebase_ai.py
 ```
-

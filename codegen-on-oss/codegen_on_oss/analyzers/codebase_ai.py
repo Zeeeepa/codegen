@@ -8,11 +8,11 @@ and guidelines for generating and modifying code.
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Union, TypeVar
+from typing import Any, TypeVar
 
 try:
-    from codegen.sdk.core.interfaces.editable import Editable
     from codegen.sdk.core.file import File
+    from codegen.sdk.core.interfaces.editable import Editable
 except ImportError:
     # Define fallback classes for when SDK is not available
     class Editable:
@@ -25,27 +25,29 @@ except ImportError:
         def source(self) -> str:
             return ""
 
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 # Type variable for context
-T = TypeVar('T', bound=Union[str, Editable, File, List[Any], Dict[str, Any]])
+T = TypeVar("T", bound=str | Editable | File | list[Any] | dict[str, Any])
 
 
-def generate_system_prompt(target: Optional[Editable] = None,
-                           context: Optional[T] = None) -> str:
+def generate_system_prompt(
+    target: Editable | None = None, context: T | None = None
+) -> str:
     """
     Generate a system prompt for AI-powered code analysis and generation.
-    
+
     Args:
         target: The target code to analyze or modify
         context: Additional context for the analysis
-        
+
     Returns:
         A system prompt string for AI models
     """
@@ -149,15 +151,14 @@ REMEMBER: When giving the final answer, you must use the set_answer tool to prov
     return prompt
 
 
-def generate_flag_system_prompt(target: Editable,
-                                context: Optional[T] = None) -> str:
+def generate_flag_system_prompt(target: Editable, context: T | None = None) -> str:
     """
     Generate a system prompt for determining whether to flag a code element.
-    
+
     Args:
         target: The target code to analyze
         context: Additional context for the analysis
-        
+
     Returns:
         A system prompt string for AI models
     """
@@ -194,13 +195,13 @@ as a chunk of code that should be modified, edited, or changed in a later step.
     return prompt
 
 
-def generate_context(context: Optional[T] = None) -> str:
+def generate_context(context: T | None = None) -> str:
     """
     Generate a context string for AI models.
-    
+
     Args:
         context: The context to generate a string for
-        
+
     Returns:
         A formatted context string
     """
@@ -230,10 +231,10 @@ def generate_context(context: Optional[T] = None) -> str:
         return output
 
 
-def generate_tools() -> List[Dict[str, Any]]:
+def generate_tools() -> list[dict[str, Any]]:
     """
     Generate a list of tools for AI models.
-    
+
     Returns:
         A list of tool definitions
     """
@@ -258,10 +259,10 @@ def generate_tools() -> List[Dict[str, Any]]:
     ]
 
 
-def generate_flag_tools() -> List[Dict[str, Any]]:
+def generate_flag_tools() -> list[dict[str, Any]]:
     """
     Generate a list of tools for flagging code elements.
-    
+
     Returns:
         A list of tool definitions
     """
@@ -289,68 +290,70 @@ def generate_flag_tools() -> List[Dict[str, Any]]:
 class CodebaseAI:
     """
     AI-powered code analysis and generation capabilities.
-    
+
     This class provides methods for generating system prompts, context,
     and tools for AI models to analyze and generate code.
     """
-    
+
     def __init__(self):
         """Initialize the CodebaseAI instance."""
         self.logger = logging.getLogger(__name__)
-    
-    def generate_system_prompt(self, target: Optional[Editable] = None,
-                               context: Optional[T] = None) -> str:
+
+    def generate_system_prompt(
+        self, target: Editable | None = None, context: T | None = None
+    ) -> str:
         """
         Generate a system prompt for AI-powered code analysis and generation.
-        
+
         Args:
             target: The target code to analyze or modify
             context: Additional context for the analysis
-            
+
         Returns:
             A system prompt string for AI models
         """
         return generate_system_prompt(target, context)
-    
-    def generate_flag_system_prompt(self, target: Editable,
-                                    context: Optional[T] = None) -> str:
+
+    def generate_flag_system_prompt(
+        self, target: Editable, context: T | None = None
+    ) -> str:
         """
         Generate a system prompt for determining whether to flag a code element.
-        
+
         Args:
             target: The target code to analyze
             context: Additional context for the analysis
-            
+
         Returns:
             A system prompt string for AI models
         """
         return generate_flag_system_prompt(target, context)
-    
-    def generate_context(self, context: Optional[T] = None) -> str:
+
+    def generate_context(self, context: T | None = None) -> str:
         """
         Generate a context string for AI models.
-        
+
         Args:
             context: The context to generate a string for
-            
+
         Returns:
             A formatted context string
         """
         return generate_context(context)
-    
-    def generate_tools(self) -> List[Dict[str, Any]]:
+
+    def generate_tools(self) -> list[dict[str, Any]]:
         """
         Generate a list of tools for AI models.
-        
+
         Returns:
             A list of tool definitions
         """
         return generate_tools()
-    
-    def generate_flag_tools(self) -> List[Dict[str, Any]]:
+
+    def generate_flag_tools(self) -> list[dict[str, Any]]:
         """
         Generate a list of tools for flagging code elements.
-        
+
         Returns:
             A list of tool definitions
         """
