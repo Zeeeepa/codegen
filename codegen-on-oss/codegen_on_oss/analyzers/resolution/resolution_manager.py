@@ -285,10 +285,14 @@ class ResolutionManager:
 
             # Special handling based on issue type
             if (
-                issue_type == "unused_import"
-                or issue_type == "unused_variable"
-                or issue_type == "unused_function"
-            ) or issue_type == "missing_return_type" or issue_type == "parameter_type_mismatch":
+                (
+                    issue_type == "unused_import"
+                    or issue_type == "unused_variable"
+                    or issue_type == "unused_function"
+                )
+                or issue_type == "missing_return_type"
+                or issue_type == "parameter_type_mismatch"
+            ):
                 if "code_changes" in resolution_data:
                     self._apply_code_changes(
                         issue_file, resolution_data["code_changes"]
@@ -587,10 +591,8 @@ class ResolutionManager:
                 import_line = lines[issue_line - 1]
 
                 # Check if it's a single import or part of a multi-import
-                if (
-                    f"import {import_name}" in import_line
-                    or ("from " in import_line
-                    and f" import {import_name}" in import_line)
+                if f"import {import_name}" in import_line or (
+                    "from " in import_line and f" import {import_name}" in import_line
                 ):
                     # Generate change
                     return {

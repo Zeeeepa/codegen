@@ -228,13 +228,9 @@ class DependencyAnalyzer:
                 for dep in self.circular_dependencies
             ],
             "circular_dependencies_count": len(self.circular_dependencies),
-            "affected_modules": list(
-                {
-                    module
-                    for dep in self.circular_dependencies
-                    for module in dep.modules
-                }
-            ),
+            "affected_modules": list({
+                module for dep in self.circular_dependencies for module in dep.modules
+            }),
         }
 
         # Organize module coupling
@@ -619,7 +615,9 @@ class DependencyAnalyzer:
                     )
 
             except Exception as e:
-                logger.exception(f"Error finding circular function call dependencies: {e}")
+                logger.exception(
+                    f"Error finding circular function call dependencies: {e}"
+                )
 
     def _analyze_module_coupling(self) -> None:
         """Analyze module coupling in the codebase."""

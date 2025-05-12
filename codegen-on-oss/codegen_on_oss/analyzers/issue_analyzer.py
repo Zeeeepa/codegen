@@ -138,7 +138,9 @@ class IssueAnalyzer(BaseCodeAnalyzer):
                     handler_result = handler()
                     result[category] = handler_result
                 except Exception as e:
-                    logger.exception(f"Error detecting issues for category {category}: {e}")
+                    logger.exception(
+                        f"Error detecting issues for category {category}: {e}"
+                    )
                     result[category] = []
             else:
                 logger.warning(f"No handler registered for issue category: {category}")

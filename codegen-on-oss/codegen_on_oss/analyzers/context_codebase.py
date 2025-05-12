@@ -241,7 +241,9 @@ class CodebaseContext:
                 path = str(node.path)
 
                 # Check if file still exists
-                if (isinstance(node, SourceFile) and path not in self._file_cache) or (isinstance(node, Directory) and path not in self._directory_cache):
+                if (isinstance(node, SourceFile) and path not in self._file_cache) or (
+                    isinstance(node, Directory) and path not in self._directory_cache
+                ):
                     nodes_to_remove.append(node)
 
             # Check if symbol's file still exists
@@ -567,9 +569,7 @@ class CodebaseContext:
                 elif isinstance(node, Directory):
                     self._directory_cache[path_str] = node
 
-    def add_child(
-        self, parent: Any, child: Any, edge_type: Any | None = None
-    ) -> None:
+    def add_child(self, parent: Any, child: Any, edge_type: Any | None = None) -> None:
         """
         Add a child node to a parent node.
 

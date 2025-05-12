@@ -1,4 +1,3 @@
-
 from codegen.extensions.attribution.git_history import GitAttributionTracker
 from codegen.sdk.core.codebase import Codebase
 

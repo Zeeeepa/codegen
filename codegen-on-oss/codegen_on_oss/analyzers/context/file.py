@@ -279,7 +279,9 @@ class FileContext:
             }
 
             # Check if import is resolved
-            if (hasattr(imp, "resolved_file") and imp.resolved_file) or (hasattr(imp, "resolved_symbol") and imp.resolved_symbol):
+            if (hasattr(imp, "resolved_file") and imp.resolved_file) or (
+                hasattr(imp, "resolved_symbol") and imp.resolved_symbol
+            ):
                 import_info["is_resolved"] = True
                 result["resolved_imports"] += 1
             else:

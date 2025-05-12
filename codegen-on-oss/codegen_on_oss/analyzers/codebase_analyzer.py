@@ -524,7 +524,6 @@ class CodebaseAnalyzer:
                     hasattr(node, "symbol_type") and hasattr(node, "name")
                     for node in cycle
                 ):
-
                     # Check if all nodes in the cycle are files
                     if all(isinstance(node, SourceFile) for node in cycle):
                         result["circular_imports"].append({

@@ -15,12 +15,11 @@ import mimetypes
 import os
 import re
 import tempfile
-from enum import Enum
-from urllib.parse import quote
-from multiprocessing.pool import ThreadPool
 
 # Import for date parsing
 from datetime import datetime as dt
+from enum import Enum
+from urllib.parse import quote
 
 import codegen.agents.client.openapi_client as openapi_client
 from codegen.agents.client.openapi_client import rest
@@ -619,7 +618,7 @@ class ApiClient:
         """
         try:
             # Use datetime's own parsing instead of dateutil
-            return dt.fromisoformat(string.replace('Z', '+00:00')).date()
+            return dt.fromisoformat(string.replace("Z", "+00:00")).date()
         except ImportError:
             return string
         except ValueError:
@@ -635,7 +634,7 @@ class ApiClient:
         """
         try:
             # Use datetime's own parsing instead of dateutil
-            return dt.fromisoformat(string.replace('Z', '+00:00'))
+            return dt.fromisoformat(string.replace("Z", "+00:00"))
         except ImportError:
             return string
         except ValueError:

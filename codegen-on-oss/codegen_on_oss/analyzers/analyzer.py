@@ -67,7 +67,7 @@ class AnalyzerRegistry:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._analyzers = {}
+            cls._analyzers = {}
         return cls._instance
 
     def register(
@@ -160,8 +160,8 @@ class DependencyPlugin(AnalyzerPlugin):
                 )
                 # Save context for future use
                 self.manager.base_context = context
-            except Exception as e:
-                logger.exception(f"Error initializing context: {e}")
+            except Exception:
+                logger.exception("Error initializing context")
 
         # Initialize and run the dependency analyzer
         if context:
@@ -312,8 +312,8 @@ class AnalyzerManager:
 
             logger.info(f"Successfully initialized codebase from {repo_url}")
 
-        except Exception as e:
-            logger.exception(f"Error initializing codebase from URL: {e}")
+        except Exception:
+            logger.exception("Error initializing codebase from URL")
             raise
 
     def _init_from_path(self, repo_path: str, language: str | None = None):
@@ -354,8 +354,8 @@ class AnalyzerManager:
 
             logger.info(f"Successfully initialized codebase from {repo_path}")
 
-        except Exception as e:
-            logger.exception(f"Error initializing codebase from path: {e}")
+        except Exception:
+            logger.exception("Error initializing codebase from path")
             raise
 
     def _init_pr_data(self, pr_number: int):
@@ -375,8 +375,8 @@ class AnalyzerManager:
             # Initialize PR codebase
             self._init_pr_codebase()
 
-        except Exception as e:
-            logger.exception(f"Error initializing PR data: {e}")
+        except Exception:
+            logger.exception("Error initializing PR data")
             raise
 
     def _init_pr_codebase(self):
@@ -403,8 +403,8 @@ class AnalyzerManager:
 
             logger.info("Successfully initialized PR codebase")
 
-        except Exception as e:
-            logger.exception(f"Error initializing PR codebase: {e}")
+        except Exception:
+            logger.exception("Error initializing PR codebase")
             raise
 
     def _register_default_analyzers(self):
@@ -432,10 +432,9 @@ class AnalyzerManager:
                 return True
 
         # Check if the file is a test file
-        if "test" in file_path.lower() or "tests" in file_path.lower():
+        if ("test" in file_path.lower() or "tests" in file_path.lower()) and issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]:
             # Skip low-severity issues in test files
-            if issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]:
-                return True
+            return False
 
         return False
 
@@ -680,8 +679,7 @@ class AnalyzerManager:
             f.write(html_content)
 
     def generate_report(self, report_type: str = "summary") -> str:
-        """
-        Generate a report from the analysis results.
+        """Generate a report of the analysis results.
 
         Args:
             report_type: Type of report to generate (summary, detailed, issues)
@@ -689,17 +687,15 @@ class AnalyzerManager:
         Returns:
             Report as a string
         """
-        if not self.results:
-            raise ValueError("No analysis results available")
-
         if report_type == "summary":
             return self._generate_summary_report()
         elif report_type == "detailed":
             return self._generate_detailed_report()
         elif report_type == "issues":
             return self._generate_issues_report()
-        else:
-            raise ValueError(f"Unknown report type: {report_type}")
+
+        msg = f"Unknown report type: {report_type}"
+        raise ValueError(msg)
 
     def _generate_summary_report(self) -> str:
         """Generate a summary report."""
@@ -997,8 +993,8 @@ def main():
             report = manager.generate_report(args.report_type)
             print(report)
 
-    except Exception as e:
-        logger.exception(f"Error: {e}")
+    except Exception:
+        logger.exception("Error")
         import traceback
 
         traceback.print_exc()

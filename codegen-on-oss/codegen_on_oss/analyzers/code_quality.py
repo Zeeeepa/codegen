@@ -992,11 +992,11 @@ class CodeQualityAnalyzer:
 
                     # Skip interface/abstract methods that are supposed to be empty
                     is_abstract = (
-                        (hasattr(function, "is_abstract")
-                        and function.is_abstract)
-                        or (hasattr(function, "parent")
+                        hasattr(function, "is_abstract") and function.is_abstract
+                    ) or (
+                        hasattr(function, "parent")
                         and hasattr(function.parent, "is_interface")
-                        and function.parent.is_interface)
+                        and function.parent.is_interface
                     )
 
                     if not is_abstract:
@@ -1033,14 +1033,14 @@ class CodeQualityAnalyzer:
 
             # Check if function is abstract
             is_abstract = (
-                (hasattr(function, "is_abstract")
-                and function.is_abstract)
-                or (hasattr(function, "decorators")
+                hasattr(function, "is_abstract") and function.is_abstract
+            ) or (
+                hasattr(function, "decorators")
                 and any(
                     hasattr(d, "name")
                     and d.name in ["abstractmethod", "abc.abstractmethod"]
                     for d in function.decorators
-                ))
+                )
             )
 
             if (

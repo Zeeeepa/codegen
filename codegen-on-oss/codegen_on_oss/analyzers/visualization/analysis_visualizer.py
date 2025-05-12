@@ -296,9 +296,7 @@ class AnalysisVisualizer(BaseVisualizer):
             VisualizationType.CYCLOMATIC_COMPLEXITY, entity_name, plt.gcf()
         )
 
-    def visualize_issues_heatmap(
-        self, severity=None, path_filter: str | None = None
-    ):
+    def visualize_issues_heatmap(self, severity=None, path_filter: str | None = None):
         """
         Generate a heatmap visualization of issues in the codebase.
 
@@ -361,7 +359,9 @@ class AnalysisVisualizer(BaseVisualizer):
 
         # Sort by issue count
         sorted_data = sorted(
-            zip(file_names, issue_counts, files, strict=False), key=lambda x: x[1], reverse=True
+            zip(file_names, issue_counts, files, strict=False),
+            key=lambda x: x[1],
+            reverse=True,
         )
         file_names, issue_counts, files = zip(*sorted_data, strict=False)
 

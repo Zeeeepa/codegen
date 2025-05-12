@@ -1,4 +1,3 @@
-
 from codegen.extensions.graph.utils import Node, NodeLabel, Relation, RelationLabel, SimpleGraph
 from codegen.sdk.code_generation.doc_utils.utils import safe_get_class
 from codegen.sdk.core.class_definition import Class

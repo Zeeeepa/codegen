@@ -167,7 +167,10 @@ class CodebaseAnalyzer:
     """
 
     def __init__(
-        self, repo_url: str | None = None, repo_path: str | None = None, language: str | None = None
+        self,
+        repo_url: str | None = None,
+        repo_path: str | None = None,
+        language: str | None = None,
     ):
         """
         Initialize the CodebaseAnalyzer.

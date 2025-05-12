@@ -233,9 +233,7 @@ class CodebaseVisualizer:
             VisualizationType.CYCLOMATIC_COMPLEXITY, path_filter=path_filter
         )
 
-    def visualize_issues_heatmap(
-        self, severity=None, path_filter: str | None = None
-    ):
+    def visualize_issues_heatmap(self, severity=None, path_filter: str | None = None):
         """Convenience method for issues heatmap visualization."""
         return self.visualize(
             VisualizationType.ISSUES_HEATMAP, severity=severity, path_filter=path_filter

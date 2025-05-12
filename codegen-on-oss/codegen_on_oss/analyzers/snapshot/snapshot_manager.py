@@ -545,9 +545,7 @@ class CodebaseSnapshot:
                         )
                         content_diff[file_path] = "".join(diff)
                     except Exception as e:
-                        logger.warning(
-                            f"Error generating diff for {file_path}: {e!s}"
-                        )
+                        logger.warning(f"Error generating diff for {file_path}: {e!s}")
 
         # Calculate statistics
         diff_stats = {

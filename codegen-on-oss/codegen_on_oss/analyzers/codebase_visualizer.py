@@ -1320,7 +1320,9 @@ class CodebaseVisualizer:
 
         # Sort by issue count
         sorted_data = sorted(
-            zip(file_names, issue_counts, files, strict=False), key=lambda x: x[1], reverse=True
+            zip(file_names, issue_counts, files, strict=False),
+            key=lambda x: x[1],
+            reverse=True,
         )
         file_names, issue_counts, files = zip(*sorted_data, strict=False)
 
