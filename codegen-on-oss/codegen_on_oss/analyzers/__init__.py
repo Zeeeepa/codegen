@@ -46,6 +46,16 @@ from codegen_on_oss.analyzers.models.analysis_result import (
 # Core analysis modules
 from codegen_on_oss.analyzers.code_quality import CodeQualityAnalyzer
 from codegen_on_oss.analyzers.dependencies import DependencyAnalyzer
+from codegen_on_oss.analyzers.codebase_analysis import (
+    get_codebase_summary,
+    get_file_summary,
+    get_class_summary,
+    get_function_summary,
+    get_symbol_summary,
+    get_dependency_graph,
+    get_symbol_references,
+    get_file_complexity_metrics
+)
 
 # Legacy analyzer interfaces (for backward compatibility)
 from codegen_on_oss.analyzers.base_analyzer import BaseCodeAnalyzer
@@ -85,6 +95,16 @@ __all__ = [
     # Core analyzers
     'CodeQualityAnalyzer',
     'DependencyAnalyzer',
+    
+    # Codebase analysis utilities
+    'get_codebase_summary',
+    'get_file_summary',
+    'get_class_summary',
+    'get_function_summary',
+    'get_symbol_summary',
+    'get_dependency_graph',
+    'get_symbol_references',
+    'get_file_complexity_metrics',
 
     # Legacy interfaces (for backward compatibility)
     'BaseCodeAnalyzer',
