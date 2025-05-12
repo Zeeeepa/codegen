@@ -3,7 +3,7 @@
 Example usage of the Module Disassembler for Codegen.
 
 This script demonstrates how to use the module disassembler to analyze
-and restructure the Codegen codebase.
+and restructure the Codegen codebase using the Codegen SDK.
 """
 
 import os
@@ -30,12 +30,10 @@ def main():
     report_file = Path(args.report_file).resolve()
     
     # If focus directory is specified, adjust the repo path
+    focus_path = None
     if args.focus_dir:
-        focus_path = repo_path / args.focus_dir
-        if not focus_path.exists():
-            print(f"Error: Focus directory '{args.focus_dir}' does not exist in '{repo_path}'")
-            sys.exit(1)
-        repo_path = focus_path
+        focus_path = args.focus_dir
+        print(f"Focusing on directory: {focus_path}")
     
     print(f"Analyzing repository: {repo_path}")
     print(f"Output directory: {output_dir}")
@@ -47,8 +45,11 @@ def main():
         disassembler = ModuleDisassembler(repo_path=repo_path)
         
         # Perform the analysis
-        print("Analyzing codebase...")
-        disassembler.analyze(similarity_threshold=args.similarity_threshold)
+        print("Analyzing codebase using Codegen SDK...")
+        disassembler.analyze(
+            similarity_threshold=args.similarity_threshold,
+            focus_dir=focus_path
+        )
         
         # Print summary statistics
         print("\nAnalysis Summary:")

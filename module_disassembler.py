@@ -3,13 +3,12 @@
 Module Disassembler for Codegen
 
 This tool analyzes, restructures, and deduplicates code in the Codegen codebase,
-particularly focusing on analysis modules. It extracts functions, identifies duplicates,
-and reorganizes code based on functionality.
+particularly focusing on analysis modules. It leverages the Codegen SDK to extract
+functions, identify duplicates, and reorganize code based on functionality.
 """
 
 import os
 import sys
-import ast
 import argparse
 import difflib
 import hashlib
@@ -20,6 +19,14 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple, Any, Optional, Union, Callable
 from collections import defaultdict
 import networkx as nx
+
+# Import Codegen SDK
+from codegen.sdk.core.codebase import Codebase
+from codegen.sdk.codebase.codebase_analysis import get_codebase_summary
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.enums import SymbolType, EdgeType
 
 # Configure logging
 import logging
@@ -34,13 +41,13 @@ class FunctionInfo:
     """Represents information about a function extracted from the codebase."""
     
     def __init__(self, name: str, source: str, file_path: str, 
-                 start_line: int, end_line: int, ast_node: ast.FunctionDef):
+                 start_line: int, end_line: int, function_obj: Function = None):
         self.name = name
         self.source = source
         self.file_path = file_path
         self.start_line = start_line
         self.end_line = end_line
-        self.ast_node = ast_node
+        self.function_obj = function_obj
         self.hash = self._compute_hash()
         self.normalized_hash = self._compute_normalized_hash()
         self.dependencies = set()
@@ -55,14 +62,10 @@ class FunctionInfo:
     
     def _compute_normalized_hash(self) -> str:
         """Compute a hash of the normalized function source code (ignoring whitespace, comments, etc.)."""
-        # Parse the function to AST
-        tree = ast.parse(self.source)
-        # Remove docstrings and comments
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Str):
-                node.value.s = ""
-        # Convert back to source and normalize whitespace
-        normalized_source = ast.unparse(tree)
+        # Normalize whitespace and remove comments
+        normalized_source = re.sub(r'#.*$', '', self.source, flags=re.MULTILINE)
+        normalized_source = re.sub(r'""".*?"""', '', normalized_source, flags=re.DOTALL)
+        normalized_source = re.sub(r"'''.*?'''", '', normalized_source, flags=re.DOTALL)
         normalized_source = re.sub(r'\s+', ' ', normalized_source)
         return hashlib.md5(normalized_source.encode('utf-8')).hexdigest()
     
@@ -99,7 +102,7 @@ class ModuleDisassembler:
     
     This class provides methods to extract functions, identify duplicates,
     categorize functions by purpose, and reorganize code into a more
-    maintainable structure.
+    maintainable structure. It leverages the Codegen SDK for code analysis.
     """
     
     # Function categories based on purpose
@@ -126,15 +129,29 @@ class ModuleDisassembler:
         self.similar_groups: List[List[FunctionInfo]] = []
         self.dependency_graph = nx.DiGraph()
         self.categorized_functions: Dict[str, List[FunctionInfo]] = defaultdict(list)
+        self.codebase = None
         
-    def analyze(self, similarity_threshold: float = 0.8):
+    def analyze(self, similarity_threshold: float = 0.8, focus_dir: Optional[str] = None):
         """
         Perform a complete analysis of the codebase.
         
         Args:
             similarity_threshold: Threshold for considering functions similar (0.0-1.0)
+            focus_dir: Optional subdirectory to focus analysis on
         """
         logger.info(f"Starting analysis of repository at {self.repo_path}")
+        
+        # Initialize the codebase using Codegen SDK
+        target_path = self.repo_path
+        if focus_dir:
+            target_path = self.repo_path / focus_dir
+            if not target_path.exists():
+                raise ValueError(f"Focus directory {focus_dir} does not exist in {self.repo_path}")
+        
+        # Load the codebase using Codegen SDK
+        self.codebase = Codebase.from_directory(str(target_path))
+        logger.info(f"Loaded codebase using Codegen SDK")
+        logger.info(get_codebase_summary(self.codebase))
         
         # Extract all functions from the codebase
         self._extract_functions()
@@ -153,44 +170,44 @@ class ModuleDisassembler:
         logger.info(f"Categorized functions into {len(self.categorized_functions)} categories")
         
     def _extract_functions(self):
-        """Extract all functions from Python files in the codebase."""
-        python_files = list(self.repo_path.glob("**/*.py"))
-        
-        for file_path in python_files:
-            # Skip virtual environments, tests, and other non-core code
-            if any(part in str(file_path) for part in ["venv", "env", "node_modules", "__pycache__"]):
-                continue
-                
+        """Extract all functions from the codebase using Codegen SDK."""
+        for function in self.codebase.functions:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    source = f.read()
+                # Get the source file
+                source_file = function.source_file
+                if not source_file:
+                    continue
                 
-                # Parse the file
-                tree = ast.parse(source)
+                # Get the function source code
+                source = source_file.content
+                if not source:
+                    continue
                 
-                # Extract functions
-                for node in ast.walk(tree):
-                    if isinstance(node, ast.FunctionDef):
-                        # Get the function source code
-                        start_line = node.lineno
-                        end_line = node.end_lineno
-                        function_source = "\n".join(source.splitlines()[start_line-1:end_line])
-                        
-                        # Create a FunctionInfo object
-                        function_info = FunctionInfo(
-                            name=node.name,
-                            source=function_source,
-                            file_path=str(file_path.relative_to(self.repo_path)),
-                            start_line=start_line,
-                            end_line=end_line,
-                            ast_node=node
-                        )
-                        
-                        # Add to the functions dictionary
-                        self.functions[f"{function_info.file_path}:{function_info.name}"] = function_info
-                        
+                # Extract the function's lines
+                start_line = function.start_line
+                end_line = function.end_line
+                
+                if start_line is None or end_line is None:
+                    continue
+                
+                function_source = "\n".join(source.splitlines()[start_line-1:end_line])
+                
+                # Create a FunctionInfo object
+                file_path = str(Path(source_file.path).relative_to(self.repo_path))
+                function_info = FunctionInfo(
+                    name=function.name,
+                    source=function_source,
+                    file_path=file_path,
+                    start_line=start_line,
+                    end_line=end_line,
+                    function_obj=function
+                )
+                
+                # Add to the functions dictionary
+                self.functions[f"{function_info.file_path}:{function_info.name}"] = function_info
+                
             except Exception as e:
-                logger.warning(f"Error processing file {file_path}: {e}")
+                logger.warning(f"Error processing function {function.name}: {e}")
     
     def _identify_duplicates(self, similarity_threshold: float):
         """
@@ -241,25 +258,30 @@ class ModuleDisassembler:
         self.similar_groups.append([func1, func2])
     
     def _build_dependency_graph(self):
-        """Build a dependency graph of functions."""
+        """Build a dependency graph of functions using Codegen SDK."""
         # Add all functions as nodes
         for func in self.functions.values():
-            self.dependency_graph.add_node(func.name, function=func)
+            self.dependency_graph.add_node(func.name)
         
-        # Analyze function calls to build edges
+        # Add edges based on function calls
         for func in self.functions.values():
-            # Parse the function to find calls
+            if not func.function_obj:
+                continue
+                
+            # Get the function's dependencies using Codegen SDK
             try:
-                tree = ast.parse(func.source)
-                for node in ast.walk(tree):
-                    if isinstance(node, ast.Call) and hasattr(node.func, 'id'):
-                        called_name = node.func.id
-                        # Check if this is a call to another function we know about
-                        for potential_target in self.functions.values():
-                            if potential_target.name == called_name:
-                                # Add an edge from caller to callee
-                                self.dependency_graph.add_edge(func.name, called_name)
-                                func.dependencies.add(called_name)
+                # Get all outgoing edges from this function
+                for edge in self.codebase.ctx.get_outgoing_edges(func.function_obj.id):
+                    # Check if the edge is a symbol usage
+                    if edge.type == EdgeType.SYMBOL_USAGE:
+                        # Get the target node
+                        target_node = self.codebase.ctx.get_node(edge.target)
+                        if target_node and target_node.type == SymbolType.FUNCTION:
+                            # Add an edge from caller to callee
+                            target_func = self.codebase.ctx.get_symbol(edge.target)
+                            if target_func:
+                                self.dependency_graph.add_edge(func.name, target_func.name)
+                                func.dependencies.add(target_func.name)
             except Exception as e:
                 logger.warning(f"Error analyzing dependencies in {func.name}: {e}")
     
@@ -305,12 +327,14 @@ class ModuleDisassembler:
                 
                 # Add imports for all functions in this category
                 for func in self.categorized_functions[category]:
-                    f.write(f"from .{func.name} import {func.name}\n")
+                    if not func.is_duplicate:
+                        f.write(f"from .{func.name} import {func.name}\n")
                 
                 # Export all functions
                 f.write("\n__all__ = [\n")
                 for func in self.categorized_functions[category]:
-                    f.write(f"    '{func.name}',\n")
+                    if not func.is_duplicate:
+                        f.write(f"    '{func.name}',\n")
                 f.write("]\n")
             
             # Create a file for each function
@@ -460,6 +484,7 @@ def main():
     parser.add_argument("--output-dir", required=True, help="Directory to output the restructured modules")
     parser.add_argument("--report-file", default="disassembler_report.json", help="Path to the output report file")
     parser.add_argument("--similarity-threshold", type=float, default=0.8, help="Threshold for considering functions similar (0.0-1.0)")
+    parser.add_argument("--focus-dir", default=None, help="Focus on a specific directory (e.g., 'codegen-on-oss')")
     
     args = parser.parse_args()
     
@@ -468,7 +493,10 @@ def main():
         disassembler = ModuleDisassembler(repo_path=args.repo_path)
         
         # Perform the analysis
-        disassembler.analyze(similarity_threshold=args.similarity_threshold)
+        disassembler.analyze(
+            similarity_threshold=args.similarity_threshold,
+            focus_dir=args.focus_dir
+        )
         
         # Generate restructured modules
         disassembler.generate_restructured_modules(output_dir=args.output_dir)

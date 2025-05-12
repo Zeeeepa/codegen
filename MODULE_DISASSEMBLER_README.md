@@ -1,118 +1,123 @@
 # Module Disassembler for Codegen
 
-This tool analyzes, restructures, and deduplicates code in the Codegen codebase, particularly focusing on analysis modules. It extracts functions, identifies duplicates, and reorganizes code based on functionality.
+This tool analyzes, restructures, and deduplicates code in the Codegen codebase, particularly focusing on analysis modules. It leverages the **Codegen SDK** to extract functions, identify duplicates, and reorganize code based on functionality.
 
 ## Features
 
+- **SDK-Powered Analysis**: Uses Codegen's SDK for deep code analysis
 - **Function Extraction**: Extracts all functions from Python files in the codebase
 - **Duplicate Detection**: Identifies exact duplicates and similar functions
-- **Functional Categorization**: Categorizes functions by their purpose (analysis, visualization, utility, etc.)
+- **Function Categorization**: Categorizes functions by purpose (analysis, visualization, utility, etc.)
 - **Dependency Analysis**: Builds a dependency graph to understand function relationships
-- **Code Restructuring**: Generates a new, more maintainable module structure
-- **Detailed Reporting**: Provides comprehensive reports on duplicates and code organization
+- **Module Restructuring**: Generates a new, more maintainable module structure
+- **Detailed Reporting**: Provides reports on duplicates and code organization
 
 ## Installation
 
-No additional installation is required beyond the standard Codegen dependencies. The tool is designed to work with the existing codebase.
+The module disassembler is included in the Codegen repository. To use it, you need to have Codegen installed:
+
+```bash
+# Clone the repository (if you haven't already)
+git clone https://github.com/Zeeeepa/codegen.git
+cd codegen
+
+# Install Codegen in development mode
+pip install -e .
+```
 
 ## Usage
 
+### Basic Usage
+
 ```bash
-python module_disassembler.py --repo-path /path/to/codegen --output-dir /path/to/output
+python module_disassembler.py --repo-path "/path/to/repo" --output-dir "/path/to/output"
 ```
 
-### Arguments
+### Example Script
 
-- `--repo-path`: Path to the repository to analyze (required)
-- `--output-dir`: Directory to output the restructured modules (required)
-- `--report-file`: Path to the output report file (default: `disassembler_report.json`)
-- `--similarity-threshold`: Threshold for considering functions similar (0.0-1.0, default: 0.8)
+For more flexibility, use the example script:
+
+```bash
+python example_usage.py --repo-path "/path/to/repo" --focus-dir "codegen-on-oss" --output-dir "./restructured_modules"
+```
+
+### Command Line Arguments
+
+- `--repo-path`: Path to the repository to analyze
+- `--output-dir`: Directory to output the restructured modules
+- `--report-file`: Path to the output report file (default: disassembler_report.json)
+- `--similarity-threshold`: Threshold for considering functions similar (0.0-1.0) (default: 0.8)
+- `--focus-dir`: Focus on a specific directory (e.g., 'codegen-on-oss')
+
+## How It Works
+
+1. **Codebase Loading**: Uses Codegen SDK to load and parse the codebase
+2. **Function Extraction**: Extracts all functions with their source code and metadata
+3. **Duplicate Detection**: 
+   - Identifies exact duplicates using normalized code hashing
+   - Finds similar functions using difflib sequence matching
+4. **Dependency Analysis**: Builds a graph of function dependencies using SDK's symbol resolution
+5. **Function Categorization**: Categorizes functions based on naming patterns
+6. **Module Generation**: Creates a new module structure organized by function category
+7. **Report Generation**: Produces a detailed JSON report of the analysis
 
 ## Output Structure
 
-The tool generates a restructured module hierarchy organized by function category:
+The tool generates:
 
-```
-output_dir/
-├── __init__.py
-├── README.md
-├── analysis/
-│   ├── __init__.py
-│   ├── analyze_codebase.py
-│   ├── extract_functions.py
-│   └── ...
-├── visualization/
-│   ├── __init__.py
-│   ├── plot_dependency_graph.py
-│   └── ...
-├── utility/
-│   ├── __init__.py
-│   ├── format_output.py
-│   └── ...
-└── ...
-```
+1. **Restructured Modules**: A directory structure organized by function category
+   ```
+   output_dir/
+   ├── __init__.py
+   ├── README.md
+   ├── analysis/
+   │   ├── __init__.py
+   │   ├── analyze_code.py
+   │   └── ...
+   ├── utility/
+   │   ├── __init__.py
+   │   └── ...
+   └── ...
+   ```
 
-Each function is placed in its own file, with proper imports for dependencies. Duplicate functions are eliminated, with references pointing to the primary implementation.
+2. **Analysis Report**: A JSON file with detailed information about:
+   - Function counts by category
+   - Duplicate function groups
+   - Similar function groups
+   - Function dependencies
 
 ## Function Categories
 
 Functions are categorized based on naming patterns:
 
-- **analysis**: Functions that analyze, extract, parse, or process data
-- **visualization**: Functions that visualize, plot, or display information
+- **analysis**: Functions that analyze, extract, parse, process data
+- **visualization**: Functions that visualize, plot, render, display information
 - **utility**: Helper functions, formatters, converters
-- **io**: Functions for reading, writing, loading, or saving data
-- **validation**: Functions that validate, check, or verify data
-- **metrics**: Functions that calculate, measure, or compute metrics
-- **core**: Core functionality like initialization, main execution, etc.
+- **io**: Functions for reading, writing, loading, saving data
+- **validation**: Functions that validate, check, verify data
+- **metrics**: Functions that measure, calculate, compute values
+- **core**: Core functionality like initialization, main execution
 - **other**: Functions that don't fit into the above categories
 
-## Report Format
+## Example: Analyzing Codegen-on-OSS
 
-The tool generates a JSON report with the following structure:
-
-```json
-{
-  "summary": {
-    "total_functions": 150,
-    "duplicate_groups": 5,
-    "similar_groups": 8,
-    "categories": {
-      "analysis": 45,
-      "visualization": 20,
-      "utility": 30,
-      "io": 15,
-      "validation": 10,
-      "metrics": 25,
-      "core": 5
-    }
-  },
-  "duplicates": [...],
-  "similar": [...],
-  "categories": {...}
-}
-```
-
-## Example
+To analyze and restructure the codegen-on-oss module:
 
 ```bash
-# Analyze the codegen repository and output restructured modules
-python module_disassembler.py --repo-path ./codegen --output-dir ./restructured_modules
-
-# Analyze with a higher similarity threshold
-python module_disassembler.py --repo-path ./codegen --output-dir ./restructured_modules --similarity-threshold 0.9
+./run_disassembler.sh
 ```
 
-## Use Cases
+Or manually:
 
-1. **Code Cleanup**: Identify and eliminate duplicate code
-2. **Refactoring**: Restructure code into a more maintainable organization
-3. **Code Understanding**: Gain insights into the codebase structure and dependencies
-4. **Technical Debt Reduction**: Identify areas for improvement and consolidation
+```bash
+python example_usage.py --repo-path "." --focus-dir "codegen-on-oss" --output-dir "./restructured_modules"
+```
 
-## Limitations
+## Benefits
 
-- The tool currently only analyzes Python files
-- Function similarity detection may produce false positives with very generic functions
-- Dependency analysis is based on static analysis and may miss dynamic dependencies
+- **Code Deduplication**: Identify and eliminate duplicate code
+- **Better Organization**: Restructure code based on functionality
+- **Dependency Insights**: Understand function relationships
+- **Refactoring Guidance**: Use the analysis as a guide for refactoring
+- **Maintainability**: Improve code maintainability through better organization
 
