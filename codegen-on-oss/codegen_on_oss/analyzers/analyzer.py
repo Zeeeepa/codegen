@@ -432,7 +432,9 @@ class AnalyzerManager:
                 return True
 
         # Check if the file is a test file
-        if ("test" in file_path.lower() or "tests" in file_path.lower()) and issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]:
+        if (
+            "test" in file_path.lower() or "tests" in file_path.lower()
+        ) and issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]:
             # Skip low-severity issues in test files
             return False
 
@@ -481,7 +483,8 @@ class AnalyzerManager:
             Dictionary containing analysis results
         """
         if not self.base_codebase:
-            raise ValueError("Codebase not initialized")
+            msg = "Codebase not initialized"
+            raise ValueError(msg)
 
         # Convert string analysis types to enums
         if analysis_types:
@@ -558,25 +561,27 @@ class AnalyzerManager:
 
         return self.results
 
-    def save_results(self, output_file: str, format: str = "json"):
-        """
-        Save analysis results to a file.
+    def save_results(self, output_file: str, output_format: str = "json"):
+        """Save analysis results to a file.
 
         Args:
             output_file: Path to the output file
-            format: Output format (json, html)
+            output_format: Format to save results in (json, yaml, markdown)
         """
-        if format == "json":
-            with open(output_file, "w") as f:
-                json.dump(self.results, f, indent=2)
-        elif format == "html":
-            self._generate_html_report(output_file)
-        else:
-            # Default to JSON
-            with open(output_file, "w") as f:
-                json.dump(self.results, f, indent=2)
+        with open(output_file, "w") as f:
+            if output_format == "json":
+                import json
 
-        logger.info(f"Results saved to {output_file}")
+                f.write(json.dumps(self.results.to_dict(), indent=2))
+            elif output_format == "yaml":
+                import yaml
+
+                f.write(yaml.dump(self.results.to_dict()))
+            elif output_format == "markdown":
+                f.write(self.generate_report("detailed"))
+            else:
+                msg = f"Unsupported format: {output_format}"
+                raise ValueError(msg)
 
     def _generate_html_report(self, output_file: str):
         """Generate an HTML report of the analysis results."""
@@ -958,7 +963,7 @@ def main():
     parser.add_argument("--output-file", help="Path to the output file")
     parser.add_argument(
         "--output-format",
-        choices=["json", "html", "console"],
+        choices=["json", "yaml", "markdown", "console"],
         default="json",
         help="Output format",
     )
