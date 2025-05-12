@@ -37,8 +37,8 @@ logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=Union[str, Editable, File, List[Any], Dict[str, Any]])
 
 
-def generate_system_prompt(target: Optional[Editable] = None, 
-                          context: Optional[T] = None) -> str:
+def generate_system_prompt(target: Optional[Editable] = None,
+                           context: Optional[T] = None) -> str:
     """
     Generate a system prompt for AI-powered code analysis and generation.
     
@@ -149,8 +149,8 @@ REMEMBER: When giving the final answer, you must use the set_answer tool to prov
     return prompt
 
 
-def generate_flag_system_prompt(target: Editable, 
-                               context: Optional[T] = None) -> str:
+def generate_flag_system_prompt(target: Editable,
+                                context: Optional[T] = None) -> str:
     """
     Generate a system prompt for determining whether to flag a code element.
     
@@ -298,8 +298,8 @@ class CodebaseAI:
         """Initialize the CodebaseAI instance."""
         self.logger = logging.getLogger(__name__)
     
-    def generate_system_prompt(self, target: Optional[Editable] = None, 
-                              context: Optional[T] = None) -> str:
+    def generate_system_prompt(self, target: Optional[Editable] = None,
+                               context: Optional[T] = None) -> str:
         """
         Generate a system prompt for AI-powered code analysis and generation.
         
@@ -312,8 +312,8 @@ class CodebaseAI:
         """
         return generate_system_prompt(target, context)
     
-    def generate_flag_system_prompt(self, target: Editable, 
-                                   context: Optional[T] = None) -> str:
+    def generate_flag_system_prompt(self, target: Editable,
+                                    context: Optional[T] = None) -> str:
         """
         Generate a system prompt for determining whether to flag a code element.
         
@@ -355,4 +355,3 @@ class CodebaseAI:
             A list of tool definitions
         """
         return generate_flag_tools()
-
