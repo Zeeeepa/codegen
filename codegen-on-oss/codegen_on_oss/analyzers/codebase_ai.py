@@ -15,15 +15,19 @@ try:
     from codegen.sdk.core.interfaces.editable import Editable
 except ImportError:
     # Define fallback classes for when SDK is not available
-    class Editable:
+    class EditableFallback:
         @property
         def extended_source(self) -> str:
             return ""
 
-    class File:
+    class FileFallback:
         @property
         def source(self) -> str:
             return ""
+
+    # Use fallback classes
+    Editable = EditableFallback
+    File = FileFallback
 
 
 # Configure logging
