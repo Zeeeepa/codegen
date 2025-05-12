@@ -352,7 +352,8 @@ class CodegenAnalyzerAPI:
         if pr_number is not None:
             self.analyze_pr(pr_number, analysis_types=["pr"])
         elif self.analyzer.pr_number is None:
-            raise ValueError("No PR number specified")
+            msg = "No PR number specified"
+            raise ValueError(msg)
 
         # Generate visualization
         viz = self.visualizer.generate_pr_diff_visualization(
@@ -718,7 +719,8 @@ def api_get_visualization(
             format=params.get("format", "json"),
         )
     else:
-        raise ValueError(f"Unknown visualization type: {viz_type}")
+        msg = f"Unknown visualization type: {viz_type}"
+        raise ValueError(msg)
 
 
 def api_get_static_errors(repo_path: str) -> list[dict[str, Any]]:
