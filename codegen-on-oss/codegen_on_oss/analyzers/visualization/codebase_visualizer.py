@@ -14,6 +14,8 @@ import sys
 
 from .analysis_visualizer import AnalysisVisualizer
 from .code_visualizer import CodeVisualizer
+from .call_graph_from_node import CallGraphFromNode, CallGraphFilter, CallPathsBetweenNodes
+from .dead_code import DeadCodeVisualizer
 from .visualizer import (
     OutputFormat,
     VisualizationConfig,
@@ -64,6 +66,27 @@ class CodebaseVisualizer:
             analyzer=analyzer,
             codebase=self.codebase,
             context=self.context,
+            config=self.config,
+        )
+        
+        # Initialize new specialized visualizers
+        self.call_graph_from_node = CallGraphFromNode(
+            codebase=self.codebase,
+            config=self.config,
+        )
+        
+        self.call_graph_filter = CallGraphFilter(
+            codebase=self.codebase,
+            config=self.config,
+        )
+        
+        self.call_paths_between_nodes = CallPathsBetweenNodes(
+            codebase=self.codebase,
+            config=self.config,
+        )
+        
+        self.dead_code_visualizer = DeadCodeVisualizer(
+            codebase=self.codebase,
             config=self.config,
         )
 
@@ -226,7 +249,7 @@ class CodebaseVisualizer:
     def visualize_dead_code(self, path_filter: str | None = None):
         """Convenience method for dead code visualization."""
         return self.visualize(VisualizationType.DEAD_CODE, path_filter=path_filter)
-
+        
     def visualize_cyclomatic_complexity(self, path_filter: str | None = None):
         """Convenience method for cyclomatic complexity visualization."""
         return self.visualize(
@@ -242,6 +265,40 @@ class CodebaseVisualizer:
     def visualize_pr_comparison(self):
         """Convenience method for PR comparison visualization."""
         return self.visualize(VisualizationType.PR_COMPARISON)
+        
+    # New convenience methods for the added visualizers
+    def visualize_call_graph_from_node(self, function_name: str, max_depth: int = 5, graph_external_modules: bool = False):
+        """Convenience method for call graph from node visualization."""
+        return self.call_graph_from_node.visualize(
+            function_name=function_name, 
+            max_depth=max_depth,
+            graph_external_modules=graph_external_modules
+        )
+        
+    def visualize_call_graph_filter(self, class_name: str, method_filters: list[str] = None, 
+                                   skip_test_files: bool = True, max_depth: int = 5):
+        """Convenience method for filtered call graph visualization."""
+        return self.call_graph_filter.visualize(
+            class_name=class_name,
+            method_filters=method_filters,
+            skip_test_files=skip_test_files,
+            max_depth=max_depth
+        )
+        
+    def visualize_call_paths_between_nodes(self, start_func_name: str, end_func_name: str, max_depth: int = 5):
+        """Convenience method for call paths between nodes visualization."""
+        return self.call_paths_between_nodes.visualize(
+            start_func_name=start_func_name,
+            end_func_name=end_func_name,
+            max_depth=max_depth
+        )
+        
+    def visualize_dead_code_graph(self, skip_test_files: bool = True, skip_decorated: bool = True):
+        """Convenience method for dead code graph visualization."""
+        return self.dead_code_visualizer.visualize(
+            skip_test_files=skip_test_files,
+            skip_decorated=skip_decorated
+        )
 
 
 # Command-line interface
