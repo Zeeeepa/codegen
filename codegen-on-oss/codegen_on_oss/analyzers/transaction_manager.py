@@ -6,14 +6,16 @@ This module provides a transaction manager for handling code modifications durin
 It's responsible for queuing, sorting, and committing transactions in a controlled manner.
 """
 
+import logging
 import math
 import time
-import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Union, Any
+from typing import Any
 
 from codegen_on_oss.analyzers.transactions import (
+    ChangeType,
+    DiffLite,
     EditTransaction,
     FileAddTransaction,
     FileRemoveTransaction,
@@ -21,33 +23,38 @@ from codegen_on_oss.analyzers.transactions import (
     RemoveTransaction,
     Transaction,
     TransactionPriority,
-    DiffLite,
-    ChangeType,
 )
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
+
 class MaxTransactionsExceeded(Exception):
     """Raised when the number of transactions exceeds the max_transactions limit."""
-    def __init__(self, message: str, threshold: Optional[int] = None):
+
+    def __init__(self, message: str, threshold: int | None = None):
         super().__init__(message)
         self.threshold = threshold
+
 
 class MaxPreviewTimeExceeded(Exception):
     """Raised when more than the allotted time has passed for previewing transactions."""
-    def __init__(self, message: str, threshold: Optional[int] = None):
+
+    def __init__(self, message: str, threshold: int | None = None):
         super().__init__(message)
         self.threshold = threshold
 
+
 class TransactionError(Exception):
     """Exception raised for transaction-related errors."""
+
     pass
+
 
 class TransactionManager:
     """Responsible for handling `Transaction` objects - basically an atomic modification of a codebase.
@@ -57,22 +64,22 @@ class TransactionManager:
 
     def __init__(self) -> None:
         """Initialize the transaction manager."""
-        self.queued_transactions: Dict[Path, List[Transaction]] = dict()
-        self.pending_undos: Set[Callable[[], None]] = set()
+        self.queued_transactions: dict[Path, list[Transaction]] = {}
+        self.pending_undos: set[Callable[[], None]] = set()
         self._commiting: bool = False
-        self.max_transactions: Optional[int] = None  # None = no limit
-        self.stopwatch_start: Optional[float] = None
-        self.stopwatch_max_seconds: Optional[int] = None  # None = no limit
-        self.session: Dict[str, Any] = {}  # Session data for tracking state
+        self.max_transactions: int | None = None  # None = no limit
+        self.stopwatch_start: float | None = None
+        self.stopwatch_max_seconds: int | None = None  # None = no limit
+        self.session: dict[str, Any] = {}  # Session data for tracking state
 
     def sort_transactions(self) -> None:
         """Sort transactions by priority and position."""
-        for file_path, file_transactions in self.queued_transactions.items():
+        for _file_path, file_transactions in self.queued_transactions.items():
             file_transactions.sort(key=Transaction._to_sort_key)
 
     def clear_transactions(self) -> None:
         """Clear all transactions and reset limits.
-        
+
         Should be called between analysis runs to remove any potential extraneous transactions.
         """
         if len(self.queued_transactions) > 0:
@@ -84,17 +91,17 @@ class TransactionManager:
         self.set_max_transactions(None)
         self.reset_stopwatch()
 
-    def _format_transactions(self, transactions: List[Transaction]) -> str:
+    def _format_transactions(self, transactions: list[Transaction]) -> str:
         """Format transactions for display."""
         return "\\n".join([
-            ">" * 100 + f"\\n[ID: {t.transaction_id}]: {t.diff_str()}" + "<" * 100 
+            ">" * 100 + f"\\n[ID: {t.transaction_id}]: {t.diff_str()}" + "<" * 100
             for t in transactions
         ])
 
     def get_transactions_str(self) -> str:
         """Returns a human-readable string representation of the transactions."""
         return "\\n\\n\\n".join([
-            f"{file_path}:\\n{self._format_transactions(transactions)}" 
+            f"{file_path}:\\n{self._format_transactions(transactions)}"
             for file_path, transactions in self.queued_transactions.items()
         ])
 
@@ -104,9 +111,11 @@ class TransactionManager:
 
     def get_num_transactions(self) -> int:
         """Returns total number of transactions created to date."""
-        return sum([len(transactions) for transactions in self.queued_transactions.values()])
+        return sum([
+            len(transactions) for transactions in self.queued_transactions.values()
+        ])
 
-    def set_max_transactions(self, max_transactions: Optional[int] = None) -> None:
+    def set_max_transactions(self, max_transactions: int | None = None) -> None:
         """Set the maximum number of transactions allowed."""
         self.max_transactions = max_transactions
 
@@ -120,7 +129,7 @@ class TransactionManager:
     # Stopwatch
     ####################################################################################################################
 
-    def reset_stopwatch(self, max_seconds: Optional[int] = None) -> None:
+    def reset_stopwatch(self, max_seconds: int | None = None) -> None:
         """Reset the stopwatch with an optional time limit."""
         self.stopwatch_start = time.time()
         self.stopwatch_max_seconds = max_seconds
@@ -152,14 +161,19 @@ class TransactionManager:
         t = FileRemoveTransaction(file)
         self.add_transaction(t)
 
-    def add_transaction(self, transaction: Transaction, dedupe: bool = True, solve_conflicts: bool = True) -> bool:
+    def add_transaction(
+        self,
+        transaction: Transaction,
+        dedupe: bool = True,
+        solve_conflicts: bool = True,
+    ) -> bool:
         """Add a transaction to the queue.
-        
+
         Args:
             transaction: The transaction to add
             dedupe: Whether to check for duplicate transactions
             solve_conflicts: Whether to resolve conflicts with existing transactions
-            
+
         Returns:
             True if the transaction was added, False otherwise
         """
@@ -173,9 +187,11 @@ class TransactionManager:
         if dedupe and transaction in file_queue:
             logger.debug(f"Transaction already exists in queue: {transaction}")
             return False
-        
+
         # Solve conflicts
-        if new_transaction := self._resolve_conflicts(transaction, file_queue, solve_conflicts=solve_conflicts):
+        if new_transaction := self._resolve_conflicts(
+            transaction, file_queue, solve_conflicts=solve_conflicts
+        ):
             file_queue.append(new_transaction)
 
         self.check_limits()
@@ -193,14 +209,18 @@ class TransactionManager:
     def check_max_transactions(self) -> None:
         """Check if the maximum number of transactions has been exceeded."""
         if self.max_transactions_exceeded():
-            logger.info(f"Max transactions reached: {self.max_transactions}. Stopping analysis.")
+            logger.info(
+                f"Max transactions reached: {self.max_transactions}. Stopping analysis."
+            )
             msg = f"Max transactions reached: {self.max_transactions}"
             raise MaxTransactionsExceeded(msg, threshold=self.max_transactions)
 
     def check_max_preview_time(self) -> None:
         """Check if the maximum preview time has been exceeded."""
         if self.is_time_exceeded():
-            logger.info(f"Max preview time exceeded: {self.stopwatch_max_seconds}. Stopping analysis.")
+            logger.info(
+                f"Max preview time exceeded: {self.stopwatch_max_seconds}. Stopping analysis."
+            )
             msg = f"Max preview time exceeded: {self.stopwatch_max_seconds}"
             raise MaxPreviewTimeExceeded(msg, threshold=self.stopwatch_max_seconds)
 
@@ -208,12 +228,12 @@ class TransactionManager:
     # Commit
     ####################################################################################################################
 
-    def to_commit(self, files: Optional[Set[Path]] = None) -> Set[Path]:
+    def to_commit(self, files: set[Path] | None = None) -> set[Path]:
         """Get paths of files to commit.
-        
+
         Args:
             files: Optional set of files to filter by
-            
+
         Returns:
             Set of file paths to commit
         """
@@ -221,22 +241,22 @@ class TransactionManager:
             return set(self.queued_transactions.keys())
         return files.intersection(self.queued_transactions)
 
-    def commit(self, files: Set[Path]) -> List[DiffLite]:
+    def commit(self, files: set[Path]) -> list[DiffLite]:
         """Execute transactions in bulk for each file, in reverse order of start_byte.
-        
+
         Args:
             files: Set of file paths to commit
-            
+
         Returns:
             List of diffs that were committed
         """
         if self._commiting:
             logger.warning("Skipping commit, already committing")
             return []
-        
+
         self._commiting = True
         try:
-            diffs: List[DiffLite] = []
+            diffs: list[DiffLite] = []
             if not self.queued_transactions or len(self.queued_transactions) == 0:
                 return diffs
 
@@ -244,12 +264,18 @@ class TransactionManager:
 
             # Log information about the commit
             if len(files) > 3:
-                num_transactions = sum([len(self.queued_transactions[file_path]) for file_path in files])
-                logger.info(f"Committing {num_transactions} transactions for {len(files)} files")
+                num_transactions = sum([
+                    len(self.queued_transactions[file_path]) for file_path in files
+                ])
+                logger.info(
+                    f"Committing {num_transactions} transactions for {len(files)} files"
+                )
             else:
                 for file in files:
-                    logger.info(f"Committing {len(self.queued_transactions[file])} transactions for {file}")
-            
+                    logger.info(
+                        f"Committing {len(self.queued_transactions[file])} transactions for {file}"
+                    )
+
             # Execute transactions for each file
             for file_path in files:
                 file_transactions = self.queued_transactions.pop(file_path, [])
@@ -264,23 +290,23 @@ class TransactionManager:
                     else:
                         diffs.append(diff)
                     transaction.execute()
-            
+
             return diffs
         finally:
             self._commiting = False
 
     def apply(self, transaction: Transaction) -> None:
         """Apply a single transaction immediately.
-        
+
         Args:
             transaction: The transaction to apply
         """
         self.add_transaction(transaction)
         self.commit({transaction.file_path})
 
-    def apply_all(self) -> List[DiffLite]:
+    def apply_all(self) -> list[DiffLite]:
         """Apply all queued transactions.
-        
+
         Returns:
             List of diffs that were committed
         """
@@ -298,80 +324,142 @@ class TransactionManager:
     # Conflict Resolution
     ####################################################################################################################
 
-    def _resolve_conflicts(self, transaction: Transaction, file_queue: List[Transaction], solve_conflicts: bool = True) -> Optional[Transaction]:
+    def _resolve_conflicts(
+        self,
+        transaction: Transaction,
+        file_queue: list[Transaction],
+        solve_conflicts: bool = True,
+    ) -> Transaction | None:
         """Resolve conflicts between the new transaction and existing transactions.
-        
+
         Args:
             transaction: The new transaction
             file_queue: List of existing transactions for the file
             solve_conflicts: Whether to attempt to resolve conflicts
-            
+
         Returns:
             The transaction to add, or None if it should be discarded
         """
-        def break_down(to_break: EditTransaction) -> bool:
-            """Break down an edit transaction into smaller transactions."""
-            if new_transactions := to_break.break_down():
-                try:
-                    insert_idx = file_queue.index(to_break)
-                    file_queue.pop(insert_idx)
-                except ValueError:
-                    insert_idx = len(file_queue)
-                for new_transaction in new_transactions:
-                    if broken_down := self._resolve_conflicts(new_transaction, file_queue, solve_conflicts=solve_conflicts):
-                        file_queue.insert(insert_idx, broken_down)
-                return True
-            return False
-
+        # Extract the conflict resolution logic to reduce complexity
         try:
             conflicts = self._get_conflicts(transaction)
             if solve_conflicts and conflicts:
-                # Check if the current transaction completely overlaps with any existing transaction
-                if (completely_overlapping := self._get_overlapping_conflicts(transaction)) is not None:
-                    # If it does, check the overlapping transaction's type
-                    # If the overlapping transaction is a remove, remove the current transaction
-                    if isinstance(completely_overlapping, RemoveTransaction):
-                        return None
-                    # If the overlapping transaction is an edit, raise an error
-                    elif isinstance(completely_overlapping, EditTransaction):
-                        if break_down(completely_overlapping):
-                            return transaction
+                return self._handle_conflicts(transaction, file_queue, conflicts)
+            else:
+                # Add to priority queue and rebuild the queue
+                return transaction
+        except TransactionError:
+            logger.exception("Transaction conflict detected")
+            self._log_conflict_error(transaction, self._get_conflicts(transaction))
+            raise
 
-                        raise TransactionError()
-                else:
-                    # If current transaction is deleted, remove all conflicting transactions
-                    if isinstance(transaction, RemoveTransaction):
-                        for t in conflicts:
-                            file_queue.remove(t)
-                    # If current transaction is edit, raise an error
-                    elif isinstance(transaction, EditTransaction):
-                        if break_down(transaction):
-                            return None
-                        raise TransactionError()
+    def _handle_conflicts(
+        self,
+        transaction: Transaction,
+        file_queue: list[Transaction],
+        conflicts: list[Transaction],
+    ) -> Transaction | None:
+        """Handle conflicts between transactions.
 
-            # Add to priority queue and rebuild the queue
-            return transaction
-        except TransactionError as e:
-            logger.exception(e)
-            msg = (
-                f"Potential conflict detected in file {transaction.file_path}!\\n"
-                "Attempted to perform code modification:\\n"
-                "\\n"
-                f"{self._format_transactions([transaction])}\\n"
-                "\\n"
-                "That potentially conflicts with the following other modifications:\\n"
-                "\\n"
-                f"{self._format_transactions(conflicts)}\\n"
-                "\\n"
-                "Aborting!\\n"
-                "\\n"
-                f"[Conflict Detected] Potential Modification Conflict in File {transaction.file_path}!"
+        Args:
+            transaction: The new transaction
+            file_queue: List of existing transactions for the file
+            conflicts: List of conflicting transactions
+
+        Returns:
+            The transaction to add, or None if it should be discarded
+        """
+        # Check if the current transaction completely overlaps with any existing transaction
+        completely_overlapping = self._get_overlapping_conflicts(transaction)
+        if completely_overlapping is not None:
+            # If it does, check the overlapping transaction's type
+            # If the overlapping transaction is a remove, remove the current transaction
+            if isinstance(completely_overlapping, RemoveTransaction):
+                return None
+            # If the overlapping transaction is an edit, try to break it down
+            elif isinstance(completely_overlapping, EditTransaction):
+                if self._break_down_transaction(completely_overlapping, file_queue):
+                    return transaction
+
+                raise TransactionError()
+        else:
+            # If current transaction is deleted, remove all conflicting transactions
+            if isinstance(transaction, RemoveTransaction):
+                for t in conflicts:
+                    file_queue.remove(t)
+            # If current transaction is edit, try to break it down
+            elif isinstance(transaction, EditTransaction):
+                if self._break_down_transaction(transaction, file_queue):
+                    return None
+                raise TransactionError()
+
+        return transaction
+
+    def _break_down_transaction(
+        self, to_break: EditTransaction, file_queue: list[Transaction]
+    ) -> bool:
+        """Break down an edit transaction into smaller transactions.
+
+        Args:
+            to_break: The transaction to break down
+            file_queue: List of existing transactions for the file
+
+        Returns:
+            True if the transaction was broken down, False otherwise
+        """
+        new_transactions = to_break.break_down()
+        if not new_transactions:
+            return False
+
+        try:
+            insert_idx = file_queue.index(to_break)
+            file_queue.pop(insert_idx)
+        except ValueError:
+            insert_idx = len(file_queue)
+
+        for new_transaction in new_transactions:
+            broken_down = self._resolve_conflicts(
+                new_transaction, file_queue, solve_conflicts=True
             )
-            raise TransactionError(msg)
+            if broken_down:
+                file_queue.insert(insert_idx, broken_down)
 
-    def get_transactions_at_range(self, file_path: Path, start_byte: int, end_byte: int, 
-                                 transaction_order: Optional[TransactionPriority] = None, *, 
-                                 combined: bool = False) -> List[Transaction]:
+        return True
+
+    def _log_conflict_error(
+        self, transaction: Transaction, conflicts: list[Transaction]
+    ) -> None:
+        """Log a conflict error.
+
+        Args:
+            transaction: The transaction that caused the conflict
+            conflicts: List of conflicting transactions
+        """
+        msg = (
+            f"Potential conflict detected in file {transaction.file_path}!\n"
+            "Attempted to perform code modification:\n"
+            "\n"
+            f"{self._format_transactions([transaction])}\n"
+            "\n"
+            "That potentially conflicts with the following other modifications:\n"
+            "\n"
+            f"{self._format_transactions(conflicts)}\n"
+            "\n"
+            "Aborting!\n"
+            "\n"
+            f"[Conflict Detected] Potential Modification Conflict in File {transaction.file_path}!"
+        )
+        raise TransactionError(msg)
+
+    def get_transactions_at_range(
+        self,
+        file_path: Path,
+        start_byte: int,
+        end_byte: int,
+        transaction_order: TransactionPriority | None = None,
+        *,
+        combined: bool = False,
+    ) -> list[Transaction]:
         """Returns list of queued transactions that matches the given filtering criteria.
 
         Args:
@@ -380,35 +468,49 @@ class TransactionManager:
             end_byte: End byte position
             transaction_order: Optional filter by transaction order
             combined: Return a list of transactions which collectively apply to the given range
-            
+
         Returns:
             List of matching transactions
         """
-        matching_transactions: List[Transaction] = []
+        matching_transactions: list[Transaction] = []
         if file_path not in self.queued_transactions:
             return matching_transactions
 
         for t in self.queued_transactions[file_path]:
             if t.start_byte == start_byte:
-                if t.end_byte == end_byte:
-                    if transaction_order is None or t.transaction_order == transaction_order:
-                        matching_transactions.append(t)
+                if t.end_byte == end_byte and (
+                    transaction_order is None
+                    or t.transaction_order == transaction_order
+                ):
+                    matching_transactions.append(t)
                 elif combined and t.start_byte != t.end_byte:
-                    if other := self.get_transactions_at_range(t.file_path, t.end_byte, end_byte, transaction_order, combined=combined):
+                    other = self.get_transactions_at_range(
+                        t.file_path,
+                        t.end_byte,
+                        end_byte,
+                        transaction_order,
+                        combined=combined,
+                    )
+                    if other:
                         return [t, *other]
 
         return matching_transactions
 
-    def get_transaction_containing_range(self, file_path: Path, start_byte: int, end_byte: int, 
-                                        transaction_order: Optional[TransactionPriority] = None) -> Optional[Transaction]:
+    def get_transaction_containing_range(
+        self,
+        file_path: Path,
+        start_byte: int,
+        end_byte: int,
+        transaction_order: TransactionPriority | None = None,
+    ) -> Transaction | None:
         """Returns the nearest transaction that includes the range specified given the filtering criteria.
-        
+
         Args:
             file_path: Path to the file
             start_byte: Start byte position
             end_byte: End byte position
             transaction_order: Optional filter by transaction order
-            
+
         Returns:
             The transaction containing the range, or None if not found
         """
@@ -418,49 +520,60 @@ class TransactionManager:
         smallest_difference = math.inf
         best_fit_transaction = None
         for t in self.queued_transactions[file_path]:
-            if t.start_byte <= start_byte and t.end_byte >= end_byte:
-                if transaction_order is None or t.transaction_order == transaction_order:
-                    smallest_difference = min(smallest_difference, abs(t.start_byte - start_byte) + abs(t.end_byte - end_byte))
-                    if smallest_difference == 0:
-                        return t
-                    best_fit_transaction = t
+            if (
+                t.start_byte <= start_byte
+                and t.end_byte >= end_byte
+                and (
+                    transaction_order is None
+                    or t.transaction_order == transaction_order
+                )
+            ):
+                smallest_difference = min(
+                    smallest_difference,
+                    abs(t.start_byte - start_byte) + abs(t.end_byte - end_byte),
+                )
+                if smallest_difference == 0:
+                    return t
+                best_fit_transaction = t
         return best_fit_transaction
 
-    def _get_conflicts(self, transaction: Transaction) -> List[Transaction]:
+    def _get_conflicts(self, transaction: Transaction) -> list[Transaction]:
         """Returns all transactions that overlap with the given transaction.
-        
+
         Args:
             transaction: The transaction to check for conflicts
-            
+
         Returns:
             List of conflicting transactions
         """
-        overlapping_transactions: List[Transaction] = []
+        conflicts: list[Transaction] = []
         if transaction.file_path not in self.queued_transactions:
-            return overlapping_transactions
+            return conflicts
 
         for t in self.queued_transactions[transaction.file_path]:
-            # Skip if it's the same transaction
+            # Skip if the transaction is the same
             if t == transaction:
                 continue
 
-            # Check if the transactions overlap
+            # Check if the transaction overlaps with the given transaction
             if (
                 (t.start_byte <= transaction.start_byte < t.end_byte)
                 or (t.start_byte < transaction.end_byte <= t.end_byte)
                 or (transaction.start_byte <= t.start_byte < transaction.end_byte)
                 or (transaction.start_byte < t.end_byte <= transaction.end_byte)
             ):
-                overlapping_transactions.append(t)
+                conflicts.append(t)
 
-        return overlapping_transactions
+        return conflicts
 
-    def _get_overlapping_conflicts(self, transaction: Transaction) -> Optional[Transaction]:
+    def _get_overlapping_conflicts(
+        self, transaction: Transaction
+    ) -> Transaction | None:
         """Returns the transaction that completely overlaps with the given transaction.
-        
+
         Args:
             transaction: The transaction to check for overlaps
-            
+
         Returns:
             The overlapping transaction, or None if not found
         """
@@ -468,6 +581,9 @@ class TransactionManager:
             return None
 
         for t in self.queued_transactions[transaction.file_path]:
-            if transaction.start_byte >= t.start_byte and transaction.end_byte <= t.end_byte:
+            if (
+                transaction.start_byte >= t.start_byte
+                and transaction.end_byte <= t.end_byte
+            ):
                 return t
         return None
