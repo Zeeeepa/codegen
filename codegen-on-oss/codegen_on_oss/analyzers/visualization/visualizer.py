@@ -13,12 +13,11 @@ import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 try:
     import matplotlib.pyplot as plt
     import networkx as nx
-    from matplotlib.colors import LinearSegmentedColormap
 except ImportError:
     logging.warning(
         "Visualization dependencies not found. Please install them with: pip install networkx matplotlib"
@@ -89,7 +88,7 @@ class BaseVisualizer:
     configuration, graph creation, and visualization output.
     """
 
-    def __init__(self, config: Optional[VisualizationConfig] = None, **kwargs):
+    def __init__(self, config: VisualizationConfig | None = None, **kwargs):
         """
         Initialize the base visualizer.
 
@@ -98,9 +97,9 @@ class BaseVisualizer:
             **kwargs: Additional configuration options
         """
         self.config = config or VisualizationConfig()
-        self.graph: Optional[nx.Graph] = None
-        self.current_visualization_type: Optional[VisualizationType] = None
-        self.current_entity_name: Optional[str] = None
+        self.graph: nx.Graph | None = None
+        self.current_visualization_type: VisualizationType | None = None
+        self.current_entity_name: str | None = None
 
         # Apply any additional configuration options
         for key, value in kwargs.items():
@@ -265,12 +264,17 @@ class BaseVisualizer:
 
             # Add other attributes
             for key, value in attrs.items():
-                if key not in ["name", "type", "color", "file_path", "original_node"]:
-                    if (
-                        isinstance(value, str | int | float | bool | list | dict)
-                        or value is None
-                    ):
-                        node_data[key] = value
+                if key not in [
+                    "name",
+                    "type",
+                    "color",
+                    "file_path",
+                    "original_node",
+                ] and (
+                    isinstance(value, str | int | float | bool | list | dict)
+                    or value is None
+                ):
+                    node_data[key] = value
 
             nodes.append(node_data)
 

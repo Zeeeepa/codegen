@@ -7,15 +7,15 @@ starting from a specific function or method.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any
 
 import networkx as nx
 
-from ..context.function import Function
-from ..context.detached_symbols.function_call import FunctionCall
-from ..context.external_module import ExternalModule
 from ..context.class_definition import Class
 from ..context.codebase import CodebaseType
+from ..context.detached_symbols.function_call import FunctionCall
+from ..context.external_module import ExternalModule
+from ..context.function import Function
 from ..context.interfaces.callable import Callable
 from .visualizer import BaseVisualizer, OutputFormat, VisualizationType
 
@@ -26,12 +26,12 @@ class CallGraphFromNode(BaseVisualizer):
     """
     Visualizer for generating a call graph starting from a specific function.
 
-    This class creates a directed call graph for a given function. Starting from the 
-    specified function, it recursively iterates through its function calls and the 
+    This class creates a directed call graph for a given function. Starting from the
+    specified function, it recursively iterates through its function calls and the
     functions called by them, building a graph of the call paths to a maximum depth.
     """
 
-    def __init__(self, codebase: Optional[CodebaseType] = None, **kwargs):
+    def __init__(self, codebase: CodebaseType | None = None, **kwargs):
         """
         Initialize the CallGraphFromNode visualizer.
 
@@ -42,7 +42,12 @@ class CallGraphFromNode(BaseVisualizer):
         super().__init__(**kwargs)
         self.codebase = codebase
 
-    def visualize(self, function_name: str, max_depth: int = 5, graph_external_modules: bool = False):
+    def visualize(  # noqa: C901
+        self,
+        function_name: str,
+        max_depth: int = 5,
+        graph_external_modules: bool = False,
+    ):
         """
         Generate a call graph visualization starting from a specific function.
 
@@ -72,7 +77,9 @@ class CallGraphFromNode(BaseVisualizer):
         G.add_node(function_to_trace, color="yellow")
 
         # Recursive function to create the call graph
-        def create_downstream_call_trace(parent: Union[FunctionCall, Function, None] = None, depth: int = 0):
+        def create_downstream_call_trace(
+            parent: FunctionCall | Function | None = None, depth: int = 0
+        ):
             """
             Creates call graph for parent function.
 
@@ -85,12 +92,12 @@ class CallGraphFromNode(BaseVisualizer):
             # If the maximum recursive depth has been exceeded, return
             if max_depth <= depth:
                 return
-                
+
             if isinstance(parent, FunctionCall):
                 src_call, src_func = parent, parent.function_definition
             else:
                 src_call, src_func = parent, parent
-                
+
             # Iterate over all call paths of the symbol
             for call in src_func.function_calls:
                 # The symbol being called
@@ -140,7 +147,7 @@ class CallGraphFilter(BaseVisualizer):
     such as method names or file paths.
     """
 
-    def __init__(self, codebase: Optional[CodebaseType] = None, **kwargs):
+    def __init__(self, codebase: CodebaseType | None = None, **kwargs):
         """
         Initialize the CallGraphFilter visualizer.
 
@@ -151,8 +158,13 @@ class CallGraphFilter(BaseVisualizer):
         super().__init__(**kwargs)
         self.codebase = codebase
 
-    def visualize(self, class_name: str, method_filters: List[str] = None, 
-                  skip_test_files: bool = True, max_depth: int = 5):
+    def visualize(  # noqa: C901
+        self,
+        class_name: str,
+        method_filters: list[str] | None = None,
+        skip_test_files: bool = True,
+        max_depth: int = 5,
+    ):
         """
         Generate a filtered call graph visualization.
 
@@ -184,12 +196,15 @@ class CallGraphFilter(BaseVisualizer):
         for func in self.codebase.functions:
             if skip_test_files and "test" in func.file.filepath:
                 continue
-                
+
             for call in func.function_calls:
-                if hasattr(call.function_definition, 'parent_class') and call.function_definition.parent_class == cls:
+                if (
+                    hasattr(call.function_definition, "parent_class")
+                    and call.function_definition.parent_class == cls
+                ):
                     func_to_trace = func
                     break
-                    
+
             if func_to_trace:
                 break
 
@@ -201,7 +216,9 @@ class CallGraphFilter(BaseVisualizer):
         G.add_node(func_to_trace, color="red")
 
         # Define a recursive function to traverse function calls
-        def create_filtered_downstream_call_trace(parent: Union[FunctionCall, Function], current_depth, max_depth):
+        def create_filtered_downstream_call_trace(
+            parent: FunctionCall | Function, current_depth, max_depth
+        ):
             if current_depth > max_depth:
                 return
 
@@ -223,22 +240,32 @@ class CallGraphFilter(BaseVisualizer):
                     continue
 
                 # If the function being called is not from an external module and is not defined in a test file
-                if not isinstance(func, ExternalModule) and not (skip_test_files and func.file.filepath.startswith("test")):
+                if not isinstance(func, ExternalModule) and not (
+                    skip_test_files and func.file.filepath.startswith("test")
+                ):
                     # Add `call` to the graph and an edge from `src_call` to `call`
-                    metadata: Dict[str, Any] = {}
-                    if isinstance(func, Function) and func.is_method and func.parent_class == cls:
+                    metadata: dict[str, Any] = {}
+                    if (
+                        isinstance(func, Function)
+                        and func.is_method
+                        and func.parent_class == cls
+                    ):
                         # Only include methods that match the filter
                         if method_filters and func.name not in method_filters:
                             continue
-                            
+
                         name = f"{func.parent_class.name}.{func.name}"
                         metadata = {"color": "yellow", "name": name}
-                        
+
                     G.add_node(call, **metadata)
-                    G.add_edge(src_call, call, symbol=cls)  # Add edge from current to successor
+                    G.add_edge(
+                        src_call, call, symbol=cls
+                    )  # Add edge from current to successor
 
                     # Recursively add successors of the current symbol
-                    create_filtered_downstream_call_trace(call, current_depth + 1, max_depth)
+                    create_filtered_downstream_call_trace(
+                        call, current_depth + 1, max_depth
+                    )
 
         # Start the recursive traversal
         create_filtered_downstream_call_trace(func_to_trace, 1, max_depth)
@@ -267,7 +294,7 @@ class CallPathsBetweenNodes(BaseVisualizer):
     and an end function in the call graph.
     """
 
-    def __init__(self, codebase: Optional[CodebaseType] = None, **kwargs):
+    def __init__(self, codebase: CodebaseType | None = None, **kwargs):
         """
         Initialize the CallPathsBetweenNodes visualizer.
 
@@ -278,7 +305,7 @@ class CallPathsBetweenNodes(BaseVisualizer):
         super().__init__(**kwargs)
         self.codebase = codebase
 
-    def visualize(self, start_func_name: str, end_func_name: str, max_depth: int = 5):
+    def visualize(self, start_func_name: str, end_func_name: str, max_depth: int = 5):  # noqa: C901
         """
         Generate a visualization of call paths between two functions.
 
@@ -296,20 +323,20 @@ class CallPathsBetweenNodes(BaseVisualizer):
         # Find the start and end functions in the codebase
         start_func = None
         end_func = None
-        
+
         for func in self.codebase.functions:
             if func.name == start_func_name:
                 start_func = func
             elif func.name == end_func_name:
                 end_func = func
-                
+
             if start_func and end_func:
                 break
 
         if not start_func:
             logger.error(f"Start function {start_func_name} not found in codebase")
             return None
-            
+
         if not end_func:
             logger.error(f"End function {end_func_name} not found in codebase")
             return None
@@ -320,7 +347,9 @@ class CallPathsBetweenNodes(BaseVisualizer):
         G.add_node(end_func, color="red")
 
         # Define a recursive function to traverse function calls
-        def create_downstream_call_trace(parent: Union[FunctionCall, Function], end: Callable, current_depth, max_depth):
+        def create_downstream_call_trace(
+            parent: FunctionCall | Function, end: Callable, current_depth, max_depth
+        ):
             if current_depth > max_depth:
                 return
 
@@ -350,9 +379,11 @@ class CallPathsBetweenNodes(BaseVisualizer):
                     if func == end:
                         G.add_edge(call, end)
                         return
-                        
+
                     # Recursive call to function call
-                    create_downstream_call_trace(call, end, current_depth + 1, max_depth)
+                    create_downstream_call_trace(
+                        call, end, current_depth + 1, max_depth
+                    )
 
         # Start the recursive traversal
         create_downstream_call_trace(start_func, end_func, 1, max_depth)
@@ -360,7 +391,7 @@ class CallPathsBetweenNodes(BaseVisualizer):
         # Find all the simple paths between start and end
         try:
             all_paths = list(nx.all_simple_paths(G, source=start_func, target=end_func))
-            
+
             # Collect all nodes that are part of these paths
             nodes_in_paths = set()
             for path in all_paths:
@@ -369,7 +400,9 @@ class CallPathsBetweenNodes(BaseVisualizer):
             # Create a new subgraph with only the nodes in the paths
             G = G.subgraph(nodes_in_paths)
         except nx.NetworkXNoPath:
-            logger.warning(f"No path found between {start_func_name} and {end_func_name}")
+            logger.warning(
+                f"No path found between {start_func_name} and {end_func_name}"
+            )
 
         # Set the graph for visualization
         self.graph = G
@@ -378,10 +411,14 @@ class CallPathsBetweenNodes(BaseVisualizer):
         if self.config.output_format == OutputFormat.JSON:
             data = self._convert_graph_to_json()
             return self._save_visualization(
-                VisualizationType.CALL_GRAPH, f"{start_func_name}_to_{end_func_name}", data
+                VisualizationType.CALL_GRAPH,
+                f"{start_func_name}_to_{end_func_name}",
+                data,
             )
         else:
             fig = self._plot_graph()
             return self._save_visualization(
-                VisualizationType.CALL_GRAPH, f"{start_func_name}_to_{end_func_name}", fig
+                VisualizationType.CALL_GRAPH,
+                f"{start_func_name}_to_{end_func_name}",
+                fig,
             )

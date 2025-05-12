@@ -8,7 +8,6 @@ dead code (code that is only used by other dead code).
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Set, cast
 
 import networkx as nx
 
@@ -32,7 +31,7 @@ class DeadCodeVisualizer(BaseVisualizer):
     but also code that might only be used by other dead code (second-order dead code).
     """
 
-    def __init__(self, codebase: Optional[CodebaseType] = None, **kwargs):
+    def __init__(self, codebase: CodebaseType | None = None, **kwargs):
         """
         Initialize the DeadCodeVisualizer.
 
@@ -43,7 +42,7 @@ class DeadCodeVisualizer(BaseVisualizer):
         super().__init__(**kwargs)
         self.codebase = codebase
 
-    def visualize(self, skip_test_files: bool = True, skip_decorated: bool = True):
+    def visualize(self, skip_test_files: bool = True, skip_decorated: bool = True):  # noqa: C901
         """
         Generate a visualization of dead code in the codebase.
 
@@ -58,7 +57,7 @@ class DeadCodeVisualizer(BaseVisualizer):
         G = nx.DiGraph()
 
         # First, identify all dead code
-        dead_code: List[Function] = []
+        dead_code: list[Function] = []
 
         # Iterate through all functions in the codebase
         for function in self.codebase.functions:
@@ -82,14 +81,16 @@ class DeadCodeVisualizer(BaseVisualizer):
             for dep in symbol.dependencies:
                 if isinstance(dep, Import):
                     dep = dep.imported_symbol
-                if isinstance(dep, Symbol):
-                    if not (skip_test_files and "test" in dep.name):
-                        G.add_node(dep)
-                        G.add_edge(symbol, dep, color="red")
-                        for usage_symbol in dep.symbol_usages:
-                            if isinstance(usage_symbol, Function):
-                                if not (skip_test_files and "test" in usage_symbol.name):
-                                    G.add_edge(usage_symbol, dep)
+                if isinstance(dep, Symbol) and not (
+                    skip_test_files and "test" in dep.name
+                ):
+                    G.add_node(dep)
+                    G.add_edge(symbol, dep, color="red")
+                    for usage_symbol in dep.symbol_usages:
+                        if isinstance(usage_symbol, Function) and not (
+                            skip_test_files and "test" in usage_symbol.name
+                        ):
+                            G.add_edge(usage_symbol, dep)
 
         # Set the graph for visualization
         self.graph = G

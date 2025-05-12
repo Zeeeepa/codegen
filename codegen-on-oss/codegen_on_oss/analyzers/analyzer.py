@@ -480,8 +480,8 @@ class AnalyzerManager:
             Dictionary containing analysis results
         """
         if not self.base_codebase:
-            raise ValueError("Base codebase is missing")
-        
+            raise ValueError("Base codebase is missing")  # noqa: TRY003
+
         # Convert string analysis types to enums
         if analysis_types:
             analysis_types = [
@@ -693,7 +693,7 @@ class AnalyzerManager:
             Report as a string
         """
         if not self.results:
-            raise ValueError("No analysis results available")
+            raise ValueError("No analysis results available")  # noqa: TRY003
 
         if report_type == "summary":
             return self._generate_summary_report()
@@ -702,7 +702,7 @@ class AnalyzerManager:
         elif report_type == "issues":
             return self._generate_issues_report()
         else:
-            raise ValueError(f"Unknown report type: {report_type}")
+            raise ValueError(f"Unknown report type: {report_type}")  # noqa: TRY003
 
     def _generate_summary_report(self) -> str:
         """Generate a summary report."""
@@ -1000,8 +1000,8 @@ def main():
             report = manager.generate_report(args.report_type)
             print(report)
 
-    except Exception as e:
-        logger.exception(f"Error: {e}")
+    except Exception:
+        logger.exception("Error occurred")  # Fixed TRY401 error
         import traceback
 
         traceback.print_exc()
