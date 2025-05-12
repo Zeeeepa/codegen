@@ -47,6 +47,9 @@ from codegen_on_oss.analyzers.models.analysis_result import (
 from codegen_on_oss.analyzers.code_quality import CodeQualityAnalyzer
 from codegen_on_oss.analyzers.dependencies import DependencyAnalyzer
 
+# Diff tracking
+from codegen_on_oss.analyzers.diff_lite import ChangeType, DiffLite
+
 # Legacy analyzer interfaces (for backward compatibility)
 from codegen_on_oss.analyzers.base_analyzer import BaseCodeAnalyzer
 from codegen_on_oss.analyzers.codebase_analyzer import CodebaseAnalyzer
@@ -85,6 +88,10 @@ __all__ = [
     # Core analyzers
     'CodeQualityAnalyzer',
     'DependencyAnalyzer',
+    
+    # Diff tracking
+    'ChangeType',
+    'DiffLite',
 
     # Legacy interfaces (for backward compatibility)
     'BaseCodeAnalyzer',
