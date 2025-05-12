@@ -1,6 +1,99 @@
-# Analyzers Package
+# Codegen Analyzers
 
-This package provides tools for analyzing and modifying code during analysis.
+This directory contains the code analysis modules for the Codegen project. These analyzers provide comprehensive static code analysis, quality checking, dependency analysis, and PR validation capabilities.
+
+## Modules
+
+### Core Analyzers
+
+- **analyzer.py**: Modern analyzer architecture with plugin system
+- **base_analyzer.py**: Base class for all code analyzers
+- **codebase_analyzer.py**: Comprehensive codebase analysis
+- **code_quality.py**: Code quality analysis
+- **dependencies.py**: Dependency analysis
+- **error_analyzer.py**: Error detection and analysis
+- **parser.py**: Code parsing and AST generation for multiple languages
+- **transaction_manager.py**: Transaction manager for handling code modifications
+
+### Support Modules
+
+- **api.py**: API interface for analyzers
+- **analyzer_manager.py**: Manages analyzer plugins
+- **codebase_context.py**: Provides context for codebase analysis
+- **codebase_visualizer.py**: Visualization tools for codebases
+- **issue_analyzer.py**: Issue detection and analysis
+- **issue_types.py**: Definitions for issue types
+- **issues.py**: Issue tracking system
+
+## Parser Module
+
+The `parser.py` module provides specialized parsing functionality for code analysis, including abstract syntax tree (AST) generation and traversal for multiple programming languages. It serves as a foundation for various code analyzers in the system.
+
+### Key Features
+
+- Abstract syntax tree (AST) generation and traversal
+- Support for multiple programming languages (Python, JavaScript, TypeScript)
+- Symbol extraction (functions, classes, variables)
+- Dependency analysis (imports, requires)
+- Error handling and reporting
+
+### Usage Examples
+
+#### Basic Parsing
+
+```python
+from codegen_on_oss.analyzers.parser import parse_file, parse_code
+
+# Parse a file
+ast = parse_file("path/to/file.py")
+
+# Parse code directly
+code = "def hello(): print('Hello, World!')"
+ast = parse_code(code, "python")
+```
+
+#### Language-Specific Parsing
+
+```python
+from codegen_on_oss.analyzers.parser import PythonParser, JavaScriptParser, TypeScriptParser
+
+# Python parsing
+python_parser = PythonParser()
+python_ast = python_parser.parse_file("script.py")
+
+# JavaScript parsing
+js_parser = JavaScriptParser()
+js_ast = js_parser.parse_file("app.js")
+
+# TypeScript parsing
+ts_parser = TypeScriptParser()
+ts_ast = ts_parser.parse_file("component.ts")
+```
+
+#### Symbol and Dependency Extraction
+
+```python
+from codegen_on_oss.analyzers.parser import parse_file, create_parser
+
+# Parse a file
+ast = parse_file("path/to/file.py")
+
+# Create a parser for the language
+parser = create_parser("python")
+
+# Extract symbols (functions, classes, variables)
+symbols = parser.get_symbols(ast)
+for symbol in symbols:
+    print(f"{symbol['type']}: {symbol['name']}")
+
+# Extract dependencies (imports, requires)
+dependencies = parser.get_dependencies(ast)
+for dep in dependencies:
+    if dep["type"] == "import":
+        print(f"import {dep['module']}")
+    elif dep["type"] == "from_import":
+        print(f"from {dep['module']} import {dep['name']}")
+```
 
 ## Transaction Manager
 
@@ -70,222 +163,3 @@ The transaction manager can raise the following exceptions:
 ### Integration with Analyzers
 
 The transaction manager is designed to be used with the analyzers package to provide a consistent way to modify code during analysis. It can be integrated with other components of the analyzers package to provide a complete code analysis and modification solution.
-
-## Core Components
-
-### 1. API Interface (`api.py`)
-
-The main entry point for frontend applications. Provides REST-like endpoints for:
-
-- Codebase analysis
-- PR analysis
-- Dependency visualization
-- Issue reporting
-- Code quality assessment
-
-### 2. Analyzer System (`analyzer.py`)
-
-Plugin-based system that coordinates different types of analysis:
-
-- Code quality analysis (complexity, maintainability)
-- Dependency analysis (imports, cycles, coupling)
-- PR impact analysis
-- Type checking and error detection
-
-### 3. Issue Tracking (`issues.py`)
-
-Comprehensive issue model with:
-
-- Severity levels (critical, error, warning, info)
-- Categories (dead code, complexity, dependency, etc.)
-- Location information and suggestions
-- Filtering and grouping capabilities
-
-### 4. Dependency Analysis (`dependencies.py`)
-
-Analysis of codebase dependencies:
-
-- Import dependencies between modules
-- Circular dependency detection
-- Module coupling analysis
-- External dependencies tracking
-- Call graphs and class hierarchies
-
-### 5. Code Quality Analysis (`code_quality.py`)
-
-Analysis of code quality aspects:
-
-- Dead code detection (unused functions, variables)
-- Complexity metrics (cyclomatic, cognitive)
-- Parameter checking (types, usage)
-- Style issues and maintainability
-
-## Using the API
-
-### Setup
-
-```python
-from codegen_on_oss.analyzers.api import CodegenAnalyzerAPI
-
-# Create API instance with repository
-api = CodegenAnalyzerAPI(repo_path="/path/to/repo")
-# OR
-api = CodegenAnalyzerAPI(repo_url="https://github.com/owner/repo")
-```
-
-### Analyzing a Codebase
-
-```python
-# Run comprehensive analysis
-results = api.analyze_codebase()
-
-# Run specific analysis types
-results = api.analyze_codebase(analysis_types=["code_quality", "dependency"])
-
-# Force refresh of cached analysis
-results = api.analyze_codebase(force_refresh=True)
-```
-
-### Analyzing a PR
-
-```python
-# Analyze a specific PR
-pr_results = api.analyze_pr(pr_number=123)
-
-# Get PR impact visualization
-impact_viz = api.get_pr_impact(pr_number=123, format="json")
-```
-
-### Getting Issues
-
-```python
-# Get all issues
-all_issues = api.get_issues()
-
-# Get issues by severity
-critical_issues = api.get_issues(severity="critical")
-error_issues = api.get_issues(severity="error")
-
-# Get issues by category
-dependency_issues = api.get_issues(category="dependency_cycle")
-```
-
-### Getting Visualizations
-
-```python
-# Get module dependency graph
-module_deps = api.get_module_dependencies(format="json")
-
-# Get function call graph
-call_graph = api.get_function_call_graph(function_name="main", depth=3, format="json")
-
-# Export visualization to file
-api.export_visualization(call_graph, format="html", filename="call_graph.html")
-```
-
-### Common Analysis Patterns
-
-```python
-# Find dead code
-api.analyze_codebase(analysis_types=["code_quality"])
-dead_code = api.get_issues(category="dead_code")
-
-# Find circular dependencies
-api.analyze_codebase(analysis_types=["dependency"])
-circular_deps = api.get_circular_dependencies()
-
-# Find parameter issues
-api.analyze_codebase(analysis_types=["code_quality"])
-param_issues = api.get_parameter_issues()
-```
-
-## REST API Endpoints
-
-The analyzer can be exposed as REST API endpoints for integration with frontend applications:
-
-### Codebase Analysis
-
-```
-POST /api/analyze/codebase
-{
-  "repo_path": "/path/to/repo",
-  "analysis_types": ["code_quality", "dependency"]
-}
-```
-
-### PR Analysis
-
-```
-POST /api/analyze/pr
-{
-  "repo_path": "/path/to/repo",
-  "pr_number": 123
-}
-```
-
-### Visualization
-
-```
-POST /api/visualize
-{
-  "repo_path": "/path/to/repo",
-  "viz_type": "module_dependencies",
-  "params": {
-    "layout": "hierarchical",
-    "format": "json"
-  }
-}
-```
-
-### Issues
-
-```
-GET /api/issues?severity=error&category=dependency_cycle
-```
-
-## Implementation Example
-
-For a web application exposing these endpoints with Flask:
-
-```python
-from flask import Flask, request, jsonify
-from codegen_on_oss.analyzers.api import api_analyze_codebase, api_analyze_pr, api_get_visualization, api_get_static_errors
-
-app = Flask(__name__)
-
-
-@app.route("/api/analyze/codebase", methods=["POST"])
-def analyze_codebase():
-    data = request.json
-    result = api_analyze_codebase(repo_path=data.get("repo_path"), analysis_types=data.get("analysis_types"))
-    return jsonify(result)
-
-
-@app.route("/api/analyze/pr", methods=["POST"])
-def analyze_pr():
-    data = request.json
-    result = api_analyze_pr(repo_path=data.get("repo_path"), pr_number=data.get("pr_number"))
-    return jsonify(result)
-
-
-@app.route("/api/visualize", methods=["POST"])
-def visualize():
-    data = request.json
-    result = api_get_visualization(repo_path=data.get("repo_path"), viz_type=data.get("viz_type"), params=data.get("params", {}))
-    return jsonify(result)
-
-
-@app.route("/api/issues", methods=["GET"])
-def get_issues():
-    repo_path = request.args.get("repo_path")
-    severity = request.args.get("severity")
-    category = request.args.get("category")
-
-    api = create_api(repo_path=repo_path)
-    return jsonify(api.get_issues(severity=severity, category=category))
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
-```
-
