@@ -431,14 +431,11 @@ class AnalyzerManager:
             if pattern in file_path:
                 return True
 
-        # Check if the file is a test file
-        if (
-            "test" in file_path.lower() or "tests" in file_path.lower()
-        ) and issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]:
-            # Skip low-severity issues in test files
-            return False
-
-        return False
+        # Check if the file is a test file and skip low-severity issues in test files
+        return bool(
+            ("test" in file_path.lower() or "tests" in file_path.lower())
+            and issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]
+        )
 
     def get_issues(
         self,
@@ -483,9 +480,8 @@ class AnalyzerManager:
             Dictionary containing analysis results
         """
         if not self.base_codebase:
-            msg = "Codebase not initialized"
-            raise ValueError(msg)
-
+            raise ValueError("Base codebase is missing")
+        
         # Convert string analysis types to enums
         if analysis_types:
             analysis_types = [
@@ -562,26 +558,29 @@ class AnalyzerManager:
         return self.results
 
     def save_results(self, output_file: str, output_format: str = "json"):
-        """Save analysis results to a file.
+        """
+        Save analysis results to a file.
 
         Args:
             output_file: Path to the output file
-            output_format: Format to save results in (json, yaml, markdown)
+            output_format: Format of the output file (json or yaml)
         """
-        with open(output_file, "w") as f:
-            if output_format == "json":
-                import json
+        if output_format == "json":
+            with open(output_file, "w") as f:
+                json.dump(self.results, f, indent=2)
+        elif output_format == "yaml":
+            import yaml
 
-                f.write(json.dumps(self.results.to_dict(), indent=2))
-            elif output_format == "yaml":
-                import yaml
+            with open(output_file, "w") as f:
+                yaml.dump(self.results, f, default_flow_style=False)
+        elif output_format == "console":
+            print(json.dumps(self.results, indent=2))
+        else:
+            # Default to JSON
+            with open(output_file, "w") as f:
+                json.dump(self.results, f, indent=2)
 
-                f.write(yaml.dump(self.results.to_dict()))
-            elif output_format == "markdown":
-                f.write(self.generate_report("detailed"))
-            else:
-                msg = f"Unsupported format: {output_format}"
-                raise ValueError(msg)
+        logger.info(f"Results saved to {output_file}")
 
     def _generate_html_report(self, output_file: str):
         """Generate an HTML report of the analysis results."""
@@ -684,7 +683,8 @@ class AnalyzerManager:
             f.write(html_content)
 
     def generate_report(self, report_type: str = "summary") -> str:
-        """Generate a report of the analysis results.
+        """
+        Generate a report from the analysis results.
 
         Args:
             report_type: Type of report to generate (summary, detailed, issues)
@@ -692,15 +692,17 @@ class AnalyzerManager:
         Returns:
             Report as a string
         """
+        if not self.results:
+            raise ValueError("No analysis results available")
+
         if report_type == "summary":
             return self._generate_summary_report()
         elif report_type == "detailed":
             return self._generate_detailed_report()
         elif report_type == "issues":
             return self._generate_issues_report()
-
-        msg = f"Unknown report type: {report_type}"
-        raise ValueError(msg)
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
 
     def _generate_summary_report(self) -> str:
         """Generate a summary report."""
@@ -754,7 +756,7 @@ class AnalyzerManager:
 
         return report
 
-    def _generate_detailed_report(self) -> str:  # noqa: C901
+    def _generate_detailed_report(self) -> str:
         """Generate a detailed report."""
         report = "===== Codebase Analysis Detailed Report =====\n\n"
 
@@ -963,7 +965,7 @@ def main():
     parser.add_argument("--output-file", help="Path to the output file")
     parser.add_argument(
         "--output-format",
-        choices=["json", "yaml", "markdown", "console"],
+        choices=["json", "yaml", "console"],
         default="json",
         help="Output format",
     )
@@ -998,8 +1000,8 @@ def main():
             report = manager.generate_report(args.report_type)
             print(report)
 
-    except Exception:
-        logger.exception("Error")
+    except Exception as e:
+        logger.exception(f"Error: {e}")
         import traceback
 
         traceback.print_exc()
