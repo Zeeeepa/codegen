@@ -8,11 +8,11 @@ and guidelines for generating and modifying code.
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Union, TypeVar
+from typing import Any, TypeVar
 
 try:
-    from codegen.sdk.core.interfaces.editable import Editable
     from codegen.sdk.core.file import File
+    from codegen.sdk.core.interfaces.editable import Editable
 except ImportError:
     # Define fallback classes for when SDK is not available
     class Editable:
@@ -25,332 +25,366 @@ except ImportError:
         def source(self) -> str:
             return ""
 
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 # Type variable for context
-T = TypeVar('T', bound=Union[str, Editable, File, List[Any], Dict[str, Any]])
+T = TypeVar("T", bound=str | Editable | File | list[Any] | dict[str, Any])
 
 
-def generate_system_prompt(target: Optional[Editable] = None, 
-                          context: Optional[T] = None) -> str:
+def generate_system_prompt(
+    target: Editable | None = None, context: T | None = None
+) -> str:
     """
     Generate a system prompt for AI-powered code analysis and generation.
-    
+
     Args:
         target: The target code to analyze or modify
         context: Additional context for the analysis
-        
+
     Returns:
         A system prompt string for AI models
     """
-    prompt = """Hey CodegenBot!
-You are an incredibly precise and thoughtful AI who helps developers accomplish complex transformations on their codebase.
-You always provide clear, concise, and accurate responses.
-When dealing with code, you maintain the original structure and style unless explicitly asked to change it.
+    # Start with a base prompt
+    prompt = """
+You are an expert software engineer with deep knowledge of code analysis, refactoring, and development best practices.
+You have been tasked with analyzing and potentially modifying code to improve its quality, readability, and maintainability.
+
+Your task is to carefully analyze the provided code and context, and then provide thoughtful insights and recommendations.
+You should consider:
+
+1. Code structure and organization
+2. Potential bugs or edge cases
+3. Performance optimizations
+4. Adherence to best practices and design patterns
+5. Documentation and code comments
+6. Test coverage and quality
+
+When suggesting modifications:
+- Be specific about what should be changed and why
+- Provide concrete examples of how the code could be improved
+- Consider the impact of your changes on the rest of the codebase
+- Maintain the original functionality unless explicitly instructed otherwise
+- Respect the existing coding style and conventions
+
+Guidelines for generating code:
+- Write clean, maintainable code that follows best practices
+- Include appropriate error handling and edge case management
+- Add clear comments explaining complex logic or design decisions
+- Ensure new code integrates well with existing code
+- Follow the principle of least surprise - make code behave as expected
+
+Guidelines for modifying existing code:
+- Make minimal changes to achieve the desired outcome
+- Preserve existing behavior unless explicitly instructed to change it
+- Maintain or improve test coverage
+- Document significant changes and the reasoning behind them
+- Consider backward compatibility and potential side effects
+
+Guidelines for handling docstrings and comments:
+- Preserve existing docstrings and update them to reflect changes
+- Maintain the existing docstring style and format
+- Add or update comments for complex or non-obvious code
+- Remove comments that are redundant or no longer accurate
+
+REMEMBER: When giving the final answer, you must use the set_answer tool to provide your response.
 """
+
+    # Add target-specific instructions if a target is provided
     if target:
-        prompt += f"""
-The user has just requested a response on the following code snippet:
-
-[[[CODE SNIPPET BEGIN]]]
-{target.extended_source}
-[[[CODE SNIPPET END]]]
-
-Your job is to follow the instructions of the user, given the context provided.
-"""
-    else:
         prompt += """
-Your job is to follow the instructions of the user.
+You have been provided with a specific target to analyze or modify. Focus your analysis on this target,
+but consider its interactions with the rest of the codebase as needed.
 """
 
+    # Add context-specific instructions if context is provided
     if context:
         prompt += """
-The user has provided some additional context that you can use to assist with your response.
-You may use this context to inform your answer, but you're not required to directly include it in your response.
-
-Here is the additional context:
+You have been provided with additional context to help with your analysis. Use this context to better
+understand the code, its purpose, and how it fits into the larger system.
 """
-        prompt += generate_context(context)
-
-    prompt += """
-Please ensure your response is accurate and relevant to the user's request. You may think out loud in the response.
-
-
-Generally, when responding with an an answer, try to follow these general "ground rules":
-Remember, these are just rules you should follow by default. If the user explicitly asks for something else, you should follow their instructions instead.
-
-> When generating new code or new classes, such as "create me a new function that does XYZ" or "generate a helper function that does XYZ", try to:
-
-- Do not include extra indentation that is not necessary, unless the user explicitly asks for something else.
-- Include as much information as possible. Do not write things like "# the rest of the class" or "# the rest of the method", unless the user explicitly asks for something else.
-- Do try to include comments and well-documented code, unless the user explicitly asks for something else.
-- Only return the NEW code without re-iterating any existing code that the user has provided to you, unless the user explicitly asks for something else.
-- Do not include any code that the user has explicitly asked you to remove, unless the user explicitly asks for something else.
-
-
-> When changing existing code, such as "change this method to do XYZ" or "update this function to do XYZ" or "remove all instances of XYZ from this class", try to:
-
-- Do not include extra indentation that is not necessary, unless the user explicitly asks for something else.
-- Include the entire context of the code that the user has provided to you, unless the user explicitly asks for something else.
-- Include as much information as possible. Do not write things like "# the rest of the class" or "# the rest of the method", unless the user explicitly asks for something else.
-- Do try to include comments and well-documented code, unless the user explicitly asks for something else.
-- Avoid edit existing code that does not need editing, unless the user explicitly asks for something else.
-- When asked to modify a very small or trivial part of the code, try to only modify the part that the user has asked you to modify, unless the user explicitly asks for something else.
-- If asked to make improvements, try not to change existing function signatures, decorators, or returns, unless the user explicitly asks for something else.
-
-
-> When dealing with anything related to docstrings, for example "Generate a google style docstring for this method." or "Convert these existing docs to google style docstrings.", try to:
-
-- Do not include extra indentation that is not necessary, unless the user explicitly asks for something else.
-- Use the google style docstring format first, unless the user explicitly asks for something else.
-- If doing google style docstrings, do not include the "self" or "cls" argument in the list of arguments, unless the user explicitly asks for something else.
-- Try to have at least one line of the docstring to be a summary line, unless the user explicitly asks for something else.
-- Try to keep each line of the docstring to be less than 80 characters, unless the user explicitly asks for something else.
-- Try to keep any existing before and after examples in the docstring, unless the user explicitly asks for something else.
-- Only respond with the content of the docstring, without any additional context like the function signature, return type, or parameter types, unless the user explicitly asks for something else.
-- Do not include formatting like tripple quotes in your response, unless the user explicitly asks for something else.
-- Do not include any markdown formatting, unless the user explicitly asks for something else.
-
-If you need a refresher on what google-style docstrings are:
-- The first line is a summary line.
-- The second line is a description of the method.
-- The third line is a list of arguments.
-- The fourth line is a list of returns.
-Google docstrings may also include other information like exceptions and examples.
-When generating NEW code or NEW classes, also try to generate docstrings alongside the code with the google style docstring format,
-unless the user explicitly asks for something else.
-
-
-> When dealing with anything related to comments, such as "write me a comment for this method" or "change this existing comment to be more descriptive", try to:
-
-- Do not include extra indentation that is not necessary, unless the user explicitly asks for something else.
-- Do not include any comment delimiters like "#" or "//" unless the user explicitly asks for something else.
-- Do not include any markdown formatting, unless the user explicitly asks for something else.
-- Try to keep each line of the comment to be less than 80 characters, unless the user explicitly asks for something else.
-- If you are only requested to edit or create a comment, do not include any code or other context that the user has provided to you, unless the user explicitly asks for something else.
-
-
-> When dealing with single-word or single-phrase answers, like "what is a better name for this function" or "what is a better name for this class", try to:
-
-- Only respond with the content of the new name, without any additional context like the function signature, return type, or parameter types, unless the user explicitly asks for something else.
-- Do not include formatting like tripple quotes in your response, unless the user explicitly asks for something else.
-- Do not include any markdown formatting, unless the user explicitly asks for something else.
-- Do not include any code or other context that the user has provided to you, unless the user explicitly asks for something else.
-
-REMEMBER: When giving the final answer, you must use the set_answer tool to provide the final answer that will be used in subsequent operations such as writing to a file, renaming, or editing.
-    """
 
     return prompt
 
 
-def generate_flag_system_prompt(target: Editable, 
-                               context: Optional[T] = None) -> str:
+def generate_flag_system_prompt(
+    target: Editable, context: T | None = None
+) -> str:
     """
     Generate a system prompt for determining whether to flag a code element.
-    
+
     Args:
         target: The target code to analyze
         context: Additional context for the analysis
-        
+
     Returns:
         A system prompt string for AI models
     """
-    prompt = f"""Hey CodegenBot!
-You are an incredibly precise and thoughtful AI who helps developers accomplish complex transformations on their codebase.
+    prompt = """
+You are an expert code reviewer with deep knowledge of code quality, security, and best practices.
+Your task is to analyze the provided code and determine whether it should be flagged for review or modification.
 
-You are now tasked with determining whether to flag the symbol, file, attribute, or message using AI.
-Flagging a symbol means to mark it as a chunk of code that should be modified in a later step.
-You will be given the user prompt, and the code snippet that the user is requesting a response on.
-Use the should_flag tool to return either a true or false answer to the question of whether to flag the symbol, file, attribute, or message.
+You should flag code that:
+1. Contains potential bugs or logical errors
+2. Has security vulnerabilities
+3. Violates best practices or coding standards
+4. Is overly complex or difficult to maintain
+5. Lacks proper error handling or edge case management
+6. Has performance issues or inefficiencies
+7. Contains duplicated logic that could be refactored
+8. Has poor or missing documentation
+9. Lacks appropriate test coverage
 
-Here is the code snippet that the user is requesting a response on:
+When analyzing the code, consider:
+- The code's purpose and functionality
+- Its interactions with other parts of the system
+- The potential impact of issues on the overall system
+- The severity and priority of any identified issues
 
-[[[CODE SNIPPET BEGIN]]]
-{target.extended_source}
-[[[CODE SNIPPET END]]]
+Your response should be a clear YES or NO, followed by a brief explanation of your reasoning.
+If you flag the code (YES), provide specific details about the issues you've identified and
+suggestions for how they could be addressed.
+
+REMEMBER: Use the flag_code tool to provide your final answer.
 """
 
+    # Add context-specific instructions if context is provided
     if context:
         prompt += """
-The user has provided some additional context that you can use to assist with your response.
-You may use this context to inform your answer, but you're not required to directly include it in your response.
-
-Here is the additional context:
+You have been provided with additional context to help with your analysis. Use this context to better
+understand the code, its purpose, and how it fits into the larger system.
 """
-        prompt += generate_context(context)
-
-    prompt += """
-Please intelligently determine whether the user's request on the given code snippet should be flagged.
-Remember, use the should_flag tool to return either a true or false answer to the question of whether to flag the symbol, file, attribute, or message
-as a chunk of code that should be modified, edited, or changed in a later step.
-    """
 
     return prompt
 
 
-def generate_context(context: Optional[T] = None) -> str:
+def generate_context(context: T | None = None) -> str:
     """
     Generate a context string for AI models.
-    
+
     Args:
-        context: The context to generate a string for
-        
+        context: The context to format
+
     Returns:
         A formatted context string
     """
-    output = ""
-    if not context:
-        return output
-    else:
-        if isinstance(context, str):
-            output += f"====== Context ======\n{context}\n====================\n\n"
-        elif isinstance(context, Editable):
-            # Get class name
-            output += f"====== {context.__class__.__name__} ======\n"
-            output += f"{context.extended_source}\n"
-            output += "====================\n\n"
-        elif isinstance(context, File):
-            output += f"====== {context.__class__.__name__}======\n"
-            output += f"{context.source}\n"
-            output += "====================\n\n"
-        elif isinstance(context, list):
-            for item in context:
-                output += generate_context(item)
-        elif isinstance(context, dict):
-            for key, value in context.items():
-                output += f"[[[ {key} ]]]\n"
-                output += generate_context(value)
-                output += "\n\n"
-        return output
+    if context is None:
+        return ""
+
+    if isinstance(context, str):
+        return context
+
+    if hasattr(context, "extended_source") and callable(getattr(context, "extended_source", None)):
+        return context.extended_source
+
+    if hasattr(context, "source") and callable(getattr(context, "source", None)):
+        return context.source
+
+    if isinstance(context, list):
+        return "\n\n".join(str(item) for item in context)
+
+    if isinstance(context, dict):
+        return "\n\n".join(f"{key}: {value}" for key, value in context.items())
+
+    return str(context)
 
 
-def generate_tools() -> List[Dict[str, Any]]:
+def generate_tools() -> list[dict[str, Any]]:
     """
     Generate a list of tools for AI models.
-    
+
     Returns:
         A list of tool definitions
     """
     return [
         {
-            "type": "function",
-            "function": {
-                "name": "set_answer",
-                "description": "Use this function to set the final answer to the given prompt. This answer will be used in subsequent operations such as writing to a file, renaming, or editing.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "answer": {
-                            "type": "string",
-                            "description": "The final answer to the given prompt. Do not include any uneccesary context or commentary in your response.",
-                        },
-                    },
-                    "required": ["answer"],
+            "name": "set_answer",
+            "description": "Set the final answer for the analysis",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "answer": {
+                        "type": "string",
+                        "description": "The final answer for the analysis",
+                    }
                 },
+                "required": ["answer"],
             },
-        }
+        },
+        {
+            "name": "analyze_code",
+            "description": "Analyze a specific part of the code",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The code to analyze",
+                    },
+                    "focus": {
+                        "type": "string",
+                        "description": "The specific aspect to focus on (e.g., 'bugs', 'performance', 'style')",
+                    },
+                },
+                "required": ["code"],
+            },
+        },
+        {
+            "name": "suggest_modification",
+            "description": "Suggest a modification to the code",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "original_code": {
+                        "type": "string",
+                        "description": "The original code",
+                    },
+                    "modified_code": {
+                        "type": "string",
+                        "description": "The modified code",
+                    },
+                    "explanation": {
+                        "type": "string",
+                        "description": "Explanation of the modification",
+                    },
+                },
+                "required": ["original_code", "modified_code", "explanation"],
+            },
+        },
     ]
 
 
-def generate_flag_tools() -> List[Dict[str, Any]]:
+def generate_flag_tools() -> list[dict[str, Any]]:
     """
     Generate a list of tools for flagging code elements.
-    
+
     Returns:
         A list of tool definitions
     """
     return [
         {
-            "type": "function",
-            "function": {
-                "name": "should_flag",
-                "description": "Use this function to determine whether to flag the symbol, file, attribute, or message using AI.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "flag": {
-                            "type": "boolean",
-                            "description": "Whether to flag the symbol, file, attribute, or message.",
-                        },
+            "name": "flag_code",
+            "description": "Flag a code element for review or modification",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "flag": {
+                        "type": "boolean",
+                        "description": "Whether to flag the code (true) or not (false)",
                     },
-                    "required": ["flag"],
+                    "reason": {
+                        "type": "string",
+                        "description": "The reason for flagging or not flagging the code",
+                    },
+                    "suggestions": {
+                        "type": "string",
+                        "description": "Suggestions for addressing the issues (if flagged)",
+                    },
                 },
+                "required": ["flag", "reason"],
             },
-        }
+        },
+        {
+            "name": "analyze_issue",
+            "description": "Analyze a specific issue in the code",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "issue_type": {
+                        "type": "string",
+                        "description": "The type of issue (e.g., 'bug', 'security', 'performance')",
+                    },
+                    "severity": {
+                        "type": "string",
+                        "description": "The severity of the issue (e.g., 'low', 'medium', 'high')",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the issue",
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "The location of the issue in the code",
+                    },
+                },
+                "required": ["issue_type", "severity", "description"],
+            },
+        },
     ]
 
 
 class CodebaseAI:
     """
-    AI-powered code analysis and generation capabilities.
-    
-    This class provides methods for generating system prompts, context,
-    and tools for AI models to analyze and generate code.
+    A class for AI-powered code analysis and generation.
     """
-    
+
     def __init__(self):
-        """Initialize the CodebaseAI instance."""
+        """
+        Initialize a CodebaseAI instance.
+        """
         self.logger = logging.getLogger(__name__)
-    
-    def generate_system_prompt(self, target: Optional[Editable] = None, 
-                              context: Optional[T] = None) -> str:
+
+    def generate_system_prompt(
+        self, target: Editable | None = None, context: T | None = None
+    ) -> str:
         """
         Generate a system prompt for AI-powered code analysis and generation.
-        
+
         Args:
             target: The target code to analyze or modify
             context: Additional context for the analysis
-            
+
         Returns:
             A system prompt string for AI models
         """
         return generate_system_prompt(target, context)
-    
-    def generate_flag_system_prompt(self, target: Editable, 
-                                   context: Optional[T] = None) -> str:
+
+    def generate_flag_system_prompt(
+        self, target: Editable, context: T | None = None
+    ) -> str:
         """
         Generate a system prompt for determining whether to flag a code element.
-        
+
         Args:
             target: The target code to analyze
             context: Additional context for the analysis
-            
+
         Returns:
             A system prompt string for AI models
         """
         return generate_flag_system_prompt(target, context)
-    
-    def generate_context(self, context: Optional[T] = None) -> str:
+
+    def generate_context(self, context: T | None = None) -> str:
         """
         Generate a context string for AI models.
-        
+
         Args:
-            context: The context to generate a string for
-            
+            context: The context to format
+
         Returns:
             A formatted context string
         """
         return generate_context(context)
-    
-    def generate_tools(self) -> List[Dict[str, Any]]:
+
+    def generate_tools(self) -> list[dict[str, Any]]:
         """
         Generate a list of tools for AI models.
-        
+
         Returns:
             A list of tool definitions
         """
         return generate_tools()
-    
-    def generate_flag_tools(self) -> List[Dict[str, Any]]:
+
+    def generate_flag_tools(self) -> list[dict[str, Any]]:
         """
         Generate a list of tools for flagging code elements.
-        
+
         Returns:
             A list of tool definitions
         """
