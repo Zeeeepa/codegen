@@ -160,7 +160,8 @@ class AnalyzerManager:
             Report as a string (if output_file is None)
         """
         if not hasattr(self.analyzer, "results") or not self.analyzer.results:
-            raise ValueError("No analysis results available. Run analysis first.")
+            msg = "No analysis results available. Run analysis first."
+            raise ValueError(msg)
 
         report = ""
 
@@ -171,7 +172,8 @@ class AnalyzerManager:
         elif report_type == "issues":
             report = self._generate_issues_report()
         else:
-            raise ValueError(f"Unknown report type: {report_type}")
+            msg = f"Unknown report type: {report_type}"
+            raise ValueError(msg)
 
         if output_file:
             with open(output_file, "w") as f:
