@@ -77,7 +77,7 @@ def analyze_imports(file_path: str) -> Set[str]:
 
 def build_dependency_graph(files: List[str]) -> Dict[str, Set[str]]:
     """Build a dependency graph for the files."""
-    graph = {}
+    graph: Dict[str, Set[str]] = {}
     module_to_file = {}
     
     # Map module names to files
@@ -138,9 +138,7 @@ def organize_files(directory: str, dry_run: bool = True) -> Dict[str, List[str]]
     graph = build_dependency_graph(py_files)
     
     # Categorize files
-    categorized_files = {}
-    for category in CATEGORIES:
-        categorized_files[category] = []
+    categorized_files: Dict[str, List[str]] = {}
     
     # Special case for README and init files
     categorized_files["root"] = []
@@ -231,4 +229,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
