@@ -17,11 +17,7 @@ try:
         IssueCategory,
         IssueSeverity,
     )
-    from codegen_on_oss.analyzers.unified_analyzer import (
-        CodeQualityAnalyzerPlugin,
-        DependencyAnalyzerPlugin,
-        UnifiedCodeAnalyzer,
-    )
+    from codegen_on_oss.analyzers.unified_analyzer import UnifiedCodeAnalyzer
 except ImportError:
     print("Required analyzer modules not found.")
     sys.exit(1)
@@ -259,7 +255,7 @@ class AnalyzerManager:
 
         return report
 
-    def _generate_detailed_report(self) -> str:
+    def _generate_detailed_report(self) -> str:  # noqa: C901
         """Generate a detailed report of the analysis results."""
         results = self.analyzer.results
 
@@ -274,24 +270,57 @@ class AnalyzerManager:
         )
         report += f"  Analysis Types: {', '.join(results['metadata'].get('analysis_types', []))}\n"
 
-        # Add detailed analysis sections
-        for analysis_type, analysis_results in results.get("results", {}).items():
-            report += f"\n{analysis_type.title()} Analysis:\n"
+        # Add issue statistics
+        report += "\nIssue Statistics:\n"
+        report += f"  Total Issues: {results['issue_stats']['total']}\n"
+        report += (
+            f"  Critical: {results['issue_stats']['by_severity'].get('critical', 0)}\n"
+        )
+        report += f"  Errors: {results['issue_stats']['by_severity'].get('error', 0)}\n"
+        report += (
+            f"  Warnings: {results['issue_stats']['by_severity'].get('warning', 0)}\n"
+        )
+        report += f"  Info: {results['issue_stats']['by_severity'].get('info', 0)}\n\n"
 
-            # Add relevant sections from each analysis type
+        # Add codebase summary
+        if "summary" in results:
+            report += "Codebase Summary:\n"
+            summary = results["summary"]
+            report += f"  Files: {summary.get('file_count', 0)}\n"
+            report += f"  Lines of Code: {summary.get('total_loc', 0)}\n"
+            report += f"  Functions: {summary.get('function_count', 0)}\n"
+            report += f"  Classes: {summary.get('class_count', 0)}\n"
+            report += f"  Imports: {summary.get('import_count', 0)}\n"
+            report += f"  Dependencies: {summary.get('dependency_count', 0)}\n\n"
+
+            # Language breakdown
+            if "language_breakdown" in summary:
+                report += "  Language Breakdown:\n"
+                for lang, stats in summary["language_breakdown"].items():
+                    report += f"    {lang}: {stats['file_count']} files, {stats['loc']} lines\n"
+
+        # Add detailed analysis results
+        report += "\nDetailed Analysis Results:\n"
+
+        # Add analysis summaries
+        for analysis_type, analysis_results in results.get("results", {}).items():
+            report += f"\n=== {analysis_type.upper()} ANALYSIS ===\n"
+
             if analysis_type == "code_quality":
                 # Dead code
                 if "dead_code" in analysis_results:
                     dead_code = analysis_results["dead_code"]
                     report += "\n  Dead Code Analysis:\n"
                     report += f"    Total Dead Code Items: {dead_code['summary']['total_dead_code_count']}\n"
+                    report += f"    Unused Functions: {dead_code['summary']['unused_functions_count']}\n"
+                    report += f"    Unused Classes: {dead_code['summary']['unused_classes_count']}\n"
+                    report += f"    Unused Variables: {dead_code['summary']['unused_variables_count']}\n"
+                    report += f"    Unused Imports: {dead_code['summary']['unused_imports_count']}\n"
 
                     # Unused functions
                     if dead_code["unused_functions"]:
                         report += f"\n    Unused Functions ({len(dead_code['unused_functions'])}):\n"
-                        for func in dead_code["unused_functions"][
-                            :10
-                        ]:  # Limit to top 10
+                        for func in dead_code["unused_functions"][:10]:  # Limit to top 10
                             report += f"      {func['name']} ({func['file']}:{func['line']})\n"
                         if len(dead_code["unused_functions"]) > 10:
                             report += f"      ... and {len(dead_code['unused_functions']) - 10} more\n"
@@ -517,3 +546,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
