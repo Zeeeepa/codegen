@@ -46,6 +46,17 @@ from codegen_on_oss.analyzers.models.analysis_result import (
 # Core analysis modules
 from codegen_on_oss.analyzers.code_quality import CodeQualityAnalyzer
 from codegen_on_oss.analyzers.dependencies import DependencyAnalyzer
+from codegen_on_oss.analyzers.parser import (
+    ASTNode,
+    BaseParser,
+    CodegenParser,
+    PythonParser,
+    JavaScriptParser,
+    TypeScriptParser,
+    create_parser,
+    parse_file,
+    parse_code
+)
 
 # Legacy analyzer interfaces (for backward compatibility)
 from codegen_on_oss.analyzers.base_analyzer import BaseCodeAnalyzer
@@ -85,6 +96,17 @@ __all__ = [
     # Core analyzers
     'CodeQualityAnalyzer',
     'DependencyAnalyzer',
+    
+    # Parser module
+    'ASTNode',
+    'BaseParser',
+    'CodegenParser',
+    'PythonParser',
+    'JavaScriptParser',
+    'TypeScriptParser',
+    'create_parser',
+    'parse_file',
+    'parse_code',
 
     # Legacy interfaces (for backward compatibility)
     'BaseCodeAnalyzer',
