@@ -7,7 +7,6 @@ specifically for the SDK.
 """
 
 import os.path
-from typing import List, Optional
 
 from codegen.configs.models.codebase import CodebaseConfig
 from codegen.configs.models.secrets import SecretsConfig
@@ -51,12 +50,12 @@ def get_codegen_sdk_base_path() -> str:
     return repo_path
 
 
-def get_codegen_sdk_subdirectories() -> List[str]:
+def get_codegen_sdk_subdirectories() -> list[str]:
     """
     Returns a list of subdirectories that contain the Codegen SDK code.
     
     Returns:
-        List[str]: A list of directory paths containing the SDK code
+        list[str]: A list of directory paths containing the SDK code
     """
     base = get_codegen_sdk_base_path()
     sdk_path = os.path.join(base, "codegen", "sdk")
