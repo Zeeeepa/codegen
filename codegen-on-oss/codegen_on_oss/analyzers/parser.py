@@ -8,27 +8,15 @@ programming languages. It serves as a foundation for various code analyzers
 in the system.
 """
 
+import importlib.util
 import logging
 import sys
-from abc import ABC, abstractmethod
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Optional, TypeVar
 
-try:
-    from codegen.sdk.core.codebase import Codebase
-    from codegen.sdk.core.node import Node
-    from codegen.shared.enums.programming_language import ProgrammingLanguage
-
-    # Import from our own modules
-    from codegen_on_oss.analyzers.issue_types import (
-        AnalysisType,
-        Issue,
-        IssueCategory,
-        IssueSeverity,
-    )
-except ImportError:
-    print("Codegen SDK or required modules not found.")
+# Check if required modules are available
+if importlib.util.find_spec("codegen.sdk") is None:
+    print("Codegen SDK not found.")
     sys.exit(1)
 
 # Configure logging
