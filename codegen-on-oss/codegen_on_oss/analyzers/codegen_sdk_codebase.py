@@ -45,7 +45,9 @@ def get_codegen_sdk_base_path() -> str:
             return path
     
     # If not found, default to repo path and log a warning
-    logger.warning(f"Could not find Codegen SDK directory, defaulting to repo path: {repo_path}")
+    logger.warning(
+        f"Could not find Codegen SDK directory, defaulting to repo path: {repo_path}"
+    )
     return repo_path
 
 
@@ -79,9 +81,9 @@ def get_codegen_sdk_subdirectories() -> List[str]:
 
 
 def get_codegen_sdk_codebase(
-    config: Optional[CodebaseConfig] = None,
-    secrets: Optional[SecretsConfig] = None,
-    programming_language: Optional[ProgrammingLanguage] = None,
+    config: CodebaseConfig | None = None,
+    secrets: SecretsConfig | None = None,
+    programming_language: ProgrammingLanguage | None = None,
 ) -> Codebase:
     """
     Creates a Codebase instance specifically for the Codegen SDK.
@@ -128,4 +130,3 @@ def get_codegen_sdk_codebase(
     )
     
     return codebase
-
