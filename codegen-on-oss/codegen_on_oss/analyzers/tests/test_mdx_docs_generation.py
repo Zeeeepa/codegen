@@ -28,7 +28,7 @@ class TestMdxDocsGeneration(unittest.TestCase):
             type="str",
             default="'default'"
         )
-        
+
         self.method_doc = MethodDoc(
             name="test_method",
             description="A test method",
@@ -43,7 +43,7 @@ class TestMdxDocsGeneration(unittest.TestCase):
             version="abc123",
             github_url="https://github.com/example/repo/blob/main/test.py"
         )
-        
+
         self.attribute_doc = MethodDoc(
             name="test_attribute",
             description="A test attribute",
@@ -58,7 +58,7 @@ class TestMdxDocsGeneration(unittest.TestCase):
             version="abc123",
             github_url="https://github.com/example/repo/blob/main/test.py"
         )
-        
+
         self.class_doc = ClassDoc(
             title="TestClass",
             description="A test class",
@@ -128,7 +128,7 @@ class TestMdxDocsGeneration(unittest.TestCase):
             github_url=""
         )
         self.assertEqual(get_mdx_route_for_class(py_class_doc), "codebase-sdk/python/PyClass")
-        
+
         # Test TypeScript class
         ts_class_doc = ClassDoc(
             title="TsClass",
@@ -140,7 +140,7 @@ class TestMdxDocsGeneration(unittest.TestCase):
             github_url=""
         )
         self.assertEqual(get_mdx_route_for_class(ts_class_doc), "codebase-sdk/typescript/TsClass")
-        
+
         # Test core class
         core_class_doc = ClassDoc(
             title="CoreClass",
@@ -158,7 +158,7 @@ class TestMdxDocsGeneration(unittest.TestCase):
         # Test simple type
         simple_result = resolve_type_string("str")
         self.assertIn('<code className="text-sm bg-gray-100 px-2 py-0.5 rounded">str</code>', simple_result)
-        
+
         # Test complex type with link
         complex_result = resolve_type_string("<api-reference/core/Symbol>")
         self.assertIn("<>", complex_result)

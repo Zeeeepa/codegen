@@ -6,18 +6,20 @@ formatting parameters and return types, and sanitizing HTML and MDX content.
 """
 
 import re
-from typing import Optional, List, Union
 
 from codegen_on_oss.analyzers.doc_utils.schemas import ClassDoc, MethodDoc, ParameterDoc
-from codegen_on_oss.analyzers.doc_utils.utils import sanitize_html_for_mdx, sanitize_mdx_mintlify_description
+from codegen_on_oss.analyzers.doc_utils.utils import (
+    sanitize_html_for_mdx,
+    sanitize_mdx_mintlify_description,
+)
 
 
 def render_mdx_page_for_class(cls_doc: ClassDoc) -> str:
     """Renders the MDX for a single class.
-    
+
     Args:
         cls_doc: The class documentation object.
-        
+
     Returns:
         The MDX content for the class.
     """
@@ -28,13 +30,13 @@ def render_mdx_page_for_class(cls_doc: ClassDoc) -> str:
 """
 
 
-def render_mdx_page_title(cls_doc: ClassDoc, icon: Optional[str] = None) -> str:
+def render_mdx_page_title(cls_doc: ClassDoc, icon: str | None = None) -> str:
     """Renders the MDX for the page title.
-    
+
     Args:
         cls_doc: The class documentation object.
         icon: Optional icon to display.
-        
+
     Returns:
         The MDX content for the page title.
     """
@@ -59,10 +61,10 @@ import {{Attribute}} from '/snippets/Attribute.mdx';
 
 def render_mdx_inheritence_section(cls_doc: ClassDoc) -> str:
     """Renders the MDX for the inheritance section.
-    
+
     Args:
         cls_doc: The class documentation object.
-        
+
     Returns:
         The MDX content for the inheritance section.
     """
@@ -78,10 +80,10 @@ def render_mdx_inheritence_section(cls_doc: ClassDoc) -> str:
 
 def render_mdx_attributes_section(cls_doc: ClassDoc) -> str:
     """Renders the MDX for the attributes section.
-    
+
     Args:
         cls_doc: The class documentation object.
-        
+
     Returns:
         The MDX content for the attributes section.
     """
@@ -98,10 +100,10 @@ def render_mdx_attributes_section(cls_doc: ClassDoc) -> str:
 
 def render_mdx_methods_section(cls_doc: ClassDoc) -> str:
     """Renders the MDX for the methods section.
-    
+
     Args:
         cls_doc: The class documentation object.
-        
+
     Returns:
         The MDX content for the methods section.
     """
@@ -118,10 +120,10 @@ def render_mdx_methods_section(cls_doc: ClassDoc) -> str:
 
 def render_mdx_for_attribute(attribute: MethodDoc) -> str:
     """Renders the MDX for a single attribute.
-    
+
     Args:
         attribute: The attribute documentation object.
-        
+
     Returns:
         The MDX content for the attribute.
     """
@@ -145,10 +147,10 @@ def render_mdx_for_attribute(attribute: MethodDoc) -> str:
 
 def format_parameter_for_mdx(parameter: ParameterDoc) -> str:
     """Format a parameter for MDX documentation.
-    
+
     Args:
         parameter: The parameter documentation object.
-        
+
     Returns:
         The MDX content for the parameter.
     """
@@ -163,25 +165,25 @@ def format_parameter_for_mdx(parameter: ParameterDoc) -> str:
 """.strip()
 
 
-def format_parameters_for_mdx(parameters: List[ParameterDoc]) -> str:
+def format_parameters_for_mdx(parameters: list[ParameterDoc]) -> str:
     """Format a list of parameters for MDX documentation.
-    
+
     Args:
         parameters: The list of parameter documentation objects.
-        
+
     Returns:
         The MDX content for the parameters.
     """
     return "\n".join([format_parameter_for_mdx(parameter) for parameter in parameters])
 
 
-def format_return_for_mdx(return_type: List[str], return_description: Optional[str] = None) -> str:
+def format_return_for_mdx(return_type: list[str], return_description: str | None = None) -> str:
     """Format a return type for MDX documentation.
-    
+
     Args:
         return_type: The return type.
         return_description: The return description.
-        
+
     Returns:
         The MDX content for the return type.
     """
@@ -195,10 +197,10 @@ def format_return_for_mdx(return_type: List[str], return_description: Optional[s
 
 def render_mdx_for_method(method: MethodDoc) -> str:
     """Renders the MDX for a single method.
-    
+
     Args:
         method: The method documentation object.
-        
+
     Returns:
         The MDX content for the method.
     """
@@ -224,12 +226,12 @@ def render_mdx_for_method(method: MethodDoc) -> str:
 
 def get_mdx_route_for_class(cls_doc: ClassDoc) -> str:
     """Get the expected MDX route for a class.
-    
+
     Split by /core, /python, and /typescript
-    
+
     Args:
         cls_doc: The class documentation object.
-        
+
     Returns:
         The MDX route for the class.
     """
@@ -244,10 +246,10 @@ def get_mdx_route_for_class(cls_doc: ClassDoc) -> str:
 
 def format_type_string(type_string: str) -> str:
     """Format a type string for MDX documentation.
-    
+
     Args:
         type_string: The type string to format.
-        
+
     Returns:
         The formatted type string.
     """
@@ -257,10 +259,10 @@ def format_type_string(type_string: str) -> str:
 
 def resolve_type_string(type_string: str) -> str:
     """Resolve a type string for MDX documentation.
-    
+
     Args:
         type_string: The type string to resolve.
-        
+
     Returns:
         The resolved type string.
     """
@@ -272,10 +274,10 @@ def resolve_type_string(type_string: str) -> str:
 
 def format_builtin_type_string(type_string: str) -> str:
     """Format a builtin type string for MDX documentation.
-    
+
     Args:
         type_string: The type string to format.
-        
+
     Returns:
         The formatted type string.
     """
@@ -287,10 +289,10 @@ def format_builtin_type_string(type_string: str) -> str:
 
 def span_type_string_by_pipe(type_string: str) -> str:
     """Span a type string by pipe for MDX documentation.
-    
+
     Args:
         type_string: The type string to span.
-        
+
     Returns:
         The spanned type string.
     """
@@ -302,11 +304,11 @@ def span_type_string_by_pipe(type_string: str) -> str:
 
 def parse_link(type_string: str, href: bool = False) -> str:
     """Parse a link for MDX documentation.
-    
+
     Args:
         type_string: The type string to parse.
         href: Whether to use href format.
-        
+
     Returns:
         The parsed link.
     """

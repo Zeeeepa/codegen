@@ -8,7 +8,7 @@ from pydantic.fields import Field
 
 class ParameterDoc(BaseModel):
     """Documentation for a function or method parameter."""
-    
+
     name: str = Field(..., description="The name of the parameter")
     description: str = Field(..., description="The description of the parameter")
     type: str = Field(..., description="The type of the parameter")
@@ -17,7 +17,7 @@ class ParameterDoc(BaseModel):
 
 class MethodDoc(BaseModel):
     """Documentation for a method or property."""
-    
+
     name: str = Field(..., description="The name of the method")
     description: str | None = Field(..., description="The description of the method")
     parameters: list[ParameterDoc] = Field(..., description="The parameters of the method")
@@ -34,7 +34,7 @@ class MethodDoc(BaseModel):
 
 class ClassDoc(BaseModel):
     """Documentation for a class."""
-    
+
     title: str = Field(..., description="The title of the class")
     description: str = Field(..., description="The description of the class")
     content: str = Field(..., description="The content of the class")
@@ -48,6 +48,6 @@ class ClassDoc(BaseModel):
 
 class GSDocs(BaseModel):
     """Collection of class documentation."""
-    
+
     classes: list[ClassDoc] = Field(..., description="The classes to document")
 

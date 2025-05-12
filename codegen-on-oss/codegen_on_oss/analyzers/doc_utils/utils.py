@@ -2,15 +2,14 @@
 
 import re
 import textwrap
-from typing import Optional
 
 
-def sanitize_docstring_for_markdown(docstring: Optional[str]) -> str:
+def sanitize_docstring_for_markdown(docstring: str | None) -> str:
     """Sanitize the docstring for MDX.
-    
+
     Args:
         docstring: The docstring to sanitize.
-        
+
     Returns:
         The sanitized docstring.
     """
@@ -29,10 +28,10 @@ def sanitize_docstring_for_markdown(docstring: Optional[str]) -> str:
 
 def sanitize_mdx_mintlify_description(content: str) -> str:
     """Mintlify description field needs to have string escaped, which content doesn't need.
-    
+
     Args:
         content: The content to sanitize.
-        
+
     Returns:
         The sanitized content.
     """
