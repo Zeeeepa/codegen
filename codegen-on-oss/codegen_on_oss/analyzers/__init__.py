@@ -23,8 +23,10 @@ from codegen_on_oss.analyzers.api import (
     api_get_visualization,
     create_api,
 )
+
 # Legacy analyzer interfaces (for backward compatibility)
 from codegen_on_oss.analyzers.base_analyzer import BaseCodeAnalyzer
+
 # Core analysis modules
 from codegen_on_oss.analyzers.code_quality import CodeQualityAnalyzer
 from codegen_on_oss.analyzers.codebase_analysis import (
@@ -42,6 +44,7 @@ from codegen_on_oss.analyzers.dependencies import DependencyAnalyzer
 # Diff tracking
 from codegen_on_oss.analyzers.diff_lite import ChangeType, DiffLite
 from codegen_on_oss.analyzers.error_analyzer import CodebaseAnalyzer as ErrorAnalyzer
+
 # Issue tracking system
 from codegen_on_oss.analyzers.issues import (
     AnalysisType,
@@ -57,6 +60,18 @@ from codegen_on_oss.analyzers.models.analysis_result import (
     CodeQualityResult,
     DependencyResult,
     PrAnalysisResult,
+)
+# Parser module
+from codegen_on_oss.analyzers.parser import (
+    ASTNode,
+    BaseParser,
+    CodegenParser,
+    JavaScriptParser,
+    PythonParser,
+    TypeScriptParser,
+    create_parser,
+    parse_code,
+    parse_file,
 )
 
 __all__ = [
@@ -104,5 +119,14 @@ __all__ = [
     "BaseCodeAnalyzer",
     "CodebaseAnalyzer",
     "ErrorAnalyzer",
+    # Parser module
+    "ASTNode",
+    "BaseParser",
+    "CodegenParser",
+    "JavaScriptParser",
+    "PythonParser",
+    "TypeScriptParser",
+    "create_parser",
+    "parse_code",
+    "parse_file",
 ]
-
