@@ -354,7 +354,9 @@ class AnalyzerManager:
                         for func in high_complexity[:10]:  # Limit to top 10
                             report += f"      {func['name']} (Complexity: {func['complexity']}, {func['file']}:{func['line']})\n"
                         if len(high_complexity) > 10:
-                            report += f"      ... and {len(high_complexity) - 10} more\n"
+                            report += (
+                                f"      ... and {len(high_complexity) - 10} more\n"
+                            )
 
                 # Maintainability
                 if "maintainability" in analysis_results:

@@ -219,6 +219,42 @@ class CodegenAnalyzerAPI:
 
         return viz
 
+    def generate_dependency_graph(
+        self,
+        repo_path: str | None = None,
+        module_path: str | None = None,
+        layout: str = "hierarchical",
+        output_format: str = "json",
+    ) -> dict[str, Any]:
+        """
+        Generate a dependency graph for the codebase.
+
+        Args:
+            repo_path: Path to the repository (optional, uses self.repo_path if not provided)
+            module_path: Path to the specific module to analyze (optional)
+            layout: Graph layout algorithm (hierarchical, force, circular)
+            output_format: Output format (json, dot, graphml)
+
+        Returns:
+            Dictionary containing the dependency graph data
+        """
+        # Run analysis if not already done
+        if not self._analysis_cache:
+            self.analyze_codebase(analysis_types=["dependency"])
+
+        # Generate visualization
+        viz = self.visualizer.generate_module_dependency_graph(
+            codebase_context=self.analyzer.base_context,
+            module_path=module_path,
+            layout=layout,
+        )
+
+        # Export if needed
+        if output_format != "json":
+            return self.visualizer.export(viz, format=output_format)
+
+        return viz
+
     def get_function_call_graph(
         self,
         function_name: str | list[str],
@@ -253,6 +289,45 @@ class CodegenAnalyzerAPI:
         # Export if needed
         if format != "json":
             return self.visualizer.export(viz, format=format)
+
+        return viz
+
+    def generate_call_graph(
+        self,
+        function_name: str | None = None,
+        file_path: str | None = None,
+        depth: int = 2,
+        layout: str = "hierarchical",
+        output_format: str = "json",
+    ) -> dict[str, Any]:
+        """
+        Generate a call graph for a specific function or file.
+
+        Args:
+            function_name: Name of the function to analyze
+            file_path: Path to the file containing the function
+            depth: Maximum depth of the call graph
+            layout: Graph layout algorithm (hierarchical, force, circular)
+            output_format: Output format (json, dot, graphml)
+
+        Returns:
+            Dictionary containing the call graph data
+        """
+        # Run analysis if not already done
+        if not self._analysis_cache:
+            self.analyze_codebase(analysis_types=["code_quality"])
+
+        # Generate visualization
+        viz = self.visualizer.generate_function_call_graph(
+            functions=function_name,
+            codebase_context=self.analyzer.base_context,
+            depth=depth,
+            layout=layout,
+        )
+
+        # Export if needed
+        if output_format != "json":
+            return self.visualizer.export(viz, format=output_format)
 
         return viz
 
@@ -468,6 +543,83 @@ class CodegenAnalyzerAPI:
             ]
 
         return symbol_dict
+
+    def generate_class_diagram(
+        self,
+        class_name: str | None = None,
+        module_name: str | None = None,
+        include_methods: bool = True,
+        include_attributes: bool = True,
+        output_format: str = "json",
+    ) -> dict[str, Any]:
+        """
+        Generate a class diagram for the codebase.
+
+        Args:
+            class_name: Name of the class to analyze (optional)
+            module_name: Name of the module containing the class (optional)
+            include_methods: Whether to include methods in the diagram
+            include_attributes: Whether to include attributes in the diagram
+            output_format: Output format (json, dot, graphml, plantuml)
+
+        Returns:
+            Dictionary containing the class diagram data
+        """
+        # Run analysis if not already done
+        if not self._analysis_cache:
+            self.analyze_codebase(analysis_types=["dependency"])
+
+        # Generate visualization
+        viz = self.visualizer.generate_class_diagram(
+            codebase_context=self.analyzer.base_context,
+            class_name=class_name,
+            module_name=module_name,
+            include_methods=include_methods,
+            include_attributes=include_attributes,
+        )
+
+        # Export if needed
+        if output_format != "json":
+            return self.visualizer.export(viz, format=output_format)
+
+        return viz
+
+    def generate_sequence_diagram(
+        self,
+        function_name: str,
+        file_path: str | None = None,
+        max_depth: int = 3,
+        output_format: str = "json",
+    ) -> dict[str, Any]:
+        """
+        Generate a sequence diagram for a specific function.
+
+        Args:
+            function_name: Name of the function to analyze
+            file_path: Path to the file containing the function (optional)
+            max_depth: Maximum depth of the sequence diagram
+            output_format: Output format (json, plantuml)
+
+        Returns:
+            Dictionary containing the sequence diagram data
+        """
+        # Run analysis if not already done
+        if not self._analysis_cache:
+            self.analyze_codebase(analysis_types=["code_quality"])
+
+        # Generate visualization
+        viz = self.visualizer.generate_sequence_diagram(
+            codebase_context=self.analyzer.base_context,
+            function_name=function_name,
+            file_path=file_path,
+            max_depth=max_depth,
+        )
+
+        # Export if needed
+        if output_format != "json":
+            return self.visualizer.export(viz, format=output_format)
+
+        return viz
 
 
 def create_api(
