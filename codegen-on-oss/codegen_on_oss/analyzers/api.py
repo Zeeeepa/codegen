@@ -197,7 +197,7 @@ class CodegenAnalyzerAPI:
         Args:
             module_path: Path to the module to analyze
             layout: Layout algorithm to use
-            format: Output format
+            output_format: Output format
 
         Returns:
             Module dependency visualization
@@ -233,7 +233,7 @@ class CodegenAnalyzerAPI:
             repo_path: Path to the repository (optional, uses self.repo_path if not provided)
             module_path: Path to the specific module to analyze (optional)
             layout: Graph layout algorithm (hierarchical, force, circular)
-            output_format: Output format (json, dot, graphml)
+            output_output_format: Output format (json, dot, graphml)
 
         Returns:
             Dictionary containing the dependency graph data
@@ -269,7 +269,7 @@ class CodegenAnalyzerAPI:
             function_name: Name of the function(s) to analyze
             depth: Maximum depth of the call graph
             layout: Layout algorithm to use
-            format: Output format
+            output_format: Output format
 
         Returns:
             Function call graph visualization
@@ -308,7 +308,7 @@ class CodegenAnalyzerAPI:
             file_path: Path to the file containing the function
             depth: Maximum depth of the call graph
             layout: Graph layout algorithm (hierarchical, force, circular)
-            output_format: Output format (json, dot, graphml)
+            output_output_format: Output format (json, dot, graphml)
 
         Returns:
             Dictionary containing the call graph data
@@ -343,7 +343,7 @@ class CodegenAnalyzerAPI:
         Args:
             pr_number: PR number to analyze
             layout: Layout algorithm to use
-            format: Output format
+            output_format: Output format
 
         Returns:
             PR impact visualization
@@ -376,13 +376,15 @@ class CodegenAnalyzerAPI:
 
         Args:
             visualization: Visualization to export
-            format: Output format
+            output_format: Output format
             filename: Output filename
 
         Returns:
             Exported visualization or path to saved file
         """
-        return self.visualizer.export(visualization, format=output_format, filename=filename)
+        return self.visualizer.export(
+            visualization, format=output_format, filename=filename
+        )
 
     def get_static_errors(self) -> list[dict[str, Any]]:
         """
@@ -560,7 +562,7 @@ class CodegenAnalyzerAPI:
             module_name: Name of the module containing the class (optional)
             include_methods: Whether to include methods in the diagram
             include_attributes: Whether to include attributes in the diagram
-            output_format: Output format (json, dot, graphml, plantuml)
+            output_output_format: Output format (json, dot, graphml, plantuml)
 
         Returns:
             Dictionary containing the class diagram data
@@ -598,7 +600,7 @@ class CodegenAnalyzerAPI:
             function_name: Name of the function to analyze
             file_path: Path to the file containing the function (optional)
             max_depth: Maximum depth of the sequence diagram
-            output_format: Output format (json, plantuml)
+            output_output_format: Output format (json, plantuml)
 
         Returns:
             Dictionary containing the sequence diagram data
