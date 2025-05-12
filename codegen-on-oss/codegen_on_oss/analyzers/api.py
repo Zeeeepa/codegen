@@ -189,7 +189,7 @@ class CodegenAnalyzerAPI:
         self,
         module_path: str | None = None,
         layout: str = "hierarchical",
-        format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Get module dependencies.
@@ -215,7 +215,7 @@ class CodegenAnalyzerAPI:
 
         # Export if needed
         if format != "json":
-            return self.visualizer.export(viz, format=format)
+            return self.visualizer.export(viz, format=output_format)
 
         return viz
 
@@ -224,7 +224,7 @@ class CodegenAnalyzerAPI:
         repo_path: str | None = None,
         module_path: str | None = None,
         layout: str = "hierarchical",
-        output_format: str = "json",
+        output_output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a dependency graph for the codebase.
@@ -260,7 +260,7 @@ class CodegenAnalyzerAPI:
         function_name: str | list[str],
         depth: int = 2,
         layout: str = "hierarchical",
-        format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Get function call graph.
@@ -288,7 +288,7 @@ class CodegenAnalyzerAPI:
 
         # Export if needed
         if format != "json":
-            return self.visualizer.export(viz, format=format)
+            return self.visualizer.export(viz, format=output_format)
 
         return viz
 
@@ -298,7 +298,7 @@ class CodegenAnalyzerAPI:
         file_path: str | None = None,
         depth: int = 2,
         layout: str = "hierarchical",
-        output_format: str = "json",
+        output_output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a call graph for a specific function or file.
@@ -335,7 +335,7 @@ class CodegenAnalyzerAPI:
         self,
         pr_number: int | None = None,
         layout: str = "force",
-        format: str = "json",
+        output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Get PR impact visualization.
@@ -361,14 +361,14 @@ class CodegenAnalyzerAPI:
 
         # Export if needed
         if format != "json":
-            return self.visualizer.export(viz, format=format)
+            return self.visualizer.export(viz, format=output_format)
 
         return viz
 
     def export_visualization(
         self,
         visualization: dict[str, Any],
-        format: str = "json",
+        output_format: str = "json",
         filename: str | None = None,
     ) -> str | dict[str, Any]:
         """
@@ -382,7 +382,7 @@ class CodegenAnalyzerAPI:
         Returns:
             Exported visualization or path to saved file
         """
-        return self.visualizer.export(visualization, format=format, filename=filename)
+        return self.visualizer.export(visualization, format=output_format, filename=filename)
 
     def get_static_errors(self) -> list[dict[str, Any]]:
         """
@@ -550,7 +550,7 @@ class CodegenAnalyzerAPI:
         module_name: str | None = None,
         include_methods: bool = True,
         include_attributes: bool = True,
-        output_format: str = "json",
+        output_output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a class diagram for the codebase.
@@ -589,7 +589,7 @@ class CodegenAnalyzerAPI:
         function_name: str,
         file_path: str | None = None,
         max_depth: int = 3,
-        output_format: str = "json",
+        output_output_format: str = "json",
     ) -> dict[str, Any]:
         """
         Generate a sequence diagram for a specific function.
