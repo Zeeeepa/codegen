@@ -16,10 +16,6 @@ from typing import Any
 try:
     from codegen.configs.models.codebase import CodebaseConfig
     from codegen.configs.models.secrets import SecretsConfig
-    from codegen.git.repo_operator.repo_operator import RepoOperator
-    from codegen.git.schemas.repo_config import RepoConfig
-    from codegen.sdk.codebase.config import ProjectConfig
-    from codegen.sdk.core.codebase import Codebase
     from codegen.shared.enums.programming_language import ProgrammingLanguage
 except ImportError:
     print("Codegen SDK not found. Please install it first.")
@@ -415,13 +411,9 @@ class AnalyzerManager:
             if pattern in file_path:
                 return True
 
-        # Check if the file is a test file
-        if "test" in file_path.lower() or "tests" in file_path.lower():
-            # Skip low-severity issues in test files
-            if issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING]:
-                return True
-
-        return False
+        # Skip low-severity issues in test files
+        return (("test" in file_path.lower() or "tests" in file_path.lower())
+                and issue.severity in [IssueSeverity.INFO, IssueSeverity.WARNING])
 
     def get_issues(
         self,
@@ -466,7 +458,7 @@ class AnalyzerManager:
             Dictionary containing analysis results
         """
         if not self.base_codebase:
-            raise ValueError("Codebase not initialized")
+            raise CodebaseNotInitializedError()
 
         # Convert string analysis types to enums
         if analysis_types:
@@ -543,25 +535,35 @@ class AnalyzerManager:
 
         return self.results
 
-    def save_results(self, output_file: str, format: str = "json"):
+    def save_results(self, output_file: str, output_format: str = "json"):
         """
         Save analysis results to a file.
-
         Args:
-            output_file: Path to the output file
-            format: Output format (json, html)
+            output_file: Path to save results to
+            output_format: Format of the output file (json, yaml, etc.)
         """
-        if format == "json":
-            with open(output_file, "w") as f:
-                json.dump(self.results, f, indent=2)
-        elif format == "html":
-            self._generate_html_report(output_file)
-        else:
-            # Default to JSON
-            with open(output_file, "w") as f:
-                json.dump(self.results, f, indent=2)
+        if not self.results:
+            logger.warning("No results to save")
+            return
 
-        logger.info(f"Results saved to {output_file}")
+        try:
+            with open(output_file, "w") as f:
+                if output_format.lower() == "json":
+                    json.dump(self.results, f, indent=2, default=str)
+                elif output_format.lower() == "yaml":
+                    try:
+                        import yaml
+                        yaml.dump(self.results, f, default_flow_style=False)
+                    except ImportError:
+                        logger.exception("PyYAML not installed. Saving as JSON instead.")
+                        json.dump(self.results, f, indent=2, default=str)
+                else:
+                    logger.warning(f"Unsupported format: {output_format}. Saving as JSON.")
+                    json.dump(self.results, f, indent=2, default=str)
+
+            logger.info(f"Results saved to {output_file}")
+        except Exception:
+            logger.exception("Error saving results")
 
     def _generate_html_report(self, output_file: str):
         """Generate an HTML report of the analysis results."""
@@ -663,18 +665,16 @@ class AnalyzerManager:
         with open(output_file, "w") as f:
             f.write(html_content)
 
-    def generate_report(self, report_type: str = "summary") -> str:
+    def _generate_report(self, report_type: str = "summary") -> str:
         """
-        Generate a report from the analysis results.
-
+        Generate a report of the analysis results.
         Args:
             report_type: Type of report to generate (summary, detailed, issues)
-
         Returns:
-            Report as a string
+            String containing the report
         """
         if not self.results:
-            raise ValueError("No analysis results available")
+            raise NoResultsError()
 
         if report_type == "summary":
             return self._generate_summary_report()
@@ -683,7 +683,7 @@ class AnalyzerManager:
         elif report_type == "issues":
             return self._generate_issues_report()
         else:
-            raise ValueError(f"Unknown report type: {report_type}")
+            raise UnknownReportTypeError()
 
     def _generate_summary_report(self) -> str:
         """Generate a summary report."""
@@ -907,6 +907,26 @@ class AnalyzerManager:
                 report += "\n"
 
         return report
+
+
+class AnalyzerError(Exception):
+    """Base exception for analyzer errors."""
+    pass
+
+class NoResultsError(AnalyzerError):
+    """Exception raised when no analysis results are available."""
+    def __init__(self):
+        super().__init__("No analysis results available")
+
+class UnknownReportTypeError(AnalyzerError):
+    """Exception raised when an unknown report type is specified."""
+    def __init__(self):
+        super().__init__("Unknown report type")
+
+class CodebaseNotInitializedError(AnalyzerError):
+    """Exception raised when the codebase is not initialized."""
+    def __init__(self):
+        super().__init__("Codebase not initialized")
 
 
 def main():
