@@ -46,6 +46,14 @@ from codegen_on_oss.analyzers.models.analysis_result import (
 # Core analysis modules
 from codegen_on_oss.analyzers.code_quality import CodeQualityAnalyzer
 from codegen_on_oss.analyzers.dependencies import DependencyAnalyzer
+from codegen_on_oss.analyzers.codebase_ai import (
+    CodebaseAI,
+    generate_system_prompt,
+    generate_flag_system_prompt,
+    generate_context,
+    generate_tools,
+    generate_flag_tools
+)
 
 # Legacy analyzer interfaces (for backward compatibility)
 from codegen_on_oss.analyzers.base_analyzer import BaseCodeAnalyzer
@@ -85,6 +93,12 @@ __all__ = [
     # Core analyzers
     'CodeQualityAnalyzer',
     'DependencyAnalyzer',
+    'CodebaseAI',
+    'generate_system_prompt',
+    'generate_flag_system_prompt',
+    'generate_context',
+    'generate_tools',
+    'generate_flag_tools',
 
     # Legacy interfaces (for backward compatibility)
     'BaseCodeAnalyzer',
