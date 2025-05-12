@@ -18,7 +18,6 @@ try:
         IssueSeverity,
     )
     from codegen_on_oss.analyzers.unified_analyzer import (
-        AnalyzerRegistry,
         CodeQualityAnalyzerPlugin,
         DependencyAnalyzerPlugin,
         UnifiedCodeAnalyzer,
