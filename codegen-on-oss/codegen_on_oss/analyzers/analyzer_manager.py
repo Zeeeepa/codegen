@@ -118,10 +118,12 @@ class AnalyzerManager:
                 logger.info(f"Saving results to {output_file}")
                 self.analyzer.save_results(output_file, output_format)
 
-            return results
+                return results
+            else:
+                return results
 
-        except Exception as e:
-            logger.exception(f"Error running analysis: {e}")
+        except Exception:
+            logger.exception("Error running analysis")
             import traceback
 
             traceback.print_exc()
@@ -320,7 +322,9 @@ class AnalyzerManager:
                     # Unused functions
                     if dead_code["unused_functions"]:
                         report += f"\n    Unused Functions ({len(dead_code['unused_functions'])}):\n"
-                        for func in dead_code["unused_functions"][:10]:  # Limit to top 10
+                        for func in dead_code["unused_functions"][
+                            :10
+                        ]:  # Limit to top 10
                             report += f"      {func['name']} ({func['file']}:{func['line']})\n"
                         if len(dead_code["unused_functions"]) > 10:
                             report += f"      ... and {len(dead_code['unused_functions']) - 10} more\n"
@@ -348,9 +352,7 @@ class AnalyzerManager:
                         for func in high_complexity[:10]:  # Limit to top 10
                             report += f"      {func['name']} (Complexity: {func['complexity']}, {func['file']}:{func['line']})\n"
                         if len(high_complexity) > 10:
-                            report += (
-                                f"      ... and {len(high_complexity) - 10} more\n"
-                            )
+                            report += f"      ... and {len(high_complexity) - 10} more\n"
 
                 # Maintainability
                 if "maintainability" in analysis_results:
@@ -546,4 +548,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
