@@ -10,26 +10,27 @@ from watchfiles import Change
 class ChangeType(IntEnum):
     """
     Enumeration of change types for tracking file modifications.
-    
+
     Attributes:
         Modified: File content has been modified
         Removed: File has been deleted
         Renamed: File has been renamed
         Added: New file has been added
     """
+
     Modified = auto()
     Removed = auto()
     Renamed = auto()
     Added = auto()
 
     @staticmethod
-    def from_watch_change_type(change_type: Change) -> 'ChangeType':
+    def from_watch_change_type(change_type: Change) -> "ChangeType":
         """
         Convert watchfiles Change type to ChangeType.
-        
+
         Args:
             change_type: The watchfiles Change enum value
-            
+
         Returns:
             Corresponding ChangeType enum value
         """
@@ -39,21 +40,21 @@ class ChangeType(IntEnum):
             return ChangeType.Removed
         elif change_type is Change.modified:
             return ChangeType.Modified
-        
+
         msg = f"Unsupported watch change type: {change_type}"
         raise ValueError(msg)
 
     @staticmethod
-    def from_git_change_type(change_type: str | None) -> 'ChangeType':
+    def from_git_change_type(change_type: str | None) -> "ChangeType":
         """
         Convert git change type string to ChangeType.
-        
+
         Args:
             change_type: Git change type string ('M', 'D', 'R', 'A')
-            
+
         Returns:
             Corresponding ChangeType enum value
-            
+
         Raises:
             ValueError: If the change type is not supported
         """
@@ -65,7 +66,7 @@ class ChangeType(IntEnum):
             return ChangeType.Renamed
         if change_type == "A":
             return ChangeType.Added
-        
+
         msg = f"Invalid git change type: {change_type}"
         raise ValueError(msg)
 
@@ -73,10 +74,10 @@ class ChangeType(IntEnum):
 class DiffLite(NamedTuple):
     """
     Simple diff implementation for tracking file changes during code analysis.
-    
+
     This lightweight diff implementation provides support for tracking file changes,
     including modifications, removals, renames, and additions.
-    
+
     Attributes:
         change_type: Type of change (Modified, Removed, Renamed, Added)
         path: Path to the file
@@ -84,6 +85,7 @@ class DiffLite(NamedTuple):
         rename_to: New path for renamed files (None for non-renamed files)
         old_content: Previous content of the file (None if not available)
     """
+
     change_type: ChangeType
     path: Path
     rename_from: Path | None = None
@@ -94,11 +96,11 @@ class DiffLite(NamedTuple):
     def from_watch_change(cls, change: Change, path: PathLike) -> Self:
         """
         Create a DiffLite instance from a watchfiles Change.
-        
+
         Args:
             change: The watchfiles Change enum value
             path: Path to the file
-            
+
         Returns:
             DiffLite instance representing the change
         """
@@ -111,17 +113,17 @@ class DiffLite(NamedTuple):
     def from_git_diff(cls, git_diff: Diff) -> Self:
         """
         Create a DiffLite instance from a git Diff object.
-        
+
         Args:
             git_diff: Git Diff object
-            
+
         Returns:
             DiffLite instance representing the git diff
         """
         old = None
         if git_diff.a_blob:
             old = git_diff.a_blob.data_stream.read()
-        
+
         return cls(
             change_type=ChangeType.from_git_change_type(git_diff.change_type),
             path=Path(git_diff.a_path) if git_diff.a_path else None,
@@ -134,12 +136,12 @@ class DiffLite(NamedTuple):
     def from_reverse_diff(cls, diff_lite: "DiffLite") -> Self:
         """
         Create a DiffLite instance that represents the reverse of another DiffLite.
-        
+
         This is useful for undoing changes or representing the opposite operation.
-        
+
         Args:
             diff_lite: Original DiffLite instance
-            
+
         Returns:
             DiffLite instance representing the reverse change
         """
@@ -159,4 +161,3 @@ class DiffLite(NamedTuple):
             )
 
         return cls(change_type=change_type, path=diff_lite.path)
-

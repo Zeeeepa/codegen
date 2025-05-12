@@ -1,7 +1,7 @@
 """Langchain tools for workspace operations."""
 
 from collections.abc import Callable
-from typing import Annotated, ClassVar, Literal, Optional
+from typing import Annotated, ClassVar, Literal
 
 from langchain_core.messages import ToolMessage
 from langchain_core.stores import InMemoryBaseStore
@@ -56,10 +56,10 @@ class ViewFileInput(BaseModel):
     """Input for viewing a file."""
 
     filepath: str = Field(..., description="Path to the file relative to workspace root")
-    start_line: Optional[int] = Field(None, description="Starting line number to view (1-indexed, inclusive)")
-    end_line: Optional[int] = Field(None, description="Ending line number to view (1-indexed, inclusive)")
-    max_lines: Optional[int] = Field(None, description="Maximum number of lines to view at once, defaults to 500")
-    line_numbers: Optional[bool] = Field(True, description="If True, add line numbers to the content (1-indexed)")
+    start_line: int | None = Field(None, description="Starting line number to view (1-indexed, inclusive)")
+    end_line: int | None = Field(None, description="Ending line number to view (1-indexed, inclusive)")
+    max_lines: int | None = Field(None, description="Maximum number of lines to view at once, defaults to 500")
+    line_numbers: bool | None = Field(True, description="If True, add line numbers to the content (1-indexed)")
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
@@ -80,10 +80,10 @@ The response will indicate if there are more lines available to view."""
         self,
         tool_call_id: str,
         filepath: str,
-        start_line: Optional[int] = None,
-        end_line: Optional[int] = None,
-        max_lines: Optional[int] = None,
-        line_numbers: Optional[bool] = True,
+        start_line: int | None = None,
+        end_line: int | None = None,
+        max_lines: int | None = None,
+        line_numbers: bool | None = True,
     ) -> ToolMessage:
         result = view_file(
             self.codebase,
@@ -146,7 +146,7 @@ class RipGrepTool(BaseTool):
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, tool_call_id: str, query: str, file_extensions: Optional[list[str]] = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False) -> ToolMessage:
+    def _run(self, tool_call_id: str, query: str, file_extensions: list[str] | None = None, page: int = 1, files_per_page: int = 10, use_regex: bool = False) -> ToolMessage:
         result = search(self.codebase, query, file_extensions=file_extensions, page=page, files_per_page=files_per_page, use_regex=use_regex)
         return result.render(tool_call_id)
 

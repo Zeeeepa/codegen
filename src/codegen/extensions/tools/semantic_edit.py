@@ -2,7 +2,7 @@
 
 import difflib
 import re
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 from langchain_core.messages import ToolMessage
 from langchain_core.output_parsers import StrOutputParser
@@ -26,15 +26,15 @@ class SemanticEditObservation(Observation):
     filepath: str = Field(
         description="Path to the edited file",
     )
-    diff: Optional[str] = Field(
+    diff: str | None = Field(
         default=None,
         description="Unified diff of changes made to the file",
     )
-    new_content: Optional[str] = Field(
+    new_content: str | None = Field(
         default=None,
         description="New content of the file with line numbers after edits",
     )
-    line_count: Optional[int] = Field(
+    line_count: int | None = Field(
         default=None,
         description="Total number of lines in the edited file",
     )

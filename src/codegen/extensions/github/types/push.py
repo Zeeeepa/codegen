@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -23,7 +22,7 @@ class PushEvent(BaseModel):
     created: bool
     deleted: bool
     forced: bool
-    base_ref: Optional[str]
+    base_ref: str | None
     compare: str
     commits: list[GitHubCommit]
     head_commit: GitHubCommit

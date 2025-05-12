@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from langchain.tools import BaseTool
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class ChatAgent:
     """Agent for interacting with a codebase."""
 
-    def __init__(self, codebase: "Codebase", model_provider: str = "anthropic", model_name: str = "claude-3-5-sonnet-latest", memory: bool = True, tools: Optional[list[BaseTool]] = None, **kwargs):
+    def __init__(self, codebase: "Codebase", model_provider: str = "anthropic", model_name: str = "claude-3-5-sonnet-latest", memory: bool = True, tools: list[BaseTool] | None = None, **kwargs):
         """Initialize a CodeAgent.
 
         Args:
@@ -31,7 +31,7 @@ class ChatAgent:
         self.codebase = codebase
         self.agent = create_chat_agent(self.codebase, model_provider=model_provider, model_name=model_name, memory=memory, additional_tools=tools, **kwargs)
 
-    def run(self, prompt: str, thread_id: Optional[str] = None) -> str:
+    def run(self, prompt: str, thread_id: str | None = None) -> str:
         """Run the agent with a prompt.
 
         Args:
@@ -59,7 +59,7 @@ class ChatAgent:
 
         return s["final_answer"]
 
-    def chat(self, prompt: str, thread_id: Optional[str] = None) -> tuple[str, str]:
+    def chat(self, prompt: str, thread_id: str | None = None) -> tuple[str, str]:
         """Chat with the agent, maintaining conversation history.
 
         Args:

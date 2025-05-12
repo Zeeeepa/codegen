@@ -13,10 +13,9 @@ from __future__ import annotations
 import json
 import pprint
 import re  # noqa: F401
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import BaseModel, StrictInt, StrictStr, ValidationError, field_validator
-from typing_extensions import Self
 
 VALIDATIONERRORLOCINNER_ANY_OF_SCHEMAS = ["int", "str"]
 

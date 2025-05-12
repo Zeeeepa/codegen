@@ -1,6 +1,6 @@
 """Tool for creating new files."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -23,7 +23,7 @@ class CreateFileObservation(Observation):
     str_template: ClassVar[str] = "Created file {filepath}"
 
 
-def create_file(codebase: Codebase, filepath: str, content: str, max_tokens: Optional[int] = None) -> CreateFileObservation:
+def create_file(codebase: Codebase, filepath: str, content: str, max_tokens: int | None = None) -> CreateFileObservation:
     """Create a new file.
 
     Args:

@@ -1,6 +1,6 @@
 """Type definitions for tool outputs."""
 
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 
 class EditFileArtifacts(TypedDict, total=False):
@@ -10,8 +10,8 @@ class EditFileArtifacts(TypedDict, total=False):
     """
 
     filepath: str  # Path to the edited file
-    diff: Optional[str]  # Diff of changes made to the file
-    error: Optional[str]  # Error message (only present on error)
+    diff: str | None  # Diff of changes made to the file
+    error: str | None  # Error message (only present on error)
 
 
 class ViewFileArtifacts(TypedDict, total=False):
@@ -22,14 +22,14 @@ class ViewFileArtifacts(TypedDict, total=False):
     """
 
     filepath: str  # Path to the viewed file
-    start_line: Optional[int]  # Starting line number viewed
-    end_line: Optional[int]  # Ending line number viewed
-    content: Optional[str]  # Content of the file
-    total_lines: Optional[int]  # Total number of lines in file
-    has_more: Optional[bool]  # Whether there are more lines to view
-    max_lines_per_page: Optional[int]  # Maximum lines that can be viewed at once
-    file_size: Optional[int]  # Size of file in bytes
-    error: Optional[str]  # Error message (only present on error)
+    start_line: int | None  # Starting line number viewed
+    end_line: int | None  # Ending line number viewed
+    content: str | None  # Content of the file
+    total_lines: int | None  # Total number of lines in file
+    has_more: bool | None  # Whether there are more lines to view
+    max_lines_per_page: int | None  # Maximum lines that can be viewed at once
+    file_size: int | None  # Size of file in bytes
+    error: str | None  # Error message (only present on error)
 
 
 class ListDirectoryArtifacts(TypedDict, total=False):
@@ -41,14 +41,14 @@ class ListDirectoryArtifacts(TypedDict, total=False):
 
     dirpath: str  # Full path to the directory
     name: str  # Name of the directory
-    files: Optional[list[str]]  # List of files in this directory
-    file_paths: Optional[list[str]]  # Full paths to files in this directory
-    subdirs: Optional[list[str]]  # List of subdirectory names
-    subdir_paths: Optional[list[str]]  # Full paths to subdirectories
-    is_leaf: Optional[bool]  # Whether this is a leaf node (at max depth)
-    depth: Optional[int]  # Current depth in the tree
-    max_depth: Optional[int]  # Maximum depth allowed
-    error: Optional[str]  # Error message (only present on error)
+    files: list[str] | None  # List of files in this directory
+    file_paths: list[str] | None  # Full paths to files in this directory
+    subdirs: list[str] | None  # List of subdirectory names
+    subdir_paths: list[str] | None  # Full paths to subdirectories
+    is_leaf: bool | None  # Whether this is a leaf node (at max depth)
+    depth: int | None  # Current depth in the tree
+    max_depth: int | None  # Maximum depth allowed
+    error: str | None  # Error message (only present on error)
 
 
 class SearchMatch(TypedDict, total=False):
@@ -74,7 +74,7 @@ class SearchArtifacts(TypedDict, total=False):
     files_per_page: int  # Number of files shown per page
     matches: list[SearchMatch]  # List of matches with file paths and line numbers
     file_paths: list[str]  # List of files containing matches
-    error: Optional[str]  # Error message (only present on error)
+    error: str | None  # Error message (only present on error)
 
 
 class SemanticEditArtifacts(TypedDict, total=False):
@@ -85,10 +85,10 @@ class SemanticEditArtifacts(TypedDict, total=False):
     """
 
     filepath: str  # Path to the edited file
-    diff: Optional[str]  # Unified diff of changes made to the file
-    new_content: Optional[str]  # New content of the file after edits
-    line_count: Optional[int]  # Total number of lines in the edited file
-    error: Optional[str]  # Error message (only present on error)
+    diff: str | None  # Unified diff of changes made to the file
+    new_content: str | None  # New content of the file after edits
+    line_count: int | None  # Total number of lines in the edited file
+    error: str | None  # Error message (only present on error)
 
 
 class RelaceEditArtifacts(TypedDict, total=False):
@@ -99,7 +99,7 @@ class RelaceEditArtifacts(TypedDict, total=False):
     """
 
     filepath: str  # Path to the edited file
-    diff: Optional[str]  # Unified diff of changes made to the file
-    new_content: Optional[str]  # New content of the file after edits
-    line_count: Optional[int]  # Total number of lines in the edited file
-    error: Optional[str]  # Error message (only present on error)
+    diff: str | None  # Unified diff of changes made to the file
+    new_content: str | None  # New content of the file after edits
+    line_count: int | None  # Total number of lines in the edited file
+    error: str | None  # Error message (only present on error)

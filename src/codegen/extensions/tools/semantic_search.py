@@ -1,6 +1,6 @@
 """Semantic search over codebase files."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -51,7 +51,7 @@ def semantic_search(
     query: str,
     k: int = 5,
     preview_length: int = 200,
-    index_path: Optional[str] = None,
+    index_path: str | None = None,
 ) -> SemanticSearchObservation:
     """Search the codebase using semantic similarity.
 

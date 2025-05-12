@@ -1,7 +1,7 @@
 """Base class for tool observations/responses."""
 
 import json
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from langchain_core.messages import ToolMessage
 from pydantic import BaseModel, Field
@@ -22,7 +22,7 @@ class Observation(BaseModel):
         default="success",
         description="Status of the operation - 'success' or 'error'",
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         description="Error message if status is 'error'",
     )
@@ -61,7 +61,7 @@ class Observation(BaseModel):
             return rendered[:max_tokens] + "\n\n...truncated...\n\n"
         return rendered
 
-    def render(self, tool_call_id: Optional[str] = None) -> ToolMessage | str:
+    def render(self, tool_call_id: str | None = None) -> ToolMessage | str:
         """Render the observation as a ToolMessage or string.
 
         Args:

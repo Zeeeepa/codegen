@@ -1,6 +1,6 @@
 """Tool for viewing file contents and metadata."""
 
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 from langchain_core.messages import ToolMessage
 from pydantic import Field
@@ -25,23 +25,23 @@ class ViewFileObservation(Observation):
     raw_content: str = Field(
         description="Raw content of the file",
     )
-    line_count: Optional[int] = Field(
+    line_count: int | None = Field(
         default=None,
         description="Number of lines in the file",
     )
-    start_line: Optional[int] = Field(
+    start_line: int | None = Field(
         default=None,
         description="Starting line number of the content (1-indexed)",
     )
-    end_line: Optional[int] = Field(
+    end_line: int | None = Field(
         default=None,
         description="Ending line number of the content (1-indexed)",
     )
-    has_more: Optional[bool] = Field(
+    has_more: bool | None = Field(
         default=None,
         description="Whether there are more lines after end_line",
     )
-    max_lines_per_page: Optional[int] = Field(
+    max_lines_per_page: int | None = Field(
         default=None,
         description="Maximum number of lines that can be viewed at once",
     )
@@ -109,8 +109,8 @@ def view_file(
     codebase: Codebase,
     filepath: str,
     line_numbers: bool = True,
-    start_line: Optional[int] = None,
-    end_line: Optional[int] = None,
+    start_line: int | None = None,
+    end_line: int | None = None,
     max_lines: int = 500,
 ) -> ViewFileObservation:
     """View the contents and metadata of a file.
