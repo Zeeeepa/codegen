@@ -210,6 +210,8 @@ class InsertTransaction(Transaction):
 
     def _generate_new_content_bytes(self) -> bytes:
         """Generate the new content bytes after insertion."""
+        if self.new_content is None:
+            raise ValueError("Cannot generate content bytes: new_content is None")
         new_bytes = bytes(self.new_content, encoding="utf-8")
         content_bytes = self.file.content_bytes
         head = content_bytes[: self.insert_byte]
@@ -230,7 +232,8 @@ class InsertTransaction(Transaction):
     def diff_str(self) -> str:
         """Human-readable string representation of the change."""
         diff = "".join(unified_diff(self.file.content.splitlines(True), self._generate_new_content_bytes().decode("utf-8").splitlines(True)))
-        return f"Insert {len(self.new_content)} bytes at bytes ({self.start_byte}, {self.end_byte})\n{diff}"
+        content_length = len(self.new_content) if self.new_content is not None else 0
+        return f"Insert {content_length} bytes at bytes ({self.start_byte}, {self.end_byte})\n{diff}"
 
 class EditTransaction(Transaction):
     """Transaction to edit content in a file."""
@@ -364,4 +367,3 @@ class FileRemoveTransaction(Transaction):
     def diff_str(self) -> str:
         """Human-readable string representation of the change."""
         return f"Remove file at {self.file_path}"
-

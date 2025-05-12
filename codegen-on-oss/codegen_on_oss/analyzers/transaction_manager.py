@@ -61,9 +61,9 @@ class TransactionManager:
         self.pending_undos: Set[Callable[[], None]] = set()
         self._commiting: bool = False
         self.max_transactions: Optional[int] = None  # None = no limit
-        self.stopwatch_start = None
+        self.stopwatch_start: Optional[float] = None
         self.stopwatch_max_seconds: Optional[int] = None  # None = no limit
-        self.session = {}  # Session data for tracking state
+        self.session: Dict[str, Any] = {}  # Session data for tracking state
 
     def sort_transactions(self) -> None:
         """Sort transactions by priority and position."""
@@ -127,7 +127,7 @@ class TransactionManager:
 
     def is_time_exceeded(self) -> bool:
         """Check if the stopwatch time limit has been exceeded."""
-        if self.stopwatch_max_seconds is None:
+        if self.stopwatch_max_seconds is None or self.stopwatch_start is None:
             return False
         else:
             num_seconds = time.time() - self.stopwatch_start
@@ -384,7 +384,7 @@ class TransactionManager:
         Returns:
             List of matching transactions
         """
-        matching_transactions = []
+        matching_transactions: List[Transaction] = []
         if file_path not in self.queued_transactions:
             return matching_transactions
 
@@ -435,14 +435,24 @@ class TransactionManager:
         Returns:
             List of conflicting transactions
         """
-        overlapping_transactions = []
+        overlapping_transactions: List[Transaction] = []
         if transaction.file_path not in self.queued_transactions:
             return overlapping_transactions
-            
-        queued_transactions = list(self.queued_transactions[transaction.file_path])
-        for t in queued_transactions:
-            if transaction.start_byte < t.end_byte and transaction.end_byte > t.start_byte:
+
+        for t in self.queued_transactions[transaction.file_path]:
+            # Skip if it's the same transaction
+            if t == transaction:
+                continue
+
+            # Check if the transactions overlap
+            if (
+                (t.start_byte <= transaction.start_byte < t.end_byte)
+                or (t.start_byte < transaction.end_byte <= t.end_byte)
+                or (transaction.start_byte <= t.start_byte < transaction.end_byte)
+                or (transaction.start_byte < t.end_byte <= transaction.end_byte)
+            ):
                 overlapping_transactions.append(t)
+
         return overlapping_transactions
 
     def _get_overlapping_conflicts(self, transaction: Transaction) -> Optional[Transaction]:
@@ -456,9 +466,8 @@ class TransactionManager:
         """
         if transaction.file_path not in self.queued_transactions:
             return None
-            
+
         for t in self.queued_transactions[transaction.file_path]:
             if transaction.start_byte >= t.start_byte and transaction.end_byte <= t.end_byte:
                 return t
         return None
-
