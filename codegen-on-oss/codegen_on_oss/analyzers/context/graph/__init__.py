@@ -21,7 +21,7 @@ def build_dependency_graph(edges: list[dict[str, Any]]) -> nx.DiGraph:
     Returns:
         NetworkX DiGraph representing the dependencies
     """
-    graph = nx.DiGraph()
+    graph: nx.DiGraph = nx.DiGraph()
 
     for edge in edges:
         source = edge.get("source")
@@ -187,3 +187,4 @@ def calculate_cohesion(
         cohesion[module] = internal_edges / total_edges if total_edges > 0 else 0.0
 
     return cohesion
+
