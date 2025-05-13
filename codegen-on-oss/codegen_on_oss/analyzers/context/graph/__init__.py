@@ -21,7 +21,7 @@ def build_dependency_graph(edges: list[dict[str, Any]]) -> nx.DiGraph:
     Returns:
         NetworkX DiGraph representing the dependencies
     """
-    graph = nx.DiGraph()
+    graph: nx.DiGraph = nx.DiGraph()
 
     for edge in edges:
         source = edge.get("source")

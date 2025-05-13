@@ -124,9 +124,12 @@ class DiffLite(NamedTuple):
         if git_diff.a_blob:
             old = git_diff.a_blob.data_stream.read()
 
+        # Ensure path is never None
+        path = Path(git_diff.a_path) if git_diff.a_path else Path("")
+
         return cls(
             change_type=ChangeType.from_git_change_type(git_diff.change_type),
-            path=Path(git_diff.a_path) if git_diff.a_path else None,
+            path=path,
             rename_from=Path(git_diff.rename_from) if git_diff.rename_from else None,
             rename_to=Path(git_diff.rename_to) if git_diff.rename_to else None,
             old_content=old,
