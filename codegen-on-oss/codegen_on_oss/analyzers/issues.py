@@ -1,339 +1,315 @@
-#!/usr/bin/env python3
-"""
-Issues Module
-
-This module defines issue models, categories, and severities for code analysis.
-It provides a standardized way to represent and manage issues across different analyzers.
-"""
+"""Issue tracking and management for code analysis."""
 
 import json
 import logging
+import uuid
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 
-class AnalysisType(str, Enum):
-    """Types of analysis that can be performed."""
+class IssueCategory(str, Enum):
+    """Categories for code issues."""
 
-    CODEBASE = "codebase"
-    PR = "pr"
-    COMPARISON = "comparison"
-    CODE_QUALITY = "code_quality"
-    DEPENDENCY = "dependency"
     SECURITY = "security"
     PERFORMANCE = "performance"
-    TYPE_CHECKING = "type_checking"
+    MAINTAINABILITY = "maintainability"
+    RELIABILITY = "reliability"
+    USABILITY = "usability"
+    COMPATIBILITY = "compatibility"
+    ACCESSIBILITY = "accessibility"
+    DOCUMENTATION = "documentation"
+    TESTING = "testing"
+    OTHER = "other"
 
 
 class IssueSeverity(str, Enum):
-    """Severity levels for issues."""
+    """Severity levels for code issues."""
 
-    CRITICAL = "critical"  # Must be fixed immediately, blocks functionality
-    ERROR = "error"  # Must be fixed, causes errors or undefined behavior
-    WARNING = "warning"  # Should be fixed, may cause problems in future
-    INFO = "info"  # Informational, could be improved but not critical
-
-
-class IssueCategory(str, Enum):
-    """Categories of issues that can be detected."""
-
-    # Code Quality Issues
-    DEAD_CODE = "dead_code"  # Unused variables, functions, etc.
-    COMPLEXITY = "complexity"  # Code too complex, needs refactoring
-    STYLE_ISSUE = "style_issue"  # Code style issues (line length, etc.)
-    DOCUMENTATION = "documentation"  # Missing or incomplete documentation
-
-    # Type and Parameter Issues
-    TYPE_ERROR = "type_error"  # Type errors or inconsistencies
-    PARAMETER_MISMATCH = "parameter_mismatch"  # Parameter type or count mismatch
-    RETURN_TYPE_ERROR = "return_type_error"  # Return type error or mismatch
-
-    # Implementation Issues
-    IMPLEMENTATION_ERROR = "implementation_error"  # Incorrect implementation
-    MISSING_IMPLEMENTATION = "missing_implementation"  # Missing implementation
-
-    # Dependency Issues
-    IMPORT_ERROR = "import_error"  # Import errors or issues
-    DEPENDENCY_CYCLE = "dependency_cycle"  # Circular dependency
-    MODULE_COUPLING = "module_coupling"  # High coupling between modules
-
-    # API Issues
-    API_CHANGE = "api_change"  # API has changed in a breaking way
-    API_USAGE_ERROR = "api_usage_error"  # Incorrect API usage
-
-    # Security Issues
-    SECURITY_VULNERABILITY = "security_vulnerability"  # Security vulnerability
-
-    # Performance Issues
-    PERFORMANCE_ISSUE = "performance_issue"  # Performance issue
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
 
 
 class IssueStatus(str, Enum):
     """Status of an issue."""
 
-    OPEN = "open"  # Issue is open and needs to be fixed
-    FIXED = "fixed"  # Issue has been fixed
-    WONTFIX = "wontfix"  # Issue will not be fixed
-    INVALID = "invalid"  # Issue is invalid or not applicable
-    DUPLICATE = "duplicate"  # Issue is a duplicate of another
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    WONT_FIX = "wont_fix"
+    DUPLICATE = "duplicate"
+    INVALID = "invalid"
 
 
 @dataclass
-class CodeLocation:
-    """Location of an issue in code."""
+class Location:
+    """Location of an issue in the code.
+
+    Attributes:
+        file: Path to the file
+        line_start: Starting line number
+        line_end: Ending line number
+        column_start: Starting column number
+        column_end: Ending column number
+    """
 
     file: str
-    line: int | None = None
-    column: int | None = None
-    end_line: int | None = None
-    end_column: int | None = None
+    line_start: int = 0
+    line_end: int = 0
+    column_start: int = 0
+    column_end: int = 0
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary representation."""
-        return {k: v for k, v in asdict(self).items() if v is not None}
+        """Convert the location to a dictionary.
+
+        Returns:
+            Dictionary representation of the location
+        """
+        return {
+            "file": self.file,
+            "line_start": self.line_start,
+            "line_end": self.line_end,
+            "column_start": self.column_start,
+            "column_end": self.column_end,
+        }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "CodeLocation":
-        """Create from dictionary representation."""
-        return cls(**{k: v for k, v in data.items() if k in cls.__annotations__})
+    def from_dict(cls, data: dict[str, Any]) -> "Location":
+        """Create a Location instance from a dictionary.
 
-    def __str__(self) -> str:
-        """Convert to string representation."""
-        if self.line is not None:
-            if self.column is not None:
-                return f"{self.file}:{self.line}:{self.column}"
-            return f"{self.file}:{self.line}"
-        return self.file
+        Args:
+            data: Dictionary containing location data
+
+        Returns:
+            A Location instance
+        """
+        return cls(
+            file=data.get("file", ""),
+            line_start=data.get("line_start", 0),
+            line_end=data.get("line_end", 0),
+            column_start=data.get("column_start", 0),
+            column_end=data.get("column_end", 0),
+        )
 
 
 @dataclass
 class Issue:
-    """Represents an issue found during analysis."""
+    """Representation of a code issue.
 
-    # Core fields
+    Attributes:
+        id: Unique identifier for the issue
+        message: Description of the issue
+        severity: Severity level of the issue
+        location: Location of the issue in the code
+        category: Category of the issue
+        status: Status of the issue
+        symbol: Symbol associated with the issue
+        suggestion: Suggested fix for the issue
+        related_symbols: List of related symbols
+        related_locations: List of related locations
+    """
+
     message: str
     severity: IssueSeverity
-    location: CodeLocation
-
-    # Classification fields
-    category: IssueCategory | None = None
-    analysis_type: AnalysisType | None = None
+    location: Location
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    category: Optional[IssueCategory] = None
     status: IssueStatus = IssueStatus.OPEN
-
-    # Context fields
-    symbol: str | None = None
-    code: str | None = None
-    suggestion: str | None = None
-    related_symbols: list[str] = field(default_factory=list)
-    related_locations: list[CodeLocation] = field(default_factory=list)
-
-    # Metadata fields
-    id: str | None = None
-    hash: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """Initialize derived fields."""
-        # Generate an ID if not provided
-        if self.id is None:
-            import hashlib
-
-            # Create a hash based on location and message
-            hash_input = f"{self.location.file}:{self.location.line}:{self.message}"
-            self.id = hashlib.md5(hash_input.encode()).hexdigest()[:12]
-
-    @property
-    def file(self) -> str:
-        """Get the file path."""
-        return self.location.file
-
-    @property
-    def line(self) -> int | None:
-        """Get the line number."""
-        return self.location.line
+    symbol: Optional[str] = None
+    suggestion: Optional[str] = None
+    related_symbols: Optional[list[str]] = None
+    related_locations: Optional[list[Location]] = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary representation."""
+        """Convert the issue to a dictionary.
+
+        Returns:
+            Dictionary representation of the issue
+        """
         result = {
             "id": self.id,
             "message": self.message,
-            "severity": self.severity.value,
+            "severity": self.severity,
             "location": self.location.to_dict(),
-            "status": self.status.value,
+            "status": self.status,
         }
 
-        # Add optional fields if present
         if self.category:
-            result["category"] = self.category.value
-
-        if self.analysis_type:
-            result["analysis_type"] = self.analysis_type.value
+            result["category"] = self.category
 
         if self.symbol:
             result["symbol"] = self.symbol
-
-        if self.code:
-            result["code"] = self.code
 
         if self.suggestion:
             result["suggestion"] = self.suggestion
 
         if self.related_symbols:
-            result["related_symbols"] = self.related_symbols
+            result["related_symbols"] = self.related_symbols  # type: ignore
 
         if self.related_locations:
-            result["related_locations"] = [
+            result["related_locations"] = [  # type: ignore
                 loc.to_dict() for loc in self.related_locations
             ]
-
-        if self.metadata:
-            result["metadata"] = self.metadata
 
         return result
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Issue":
-        """Create from dictionary representation."""
-        # Convert string enums to actual enum values
-        if "severity" in data and isinstance(data["severity"], str):
-            data["severity"] = IssueSeverity(data["severity"])
+        """Create an Issue instance from a dictionary.
 
-        if "category" in data and isinstance(data["category"], str):
-            data["category"] = IssueCategory(data["category"])
+        Args:
+            data: Dictionary containing issue data
 
-        if "analysis_type" in data and isinstance(data["analysis_type"], str):
-            data["analysis_type"] = AnalysisType(data["analysis_type"])
+        Returns:
+            An Issue instance
+        """
+        location_data = data.get("location", {})
+        location = Location.from_dict(location_data)
 
-        if "status" in data and isinstance(data["status"], str):
-            data["status"] = IssueStatus(data["status"])
-
-        # Convert location dict to CodeLocation
-        if "location" in data and isinstance(data["location"], dict):
-            data["location"] = CodeLocation.from_dict(data["location"])
-
-        # Convert related_locations dicts to CodeLocation objects
-        if "related_locations" in data and isinstance(data["related_locations"], list):
-            data["related_locations"] = [
-                CodeLocation.from_dict(loc) if isinstance(loc, dict) else loc
-                for loc in data["related_locations"]
+        related_locations = None
+        if "related_locations" in data:
+            related_locations = [
+                Location.from_dict(loc) for loc in data["related_locations"]
             ]
 
-        return cls(**{k: v for k, v in data.items() if k in cls.__annotations__})
+        return cls(
+            id=data.get("id", str(uuid.uuid4())),
+            message=data.get("message", ""),
+            severity=data.get("severity", IssueSeverity.MEDIUM),
+            location=location,
+            category=data.get("category"),
+            status=data.get("status", IssueStatus.OPEN),
+            symbol=data.get("symbol"),
+            suggestion=data.get("suggestion"),
+            related_symbols=data.get("related_symbols"),
+            related_locations=related_locations,
+        )
 
 
 class IssueCollection:
-    """Collection of issues with filtering and grouping capabilities."""
+    """Collection of code issues with filtering and grouping capabilities.
 
-    def __init__(self, issues: list[Issue] | None = None):
-        """
-        Initialize the issue collection.
+    Attributes:
+        issues: List of issues in the collection
+    """
+
+    def __init__(self, issues: Optional[list[Issue]] = None):
+        """Initialize an issue collection.
 
         Args:
             issues: Initial list of issues
         """
         self.issues = issues or []
-        self._filters = []
+        self._filters: list[tuple[Callable[[Issue], bool], str]] = []
 
     def add_issue(self, issue: Issue):
-        """
-        Add an issue to the collection.
+        """Add an issue to the collection.
 
         Args:
-            issue: Issue to add
+            issue: The issue to add
         """
         self.issues.append(issue)
 
     def add_issues(self, issues: list[Issue]):
-        """
-        Add multiple issues to the collection.
+        """Add multiple issues to the collection.
 
         Args:
-            issues: Issues to add
+            issues: List of issues to add
         """
         self.issues.extend(issues)
 
-    def add_filter(self, filter_func: Callable[[Issue], bool], description: str = ""):
-        """
-        Add a filter function.
+    def add_filter(self, filter_func: Callable[[Issue], bool], name: str = ""):
+        """Add a filter function to the collection.
 
         Args:
-            filter_func: Function that returns True if issue should be included
-            description: Description of the filter
+            filter_func: Function that takes an issue and returns True if it should be included
+            name: Name of the filter for reference
         """
-        self._filters.append((filter_func, description))
+        self._filters.append((filter_func, name))
 
-    def get_issues(
-        self,
-        severity: IssueSeverity | None = None,
-        category: IssueCategory | None = None,
-        status: IssueStatus | None = None,
-        file_path: str | None = None,
-        symbol: str | None = None,
-    ) -> list[Issue]:
-        """
-        Get issues matching the specified criteria.
+    def filter_by_severity(self, severity: IssueSeverity):
+        """Add a filter to include only issues with the specified severity.
 
         Args:
-            severity: Severity to filter by
-            category: Category to filter by
-            status: Status to filter by
-            file_path: File path to filter by
-            symbol: Symbol name to filter by
+            severity: The severity level to filter by
+        """
+        self.add_filter(
+            lambda issue: issue.severity == severity, f"severity={severity}"
+        )
+
+    def filter_by_category(self, category: IssueCategory):
+        """Add a filter to include only issues with the specified category.
+
+        Args:
+            category: The category to filter by
+        """
+        self.add_filter(
+            lambda issue: issue.category == category, f"category={category}"
+        )
+
+    def filter_by_status(self, status: IssueStatus):
+        """Add a filter to include only issues with the specified status.
+
+        Args:
+            status: The status to filter by
+        """
+        self.add_filter(lambda issue: issue.status == status, f"status={status}")
+
+    def filter_by_file(self, file_path: str):
+        """Add a filter to include only issues in the specified file.
+
+        Args:
+            file_path: The file path to filter by
+        """
+        self.add_filter(
+            lambda issue: issue.location.file == file_path, f"file={file_path}"
+        )
+
+    def filter_by_symbol(self, symbol: str):
+        """Add a filter to include only issues related to the specified symbol.
+
+        Args:
+            symbol: The symbol to filter by
+        """
+        self.add_filter(lambda issue: issue.symbol == symbol, f"symbol={symbol}")
+
+    def clear_filters(self):
+        """Clear all filters from the collection."""
+        self._filters = []
+
+    def get_filtered_issues(self) -> list[Issue]:
+        """Get issues that pass all filters.
 
         Returns:
-            List of matching issues
+            List of filtered issues
         """
+        if not self._filters:
+            return self.issues
+
         filtered_issues = self.issues
-
-        # Apply custom filters
         for filter_func, _ in self._filters:
-            filtered_issues = [i for i in filtered_issues if filter_func(i)]
-
-        # Apply standard filters
-        if severity:
-            filtered_issues = [i for i in filtered_issues if i.severity == severity]
-
-        if category:
-            filtered_issues = [i for i in filtered_issues if i.category == category]
-
-        if status:
-            filtered_issues = [i for i in filtered_issues if i.status == status]
-
-        if file_path:
-            filtered_issues = [
-                i for i in filtered_issues if i.location.file == file_path
-            ]
-
-        if symbol:
-            filtered_issues = [
-                i
-                for i in filtered_issues
-                if (
-                    i.symbol == symbol
-                    or (i.related_symbols and symbol in i.related_symbols)
-                )
-            ]
+            filtered_issues = [issue for issue in filtered_issues if filter_func(issue)]
 
         return filtered_issues
 
     def group_by_severity(self) -> dict[IssueSeverity, list[Issue]]:
-        """
-        Group issues by severity.
+        """Group issues by severity.
 
         Returns:
             Dictionary mapping severities to lists of issues
         """
-        result = {severity: [] for severity in IssueSeverity}
+        result: dict[IssueSeverity, list[Issue]] = {severity: [] for severity in IssueSeverity}
 
         for issue in self.issues:
             result[issue.severity].append(issue)
@@ -341,13 +317,12 @@ class IssueCollection:
         return result
 
     def group_by_category(self) -> dict[IssueCategory, list[Issue]]:
-        """
-        Group issues by category.
+        """Group issues by category.
 
         Returns:
             Dictionary mapping categories to lists of issues
         """
-        result = {category: [] for category in IssueCategory}
+        result: dict[IssueCategory, list[Issue]] = {category: [] for category in IssueCategory}
 
         for issue in self.issues:
             if issue.category:
@@ -356,157 +331,128 @@ class IssueCollection:
         return result
 
     def group_by_file(self) -> dict[str, list[Issue]]:
-        """
-        Group issues by file.
+        """Group issues by file.
 
         Returns:
             Dictionary mapping file paths to lists of issues
         """
-        result = {}
+        result: dict[str, list[Issue]] = {}
 
         for issue in self.issues:
             if issue.location.file not in result:
                 result[issue.location.file] = []
-
             result[issue.location.file].append(issue)
 
         return result
 
-    def statistics(self) -> dict[str, Any]:
-        """
-        Get statistics about the issues.
+    def group_by_status(self) -> dict[IssueStatus, list[Issue]]:
+        """Group issues by status.
 
         Returns:
-            Dictionary with issue statistics
+            Dictionary mapping statuses to lists of issues
         """
         by_severity = self.group_by_severity()
         by_category = self.group_by_category()
-        by_status = {status: [] for status in IssueStatus}
+        by_status: dict[IssueStatus, list[Issue]] = {status: [] for status in IssueStatus}
         for issue in self.issues:
             by_status[issue.status].append(issue)
 
-        return {
-            "total": len(self.issues),
-            "by_severity": {
-                severity.value: len(issues) for severity, issues in by_severity.items()
-            },
-            "by_category": {
-                category.value: len(issues)
-                for category, issues in by_category.items()
-                if len(issues) > 0  # Only include non-empty categories
-            },
-            "by_status": {
-                status.value: len(issues) for status, issues in by_status.items()
-            },
-            "file_count": len(self.group_by_file()),
-        }
+        return by_status
 
     def to_dict(self) -> dict[str, Any]:
-        """
-        Convert to dictionary representation.
+        """Convert the issue collection to a dictionary.
 
         Returns:
             Dictionary representation of the issue collection
         """
         return {
             "issues": [issue.to_dict() for issue in self.issues],
-            "statistics": self.statistics(),
-            "filters": [desc for _, desc in self._filters if desc],
+            "filters": [name for _, name in self._filters if name],
         }
+
+    def to_json(self, indent: Optional[int] = None) -> str:
+        """Convert the issue collection to a JSON string.
+
+        Args:
+            indent: Number of spaces for indentation in the JSON output
+
+        Returns:
+            JSON string representation of the issue collection
+        """
+        return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "IssueCollection":
-        """
-        Create from dictionary representation.
+        """Create an IssueCollection instance from a dictionary.
 
         Args:
-            data: Dictionary representation
+            data: Dictionary containing issue collection data
 
         Returns:
-            Issue collection
+            An IssueCollection instance
         """
-        collection = cls()
-
-        if "issues" in data and isinstance(data["issues"], list):
-            collection.add_issues([
-                Issue.from_dict(issue) if isinstance(issue, dict) else issue
-                for issue in data["issues"]
-            ])
-
-        return collection
-
-    def save_to_file(self, file_path: str, format: str = "json"):
-        """
-        Save to file.
-
-        Args:
-            file_path: Path to save to
-            format: Format to save in
-        """
-        if format == "json":
-            with open(file_path, "w") as f:
-                json.dump(self.to_dict(), f, indent=2)
-        else:
-            raise ValueError(f"Unsupported format: {format}")
+        issues_data = data.get("issues", [])
+        issues = [Issue.from_dict(issue_data) for issue_data in issues_data]
+        return cls(issues)
 
     @classmethod
-    def load_from_file(cls, file_path: str) -> "IssueCollection":
-        """
-        Load from file.
+    def from_json(cls, json_str: str) -> "IssueCollection":
+        """Create an IssueCollection instance from a JSON string.
 
         Args:
-            file_path: Path to load from
+            json_str: JSON string containing issue collection data
 
         Returns:
-            Issue collection
+            An IssueCollection instance
         """
-        with open(file_path) as f:
-            data = json.load(f)
-
+        data = json.loads(json_str)
         return cls.from_dict(data)
 
 
 def create_issue(
     message: str,
-    severity: str | IssueSeverity,
     file: str,
-    line: int | None = None,
-    category: str | IssueCategory | None = None,
-    symbol: str | None = None,
-    suggestion: str | None = None,
+    line_start: int = 0,
+    line_end: int = 0,
+    column_start: int = 0,
+    column_end: int = 0,
+    severity: IssueSeverity = IssueSeverity.MEDIUM,
+    category: Optional[IssueCategory] = None,
+    symbol: Optional[str] = None,
+    suggestion: Optional[str] = None,
 ) -> Issue:
-    """
-    Create an issue with simplified parameters.
+    """Create a new issue with the specified parameters.
 
     Args:
-        message: Issue message
-        severity: Issue severity
-        file: File path
-        line: Line number
-        category: Issue category
-        symbol: Symbol name
-        suggestion: Suggested fix
+        message: Description of the issue
+        file: Path to the file containing the issue
+        line_start: Starting line number
+        line_end: Ending line number
+        column_start: Starting column number
+        column_end: Ending column number
+        severity: Severity level of the issue
+        category: Category of the issue
+        symbol: Symbol associated with the issue
+        suggestion: Suggested fix for the issue
 
     Returns:
-        Issue object
+        A new Issue instance
     """
-    # Convert string severity to enum
-    if isinstance(severity, str):
-        severity = IssueSeverity(severity)
-
-    # Convert string category to enum
-    if isinstance(category, str) and category:
-        category = IssueCategory(category)
-
-    # Create location
-    location = CodeLocation(file=file, line=line)
+    location = Location(
+        file=file,
+        line_start=line_start,
+        line_end=line_end,
+        column_start=column_start,
+        column_end=column_end,
+    )
 
     # Create issue
     return Issue(
         message=message,
         severity=severity,
         location=location,
-        category=category,
+        category=category if category != "" else None,
         symbol=symbol,
         suggestion=suggestion,
     )
+

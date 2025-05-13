@@ -1,163 +1,128 @@
-from enum import IntEnum, auto
-from os import PathLike
+"""Lightweight diff utilities for analyzing code changes."""
+
+import logging
+from enum import Enum
 from pathlib import Path
-from typing import NamedTuple, Self
+from typing import Dict, List, NamedTuple, Optional, Union
 
-from git import Diff
-from watchfiles import Change
+logger = logging.getLogger(__name__)
 
 
-class ChangeType(IntEnum):
-    """
-    Enumeration of change types for tracking file modifications.
+class ChangeType(str, Enum):
+    """Enum representing the type of change in a diff."""
 
-    Attributes:
-        Modified: File content has been modified
-        Removed: File has been deleted
-        Renamed: File has been renamed
-        Added: New file has been added
-    """
+    ADDED = "added"
+    DELETED = "deleted"
+    MODIFIED = "modified"
+    RENAMED = "renamed"
+    UNKNOWN = "unknown"
 
-    Modified = auto()
-    Removed = auto()
-    Renamed = auto()
-    Added = auto()
-
-    @staticmethod
-    def from_watch_change_type(change_type: Change) -> "ChangeType":
-        """
-        Convert watchfiles Change type to ChangeType.
+    @classmethod
+    def from_git_change_type(cls, git_change_type: str) -> "ChangeType":
+        """Convert a git change type to a ChangeType enum.
 
         Args:
-            change_type: The watchfiles Change enum value
+            git_change_type: The git change type string
 
         Returns:
-            Corresponding ChangeType enum value
+            The corresponding ChangeType enum value
         """
-        if change_type is Change.added:
-            return ChangeType.Added
-        elif change_type is Change.deleted:
-            return ChangeType.Removed
-        elif change_type is Change.modified:
-            return ChangeType.Modified
-
-        msg = f"Unsupported watch change type: {change_type}"
-        raise ValueError(msg)
-
-    @staticmethod
-    def from_git_change_type(change_type: str | None) -> "ChangeType":
-        """
-        Convert git change type string to ChangeType.
-
-        Args:
-            change_type: Git change type string ('M', 'D', 'R', 'A')
-
-        Returns:
-            Corresponding ChangeType enum value
-
-        Raises:
-            ValueError: If the change type is not supported
-        """
-        if change_type == "M":
-            return ChangeType.Modified
-        if change_type == "D":
-            return ChangeType.Removed
-        if change_type == "R":
-            return ChangeType.Renamed
-        if change_type == "A":
-            return ChangeType.Added
-
-        msg = f"Invalid git change type: {change_type}"
-        raise ValueError(msg)
+        mapping = {
+            "A": cls.ADDED,
+            "D": cls.DELETED,
+            "M": cls.MODIFIED,
+            "R": cls.RENAMED,
+        }
+        return mapping.get(git_change_type, cls.UNKNOWN)
 
 
 class DiffLite(NamedTuple):
-    """
-    Simple diff implementation for tracking file changes during code analysis.
+    """Lightweight representation of a diff.
 
-    This lightweight diff implementation provides support for tracking file changes,
-    including modifications, removals, renames, and additions.
+    This class provides a simplified view of a diff, containing only the essential
+    information needed for analysis.
 
     Attributes:
-        change_type: Type of change (Modified, Removed, Renamed, Added)
-        path: Path to the file
-        rename_from: Original path for renamed files (None for non-renamed files)
-        rename_to: New path for renamed files (None for non-renamed files)
-        old_content: Previous content of the file (None if not available)
+        change_type: The type of change (added, deleted, modified, renamed)
+        path: The path of the file
+        rename_from: The original path if the file was renamed
+        rename_to: The new path if the file was renamed
+        old_content: The content of the file before the change
+        new_content: The content of the file after the change
     """
 
     change_type: ChangeType
     path: Path
-    rename_from: Path | None = None
-    rename_to: Path | None = None
-    old_content: bytes | None = None
+    rename_from: Optional[Path] = None
+    rename_to: Optional[Path] = None
+    old_content: Optional[bytes] = None
+    new_content: Optional[bytes] = None
 
-    @classmethod
-    def from_watch_change(cls, change: Change, path: PathLike) -> Self:
-        """
-        Create a DiffLite instance from a watchfiles Change.
-
-        Args:
-            change: The watchfiles Change enum value
-            path: Path to the file
+    @property
+    def is_added(self) -> bool:
+        """Check if the file was added.
 
         Returns:
-            DiffLite instance representing the change
+            True if the file was added, False otherwise
         """
-        return cls(
-            change_type=ChangeType.from_watch_change_type(change),
-            path=Path(path),
-        )
+        return self.change_type == ChangeType.ADDED
 
-    @classmethod
-    def from_git_diff(cls, git_diff: Diff) -> Self:
-        """
-        Create a DiffLite instance from a git Diff object.
-
-        Args:
-            git_diff: Git Diff object
+    @property
+    def is_deleted(self) -> bool:
+        """Check if the file was deleted.
 
         Returns:
-            DiffLite instance representing the git diff
+            True if the file was deleted, False otherwise
         """
+        return self.change_type == ChangeType.DELETED
+
+    @property
+    def is_modified(self) -> bool:
+        """Check if the file was modified.
+
+        Returns:
+            True if the file was modified, False otherwise
+        """
+        return self.change_type == ChangeType.MODIFIED
+
+    @property
+    def is_renamed(self) -> bool:
+        """Check if the file was renamed.
+
+        Returns:
+            True if the file was renamed, False otherwise
+        """
+        return self.change_type == ChangeType.RENAMED
+
+    @classmethod
+    def from_git_diff(cls, git_diff) -> "DiffLite":
+        """Create a DiffLite instance from a git diff.
+
+        Args:
+            git_diff: A git diff object
+
+        Returns:
+            A DiffLite instance representing the diff
+        """
+        # Get the content of the file before and after the change
         old = None
+        new = None
+
+        if git_diff.b_blob:
+            new = git_diff.b_blob.data_stream.read()
+
         if git_diff.a_blob:
             old = git_diff.a_blob.data_stream.read()
 
+        # Ensure path is never None
+        path = Path(git_diff.a_path) if git_diff.a_path else Path("")
+
         return cls(
             change_type=ChangeType.from_git_change_type(git_diff.change_type),
-            path=Path(git_diff.a_path) if git_diff.a_path else None,
+            path=path,
             rename_from=Path(git_diff.rename_from) if git_diff.rename_from else None,
             rename_to=Path(git_diff.rename_to) if git_diff.rename_to else None,
             old_content=old,
+            new_content=new,
         )
 
-    @classmethod
-    def from_reverse_diff(cls, diff_lite: "DiffLite") -> Self:
-        """
-        Create a DiffLite instance that represents the reverse of another DiffLite.
-
-        This is useful for undoing changes or representing the opposite operation.
-
-        Args:
-            diff_lite: Original DiffLite instance
-
-        Returns:
-            DiffLite instance representing the reverse change
-        """
-        if diff_lite.change_type == ChangeType.Added:
-            change_type = ChangeType.Removed
-        elif diff_lite.change_type == ChangeType.Removed:
-            change_type = ChangeType.Added
-        else:
-            change_type = diff_lite.change_type
-
-        if diff_lite.change_type == ChangeType.Renamed:
-            return cls(
-                change_type=change_type,
-                path=diff_lite.path,
-                rename_from=diff_lite.rename_to,
-                rename_to=diff_lite.rename_from,
-            )
-
-        return cls(change_type=change_type, path=diff_lite.path)
