@@ -1,9 +1,9 @@
-"""Lightweight diff utilities for analyzing code changes."""
+"""Lightweight diff utilities."""
 
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Union
+from typing import NamedTuple
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +53,10 @@ class DiffLite(NamedTuple):
 
     change_type: ChangeType
     path: Path
-    rename_from: Optional[Path] = None
-    rename_to: Optional[Path] = None
-    old_content: Optional[bytes] = None
-    new_content: Optional[bytes] = None
+    rename_from: Path | None = None
+    rename_to: Path | None = None
+    old_content: bytes | None = None
+    new_content: bytes | None = None
 
     @property
     def is_added(self) -> bool:

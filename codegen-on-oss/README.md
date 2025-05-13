@@ -89,12 +89,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 # Create a filtered call graph visualizer
-visualizer = CallGraphFilter(
-    function_name="process_request",
-    class_name="ApiHandler",
-    method_names=["get", "post", "put", "delete"],
-    max_depth=3
-)
+visualizer = CallGraphFilter(function_name="process_request", class_name="ApiHandler", method_names=["get", "post", "put", "delete"], max_depth=3)
 
 # Generate the graph
 G = visualizer.visualize(codebase)
@@ -115,11 +110,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 # Create a call paths visualizer
-visualizer = CallPathsBetweenNodes(
-    start_function_name="start_process",
-    end_function_name="end_process",
-    max_depth=5
-)
+visualizer = CallPathsBetweenNodes(start_function_name="start_process", end_function_name="end_process", max_depth=5)
 
 # Generate the graph
 G = visualizer.visualize(codebase)

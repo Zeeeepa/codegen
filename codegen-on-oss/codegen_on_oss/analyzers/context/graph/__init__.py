@@ -1,7 +1,7 @@
 """Graph utilities for analyzing code dependencies."""
 
 import logging
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any
 
 import networkx as nx
 
@@ -75,4 +75,3 @@ def find_cycles(graph: nx.DiGraph) -> list:
         return list(nx.simple_cycles(graph))
     except nx.NetworkXNoCycle:
         return []
-

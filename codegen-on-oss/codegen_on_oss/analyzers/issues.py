@@ -155,10 +155,10 @@ class Issue:
             result["suggestion"] = self.suggestion
 
         if self.related_symbols:
-            result["related_symbols"] = self.related_symbols  # type: ignore
+            result["related_symbols"] = self.related_symbols  # type: ignore[assignment]
 
         if self.related_locations:
-            result["related_locations"] = [  # type: ignore
+            result["related_locations"] = [  # type: ignore[assignment]
                 loc.to_dict() for loc in self.related_locations
             ]
 
@@ -455,4 +455,3 @@ def create_issue(
         symbol=symbol,
         suggestion=suggestion,
     )
-
