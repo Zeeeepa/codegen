@@ -3,7 +3,7 @@ Graph utilities for analyzing code dependencies.
 """
 
 import logging
-from typing import Any
+from typing import Any, List, Dict
 
 import networkx as nx
 

@@ -45,6 +45,26 @@ class ChangeType(str, Enum):
             return ChangeType.RENAMED
         else:
             return ChangeType.UNKNOWN
+            
+    @staticmethod
+    def from_watch_change_type(change: Change) -> "ChangeType":
+        """
+        Convert watchfiles Change enum to ChangeType.
+        
+        Args:
+            change: The watchfiles Change enum value
+            
+        Returns:
+            Corresponding ChangeType enum value
+        """
+        if change == Change.added:
+            return ChangeType.ADDED
+        elif change == Change.deleted:
+            return ChangeType.DELETED
+        elif change == Change.modified:
+            return ChangeType.MODIFIED
+        else:
+            return ChangeType.UNKNOWN
 
 
 class DiffLite(NamedTuple):
@@ -111,7 +131,7 @@ class DiffLite(NamedTuple):
         path = Path(git_diff.a_path) if git_diff.a_path else Path("")
 
         return cls(
-            change_type=ChangeType.from_git_change_type(git_diff.change_type),
+            change_type=ChangeType.from_git_change_type(git_diff.change_type or ""),
             path=path,
             rename_from=Path(git_diff.rename_from) if git_diff.rename_from else None,
             rename_to=Path(git_diff.rename_to) if git_diff.rename_to else None,

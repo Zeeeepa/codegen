@@ -11,7 +11,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, cast
 
 # Configure logging
 logging.basicConfig(
@@ -164,7 +164,7 @@ class Issue:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
-        result = {
+        result: dict[str, Any] = {
             "id": self.id,
             "message": self.message,
             "severity": self.severity.value,
@@ -189,10 +189,10 @@ class Issue:
             result["suggestion"] = self.suggestion
 
         if self.related_symbols:
-            result["related_symbols"] = self.related_symbols  # type: ignore
+            result["related_symbols"] = self.related_symbols
 
         if self.related_locations:
-            result["related_locations"] = [  # type: ignore
+            result["related_locations"] = [
                 loc.to_dict() for loc in self.related_locations
             ]
 
@@ -494,9 +494,12 @@ def create_issue(
     if isinstance(severity, str):
         severity = IssueSeverity(severity)
 
-    # Convert string category to enum
+    # Convert string category to enum if it's not empty
+    issue_category: Optional[IssueCategory] = None
     if isinstance(category, str) and category:
-        category = IssueCategory(category)
+        issue_category = IssueCategory(category)
+    elif isinstance(category, IssueCategory):
+        issue_category = category
 
     # Create location
     location = CodeLocation(file=file, line=line)
@@ -506,7 +509,7 @@ def create_issue(
         message=message,
         severity=severity,
         location=location,
-        category=category if category != "" else None,  # type: ignore
+        category=issue_category,
         symbol=symbol,
         suggestion=suggestion,
     )
