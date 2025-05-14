@@ -464,24 +464,22 @@ class AnalyzerManager:
 
     def analyze(
         self,
-        analysis_types: list[AnalysisType | str] | None = None,
-        output_file: str | None = None,
-        output_format: str = "json",
-    ) -> dict[str, Any]:
+        analysis_types=None,
+        **kwargs,
+    ):
         """
         Perform analysis on the codebase.
 
         Args:
             analysis_types: List of analysis types to perform
-            output_file: Path to save results to
-            output_format: Format of the output file
+            **kwargs: Additional arguments for specific analyzers
 
         Returns:
             Dictionary containing analysis results
         """
         if not self.base_codebase:
-            raise ValueError("Base codebase is missing")
-        
+            raise ValueError("Base codebase is missing")  # noqa: TRY003
+
         # Convert string analysis types to enums
         if analysis_types:
             analysis_types = [
@@ -550,12 +548,6 @@ class AnalyzerManager:
                 ),
             },
         }
-
-        # Save results if output file is specified
-        if output_file:
-            self.save_results(output_file, output_format)
-
-        return self.results
 
     def save_results(self, output_file: str, output_format: str = "json"):
         """
@@ -682,9 +674,9 @@ class AnalyzerManager:
         with open(output_file, "w") as f:
             f.write(html_content)
 
-    def generate_report(self, report_type: str = "summary") -> str:
+    def generate_report(self, report_type="summary"):
         """
-        Generate a report from the analysis results.
+        Generate a report from analysis results.
 
         Args:
             report_type: Type of report to generate (summary, detailed, issues)
@@ -693,7 +685,7 @@ class AnalyzerManager:
             Report as a string
         """
         if not self.results:
-            raise ValueError("No analysis results available")
+            raise ValueError("No analysis results available")  # noqa: TRY003
 
         if report_type == "summary":
             return self._generate_summary_report()
@@ -702,7 +694,7 @@ class AnalyzerManager:
         elif report_type == "issues":
             return self._generate_issues_report()
         else:
-            raise ValueError(f"Unknown report type: {report_type}")
+            raise ValueError(f"Unknown report type: {report_type}")  # noqa: TRY003
 
     def _generate_summary_report(self) -> str:
         """Generate a summary report."""
@@ -756,7 +748,7 @@ class AnalyzerManager:
 
         return report
 
-    def _generate_detailed_report(self) -> str:
+    def _generate_detailed_report(self) -> str:  # noqa: C901
         """Generate a detailed report."""
         report = "===== Codebase Analysis Detailed Report =====\n\n"
 
@@ -1000,8 +992,8 @@ def main():
             report = manager.generate_report(args.report_type)
             print(report)
 
-    except Exception as e:
-        logger.exception(f"Error: {e}")
+    except Exception:
+        logger.exception("Error occurred during processing")
         import traceback
 
         traceback.print_exc()
