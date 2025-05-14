@@ -11,7 +11,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(
@@ -189,10 +189,10 @@ class Issue:
             result["suggestion"] = self.suggestion
 
         if self.related_symbols:
-            result["related_symbols"] = self.related_symbols
+            result["related_symbols"] = self.related_symbols  # type: ignore
 
         if self.related_locations:
-            result["related_locations"] = [
+            result["related_locations"] = [  # type: ignore
                 loc.to_dict() for loc in self.related_locations
             ]
 
@@ -242,7 +242,7 @@ class IssueCollection:
             issues: Initial list of issues
         """
         self.issues = issues or []
-        self._filters = []
+        self._filters: list[tuple[Callable[[Issue], bool], str]] = []
 
     def add_issue(self, issue: Issue):
         """
@@ -333,7 +333,7 @@ class IssueCollection:
         Returns:
             Dictionary mapping severities to lists of issues
         """
-        result = {severity: [] for severity in IssueSeverity}
+        result: dict[IssueSeverity, list[Issue]] = {severity: [] for severity in IssueSeverity}
 
         for issue in self.issues:
             result[issue.severity].append(issue)
@@ -347,7 +347,7 @@ class IssueCollection:
         Returns:
             Dictionary mapping categories to lists of issues
         """
-        result = {category: [] for category in IssueCategory}
+        result: dict[IssueCategory, list[Issue]] = {category: [] for category in IssueCategory}
 
         for issue in self.issues:
             if issue.category:
@@ -362,7 +362,7 @@ class IssueCollection:
         Returns:
             Dictionary mapping file paths to lists of issues
         """
-        result = {}
+        result: dict[str, list[Issue]] = {}
 
         for issue in self.issues:
             if issue.location.file not in result:
@@ -381,7 +381,7 @@ class IssueCollection:
         """
         by_severity = self.group_by_severity()
         by_category = self.group_by_category()
-        by_status = {status: [] for status in IssueStatus}
+        by_status: dict[IssueStatus, list[Issue]] = {status: [] for status in IssueStatus}
         for issue in self.issues:
             by_status[issue.status].append(issue)
 
@@ -506,7 +506,7 @@ def create_issue(
         message=message,
         severity=severity,
         location=location,
-        category=category,
+        category=category if category != "" else None,  # type: ignore
         symbol=symbol,
         suggestion=suggestion,
     )

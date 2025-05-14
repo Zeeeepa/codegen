@@ -1,13 +1,13 @@
-from enum import IntEnum, auto
+from enum import Enum, auto
 from os import PathLike
 from pathlib import Path
-from typing import NamedTuple, Self
+from typing import NamedTuple, Self, Optional
 
 from git import Diff
 from watchfiles import Change
 
 
-class ChangeType(IntEnum):
+class ChangeType(str, Enum):
     """
     Enumeration of change types for tracking file modifications.
 
@@ -18,57 +18,33 @@ class ChangeType(IntEnum):
         Added: New file has been added
     """
 
-    Modified = auto()
-    Removed = auto()
-    Renamed = auto()
-    Added = auto()
+    ADDED = "added"
+    DELETED = "deleted"
+    MODIFIED = "modified"
+    RENAMED = "renamed"
+    UNKNOWN = "unknown"
 
     @staticmethod
-    def from_watch_change_type(change_type: Change) -> "ChangeType":
+    def from_git_change_type(change_type: str) -> "ChangeType":
         """
-        Convert watchfiles Change type to ChangeType.
+        Convert git change type to ChangeType.
 
         Args:
-            change_type: The watchfiles Change enum value
+            change_type: The git change type string
 
         Returns:
             Corresponding ChangeType enum value
         """
-        if change_type is Change.added:
-            return ChangeType.Added
-        elif change_type is Change.deleted:
-            return ChangeType.Removed
-        elif change_type is Change.modified:
-            return ChangeType.Modified
-
-        msg = f"Unsupported watch change type: {change_type}"
-        raise ValueError(msg)
-
-    @staticmethod
-    def from_git_change_type(change_type: str | None) -> "ChangeType":
-        """
-        Convert git change type string to ChangeType.
-
-        Args:
-            change_type: Git change type string ('M', 'D', 'R', 'A')
-
-        Returns:
-            Corresponding ChangeType enum value
-
-        Raises:
-            ValueError: If the change type is not supported
-        """
-        if change_type == "M":
-            return ChangeType.Modified
-        if change_type == "D":
-            return ChangeType.Removed
-        if change_type == "R":
-            return ChangeType.Renamed
         if change_type == "A":
-            return ChangeType.Added
-
-        msg = f"Invalid git change type: {change_type}"
-        raise ValueError(msg)
+            return ChangeType.ADDED
+        elif change_type == "D":
+            return ChangeType.DELETED
+        elif change_type == "M":
+            return ChangeType.MODIFIED
+        elif change_type == "R":
+            return ChangeType.RENAMED
+        else:
+            return ChangeType.UNKNOWN
 
 
 class DiffLite(NamedTuple):
@@ -79,18 +55,20 @@ class DiffLite(NamedTuple):
     including modifications, removals, renames, and additions.
 
     Attributes:
-        change_type: Type of change (Modified, Removed, Renamed, Added)
+        change_type: Type of change (added, deleted, modified, renamed)
         path: Path to the file
         rename_from: Original path for renamed files (None for non-renamed files)
         rename_to: New path for renamed files (None for non-renamed files)
         old_content: Previous content of the file (None if not available)
+        new_content: New content of the file (None if not available)
     """
 
     change_type: ChangeType
     path: Path
-    rename_from: Path | None = None
-    rename_to: Path | None = None
-    old_content: bytes | None = None
+    rename_from: Optional[Path] = None
+    rename_to: Optional[Path] = None
+    old_content: bytes = b""
+    new_content: bytes = b""
 
     @classmethod
     def from_watch_change(cls, change: Change, path: PathLike) -> Self:
@@ -120,16 +98,25 @@ class DiffLite(NamedTuple):
         Returns:
             DiffLite instance representing the git diff
         """
-        old = None
+        old = b""
+        new = b""
+
         if git_diff.a_blob:
             old = git_diff.a_blob.data_stream.read()
 
+        if git_diff.b_blob:
+            new = git_diff.b_blob.data_stream.read()
+
+        # Ensure path is never None
+        path = Path(git_diff.a_path) if git_diff.a_path else Path("")
+
         return cls(
             change_type=ChangeType.from_git_change_type(git_diff.change_type),
-            path=Path(git_diff.a_path) if git_diff.a_path else None,
+            path=path,
             rename_from=Path(git_diff.rename_from) if git_diff.rename_from else None,
             rename_to=Path(git_diff.rename_to) if git_diff.rename_to else None,
             old_content=old,
+            new_content=new,
         )
 
     @classmethod
@@ -145,14 +132,14 @@ class DiffLite(NamedTuple):
         Returns:
             DiffLite instance representing the reverse change
         """
-        if diff_lite.change_type == ChangeType.Added:
-            change_type = ChangeType.Removed
-        elif diff_lite.change_type == ChangeType.Removed:
-            change_type = ChangeType.Added
+        if diff_lite.change_type == ChangeType.ADDED:
+            change_type = ChangeType.DELETED
+        elif diff_lite.change_type == ChangeType.DELETED:
+            change_type = ChangeType.ADDED
         else:
             change_type = diff_lite.change_type
 
-        if diff_lite.change_type == ChangeType.Renamed:
+        if diff_lite.change_type == ChangeType.RENAMED:
             return cls(
                 change_type=change_type,
                 path=diff_lite.path,
