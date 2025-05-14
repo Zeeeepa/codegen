@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Any, Dict, List, Optional, Set, Union
 
 import networkx as nx
 from codegen.sdk.core.codebase import CodebaseType
@@ -111,52 +112,84 @@ class DeadCode(Skill, ABC):
     @staticmethod
     @skill_impl(test_cases=[PyDeadCodeTest], language=ProgrammingLanguage.PYTHON)
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
-    def skill_func(codebase: CodebaseType):
-        # Create a directed graph to visualize dead and second-order dead code
+    def skill_func(codebase: CodebaseType) -> None:
+        # Create a directed graph
         G = nx.DiGraph()
 
-        # First, identify all dead code
-        dead_code: list[Function] = []
+        # Get all functions in the codebase
+        all_functions = codebase.get_all_functions()
 
-        # Iterate through all functions in the codebase
-        for function in codebase.functions:
-            # Skip functions in test files or with decorators
-            if "test" in function.file.filepath or function.decorators:
-                continue
+        # Create a set to track used functions
+        used_functions: Set[Function] = set()
 
-            # Check if the function has no usages
-            if not function.symbol_usages:
-                # Add the function to the dead code list
-                dead_code.append(function)
-                # Add the function to the graph as dead code
-                G.add_node(function, color="red")
+        # Find the entry point function (e.g., main function or any function that's called from outside)
+        entry_points = []
+        for func in all_functions:
+            # Check if the function is imported elsewhere
+            if func.usages:
+                entry_points.append(func)
+                used_functions.add(func)
 
-        # Process dependencies of dead code
-        DeadCode._process_dependencies(dead_code, G)
+        # Recursively mark all functions that are called from entry points
+        def mark_used_functions(func: Function) -> None:
+            for call in func.function_calls:
+                called_func = call.function_definition
+                if isinstance(called_func, Function) and called_func not in used_functions:
+                    used_functions.add(called_func)
+                    mark_used_functions(called_func)
 
-        # Visualize the graph to show dead and second-order dead code
+        # Mark all functions that are called from entry points
+        for entry_point in entry_points:
+            mark_used_functions(entry_point)
+
+        # Find dead code (functions that are not used)
+        dead_functions = [func for func in all_functions if func not in used_functions]
+
+        # Add all functions to the graph
+        for func in all_functions:
+            if func in used_functions:
+                G.add_node(func, color="green", status="used")
+            else:
+                G.add_node(func, color="red", status="unused")
+
+        # Add edges for function calls
+        for func in all_functions:
+            for call in func.function_calls:
+                called_func = call.function_definition
+                if isinstance(called_func, Function):
+                    G.add_edge(func, called_func)
+
+        # Visualize the graph
         codebase.visualize(G)
 
     @staticmethod
-    def _process_dependencies(dead_code: list[Function], G: nx.DiGraph):
-        """Process dependencies of dead code functions and add them to the graph."""
-        for symbol in dead_code:
-            # Get all usages of the dead code symbol
-            for dep in symbol.dependencies:
-                if isinstance(dep, Import):
-                    dep = dep.imported_symbol
+    def _process_dependencies(dead_code: List[Function], graph: nx.DiGraph) -> None:
+        """Process dependencies of dead code functions.
 
-                # Skip non-symbols or test-related symbols
-                if not isinstance(dep, Symbol) or "test" in dep.name:
-                    continue
+        Args:
+            dead_code: List of functions identified as dead code
+            graph: NetworkX graph to visualize the dead code
+        """
+        # Identify second-order dead code (functions only called by dead code)
+        second_order_dead: Set[Function] = set()
 
-                G.add_node(dep)
-                G.add_edge(symbol, dep, color="red")
+        # Check each dead function's calls
+        for dead_func in dead_code:
+            for call in dead_func.function_calls:
+                called_func = call.function_definition
+                if isinstance(called_func, Function):
+                    # Check if this function is only called by dead code
+                    is_second_order = True
+                    for usage in called_func.symbol_usages:
+                        # If used by a function not in dead_code, it's not second-order dead
+                        if usage.parent_function not in dead_code:
+                            is_second_order = False
+                            break
 
-                # Add usage symbols that are functions and not test-related
-                for usage_symbol in dep.symbol_usages:
-                    if (
-                        isinstance(usage_symbol, Function)
-                        and "test" not in usage_symbol.name
-                    ):
-                        G.add_edge(usage_symbol, dep)
+                    if is_second_order and called_func not in dead_code:
+                        second_order_dead.add(called_func)
+                        # Add to graph as second-order dead code
+                        graph.add_node(called_func, color="orange")
+
+                    # Add edge to show the call relationship
+                    graph.add_edge(dead_func, called_func)

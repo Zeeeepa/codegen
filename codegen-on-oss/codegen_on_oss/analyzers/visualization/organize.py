@@ -1,15 +1,20 @@
 from abc import ABC
+from typing import Any, Dict, List, Optional, Union, Callable as PyCallable
 
 from codegen.sdk.core.codebase import CodebaseType, TSCodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
+
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
-from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile, SkillTestCaseTSFile
+from tests.shared.skills.skill_test import (
+    SkillTestCase,
+    SkillTestCasePyFile,
+    SkillTestCaseTSFile,
+)
 
-SplitFunctionsIntoSeparateFilesPyTestCase = SkillTestCase(
-    [
-        SkillTestCasePyFile(
-            input="""
+SplitFunctionsIntoSeparateFilesPyTestCase = SkillTestCase([
+    SkillTestCasePyFile(
+        input="""
 NON_FUNCTION = 'This is not a function'
 def function1():
     print("This is function 1")
@@ -20,37 +25,36 @@ def function2():
 def function3():
     print("This is function 3")
 """,
-            output="""
+        output="""
             NON_FUNCTION = 'This is not a function'
 """,
-            filepath="path/to/file.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="path/to/file.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def function1():
     print("This is function 1")
 """,
-            filepath="function1.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="function1.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def function2():
     print("This is function 2")
 """,
-            filepath="function2.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="function2.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def function3():
     print("This is function 3")
 """,
-            filepath="function3.py",
-        ),
-    ]
-)
+        filepath="function3.py",
+    ),
+])
 
 
 @skill(
@@ -67,7 +71,7 @@ class SplitFunctionsIntoSeparateFiles(Skill, ABC):
 
     @staticmethod
     @skill_impl(test_cases=[SplitFunctionsIntoSeparateFilesPyTestCase], language=ProgrammingLanguage.PYTHON)
-    def skill_func(codebase: CodebaseType):
+    def skill_func(codebase: CodebaseType) -> None:
         # Retrieve the Python file from the codebase
         file = codebase.get_file("path/to/file.py")
         # Iterate through the functions in the file
@@ -78,39 +82,36 @@ class SplitFunctionsIntoSeparateFiles(Skill, ABC):
             function.move_to_file(new_file)
 
 
-MoveSymbolDemonstrationPyTestCase = SkillTestCase(
-    [
-        SkillTestCasePyFile(
-            input="""
+MoveSymbolDemonstrationPyTestCase = SkillTestCase([
+    SkillTestCasePyFile(
+        input="""
 def my_function():
     print("This is my function")
 
 def another_function():
     my_function()
 """,
-            output="""
+        output="""
 from path.to.dst.location import my_function
 
 def another_function():
     my_function()
 """,
-            filepath="path/to/source_file.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="path/to/source_file.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def my_function():
     print("This is my function")
 """,
-            filepath="path/to/dst/location.py",
-        ),
-    ]
-)
+        filepath="path/to/dst/location.py",
+    ),
+])
 
-MoveSymbolDemonstrationTSTestCase = SkillTestCase(
-    [
-        SkillTestCaseTSFile(
-            input="""
+MoveSymbolDemonstrationTSTestCase = SkillTestCase([
+    SkillTestCaseTSFile(
+        input="""
 function myFunction() {
     console.log("This is my function");
 }
@@ -119,35 +120,38 @@ function anotherFunction() {
     myFunction();
 }
 """,
-            output="""
+        output="""
 import { myFunction } from 'path/to/dst/location';
 
 function anotherFunction() {
     myFunction();
 }
 """,
-            filepath="path/to/source_file.ts",
-        ),
-        SkillTestCaseTSFile(
-            input="",
-            output="""
+        filepath="path/to/source_file.ts",
+    ),
+    SkillTestCaseTSFile(
+        input="",
+        output="""
 export function myFunction() {
     console.log("This is my function");
 }
 """,
-            filepath="path/to/dst/location.ts",
-        ),
-    ]
+        filepath="path/to/dst/location.ts",
+    ),
+])
+
+
+@skill(
+    prompt="Generate a code snippet that demonstrates how to move a symbol from one file to another in a codebase.",
+    guide=True,
+    uid="1f0182b7-d3c6-4cde-8ffd-d1bbe31e51be",
 )
-
-
-@skill(prompt="Generate a code snippet that demonstrates how to move a symbol from one file to another in a codebase.", guide=True, uid="1f0182b7-d3c6-4cde-8ffd-d1bbe31e51be")
 class MoveSymbolDemonstration(Skill, ABC):
     """This code snippet demonstrates how to move a symbol from one file to another in a codebase."""
 
     @staticmethod
     @skill_impl(test_cases=[MoveSymbolDemonstrationPyTestCase], language=ProgrammingLanguage.PYTHON)
-    def python_skill_func(codebase: CodebaseType):
+    def python_skill_func(codebase: CodebaseType) -> None:
         source_file = codebase.get_file("path/to/source_file.py")
         # =====[ Code Snippet ]=====
         # Get the symbol
@@ -159,7 +163,7 @@ class MoveSymbolDemonstration(Skill, ABC):
 
     @staticmethod
     @skill_impl(test_cases=[MoveSymbolDemonstrationTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
-    def typescript_skill_func(codebase: CodebaseType):
+    def typescript_skill_func(codebase: CodebaseType) -> None:
         source_file = codebase.get_file("path/to/source_file.ts")
         # =====[ Code Snippet ]=====
         # Get the symbol
@@ -170,39 +174,36 @@ class MoveSymbolDemonstration(Skill, ABC):
         symbol_to_move.move_to_file(dst_file, include_dependencies=True, strategy="add_back_edge")
 
 
-MoveSymbolWithUpdatedImportsPyTestCase = SkillTestCase(
-    [
-        SkillTestCasePyFile(
-            input="""
+MoveSymbolWithUpdatedImportsPyTestCase = SkillTestCase([
+    SkillTestCasePyFile(
+        input="""
 def symbol_to_move():
     print("This symbol will be moved")
 
 def use_symbol():
     symbol_to_move()
 """,
-            output="""
+        output="""
 from new_file import symbol_to_move
 
 def use_symbol():
     symbol_to_move()
 """,
-            filepath="original_file.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="original_file.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def symbol_to_move():
     print("This symbol will be moved")
 """,
-            filepath="new_file.py",
-        ),
-    ]
-)
+        filepath="new_file.py",
+    ),
+])
 
-MoveSymbolWithUpdatedImportsTSTestCase = SkillTestCase(
-    [
-        SkillTestCaseTSFile(
-            input="""
+MoveSymbolWithUpdatedImportsTSTestCase = SkillTestCase([
+    SkillTestCaseTSFile(
+        input="""
 function symbolToMove() {
     console.log("This symbol will be moved");
 }
@@ -211,32 +212,31 @@ function useSymbol() {
     symbolToMove();
 }
 """,
-            output="""
+        output="""
 import { symbolToMove } from 'new_file';
 
 function useSymbol() {
     symbolToMove();
 }
 """,
-            filepath="original_file.ts",
-        ),
-        SkillTestCaseTSFile(
-            input="",
-            output="""
+        filepath="original_file.ts",
+    ),
+    SkillTestCaseTSFile(
+        input="",
+        output="""
 export function symbolToMove() {
     console.log("This symbol will be moved");
 }
 """,
-            filepath="new_file.ts",
-        ),
-    ]
-)
+        filepath="new_file.ts",
+    ),
+])
 
 
 @skill(
     prompt="""Generate a code snippet that demonstrates how to use a method called `move_to_file` on an object named
     `symbol_to_move`. The method should take two parameters: `dest_file`, which represents the destination file path,
-    and `strategy`, which should be set to the string value "update_all_imports".""",
+    and `strategy`, which should be set to the string value "update_all_imports.""",
     guide=True,
     uid="d24a61b5-212e-4567-87b0-f6ab586b42c1",
 )
@@ -246,53 +246,56 @@ class MoveSymbolWithUpdatedImports(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolWithUpdatedImportsPyTestCase], language=ProgrammingLanguage.PYTHON)
-    def python_skill_func(codebase: CodebaseType):
+    @skill_impl(
+        test_cases=[MoveSymbolWithUpdatedImportsPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    def python_skill_func(codebase: CodebaseType) -> None:
         symbol_to_move = codebase.get_symbol("symbol_to_move")
         dst_file = codebase.create_file("new_file.py")
         symbol_to_move.move_to_file(dst_file, strategy="update_all_imports")
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolWithUpdatedImportsTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
-    def typescript_skill_func(codebase: TSCodebaseType) -> callable:
+    @skill_impl(
+        test_cases=[MoveSymbolWithUpdatedImportsTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
+    def typescript_skill_func(codebase: TSCodebaseType) -> None:
         symbol_to_move = codebase.get_symbol("symbolToMove")
         dst_file = codebase.create_file("new_file.ts")
         symbol_to_move.move_to_file(dst_file, strategy="update_all_imports")
 
 
-MoveSymbolWithAddBackEdgeStrategyPyTestCase = SkillTestCase(
-    [
-        SkillTestCasePyFile(
-            input="""
+MoveSymbolWithAddBackEdgeStrategyPyTestCase = SkillTestCase([
+    SkillTestCasePyFile(
+        input="""
 def symbol_to_move():
     print("This symbol will be moved")
 
 def use_symbol():
     symbol_to_move()
 """,
-            output="""
+        output="""
 from new_file import symbol_to_move
 
 def use_symbol():
     symbol_to_move()
 """,
-            filepath="original_file.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="original_file.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def symbol_to_move():
     print("This symbol will be moved")
 """,
-            filepath="new_file.py",
-        ),
-    ]
-)
+        filepath="new_file.py",
+    ),
+])
 
-MoveSymbolWithAddBackEdgeStrategyTSTestCase = SkillTestCase(
-    [
-        SkillTestCaseTSFile(
-            input="""
+MoveSymbolWithAddBackEdgeStrategyTSTestCase = SkillTestCase([
+    SkillTestCaseTSFile(
+        input="""
 function symbolToMove() {
     console.log("This symbol will be moved");
 }
@@ -301,26 +304,25 @@ function useSymbol() {
     symbolToMove();
 }
 """,
-            output="""
+        output="""
 import { symbolToMove } from 'new_file';
 
 function useSymbol() {
     symbolToMove();
 }
 """,
-            filepath="original_file.ts",
-        ),
-        SkillTestCaseTSFile(
-            input="",
-            output="""
+        filepath="original_file.ts",
+    ),
+    SkillTestCaseTSFile(
+        input="",
+        output="""
 export function symbolToMove() {
     console.log("This symbol will be moved");
 }
 """,
-            filepath="new_file.ts",
-        ),
-    ]
-)
+        filepath="new_file.ts",
+    ),
+])
 
 
 @skill(
@@ -336,24 +338,29 @@ class MoveSymbolWithAddBackEdgeStrategy(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolWithAddBackEdgeStrategyPyTestCase], language=ProgrammingLanguage.PYTHON)
-    def skill_func(codebase: CodebaseType):
+    @skill_impl(
+        test_cases=[MoveSymbolWithAddBackEdgeStrategyPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    def skill_func(codebase: CodebaseType) -> None:
         symbol_to_move = codebase.get_symbol("symbol_to_move")
         dst_file = codebase.create_file("new_file.py")
         symbol_to_move.move_to_file(dst_file, strategy="add_back_edge")
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolWithAddBackEdgeStrategyTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
-    def typescript_skill_func(codebase: TSCodebaseType) -> callable:
+    @skill_impl(
+        test_cases=[MoveSymbolWithAddBackEdgeStrategyTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
+    def typescript_skill_func(codebase: TSCodebaseType) -> None:
         symbol_to_move = codebase.get_symbol("symbolToMove")
         dst_file = codebase.create_file("new_file.ts")
         symbol_to_move.move_to_file(dst_file, strategy="add_back_edge")
 
 
-MoveSymbolToFileWithDependenciesPyTestCase = SkillTestCase(
-    [
-        SkillTestCasePyFile(
-            input="""
+MoveSymbolToFileWithDependenciesPyTestCase = SkillTestCase([
+    SkillTestCasePyFile(
+        input="""
 def dependency_function():
     print("I'm a dependency")
 
@@ -364,17 +371,17 @@ def my_symbol():
 def use_symbol():
     my_symbol()
 """,
-            output="""
+        output="""
 from new_file import my_symbol
 
 def use_symbol():
     my_symbol()
 """,
-            filepath="original_file.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="original_file.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def dependency_function():
     print("I'm a dependency")
 
@@ -382,15 +389,13 @@ def my_symbol():
     dependency_function()
     print("This is my symbol")
 """,
-            filepath="new_file.py",
-        ),
-    ]
-)
+        filepath="new_file.py",
+    ),
+])
 
-MoveSymbolToFileWithDependenciesTSTestCase = SkillTestCase(
-    [
-        SkillTestCaseTSFile(
-            input="""
+MoveSymbolToFileWithDependenciesTSTestCase = SkillTestCase([
+    SkillTestCaseTSFile(
+        input="""
 function dependencyFunction() {
     console.log("I'm a dependency");
 }
@@ -404,18 +409,18 @@ function useSymbol() {
     mySymbol();
 }
 """,
-            output="""
+        output="""
 import { mySymbol } from 'new_file';
 
 function useSymbol() {
     mySymbol();
 }
 """,
-            filepath="original_file.ts",
-        ),
-        SkillTestCaseTSFile(
-            input="",
-            output="""
+        filepath="original_file.ts",
+    ),
+    SkillTestCaseTSFile(
+        input="",
+        output="""
 function dependencyFunction() {
     console.log("I'm a dependency");
 }
@@ -425,10 +430,9 @@ export function mySymbol() {
     console.log("This is my symbol");
 }
 """,
-            filepath="new_file.ts",
-        ),
-    ]
-)
+        filepath="new_file.ts",
+    ),
+])
 
 
 @skill(
@@ -446,24 +450,29 @@ class MoveSymbolToFileWithDependencies(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolToFileWithDependenciesPyTestCase], language=ProgrammingLanguage.PYTHON)
-    def skill_func(codebase: CodebaseType):
+    @skill_impl(
+        test_cases=[MoveSymbolToFileWithDependenciesPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    def skill_func(codebase: CodebaseType) -> None:
         my_symbol = codebase.get_symbol("my_symbol")
         dst_file = codebase.create_file("new_file.py")
         my_symbol.move_to_file(dst_file, include_dependencies=True)
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolToFileWithDependenciesTSTestCase], language=ProgrammingLanguage.TYPESCRIPT)
-    def typescript_skill_func(codebase: TSCodebaseType):
+    @skill_impl(
+        test_cases=[MoveSymbolToFileWithDependenciesTSTestCase],
+        language=ProgrammingLanguage.TYPESCRIPT,
+    )
+    def typescript_skill_func(codebase: TSCodebaseType) -> None:
         my_symbol = codebase.get_symbol("mySymbol")
         dst_file = codebase.create_file("new_file.ts")
         my_symbol.move_to_file(dst_file, include_dependencies=True)
 
 
-MoveSymbolsWithDependenciesPyTestCase = SkillTestCase(
-    [
-        SkillTestCasePyFile(
-            input="""
+MoveSymbolsWithDependenciesPyTestCase = SkillTestCase([
+    SkillTestCasePyFile(
+        input="""
 def dependency_function():
     print("I'm a dependency")
 
@@ -479,18 +488,18 @@ def use_symbols():
     my_function()
     obj = MyClass()
 """,
-            output="""
+        output="""
 from path.to.destination_file import my_function, MyClass
 
 def use_symbols():
     my_function()
     obj = MyClass()
 """,
-            filepath="path/to/source_file.py",
-        ),
-        SkillTestCasePyFile(
-            input="",
-            output="""
+        filepath="path/to/source_file.py",
+    ),
+    SkillTestCasePyFile(
+        input="",
+        output="""
 def dependency_function():
     print("I'm a dependency")
 
@@ -502,10 +511,9 @@ class MyClass:
     def __init__(self):
         self.value = dependency_function()
 """,
-            filepath="path/to/destination_file.py",
-        ),
-    ]
-)
+        filepath="path/to/destination_file.py",
+    ),
+])
 
 
 @skill(
@@ -525,14 +533,21 @@ class MoveSymbolsWithDependencies(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[MoveSymbolsWithDependenciesPyTestCase], language=ProgrammingLanguage.PYTHON)
-    def skill_func(codebase: CodebaseType):
+    @skill_impl(
+        test_cases=[MoveSymbolsWithDependenciesPyTestCase],
+        language=ProgrammingLanguage.PYTHON,
+    )
+    def skill_func(codebase: CodebaseType) -> None:
         # Retrieve the source and destination files
         source_file = codebase.get_file("path/to/source_file.py")
         dest_file = codebase.get_file("path/to/destination_file.py")
         # Create a list of symbols to move
-        symbols_to_move = [source_file.get_function("my_function"), source_file.get_class("MyClass")]
+        symbols_to_move = [
+            source_file.get_function("my_function"),
+            source_file.get_class("MyClass"),
+        ]
         # Move each symbol to the destination file
         for symbol in symbols_to_move:
-            symbol.move_to_file(dest_file, include_dependencies=True, strategy="update_all_imports")
-
+            symbol.move_to_file(
+                dest_file, include_dependencies=True, strategy="update_all_imports"
+            )

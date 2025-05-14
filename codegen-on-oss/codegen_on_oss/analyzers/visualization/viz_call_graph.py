@@ -1,7 +1,7 @@
 from abc import ABC
+from typing import Any, Dict, List, Optional, Union
 
 import networkx as nx
-
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.codebase import CodebaseType
 from codegen.sdk.core.detached_symbols.function_call import FunctionCall
@@ -9,6 +9,7 @@ from codegen.sdk.core.external_module import ExternalModule
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.interfaces.callable import Callable
 from codegen.shared.enums.programming_language import ProgrammingLanguage
+
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
 from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile
@@ -43,7 +44,11 @@ def C():
 )
 
 
-@skill(eval_skill=False, prompt="Show me a visualization of the call graph from X", uid="81e8fbb7-a00a-4e74-b9c2-24f79d24d389")
+@skill(
+    eval_skill=False,
+    prompt="Show me a visualization of the call graph from X",
+    uid="81e8fbb7-a00a-4e74-b9c2-24f79d24d389",
+)
 class CallGraphFromNode(Skill, ABC):
     """This skill creates a directed call graph for a given function. Starting from the specified function, it recursively iterates
     through its function calls and the functions called by them, building a graph of the call paths to a maximum depth. The root of the directed graph
@@ -61,7 +66,7 @@ class CallGraphFromNode(Skill, ABC):
     @staticmethod
     @skill_impl(test_cases=[CallGraphFromNodeTest], language=ProgrammingLanguage.PYTHON)
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
-    def skill_func(codebase: CodebaseType):
+    def skill_func(codebase: CodebaseType) -> None:
         # Create a directed graph
         G = nx.DiGraph()
 
@@ -71,7 +76,7 @@ class CallGraphFromNode(Skill, ABC):
         # ===== [ Maximum Recursive Depth ] =====
         MAX_DEPTH = 5
 
-        def create_downstream_call_trace(parent: FunctionCall | Function | None = None, depth: int = 0):
+        def create_downstream_call_trace(parent: Union[FunctionCall, Function, None] = None, depth: int = 0) -> None:
             """Creates call graph for parent
 
             This function recurses through the call graph of a function and creates a visualization
@@ -88,6 +93,7 @@ class CallGraphFromNode(Skill, ABC):
                 src_call, src_func = parent, parent.function_definition
             else:
                 src_call, src_func = parent, parent
+
             # Iterate over all call paths of the symbol
             for call in src_func.function_calls:
                 # the symbol being called
@@ -194,7 +200,7 @@ class CallGraphFilter(Skill, ABC):
     @staticmethod
     @skill_impl(test_cases=[CallGraphFilterTest], language=ProgrammingLanguage.PYTHON)
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
-    def skill_func(codebase: CodebaseType):
+    def skill_func(codebase: CodebaseType) -> None:
         # Create a directed graph
         G = nx.DiGraph()
 
@@ -212,7 +218,7 @@ class CallGraphFilter(Skill, ABC):
         cls = codebase.get_class("MyClass")
 
         # Define a recursive function to traverse function calls
-        def create_filtered_downstream_call_trace(parent: FunctionCall | Function, current_depth, max_depth):
+        def create_filtered_downstream_call_trace(parent: Union[FunctionCall, Function], current_depth: int, max_depth: int) -> None:
             if current_depth > max_depth:
                 return
 
@@ -235,7 +241,7 @@ class CallGraphFilter(Skill, ABC):
                 # if the function being called is not from an external module and is not defined in a test file
                 if not isinstance(func, ExternalModule) and not func.file.filepath.startswith("test"):
                     # add `call` to the graph and an edge from `src_call` to `call`
-                    metadata = {}
+                    metadata: Dict[str, Any] = {}
                     if isinstance(func, Function) and func.is_method and func.name in ["post", "get", "patch", "delete"]:
                         name = f"{func.parent_class.name}.{func.name}"
                         metadata = {"color": "yellow", "name": name}
@@ -271,7 +277,11 @@ def end_func():
 )
 
 
-@skill(eval_skill=False, prompt="Show me a visualization of the call paths between start_class and end_class", uid="aa3f70c3-ac1c-4737-a8b8-7ba89e3c5671")
+@skill(
+    eval_skill=False,
+    prompt="Show me a visualization of the call paths between start_class and end_class",
+    uid="aa3f70c3-ac1c-4737-a8b8-7ba89e3c5671",
+)
 class CallPathsBetweenNodes(Skill, ABC):
     """This skill generates and visualizes a call graph between two specified functions.
     It starts from a given function and iteratively traverses through its function calls,
@@ -287,72 +297,51 @@ class CallPathsBetweenNodes(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CallPathsBetweenNodesTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[CallPathsBetweenNodesTest], language=ProgrammingLanguage.PYTHON
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
-    def skill_func(codebase: CodebaseType):
+    def skill_func(codebase: CodebaseType) -> None:
         # Create a directed graph
         G = nx.DiGraph()
 
-        # ===== [ Maximum Recursive Depth ] =====
-        MAX_DEPTH = 5
+        # Get the start and end functions
+        start_func = codebase.get_function("start_func")
+        end_func = codebase.get_function("end_func")
 
-        # Define a recursive function to traverse usages
-        def create_downstream_call_trace(parent: FunctionCall | Function, end: Callable, current_depth, max_depth):
-            if current_depth > max_depth:
-                return
+        # Add the start and end functions as nodes
+        G.add_node(start_func, color="green")
+        G.add_node(end_func, color="red")
 
-            # if parent is of type Function
-            if isinstance(parent, Function):
-                # set both src_call, src_func to parent
-                src_call, src_func = parent, parent
-            else:
-                # get the first callable of parent
-                src_call, src_func = parent, parent.function_definition
+        # Create a dictionary to store all functions and their calls
+        function_calls: Dict[Function, List[Function]] = {}
 
-            # Iterate over all call paths of the symbol
-            for call in src_func.function_calls:
-                # the symbol being called
-                func = call.function_definition
+        # Get all functions in the codebase
+        all_functions = codebase.get_all_functions()
 
-                # ignore direct recursive calls
-                if func.name == src_func.name:
-                    continue
+        # Build the function call graph
+        for func in all_functions:
+            function_calls[func] = []
+            for call in func.function_calls:
+                called_func = call.function_definition
+                if isinstance(called_func, Function):
+                    function_calls[func].append(called_func)
+                    G.add_edge(func, called_func)
 
-                # if the function being called is not from an external module
-                if not isinstance(func, ExternalModule):
-                    # add `call` to the graph and an edge from `src_call` to `call`
-                    G.add_node(call)
-                    G.add_edge(src_call, call)
+        # Find all paths between start_func and end_func
+        paths = list(nx.all_simple_paths(G, start_func, end_func))
 
-                    if func == end:
-                        G.add_edge(call, end)
-                        return
-                    # recursive call to function call
-                    create_downstream_call_trace(call, end, current_depth + 1, max_depth)
+        # Create a new graph with only the paths between start_func and end_func
+        path_graph = nx.DiGraph()
+        path_graph.add_node(start_func, color="green")
+        path_graph.add_node(end_func, color="red")
 
-        # Get the start and end function
-        start = codebase.get_function("start_func")
-        end = codebase.get_function("end_func")
+        # Add all nodes and edges in the paths
+        for path in paths:
+            for i in range(len(path) - 1):
+                path_graph.add_node(path[i])
+                path_graph.add_node(path[i + 1])
+                path_graph.add_edge(path[i], path[i + 1])
 
-        # Set starting node as blue
-        G.add_node(start, color="blue")
-        # Set ending node as red
-        G.add_node(end, color="red")
-
-        # Start the recursive traversal
-        create_downstream_call_trace(start, end, 1, MAX_DEPTH)
-
-        # Find all the simple paths between start and end
-        all_paths = nx.all_simple_paths(G, source=start, target=end)
-
-        # Collect all nodes that are part of these paths
-        nodes_in_paths = set()
-        for path in all_paths:
-            nodes_in_paths.update(path)
-
-        # Create a new subgraph with only the nodes in the paths
-        G = G.subgraph(nodes_in_paths)
-
-        # Visualize the graph
-        codebase.visualize(G)
-
+        # Visualize the path graph
+        codebase.visualize(path_graph)
