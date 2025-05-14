@@ -33,6 +33,20 @@ from codegen_on_oss.analyzers.issues import (
     IssueSeverity,
 )
 
+
+# Define custom exceptions
+class MissingCodebaseError(ValueError):
+    """Error raised when a required codebase is missing."""
+    pass
+
+class MissingResultError(ValueError):
+    """Error raised when analysis result is missing."""
+    pass
+
+class UnknownReportTypeError(ValueError):
+    """Error raised when an unknown report type is specified."""
+    pass
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -464,7 +478,7 @@ class AnalyzerManager:
 
     def analyze(
         self,
-        analysis_types: list[AnalysisType | str] | None = None,
+        analysis_types: list[str | AnalysisType] | None = None,
         output_file: str | None = None,
         output_format: str = "json",
     ) -> dict[str, Any]:
@@ -473,30 +487,32 @@ class AnalyzerManager:
 
         Args:
             analysis_types: List of analysis types to perform
-            output_file: Path to save results to
-            output_format: Format of the output file
+            output_file: Path to the output file
+            output_format: Output format (json, yaml, console)
 
         Returns:
-            Dictionary containing analysis results
+            Analysis results
         """
         if not self.base_codebase:
-            raise ValueError("Base codebase is missing")
-        
+            raise MissingCodebaseError()
+
         # Convert string analysis types to enums
-        if analysis_types:
-            analysis_types = [
-                at if isinstance(at, AnalysisType) else AnalysisType(at)
-                for at in analysis_types
-            ]
-        else:
-            # Default to code quality and dependency analysis
-            analysis_types = [AnalysisType.CODE_QUALITY, AnalysisType.DEPENDENCY]
+        self.analysis_types = analysis_types or ["code_quality", "dependency"]
+        analysis_types_enum = []
+        for analysis_type in self.analysis_types:
+            if isinstance(analysis_type, str):
+                try:
+                    analysis_types_enum.append(AnalysisType(analysis_type))
+                except ValueError:
+                    logger.warning(f"Unknown analysis type: {analysis_type}")
+            else:
+                analysis_types_enum.append(analysis_type)
 
         # Initialize results
         self.results = {
             "metadata": {
                 "analysis_time": datetime.now().isoformat(),
-                "analysis_types": [t.value for t in analysis_types],
+                "analysis_types": [t.value for t in analysis_types_enum],
                 "repo_name": getattr(self.base_codebase.ctx, "repo_name", None),
                 "language": str(
                     getattr(self.base_codebase.ctx, "programming_language", None)
@@ -512,7 +528,7 @@ class AnalyzerManager:
         # Run each analyzer
         registry = AnalyzerRegistry()
 
-        for analysis_type in analysis_types:
+        for analysis_type in analysis_types_enum:
             analyzer_class = registry.get_analyzer(analysis_type)
 
             if analyzer_class:
@@ -608,16 +624,16 @@ class AnalyzerManager:
             <h1>Codebase Analysis Report</h1>
             <div class="section">
                 <h2>Summary</h2>
-                <p>Repository: {self.results["metadata"].get("repo_name", "Unknown")}</p>
-                <p>Language: {self.results["metadata"].get("language", "Unknown")}</p>
-                <p>Analysis Time: {self.results["metadata"].get("analysis_time", "Unknown")}</p>
-                <p>Analysis Types: {", ".join(self.results["metadata"].get("analysis_types", []))}</p>
+                <p>Repository: {self.results['metadata'].get("repo_name", "Unknown")}</p>
+                <p>Language: {self.results['metadata'].get("language", "Unknown")}</p>
+                <p>Analysis Time: {self.results['metadata'].get("analysis_time", "Unknown")}</p>
+                <p>Analysis Types: {", ".join(self.results['metadata'].get("analysis_types", []))}</p>
                 <p>Total Issues: {len(self.issues)}</p>
                 <ul>
-                    <li class="critical">Critical: {self.results["issue_stats"]["by_severity"].get("critical", 0)}</li>
-                    <li class="error">Errors: {self.results["issue_stats"]["by_severity"].get("error", 0)}</li>
-                    <li class="warning">Warnings: {self.results["issue_stats"]["by_severity"].get("warning", 0)}</li>
-                    <li class="info">Info: {self.results["issue_stats"]["by_severity"].get("info", 0)}</li>
+                    <li class="critical">Critical: {self.results['issue_stats']['by_severity'].get("critical", 0)}</li>
+                    <li class="error">Errors: {self.results['issue_stats']['by_severity'].get("error", 0)}</li>
+                    <li class="warning">Warnings: {self.results['issue_stats']['by_severity'].get("warning", 0)}</li>
+                    <li class="info">Info: {self.results['issue_stats']['by_severity'].get("info", 0)}</li>
                 </ul>
             </div>
         """
@@ -684,7 +700,7 @@ class AnalyzerManager:
 
     def generate_report(self, report_type: str = "summary") -> str:
         """
-        Generate a report from the analysis results.
+        Generate a report of the analysis results.
 
         Args:
             report_type: Type of report to generate (summary, detailed, issues)
@@ -693,7 +709,7 @@ class AnalyzerManager:
             Report as a string
         """
         if not self.results:
-            raise ValueError("No analysis results available")
+            raise MissingResultError()
 
         if report_type == "summary":
             return self._generate_summary_report()
@@ -702,7 +718,7 @@ class AnalyzerManager:
         elif report_type == "issues":
             return self._generate_issues_report()
         else:
-            raise ValueError(f"Unknown report type: {report_type}")
+            raise UnknownReportTypeError()
 
     def _generate_summary_report(self) -> str:
         """Generate a summary report."""
@@ -927,6 +943,118 @@ class AnalyzerManager:
 
         return report
 
+    def analyze_pr_impact(self) -> dict[str, Any]:
+        """
+        Analyze the impact of a PR on the codebase.
+        """
+        if not self.base_codebase:
+            raise MissingCodebaseError()
+
+        # Convert string analysis types to enums
+        analysis_types = []
+        for analysis_type in self.analysis_types:
+            if isinstance(analysis_type, str):
+                try:
+                    analysis_types.append(AnalysisType(analysis_type))
+                except ValueError:
+                    logger.warning(f"Unknown analysis type: {analysis_type}")
+            else:
+                analysis_types.append(analysis_type)
+
+        # Initialize results
+        self.results = {
+            "metadata": {
+                "analysis_time": datetime.now().isoformat(),
+                "analysis_types": [t.value for t in analysis_types],
+                "repo_name": getattr(self.base_codebase.ctx, "repo_name", None),
+                "language": str(
+                    getattr(self.base_codebase.ctx, "programming_language", None)
+                ),
+            },
+            "summary": {},
+            "results": {},
+        }
+
+        # Reset issues
+        self.issues = []
+
+        # Run each analyzer
+        registry = AnalyzerRegistry()
+
+        for analysis_type in analysis_types:
+            analyzer_class = registry.get_analyzer(analysis_type)
+
+            if analyzer_class:
+                logger.info(f"Running {analysis_type.value} analysis")
+                analyzer = analyzer_class(self)
+                analysis_result = analyzer.analyze()
+
+                # Add results to unified results
+                self.results["results"][analysis_type.value] = analysis_result
+            else:
+                logger.warning(f"No analyzer found for {analysis_type.value}")
+
+        # Add issues to results
+        self.results["issues"] = [issue.to_dict() for issue in self.issues]
+
+        # Add issue statistics
+        self.results["issue_stats"] = {
+            "total": len(self.issues),
+            "by_severity": {
+                "critical": sum(
+                    1
+                    for issue in self.issues
+                    if issue.severity == IssueSeverity.CRITICAL
+                ),
+                "error": sum(
+                    1 for issue in self.issues if issue.severity == IssueSeverity.ERROR
+                ),
+                "warning": sum(
+                    1
+                    for issue in self.issues
+                    if issue.severity == IssueSeverity.WARNING
+                ),
+                "info": sum(
+                    1 for issue in self.issues if issue.severity == IssueSeverity.INFO
+                ),
+            },
+        }
+
+        return self.results
+
+    def get_result(self) -> dict[str, Any]:
+        """
+        Get the analysis result.
+
+        Returns:
+            Analysis result
+        """
+        if not self.result:
+            raise MissingResultError()
+
+        return self.result
+
+    def get_modified_symbols(self) -> dict[str, Any]:
+        """
+        Get the symbols modified in the PR.
+        """
+        if not self.result:
+            raise MissingResultError()
+
+        # Get the modified symbols from the PR diff
+        modified_symbols = {}
+
+        # This is a placeholder - would use actual PR diff analysis
+        if self.pr_diff:
+            modified_symbols = {
+                "functions": [],
+                "classes": [],
+                "methods": [],
+                "variables": [],
+            }
+
+        return modified_symbols
+
 
 def main():
     """Command-line entry point."""
@@ -1000,8 +1128,8 @@ def main():
             report = manager.generate_report(args.report_type)
             print(report)
 
-    except Exception as e:
-        logger.exception(f"Error: {e}")
+    except Exception:
+        logger.exception("Error during analysis")
         import traceback
 
         traceback.print_exc()
