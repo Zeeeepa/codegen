@@ -100,8 +100,8 @@ def main():
                 output_file=args.output_file,
             )
     
-    except Exception as e:
-        logger.error(f"Error: {e}")
+    except Exception:
+        logger.exception("Error occurred during execution")
         import traceback
         traceback.print_exc()
         sys.exit(1)
@@ -208,4 +208,3 @@ def run_summary_command(
 
 if __name__ == "__main__":
     main()
-

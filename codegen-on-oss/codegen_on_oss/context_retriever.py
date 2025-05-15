@@ -19,8 +19,8 @@ try:
     from codegen.sdk.core.import_resolution import Import
     from codegen.sdk.core.symbol import Symbol
     from codegen.sdk.enums import EdgeType, SymbolType
-except ImportError:
-    raise ImportError("Codegen SDK not found. Please install it first.")
+except ImportError as err:
+    raise ImportError("Codegen SDK not found.") from err
 
 # Configure logging
 logging.basicConfig(

@@ -21,15 +21,14 @@ try:
     from codegen.configs.models.codebase import CodebaseConfig
     from codegen.configs.models.secrets import SecretsConfig
     from codegen.sdk.core.codebase import Codebase
-    from codegen.sdk.core.class_definition import Class
     from codegen.sdk.core.file import SourceFile
     from codegen.sdk.core.function import Function
     from codegen.sdk.core.import_resolution import Import
     from codegen.sdk.core.symbol import Symbol
     from codegen.sdk.enums import EdgeType, SymbolType
     from codegen.shared.enums.programming_language import ProgrammingLanguage
-except ImportError:
-    print("Codegen SDK not found. Please install it first.")
+except ImportError as err:
+    print("Codegen SDK not found.")
     sys.exit(1)
 
 # Configure logging
