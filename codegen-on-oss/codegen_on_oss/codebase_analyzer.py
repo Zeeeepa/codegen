@@ -141,8 +141,8 @@ class CodebaseAnalyzer:
         """
         self.repo_path = repo_path
         self.language = language
-        self.codebase = None
-        self.issues = []
+        self.codebase: Optional[Codebase] = None
+        self.issues: List[CodeIssue] = []
         
         # Initialize the codebase if path is provided
         if repo_path:
@@ -180,7 +180,7 @@ class CodebaseAnalyzer:
             logger.error(f"Error initializing codebase from path: {e}")
             raise
     
-    def analyze(self, output_format: str = "text", output_file: Optional[str] = None):
+    def analyze(self, output_format: str = "text", output_file: Optional[str] = None) -> Dict[str, Any]:
         """
         Perform a comprehensive analysis of the codebase.
         
@@ -232,6 +232,9 @@ class CodebaseAnalyzer:
     
     def _find_unused_functions(self):
         """Find unused functions in the codebase."""
+        if not self.codebase:
+            return
+            
         for func in self.codebase.functions:
             if not func.usages:
                 self.issues.append(CodeIssue(
@@ -246,6 +249,9 @@ class CodebaseAnalyzer:
     
     def _find_unused_imports(self):
         """Find unused imports in the codebase."""
+        if not self.codebase:
+            return
+            
         for file in self.codebase.files:
             for import_stmt in file.imports:
                 if not import_stmt.usages:
@@ -261,6 +267,9 @@ class CodebaseAnalyzer:
     
     def _find_unused_parameters(self):
         """Find functions with unused parameters."""
+        if not self.codebase:
+            return
+            
         for func in self.codebase.functions:
             for param in func.parameters:
                 # Check if parameter is used in function body
@@ -277,78 +286,85 @@ class CodebaseAnalyzer:
     
     def _find_complex_functions(self):
         """Find overly complex functions."""
+        if not self.codebase:
+            return
+            
         for func in self.codebase.functions:
-            # Simple complexity heuristic based on source code length
-            source_lines = func.source.count('\n') + 1
-            if source_lines > 50:  # Arbitrary threshold
-                self.issues.append(CodeIssue(
-                    category=IssueCategory.COMPLEXITY,
-                    severity=IssueSeverity.INFO,
-                    message=f"Function is {source_lines} lines long, which may be too complex",
-                    file_path=func.file.file_path if hasattr(func, "file") else None,
-                    symbol_name=func.name,
-                    symbol_type="function",
-                    suggestion="Consider refactoring this function into smaller, more focused functions"
-                ))
+            if hasattr(func, 'source') and func.source:
+                line_count = func.source.count('\n') + 1
+                if line_count > 50:  # Threshold for complex functions
+                    self.issues.append(CodeIssue(
+                        category=IssueCategory.COMPLEXITY,
+                        severity=IssueSeverity.INFO,
+                        message=f"Function is too complex ({line_count} lines)",
+                        file_path=func.file.file_path if hasattr(func, "file") else None,
+                        symbol_name=func.name,
+                        symbol_type="function",
+                        suggestion="Consider refactoring this function into smaller, more focused functions"
+                    ))
     
     def _analyze_dependencies(self):
         """Analyze dependency issues."""
         logger.info("Analyzing dependencies...")
         
-        # Find parameter mismatches in function calls
-        self._find_parameter_mismatches()
-        
-        # Find circular imports (simplified approach)
+        # Find circular imports
         self._find_circular_imports()
+        
+        # Find parameter mismatches
+        self._find_parameter_mismatches()
         
         logger.info(f"Found {len(self.issues)} dependency issues")
     
-    def _find_parameter_mismatches(self):
-        """Find parameter mismatches in function calls."""
-        for func in self.codebase.functions:
-            for call in func.call_sites:
-                expected_params = set(p.name for p in func.parameters)
-                actual_params = set(arg.parameter_name for arg in call.args if arg.parameter_name)
-                missing = expected_params - actual_params
-                if missing and not func.has_kwargs:
-                    self.issues.append(CodeIssue(
-                        category=IssueCategory.PARAMETER_ERROR,
-                        severity=IssueSeverity.ERROR,
-                        message=f"Missing required parameters: {missing}",
-                        file_path=call.file.file_path if hasattr(call, "file") else None,
-                        symbol_name=func.name,
-                        symbol_type="function call",
-                        suggestion=f"Add the missing parameters: {missing}"
-                    ))
-    
     def _find_circular_imports(self):
-        """Find circular imports in the codebase (simplified approach)."""
-        # This is a simplified approach that doesn't handle all cases
-        # A more robust implementation would use a graph-based approach
-        import_map = {}
-        
-        # Build import map
+        """Find circular imports in the codebase."""
+        if not self.codebase:
+            return
+            
+        # Build import graph
+        import_graph: Dict[str, List[str]] = {}
         for file in self.codebase.files:
-            import_map[file.file_path] = []
+            import_graph[file.file_path] = []
             for import_stmt in file.imports:
-                if hasattr(import_stmt, "resolved_file") and import_stmt.resolved_file:
-                    import_map[file.file_path].append(import_stmt.resolved_file.file_path)
+                if hasattr(import_stmt, 'resolved_file') and import_stmt.resolved_file:
+                    import_graph[file.file_path].append(import_stmt.resolved_file.file_path)
         
-        # Check for circular imports (direct only)
-        for file_path, imports in import_map.items():
+        # Check for direct circular imports
+        for file_path, imports in import_graph.items():
             for imported_file in imports:
-                if imported_file in import_map and file_path in import_map[imported_file]:
+                if imported_file in import_graph and file_path in import_graph[imported_file]:
                     self.issues.append(CodeIssue(
                         category=IssueCategory.CIRCULAR_DEPENDENCY,
-                        severity=IssueSeverity.WARNING,
-                        message=f"Circular import detected between {file_path} and {imported_file}",
+                        severity=IssueSeverity.ERROR,
+                        message=f"Circular import between {file_path} and {imported_file}",
                         file_path=file_path,
+                        symbol_type="import",
                         suggestion="Refactor the code to break the circular dependency"
                     ))
     
+    def _find_parameter_mismatches(self):
+        """Find parameter mismatches in function calls."""
+        if not self.codebase:
+            return
+            
+        for func in self.codebase.functions:
+            for call in func.call_sites:
+                expected_params = set(p.name for p in func.parameters)
+                actual_params = set(arg.parameter for arg in call.args if arg.parameter)
+                missing = expected_params - actual_params
+                if missing and not hasattr(func, 'has_kwargs'):
+                    self.issues.append(CodeIssue(
+                        category=IssueCategory.PARAMETER_ERROR,
+                        severity=IssueSeverity.ERROR,
+                        message=f"Function call missing parameters: {', '.join(missing)}",
+                        file_path=call.file.file_path if hasattr(call, "file") else None,
+                        symbol_name=func.name,
+                        symbol_type="function_call",
+                        suggestion=f"Add the missing parameters to the function call"
+                    ))
+    
     def _analyze_structure(self):
-        """Analyze codebase structure issues."""
-        logger.info("Analyzing codebase structure...")
+        """Analyze structural issues."""
+        logger.info("Analyzing code structure...")
         
         # Find large files
         self._find_large_files()
@@ -356,67 +372,74 @@ class CodebaseAnalyzer:
         # Find deeply nested functions
         self._find_deeply_nested_functions()
         
-        logger.info(f"Found {len(self.issues)} structure issues")
+        logger.info(f"Found {len(self.issues)} structural issues")
     
     def _find_large_files(self):
         """Find excessively large files."""
+        if not self.codebase:
+            return
+            
         for file in self.codebase.files:
-            if hasattr(file, "source") and file.source:
+            if hasattr(file, 'source') and file.source:
                 line_count = file.source.count('\n') + 1
-                if line_count > 500:  # Arbitrary threshold
+                if line_count > 500:  # Threshold for large files
                     self.issues.append(CodeIssue(
                         category=IssueCategory.MAINTAINABILITY,
-                        severity=IssueSeverity.INFO,
-                        message=f"File is {line_count} lines long, which may be too large",
+                        severity=IssueSeverity.WARNING,
+                        message=f"File is too large ({line_count} lines)",
                         file_path=file.file_path,
+                        symbol_type="file",
                         suggestion="Consider splitting this file into multiple smaller files"
                     ))
     
     def _find_deeply_nested_functions(self):
         """Find deeply nested functions."""
-        # This is a simplified approach that doesn't handle all cases
-        # A more robust implementation would parse the AST
+        if not self.codebase:
+            return
+            
         for func in self.codebase.functions:
-            if hasattr(func, "source") and func.source:
-                # Count indentation levels as a proxy for nesting
+            if hasattr(func, 'source') and func.source:
+                # Simple heuristic: count indentation levels
                 lines = func.source.split('\n')
                 max_indent = 0
                 for line in lines:
-                    indent = len(line) - len(line.lstrip())
-                    max_indent = max(max_indent, indent)
+                    if line.strip() and not line.strip().startswith('#'):
+                        indent = len(line) - len(line.lstrip())
+                        max_indent = max(max_indent, indent)
                 
-                # Assuming 4 spaces or 1 tab per indentation level
-                nesting_level = max_indent // 4
-                if nesting_level > 4:  # Arbitrary threshold
+                if max_indent > 16:  # Threshold for deep nesting (4 levels with 4-space indentation)
                     self.issues.append(CodeIssue(
                         category=IssueCategory.COMPLEXITY,
                         severity=IssueSeverity.WARNING,
-                        message=f"Function has a nesting level of {nesting_level}, which may be too deep",
+                        message=f"Function has deep nesting (indentation: {max_indent} spaces)",
                         file_path=func.file.file_path if hasattr(func, "file") else None,
                         symbol_name=func.name,
                         symbol_type="function",
-                        suggestion="Consider refactoring to reduce nesting depth"
+                        suggestion="Refactor to reduce nesting by extracting code into helper functions"
                     ))
     
     def _generate_report(self) -> Dict[str, Any]:
         """Generate a comprehensive report of the analysis results."""
-        # Basic codebase statistics
+        if not self.codebase:
+            raise ValueError("Codebase not initialized. Please initialize the codebase first.")
+            
+        # Gather statistics
         stats = {
-            "files": len(list(self.codebase.files)),
-            "functions": len(list(self.codebase.functions)),
-            "classes": len(list(self.codebase.classes)),
-            "imports": len(list(self.codebase.imports)),
+            "files": len(self.codebase.files),
+            "functions": len(self.codebase.functions),
+            "classes": len(self.codebase.classes),
+            "imports": len(self.codebase.imports),
         }
         
         # Group issues by category
-        issues_by_category = {}
+        issues_by_category: Dict[str, List[Dict[str, Any]]] = {}
         for issue in self.issues:
             if issue.category not in issues_by_category:
                 issues_by_category[issue.category] = []
             issues_by_category[issue.category].append(issue.to_dict())
         
         # Group issues by severity
-        issues_by_severity = {}
+        issues_by_severity: Dict[str, List[Dict[str, Any]]] = {}
         for issue in self.issues:
             if issue.severity not in issues_by_severity:
                 issues_by_severity[issue.severity] = []
@@ -671,4 +694,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

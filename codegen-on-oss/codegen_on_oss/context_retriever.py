@@ -47,15 +47,15 @@ class CodebaseContext:
             codebase: The Codebase object to extract context from
         """
         self.codebase = codebase
-        self.files = list(codebase.files)
-        self.functions = list(codebase.functions)
-        self.classes = list(codebase.classes)
-        self.imports = list(codebase.imports)
+        self.files: List[Any] = list(codebase.files)
+        self.functions: List[Any] = list(codebase.functions)
+        self.classes: List[Any] = list(codebase.classes)
+        self.imports: List[Any] = list(codebase.imports)
         
         # Cache for expensive operations
-        self._function_call_graph = None
-        self._import_graph = None
-        self._symbol_usage_map = None
+        self._function_call_graph: Optional[Dict[str, List[str]]] = None
+        self._import_graph: Optional[Dict[str, List[str]]] = None
+        self._symbol_usage_map: Optional[Dict[str, List[str]]] = None
     
     def get_codebase_summary(self) -> Dict[str, Any]:
         """
@@ -75,7 +75,7 @@ class CodebaseContext:
     
     def _get_file_extensions(self) -> Dict[str, int]:
         """Get a count of file extensions in the codebase."""
-        extensions = {}
+        extensions: Dict[str, int] = {}
         for file in self.files:
             _, ext = os.path.splitext(file.file_path)
             if ext:
@@ -87,7 +87,7 @@ class CodebaseContext:
     
     def _get_top_level_directories(self) -> Dict[str, int]:
         """Get a count of files in top-level directories."""
-        directories = {}
+        directories: Dict[str, int] = {}
         for file in self.files:
             parts = file.file_path.split('/')
             if len(parts) > 1:
@@ -128,9 +128,9 @@ class CodebaseContext:
         Returns:
             A list of tuples containing (Function, list of unused parameter names)
         """
-        result = []
+        result: List[Tuple[Function, List[str]]] = []
         for func in self.functions:
-            unused_params = []
+            unused_params: List[str] = []
             for param in func.parameters:
                 # Check if parameter is used in function body
                 if param.name not in [dep.name for dep in func.dependencies]:
@@ -146,13 +146,13 @@ class CodebaseContext:
         Returns:
             A list of tuples containing (Function, list of missing parameter names)
         """
-        result = []
+        result: List[Tuple[Function, List[str]]] = []
         for func in self.functions:
             for call in func.call_sites:
                 expected_params = set(p.name for p in func.parameters)
-                actual_params = set(arg.parameter_name for arg in call.args if arg.parameter_name)
+                actual_params = set(arg.parameter for arg in call.args if arg.parameter)
                 missing = expected_params - actual_params
-                if missing and not func.has_kwargs:
+                if missing and not hasattr(func, 'has_kwargs'):
                     result.append((func, list(missing)))
         return result
     
@@ -166,7 +166,7 @@ class CodebaseContext:
         if self._function_call_graph is not None:
             return self._function_call_graph
         
-        graph = {}
+        graph: Dict[str, List[str]] = {}
         for func in self.functions:
             graph[func.name] = []
             for call in func.function_calls:
@@ -186,7 +186,7 @@ class CodebaseContext:
         if self._import_graph is not None:
             return self._import_graph
         
-        graph = {}
+        graph: Dict[str, List[str]] = {}
         for file in self.files:
             graph[file.file_path] = []
             for import_stmt in file.imports:
@@ -224,7 +224,7 @@ class CodebaseContext:
         if self._symbol_usage_map is not None:
             return self._symbol_usage_map
         
-        usage_map = {}
+        usage_map: Dict[str, List[str]] = {}
         
         # Add functions
         for func in self.functions:
@@ -371,14 +371,18 @@ class CodebaseContext:
         attributes = [a.name for a in cls.attributes] if hasattr(cls, 'attributes') else []
         
         # Get parent classes
-        parent_classes = [p.name for p in cls.parent_classes] if hasattr(cls, 'parent_classes') else []
+        parent_classes = []
+        if hasattr(cls, 'parent_classes') and cls.parent_classes:
+            for parent in cls.parent_classes:
+                if hasattr(parent, 'name'):
+                    parent_classes.append(parent.name)
         
         # Get child classes
         child_classes = []
         for c in self.classes:
-            if hasattr(c, 'parent_classes'):
+            if hasattr(c, 'parent_classes') and c.parent_classes:
                 for parent in c.parent_classes:
-                    if parent.name == class_name:
+                    if hasattr(parent, 'name') and parent.name == class_name:
                         child_classes.append(c.name)
         
         return {
@@ -482,4 +486,3 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
-
