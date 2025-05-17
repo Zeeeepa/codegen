@@ -109,4 +109,3 @@ You can customize the application by modifying the `run.py` file to add new anal
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [GitHub API Documentation](https://docs.github.com/en/rest)
-

@@ -126,4 +126,3 @@ You can customize the application by modifying the event handlers in `webhooks.p
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [Linear API Documentation](https://developers.linear.app/docs/)
-

@@ -8,4 +8,3 @@ dependencies = [
   "codegen>=0.52.19",
   "python-dotenv>=1.0.0",
 ]
-

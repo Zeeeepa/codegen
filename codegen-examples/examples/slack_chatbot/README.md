@@ -129,4 +129,3 @@ You can customize the application by modifying the following files:
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [Slack API Documentation](https://api.slack.com/)
-

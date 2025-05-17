@@ -44,4 +44,3 @@ python3 -m modal deploy webhooks.py
 
 echo "Deployment complete! You can check the status with 'modal app status linear-webhooks'"
 echo "To view logs, run 'modal app logs linear-webhooks'"
-
