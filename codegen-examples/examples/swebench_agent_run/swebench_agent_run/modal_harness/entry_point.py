@@ -73,7 +73,7 @@ image = (
         copy=True,
     )
     .run_commands(
-        "pip install -e /root/codegen",
+        "pip install codegen==0.52.19",
         "rm -r /root/codegen/.git",
         "pip install -e /root/swebench_agent_run",
     )

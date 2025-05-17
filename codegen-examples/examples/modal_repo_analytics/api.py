@@ -5,7 +5,7 @@ from codegen import Codebase
 from pydantic import BaseModel
 
 # Create image with dependencies
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=0.5.30")
+image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen==0.52.19")
 
 # Create Modal app
 app = modal.App("codegen-repo-analyzer")

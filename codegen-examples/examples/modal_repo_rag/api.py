@@ -11,7 +11,7 @@ image = (
     .apt_install("git")
     .pip_install(
         "fastapi[standard]",
-        "codegen>=0.5.30",
+        "codegen==0.52.19",
         "openai>=1.1.0",
     )
 )

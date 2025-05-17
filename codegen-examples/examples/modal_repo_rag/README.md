@@ -1,120 +1,117 @@
-# Codegen RAG Q&A API
+# Modal Repository RAG Q&A
 
-<p align="center">
-  <a href="https://docs.codegen.com">
-    <img src="https://i.imgur.com/6RF9W0z.jpeg" />
-  </a>
-</p>
+This example demonstrates how to deploy a Modal application that uses Codegen's VectorIndex for RAG-based code question answering.
 
-<h2 align="center">
-  Answer questions about any GitHub repository using RAG
-</h2>
+## Features
 
-<div align="center">
+- Answer questions about code using Retrieval-Augmented Generation (RAG)
+- Automatically index GitHub repositories
+- Persistent vector indices using Modal volumes
+- Web endpoint for API access
+- Easily deployable to Modal cloud
 
-[![Documentation](https://img.shields.io/badge/Docs-docs.codegen.com-purple?style=flat-square)](https://docs.codegen.com)
-[![License](https://img.shields.io/badge/Code%20License-Apache%202.0-gray?&color=gray)](https://github.com/codegen-sh/codegen-sdk/tree/develop?tab=Apache-2.0-1-ov-file)
+## Prerequisites
 
-</div>
+Before you begin, ensure you have the following installed:
+- Python 3.10+
+- [Modal CLI](https://modal.com/docs/guide/cli-reference)
+- [Codegen SDK](https://docs.codegen.com)
+- OpenAI API key (for the LLM)
 
-This example demonstrates how to build a RAG-powered code Q&A API using Codegen's VectorIndex and Modal. The API can answer questions about any GitHub repository by:
+## Setup
 
-1. Creating embeddings for all files in the repository
-1. Finding the most relevant files for a given question
-1. Using GPT-4 to generate an answer based on the context
-
-## Quick Start
-
-1. Install dependencies:
+1. Install the required dependencies:
 
 ```bash
-pip install modal-client codegen openai
+pip install modal codegen==0.52.19 openai
 ```
 
-2. Create a Modal volume for storing indices:
+2. Authenticate with Modal:
 
 ```bash
-modal volume create codegen-indices
+modal token new
 ```
 
-3. Start the API server:
+3. Set up your OpenAI API key:
 
 ```bash
-modal serve api.py
+export OPENAI_API_KEY=your_api_key_here
 ```
 
-4. Test with curl:
+## Deployment
+
+You can deploy this example to Modal using the provided deploy script:
 
 ```bash
-curl -X POST "http://localhost:8000/answer_code_question" \
+./deploy.sh
+```
+
+This will:
+1. Create a Modal volume for storing vector indices (if it doesn't exist)
+2. Deploy the application to Modal
+3. Provide you with a URL to access the API
+
+## Usage
+
+Once deployed, you can use the API to ask questions about GitHub repositories:
+
+```bash
+curl -X POST "https://codegen-rag-qa--answer-code-question.modal.run" \
   -H "Content-Type: application/json" \
   -d '{
-    "repo_name": "fastapi/fastapi",
-    "query": "How does FastAPI handle dependency injection?"
+    "repo_name": "owner/repo",
+    "query": "How does the authentication system work?"
   }'
 ```
 
-## API Reference
+Replace `owner/repo` with the GitHub repository you want to query and adjust the question as needed.
 
-### POST /answer_code_question
+## API Response
 
-Request body:
-
-```json
-{
-  "repo_name": "owner/repo",
-  "query": "Your question about the code"
-}
-```
-
-Response format:
+The API returns a JSON response with the following structure:
 
 ```json
 {
-  "status": "success",
-  "error": "",
-  "answer": "Detailed answer based on the code...",
+  "answer": "The authentication system works by...",
   "context": [
     {
-      "filepath": "path/to/file.py",
-      "snippet": "Relevant code snippet..."
+      "filepath": "src/auth/login.py",
+      "snippet": "def authenticate_user(username, password):..."
+    },
+    {
+      "filepath": "src/auth/session.py",
+      "snippet": "class Session:..."
     }
-  ]
+  ],
+  "status": "success",
+  "error": ""
 }
 ```
+
+If there's an error, the `status` field will be set to `"error"` and the `error` field will contain the error message.
 
 ## How It Works
 
-1. The API uses Codegen to clone and analyze the repository
-1. It creates/loads a VectorIndex of all files using OpenAI's embeddings
-1. For each question:
-   - Finds the most semantically similar files
-   - Extracts relevant code snippets
-   - Uses GPT-4 to generate an answer based on the context
+1. The application creates or loads a vector index for the specified repository
+2. When a question is asked, it finds the most relevant code snippets using semantic search
+3. It then uses OpenAI's API to generate an answer based on the retrieved code context
+4. The vector indices are stored in a Modal volume for persistence between runs
 
-## Development
+## Customization
 
-The API is built using:
+You can customize this example by:
 
-- Modal for serverless deployment
-- Codegen for repository analysis
-- OpenAI for embeddings and Q&A
-- FastAPI for the web endpoint
+1. Changing the LLM model (currently uses GPT-4 Turbo)
+2. Adjusting the number of context snippets retrieved
+3. Modifying the prompt template for better answers
+4. Adding authentication to the API endpoint
 
-To deploy changes:
+## Troubleshooting
 
-```bash
-modal deploy api.py
-```
+If you encounter issues:
 
-## Environment Variables
+1. Ensure you have the correct version of Modal and Codegen installed
+2. Check that you're authenticated with Modal
+3. Verify that your OpenAI API key is set correctly
+4. Check the Modal logs for detailed error information
 
-Required environment variables:
-
-- `OPENAI_API_KEY`: Your OpenAI API key
-
-## Learn More
-
-- [Codegen Documentation](https://docs.codegen.com)
-- [Modal Documentation](https://modal.com/docs)
-- [VectorIndex Tutorial](https://docs.codegen.com/building-with-codegen/semantic-code-search)
