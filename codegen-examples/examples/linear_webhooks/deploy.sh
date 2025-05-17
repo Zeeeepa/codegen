@@ -25,13 +25,13 @@ fi
 if [ ! -f .env ]; then
     echo -e "${YELLOW}Warning: .env file not found.${NC}"
     echo -e "Creating .env file from template..."
-    
+
     if [ -f .env.template ]; then
         cp .env.template .env
         echo -e "${YELLOW}Please edit the .env file with your Linear API key and webhook secret.${NC}"
         echo -e "Do you want to continue with deployment? (y/n)"
         read -r continue
-        
+
         if [ "$continue" != "y" ] && [ "$continue" != "Y" ]; then
             echo -e "${RED}Deployment cancelled.${NC}"
             exit 0

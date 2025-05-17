@@ -65,8 +65,8 @@ These examples demonstrate how to integrate Codegen with other tools:
 Before running these examples, ensure you have:
 
 1. Python 3.10+ installed
-2. Codegen SDK installed: `pip install codegen==0.52.19`
-3. For Modal examples, Modal CLI installed: `pip install modal`
+1. Codegen SDK installed: `pip install codegen==0.52.19`
+1. For Modal examples, Modal CLI installed: `pip install modal`
 
 ## Using the Deployer Script
 
@@ -75,20 +75,23 @@ The `Deployer.sh` script allows you to interactively select and deploy multiple 
 To use it:
 
 1. Make sure the script is executable:
+
    ```bash
    chmod +x Deployer.sh
    ```
 
-2. Run the script:
+1. Run the script:
+
    ```bash
    ./Deployer.sh
    ```
 
-3. Select the examples you want to deploy when prompted:
+1. Select the examples you want to deploy when prompted:
+
    - Enter the numbers of the examples (space-separated)
    - Or enter 'all' to deploy all examples
 
-4. Confirm your selection
+1. Confirm your selection
 
 The script will deploy the selected examples concurrently and show the deployment status.
 
@@ -97,4 +100,3 @@ The script will deploy the selected examples concurrently and show the deploymen
 - [Codegen Documentation](https://docs.codegen.com)
 - [Modal Documentation](https://modal.com/docs/guide)
 - [Codegen GitHub Repository](https://github.com/Zeeeepa/codegen)
-

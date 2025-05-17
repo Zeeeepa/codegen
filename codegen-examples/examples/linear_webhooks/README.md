@@ -12,6 +12,7 @@ This example demonstrates how to deploy a Modal application that handles Linear 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - Python 3.10+
 - [Modal CLI](https://modal.com/docs/guide/cli-reference)
 - [Codegen SDK](https://docs.codegen.com)
@@ -57,12 +58,12 @@ This will deploy the application to Modal and provide you with a URL to configur
 ## Linear Webhook Configuration
 
 1. Go to your Linear workspace settings
-2. Navigate to "API" > "Webhooks"
-3. Click "New Webhook"
-4. Enter the URL provided by the deployment script
-5. Select the events you want to receive (e.g., "Issues")
-6. Copy the webhook secret and add it to your `.env` file
-7. Click "Create webhook"
+1. Navigate to "API" > "Webhooks"
+1. Click "New Webhook"
+1. Enter the URL provided by the deployment script
+1. Select the events you want to receive (e.g., "Issues")
+1. Copy the webhook secret and add it to your `.env` file
+1. Click "Create webhook"
 
 ## Customizing Event Handlers
 
@@ -78,6 +79,7 @@ def handle_comment(self, data: dict):
 ## Available Event Types
 
 Linear supports the following event types:
+
 - Issue
 - Comment
 - Project
@@ -94,10 +96,10 @@ Linear supports the following event types:
 If you encounter issues:
 
 1. Ensure you have the correct version of Modal and Codegen installed
-2. Check that you're authenticated with Modal
-3. Verify that your Linear API key and webhook secret are correct
-4. Check the Modal logs for detailed error information
-5. Verify that the webhook URL is correctly configured in Linear
+1. Check that you're authenticated with Modal
+1. Verify that your Linear API key and webhook secret are correct
+1. Check the Modal logs for detailed error information
+1. Verify that the webhook URL is correctly configured in Linear
 
 ## Security Considerations
 
@@ -105,4 +107,3 @@ If you encounter issues:
 - Use environment variables for sensitive information
 - Consider adding authentication to your webhook endpoint
 - Validate webhook signatures to ensure requests are coming from Linear
-

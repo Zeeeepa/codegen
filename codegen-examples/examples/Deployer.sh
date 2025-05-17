@@ -38,24 +38,24 @@ deploy_examples() {
     local examples=("$@")
     local pids=()
     local results=()
-    
+
     echo -e "${BLUE}Starting deployment of ${#examples[@]} examples...${NC}"
-    
+
     # Start all deployments in the background
     for example in "${examples[@]}"; do
         local example_dir=$(dirname "$example")
         local example_name=$(basename "$example_dir")
-        
+
         echo -e "${YELLOW}Deploying ${example_name}...${NC}"
-        
+
         # Change to the example directory and run deploy.sh
         (cd "$example_dir" && ./deploy.sh > /tmp/deploy_${example_name}.log 2>&1)&
-        
+
         # Store the PID and example name
         pids+=($!)
         results+=("$example_name")
     done
-    
+
     # Wait for all deployments to finish
     for i in "${!pids[@]}"; do
         if wait "${pids[$i]}"; then
@@ -65,7 +65,7 @@ deploy_examples() {
             echo -e "${YELLOW}See log at /tmp/deploy_${results[$i]}.log${NC}"
         fi
     done
-    
+
     echo -e "${BLUE}All deployments completed.${NC}"
 }
 
@@ -74,15 +74,15 @@ main() {
     # Check if Modal CLI is installed and authenticated
     check_modal_cli
     check_modal_auth
-    
+
     # Find all examples with deploy.sh scripts
     examples=($(find_examples))
-    
+
     if [ ${#examples[@]} -eq 0 ]; then
         echo -e "${RED}No examples with deploy.sh scripts found.${NC}"
         exit 1
     fi
-    
+
     # Display the list of available examples
     echo -e "${BLUE}Available examples:${NC}"
     for i in "${!examples[@]}"; do
@@ -90,13 +90,13 @@ main() {
         local example_name=$(basename "$example_dir")
         echo -e "${YELLOW}$((i+1)).${NC} $example_name"
     done
-    
+
     # Prompt for selection
     echo -e "${BLUE}Enter the numbers of the examples you want to deploy (space-separated), or 'all' for all examples:${NC}"
     read -r selection
-    
+
     selected_examples=()
-    
+
     if [ "$selection" == "all" ]; then
         selected_examples=("${examples[@]}")
     else
@@ -109,12 +109,12 @@ main() {
             fi
         done
     fi
-    
+
     if [ ${#selected_examples[@]} -eq 0 ]; then
         echo -e "${RED}No valid examples selected.${NC}"
         exit 1
     fi
-    
+
     # Confirm the selection
     echo -e "${BLUE}You selected the following examples:${NC}"
     for example in "${selected_examples[@]}"; do
@@ -122,15 +122,15 @@ main() {
         local example_name=$(basename "$example_dir")
         echo -e "${YELLOW}•${NC} $example_name"
     done
-    
+
     echo -e "${BLUE}Do you want to deploy these examples? (y/n)${NC}"
     read -r confirm
-    
+
     if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
         echo -e "${RED}Deployment cancelled.${NC}"
         exit 0
     fi
-    
+
     # Deploy the selected examples
     deploy_examples "${selected_examples[@]}"
 }

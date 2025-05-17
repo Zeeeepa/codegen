@@ -12,6 +12,7 @@ This is a simple example that demonstrates how to deploy a basic Modal applicati
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - Python 3.10+
 - [Modal CLI](https://modal.com/docs/guide/cli-reference)
 - [Codegen SDK](https://docs.codegen.com)
@@ -65,8 +66,8 @@ The web endpoint returns a JSON response with the following structure:
 This example includes three main components:
 
 1. **Regular Function**: `hello()` - A simple function that returns a greeting
-2. **Web Endpoint**: `web_hello()` - A web endpoint that returns a JSON greeting
-3. **Scheduled Function**: `scheduled_hello()` - A function that runs every hour
+1. **Web Endpoint**: `web_hello()` - A web endpoint that returns a JSON greeting
+1. **Scheduled Function**: `scheduled_hello()` - A function that runs every hour
 
 ## Local Testing
 
@@ -83,16 +84,15 @@ This will run the application locally and call the `hello()` function with the a
 You can customize this example by:
 
 1. Adding more functions to the Modal app
-2. Changing the schedule for the scheduled function
-3. Adding more complex logic to the functions
-4. Integrating with other Codegen features
+1. Changing the schedule for the scheduled function
+1. Adding more complex logic to the functions
+1. Integrating with other Codegen features
 
 ## Troubleshooting
 
 If you encounter issues:
 
 1. Ensure you have the correct version of Modal and Codegen installed
-2. Check that you're authenticated with Modal
-3. Verify that the Modal CLI is installed correctly
-4. Check the Modal logs for detailed error information
-
+1. Check that you're authenticated with Modal
+1. Verify that the Modal CLI is installed correctly
+1. Check the Modal logs for detailed error information

@@ -12,6 +12,7 @@ This example demonstrates how to deploy a Modal application that uses Codegen to
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - Python 3.10+
 - [Modal CLI](https://modal.com/docs/guide/cli-reference)
 - [Codegen SDK](https://docs.codegen.com)
@@ -71,15 +72,14 @@ If there's an error, the `status` field will be set to `"error"` and the `error`
 You can customize this example by:
 
 1. Adding more metrics to the `RepoMetrics` model
-2. Extending the `analyze_repo` function to extract additional information
-3. Adding authentication to the API endpoint
+1. Extending the `analyze_repo` function to extract additional information
+1. Adding authentication to the API endpoint
 
 ## Troubleshooting
 
 If you encounter issues:
 
 1. Ensure you have the correct version of Modal and Codegen installed
-2. Check that you're authenticated with Modal
-3. Verify that the repository name is in the correct format (`owner/repo`)
-4. Check the Modal logs for detailed error information
-
+1. Check that you're authenticated with Modal
+1. Verify that the repository name is in the correct format (`owner/repo`)
+1. Check the Modal logs for detailed error information
