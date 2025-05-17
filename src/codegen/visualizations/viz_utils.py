@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import networkx as nx
 import plotly.graph_objects as go
@@ -21,8 +21,8 @@ from codegen.visualizations.enums import (
 
 if TYPE_CHECKING:
     from codegen.git.repo_operator.repo_operator import RepoOperator
-    from codegen.sdk.core.detached_symbols.function_call import FunctionCall
     from codegen.sdk.core.class_definition import Class
+    from codegen.sdk.core.detached_symbols.function_call import FunctionCall
     from codegen.sdk.core.external_module import ExternalModule
 
 ####################################################################################################################
@@ -44,12 +44,12 @@ def get_graph_json(op: "RepoOperator"):
 ####################################################################################################################
 
 
-def get_node_options(node: Editable | str | int) -> Dict[str, Any]:
+def get_node_options(node: Editable | str | int) -> dict[str, Any]:
     """Get visualization options for a node.
-    
+
     Args:
         node: The node to get options for
-        
+
     Returns:
         A dictionary of visualization options
     """
@@ -60,10 +60,10 @@ def get_node_options(node: Editable | str | int) -> Dict[str, Any]:
 
 def get_node_id(node: Editable | str | int) -> str:
     """Get a unique identifier for a node.
-    
+
     Args:
         node: The node to get an ID for
-        
+
     Returns:
         A string identifier for the node
     """
@@ -77,11 +77,11 @@ def get_node_id(node: Editable | str | int) -> str:
 
 def graph_to_json(G1: Graph, root: Editable | str | int | None = None) -> str:
     """Convert a NetworkX graph to JSON for visualization.
-    
+
     Args:
         G1: The NetworkX graph to convert
         root: The root node for tree visualization
-        
+
     Returns:
         A JSON string representation of the graph
     """
@@ -115,30 +115,30 @@ def create_call_graph(
     max_depth: int = 5,
     include_external: bool = False,
     include_recursive: bool = True,
-    filters: Optional[Dict[CallGraphFilterType, Any]] = None,
-) -> Tuple[DiGraph, Dict[str, Any]]:
+    filters: Optional[dict[CallGraphFilterType, Any]] = None,
+) -> tuple[DiGraph, dict[str, Any]]:
     """Create an enhanced call graph for visualization.
-    
+
     Args:
         source_function: The function to create a call graph for
         max_depth: Maximum depth of the call graph
         include_external: Whether to include external module calls
         include_recursive: Whether to include recursive calls
         filters: Filters to apply to the call graph
-        
+
     Returns:
         A tuple containing the call graph and metadata
     """
     G = DiGraph()
-    visited_nodes: Set[str] = set()
-    edge_counts: Dict[str, int] = {}
+    visited_nodes: set[str] = set()
+    edge_counts: dict[str, int] = {}
     metadata = {
         "node_count": 0,
         "edge_count": 0,
         "max_depth_reached": False,
         "filters_applied": filters or {},
     }
-    
+
     # Apply default filters if none provided
     if filters is None:
         filters = {
@@ -146,68 +146,67 @@ def create_call_graph(
             CallGraphFilterType.FUNCTION_TYPE: "all",
             CallGraphFilterType.PRIVACY: "all",
         }
-    
+
     def add_node_with_metadata(func: Union[Function, "Class", "ExternalModule"]) -> str:
         """Add a node to the graph with enhanced metadata."""
         node_id = get_node_id(func)
-        
+
         if node_id in visited_nodes:
             return node_id
-        
+
         visited_nodes.add(node_id)
         metadata["node_count"] += 1
-        
+
         # Basic node attributes
         node_attrs = {
             "name": func.name,
             "file_path": getattr(func, "filepath", None),
             "symbol_name": func.__class__.__name__,
         }
-        
+
         # Enhanced attributes for Function objects
         if isinstance(func, Function):
-            node_attrs.update({
-                "is_async": func.is_async,
-                "is_method": func.is_method,
-                "is_private": func.is_private,
-                "module": func.filepath.split("/")[-2] if func.filepath else None,
-                "parent_class": func.parent_class.name if func.is_method else None,
-                "return_type": str(func.return_type) if func.return_type else None,
-                "parameters": [p.name for p in func.parameters] if hasattr(func, "parameters") else [],
-                "complexity": len(func.code_block.statements) if hasattr(func, "code_block") else 0,
-            })
-        
+            node_attrs.update(
+                {
+                    "is_async": func.is_async,
+                    "is_method": func.is_method,
+                    "is_private": func.is_private,
+                    "module": func.filepath.split("/")[-2] if func.filepath else None,
+                    "parent_class": func.parent_class.name if func.is_method else None,
+                    "return_type": str(func.return_type) if func.return_type else None,
+                    "parameters": [p.name for p in func.parameters] if hasattr(func, "parameters") else [],
+                    "complexity": len(func.code_block.statements) if hasattr(func, "code_block") else 0,
+                }
+            )
+
         G.add_node(node_id, **node_attrs)
         return node_id
-    
-    def add_edge_with_metadata(
-        source_id: str,
-        target_id: str,
-        call: "FunctionCall",
-        call_type: CallGraphEdgeType = CallGraphEdgeType.DIRECT
-    ) -> None:
+
+    def add_edge_with_metadata(source_id: str, target_id: str, call: "FunctionCall", call_type: CallGraphEdgeType = CallGraphEdgeType.DIRECT) -> None:
         """Add an edge to the graph with enhanced metadata."""
         edge_key = f"{source_id}-{target_id}"
-        
+
         # Track call counts for each edge
         if edge_key in edge_counts:
             edge_counts[edge_key] += 1
         else:
             edge_counts[edge_key] = 1
             metadata["edge_count"] += 1
-        
-        edge_attrs = asdict(VizEdge(
-            name=call.name,
-            source=source_id,
-            target=target_id,
-            call_type=call_type.value,
-            file_path=call.filepath,
-            start_point=call.start_point,
-            end_point=call.end_point,
-            weight=edge_counts[edge_key],
-            label=f"{call.name}()" if hasattr(call, "name") else "call",
-        ))
-        
+
+        edge_attrs = asdict(
+            VizEdge(
+                name=call.name,
+                source=source_id,
+                target=target_id,
+                call_type=call_type.value,
+                file_path=call.filepath,
+                start_point=call.start_point,
+                end_point=call.end_point,
+                weight=edge_counts[edge_key],
+                label=f"{call.name}()" if hasattr(call, "name") else "call",
+            )
+        )
+
         # Set edge style based on call type
         if call_type == CallGraphEdgeType.RECURSIVE:
             edge_attrs["style"] = "dashed"
@@ -221,9 +220,9 @@ def create_call_graph(
         else:
             edge_attrs["style"] = "solid"
             edge_attrs["color"] = "#333333"  # Dark gray
-        
+
         G.add_edge(source_id, target_id, **edge_attrs)
-    
+
     def should_include_node(func: Union[Function, "Class", "ExternalModule"]) -> bool:
         """Determine if a node should be included based on filters."""
         # Filter by function type
@@ -233,7 +232,7 @@ def create_call_graph(
                 return False
             if func_type_filter == "function" and getattr(func, "is_method", True):
                 return False
-        
+
         # Filter by privacy
         privacy_filter = filters.get(CallGraphFilterType.PRIVACY, "all")
         if privacy_filter != "all":
@@ -242,31 +241,31 @@ def create_call_graph(
                 return False
             if privacy_filter == "public" and is_private:
                 return False
-        
+
         # Filter by module
         module_filter = filters.get(CallGraphFilterType.MODULE, None)
         if module_filter:
             module = func.filepath.split("/")[-2] if getattr(func, "filepath", None) else None
             if module != module_filter:
                 return False
-        
+
         return True
-    
+
     def traverse_calls(func: Function, depth: int = 0) -> None:
         """Recursively traverse function calls to build the graph."""
         if depth >= filters.get(CallGraphFilterType.DEPTH, max_depth):
             metadata["max_depth_reached"] = True
             return
-        
+
         source_id = add_node_with_metadata(func)
-        
+
         for call in func.function_calls:
             target_func = call.function_definition
-            
+
             # Skip if no function definition found
             if not target_func:
                 continue
-            
+
             # Determine call type
             call_type = CallGraphEdgeType.DIRECT
             if target_func.name == func.name:
@@ -279,40 +278,40 @@ def create_call_graph(
                 call_type = CallGraphEdgeType.EXTERNAL
                 if not include_external:
                     continue
-            
+
             # Apply filters
             if not should_include_node(target_func):
                 continue
-            
+
             # Add target node and edge
             target_id = add_node_with_metadata(target_func)
             add_edge_with_metadata(source_id, target_id, call, call_type)
-            
+
             # Continue traversal if target is a Function
             if hasattr(target_func, "function_calls"):
                 traverse_calls(target_func, depth + 1)
-    
+
     # Start traversal from source function
     if should_include_node(source_function):
         traverse_calls(source_function)
-    
+
     return G, metadata
 
 
 def create_interactive_call_graph(
     G: DiGraph,
-    metadata: Dict[str, Any],
+    metadata: dict[str, Any],
     highlight_node: Optional[str] = None,
     layout: str = "dot",
 ) -> go.Figure:
     """Create an interactive Plotly figure for call graph visualization.
-    
+
     Args:
         G: The call graph
         metadata: Metadata about the graph
         highlight_node: Node to highlight
         layout: Layout algorithm to use
-        
+
     Returns:
         A Plotly figure object
     """
@@ -325,20 +324,20 @@ def create_interactive_call_graph(
         pos = nx.spring_layout(G)
     else:
         pos = nx.kamada_kawai_layout(G)
-    
+
     # Extract node positions
     node_x = []
     node_y = []
     node_text = []
     node_color = []
     node_size = []
-    
+
     for node in G.nodes():
         node_attrs = G.nodes[node]
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        
+
         # Create detailed hover text
         hover_text = f"<b>{node_attrs.get('name', 'Unknown')}</b><br>"
         if node_attrs.get("is_method", False):
@@ -354,9 +353,9 @@ def create_interactive_call_graph(
             hover_text += f"Parameters: {params}<br>"
         if node_attrs.get("return_type"):
             hover_text += f"Returns: {node_attrs.get('return_type')}<br>"
-        
+
         node_text.append(hover_text)
-        
+
         # Set node color based on type
         if node == highlight_node:
             node_color.append("#FF0000")  # Red for highlighted node
@@ -368,11 +367,11 @@ def create_interactive_call_graph(
             node_color.append("#AAAAAA")  # Gray for external modules
         else:
             node_color.append("#9CDCFE")  # Default blue for functions
-        
+
         # Set node size based on complexity
         complexity = node_attrs.get("complexity", 5)
         node_size.append(10 + min(complexity, 20))
-    
+
     # Create node trace
     node_trace = go.Scatter(
         x=node_x,
@@ -386,27 +385,27 @@ def create_interactive_call_graph(
             line=dict(width=2, color="#FFFFFF"),
         ),
     )
-    
+
     # Extract edge positions and attributes
     edge_x = []
     edge_y = []
     edge_color = []
     edge_width = []
     edge_dash = []
-    
+
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
         edge_attrs = G.edges[edge]
-        
+
         # Add line trace for each edge
         edge_x.extend([x0, x1, None])
         edge_y.extend([y0, y1, None])
-        
+
         # Set edge color and style
         edge_color.append(edge_attrs.get("color", "#333333"))
         edge_width.append(1 + min(edge_attrs.get("weight", 1), 5))
-        
+
         # Set dash style based on edge type
         if edge_attrs.get("style") == "dashed":
             edge_dash.append("dash")
@@ -416,37 +415,39 @@ def create_interactive_call_graph(
             edge_dash.append("dashdot")
         else:
             edge_dash.append("solid")
-    
+
     # Create edge traces (one for each dash style)
     edge_traces = []
     dash_styles = set(edge_dash)
-    
+
     for dash_style in dash_styles:
         indices = [i for i, d in enumerate(edge_dash) if d == dash_style]
         if not indices:
             continue
-        
+
         # Extract data for this dash style
         style_x = [edge_x[i] for i in indices]
         style_y = [edge_y[i] for i in indices]
         style_color = [edge_color[i] for i in indices]
         style_width = [edge_width[i] for i in indices]
-        
-        edge_traces.append(go.Scatter(
-            x=style_x,
-            y=style_y,
-            mode="lines",
-            line=dict(
-                color=style_color,
-                width=style_width,
-                dash=dash_style,
-            ),
-            hoverinfo="none",
-        ))
-    
+
+        edge_traces.append(
+            go.Scatter(
+                x=style_x,
+                y=style_y,
+                mode="lines",
+                line=dict(
+                    color=style_color,
+                    width=style_width,
+                    dash=dash_style,
+                ),
+                hoverinfo="none",
+            )
+        )
+
     # Create figure
     fig = go.Figure(
-        data=edge_traces + [node_trace],
+        data=[*edge_traces, node_trace],
         layout=go.Layout(
             title=f"Call Graph ({metadata['node_count']} nodes, {metadata['edge_count']} edges)",
             showlegend=False,
@@ -457,7 +458,7 @@ def create_interactive_call_graph(
             plot_bgcolor="#FFFFFF",
         ),
     )
-    
+
     # Add buttons for different layouts
     fig.update_layout(
         updatemenus=[
@@ -494,26 +495,26 @@ def create_interactive_call_graph(
             ),
         ]
     )
-    
+
     return fig
 
 
 def apply_call_graph_filters(
     G: DiGraph,
-    filters: Dict[CallGraphFilterType, Any],
+    filters: dict[CallGraphFilterType, Any],
 ) -> DiGraph:
     """Apply filters to a call graph.
-    
+
     Args:
         G: The call graph to filter
         filters: Filters to apply
-        
+
     Returns:
         A filtered call graph
     """
     filtered_G = G.copy()
     nodes_to_remove = []
-    
+
     for node, attrs in filtered_G.nodes(data=True):
         # Filter by function type
         func_type_filter = filters.get(CallGraphFilterType.FUNCTION_TYPE, "all")
@@ -524,7 +525,7 @@ def apply_call_graph_filters(
             if func_type_filter == "function" and attrs.get("is_method", True):
                 nodes_to_remove.append(node)
                 continue
-        
+
         # Filter by privacy
         privacy_filter = filters.get(CallGraphFilterType.PRIVACY, "all")
         if privacy_filter != "all":
@@ -535,7 +536,7 @@ def apply_call_graph_filters(
             if privacy_filter == "public" and is_private:
                 nodes_to_remove.append(node)
                 continue
-        
+
         # Filter by module
         module_filter = filters.get(CallGraphFilterType.MODULE, None)
         if module_filter:
@@ -543,7 +544,7 @@ def apply_call_graph_filters(
             if module != module_filter:
                 nodes_to_remove.append(node)
                 continue
-        
+
         # Filter by complexity
         complexity_filter = filters.get(CallGraphFilterType.COMPLEXITY, None)
         if complexity_filter is not None:
@@ -551,7 +552,7 @@ def apply_call_graph_filters(
             if complexity < complexity_filter:
                 nodes_to_remove.append(node)
                 continue
-        
+
         # Filter by call count
         call_count_filter = filters.get(CallGraphFilterType.CALL_COUNT, None)
         if call_count_filter is not None:
@@ -560,10 +561,9 @@ def apply_call_graph_filters(
             if len(in_edges) < call_count_filter:
                 nodes_to_remove.append(node)
                 continue
-    
+
     # Remove filtered nodes
     for node in nodes_to_remove:
         filtered_G.remove_node(node)
-    
-    return filtered_G
 
+    return filtered_G
