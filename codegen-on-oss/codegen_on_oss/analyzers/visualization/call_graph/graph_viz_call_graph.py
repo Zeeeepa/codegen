@@ -1,7 +1,6 @@
 from abc import ABC
 
 import networkx as nx
-
 from codegen.sdk.core.class_definition import Class
 from codegen.sdk.core.codebase import CodebaseType
 from codegen.sdk.core.detached_symbols.function_call import FunctionCall
@@ -9,6 +8,7 @@ from codegen.sdk.core.external_module import ExternalModule
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.interfaces.callable import Callable
 from codegen.shared.enums.programming_language import ProgrammingLanguage
+
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
 from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile
@@ -43,7 +43,11 @@ def C():
 )
 
 
-@skill(eval_skill=False, prompt="Show me a visualization of the call graph from X", uid="81e8fbb7-a00a-4e74-b9c2-24f79d24d389")
+@skill(
+    eval_skill=False,
+    prompt="Show me a visualization of the call graph from X",
+    uid="81e8fbb7-a00a-4e74-b9c2-24f79d24d389",
+)
 class CallGraphFromNode(Skill, ABC):
     """This skill creates a directed call graph for a given function. Starting from the specified function, it recursively iterates
     through its function calls and the functions called by them, building a graph of the call paths to a maximum depth. The root of the directed graph
@@ -71,7 +75,9 @@ class CallGraphFromNode(Skill, ABC):
         # ===== [ Maximum Recursive Depth ] =====
         MAX_DEPTH = 5
 
-        def create_downstream_call_trace(parent: FunctionCall | Function | None = None, depth: int = 0):
+        def create_downstream_call_trace(
+            parent: FunctionCall | Function | None = None, depth: int = 0
+        ):
             """Creates call graph for parent
 
             This function recurses through the call graph of a function and creates a visualization
@@ -82,7 +88,7 @@ class CallGraphFromNode(Skill, ABC):
 
             """
             # if the maximum recursive depth has been exceeded return
-            if MAX_DEPTH <= depth:
+            if depth >= MAX_DEPTH:
                 return
             if isinstance(parent, FunctionCall):
                 src_call, src_func = parent, parent.function_definition
@@ -212,7 +218,9 @@ class CallGraphFilter(Skill, ABC):
         cls = codebase.get_class("MyClass")
 
         # Define a recursive function to traverse function calls
-        def create_filtered_downstream_call_trace(parent: FunctionCall | Function, current_depth, max_depth):
+        def create_filtered_downstream_call_trace(
+            parent: FunctionCall | Function, current_depth, max_depth
+        ):
             if current_depth > max_depth:
                 return
 
@@ -233,17 +241,27 @@ class CallGraphFilter(Skill, ABC):
                     continue
 
                 # if the function being called is not from an external module and is not defined in a test file
-                if not isinstance(func, ExternalModule) and not func.file.filepath.startswith("test"):
+                if not isinstance(
+                    func, ExternalModule
+                ) and not func.file.filepath.startswith("test"):
                     # add `call` to the graph and an edge from `src_call` to `call`
                     metadata = {}
-                    if isinstance(func, Function) and func.is_method and func.name in ["post", "get", "patch", "delete"]:
+                    if (
+                        isinstance(func, Function)
+                        and func.is_method
+                        and func.name in ["post", "get", "patch", "delete"]
+                    ):
                         name = f"{func.parent_class.name}.{func.name}"
                         metadata = {"color": "yellow", "name": name}
                     G.add_node(call, **metadata)
-                    G.add_edge(src_call, call, symbol=cls)  # Add edge from current to successor
+                    G.add_edge(
+                        src_call, call, symbol=cls
+                    )  # Add edge from current to successor
 
                     # Recursively add successors of the current symbol
-                    create_filtered_downstream_call_trace(call, current_depth + 1, max_depth)
+                    create_filtered_downstream_call_trace(
+                        call, current_depth + 1, max_depth
+                    )
 
         # Start the recursive traversal
         create_filtered_downstream_call_trace(func_to_trace, 1, MAX_DEPTH)
@@ -271,7 +289,11 @@ def end_func():
 )
 
 
-@skill(eval_skill=False, prompt="Show me a visualization of the call paths between start_class and end_class", uid="aa3f70c3-ac1c-4737-a8b8-7ba89e3c5671")
+@skill(
+    eval_skill=False,
+    prompt="Show me a visualization of the call paths between start_class and end_class",
+    uid="aa3f70c3-ac1c-4737-a8b8-7ba89e3c5671",
+)
 class CallPathsBetweenNodes(Skill, ABC):
     """This skill generates and visualizes a call graph between two specified functions.
     It starts from a given function and iteratively traverses through its function calls,
@@ -287,7 +309,9 @@ class CallPathsBetweenNodes(Skill, ABC):
     """
 
     @staticmethod
-    @skill_impl(test_cases=[CallPathsBetweenNodesTest], language=ProgrammingLanguage.PYTHON)
+    @skill_impl(
+        test_cases=[CallPathsBetweenNodesTest], language=ProgrammingLanguage.PYTHON
+    )
     @skill_impl(test_cases=[], skip_test=True, language=ProgrammingLanguage.TYPESCRIPT)
     def skill_func(codebase: CodebaseType):
         # Create a directed graph
@@ -297,7 +321,9 @@ class CallPathsBetweenNodes(Skill, ABC):
         MAX_DEPTH = 5
 
         # Define a recursive function to traverse usages
-        def create_downstream_call_trace(parent: FunctionCall | Function, end: Callable, current_depth, max_depth):
+        def create_downstream_call_trace(
+            parent: FunctionCall | Function, end: Callable, current_depth, max_depth
+        ):
             if current_depth > max_depth:
                 return
 
@@ -328,7 +354,9 @@ class CallPathsBetweenNodes(Skill, ABC):
                         G.add_edge(call, end)
                         return
                     # recursive call to function call
-                    create_downstream_call_trace(call, end, current_depth + 1, max_depth)
+                    create_downstream_call_trace(
+                        call, end, current_depth + 1, max_depth
+                    )
 
         # Get the start and end function
         start = codebase.get_function("start_func")
@@ -355,4 +383,3 @@ class CallPathsBetweenNodes(Skill, ABC):
 
         # Visualize the graph
         codebase.visualize(G)
-

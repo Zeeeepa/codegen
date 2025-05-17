@@ -41,12 +41,18 @@ def graph_class_methods(target_class: Class):
 
 def generate_edge_meta(call: FunctionCall) -> dict:
     """Generate metadata for graph edges representing function calls"""
-    return {"name": call.name, "file_path": call.filepath, "start_point": call.start_point, "end_point": call.end_point, "symbol_name": "FunctionCall"}
+    return {
+        "name": call.name,
+        "file_path": call.filepath,
+        "start_point": call.start_point,
+        "end_point": call.end_point,
+        "symbol_name": "FunctionCall",
+    }
 
 
 def create_downstream_call_trace(src_func: Function, depth: int = 0):
     """Creates call graph for parent function by recursively traversing all function calls"""
-    if MAX_DEPTH <= depth or isinstance(src_func, ExternalModule):
+    if depth >= MAX_DEPTH or isinstance(src_func, ExternalModule):
         return
 
     for call in src_func.function_calls:
@@ -62,13 +68,19 @@ def create_downstream_call_trace(src_func: Function, depth: int = 0):
         if isinstance(func, Class) and IGNORE_CLASS_CALLS:
             continue
 
-        if isinstance(func, (Class, ExternalModule)):
+        if isinstance(func, Class | ExternalModule):
             func_name = func.name
         elif isinstance(func, Function):
-            func_name = f"{func.parent_class.name}.{func.name}" if func.is_method else func.name
+            func_name = (
+                f"{func.parent_class.name}.{func.name}" if func.is_method else func.name
+            )
 
         if func not in visited:
-            G.add_node(func, name=func_name, color=COLOR_PALETTE.get(func.__class__.__name__, None))
+            G.add_node(
+                func,
+                name=func_name,
+                color=COLOR_PALETTE.get(func.__class__.__name__, None),
+            )
             visited.add(func)
 
         G.add_edge(src_func, func, **generate_edge_meta(call))
@@ -99,9 +111,14 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Initializing codebase...")
-    codebase = Codebase.from_repo("codegen-oss/modal-client", commit="00bf226a1526f9d775d2d70fc7711406aaf42958", language="python")
-    print(f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions.")
+    codebase = Codebase.from_repo(
+        "codegen-oss/modal-client",
+        commit="00bf226a1526f9d775d2d70fc7711406aaf42958",
+        language="python",
+    )
+    print(
+        f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions."
+    )
     print("Creating graph...")
 
     run(codebase)
-

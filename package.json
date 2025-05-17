@@ -5,7 +5,12 @@
 		"plugins": [
 			"@semantic-release/commit-analyzer",
 			"@semantic-release/release-notes-generator",
-			"@semantic-release/github"
+			"@semantic-release/changelog",
+			"@semantic-release/npm",
+			"@semantic-release/github",
+			"@semantic-release/git"
 		]
-	}
+	},
+	"packageManager": "yarn@4.0.2"
 }
+

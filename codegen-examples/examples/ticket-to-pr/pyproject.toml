@@ -1,12 +1,15 @@
 [project]
-name = "ticket-to-pr"
+name = "linear-ticket-to-pr-example"
 version = "0.1.0"
-description = "A example implementation of a agentic linear bot that can create PRs from linear tickets"
-readme = "README.md"
-requires-python = ">=3.12, <3.14"
+description = "Linear ticket to GitHub PR example for Codegen"
+requires-python = ">=3.13"
 dependencies = [
-  "codegen@git+https://github.com/codegen-sh/codegen-sdk.git@1f4dddb258a61574bce8edd06c81510c42e1e255",
-  "fastapi>=0.115.8",
-  "modal>=0.73.51",
-  "pydantic>=2.10.6",
+  "codegen>=0.26.3",
+  "modal>=0.73.25",
+  "fastapi>=0.110.0",
+  "uvicorn>=0.27.0",
+  "pydantic>=2.0.0",
 ]
+
+[project.optional-dependencies]
+dev = ["black>=23.0.0", "isort>=5.12.0", "mypy>=1.0.0", "ruff>=0.0.270"]
