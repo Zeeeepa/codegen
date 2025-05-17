@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Linear webhook example for Codegen"
 requires-python = ">=3.13"
 dependencies = [
-    "codegen>=0.22.2", 
+    "codegen>=0.26.3", 
     "modal>=0.73.25",
     "fastapi>=0.110.0",
     "uvicorn>=0.27.0",
@@ -18,3 +18,4 @@ dev = [
     "mypy>=1.0.0",
     "ruff>=0.0.270"
 ]
+

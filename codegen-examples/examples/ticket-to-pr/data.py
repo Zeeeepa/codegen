@@ -20,3 +20,4 @@ class LinearIssueUpdateEvent(BaseModel):
     title: str
     description: Optional[str] = None
     identifier: Optional[str] = None
+
