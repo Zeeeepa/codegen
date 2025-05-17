@@ -32,13 +32,26 @@ if [ ! -f .env ]; then
         cp .env.template .env
         echo "Please edit the .env file with your credentials before deploying."
         exit 1
+    else
+        echo "No .env.template file found. Creating a basic .env template..."
+        cat > .env.template << EOL
+# Slack credentials
+SLACK_BOT_TOKEN=your_slack_bot_token
+SLACK_SIGNING_SECRET=your_slack_signing_secret
+
+# Modal configuration (optional)
+MODAL_API_KEY=your_modal_api_key
+EOL
+        cp .env.template .env
+        echo "Please edit the .env file with your credentials before deploying."
+        exit 1
     fi
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying Slack Chatbot to Modal..."
+python3 api.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status slack-chatbot'"
+echo "To view logs, run 'modal app logs slack-chatbot'"
 

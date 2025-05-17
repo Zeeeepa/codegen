@@ -1,110 +1,129 @@
-# Github Checks
+# GitHub Checks Example
 
-This application is a GitHub integration that analyzes import cycles in codebases. It automatically runs when a pull request is labeled and checks for potentially problematic import patterns in the modified codebase.
+This example demonstrates how to create a GitHub check that analyzes import cycles in a repository using the Codegen SDK and Modal. When a pull request is labeled, this application will:
 
-## Features
+1. Analyze the codebase for import cycles
+2. Identify potentially problematic cycles with mixed static and dynamic imports
+3. Post a comment on the pull request with the analysis results
 
-- Analyzes import relationships in codebases
-- Detects circular import dependencies
-- Identifies problematic cycles with mixed static and dynamic imports
-- Automatically comments on pull requests with detailed analysis
+## Prerequisites
 
-## How It Works
-
-1. The app creates a directed graph representing import relationships in the codebase
-
-   ```python
-   for imp in codebase.imports:
-       if imp.from_file and imp.to_file:
-           G.add_edge(
-               imp.to_file.filepath,
-               imp.from_file.filepath,
-               color="red" if getattr(imp, "is_dynamic", False) else "black",
-               label="dynamic" if getattr(imp, "is_dynamic", False) else "static",
-               is_dynamic=getattr(imp, "is_dynamic", False),
-           )
-   ```
-
-1. It identifies strongly connected components (cycles) in the import graph
-
-   ```python
-   cycles = [scc for scc in nx.strongly_connected_components(G) if len(scc) > 1]
-   ```
-
-1. It specifically flags cycles that contain both static and dynamic imports
-
-   ```python
-   dynamic_count = sum(1 for e in edges.values() if e["color"] == "red")
-       static_count = sum(1 for e in edges.values() if e["color"] == "black")
-
-       if dynamic_count > 0 and static_count > 0:
-           mixed_imports[(from_file, to_file)] = {
-               "dynamic": dynamic_count,
-               "static": static_count,
-               "edges": edges,
-           }
-   ```
-
-1. Results are posted as a comment on the pull request
-
-   ```python
-    message = ["### Import Cycle Analysis - GitHub Check\n"]
-
-    if problematic_loops:
-        message.append("\n### ⚠️ Potentially Problematic Import Cycles")
-        message.append("Cycles with mixed static and dynamic imports, which might recquire attention.")
-        for i, cycle in enumerate(problematic_loops, 1):
-            message.append(f"\n#### Problematic Cycle {i}")
-            for (from_file, to_file), imports in cycle["mixed_imports"].items():
-                message.append(f"\nFrom: `{from_file}`")
-                message.append(f"To: `{to_file}`")
-                message.append(f"- Static imports: {imports['static']}")
-                message.append(f"- Dynamic imports: {imports['dynamic']}")
-    else:
-        message.append("\nNo problematic import cycles found! 🎉")
-   ```
+- [Modal](https://modal.com/) account
+- [GitHub](https://github.com/) repository access
+- Python 3.13 or higher
 
 ## Setup
 
-1. Ensure you have the following dependencies:
+### 1. Install Dependencies
 
-   - Python 3.13
-   - Modal
-   - Codegen
-   - NetworkX
-   - python-dotenv
+```bash
+# Clone the repository
+git clone https://github.com/Zeeeepa/codegen.git
+cd codegen/codegen-examples/examples/github_checks
 
-1. Set up your environment variables in a `.env` file
+# Install dependencies
+pip install -e .
+```
 
-   - `GITHUB_TOKEN`: Your GitHub token, configured with `repo` and `workflow` scopes.
+### 2. Configure Environment Variables
 
-1. Deploy the app using Modal:
+Create a `.env` file with your credentials:
 
-   ```bash
-   modal deploy app.py
-   ```
+```
+# GitHub credentials
+GITHUB_TOKEN=your_github_token
 
-   - After deployment, configure your GitHub App's webhook URL in its developer settings to point to your Modal endpoint with the endpoint `/github/events`
-   - The app will analyze imports via the Modal deployment whenever a pull request receives a `Codegen` label
+# Modal configuration (optional)
+MODAL_API_KEY=your_modal_api_key
+```
 
-## Technical Details
+To get these credentials:
 
-The application uses Codegen to parse the codebase and a combination of NetworkX and Codegen to analyze the import relationships. The app is structured as a Modal App with a FastAPI server.
-The analysis runs when a pull request is labeled (`pull_request:labeled` event).
+- **GITHUB_TOKEN**: Create a personal access token with repo permissions
+- **MODAL_API_KEY**: Your Modal API key (if not using Modal CLI authentication)
 
-## Output Format
+### 3. Authenticate with Modal
 
-The analysis results are posted as a markdown-formatted comment on the pull request, including:
+```bash
+modal token new
+```
 
-- Summary statistics
-- Detailed cycle information
-- Warning indicators for problematic import patterns
+## Deployment Commands
 
-## Learn More
+### Deploy to Modal
 
-- [Codegen Documentation](https://docs.codegen.com)
-- [Detecting Import Loops](https://docs.codegen.com/blog/fixing-import-loops)
+```bash
+# Deploy the application to Modal
+./deploy.sh
+```
 
-## Contributing
+This will deploy the application to Modal and provide you with a URL that you can use to configure the GitHub webhook.
 
-Feel free to submit issues and enhancement requests!
+### Get Deployment Status
+
+```bash
+# Check the status of your Modal deployment
+modal app status codegen-import-cycles-github-check
+```
+
+### View Logs
+
+```bash
+# View logs from your Modal deployment
+modal app logs codegen-import-cycles-github-check
+```
+
+### Update Deployment
+
+```bash
+# Update your Modal deployment after making changes
+./deploy.sh
+```
+
+### Stop Deployment
+
+```bash
+# Stop your Modal deployment
+modal app stop codegen-import-cycles-github-check
+```
+
+## Configuring GitHub Webhooks
+
+1. Go to your GitHub repository
+2. Go to Settings → Webhooks
+3. Click "Add webhook"
+4. Enter the URL provided by Modal when you deployed the application
+5. Select "application/json" as the content type
+6. Select "Let me select individual events"
+7. Check "Pull requests"
+8. Click "Add webhook"
+
+## Usage
+
+1. Create a pull request in your repository
+2. Add a label to the pull request
+3. The application will automatically:
+   - Analyze the codebase for import cycles
+   - Identify potentially problematic cycles
+   - Post a comment on the pull request with the analysis results
+
+## Customizing the Application
+
+You can customize the application by modifying the following functions in `app.py`:
+
+- `create_graph_from_codebase`: Creates a directed graph representing import relationships
+- `find_import_cycles`: Identifies strongly connected components (cycles) in the import graph
+- `find_problematic_import_loops`: Identifies cycles with both static and dynamic imports
+
+## Troubleshooting
+
+- **Webhook not receiving events**: Verify that your GitHub webhook is configured correctly and that the URL is accessible.
+- **Authentication errors**: Check that your GITHUB_TOKEN is correct and has the necessary permissions.
+- **Modal deployment issues**: Run `modal app logs codegen-import-cycles-github-check` to view logs and diagnose issues.
+
+## Additional Resources
+
+- [Codegen Documentation](https://docs.codegen.sh/)
+- [Modal Documentation](https://modal.com/docs)
+- [GitHub Webhooks Documentation](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks)
+

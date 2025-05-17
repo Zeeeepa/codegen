@@ -1,28 +1,106 @@
-import modal.running_app
-from codegen.extensions.events.app import CodegenApp
+import os
 import modal
+from codegen.extensions.events.app import CodegenApp
+from codegen.extensions.linear.types import LinearEvent, LinearIssue, LinearComment, LinearUser
+from codegen.shared.logging.get_logger import get_logger
 
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=v0.22.2")
-app = CodegenApp(name="test-linear", modal_api_key="", image=image)
+logger = get_logger(__name__)
 
-# Here is an example implementation of setting up an endpoint for receiving webhook events from Linear.
-# The @app.linear.event() decorator takes care of subscribing to the webhook and also unsubscribing when the deployment spun
-# Load environment variables from .env file
+# Create a Modal image with the necessary dependencies
+image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=v0.26.3")
 
+# Initialize the CodegenApp with a name and the image
+app = CodegenApp(name="linear-webhooks", modal_api_key="", image=image)
 
+# Define a Modal class to handle Linear events
 @app.cls(secrets=[modal.Secret.from_dotenv()], keep_warm=1)
 class LinearEventHandlers:
     @modal.enter()
     def enter(self):
+        """Subscribe to all Linear webhook handlers when the app starts"""
+        logger.info("Subscribing to Linear webhook handlers")
         app.linear.subscribe_all_handlers()
 
     @modal.exit()
     def exit(self):
+        """Unsubscribe from all Linear webhook handlers when the app stops"""
+        logger.info("Unsubscribing from Linear webhook handlers")
         app.linear.unsubscribe_all_handlers()
 
     @modal.web_endpoint(method="POST")
     @app.linear.event("Issue")
-    def test(self, data: dict):
-        # handle webhook event
-        # data is the payload of the webhook event
-        print(data)
+    def handle_issue(self, event: LinearEvent):
+        """Handle Linear Issue events
+        
+        This endpoint will be triggered when an issue is created, updated, or deleted in Linear.
+        """
+        # Check if the data is an Issue before accessing title
+        if isinstance(event.data, LinearIssue):
+            issue_title = event.data.title
+            logger.info(f"Received Linear Issue event: {event.action} - {issue_title}")
+            return {
+                "status": "success",
+                "message": f"Processed Linear Issue event: {event.action}",
+                "issue_id": event.data.id,
+                "issue_title": issue_title
+            }
+        else:
+            logger.warning(f"Received non-Issue data for Issue event: {event.action}")
+            return {
+                "status": "warning",
+                "message": f"Received non-Issue data for Issue event: {event.action}",
+                "id": event.data.id
+            }
+
+    @modal.web_endpoint(method="POST")
+    @app.linear.event("Comment")
+    def handle_comment(self, event: LinearEvent):
+        """Handle Linear Comment events
+        
+        This endpoint will be triggered when a comment is created, updated, or deleted in Linear.
+        """
+        # Check if the data is a Comment before processing
+        if isinstance(event.data, LinearComment):
+            logger.info(f"Received Linear Comment event: {event.action}")
+            
+            # Get the comment body and user information if available
+            comment_body = event.data.body
+            user_info = ""
+            if event.data.user:
+                user_info = f" by {event.data.user.name}"
+            
+            logger.info(f"Comment{user_info}: {comment_body}")
+            
+            return {
+                "status": "success",
+                "message": f"Processed Linear Comment event: {event.action}",
+                "comment_id": event.data.id,
+                "comment_body": comment_body
+            }
+        else:
+            logger.warning(f"Received non-Comment data for Comment event: {event.action}")
+            return {
+                "status": "warning",
+                "message": f"Received non-Comment data for Comment event: {event.action}",
+                "id": event.data.id
+            }
+
+    @modal.web_endpoint(method="POST")
+    @app.linear.event("*")
+    def handle_generic(self, event: LinearEvent):
+        """Handle any other Linear events
+        
+        This endpoint will be triggered for any Linear event type not explicitly handled.
+        """
+        logger.info(f"Received Linear event: {event.type} - {event.action}")
+        return {
+            "status": "success",
+            "message": f"Processed Linear event: {event.type} - {event.action}",
+            "event_type": event.type,
+            "event_action": event.action
+        }
+
+# If running this file directly, this will deploy the app to Modal
+if __name__ == "__main__":
+    app.serve()
+

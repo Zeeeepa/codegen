@@ -1,17 +1,11 @@
-# Linear Ticket-to-PR Example
+# Linear Webhooks Example
 
-This example demonstrates how to create a Modal application that automatically creates GitHub pull requests from Linear tickets using the Codegen SDK. When a Linear ticket is moved to a specific state, this application will:
-
-1. Create a new branch in the specified GitHub repository
-2. Generate code changes based on the ticket description
-3. Create a pull request with the changes
-4. Link the pull request to the Linear ticket
+This example demonstrates how to create a Modal application that handles Linear webhooks using the Codegen SDK. The application can process various Linear events such as issue creation, updates, comments, and more.
 
 ## Prerequisites
 
 - [Modal](https://modal.com/) account
 - [Linear](https://linear.app/) workspace with admin access
-- [GitHub](https://github.com/) repository access
 - Python 3.10 or higher
 
 ## Setup
@@ -21,7 +15,7 @@ This example demonstrates how to create a Modal application that automatically c
 ```bash
 # Clone the repository
 git clone https://github.com/Zeeeepa/codegen.git
-cd codegen/codegen-examples/examples/ticket-to-pr
+cd codegen/codegen-examples/examples/linear_webhooks
 
 # Install dependencies
 pip install -e .
@@ -37,11 +31,6 @@ LINEAR_ACCESS_TOKEN=your_linear_api_token
 LINEAR_SIGNING_SECRET=your_linear_webhook_signing_secret
 LINEAR_TEAM_ID=your_linear_team_id
 
-# GitHub credentials
-GITHUB_TOKEN=your_github_token
-GITHUB_REPO=your_github_repo_name
-GITHUB_OWNER=your_github_username_or_org
-
 # Modal configuration (optional)
 MODAL_API_KEY=your_modal_api_key
 ```
@@ -51,9 +40,6 @@ To get these credentials:
 - **LINEAR_ACCESS_TOKEN**: Create an API key in Linear (Settings → API → Create Key)
 - **LINEAR_SIGNING_SECRET**: Create a webhook in Linear and copy the signing secret
 - **LINEAR_TEAM_ID**: Your Linear team ID (can be found in team settings)
-- **GITHUB_TOKEN**: Create a personal access token with repo permissions
-- **GITHUB_REPO**: The name of your GitHub repository
-- **GITHUB_OWNER**: Your GitHub username or organization name
 - **MODAL_API_KEY**: Your Modal API key (if not using Modal CLI authentication)
 
 ### 3. Authenticate with Modal
@@ -77,14 +63,14 @@ This will deploy the application to Modal and provide you with a URL that you ca
 
 ```bash
 # Check the status of your Modal deployment
-modal app status linear-bot
+modal app status linear-webhooks
 ```
 
 ### View Logs
 
 ```bash
 # View logs from your Modal deployment
-modal app logs linear-bot
+modal app logs linear-webhooks
 ```
 
 ### Update Deployment
@@ -98,7 +84,7 @@ modal app logs linear-bot
 
 ```bash
 # Stop your Modal deployment
-modal app stop linear-bot
+modal app stop linear-webhooks
 ```
 
 ## Configuring Linear Webhooks
@@ -107,38 +93,36 @@ modal app stop linear-bot
 2. Go to Settings → API → Webhooks
 3. Click "New Webhook"
 4. Enter the URL provided by Modal when you deployed the application
-5. Select the "Issues" event
+5. Select the events you want to receive (e.g., Issues, Comments)
 6. Copy the signing secret and add it to your `.env` file as `LINEAR_SIGNING_SECRET`
 7. Click "Create Webhook"
 
 ## Usage
 
-1. Create a ticket in Linear with a description of the changes you want to make
-2. Move the ticket to the state that triggers the webhook (configured in `app.py`)
-3. The application will automatically:
-   - Create a new branch in your GitHub repository
-   - Generate code changes based on the ticket description
-   - Create a pull request with the changes
-   - Link the pull request to the Linear ticket
+The application handles the following Linear events:
+
+- **Issue**: Created, updated, or removed
+- **Comment**: Created, updated, or removed
+
+You can customize the handlers in `webhooks.py` to process these events according to your needs.
 
 ## Customizing the Application
 
-You can customize the application by modifying the following in `app.py`:
+You can customize the application by modifying the event handlers in `webhooks.py`. Each handler receives a `LinearEvent` object that contains information about the event, including:
 
-- `TARGET_STATE_NAME`: The Linear state that triggers the webhook
-- `handle_issue_update`: The function that processes the Linear webhook
-- `create_pr_from_ticket`: The function that creates the GitHub pull request
+- `action`: The action that triggered the event (e.g., "create", "update")
+- `data`: The data associated with the event (e.g., issue details, comment details)
+- `type`: The type of event (e.g., "Issue", "Comment")
 
 ## Troubleshooting
 
 - **Webhook not receiving events**: Verify that your Linear webhook is configured correctly and that the URL is accessible.
-- **Authentication errors**: Check that your LINEAR_ACCESS_TOKEN, LINEAR_SIGNING_SECRET, and GITHUB_TOKEN are correct.
-- **Modal deployment issues**: Run `modal app logs linear-bot` to view logs and diagnose issues.
+- **Authentication errors**: Check that your LINEAR_ACCESS_TOKEN and LINEAR_SIGNING_SECRET are correct.
+- **Modal deployment issues**: Run `modal app logs linear-webhooks` to view logs and diagnose issues.
 
 ## Additional Resources
 
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [Linear API Documentation](https://developers.linear.app/docs/)
-- [GitHub API Documentation](https://docs.github.com/en/rest)
 

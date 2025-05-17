@@ -1,84 +1,73 @@
-from codegen import Codebase, ProgrammingLanguage
-from typing import List, Dict, Any
-from codegen.configs.models.codebase import CodebaseConfig
-from data import LinearLabels, LinearIssueUpdateEvent
+from codegen import Codebase
+from codegen.extensions.clients.linear import LinearClient
+from codegen.shared.enums.programming_language import ProgrammingLanguage
+from codegen.extensions.linear.types import LinearEvent, LinearIssue, LinearComment, LinearUser, LinearLabel
+
+from typing import Any, Dict, List, Optional, cast
 import os
-import logging
+from pydantic import BaseModel
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+class LinearIssueUpdateEvent(BaseModel):
+    issue_id: str
+    issue_url: str
+    title: str
+    description: Optional[str] = None
+    identifier: Optional[str] = None
 
 
-def process_update_event(event_data: dict[str, Any]):
-    print("processing update event")
-
-    action = event_data.get("action")
-    actor = event_data.get("actor")
-    created_at = event_data.get("createdAt")
-    issue_url = event_data.get("url")
-    data: Dict[str, Any] = event_data.get("data")
-    issue_id = data.get("id")
-    title = data.get("title")
-    description = data.get("description")
-    identifier = data.get("identifier")
-
-    labels: List[LinearLabels] = data.get("labels")
-    updated_from: Dict[str, Any] = event_data.get("updatedFrom")
-
-    update_event = LinearIssueUpdateEvent(
+def process_update_event(data: Any) -> LinearIssueUpdateEvent:
+    """Process a Linear webhook event and extract issue information."""
+    # Extract issue data from the event
+    issue_data = cast(Dict[str, Any], data.get("data", {}))
+    
+    # Extract issue ID and URL
+    issue_id = issue_data.get("id", "")
+    issue_url = issue_data.get("url", "")
+    
+    # Extract labels
+    labels = cast(List[LinearLabel], issue_data.get("labels", []))
+    team = cast(Dict[str, Any], issue_data.get("team", {}))
+    
+    # Extract issue title, description, and identifier
+    title = issue_data.get("title", "")
+    description = issue_data.get("description", "")
+    identifier = f"{team.get('key', '')}-{issue_data.get('number', '')}"
+    
+    # Create and return the event object
+    return LinearIssueUpdateEvent(
         issue_id=issue_id,
-        action=action,
-        actor=actor,
-        created_at=created_at,
         issue_url=issue_url,
-        data=data,
-        labels=labels,
-        updated_from=updated_from,
         title=title,
         description=description,
         identifier=identifier,
     )
-    return update_event
 
 
-def format_linear_message(title: str, description: str | None = "") -> str:
-    """Format a Linear update event into a message for the agent"""
-
-    return f"""
-    Here is a new issue titled '{title}' and with the description '{description}'. Continue to respond to this query. Use your tools to query the codebase for more context.
-    When applicable include references to files and line numbers, code snippets are also encouraged. Don't forget to create a pull request with your changes, use the appropriate tool to do so.
-    """
-
-
-def has_codegen_label(*args, **kwargs):
-    body = kwargs.get("data")
-    type = body.get("type")
-    action = body.get("action")
-
-    if type == "Issue" and action == "update":
-        # handle issue update (label updates)
-        update_event = process_update_event(body)
-
-    has_codegen_label = any(label.name == "Codegen" for label in update_event.labels)
-    codegen_label_id = next((label.id for label in update_event.labels if label.name == "Codegen"), None)
-    had_codegen_label = codegen_label_id in update_event.updated_from.get("labels", []) if codegen_label_id else False
-    previous_labels = update_event.updated_from.get("labelIds", None)
-
-    if previous_labels is None or not has_codegen_label:
-        logger.info("No labels updated, skipping codegen bot response")
-        return False
-
-    if has_codegen_label and not had_codegen_label:
-        logger.info("Codegen label added, codegen bot will respond")
-        return True
-
-    logger.info("Codegen label removed or already existed, codegen bot will not respond")
-    return False
+def has_codegen_label(data: dict) -> bool:
+    """Check if the issue has the 'Codegen' label."""
+    issue_data = data.get("data", {})
+    labels = issue_data.get("labels", [])
+    
+    return any(label.get("name") == "Codegen" for label in labels)
 
 
-def create_codebase(repo_name: str, language: ProgrammingLanguage):
-    config = CodebaseConfig()
+def format_linear_message(title: str, description: Optional[str]) -> str:
+    """Format a Linear issue title and description into a message for the agent."""
+    message = f"Create a PR that implements: {title}"
+    
+    if description:
+        message += f"\n\nDetails:\n{description}"
+    
+    return message
+
+
+def create_codebase(repo_name: str, language: ProgrammingLanguage) -> Codebase:
+    """Create a Codebase instance for the specified repository."""
+    from codegen.config import Config
+    
+    config = Config()
     config.secrets.github_token = os.environ["GITHUB_TOKEN"]
-
+    
     return Codebase.from_repo(repo_name, language=language, tmp_dir="/root", config=config)
+

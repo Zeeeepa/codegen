@@ -25,20 +25,24 @@ if ! modal token list &> /dev/null; then
     exit 1
 fi
 
-# Check if .env file exists
+# Create .env file if it doesn't exist
 if [ ! -f .env ]; then
-    if [ -f .env.template ]; then
-        echo ".env file not found. Creating from template..."
-        cp .env.template .env
-        echo "Please edit the .env file with your credentials before deploying."
-        exit 1
-    fi
+    echo "Creating .env file..."
+    cat > .env << EOL
+# GitHub credentials
+GITHUB_TOKEN=your_github_token
+
+# Modal configuration (optional)
+MODAL_API_KEY=your_modal_api_key
+EOL
+    echo "Please edit the .env file with your credentials before deploying."
+    exit 1
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying Repository Analytics to Modal..."
+python3 run.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status repo-analytics'"
+echo "To view logs, run 'modal app logs repo-analytics'"
 
