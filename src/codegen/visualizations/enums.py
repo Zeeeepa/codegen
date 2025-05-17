@@ -41,5 +41,5 @@ class SelectedElement:
     type: ElementType
     id: str
     name: str
-    methods: list[str] = None
-    related_elements: list[str] = None
+    methods: list[str] | None = None
+    related_elements: list[str] | None = None
