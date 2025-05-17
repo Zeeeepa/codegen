@@ -1,5 +1,5 @@
 from codegen import Codebase, ProgrammingLanguage
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, cast
 from codegen.configs.models.codebase import CodebaseConfig
 from data import LinearLabels, LinearIssueUpdateEvent
 import os
@@ -17,14 +17,14 @@ def process_update_event(event_data: dict[str, Any]):
     actor = event_data.get("actor")
     created_at = event_data.get("createdAt")
     issue_url = event_data.get("url")
-    data: Dict[str, Any] = event_data.get("data")
+    data: Dict[str, Any] = event_data.get("data", {})
     issue_id = data.get("id")
     title = data.get("title")
     description = data.get("description")
     identifier = data.get("identifier")
 
-    labels: List[LinearLabels] = data.get("labels")
-    updated_from: Dict[str, Any] = event_data.get("updatedFrom")
+    labels: List[LinearLabels] = data.get("labels", [])
+    updated_from: Dict[str, Any] = event_data.get("updatedFrom", {})
 
     update_event = LinearIssueUpdateEvent(
         issue_id=issue_id,
@@ -51,17 +51,20 @@ def format_linear_message(title: str, description: str | None = "") -> str:
     """
 
 
-def has_codegen_label(*args, **kwargs):
-    body = kwargs.get("data")
-    type = body.get("type")
-    action = body.get("action")
+def has_codegen_label(event: Any) -> bool:
+    body = getattr(event, "data", {})
+    type = getattr(body, "type", "")
+    action = getattr(body, "action", "")
 
     if type == "Issue" and action == "update":
         # handle issue update (label updates)
         update_event = process_update_event(body)
+    else:
+        # Default case if not an issue update
+        return False
 
-    has_codegen_label = any(label.name == "Codegen" for label in update_event.labels)
-    codegen_label_id = next((label.id for label in update_event.labels if label.name == "Codegen"), None)
+    has_codegen_label = any(getattr(label, "name", "") == "Codegen" for label in update_event.labels)
+    codegen_label_id = next((getattr(label, "id", None) for label in update_event.labels if getattr(label, "name", "") == "Codegen"), None)
     had_codegen_label = codegen_label_id in update_event.updated_from.get("labels", []) if codegen_label_id else False
     previous_labels = update_event.updated_from.get("labelIds", None)
 
@@ -77,8 +80,9 @@ def has_codegen_label(*args, **kwargs):
     return False
 
 
-def create_codebase(repo_name: str, language: ProgrammingLanguage):
+def create_codebase(repo_name: str = "Zeeeepa/codegen", language: ProgrammingLanguage = ProgrammingLanguage.PYTHON):
     config = CodebaseConfig()
     config.secrets.github_token = os.environ["GITHUB_TOKEN"]
 
     return Codebase.from_repo(repo_name, language=language, tmp_dir="/root", config=config)
+

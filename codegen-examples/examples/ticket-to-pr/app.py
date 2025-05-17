@@ -5,9 +5,7 @@ from codegen.extensions.tools.github.create_pr import create_pr
 from codegen.shared.enums.programming_language import ProgrammingLanguage
 from codegen.extensions.linear.types import LinearEvent
 from helpers import create_codebase, format_linear_message, has_codegen_label, process_update_event
-
-from fastapi import Request
-import modal
+from typing import Dict, Any
 
 # Create a Modal image with the required dependencies
 image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("codegen>=0.26.3")
@@ -55,7 +53,8 @@ class LinearBot:
         if event.action == "create":
             return self.process_create_event(event)
         elif event.action == "update":
-            return process_update_event(event, self.linear_client)
+            # Process the update event without passing the linear_client
+            return process_update_event(event.data)
         else:
             return {"status": "skipped", "message": f"Unsupported action: {event.action}"}
 
@@ -68,7 +67,8 @@ class LinearBot:
         3. Comment on the Linear issue with a link to the PR
         """
         # Create a codebase object for the GitHub repository
-        codebase = create_codebase()
+        repo_name = "Zeeeepa/codegen"  # Default repository
+        codebase = create_codebase(repo_name=repo_name, language=ProgrammingLanguage.PYTHON)
 
         # Format the issue description for the PR
         issue_title = event.data.title
