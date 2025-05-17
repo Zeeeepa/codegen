@@ -53,7 +53,7 @@ def create_inheritance_graph(
 
     # Add the root class to the graph
     add_class_to_graph(G, root_class, include_methods=include_methods)
-    visited.add(root_class.node_id)
+    visited.add(str(root_class.node_id))
 
     # Add superclasses if requested
     if include_superclasses:
@@ -163,9 +163,11 @@ def add_superclasses_to_graph(
     if max_depth is not None and depth >= max_depth:
         return
     
-    for superclass in cls.superclasses(max_depth=1):
+    # Get superclasses using the internal method
+    superclasses = cls._get_superclasses(max_depth=1)
+    for superclass in superclasses:
         # Skip if already visited
-        if superclass.node_id in visited:
+        if str(superclass.node_id) in visited:
             continue
         
         # Skip if not matching filter
@@ -205,7 +207,7 @@ def add_superclasses_to_graph(
             style="dashed" if relation_type == InheritanceRelationType.IMPLEMENTS else "solid",
         )
         
-        visited.add(superclass.node_id)
+        visited.add(str(superclass.node_id))
         
         # Recursively add superclasses
         if isinstance(superclass, Class):
@@ -251,9 +253,11 @@ def add_subclasses_to_graph(
     if max_depth is not None and depth >= max_depth:
         return
     
-    for subclass in cls.subclasses(max_depth=1):
+    # Get subclasses using the internal method
+    subclasses = cls._get_subclasses(max_depth=1)
+    for subclass in subclasses:
         # Skip if already visited
-        if subclass.node_id in visited:
+        if str(subclass.node_id) in visited:
             continue
         
         # Skip if not matching filter
@@ -265,29 +269,33 @@ def add_subclasses_to_graph(
             continue
         
         # Add the subclass to the graph
-        add_class_to_graph(G, subclass, include_methods=include_methods)
-        
-        # Add edge from subclass to superclass
-        G.add_edge(
-            subclass, 
-            cls, 
-            relation=InheritanceRelationType.EXTENDS.value,
-            style="solid",
-        )
-        
-        visited.add(subclass.node_id)
-        
-        # Recursively add subclasses
-        add_subclasses_to_graph(
-            G, 
-            subclass, 
-            max_depth=max_depth, 
-            visited=visited, 
-            depth=depth+1,
-            include_interfaces=include_interfaces,
-            include_methods=include_methods,
-            filter_packages=filter_packages
-        )
+        if isinstance(subclass, Class):
+            add_class_to_graph(G, subclass, include_methods=include_methods)
+            
+            # Add edge from subclass to superclass
+            G.add_edge(
+                subclass, 
+                cls, 
+                relation=InheritanceRelationType.EXTENDS.value,
+                style="solid",
+            )
+            
+            visited.add(str(subclass.node_id))
+            
+            # Recursively add subclasses
+            add_subclasses_to_graph(
+                G, 
+                subclass, 
+                max_depth=max_depth, 
+                visited=visited, 
+                depth=depth+1,
+                include_interfaces=include_interfaces,
+                include_methods=include_methods,
+                filter_packages=filter_packages
+            )
+        else:
+            # Skip non-Class subclasses
+            continue
 
 
 def detect_multiple_inheritance(cls: Class) -> List[Tuple[Class, List[Class]]]:
@@ -304,12 +312,14 @@ def detect_multiple_inheritance(cls: Class) -> List[Tuple[Class, List[Class]]]:
     
     # Check if the class has multiple direct parents
     if cls.parent_classes and len(cls.parent_class_names) > 1:
-        parent_classes = [p for p in cls.superclasses(max_depth=1) if isinstance(p, Class)]
+        # Get superclasses using the internal method
+        parent_classes = [p for p in cls._get_superclasses(max_depth=1) if isinstance(p, Class)]
         if len(parent_classes) > 1:
             result.append((cls, parent_classes))
     
     # Recursively check subclasses
-    for subclass in cls.subclasses(max_depth=1):
+    # Get subclasses using the internal method
+    for subclass in cls._get_subclasses(max_depth=1):
         if isinstance(subclass, Class):
             result.extend(detect_multiple_inheritance(subclass))
     
@@ -408,4 +418,3 @@ def add_method_override_info(G: DiGraph) -> DiGraph:
                         break
     
     return G
-
