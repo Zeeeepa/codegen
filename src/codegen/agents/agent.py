@@ -12,9 +12,9 @@ from codegen.agents.constants import CODEGEN_BASE_API_URL
 class AgentTask:
     """Represents an agent run job."""
 
-    def __init__(self, task_data: AgentRunResponse, api_client: ApiClient, org_id: int):
+    def __init__(self, task_data: AgentRunResponse, api_client: ApiClient):
         self.id = task_data.id
-        self.org_id = org_id
+        self.org_id = api_client.configuration.org_id if hasattr(api_client.configuration, "org_id") else None
         self.status = task_data.status
         self.result = task_data.result
         self.web_url = task_data.web_url
@@ -27,7 +27,7 @@ class AgentTask:
             return
 
         job_data = self._agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get(
-            agent_run_id=int(self.id), org_id=int(self.org_id), authorization=f"Bearer {self._api_client.configuration.access_token}"
+            agent_run_id=int(self.id), org_id=int(self.org_id)
         )
 
         # Convert API response to dict for attribute access
@@ -55,7 +55,10 @@ class Agent:
         self.org_id = org_id or int(os.environ.get("CODEGEN_ORG_ID", "1"))  # Default to org ID 1 if not specified
 
         # Configure API client
-        config = Configuration(host=base_url, access_token=token)
+        config = Configuration(host=base_url)
+        config.api_key["Authorization"] = token
+        config.api_key_prefix["Authorization"] = "Bearer"
+        config.org_id = self.org_id  # Add org_id to configuration
         self.api_client = ApiClient(configuration=config)
         self.agents_api = AgentsApi(self.api_client)
 
@@ -66,20 +69,24 @@ class Agent:
         """Run an agent with the given prompt.
 
         Args:
-            prompt: The instruction for the agent to execute
+            prompt: The prompt to send to the agent.
 
         Returns:
-            Job: A job object representing the agent run
+            An AgentTask object representing the running job.
         """
-        run_input = CreateAgentRunInput(prompt=prompt)
-        agent_run_response = self.agents_api.create_agent_run_v1_organizations_org_id_agent_run_post(
-            org_id=int(self.org_id), create_agent_run_input=run_input, authorization=f"Bearer {self.token}", _headers={"Content-Type": "application/json"}
+        # Create the agent run
+        create_input = CreateAgentRunInput(prompt=prompt)
+        response = self.agents_api.create_agent_run_v1_organizations_org_id_agent_run_post(
+            org_id=self.org_id, create_agent_run_input=create_input
         )
-        # Convert API response to dict for Job initialization
 
-        job = AgentTask(agent_run_response, self.api_client, self.org_id)
-        self.current_job = job
-        return job
+        # Create a task object from the response
+        self.current_job = AgentTask(
+            task_data=response,
+            api_client=self.api_client,
+        )
+
+        return self.current_job
 
     def get_status(self) -> dict[str, Any] | None:
         """Get the status of the current job.

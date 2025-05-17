@@ -121,19 +121,8 @@ class Configuration:
     """This class contains various settings of the API client.
 
     :param host: Base url.
-    :param ignore_operation_servers
-      Boolean to ignore operation servers for the API client.
-      Config will use `host` as the base url regardless of the operation servers.
-    :param api_key: Dict to store API key(s).
-      Each entry in the dict specifies an API key.
-      The dict key is the name of the security scheme in the OAS specification.
-      The dict value is the API key secret.
-    :param api_key_prefix: Dict to store API prefix (e.g. Bearer).
-      The dict key is the name of the security scheme in the OAS specification.
-      The dict value is an API key prefix when generating the auth data.
-    :param username: Username for HTTP basic authentication.
-    :param password: Password for HTTP basic authentication.
-    :param access_token: Access token.
+    :param discard_unknown_keys: Boolean to discard unknown keys in the response.
+    :param disabled_client_side_validations: String to disable client side validations.
     :param server_index: Index to servers configuration.
     :param server_variables: Mapping with string values to replace variables in
       templated server configuration. The validation of enums is performed for
@@ -146,9 +135,26 @@ class Configuration:
       values before.
     :param ssl_ca_cert: str - the path to a file of concatenated CA certificates
       in PEM format.
-    :param retries: Number of retries for API requests.
-    :param ca_cert_data: verify the peer using concatenated CA certificate data
-      in PEM (str) or DER (bytes) format.
+    :param cert_file: str - the path to a client certificate file.
+    :param key_file: str - the path to a client key file.
+    :param assert_hostname: bool - enable/disable SSL hostname verification.
+    :param assert_fingerprint: str - the SSL certificate fingerprint to verify.
+    :param connection_pool_maxsize: int - the maximum number of connections saved
+      per pool. urllib3 uses 1 connection as default value, but this is
+      not the best value when you are making a lot of possibly parallel
+      requests to the same host, which is often the case here.
+    :param proxy: str - the proxy URL.
+    :param proxy_headers: dict - the proxy headers.
+    :param safe_chars_for_path_param: str - safe chars for path_param.
+    :param retries: int - number of retries for API requests.
+    :param socket_options: list of tuples - options to pass down to the underlying urllib3 socket.
+    :param logger_file: str - the logger file path.
+    :param logger_format: str - the logger format.
+    :param logger_stream_handler: logging.StreamHandler - the logger stream handler.
+    :param logger_file_handler: logging.FileHandler - the logger file handler.
+    :param logger_encoding: str - the logger encoding.
+    :param refresh_api_key_hook: callable - the function hook to refresh API key if expired.
+    :param debug: bool - the debug status, True or False.
 
     """
 
@@ -157,20 +163,29 @@ class Configuration:
     def __init__(
         self,
         host: str | None = None,
-        api_key: dict[str, str] | None = None,
-        api_key_prefix: dict[str, str] | None = None,
-        username: str | None = None,
-        password: str | None = None,
-        access_token: str | None = None,
+        discard_unknown_keys: bool = False,
+        disabled_client_side_validations: str = "",
         server_index: int | None = None,
-        server_variables: ServerVariablesT | None = None,
-        server_operation_index: dict[int, int] | None = None,
-        server_operation_variables: dict[int, ServerVariablesT] | None = None,
-        ignore_operation_servers: bool = False,
+        server_variables: dict[str, str] | None = None,
+        server_operation_index: dict[str, int] | None = None,
+        server_operation_variables: dict[str, dict[str, str]] | None = None,
         ssl_ca_cert: str | None = None,
+        cert_file: str | None = None,
+        key_file: str | None = None,
+        assert_hostname: bool | None = None,
+        assert_fingerprint: str | None = None,
+        connection_pool_maxsize: int | None = None,
+        proxy: str | None = None,
+        proxy_headers: dict[str, str] | None = None,
+        safe_chars_for_path_param: str | None = None,
         retries: int | None = None,
-        ca_cert_data: str | bytes | None = None,
-        *,
+        socket_options: list[tuple[int, int, int]] | None = None,
+        logger_file: str | None = None,
+        logger_format: str | None = None,
+        logger_stream_handler: logging.StreamHandler | None = None,
+        logger_file_handler: logging.FileHandler | None = None,
+        logger_encoding: str | None = None,
+        refresh_api_key_hook: callable | None = None,
         debug: bool | None = None,
     ) -> None:
         """Constructor"""
@@ -185,7 +200,7 @@ class Configuration:
         self.server_operation_variables = server_operation_variables or {}
         """Default server variables
         """
-        self.ignore_operation_servers = ignore_operation_servers
+        self.ignore_operation_servers = False
         """Ignore operation servers
         """
         self.temp_folder_path = None
@@ -193,25 +208,21 @@ class Configuration:
         """
         # Authentication Settings
         self.api_key = {}
-        if api_key:
-            self.api_key = api_key
         """dict to store API key(s)
         """
         self.api_key_prefix = {}
-        if api_key_prefix:
-            self.api_key_prefix = api_key_prefix
         """dict to store API prefix (e.g. Bearer)
         """
-        self.refresh_api_key_hook = None
+        self.refresh_api_key_hook = refresh_api_key_hook
         """function hook to refresh API key if expired
         """
-        self.username = username
+        self.username = None
         """Username for HTTP basic authentication
         """
-        self.password = password
+        self.password = None
         """Password for HTTP basic authentication
         """
-        self.access_token = access_token
+        self.access_token = None
         """Access token
         """
         self.logger = {}
@@ -222,13 +233,13 @@ class Configuration:
         self.logger_format = "%(asctime)s %(levelname)s %(message)s"
         """Log format
         """
-        self.logger_stream_handler = None
+        self.logger_stream_handler = logger_stream_handler
         """Log stream handler
         """
-        self.logger_file_handler: FileHandler | None = None
+        self.logger_file_handler: FileHandler | None = logger_file_handler
         """Log file handler
         """
-        self.logger_file = None
+        self.logger_file = logger_file
         """Debug file location
         """
         if debug is not None:
@@ -246,17 +257,17 @@ class Configuration:
         self.ssl_ca_cert = ssl_ca_cert
         """Set this to customize the certificate file to verify the peer.
         """
-        self.ca_cert_data = ca_cert_data
+        self.ca_cert_data = None
         """Set this to verify the peer using PEM (str) or DER (bytes)
            certificate data.
         """
-        self.cert_file = None
+        self.cert_file = cert_file
         """client certificate file
         """
-        self.key_file = None
+        self.key_file = key_file
         """client key file
         """
-        self.assert_hostname = None
+        self.assert_hostname = assert_hostname
         """Set this to True/False to enable/disable SSL hostname verification.
         """
         self.tls_server_name = None
@@ -264,7 +275,7 @@ class Configuration:
            Set this to the SNI value expected by the server.
         """
 
-        self.connection_pool_maxsize = multiprocessing.cpu_count() * 5
+        self.connection_pool_maxsize = connection_pool_maxsize or multiprocessing.cpu_count() * 5
         """urllib3 connection pool's maximum number of connections saved
            per pool. urllib3 uses 1 connection as default value, but this is
            not the best value when you are making a lot of possibly parallel
@@ -272,13 +283,13 @@ class Configuration:
            cpu_count * 5 is used as default value to increase performance.
         """
 
-        self.proxy: str | None = None
+        self.proxy: str | None = proxy
         """Proxy URL
         """
-        self.proxy_headers = None
+        self.proxy_headers = proxy_headers
         """Proxy headers
         """
-        self.safe_chars_for_path_param = ""
+        self.safe_chars_for_path_param = safe_chars_for_path_param
         """Safe chars for path_param
         """
         self.retries = retries
@@ -287,7 +298,7 @@ class Configuration:
         # Enable client side validation
         self.client_side_validation = True
 
-        self.socket_options = None
+        self.socket_options = socket_options
         """Options to pass down to the underlying urllib3 socket
         """
 
@@ -345,9 +356,6 @@ class Configuration:
         object of Configuration class or returns a copy of default
         configuration.
 
-        If the CODEGEN_API_KEY environment variable is set, it will be used
-        as the API key for authorization.
-
         :return: The configuration object.
         """
         if cls._default is None:
@@ -359,7 +367,7 @@ class Configuration:
                 config.api_key["Authorization"] = api_key
                 config.api_key_prefix["Authorization"] = "Bearer"
             else:
-                config.api_key_prefix["Authorization"] = "Bearer
+                config.api_key_prefix["Authorization"] = "Bearer"
                 
             cls._default = config
             
@@ -463,7 +471,7 @@ class Configuration:
         if key:
             prefix = self.api_key_prefix.get(identifier)
             if prefix:
-                return f"{prefix} {key}"
+                return prefix + " " + key
             else:
                 return key
 
