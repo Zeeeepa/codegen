@@ -1,4 +1,5 @@
 import os
+from typing import TYPE_CHECKING, Optional, Union
 
 import plotly.graph_objects as go
 from networkx import Graph
@@ -7,7 +8,9 @@ from codegen.git.repo_operator.repo_operator import RepoOperator
 from codegen.sdk.core.interfaces.editable import Editable
 from codegen.shared.logging.get_logger import get_logger
 from codegen.visualizations.viz_utils import graph_to_json
-from codegen.visualizations.module_dependency_viz import ModuleDependencyGraph, build_module_dependency_graph
+
+if TYPE_CHECKING:
+    from codegen.visualizations.module_dependency_viz import ModuleDependencyGraph
 
 logger = get_logger(__name__)
 
@@ -33,7 +36,7 @@ class VisualizationManager:
         if self.op.folder_exists(self.viz_path):
             self.op.emptydir(self.viz_path)
 
-    def write_graphviz_data(self, G: Graph | go.Figure | ModuleDependencyGraph, root: Editable | str | int | None = None) -> None:
+    def write_graphviz_data(self, G: Union[Graph, go.Figure, "ModuleDependencyGraph"], root: Optional[Union[Editable, str, int]] = None) -> None:
         """Writes the graph data to a file.
 
         Args:
@@ -50,8 +53,13 @@ class VisualizationManager:
             graph_json = graph_to_json(G, root)
         elif isinstance(G, go.Figure):
             graph_json = G.to_json()
-        elif isinstance(G, ModuleDependencyGraph):
-            graph_json = G.to_json(root)
+        else:
+            # This is a ModuleDependencyGraph
+            from codegen.visualizations.module_dependency_viz import ModuleDependencyGraph
+            if isinstance(G, ModuleDependencyGraph):
+                graph_json = G.to_json(root)
+            else:
+                raise TypeError(f"Unsupported graph type: {type(G)}")
 
         # Check if the visualization path exists, if so, empty it
         if self.op.folder_exists(self.viz_path):
