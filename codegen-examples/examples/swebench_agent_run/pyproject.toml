@@ -8,7 +8,7 @@ dependencies = [
   "modal>=0.73.25",
   "tqdm>=4.66.0",
   "click>=8.1.0",
-  "codegen",
+  "codegen>=0.52.19",
   "swebench>=3.0.15",
   "tenacity>=9.0.0",
 ]

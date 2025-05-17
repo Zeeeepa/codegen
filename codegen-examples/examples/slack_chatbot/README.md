@@ -1,121 +1,132 @@
-# Codegen Slack Bot
+# Slack Chatbot Example
 
-<p align="center">
-  <a href="https://docs.codegen.com">
-    <img src="https://i.imgur.com/6RF9W0z.jpeg" />
-  </a>
-</p>
+This example demonstrates how to create a Slack chatbot using the Codegen SDK and Modal. The chatbot can answer questions about codebases and provide code snippets and explanations.
 
-<h2 align="center">
-  A Slack bot for answering questions about Codegen's implementation
-</h2>
+## Prerequisites
 
-<div align="center">
+- [Modal](https://modal.com/) account
+- [Slack](https://slack.com/) workspace with admin access
+- Python 3.13 or higher
+- Codegen SDK (version 0.52.19 or higher)
 
-[![Documentation](https://img.shields.io/badge/Docs-docs.codegen.com-purple?style=flat-square)](https://docs.codegen.com)
-[![License](https://img.shields.io/badge/Code%20License-Apache%202.0-gray?&color=gray)](https://github.com/codegen-sh/codegen-sdk/tree/develop?tab=Apache-2.0-1-ov-file)
+## Setup
 
-</div>
-
-This example demonstrates how to build a Slack chatbot that can answer questions about Codegen's implementation using VectorIndex for RAG. The bot:
-
-1. Maintains an up-to-date index of Codegen's source code
-1. Uses semantic search to find relevant code snippets
-1. Generates detailed answers about Codegen's internals using GPT-4
-
-## Quick Start
-
-1. Install dependencies:
+### 1. Install Dependencies
 
 ```bash
-pip install modal-client codegen slack-bolt openai
+# Clone the repository
+git clone https://github.com/Zeeeepa/codegen.git
+cd codegen/codegen-examples/examples/slack_chatbot
+
+# Install dependencies
+pip install -e .
 ```
 
-2. Create a Slack app and get tokens:
+### 2. Configure Environment Variables
 
-   - Create a new Slack app at https://api.slack.com/apps
-   - Add bot token scopes:
-     - `app_mentions:read`
-     - `chat:write`
-     - `reactions:write`
-   - Install the app to your workspace
+Create a `.env` file with your credentials:
 
-1. Set up environment:
+```
+# Slack credentials
+SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
+SLACK_SIGNING_SECRET=your-slack-signing-secret
+
+# Modal configuration (optional)
+MODAL_API_KEY=your_modal_api_key
+```
+
+To get these credentials:
+
+- **SLACK_BOT_TOKEN**: Create a Slack app and get the Bot User OAuth Token
+- **SLACK_SIGNING_SECRET**: Get the Signing Secret from your Slack app's Basic Information page
+- **MODAL_API_KEY**: Your Modal API key (if not using Modal CLI authentication)
+
+### 3. Authenticate with Modal
 
 ```bash
-# Copy template and fill in your tokens
-cp .env.template .env
+modal token new
 ```
 
-4. Start the bot:
+## Deployment Commands
+
+### Deploy to Modal
 
 ```bash
-modal serve api.py
+# Deploy the application to Modal
+./deploy.sh
 ```
+
+This will deploy the application to Modal and provide you with a URL that you can use to configure the Slack app.
+
+### Get Deployment Status
+
+```bash
+# Check the status of your Modal deployment
+modal app status slack-chatbot
+```
+
+### View Logs
+
+```bash
+# View logs from your Modal deployment
+modal app logs slack-chatbot
+```
+
+### Update Deployment
+
+```bash
+# Update your Modal deployment after making changes
+./deploy.sh
+```
+
+### Stop Deployment
+
+```bash
+# Stop your Modal deployment
+modal app stop slack-chatbot
+```
+
+## Configuring Slack App
+
+1. Go to [Slack API](https://api.slack.com/apps) and create a new app
+2. Go to "OAuth & Permissions" and add the following scopes:
+   - `app_mentions:read`
+   - `chat:write`
+   - `im:history`
+   - `im:read`
+   - `im:write`
+3. Install the app to your workspace
+4. Go to "Event Subscriptions" and enable events
+5. Enter the URL provided by Modal when you deployed the application as the Request URL
+6. Subscribe to the following bot events:
+   - `app_mention`
+   - `message.im`
+7. Save changes
 
 ## Usage
 
-Just mention the bot in any channel and ask your question about Codegen:
+Once the chatbot is deployed and configured, you can interact with it in two ways:
 
-```
-@your-bot-name How does the VectorIndex work?
-@your-bot-name What's the implementation of semantic search?
-@your-bot-name How does Codegen handle file operations?
-```
+1. **Direct Messages**: Send a direct message to the bot
+2. **Mentions**: Mention the bot in a channel using `@botname`
 
-The bot will:
+The bot will respond to your messages with information about the codebase you're asking about.
 
-1. Find the most relevant Codegen source code
-1. Generate a detailed explanation
-1. Show you links to the actual implementation
+## Customizing the Application
 
-## Response Format
+You can customize the application by modifying the following files:
 
-The bot responds with:
+- `api.py`: The main application file that handles Slack events and responses
 
-1. A detailed answer about Codegen's implementation
-1. Links to relevant source files on GitHub
-1. Error messages if something goes wrong
+## Troubleshooting
 
-Example response:
+- **Webhook not receiving events**: Verify that your Slack app is configured correctly and that the URL is accessible.
+- **Authentication errors**: Check that your SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET are correct.
+- **Modal deployment issues**: Run `modal app logs slack-chatbot` to view logs and diagnose issues.
 
-```
-*Answer:*
-The VectorIndex class uses OpenAI's embeddings to create searchable vectors
-for all files in a codebase. It handles chunking large files and maintains
-a persistent index for faster subsequent queries.
+## Additional Resources
 
-*Relevant Files:*
-• src/codegen/extensions/vector_index.py
-• src/codegen/extensions/tools/semantic_search.py
-```
-
-## Environment Variables
-
-Required environment variables (in `.env`):
-
-- `SLACK_BOT_TOKEN`: Slack Bot User OAuth Token
-- `SLACK_SIGNING_SECRET`: Slack Signing Secret
-- `OPENAI_API_KEY`: OpenAI API key
-
-## Development
-
-The bot is built using:
-
-- Modal for serverless deployment
-- Codegen for codebase analysis
-- Slack Bolt for the Slack integration
-- OpenAI for embeddings and Q&A
-
-To deploy changes:
-
-```bash
-modal deploy api.py
-```
-
-## Learn More
-
-- [Codegen Documentation](https://docs.codegen.com)
-- [Slack Bolt Python](https://slack.dev/bolt-python/concepts)
+- [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
-- [VectorIndex Tutorial](https://docs.codegen.com/building-with-codegen/semantic-code-search)
+- [Slack API Documentation](https://api.slack.com/)
+

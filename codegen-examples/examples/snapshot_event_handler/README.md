@@ -1,53 +1,123 @@
-# Event Handler with codebase snapshotting
+# Snapshot Event Handler Example
 
-This project is designed to using Modal snapshotting to provide parsed codebase instances with minimal latency, make it more manageable to write event based handlers.
-
-Follow the instructions below to set up and deploy the application.
+This example demonstrates how to use the Codegen SDK with Modal to create a webhook handler for GitHub snapshot events. When a GitHub webhook event is received, this application will process the event and perform actions based on the event type.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed and configured:
+- [Modal](https://modal.com/) account
+- [GitHub](https://github.com/) repository access
+- Python 3.13 or higher
+- Codegen SDK (version 0.52.19 or higher)
 
-1. **uv**: A tool for managing virtual environments and syncing dependencies.
-1. **Modal**: Ensure you have Modal configured on your system.
+## Setup
 
-## Setup Instructions
+### 1. Install Dependencies
 
-1. **Create a Virtual Environment**
+```bash
+# Clone the repository
+git clone https://github.com/Zeeeepa/codegen.git
+cd codegen/codegen-examples/examples/snapshot_event_handler
 
-   Use `uv` to create a virtual environment with Python 3.13:
+# Install dependencies
+pip install -e .
+```
 
-   ```bash
-   uv venv --python 3.13
+### 2. Configure Environment Variables
 
-   source ./venv/bin/activate
-   ```
+Create a `.env` file with your credentials:
 
-1. **Sync Dependencies**
+```
+# GitHub credentials
+GITHUB_TOKEN=your_github_token
 
-   Sync the project dependencies using `uv`:
+# Modal configuration (optional)
+MODAL_API_KEY=your_modal_api_key
+```
 
-   ```bash
-   uv sync
-   ```
+### 3. Authenticate with Modal
 
-1. **Deploy to Modal**
+```bash
+modal token new
+```
 
-   Deploy the application to Modal by running:
+## Deployment Commands
 
-   ```bash
-   uv run modal deploy event_handlers.py
-   ```
+### Deploy to Modal
 
-   This command will deploy the Modal app and provide a web URL for your webhook sync.
+```bash
+# Deploy the application to Modal
+./deploy.sh
+```
 
-## Project Structure
+This will deploy the application to Modal and provide you with a URL that you can use to configure the GitHub webhook.
 
-- `event_handlers.py`: Contains the main logic for handling events.
-- `pr_tasks.py`: Additional tasks related to pull requests.
-- `.env.template` and `.env`: Environment variable templates and configurations.
-- `pyproject.toml`: Project configuration and dependencies.
+### Get Deployment Status
 
-## Integration
+```bash
+# Check the status of your Modal deployment
+modal app status snapshot-event-handler
+```
 
-Once deployed, you can use the deployed web_url as the webhook endpoint for your slack, linear, or github webhooks.
+### View Logs
+
+```bash
+# View logs from your Modal deployment
+modal app logs snapshot-event-handler
+```
+
+### Update Deployment
+
+```bash
+# Update your Modal deployment after making changes
+./deploy.sh
+```
+
+### Stop Deployment
+
+```bash
+# Stop your Modal deployment
+modal app stop snapshot-event-handler
+```
+
+## Configuring GitHub Webhooks
+
+1. Go to your GitHub repository
+2. Go to Settings → Webhooks
+3. Click "Add webhook"
+4. Enter the URL provided by Modal when you deployed the application
+5. Select "application/json" as the content type
+6. Select "Let me select individual events"
+7. Check the events you want to receive (e.g., "Pull requests", "Issues")
+8. Click "Add webhook"
+
+## Usage
+
+The application handles the following GitHub events:
+
+- **Pull Request**: Created, updated, or closed
+- **Issue**: Created, updated, or closed
+- **Push**: Code pushed to the repository
+
+You can customize the handlers in `event_handlers.py` to process these events according to your needs.
+
+## Customizing the Application
+
+You can customize the application by modifying the event handlers in `event_handlers.py`. Each handler receives a GitHub event object that contains information about the event, including:
+
+- `action`: The action that triggered the event (e.g., "opened", "closed")
+- `repository`: Information about the repository
+- `sender`: Information about the user who triggered the event
+- Event-specific data (e.g., pull request details, issue details)
+
+## Troubleshooting
+
+- **Webhook not receiving events**: Verify that your GitHub webhook is configured correctly and that the URL is accessible.
+- **Authentication errors**: Check that your GITHUB_TOKEN is correct and has the necessary permissions.
+- **Modal deployment issues**: Run `modal app logs snapshot-event-handler` to view logs and diagnose issues.
+
+## Additional Resources
+
+- [Codegen Documentation](https://docs.codegen.sh/)
+- [Modal Documentation](https://modal.com/docs)
+- [GitHub Webhooks Documentation](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks)
+

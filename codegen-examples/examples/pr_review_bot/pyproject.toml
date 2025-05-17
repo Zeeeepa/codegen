@@ -1,12 +1,12 @@
 [project]
-name = "ticket-to-pr"
+name = "pr-review-bot"
 version = "0.1.0"
-description = "A example implementation of a agentic linear bot that can create PRs from linear tickets"
+description = "PR review bot example for Codegen"
 readme = "README.md"
-requires-python = ">=3.12, <3.14"
+requires-python = ">=3.13"
 dependencies = [
-  "codegen==0.31.1",
-  "fastapi>=0.115.8",
-  "modal>=0.73.51",
-  "pydantic>=2.10.6",
+  "modal>=0.73.25",
+  "fastapi[standard]",
+  "codegen>=0.52.19",
+  "python-dotenv>=1.0.0",
 ]

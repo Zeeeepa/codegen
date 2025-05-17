@@ -25,20 +25,27 @@ if ! modal token list &> /dev/null; then
     exit 1
 fi
 
-# Check if .env file exists
-if [ ! -f .env ]; then
-    if [ -f .env.template ]; then
-        echo ".env file not found. Creating from template..."
-        cp .env.template .env
-        echo "Please edit the .env file with your credentials before deploying."
-        exit 1
-    fi
+# Create a basic pyproject.toml if it doesn't exist
+if [ ! -f pyproject.toml ]; then
+    echo "Creating pyproject.toml..."
+    cat > pyproject.toml << EOL
+[project]
+name = "repo-analytics"
+version = "0.1.0"
+description = "Repository analytics example for Codegen"
+requires-python = ">=3.13"
+dependencies = [
+  "modal>=0.73.25",
+  "codegen>=0.52.19",
+  "python-dotenv>=1.0.0",
+]
+EOL
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying Repository Analytics to Modal..."
+python3 -m modal deploy run.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status repo-analytics'"
+echo "To view logs, run 'modal app logs repo-analytics'"
 
