@@ -70,3 +70,4 @@ class LinearEventHandlers:
 # If running this file directly, this will deploy the app to Modal
 if __name__ == "__main__":
     app.serve()
+
