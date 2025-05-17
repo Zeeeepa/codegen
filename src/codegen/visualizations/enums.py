@@ -25,3 +25,21 @@ class GraphJson:
 class GraphType(StrEnum):
     TREE = "tree"
     GRAPH = "graph"
+
+
+class ElementType(StrEnum):
+    """Types of elements that can be selected in the visualization UI."""
+    SYMBOL = "symbol"
+    FILE = "file"
+    FUNCTION = "function"
+    CLASS = "class"
+
+
+@dataclass(frozen=True)
+class SelectedElement:
+    """Represents an element selected in the visualization UI."""
+    type: ElementType
+    id: str
+    name: str
+    methods: list[str] = None
+    related_elements: list[str] = None
