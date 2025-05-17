@@ -1,7 +1,7 @@
 import os
 import modal
 from codegen.extensions.events.app import CodegenApp
-from codegen.extensions.linear.types import LinearEvent
+from codegen.extensions.linear.types import LinearEvent, LinearIssue, LinearComment
 from codegen.shared.logging.get_logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,14 +34,23 @@ class LinearEventHandlers:
         
         This endpoint will be triggered when an issue is created, updated, or deleted in Linear.
         """
-        logger.info(f"Received Linear Issue event: {event.action} - {event.data.title}")
-        # Process the event data as needed
-        return {
-            "status": "success",
-            "message": f"Processed Linear Issue event: {event.action}",
-            "issue_id": event.data.id,
-            "issue_title": event.data.title
-        }
+        # Check if the data is an Issue before accessing title
+        if isinstance(event.data, LinearIssue):
+            issue_title = event.data.title
+            logger.info(f"Received Linear Issue event: {event.action} - {issue_title}")
+            return {
+                "status": "success",
+                "message": f"Processed Linear Issue event: {event.action}",
+                "issue_id": event.data.id,
+                "issue_title": issue_title
+            }
+        else:
+            logger.warning(f"Received non-Issue data for Issue event: {event.action}")
+            return {
+                "status": "warning",
+                "message": f"Received non-Issue data for Issue event: {event.action}",
+                "id": event.data.id
+            }
 
     @modal.web_endpoint(method="POST")
     @app.linear.event("Comment")
