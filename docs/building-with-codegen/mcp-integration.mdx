@@ -1,0 +1,271 @@
+---
+title: "MCP Integration"
+sidebarTitle: "MCP Integration"
+icon: "plug"
+iconType: "solid"
+---
+
+# Model Context Protocol (MCP) Integration
+
+The Codegen SDK provides integration with the Model Context Protocol (MCP), enabling seamless communication between language models and external tools or data sources. This guide covers how to use MCP with Codegen SDK.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is a standardized protocol for connecting language models with external tools, data sources, and services. It allows models to:
+
+- Request information from external sources
+- Execute tools and commands
+- Access contextual information about codebases
+- Interact with version control systems
+
+## Setting Up MCP Integration
+
+To use MCP with Codegen SDK, you need to set up an MCP server and configure your client:
+
+```python
+from codegen import Codebase
+from codegen.extensions.mcp import MCPClient
+
+# Initialize your codebase
+codebase = Codebase("path/to/your/code")
+
+# Initialize MCP client
+mcp_client = MCPClient(
+    server_url="http://localhost:8000",
+    api_key="your-mcp-api-key"  # If required by your MCP server
+)
+
+# Connect the MCP client to your codebase
+codebase.register_mcp_client(mcp_client)
+```
+
+## Using MCP for Code Analysis
+
+Once your MCP client is set up, you can use it to enhance code analysis:
+
+```python
+# Get context-aware information about a function
+function = codebase.get_function("process_data")
+context = codebase.get_mcp_context(
+    target=function,
+    include_dependencies=True,
+    include_usages=True
+)
+
+# Use the context in AI queries
+result = codebase.ai(
+    prompt="Explain what this function does and suggest improvements",
+    target=function,
+    context=context
+)
+```
+
+## MCP Tools and Commands
+
+MCP provides a set of tools and commands that can be executed through the protocol:
+
+```python
+# Execute an MCP tool
+result = codebase.execute_mcp_tool(
+    tool_name="code-search",
+    parameters={
+        "query": "def process_data",
+        "max_results": 5
+    }
+)
+
+# Process the results
+for match in result.matches:
+    print(f"Found in {match.file_path}:{match.line_number}")
+    print(match.code_snippet)
+```
+
+## Building MCP-Enabled Agents
+
+You can build agents that leverage MCP for enhanced capabilities:
+
+```python
+from codegen.extensions.mcp import MCPAgent
+
+# Create an MCP-enabled agent
+agent = MCPAgent(
+    codebase=codebase,
+    mcp_client=mcp_client,
+    model="gpt-4"
+)
+
+# Run the agent with a task
+result = agent.run(
+    task="Find all usages of the UserService class and suggest improvements",
+    max_iterations=10
+)
+
+# Process the agent's output
+print(result.summary)
+for action in result.actions:
+    print(f"Action: {action.type}")
+    print(f"Result: {action.result}")
+```
+
+## MCP Server Implementation
+
+You can also implement your own MCP server using Codegen SDK:
+
+```python
+from codegen.extensions.mcp import MCPServer, register_tool
+
+# Create an MCP server
+server = MCPServer(
+    host="0.0.0.0",
+    port=8000,
+    codebase=codebase
+)
+
+# Register custom tools
+@register_tool(server)
+def custom_code_analysis(parameters):
+    """
+    Analyze code for specific patterns.
+    
+    Parameters:
+        pattern (str): The pattern to search for
+        file_types (list): List of file extensions to include
+    """
+    pattern = parameters.get("pattern")
+    file_types = parameters.get("file_types", [".py", ".ts"])
+    
+    results = []
+    for file in codebase.files:
+        if any(file.path.endswith(ext) for ext in file_types):
+            if pattern in file.content:
+                results.append({
+                    "file": file.path,
+                    "matches": file.content.count(pattern)
+                })
+    
+    return {
+        "results": results,
+        "total_matches": sum(r["matches"] for r in results)
+    }
+
+# Start the server
+server.start()
+```
+
+## MCP and External Tools
+
+MCP can integrate with external tools and services:
+
+```python
+# Register GitHub integration
+server.register_github_integration(
+    repo_owner="your-org",
+    repo_name="your-repo",
+    access_token="your-github-token"
+)
+
+# Register Linear integration
+server.register_linear_integration(
+    api_key="your-linear-api-key",
+    team_id="your-team-id"
+)
+```
+
+## Best Practices
+
+### 1. Secure Your MCP Server
+
+```python
+# Set up authentication
+server = MCPServer(
+    host="0.0.0.0",
+    port=8000,
+    codebase=codebase,
+    require_api_key=True,
+    api_keys=["your-secret-key-1", "your-secret-key-2"]
+)
+
+# Enable HTTPS
+server.enable_ssl(
+    cert_file="path/to/cert.pem",
+    key_file="path/to/key.pem"
+)
+```
+
+### 2. Handle Rate Limiting
+
+```python
+# Configure rate limiting
+server = MCPServer(
+    host="0.0.0.0",
+    port=8000,
+    codebase=codebase,
+    rate_limit=100,  # requests per minute
+    rate_limit_window=60  # seconds
+)
+```
+
+### 3. Implement Logging and Monitoring
+
+```python
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    filename='mcp_server.log'
+)
+
+# Enable detailed logging in the server
+server = MCPServer(
+    host="0.0.0.0",
+    port=8000,
+    codebase=codebase,
+    log_level=logging.INFO,
+    log_requests=True
+)
+```
+
+## Advanced MCP Features
+
+### Custom Context Providers
+
+```python
+from codegen.extensions.mcp import ContextProvider
+
+# Create a custom context provider
+class DatabaseSchemaProvider(ContextProvider):
+    def __init__(self, db_connection_string):
+        self.db_connection_string = db_connection_string
+        
+    def get_context(self, request):
+        # Connect to the database and extract schema information
+        # ...
+        return {
+            "tables": [...],
+            "relationships": [...],
+            "indexes": [...]
+        }
+
+# Register the provider with the MCP server
+db_provider = DatabaseSchemaProvider("postgresql://user:pass@localhost/mydb")
+server.register_context_provider("database_schema", db_provider)
+```
+
+### MCP Webhooks
+
+```python
+# Register a webhook for MCP events
+server.register_webhook(
+    event_type="tool_execution",
+    url="https://your-service.com/webhooks/mcp",
+    secret="your-webhook-secret"
+)
+```
+
+## Conclusion
+
+MCP integration in Codegen SDK provides a powerful way to connect language models with external tools and data sources. By implementing MCP servers and clients, you can create sophisticated AI-powered applications that have deep understanding of your codebase and can interact with your development tools and services.
+
+

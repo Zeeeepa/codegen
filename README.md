@@ -1,121 +1,126 @@
-# Comprehensive Codebase Analyzer
+# Codegen SDK
 
-A powerful static code analysis system that provides extensive information about your codebase using the Codegen SDK.
+A powerful Python SDK to interact with intelligent code generation agents, providing comprehensive code analysis and manipulation capabilities.
 
 ## Features
 
-This analyzer provides comprehensive analysis of your codebase, including:
+The Codegen SDK provides a rich set of features for code analysis and manipulation:
 
-### 1. Codebase Structure Analysis
+### 1. Code Analysis
 
-- File Statistics (count, language, size)
-- Symbol Tree Analysis
-- Import/Export Analysis
-- Module Organization
+- Static code analysis for Python and TypeScript
+- Symbol tree analysis (functions, classes, variables)
+- Import/Export analysis
+- Dependency and usage tracking
+- Type inference and checking
 
-### 2. Symbol-Level Analysis
+### 2. Code Manipulation
 
-- Function Analysis (parameters, return types, complexity)
-- Class Analysis (methods, attributes, inheritance)
-- Variable Analysis
-- Type Analysis
+- Programmatic code editing and refactoring
+- Symbol renaming and moving
+- Import management
+- Code generation with AI assistance
+- Automated code transformations (codemods)
 
-### 3. Dependency and Flow Analysis
+### 3. AI Integration
 
-- Call Graph Generation
-- Data Flow Analysis
-- Control Flow Analysis
-- Symbol Usage Analysis
+- Integration with LLMs for code generation and analysis
+- Context-aware code suggestions
+- Documentation generation
+- Code quality improvements
 
-### 4. Code Quality Analysis
+### 4. Extensions and Integrations
 
-- Unused Code Detection
-- Code Duplication Analysis
-- Complexity Metrics
-- Style and Convention Analysis
+- GitHub integration for PR analysis and creation
+- Linear integration for issue tracking
+- Slack integration for notifications and chat
+- MCP (Model Context Protocol) support
+- Visualization tools for code analysis
 
-### 5. Visualization Capabilities
+### 5. CLI Tools
 
-- Dependency Graphs
-- Call Graphs
-- Symbol Trees
-- Heat Maps
-
-### 6. Language-Specific Analysis
-
-- Python-Specific Analysis
-- TypeScript-Specific Analysis
-
-### 7. Code Metrics
-
-- Monthly Commits
-- Cyclomatic Complexity
-- Halstead Volume
-- Maintainability Index
+- Interactive code exploration
+- Codemod execution
+- Project initialization
+- Notebook integration
 
 ## Installation
 
-1. Clone the repository:
+1. Install the Codegen SDK:
 
 ```bash
-git clone https://github.com/yourusername/codebase-analyzer.git
-cd codebase-analyzer
+pip install codegen-sdk
 ```
 
-2. Install dependencies:
+2. Initialize a project:
 
 ```bash
-pip install -r requirements.txt
+codegen init
 ```
 
 ## Usage
 
-### Analyzing a Repository
+### Basic Code Analysis
 
-```bash
-# Analyze from URL
-python codebase_analyzer.py --repo-url https://github.com/username/repo
+```python
+from codegen import Codebase
 
-# Analyze local repository
-python codebase_analyzer.py --repo-path /path/to/repo
+# Load a codebase
+codebase = Codebase("path/to/your/code")
 
-# Specify language
-python codebase_analyzer.py --repo-url https://github.com/username/repo --language python
-
-# Analyze specific categories
-python codebase_analyzer.py --repo-url https://github.com/username/repo --categories codebase_structure code_quality
+# Analyze functions
+for function in codebase.functions:
+    print(f"Function: {function.name}")
+    print(f"  Parameters: {[p.name for p in function.parameters]}")
+    print(f"  Return type: {function.return_type}")
+    print(f"  Call sites: {len(list(function.call_sites))}")
 ```
 
-### Output Formats
+### Code Manipulation
 
-```bash
-# Output as JSON
-python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format json --output-file analysis.json
+```python
+# Find a function
+function = codebase.get_function("process_data")
 
-# Generate HTML report
-python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format html --output-file report.html
+# Rename the function
+function.rename("process_data_v2")
 
-# Print to console (default)
-python codebase_analyzer.py --repo-url https://github.com/username/repo --output-format console
+# Add a parameter
+function.add_parameter("debug", "bool = False")
+
+# Add a docstring
+function.set_docstring("Process data with optional debug mode")
+
+# Commit changes
+codebase.commit("Update process_data function")
 ```
 
-## Available Analysis Categories
+### AI-Assisted Code Generation
 
-- `codebase_structure`: File statistics, symbol tree, import/export analysis, module organization
-- `symbol_level`: Function, class, variable, and type analysis
-- `dependency_flow`: Call graphs, data flow, control flow, symbol usage
-- `code_quality`: Unused code, duplication, complexity, style
-- `visualization`: Dependency graphs, call graphs, symbol trees, heat maps
-- `language_specific`: Language-specific analysis features
-- `code_metrics`: Commits, complexity, volume, maintainability
+```python
+# Set your OpenAI API key
+codebase.set_ai_key("your-openai-api-key")
 
-## Requirements
+# Generate a test for a function
+function = codebase.get_function("calculate_total")
+test_code = codebase.ai(f"Write a pytest test for the function {function.name}", target=function)
 
-- Python 3.8+
-- Codegen SDK
-- NetworkX
-- Matplotlib
-- Rich
+# Create a new test file
+test_file = codebase.create_file(f"tests/test_{function.file.stem}.py")
+test_file.write(test_code)
+```
+
+## Documentation
+
+For full documentation, visit [docs.codegen.com](https://docs.codegen.com).
+
+## Examples
+
+Check out the [codegen-examples](https://github.com/Zeeeepa/codegen-examples) repository for more examples and use cases.
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 

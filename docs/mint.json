@@ -42,7 +42,7 @@
 	},
 	"topbarCtaButton": {
 		"name": "GitHub",
-		"url": "https://github.com/codegen-sh/codegen-sdk"
+		"url": "https://github.com/Zeeeepa/codegen"
 	},
 	"tabs": [
 		{
@@ -148,6 +148,9 @@
 				"building-with-codegen/codebase-visualization",
 				"building-with-codegen/flagging-symbols",
 				"building-with-codegen/calling-out-to-llms",
+				"building-with-codegen/ai-integration",
+				"building-with-codegen/mcp-integration",
+				"building-with-codegen/github-integration",
 				"building-with-codegen/semantic-code-search",
 				"building-with-codegen/reducing-conditions"
 			]

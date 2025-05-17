@@ -32,7 +32,7 @@ After installing UV, set up your development environment:
 
 ```bash
 uv venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv sync --dev
 ```
 
@@ -49,11 +49,31 @@ uv run pytest tests/unit -n auto
 
 # Codemod tests (tests larger programs)
 uv run pytest tests/integration/codemod/test_codemods.py -n auto
+
+# Run specific test
+uv run pytest tests/unit/test_file.py::test_function -v
 ```
 
 > [!TIP]
 >
 > - If on Linux the error `OSError: [Errno 24] Too many open files` appears then you might want to increase your _ulimit_
+> - Use `pytest -xvs` for more verbose output and to stop on first failure
+
+## Documentation
+
+Documentation is built using Mintlify. To run the documentation locally:
+
+```bash
+cd docs
+npm i -g mintlify
+mintlify dev --port 3333
+```
+
+When adding new documentation:
+
+1. Create a new `.mdx` file in the appropriate directory
+1. Update `mint.json` to include the new page in the navigation
+1. Test the documentation locally before submitting a PR
 
 ## Pull Request Process
 
