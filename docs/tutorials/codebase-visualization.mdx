@@ -22,10 +22,13 @@ iconType: "solid"
 
 ## Overview
 
-To demonstrate the visualization capabilities of the codegen we will generate three different visualizations of PostHog's open source [repository](https://github.com/PostHog/posthog).
+To demonstrate the visualization capabilities of the codegen we will generate several different visualizations of PostHog's open source [repository](https://github.com/PostHog/posthog).
  - [Call Trace Visualization](#call-trace-visualization)
  - [Function Dependency Graph](#function-dependency-graph)
  - [Blast Radius Visualization](#blast-radius-visualization)
+ - [Class Method Relationships](#class-method-relationships)
+ - [Inheritance Hierarchy Visualization](#inheritance-hierarchy-visualization)
+ - [Module Dependency Visualization](#module-dependency-visualization)
 
 
 ## Call Trace Visualization
@@ -168,6 +171,31 @@ codebase.visualize(G)
 View on [codegen.sh](https://www.codegen.sh/codemod/6a34b45d-c8ad-422e-95a8-46d4dc3ce2b0/public/diff)
 </Info>
 
+### Enhanced Call Graph Features
+
+The enhanced call graph visualization now includes:
+
+1. **Interactive Node Selection**:
+   - Click on any function node to see its source code
+   - View all incoming and outgoing calls for the selected function
+   - See related functions in the selection row
+
+2. **Call Relationship Details**:
+   - Hover over edges to see call details (line numbers, file paths)
+   - View conditional calls with dashed lines
+   - See call frequency with edge weights
+
+3. **Filtering Options**:
+   ```python
+   # Filter call graph to show only API-related calls
+   api_calls = nx.DiGraph()
+   for u, v, data in G.edges(data=True):
+       if "api" in getattr(u, "filepath", "") or "api" in getattr(v, "filepath", ""):
+           api_calls.add_edge(u, v, **data)
+   
+   codebase.visualize(api_calls)
+   ```
+
 ### Common Use Cases
 The call graph visualization is particularly useful for:
  - Understanding complex codebases
@@ -240,6 +268,32 @@ create_dependencies_visualization(target_func)
 # Render visualization
 codebase.visualize(G)
 ```
+
+### Enhanced Dependency Graph Features
+
+The enhanced dependency graph visualization now includes:
+
+1. **Dependency Type Classification**:
+   ```python
+   # Classify dependencies by type
+   for dep in symbol.dependencies:
+       if isinstance(dep, Import):
+           G.add_edge(symbol, dep, type="import", color="#7ee8fa")
+       elif isinstance(dep, Function):
+           G.add_edge(symbol, dep, type="function_call", color="#ff7e5f")
+       elif isinstance(dep, Variable):
+           G.add_edge(symbol, dep, type="variable_use", color="#feb47b")
+   ```
+
+2. **Dependency Strength Visualization**:
+   - Edge thickness represents dependency strength
+   - More frequent dependencies have thicker edges
+   - Critical path dependencies are highlighted
+
+3. **Interactive Dependency Exploration**:
+   - Click on any node to see its dependencies
+   - Filter dependencies by type
+   - Expand or collapse dependency groups
 
 ### Take a look
 <iframe
@@ -352,6 +406,39 @@ create_blast_radius_visualization(target_func)
 codebase.visualize(G)
 ```
 
+### Enhanced Blast Radius Features
+
+The enhanced blast radius visualization now includes:
+
+1. **Impact Classification**:
+   - Color-coded impact types (API endpoints, internal functions, UI components)
+   - Critical path highlighting for high-impact changes
+   - Visual indicators for public vs. private usage
+
+2. **Risk Assessment**:
+   ```python
+   # Add risk assessment to nodes
+   for node in G.nodes():
+       # Count incoming edges (dependencies on this node)
+       dependents = len(list(G.predecessors(node)))
+       
+       # Assign risk level based on number of dependents
+       if dependents > 10:
+           G.nodes[node]['risk'] = 'high'
+           G.nodes[node]['color'] = '#ff0000'  # Red for high risk
+       elif dependents > 5:
+           G.nodes[node]['risk'] = 'medium'
+           G.nodes[node]['color'] = '#ffaa00'  # Orange for medium risk
+       else:
+           G.nodes[node]['risk'] = 'low'
+           G.nodes[node]['color'] = '#00aa00'  # Green for low risk
+   ```
+
+3. **Interactive Impact Analysis**:
+   - Click on any node to see its impact chain
+   - Filter by impact type or risk level
+   - Expand or collapse impact groups
+
 ### Take a look
 <iframe
   width="100%"
@@ -367,6 +454,250 @@ codebase.visualize(G)
 <Info>
 View on [codegen.sh](https://www.codegen.sh/codemod/d255db6c-9a86-4197-9b78-16c506858a3b/public/diff)
 </Info>
+
+## Class Method Relationships
+
+Understanding how methods within a class interact is essential for maintaining object-oriented code. This visualization helps you see the relationships between methods in a class, including call patterns and shared dependencies.
+
+### Basic Setup
+<Info>
+We'll use the same basic setup as the previous tutorials.
+</Info>
+
+### Building the Class Method Visualization
+```python
+def create_method_relationship_graph(target_class: Class):
+    """Creates a graph visualization of all methods in a class and their relationships"""
+    graph = nx.DiGraph()
+    visited = set()
+    
+    # Add class as central node
+    graph.add_node(target_class, color=COLOR_PALETTE.get("PyClass", "#ffca85"))
+    
+    # Add all methods as nodes connected to class
+    for method in target_class.methods:
+        method_name = f"{target_class.name}.{method.name}"
+        graph.add_node(method, name=method_name, 
+                      color=COLOR_PALETTE.get("PyFunction", "#a277ff"))
+        graph.add_edge(target_class, method)
+        visited.add(method)
+    
+    # Add edges between methods that call each other
+    for method in target_class.methods:
+        for call in method.function_calls:
+            called_method = call.function_definition
+            if called_method in target_class.methods:
+                graph.add_edge(method, called_method, **generate_edge_meta(call))
+    
+    return graph
+
+# Get target class to analyze
+target_class = codebase.get_class('Client')
+
+# Create and visualize the method relationship graph
+method_graph = create_method_relationship_graph(target_class)
+codebase.visualize(method_graph, root=target_class)
+```
+
+### Enhanced Class Method Features
+
+The enhanced class method visualization includes:
+
+1. **Method Grouping by Functionality**:
+   ```python
+   # Group methods by naming patterns
+   for method in target_class.methods:
+       if method.name.startswith('get_'):
+           graph.add_node(method, group="getters", color="#7ee8fa")
+       elif method.name.startswith('set_'):
+           graph.add_node(method, group="setters", color="#feb47b")
+       elif method.name.startswith('_'):
+           graph.add_node(method, group="private", color="#ff7e5f")
+       else:
+           graph.add_node(method, group="public", color="#a277ff")
+   ```
+
+2. **Method Dependency Strength**:
+   - Edge thickness represents call frequency
+   - Bidirectional calls highlighted with special styling
+   - Shared attribute access shown with dashed lines
+
+3. **Interactive Method Exploration**:
+   - Click on any method to see its implementation
+   - View method call hierarchy
+   - Filter methods by access level or functionality
+
+## Inheritance Hierarchy Visualization
+
+Understanding class inheritance is crucial for object-oriented programming. This visualization helps you see the inheritance relationships between classes, including method overrides and attribute inheritance.
+
+### Building the Inheritance Visualization
+```python
+def create_inheritance_hierarchy(base_class: Class, depth: int = 0, max_depth: int = 5):
+    """Creates a visualization of class inheritance hierarchy"""
+    graph = nx.DiGraph()
+    visited = set()
+    
+    def add_subclasses(cls, current_depth=0):
+        if current_depth >= max_depth or cls in visited:
+            return
+            
+        visited.add(cls)
+        
+        for subclass in cls.subclasses:
+            # Add subclass node
+            graph.add_node(subclass, color=COLOR_PALETTE.get("PyClass", "#ffca85"))
+            
+            # Add inheritance relationship
+            graph.add_edge(cls, subclass, relationship="inherits")
+            
+            # Add method override relationships
+            for method in cls.methods:
+                for subclass_method in subclass.methods:
+                    if method.name == subclass_method.name:
+                        graph.add_edge(method, subclass_method, 
+                                      relationship="overrides", 
+                                      style="dashed")
+            
+            # Recursively process subclasses
+            add_subclasses(subclass, current_depth + 1)
+    
+    # Add base class node
+    graph.add_node(base_class, color=COLOR_PALETTE.get("PyClass", "#ffca85"))
+    
+    # Build the hierarchy
+    add_subclasses(base_class)
+    
+    return graph
+
+# Get base class to analyze
+base_class = codebase.get_class('BaseModel')
+
+# Create and visualize the inheritance hierarchy
+inheritance_graph = create_inheritance_hierarchy(base_class)
+codebase.visualize(inheritance_graph, root=base_class)
+```
+
+### Enhanced Inheritance Hierarchy Features
+
+The enhanced inheritance hierarchy visualization includes:
+
+1. **Method Override Visualization**:
+   - See which methods are overridden in subclasses
+   - View method implementation differences
+   - Identify abstract methods and their implementations
+
+2. **Multi-level Inheritance Clarity**:
+   - Clear visualization of deep inheritance chains
+   - Collapsible inheritance levels
+   - Mixin and multiple inheritance representation
+
+3. **Interactive Inheritance Exploration**:
+   - Click on any class to see its methods and attributes
+   - Compare method implementations across the hierarchy
+   - Filter by inheritance level or class type
+
+## Module Dependency Visualization
+
+Understanding dependencies between modules helps manage code organization and refactoring. This visualization shows how modules depend on each other through imports and usage.
+
+### Building the Module Dependency Visualization
+```python
+def create_module_dependency_graph(start_module: str, max_depth: int = 3):
+    """Creates a visualization of module dependencies"""
+    graph = nx.DiGraph()
+    visited = set()
+    
+    def add_module_dependencies(module_path, current_depth=0):
+        if current_depth >= max_depth or module_path in visited:
+            return
+            
+        visited.add(module_path)
+        module_file = codebase.get_file(module_path)
+        
+        if not module_file:
+            return
+            
+        # Add module node
+        graph.add_node(module_file, name=module_path, 
+                      color=COLOR_PALETTE.get("Module", "#7ee8fa"))
+        
+        # Process imports
+        for imp in module_file.imports:
+            if imp.resolved_symbol and imp.resolved_symbol.file:
+                imported_module = imp.resolved_symbol.file.filepath
+                
+                # Add imported module node
+                graph.add_node(imp.resolved_symbol.file, name=imported_module,
+                              color=COLOR_PALETTE.get("Module", "#7ee8fa"))
+                
+                # Add dependency relationship
+                graph.add_edge(module_file, imp.resolved_symbol.file, 
+                              relationship="imports")
+                
+                # Recursively process imported module
+                add_module_dependencies(imported_module, current_depth + 1)
+    
+    # Build the dependency graph
+    add_module_dependencies(start_module)
+    
+    return graph
+
+# Get starting module
+start_module = "app/main.py"
+
+# Create and visualize the module dependency graph
+module_graph = create_module_dependency_graph(start_module)
+codebase.visualize(module_graph)
+```
+
+### Enhanced Module Dependency Features
+
+The enhanced module dependency visualization includes:
+
+1. **Package-level Grouping**:
+   ```python
+   # Group modules by package
+   for node in graph.nodes():
+       if isinstance(node, File):
+           package = os.path.dirname(node.filepath)
+           graph.nodes[node]['package'] = package
+           graph.nodes[node]['cluster'] = package
+   ```
+
+2. **Circular Dependency Detection**:
+   - Highlight circular dependencies with special styling
+   - Provide suggestions for breaking circular dependencies
+   - Rank dependencies by complexity
+
+3. **Interactive Module Exploration**:
+   - Click on any module to see its imports and exports
+   - Filter by package or dependency type
+   - Collapse or expand package groups
+
+## Using the Enhanced Visualization UI
+
+The enhanced visualization UI includes a selection row that shows corresponding methods when selecting Symbols, Files, Functions, or Classes. Here's how to use it:
+
+1. **Selecting Nodes**:
+   - Click on any node to select it
+   - The selection row will show related elements
+   - Double-click to focus on the selected node
+
+2. **Exploring Relationships**:
+   - Click on related elements in the selection row to navigate
+   - Use the breadcrumb navigation to return to previous views
+   - Filter the selection row by element type
+
+3. **Customizing the View**:
+   - Use the view controls to adjust the visualization
+   - Toggle different relationship types
+   - Adjust the layout algorithm
+
+4. **Exporting Results**:
+   - Export the visualization as an image
+   - Save the graph data as JSON
+   - Generate a shareable link
 
 ## What's Next?
 
