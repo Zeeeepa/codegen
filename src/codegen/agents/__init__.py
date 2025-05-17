@@ -56,9 +56,11 @@ Examples:
     result = agent.run("Create a function to parse JSON data")
     print(result)
     ```
+"""
 
 from codegen.agents.agent import Agent
 from codegen.agents.chat_agent import ChatAgent
 from codegen.agents.code_agent import CodeAgent
 
 __all__ = ["Agent", "ChatAgent", "CodeAgent"]
+

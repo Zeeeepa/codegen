@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, Optional
 
 from codegen.agents.client.openapi_client.api.agents_api import AgentsApi
 from codegen.agents.client.openapi_client.api_client import ApiClient
@@ -44,7 +44,7 @@ class AgentTask:
 class Agent:
     """API client for interacting with Codegen AI agents."""
 
-    def __init__(self, token: str, org_id: int | None = None, base_url: str | None = CODEGEN_BASE_API_URL):
+    def __init__(self, token: str, org_id: Optional[int] = None, base_url: Optional[str] = CODEGEN_BASE_API_URL):
         """Initialize a new Agent client.
 
         Args:
@@ -60,7 +60,7 @@ class Agent:
         self.agents_api = AgentsApi(self.api_client)
 
         # Current job
-        self.current_job = None
+        self.current_job: Optional[AgentTask] = None
 
     def run(self, prompt: str) -> AgentTask:
         """Run an agent with the given prompt.
@@ -81,7 +81,7 @@ class Agent:
         self.current_job = job
         return job
 
-    def get_status(self) -> dict[str, Any] | None:
+    def get_status(self) -> Optional[dict[str, Any]]:
         """Get the status of the current job.
 
         Returns:

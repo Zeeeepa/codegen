@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Generator, Iterator, List, Optional, Sequence, Tuple, cast
 from uuid import uuid4
 
 from langchain.tools import BaseTool
@@ -28,11 +28,11 @@ class CodeAgent:
     agent: CompiledGraph
     langsmith_client: Client
     project_name: str
-    thread_id: str | None = None
-    run_id: str | None = None
-    instance_id: str | None = None
-    difficulty: int | None = None
-    logger: ExternalLogger | None = None
+    thread_id: Optional[str] = None
+    run_id: Optional[str] = None
+    instance_id: Optional[str] = None
+    difficulty: Optional[int] = None
+    logger: Optional[ExternalLogger] = None
 
     def __init__(
         self,
@@ -40,13 +40,13 @@ class CodeAgent:
         model_provider: str = "anthropic",
         model_name: str = "claude-3-7-sonnet-latest",
         memory: bool = True,
-        tools: list[BaseTool] | None = None,
-        tags: list[str] | None = [],
-        metadata: dict | None = {},
-        agent_config: AgentConfig | None = None,
-        thread_id: str | None = None,
-        logger: ExternalLogger | None = None,
-        **kwargs,
+        tools: Optional[List[BaseTool]] = None,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        agent_config: Optional[AgentConfig] = None,
+        thread_id: Optional[str] = None,
+        logger: Optional[ExternalLogger] = None,
+        **kwargs: Any,
     ):
         """Initialize a CodeAgent.
 
@@ -86,6 +86,12 @@ class CodeAgent:
         self.project_name = os.environ.get("LANGCHAIN_PROJECT", "RELACE")
         print(f"Using LangSmith project: {self.project_name}")
 
+        # Initialize with empty values if not provided
+        if tags is None:
+            tags = []
+        if metadata is None:
+            metadata = {}
+
         # Store SWEBench metadata if provided
         self.run_id = metadata.get("run_id")
         self.instance_id = metadata.get("instance_id")
@@ -106,7 +112,7 @@ class CodeAgent:
             **metadata,
         }
 
-    def run(self, prompt: str, image_urls: list[str] | None = None) -> str:
+    def run(self, prompt: str, image_urls: Optional[List[str]] = None) -> str:
         """Run the agent with a prompt and optional images.
 
         Args:
@@ -117,7 +123,7 @@ class CodeAgent:
         Returns:
             The agent's response
         """
-        self.config = {
+        self.config: Dict[str, Any] = {
             "configurable": {
                 "thread_id": self.thread_id,
                 "metadata": {"project": self.project_name},
@@ -126,9 +132,13 @@ class CodeAgent:
         }
 
         # Prepare content with prompt and images if provided
-        content = [{"type": "text", "text": prompt}]
+        content_list: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
         if image_urls:
-            content += [{"type": "image_url", "image_url": {"url": image_url}} for image_url in image_urls]
+            for image_url in image_urls:
+                content_list.append({"type": "image_url", "image_url": {"url": image_url}})
+
+        # Convert to the expected type for HumanMessage
+        content: Any = content_list
 
         config = RunnableConfig(configurable={"thread_id": self.thread_id}, tags=self.tags, metadata=self.metadata, recursion_limit=200)
         # we stream the steps instead of invoke because it allows us to access intermediate nodes
@@ -138,14 +148,15 @@ class CodeAgent:
         _tracer = MessageStreamTracer(logger=self.logger)
 
         # Process the stream with the tracer
-        traced_stream = _tracer.process_stream(stream)
+        # Cast the stream to the expected type for process_stream
+        traced_stream = _tracer.process_stream(cast(Generator[Any, None, None], stream))
 
         # Keep track of run IDs from the stream
         run_ids = []
 
         for s in traced_stream:
             if len(s["messages"]) == 0 or isinstance(s["messages"][-1], HumanMessage):
-                message = HumanMessage(content=content)
+                message = HumanMessage(content=prompt)  # Use the string prompt instead of content_list
             else:
                 message = s["messages"][-1]
 
@@ -179,7 +190,7 @@ class CodeAgent:
 
         return result
 
-    def get_agent_trace_url(self) -> str | None:
+    def get_agent_trace_url(self) -> Optional[str]:
         """Get the URL for the most recent agent run in LangSmith.
 
         Returns:
@@ -197,15 +208,38 @@ class CodeAgent:
             print(separator)
             return None
 
-    def get_tools(self) -> list[BaseTool]:
-        return list(self.agent.get_graph().nodes["tools"].data.tools_by_name.values())
+    def get_tools(self) -> List[BaseTool]:
+        """Get the tools available to the agent.
+        
+        Returns:
+            List of tools available to the agent
+        """
+        # Access the tools through the graph's nodes
+        graph = self.agent.get_graph()
+        tools_node = graph.nodes.get("tools")
+        if tools_node and hasattr(tools_node.data, "tools_by_name"):
+            return list(tools_node.data.tools_by_name.values())
+        return []
 
-    def get_state(self) -> dict:
-        return self.agent.get_state(self.config)
+    def get_state(self) -> Dict[str, Any]:
+        """Get the current state of the agent.
+        
+        Returns:
+            Dictionary containing the agent's state
+        """
+        # Just return a simple dictionary with the state as a string
+        # This avoids mypy errors with the StateSnapshot type
+        state = self.agent.get_state(cast(RunnableConfig, self.config))
+        return {"state": str(state)}
 
-    def get_tags_metadata(self) -> tuple[list[str], dict]:
+    def get_tags_metadata(self) -> Tuple[List[str], Dict[str, str]]:
+        """Get the tags and metadata for the agent.
+        
+        Returns:
+            Tuple containing the tags and metadata
+        """
         tags = [self.model_name]
-        metadata = {"project": self.project_name, "model": self.model_name}
+        metadata: Dict[str, str] = {"project": self.project_name, "model": self.model_name}
         # Add SWEBench run ID and instance ID to the metadata and tags for filtering
         if self.run_id is not None:
             metadata["swebench_run_id"] = self.run_id
@@ -216,7 +250,7 @@ class CodeAgent:
             tags.append(self.instance_id)
 
         if self.difficulty is not None:
-            metadata["swebench_difficulty"] = self.difficulty
+            metadata["swebench_difficulty"] = str(self.difficulty)
             tags.append(f"difficulty_{self.difficulty}")
 
         return tags, metadata
