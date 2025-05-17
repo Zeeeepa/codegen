@@ -40,9 +40,9 @@ def login_routine(token: str | None = None) -> str:
             webbrowser.open_new(USER_SECRETS_ROUTE)
         except Exception as e:
             logger.warning(f"Failed to open browser: {e}")
-            rich.print(f"[yellow]Could not open browser automatically. Please visit:[/yellow]")
+            rich.print("[yellow]Could not open browser automatically. Please visit:[/yellow]")
             rich.print(f"[blue]{USER_SECRETS_ROUTE}[/blue]")
-        
+
         token = click.prompt("Please enter your authentication token from the browser", hide_input=False)
 
     if not token:
@@ -58,10 +58,10 @@ def login_routine(token: str | None = None) -> str:
         rich.print("To opt out, set [green]telemetry_enabled = false[/green] in [cyan]~/.config/codegen-sh/analytics.json[/cyan] ✨")
         return token
     except AuthError as e:
-        logger.error(f"Authentication failed: {e}")
+        logger.exception(f"Authentication failed: {e}")
         msg = f"Error: {e!s}"
         raise click.ClickException(msg)
     except Exception as e:
-        logger.error(f"Unexpected error during login: {e}")
+        logger.exception(f"Unexpected error during login: {e}")
         msg = f"Unexpected error: {e!s}"
         raise click.ClickException(msg)

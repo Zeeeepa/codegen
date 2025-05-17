@@ -1,12 +1,12 @@
 from abc import ABC
 
 import networkx as nx
-
 from codegen.sdk.core.codebase import CodebaseType
 from codegen.sdk.core.function import Function
 from codegen.sdk.core.import_resolution import Import
 from codegen.sdk.core.symbol import Symbol
 from codegen.shared.enums.programming_language import ProgrammingLanguage
+
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
 from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile
@@ -140,15 +140,13 @@ class DeadCode(Skill, ABC):
             for dep in symbol.dependencies:
                 if isinstance(dep, Import):
                     dep = dep.imported_symbol
-                if isinstance(dep, Symbol):
-                    if "test" not in dep.name:
-                        G.add_node(dep)
-                        G.add_edge(symbol, dep, color="red")
-                        for usage_symbol in dep.symbol_usages:
-                            if isinstance(usage_symbol, Function):
-                                if "test" not in usage_symbol.name:
-                                    G.add_edge(usage_symbol, dep)
+                if isinstance(dep, Symbol) and "test" not in dep.name:
+                    G.add_node(dep)
+                    G.add_edge(symbol, dep, color="red")
+                    for usage_symbol in dep.symbol_usages:
+                        if isinstance(usage_symbol, Function):
+                            if "test" not in usage_symbol.name:
+                                G.add_edge(usage_symbol, dep)
 
         # Visualize the graph to show dead and second-order dead code
         codebase.visualize(G)
-

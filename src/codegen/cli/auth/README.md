@@ -7,9 +7,9 @@ The Authentication module handles user authentication, session management, and t
 This module provides the following functionality:
 
 1. **Token Management**: Secure storage and retrieval of authentication tokens
-2. **Session Management**: Handling of user sessions and repository context
-3. **Authentication Flow**: User-friendly authentication process
-4. **Decorators**: Utilities to ensure authenticated access to protected resources
+1. **Session Management**: Handling of user sessions and repository context
+1. **Authentication Flow**: User-friendly authentication process
+1. **Decorators**: Utilities to ensure authenticated access to protected resources
 
 ## Components
 
@@ -65,19 +65,23 @@ Manages user sessions and repository context:
 The Authentication module implements several security measures:
 
 1. **Secure Token Storage**:
+
    - Tokens are stored with 0600 permissions (read/write for owner only)
    - The config directory is created with 0700 permissions (read/write/execute for owner only)
    - Tokens are written atomically to prevent partial writes
 
-2. **Token Validation**:
+1. **Token Validation**:
+
    - Tokens are validated with the API before use
    - Invalid or expired tokens trigger re-authentication
 
-3. **Secure Token Removal**:
+1. **Secure Token Removal**:
+
    - Token files are overwritten with null bytes before deletion
    - This prevents recovery of tokens from disk
 
-4. **Error Handling**:
+1. **Error Handling**:
+
    - Comprehensive error handling for authentication failures
    - Detailed logging for troubleshooting
 
@@ -99,6 +103,7 @@ token = login_routine()
 
 ```python
 from codegen.cli.auth.decorators import requires_auth
+
 
 @requires_auth
 def protected_function(session, *args, **kwargs):
@@ -134,4 +139,3 @@ The Authentication module defines several error types:
 - `NoTokenError`: Raised when no token is provided
 
 These errors are handled gracefully by the `requires_auth` decorator and the `login_routine` function.
-

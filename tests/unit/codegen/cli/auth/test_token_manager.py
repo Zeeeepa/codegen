@@ -98,18 +98,18 @@ class TestTokenManager:
     def test_authenticate_token_success(self, token_manager):
         """Test successful token authentication."""
         test_token = "valid_token"
-        
+
         # Mock the RestAPI.identify method to return a valid identity
         mock_identity = MagicMock()
         mock_identity.auth_context.status = "active"
-        
+
         with patch("codegen.cli.api.client.RestAPI") as mock_rest_api:
             mock_rest_api_instance = mock_rest_api.return_value
             mock_rest_api_instance.identify.return_value = mock_identity
-            
+
             # Should not raise an exception
             token_manager.authenticate_token(test_token)
-            
+
             # Verify the token was saved
             assert os.path.exists(token_manager.token_file)
             with open(token_manager.token_file) as f:
@@ -119,11 +119,11 @@ class TestTokenManager:
     def test_authenticate_token_no_identity(self, token_manager):
         """Test token authentication with no identity returned."""
         test_token = "invalid_token"
-        
+
         with patch("codegen.cli.api.client.RestAPI") as mock_rest_api:
             mock_rest_api_instance = mock_rest_api.return_value
             mock_rest_api_instance.identify.return_value = None
-            
+
             # Should raise an AuthError
             with pytest.raises(AuthError, match="No identity found for session"):
                 token_manager.authenticate_token(test_token)
@@ -131,15 +131,15 @@ class TestTokenManager:
     def test_authenticate_token_inactive(self, token_manager):
         """Test token authentication with inactive status."""
         test_token = "expired_token"
-        
+
         # Mock the RestAPI.identify method to return an inactive identity
         mock_identity = MagicMock()
         mock_identity.auth_context.status = "inactive"
-        
+
         with patch("codegen.cli.api.client.RestAPI") as mock_rest_api:
             mock_rest_api_instance = mock_rest_api.return_value
             mock_rest_api_instance.identify.return_value = mock_identity
-            
+
             # Should raise an AuthError
             with pytest.raises(AuthError, match="Current session is not active"):
                 token_manager.authenticate_token(test_token)
@@ -148,7 +148,6 @@ class TestTokenManager:
 def test_get_current_token():
     """Test the get_current_token helper function."""
     test_token = "helper_test_token"
-    
+
     with patch.object(TokenManager, "get_token", return_value=test_token):
         assert get_current_token() == test_token
-

@@ -1,6 +1,3 @@
-import os
-import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -35,11 +32,10 @@ def mock_rest_api():
     """Mock the RestAPI class."""
     with patch("codegen.cli.api.client.RestAPI") as mock_rest_api_class:
         mock_instance = mock_rest_api_class.return_value
-        
+
         # Create a mock identity with active status
         mock_identity = MagicMock()
         mock_identity.auth_context.status = "active"
         mock_instance.identify.return_value = mock_identity
-        
-        yield mock_instance
 
+        yield mock_instance

@@ -1,8 +1,8 @@
 import json
+import logging
 import os
 import stat
 from pathlib import Path
-import logging
 
 from codegen.cli.api.client import RestAPI
 from codegen.cli.auth.constants import AUTH_FILE, CONFIG_DIR
@@ -13,11 +13,12 @@ logger = logging.getLogger(__name__)
 
 class TokenManager:
     """Manages authentication tokens for the Codegen CLI.
-    
+
     This class handles storing, retrieving, validating, and clearing
     authentication tokens. It ensures tokens are stored securely and
     validates them before use.
     """
+
     def __init__(self):
         self.config_dir = CONFIG_DIR
         self.token_file = AUTH_FILE
@@ -32,10 +33,10 @@ class TokenManager:
 
     def authenticate_token(self, token: str) -> None:
         """Authenticate the token with the API.
-        
+
         Args:
             token: The token to authenticate.
-            
+
         Raises:
             AuthError: If the token is invalid or the session is not active.
         """
@@ -50,24 +51,24 @@ class TokenManager:
             self.save_token(token)
         except Exception as e:
             if not isinstance(e, AuthError):
-                logger.error(f"Error authenticating token: {e}")
+                logger.exception(f"Error authenticating token: {e}")
                 msg = f"Failed to authenticate token: {e}"
                 raise AuthError(msg) from e
             raise
 
     def save_token(self, token: str) -> None:
         """Save API token to disk securely.
-        
+
         Args:
             token: The token to save.
-            
+
         Raises:
             OSError: If there's an error saving the token.
         """
         try:
             # Create the parent directory if it doesn't exist
             self._ensure_config_dir()
-            
+
             # Write the token to a temporary file first
             temp_file = f"{self.token_file}.tmp"
             with open(temp_file, "w") as f:
@@ -78,14 +79,15 @@ class TokenManager:
 
             # Atomically replace the old file with the new one
             os.replace(temp_file, self.token_file)
-            
+
         except Exception as e:
-            logger.error(f"Error saving token: {e}")
-            raise OSError(f"Error saving token: {e}") from e
+            logger.exception(f"Error saving token: {e}")
+            msg = f"Error saving token: {e}"
+            raise OSError(msg) from e
 
     def get_token(self) -> str | None:
         """Retrieve token from disk if it exists and is valid.
-        
+
         Returns:
             The token if it exists and is valid, None otherwise.
         """
@@ -113,10 +115,10 @@ class TokenManager:
                 return token
 
         except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in token file: {e}")
+            logger.exception(f"Invalid JSON in token file: {e}")
             return None
         except (KeyError, OSError) as e:
-            logger.error(f"Error reading token: {e}")
+            logger.exception(f"Error reading token: {e}")
             return None
 
     def clear_token(self) -> None:
@@ -128,7 +130,7 @@ class TokenManager:
                     f.write(b"\0" * 100)  # Overwrite with null bytes
                 os.remove(self.token_file)
         except OSError as e:
-            logger.error(f"Error clearing token: {e}")
+            logger.exception(f"Error clearing token: {e}")
 
 
 def get_current_token() -> str | None:

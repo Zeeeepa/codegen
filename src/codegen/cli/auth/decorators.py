@@ -16,16 +16,16 @@ logger = logging.getLogger(__name__)
 
 def requires_auth(f: Callable) -> Callable:
     """Decorator that ensures a user is authenticated and injects a CodegenSession.
-    
+
     This decorator performs the following checks:
     1. Verifies that there is an active session
     2. Checks for a valid authentication token
     3. If no token exists, initiates the login flow
     4. If the token is invalid, initiates the login flow
-    
+
     Args:
         f: The function to decorate
-        
+
     Returns:
         The decorated function
     """
@@ -48,7 +48,7 @@ def requires_auth(f: Callable) -> Callable:
             try:
                 login_routine()
             except Exception as e:
-                logger.error(f"Login failed: {e}")
+                logger.exception(f"Login failed: {e}")
                 pretty_print_error(f"Authentication failed: {e}")
                 raise click.Abort()
         else:
@@ -62,7 +62,7 @@ def requires_auth(f: Callable) -> Callable:
                 try:
                     login_routine()
                 except Exception as login_error:
-                    logger.error(f"Login failed: {login_error}")
+                    logger.exception(f"Login failed: {login_error}")
                     pretty_print_error(f"Authentication failed: {login_error}")
                     raise click.Abort()
 

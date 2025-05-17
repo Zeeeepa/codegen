@@ -1,13 +1,12 @@
-import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 import click
+import pytest
 from github.MainClass import Github
 
 from codegen.cli.auth.session import CodegenSession
-from codegen.configs.constants import CODEGEN_DIR_NAME, ENV_FILENAME
+from codegen.configs.constants import CODEGEN_DIR_NAME
 
 
 @pytest.fixture
@@ -42,18 +41,18 @@ class TestCodegenSession:
                 with patch("codegen.cli.auth.session.UserConfig") as mock_user_config_class:
                     mock_config = mock_user_config_class.return_value
                     mock_config.secrets.github_token = "test-token"
-                    
+
                     with patch("codegen.cli.auth.session.session_manager") as mock_session_manager:
                         mock_session_manager.get_session.return_value = None
-                        
+
                         with patch.object(CodegenSession, "_validate"):
                             with patch.object(CodegenSession, "_initialize"):
                                 # Initialize a session
                                 session = CodegenSession(mock_repo_path)
-                                
+
                                 # Verify the session was set as active
                                 mock_session_manager.set_active_session.assert_called_once_with(mock_repo_path)
-                                
+
                                 # Verify the session properties
                                 assert session.repo_path == mock_repo_path
                                 assert session.local_git == mock_local_git
@@ -71,7 +70,7 @@ class TestCodegenSession:
         """Test from_active_session when there is no active session."""
         with patch("codegen.cli.auth.session.session_manager") as mock_session_manager:
             mock_session_manager.get_active_session.return_value = None
-            
+
             # Should return None
             assert CodegenSession.from_active_session() is None
 
@@ -79,11 +78,11 @@ class TestCodegenSession:
         """Test from_active_session when there is an active session."""
         with patch("codegen.cli.auth.session.session_manager") as mock_session_manager:
             mock_session_manager.get_active_session.return_value = mock_repo_path
-            
+
             with patch.object(CodegenSession, "__init__", return_value=None) as mock_init:
                 # Call from_active_session
                 CodegenSession.from_active_session()
-                
+
                 # Verify __init__ was called with the active session path
                 mock_init.assert_called_once_with(mock_repo_path)
 
@@ -95,7 +94,7 @@ class TestCodegenSession:
                 session.local_git = mock_local_git
                 session.repo_path = mock_repo_path
                 session.codegen_dir = mock_repo_path / CODEGEN_DIR_NAME
-                
+
                 # Create a mock config
                 mock_config = MagicMock()
                 mock_config.repository.path = None
@@ -105,10 +104,10 @@ class TestCodegenSession:
                 mock_config.repository.language = None
                 mock_config.secrets.github_token = "test-token"
                 session.config = mock_config
-                
+
                 # Call _initialize
                 session._initialize()
-                
+
                 # Verify the config was updated
                 assert mock_config.repository.path == str(mock_local_git.repo_path)
                 assert mock_config.repository.owner == mock_local_git.owner
@@ -123,24 +122,24 @@ class TestCodegenSession:
             session = CodegenSession(None)
             session.repo_path = mock_repo_path
             session.codegen_dir = mock_repo_path / CODEGEN_DIR_NAME
-            
+
             # Create a mock config
             mock_config = MagicMock()
             mock_config.secrets.github_token = "test-token"
             session.config = mock_config
-            
+
             # Create a mock local_git
             mock_local_git = MagicMock()
             mock_local_git.origin_remote = "origin"
             mock_local_git.full_name = "test-owner/test-repo"
             session.local_git = mock_local_git
-            
+
             with patch("os.path.exists", return_value=False):
                 with patch("pathlib.Path.mkdir") as mock_mkdir:
                     with patch.object(Github, "get_repo"):
                         # Call _validate
                         session._validate()
-                        
+
                         # Verify the directory was created
                         mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
@@ -150,22 +149,22 @@ class TestCodegenSession:
             session = CodegenSession(None)
             session.repo_path = mock_repo_path
             session.codegen_dir = mock_repo_path / CODEGEN_DIR_NAME
-            
+
             # Create a mock config with no GitHub token
             mock_config = MagicMock()
             mock_config.secrets.github_token = None
             session.config = mock_config
-            
+
             # Create a mock local_git
             mock_local_git = MagicMock()
             mock_local_git.origin_remote = "origin"
             session.local_git = mock_local_git
-            
+
             with patch("os.path.exists", return_value=True):
                 with patch("rich.print") as mock_print:
                     # Call _validate
                     session._validate()
-                    
+
                     # Verify a warning was printed
                     assert mock_print.call_count >= 1
                     assert any("GitHub token not found" in str(call) for call in mock_print.call_args_list)
@@ -176,24 +175,24 @@ class TestCodegenSession:
             session = CodegenSession(None)
             session.repo_path = mock_repo_path
             session.codegen_dir = mock_repo_path / CODEGEN_DIR_NAME
-            
+
             # Create a mock config
             mock_config = MagicMock()
             mock_config.secrets.github_token = "test-token"
             session.config = mock_config
-            
+
             # Create a mock local_git with no remote
             mock_local_git = MagicMock()
             mock_local_git.origin_remote = None
             mock_local_git.full_name = "test-owner/test-repo"
             session.local_git = mock_local_git
-            
+
             with patch("os.path.exists", return_value=True):
                 with patch("rich.print") as mock_print:
                     with patch.object(Github, "get_repo"):
                         # Call _validate
                         session._validate()
-                        
+
                         # Verify a warning was printed
                         assert mock_print.call_count >= 1
                         assert any("No remote found" in str(call) for call in mock_print.call_args_list)
@@ -204,18 +203,18 @@ class TestCodegenSession:
             session = CodegenSession(None)
             session.repo_path = mock_repo_path
             session.codegen_dir = mock_repo_path / CODEGEN_DIR_NAME
-            
+
             # Create a mock config
             mock_config = MagicMock()
             mock_config.secrets.github_token = "invalid-token"
             session.config = mock_config
-            
+
             # Create a mock local_git
             mock_local_git = MagicMock()
             mock_local_git.origin_remote = "origin"
             mock_local_git.full_name = "test-owner/test-repo"
             session.local_git = mock_local_git
-            
+
             with patch("os.path.exists", return_value=True):
                 with patch.object(Github, "get_repo", side_effect=Exception("Bad credentials")):
                     with patch("rich.print"):
@@ -227,13 +226,12 @@ class TestCodegenSession:
         """Test the string representation of a CodegenSession."""
         with patch.object(CodegenSession, "__init__", return_value=None):
             session = CodegenSession(None)
-            
+
             # Create a mock config
             mock_config = MagicMock()
             mock_config.repository.user_name = "Test User"
             mock_config.repository.repo_name = "test-repo"
             session.config = mock_config
-            
+
             # Verify the string representation
             assert str(session) == "CodegenSession(user=Test User, repo=test-repo)"
-

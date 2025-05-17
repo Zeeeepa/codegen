@@ -16,9 +16,12 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from codegen_on_oss.analyzers.codebase_analysis import (
-    get_class_summary, get_codebase_summary, get_dependency_graph,
-    get_file_complexity_metrics, get_file_summary, get_function_summary,
-    get_symbol_references, get_symbol_summary)
+    get_class_summary,
+    get_codebase_summary,
+    get_file_complexity_metrics,
+    get_file_summary,
+    get_function_summary,
+)
 
 
 class TestCodebaseAnalysis(unittest.TestCase):

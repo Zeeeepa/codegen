@@ -1,10 +1,8 @@
-import os
 import json
+import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import patch
 
 from codegen.cli.auth.token_manager import TokenManager
 
@@ -17,7 +15,7 @@ def test_token_manager_init():
             with patch("codegen.cli.auth.token_manager.AUTH_FILE", temp_path / "auth.json"):
                 # Create a token manager
                 token_manager = TokenManager()
-                
+
                 # Verify the config directory was created
                 assert os.path.exists(temp_path)
 
@@ -30,17 +28,17 @@ def test_token_manager_save_and_get():
             with patch("codegen.cli.auth.token_manager.AUTH_FILE", temp_path / "auth.json"):
                 # Create a token manager
                 token_manager = TokenManager()
-                
+
                 # Save a token
                 test_token = "test_token_123"
                 token_manager.save_token(test_token)
-                
+
                 # Verify the token was saved correctly
                 assert os.path.exists(token_manager.token_file)
                 with open(token_manager.token_file) as f:
                     data = json.load(f)
                     assert data["token"] == test_token
-                
+
                 # Retrieve the token
                 retrieved_token = token_manager.get_token()
                 assert retrieved_token == test_token
