@@ -3,15 +3,16 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from pydantic import field_validator
+from pydantic_settings import SettingsConfigDict
 
 from .base import RepoSource, SourceSettings
 
 
-class CSVInputSettings(SourceSettings, env_prefix="CSV_"):
+class CSVInputSettings(SourceSettings):
     """
     CSVInputSettings is a class that contains the settings for a CSVInputSource.
     """
-
+    model_config = SettingsConfigDict(env_prefix="CSV_")
     file_path: Path = Path("input.csv")
 
     @field_validator("file_path", mode="after")

@@ -13,7 +13,7 @@ from codegen_on_oss.outputs.base import BaseOutput
 
 if TYPE_CHECKING:
     # Logger only available in type checking context.
-    from loguru import Logger  # type: ignore[attr-defined]
+    from loguru import Logger
 
 
 codegen_version = str(version("codegen"))
@@ -47,7 +47,7 @@ class MetricsProfiler:
         Starts a new profiling session for a given profile name.
         Returns a MetricsProfile instance that you can use to mark measurements.
         """
-        profile = MetricsProfile(name, revision, language, self.output, logger)
+        profile = MetricsProfile(name, revision, language or "", self.output, logger)
         error_msg: str | None = None
         try:
             yield profile
@@ -60,22 +60,6 @@ class MetricsProfiler:
 
         finally:
             profile.finish(error=error_msg)
-
-    @classmethod
-    def fields(cls) -> list[str]:
-        return [
-            "repo",
-            "revision",
-            "language",
-            "action",
-            "codegen_version",
-            "delta_time",
-            "cumulative_time",
-            "cpu_time",
-            "memory_usage",
-            "memory_delta",
-            "error",
-        ]
 
 
 class MetricsProfile:
