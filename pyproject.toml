@@ -210,11 +210,8 @@ show_contexts = true
 pythonVersion = "3.12"
 enableExperimentalFeatures = true
 [tool.pytest.ini_options]
-# addopts = -v
 pythonpath = "."
 norecursedirs = "repos expected"
-# addopts = -v --cov=app --cov-report=term
-
 addopts = "--dist=loadgroup --junitxml=build/test-results/test/TEST.xml --strict-config --import-mode=importlib --cov-context=test --cov-config=pyproject.toml -p no:doctest"
 filterwarnings = """
     ignore::DeprecationWarning:botocore.*:
@@ -227,7 +224,8 @@ junit_duration_report = "call"
 junit_logging = "all"
 tmp_path_retention_policy = "failed"
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+# Removing the problematic option
+# asyncio_default_fixture_loop_scope = "function"
 [build-system]
 requires = ["hatchling>=1.26.3", "hatch-vcs>=0.4.0", "setuptools-scm>=8.0.0"]
 build-backend = "hatchling.build"
