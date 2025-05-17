@@ -12,7 +12,7 @@ echo "Installing system dependencies..."
 if command -v apt &> /dev/null; then
     # Debian/Ubuntu
     echo "Detected Debian/Ubuntu system"
-    
+
     # Check for compiler
     if ! (command -v clang &> /dev/null || command -v gcc &> /dev/null); then
         echo "Neither clang nor gcc found. Installing gcc..."
