@@ -32,13 +32,25 @@ if [ ! -f .env ]; then
         cp .env.template .env
         echo "Please edit the .env file with your credentials before deploying."
         exit 1
+    else
+        echo "No .env.template file found. Creating a basic .env template..."
+        cat > .env.template << EOL
+# GitHub credentials
+GITHUB_TOKEN=your_github_token
+
+# Modal configuration (optional)
+MODAL_API_KEY=your_modal_api_key
+EOL
+        cp .env.template .env
+        echo "Please edit the .env file with your credentials before deploying."
+        exit 1
     fi
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying GitHub Checks to Modal..."
+python3 app.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status codegen-import-cycles-github-check'"
+echo "To view logs, run 'modal app logs codegen-import-cycles-github-check'"
 
