@@ -1,106 +1,161 @@
+"""Linear webhooks handler using Modal and Codegen."""
+
+import hashlib
+import hmac
+import json
 import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+
 import modal
-from codegen.extensions.events.app import CodegenApp
-from codegen.extensions.linear.types import LinearEvent, LinearIssue, LinearComment, LinearUser
-from codegen.shared.logging.get_logger import get_logger
+from fastapi import FastAPI, Header, HTTPException, Request
+from pydantic import BaseModel, Field
 
-logger = get_logger(__name__)
+# Create image with dependencies
+image = (
+    modal.Image.debian_slim(python_version="3.13")
+    .pip_install(
+        "codegen>=0.6.1",
+        "python-dotenv>=1.0.0",
+    )
+)
 
-# Create a Modal image with the necessary dependencies
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=v0.26.3")
+# Create Modal app
+app = modal.App("linear-webhooks")
 
-# Initialize the CodegenApp with a name and the image
-app = CodegenApp(name="linear-webhooks", modal_api_key="", image=image)
+# Create a volume for persistent storage
+volume = modal.Volume.from_name("linear-data", create_if_missing=True)
 
-# Define a Modal class to handle Linear events
-@app.cls(secrets=[modal.Secret.from_dotenv()], keep_warm=1)
-class LinearEventHandlers:
-    @modal.enter()
-    def enter(self):
-        """Subscribe to all Linear webhook handlers when the app starts"""
-        logger.info("Subscribing to Linear webhook handlers")
-        app.linear.subscribe_all_handlers()
 
-    @modal.exit()
-    def exit(self):
-        """Unsubscribe from all Linear webhook handlers when the app stops"""
-        logger.info("Unsubscribing from Linear webhook handlers")
-        app.linear.unsubscribe_all_handlers()
+class LinearEvent(BaseModel):
+    """Linear webhook event model."""
 
-    @modal.web_endpoint(method="POST")
-    @app.linear.event("Issue")
-    def handle_issue(self, event: LinearEvent):
-        """Handle Linear Issue events
-        
-        This endpoint will be triggered when an issue is created, updated, or deleted in Linear.
-        """
-        # Check if the data is an Issue before accessing title
-        if isinstance(event.data, LinearIssue):
-            issue_title = event.data.title
-            logger.info(f"Received Linear Issue event: {event.action} - {issue_title}")
-            return {
-                "status": "success",
-                "message": f"Processed Linear Issue event: {event.action}",
-                "issue_id": event.data.id,
-                "issue_title": issue_title
-            }
+    action: str
+    type: str
+    data: Dict[str, Any]
+    url: Optional[str] = None
+    updatedFrom: Optional[Dict[str, Any]] = None
+    createdAt: datetime = Field(default_factory=datetime.now)
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_dotenv()],
+    volumes={"/data": volume},
+)
+@modal.asgi_app()
+def fastapi_app():
+    """Create FastAPI app with Linear webhook handlers."""
+    web_app = FastAPI(title="Linear Webhooks Handler")
+
+    @web_app.get("/")
+    async def root():
+        """Root endpoint for health checks."""
+        return {"status": "ok", "message": "Linear webhooks handler is running"}
+
+    @web_app.post("/webhook")
+    async def webhook(
+        request: Request,
+        x_linear_delivery: Optional[str] = Header(None),
+        x_linear_signature: Optional[str] = Header(None),
+    ):
+        """Handle Linear webhook events."""
+        # Verify signature if provided
+        if x_linear_signature:
+            signing_secret = os.environ.get("LINEAR_SIGNING_SECRET")
+            if not signing_secret:
+                raise HTTPException(status_code=500, detail="LINEAR_SIGNING_SECRET not configured")
+
+            body = await request.body()
+            signature = hmac.new(
+                signing_secret.encode("utf-8"),
+                body,
+                hashlib.sha256,
+            ).hexdigest()
+
+            if not hmac.compare_digest(signature, x_linear_signature):
+                raise HTTPException(status_code=401, detail="Invalid signature")
+
+        # Parse event data
+        try:
+            data = await request.json()
+            event = LinearEvent(**data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid event data: {str(e)}")
+
+        # Log event
+        log_event(event)
+
+        # Handle different event types
+        if event.type == "Issue":
+            return handle_issue_event(event)
+        elif event.type == "Comment":
+            return handle_comment_event(event)
         else:
-            logger.warning(f"Received non-Issue data for Issue event: {event.action}")
-            return {
-                "status": "warning",
-                "message": f"Received non-Issue data for Issue event: {event.action}",
-                "id": event.data.id
-            }
+            return {"status": "ignored", "message": f"Event type {event.type} not handled"}
 
-    @modal.web_endpoint(method="POST")
-    @app.linear.event("Comment")
-    def handle_comment(self, event: LinearEvent):
-        """Handle Linear Comment events
-        
-        This endpoint will be triggered when a comment is created, updated, or deleted in Linear.
-        """
-        # Check if the data is a Comment before processing
-        if isinstance(event.data, LinearComment):
-            logger.info(f"Received Linear Comment event: {event.action}")
-            
-            # Get the comment body and user information if available
-            comment_body = event.data.body
-            user_info = ""
-            if event.data.user:
-                user_info = f" by {event.data.user.name}"
-            
-            logger.info(f"Comment{user_info}: {comment_body}")
-            
-            return {
-                "status": "success",
-                "message": f"Processed Linear Comment event: {event.action}",
-                "comment_id": event.data.id,
-                "comment_body": comment_body
-            }
-        else:
-            logger.warning(f"Received non-Comment data for Comment event: {event.action}")
-            return {
-                "status": "warning",
-                "message": f"Received non-Comment data for Comment event: {event.action}",
-                "id": event.data.id
-            }
+    return web_app
 
-    @modal.web_endpoint(method="POST")
-    @app.linear.event("*")
-    def handle_generic(self, event: LinearEvent):
-        """Handle any other Linear events
-        
-        This endpoint will be triggered for any Linear event type not explicitly handled.
-        """
-        logger.info(f"Received Linear event: {event.type} - {event.action}")
+
+def log_event(event: LinearEvent):
+    """Log Linear event to file."""
+    log_file = f"/data/linear_events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+    with open(log_file, "a") as f:
+        f.write(json.dumps(event.dict()) + "\n")
+    print(f"Logged {event.type} {event.action} event")
+
+
+def handle_issue_event(event: LinearEvent) -> Dict[str, str]:
+    """Handle Linear issue events."""
+    action = event.action
+    issue_data = event.data
+    issue_id = issue_data.get("id")
+    issue_title = issue_data.get("title")
+
+    print(f"Handling issue event: {action} - {issue_title} ({issue_id})")
+
+    if action == "create":
+        # Handle issue creation
+        return {"status": "success", "message": f"Processed issue creation: {issue_title}"}
+    elif action == "update":
+        # Handle issue update
+        updated_fields = event.updatedFrom or {}
         return {
             "status": "success",
-            "message": f"Processed Linear event: {event.type} - {event.action}",
-            "event_type": event.type,
-            "event_action": event.action
+            "message": f"Processed issue update: {issue_title}",
+            "updated_fields": list(updated_fields.keys()),
         }
+    elif action == "remove":
+        # Handle issue deletion
+        return {"status": "success", "message": f"Processed issue deletion: {issue_id}"}
+    else:
+        return {"status": "ignored", "message": f"Issue action {action} not handled"}
 
-# If running this file directly, this will deploy the app to Modal
+
+def handle_comment_event(event: LinearEvent) -> Dict[str, str]:
+    """Handle Linear comment events."""
+    action = event.action
+    comment_data = event.data
+    comment_id = comment_data.get("id")
+    comment_body = comment_data.get("body")
+
+    print(f"Handling comment event: {action} - {comment_id}")
+
+    if action == "create":
+        # Handle comment creation
+        return {"status": "success", "message": "Processed comment creation"}
+    elif action == "update":
+        # Handle comment update
+        return {"status": "success", "message": "Processed comment update"}
+    elif action == "remove":
+        # Handle comment deletion
+        return {"status": "success", "message": "Processed comment deletion"}
+    else:
+        return {"status": "ignored", "message": f"Comment action {action} not handled"}
+
+
 if __name__ == "__main__":
-    app.serve()
-
+    # When running directly, deploy the app
+    print("Deploying linear-webhooks to Modal...")
+    modal.serve.deploy(fastapi_app)
+    print("Deployment complete! Check status with 'modal app status linear-webhooks'")

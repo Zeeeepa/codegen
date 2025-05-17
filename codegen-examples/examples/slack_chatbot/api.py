@@ -51,7 +51,7 @@ def answer_question(query: str) -> tuple[str, list[tuple[str, int]]]:
         if "#chunk" in filepath:
             filepath = filepath.split("#chunk")[0]
         file = codebase.get_file(filepath)
-        context += f"File: {file.filepath}\n```\n{file.content}\n```\n\n"
+        context += f"File: {file.filepath}\n```\n{file.content}```\n\n"
 
     # Create prompt for OpenAI
     prompt = f"""You are an expert on FastAPI. Given the following code context and question, provide a clear and accurate answer.
@@ -95,13 +95,17 @@ image = (
 )
 
 # Create Modal app
-app = modal.App("codegen-slack-demo")
+app = modal.App("slack-chatbot")
+
+# Create a volume to store the vector index
+volume = modal.Volume.from_name("codegen-indices", create_if_missing=True)
 
 
 @app.function(
     image=image,
     secrets=[modal.Secret.from_dotenv()],
     timeout=3600,
+    volumes={"/root": volume},
 )
 @modal.asgi_app()
 def fastapi_app():
@@ -170,3 +174,10 @@ def fastapi_app():
         return await handler.handle(request)
 
     return web_app
+
+
+if __name__ == "__main__":
+    # When running directly, deploy the app
+    print("Deploying slack-chatbot to Modal...")
+    modal.serve.deploy(fastapi_app)
+    print("Deployment complete! Check status with 'modal app status slack-chatbot'")
