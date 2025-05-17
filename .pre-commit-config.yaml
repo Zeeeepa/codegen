@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.13
+  python: python3.12
 repos:
 
   - repo: https://github.com/ComPWA/taplo-pre-commit
@@ -98,3 +98,4 @@ repos:
       - mdformat-ruff
       - mdformat-config
       - mdformat-pyproject
+

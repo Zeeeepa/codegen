@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.12']  # Removed 3.13 as it might not be fully supported yet
+        python-version: ['3.12']  # Only use Python 3.12 for now
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +27,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        pip install pytest pytest-cov
+        pip install -e .
         
     - name: Run tests
       run: |
@@ -59,7 +60,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install ruff mypy
-        pip install -e ".[dev]"
+        pip install -e .
         
     - name: Lint with ruff
       run: |
