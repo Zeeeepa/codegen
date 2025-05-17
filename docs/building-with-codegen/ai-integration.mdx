@@ -1,0 +1,325 @@
+---
+title: "AI Integration"
+sidebarTitle: "AI Integration"
+icon: "brain"
+iconType: "solid"
+---
+
+# AI Integration with Codegen SDK
+
+The Codegen SDK provides powerful AI integration capabilities that allow you to leverage large language models (LLMs) for code generation, analysis, and transformation. This guide covers the AI integration features and best practices for using them effectively.
+
+## Overview
+
+The AI integration in Codegen SDK enables you to:
+
+- Generate new code based on natural language descriptions
+- Analyze existing code for improvements
+- Transform code with AI assistance
+- Generate documentation and tests
+- Provide context-aware suggestions
+
+## Setting Up AI Integration
+
+Before using the AI features, you need to configure your API key:
+
+```python
+from codegen import Codebase
+
+# Initialize your codebase
+codebase = Codebase("path/to/your/code")
+
+# Set your OpenAI API key
+codebase.set_ai_key("your-openai-api-key")
+```
+
+You can also configure additional AI settings:
+
+```python
+# Configure AI settings
+codebase.set_ai_settings(
+    model="gpt-4",  # Specify the model to use
+    temperature=0.2,  # Lower temperature for more deterministic outputs
+    max_tokens=2000  # Maximum tokens in the response
+)
+```
+
+## Using the AI Client
+
+The primary way to interact with AI is through the `codebase.ai()` method:
+
+```python
+# Basic AI query
+result = codebase.ai(
+    prompt="Write a function to calculate the Fibonacci sequence",
+)
+
+# AI query with target code
+function = codebase.get_function("calculate_total")
+improved_code = codebase.ai(
+    prompt="Optimize this function for performance",
+    target=function
+)
+
+# AI query with additional context
+class_def = codebase.get_class("UserService")
+new_method = codebase.ai(
+    prompt="Add a method to validate user credentials",
+    target=class_def,
+    context={
+        "related_classes": [
+            codebase.get_class("User"),
+            codebase.get_class("Authentication")
+        ],
+        "existing_methods": class_def.methods,
+        "coding_style": "Follow clean code principles with proper error handling"
+    }
+)
+```
+
+## Providing Context
+
+The AI works best when given appropriate context. You can provide context in several ways:
+
+```python
+# Provide a single symbol as context
+result = codebase.ai(
+    prompt="Explain what this function does",
+    target=function,
+    context=function.parent  # The class or module containing the function
+)
+
+# Provide a list of related symbols
+result = codebase.ai(
+    prompt="Generate a new method consistent with these",
+    target=class_def,
+    context=[method for method in class_def.methods]
+)
+
+# Provide a structured dictionary of context
+result = codebase.ai(
+    prompt="Refactor this function to use async/await",
+    target=function,
+    context={
+        "call_sites": list(function.call_sites),
+        "dependencies": list(function.dependencies),
+        "related_functions": [f for f in function.parent.functions 
+                             if f.name != function.name],
+        "coding_standards": "Use TypeScript best practices"
+    }
+)
+```
+
+## Common Use Cases
+
+### Code Generation
+
+```python
+# Generate a new utility function
+new_function_code = codebase.ai(
+    prompt="Create a utility function to safely parse JSON with error handling"
+)
+
+# Add the new function to a file
+utils_file = codebase.get_file("utils.py")
+utils_file.append(new_function_code)
+```
+
+### Code Transformation
+
+```python
+# Convert a function to use async/await
+function = codebase.get_function("fetch_data")
+async_version = codebase.ai(
+    prompt="Convert this function to use async/await",
+    target=function,
+    context={
+        "dependencies": list(function.dependencies)
+    }
+)
+function.edit(async_version)
+```
+
+### Documentation Generation
+
+```python
+# Generate docstrings for all functions in a file
+file = codebase.get_file("api.py")
+for function in file.functions:
+    if not function.docstring:
+        docstring = codebase.ai(
+            prompt="Generate a comprehensive docstring for this function",
+            target=function,
+            context={
+                "style": "Google docstring format",
+                "include_params": True,
+                "include_return": True,
+                "include_examples": True
+            }
+        )
+        function.set_docstring(docstring)
+```
+
+### Test Generation
+
+```python
+# Generate tests for a class
+class_def = codebase.get_class("PaymentProcessor")
+test_code = codebase.ai(
+    prompt="Generate comprehensive pytest tests for this class",
+    target=class_def,
+    context={
+        "test_framework": "pytest",
+        "include_mocks": True,
+        "test_coverage": "aim for 100% coverage"
+    }
+)
+
+# Create a new test file
+test_file = codebase.create_file(f"tests/test_{class_def.name.lower()}.py")
+test_file.write(test_code)
+```
+
+### Code Analysis
+
+```python
+# Analyze code quality
+function = codebase.get_function("process_payment")
+analysis = codebase.ai(
+    prompt="Analyze this function for code quality issues and security vulnerabilities",
+    target=function
+)
+print(analysis)
+
+# Get suggestions for improvement
+suggestions = codebase.ai(
+    prompt="Suggest three ways to improve this function",
+    target=function
+)
+print(suggestions)
+```
+
+## Best Practices
+
+### 1. Be Specific in Your Prompts
+
+```python
+# Good: Specific prompt with clear instructions
+good_result = codebase.ai(
+    prompt="Refactor this function to use list comprehensions instead of for loops, maintaining the same functionality",
+    target=function
+)
+
+# Bad: Vague prompt
+bad_result = codebase.ai(
+    prompt="Make this better",
+    target=function
+)
+```
+
+### 2. Provide Relevant Context
+
+```python
+# Good: Providing comprehensive context
+good_result = codebase.ai(
+    prompt="Add input validation to this function",
+    target=function,
+    context={
+        "expected_inputs": "The function expects a dictionary with 'name' and 'email' fields",
+        "validation_rules": "Name should be non-empty, email should be a valid email format",
+        "error_handling": "Raise ValueError with descriptive message on invalid input"
+    }
+)
+
+# Bad: Missing important context
+bad_result = codebase.ai(
+    prompt="Add input validation",
+    target=function
+)
+```
+
+### 3. Review and Test Generated Code
+
+Always review and test AI-generated code before committing it:
+
+```python
+# Generate code
+new_code = codebase.ai(
+    prompt="Implement a caching mechanism for this function",
+    target=function
+)
+
+# Review the code (in your workflow)
+print("Review the generated code:")
+print(new_code)
+
+# Apply only after review
+function.edit(new_code)
+
+# Run tests to verify the changes work
+codebase.run_tests()
+```
+
+### 4. Use Iterative Refinement
+
+For complex tasks, use an iterative approach:
+
+```python
+# Initial implementation
+initial_code = codebase.ai(
+    prompt="Create a basic implementation of a rate limiter class",
+)
+
+# Create the class
+file = codebase.get_file("rate_limiter.py")
+file.write(initial_code)
+class_def = codebase.get_class("RateLimiter")
+
+# Refine with more specific requirements
+refined_code = codebase.ai(
+    prompt="Enhance this rate limiter to support different time windows and multiple rate limits",
+    target=class_def
+)
+class_def.edit(refined_code)
+
+# Add specific features
+final_code = codebase.ai(
+    prompt="Add Redis-based distributed rate limiting support to this class",
+    target=class_def,
+    context={
+        "redis_client": "The application uses redis.Redis for cache management",
+        "distributed_setup": "The application runs on multiple instances"
+    }
+)
+class_def.edit(final_code)
+```
+
+## Limitations and Considerations
+
+- **Token Limits**: LLMs have token limits. For large files or complex context, you may need to break down your requests.
+- **Determinism**: AI responses can vary. Set a lower temperature for more deterministic results.
+- **Code Quality**: Always review and test AI-generated code before using it in production.
+- **API Costs**: Be mindful of API usage costs, especially with larger models like GPT-4.
+- **Security**: Avoid sending sensitive information to the AI service.
+
+## Advanced Configuration
+
+For advanced use cases, you can configure the AI client with additional options:
+
+```python
+# Configure AI with advanced options
+codebase.set_ai_settings(
+    model="gpt-4",
+    temperature=0.2,
+    max_tokens=2000,
+    top_p=0.95,
+    frequency_penalty=0.5,
+    presence_penalty=0.5,
+    stop_sequences=["```"]
+)
+```
+
+## Conclusion
+
+The AI integration in Codegen SDK provides powerful capabilities for code generation, analysis, and transformation. By following the best practices outlined in this guide, you can effectively leverage AI to enhance your development workflow and improve code quality.
+

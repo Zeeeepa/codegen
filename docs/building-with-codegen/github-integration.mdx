@@ -1,0 +1,411 @@
+---
+title: "GitHub Integration"
+sidebarTitle: "GitHub Integration"
+icon: "github"
+iconType: "solid"
+---
+
+# GitHub Integration
+
+The Codegen SDK provides powerful integration with GitHub, allowing you to automate various GitHub workflows, analyze repositories, and interact with issues and pull requests. This guide covers the GitHub integration features and how to use them effectively.
+
+## Setting Up GitHub Integration
+
+To use the GitHub integration features, you need to set up authentication:
+
+```python
+from codegen import Codebase
+from codegen.extensions.github import GitHubClient
+
+# Initialize your codebase
+codebase = Codebase("path/to/your/code")
+
+# Initialize GitHub client with a personal access token
+github_client = GitHubClient(
+    access_token="your-github-token",
+    repo_owner="your-username-or-org",
+    repo_name="your-repo-name"
+)
+
+# Connect the GitHub client to your codebase
+codebase.register_github_client(github_client)
+```
+
+## Repository Operations
+
+### Cloning and Analyzing Repositories
+
+```python
+# Clone a repository
+from codegen.extensions.github import clone_repository
+
+repo_path = clone_repository(
+    repo_url="https://github.com/username/repo",
+    branch="main",
+    depth=1  # Shallow clone for faster download
+)
+
+# Analyze the cloned repository
+codebase = Codebase(repo_path)
+```
+
+### Working with Branches
+
+```python
+# Create a new branch
+github_client.create_branch(
+    base_branch="main",
+    new_branch="feature/add-authentication",
+    checkout=True  # Automatically check out the new branch
+)
+
+# List branches
+branches = github_client.list_branches()
+for branch in branches:
+    print(f"Branch: {branch.name}, Last commit: {branch.last_commit_sha}")
+
+# Delete a branch
+github_client.delete_branch("old-feature-branch")
+```
+
+## Pull Request Operations
+
+### Creating Pull Requests
+
+```python
+# Create a pull request
+pr = github_client.create_pull_request(
+    title="Add authentication feature",
+    body="This PR adds user authentication using OAuth2.",
+    base_branch="main",
+    head_branch="feature/add-authentication",
+    draft=True  # Create as draft PR
+)
+
+print(f"Created PR #{pr.number}: {pr.url}")
+```
+
+### Analyzing Pull Requests
+
+```python
+# Get a specific pull request
+pr = github_client.get_pull_request(123)
+
+# Analyze the changes in a pull request
+changes = github_client.get_pr_changes(pr.number)
+for file_change in changes:
+    print(f"File: {file_change.filename}")
+    print(f"Status: {file_change.status}")  # added, modified, removed
+    print(f"Additions: {file_change.additions}")
+    print(f"Deletions: {file_change.deletions}")
+    
+    # Analyze the code changes
+    if file_change.status != "removed" and file_change.filename.endswith(".py"):
+        file_content = github_client.get_file_content(
+            file_change.filename, 
+            ref=pr.head.sha
+        )
+        # Analyze the file content
+        # ...
+```
+
+### Reviewing Pull Requests
+
+```python
+# Add a comment to a pull request
+github_client.add_pr_comment(
+    pr_number=123,
+    body="This looks good! A few suggestions for improvement..."
+)
+
+# Add a review comment on a specific line
+github_client.add_pr_review_comment(
+    pr_number=123,
+    commit_id=pr.head.sha,
+    path="src/auth.py",
+    position=10,  # Line number
+    body="Consider adding error handling here."
+)
+
+# Submit a review
+github_client.submit_pr_review(
+    pr_number=123,
+    body="Overall looks good with a few minor suggestions.",
+    event="APPROVE"  # APPROVE, REQUEST_CHANGES, or COMMENT
+)
+```
+
+### Automated PR Analysis
+
+```python
+# Analyze a PR for code quality issues
+def analyze_pr_code_quality(pr_number):
+    pr = github_client.get_pull_request(pr_number)
+    changes = github_client.get_pr_changes(pr_number)
+    
+    issues_found = []
+    
+    for file_change in changes:
+        if file_change.status != "removed":
+            file_content = github_client.get_file_content(
+                file_change.filename, 
+                ref=pr.head.sha
+            )
+            
+            # Skip non-Python files
+            if not file_change.filename.endswith(".py"):
+                continue
+                
+            # Create a temporary file for analysis
+            temp_file = codebase.create_file(
+                file_change.filename,
+                content=file_content,
+                commit=False
+            )
+            
+            # Analyze for issues
+            for function in temp_file.functions:
+                # Check for functions without docstrings
+                if not function.docstring:
+                    issues_found.append({
+                        "file": file_change.filename,
+                        "line": function.start_line,
+                        "issue": f"Function '{function.name}' is missing a docstring"
+                    })
+                
+                # Check for overly complex functions
+                if len(list(function.statements)) > 50:
+                    issues_found.append({
+                        "file": file_change.filename,
+                        "line": function.start_line,
+                        "issue": f"Function '{function.name}' is too complex (over 50 statements)"
+                    })
+    
+    # Comment on the PR with the issues found
+    if issues_found:
+        comment_body = "## Code Quality Issues\n\n"
+        for issue in issues_found:
+            comment_body += f"- **{issue['file']}:{issue['line']}**: {issue['issue']}\n"
+        
+        github_client.add_pr_comment(pr_number, comment_body)
+        
+    return issues_found
+
+# Use the function
+issues = analyze_pr_code_quality(123)
+```
+
+## Issue Operations
+
+### Working with Issues
+
+```python
+# Create a new issue
+issue = github_client.create_issue(
+    title="Bug: Authentication fails with special characters",
+    body="When a username contains special characters, the authentication fails.",
+    labels=["bug", "priority:high"],
+    assignees=["developer-username"]
+)
+
+print(f"Created issue #{issue.number}: {issue.url}")
+
+# Get an existing issue
+issue = github_client.get_issue(456)
+
+# Add a comment to an issue
+github_client.add_issue_comment(
+    issue_number=456,
+    body="I've reproduced this issue and am working on a fix."
+)
+
+# Close an issue
+github_client.update_issue(
+    issue_number=456,
+    state="closed",
+    state_reason="completed"
+)
+```
+
+### Linking Issues and Pull Requests
+
+```python
+# Link a PR to an issue
+github_client.link_pr_to_issue(
+    pr_number=123,
+    issue_number=456
+)
+
+# Get issues linked to a PR
+linked_issues = github_client.get_linked_issues(pr_number=123)
+for issue in linked_issues:
+    print(f"Linked issue #{issue.number}: {issue.title}")
+```
+
+## Repository Analysis
+
+### Analyzing Repository Structure
+
+```python
+# Get repository statistics
+stats = github_client.get_repository_stats()
+print(f"Stars: {stats.stargazers_count}")
+print(f"Forks: {stats.forks_count}")
+print(f"Open issues: {stats.open_issues_count}")
+print(f"Last updated: {stats.updated_at}")
+
+# Get repository languages
+languages = github_client.get_repository_languages()
+for language, bytes_of_code in languages.items():
+    percentage = bytes_of_code / sum(languages.values()) * 100
+    print(f"{language}: {percentage:.2f}%")
+```
+
+### Code Search
+
+```python
+# Search for code in the repository
+search_results = github_client.search_code("def process_data")
+for result in search_results:
+    print(f"File: {result.path}")
+    print(f"URL: {result.html_url}")
+    print(f"Matches: {result.text_matches}")
+```
+
+## Workflow Automation
+
+### GitHub Actions Integration
+
+```python
+# Trigger a GitHub Actions workflow
+github_client.trigger_workflow(
+    workflow_id="ci.yml",
+    ref="feature/add-authentication",
+    inputs={
+        "environment": "staging",
+        "run_tests": "true"
+    }
+)
+
+# Get workflow runs
+workflow_runs = github_client.get_workflow_runs(
+    workflow_id="ci.yml",
+    status="completed",
+    limit=5
+)
+
+for run in workflow_runs:
+    print(f"Run #{run.id}: {run.status} - {run.conclusion}")
+    print(f"Triggered by: {run.triggering_actor.login}")
+    print(f"Started at: {run.run_started_at}")
+    print(f"URL: {run.html_url}")
+```
+
+### Automated PR Workflows
+
+```python
+# Example: Automated PR labeling based on files changed
+def label_pr_by_changes(pr_number):
+    changes = github_client.get_pr_changes(pr_number)
+    
+    labels_to_add = set()
+    
+    for file_change in changes:
+        if file_change.filename.startswith("src/api/"):
+            labels_to_add.add("api")
+        elif file_change.filename.startswith("src/ui/"):
+            labels_to_add.add("ui")
+        elif file_change.filename.startswith("tests/"):
+            labels_to_add.add("tests")
+        
+        if file_change.filename.endswith(".py"):
+            labels_to_add.add("python")
+        elif file_change.filename.endswith(".ts") or file_change.filename.endswith(".tsx"):
+            labels_to_add.add("typescript")
+    
+    if labels_to_add:
+        github_client.add_labels_to_pr(pr_number, list(labels_to_add))
+    
+    return labels_to_add
+
+# Use the function
+added_labels = label_pr_by_changes(123)
+```
+
+## Best Practices
+
+### 1. Rate Limit Awareness
+
+GitHub API has rate limits. Be mindful of them in your automation:
+
+```python
+# Check rate limit status
+rate_limit = github_client.get_rate_limit()
+print(f"Remaining requests: {rate_limit.remaining}")
+print(f"Limit resets at: {rate_limit.reset_at}")
+
+# Handle rate limiting in your code
+def rate_limit_aware_operation():
+    try:
+        # Your GitHub operation here
+        result = github_client.some_operation()
+        return result
+    except RateLimitExceededException as e:
+        reset_time = e.reset_at
+        wait_seconds = (reset_time - datetime.now()).total_seconds()
+        print(f"Rate limit exceeded. Waiting {wait_seconds} seconds...")
+        time.sleep(wait_seconds + 10)  # Add buffer
+        # Retry the operation
+        return github_client.some_operation()
+```
+
+### 2. Error Handling
+
+```python
+try:
+    pr = github_client.create_pull_request(
+        title="Add feature",
+        body="Description",
+        base_branch="main",
+        head_branch="feature-branch"
+    )
+except GitHubException as e:
+    if "pull request already exists" in str(e).lower():
+        # Handle existing PR
+        print("PR already exists")
+    elif "not found" in str(e).lower():
+        # Handle branch not found
+        print("Branch not found")
+    else:
+        # Handle other errors
+        print(f"Error: {e}")
+```
+
+### 3. Authentication Security
+
+```python
+# Never hardcode tokens in your code
+# Instead, use environment variables or secure storage
+
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get token from environment
+github_token = os.environ.get("GITHUB_TOKEN")
+if not github_token:
+    raise ValueError("GITHUB_TOKEN environment variable not set")
+
+github_client = GitHubClient(
+    access_token=github_token,
+    repo_owner="your-username-or-org",
+    repo_name="your-repo-name"
+)
+```
+
+## Conclusion
+
+The GitHub integration in Codegen SDK provides powerful capabilities for automating GitHub workflows, analyzing repositories, and interacting with issues and pull requests. By following the best practices outlined in this guide, you can effectively leverage these features to enhance your development workflow and improve code quality.
+
