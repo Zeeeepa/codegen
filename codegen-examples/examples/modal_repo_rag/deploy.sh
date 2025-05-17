@@ -29,7 +29,7 @@ fi
 echo -e "${BLUE}Deploying modal_repo_rag to Modal...${NC}"
 
 # Deploy the app
-if modal deploy api.py; then
+if modal deploy rag_api.py; then
     echo -e "${GREEN}Deployment successful!${NC}"
     echo -e "Your API is now available at: https://codegen-rag-qa--answer-code-question.modal.run"
     exit 0
