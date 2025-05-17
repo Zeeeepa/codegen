@@ -1,0 +1,244 @@
+---
+title: "Enhanced Call Graph Visualization"
+sidebarTitle: "Enhanced Call Graph"
+icon: "diagram-project"
+iconType: "solid"
+---
+
+# Enhanced Call Graph Visualization
+
+The enhanced call graph visualization provides a powerful way to explore and understand function call relationships in your codebase. This guide explains how to use the enhanced features to gain deeper insights into your code structure.
+
+## Overview
+
+Call graphs are directed graphs that represent the calling relationships between functions in a codebase. The enhanced call graph visualization in Codegen provides:
+
+- **Detailed Relationship Information**: View rich metadata about functions and their relationships
+- **Interactive Navigation**: Explore the call graph with zoom, pan, and node selection
+- **Filtering Options**: Focus on specific aspects of the code with customizable filters
+- **Improved Visual Representation**: Better visual differentiation between different types of functions and calls
+
+## Creating a Basic Call Graph
+
+To create a basic call graph visualization, use the `visualize_call_graph` method:
+
+```python
+from codegen import Codebase
+
+# Initialize codebase
+codebase = Codebase.from_repo("your-org/your-repo")
+
+# Find a function to visualize
+target_function = codebase.get_function("your_function_name")
+
+# Create call graph visualization
+codebase.op.visualization_manager.visualize_call_graph(
+    source_function=target_function,
+    max_depth=5,  # Maximum depth of the call graph
+    include_external=False,  # Whether to include external module calls
+    include_recursive=True,  # Whether to include recursive calls
+)
+```
+
+This will generate a call graph visualization and save it to the `codegen-graphviz` directory in your repository.
+
+## Interactive Features
+
+The enhanced call graph visualization includes several interactive features:
+
+- **Zoom and Pan**: Use the mouse wheel to zoom in/out and drag to pan around the graph
+- **Node Selection**: Click on a node to highlight it and its connections
+- **Hover Information**: Hover over nodes to see detailed information about the function
+- **Layout Controls**: Switch between different layout algorithms (dot, circular, spring)
+- **View Controls**: Toggle visibility of nodes and edges
+
+To create an interactive call graph visualization:
+
+```python
+# Create interactive call graph
+fig = codebase.op.visualization_manager.create_call_graph_visualization(
+    source_function=target_function,
+    max_depth=5,
+    layout="dot",  # Use dot layout for hierarchical visualization
+)
+
+# Write the visualization data
+codebase.op.visualization_manager.write_graphviz_data(fig)
+```
+
+## Filtering Options
+
+The enhanced call graph visualization supports various filtering options to help you focus on specific aspects of the code:
+
+```python
+from codegen.visualizations.enums import CallGraphFilterType
+
+# Apply filters to focus on specific aspects
+filters = {
+    CallGraphFilterType.DEPTH: 3,  # Limit depth to 3 levels
+    CallGraphFilterType.FUNCTION_TYPE: "method",  # Show only methods
+    CallGraphFilterType.PRIVACY: "public",  # Show only public methods
+    CallGraphFilterType.MODULE: "auth",  # Show only functions in the auth module
+    CallGraphFilterType.COMPLEXITY: 5,  # Show only functions with complexity >= 5
+    CallGraphFilterType.CALL_COUNT: 2,  # Show only functions called at least twice
+}
+
+# Create filtered call graph
+codebase.op.visualization_manager.visualize_call_graph(
+    source_function=target_function,
+    filters=filters,
+)
+```
+
+Available filter types:
+
+- `DEPTH`: Maximum depth of the call graph
+- `MODULE`: Filter by module name
+- `FUNCTION_TYPE`: Filter by function type ("method", "function", or "all")
+- `PRIVACY`: Filter by privacy ("private", "public", or "all")
+- `COMPLEXITY`: Filter by function complexity (minimum number of statements)
+- `CALL_COUNT`: Filter by number of incoming calls (minimum)
+
+## Visual Representation
+
+The enhanced call graph visualization uses different colors, shapes, and styles to represent different types of functions and calls:
+
+- **Node Colors**:
+  - Blue: Regular functions
+  - Purple: Methods
+  - Light Blue: Async functions
+  - Gray: External modules
+  - Red: Highlighted node
+
+- **Edge Styles**:
+  - Solid: Direct calls
+  - Dashed: Recursive calls
+  - Dotted: Async calls
+  - Dash-dot: External calls
+
+- **Node Size**: Based on function complexity (number of statements)
+
+- **Edge Width**: Based on call count (number of times the function is called)
+
+## Advanced Usage
+
+### Getting Call Graph Statistics
+
+You can get statistics about the call graph using the `get_call_graph_stats` method:
+
+```python
+# Create the call graph
+G, metadata = codegen.visualizations.viz_utils.create_call_graph(
+    source_function=target_function,
+    max_depth=5,
+)
+
+# Get call graph statistics
+stats = codebase.op.visualization_manager.get_call_graph_stats(G)
+
+print(f"Call graph statistics:")
+print(f"  Nodes: {stats['node_count']}")
+print(f"  Edges: {stats['edge_count']}")
+print(f"  Methods: {stats['function_types']['methods']}")
+print(f"  Functions: {stats['function_types']['functions']}")
+print(f"  Private: {stats['privacy']['private']}")
+print(f"  Public: {stats['privacy']['public']}")
+print(f"  Async: {stats['async']}")
+print(f"  Modules: {', '.join(stats['modules'])}")
+```
+
+### Finding Important Functions
+
+You can use NetworkX to analyze the call graph and find important functions:
+
+```python
+import networkx as nx
+
+# Create the call graph
+G, _ = codegen.visualizations.viz_utils.create_call_graph(
+    source_function=target_function,
+    max_depth=5,
+)
+
+# Find the most called function
+in_degree = dict(G.in_degree())
+most_called_node = max(in_degree, key=in_degree.get)
+most_called_attrs = G.nodes[most_called_node]
+print(f"Most called function: {most_called_attrs.get('name')} ({in_degree[most_called_node]} calls)")
+
+# Find the function that makes the most calls
+out_degree = dict(G.out_degree())
+most_calling_node = max(out_degree, key=out_degree.get)
+most_calling_attrs = G.nodes[most_calling_node]
+print(f"Function making most calls: {most_calling_attrs.get('name')} ({out_degree[most_calling_node]} calls)")
+
+# Find central functions using centrality measures
+centrality = nx.betweenness_centrality(G)
+most_central_node = max(centrality, key=centrality.get)
+most_central_attrs = G.nodes[most_central_node]
+print(f"Most central function: {most_central_attrs.get('name')}")
+```
+
+## Example
+
+Here's a complete example of creating an enhanced call graph visualization:
+
+```python
+import codegen
+from codegen import Codebase
+from codegen.visualizations.enums import CallGraphFilterType
+
+# Initialize codebase
+codebase = Codebase.from_repo("your-org/your-repo")
+
+# Find a function to visualize
+target_function = codebase.get_function("your_function_name")
+
+# Create interactive call graph
+fig = codebase.op.visualization_manager.create_call_graph_visualization(
+    source_function=target_function,
+    max_depth=5,
+    include_external=True,
+    include_recursive=True,
+    filters={
+        CallGraphFilterType.FUNCTION_TYPE: "all",
+        CallGraphFilterType.PRIVACY: "all",
+    },
+    layout="dot",
+)
+
+# Write the visualization data
+codebase.op.visualization_manager.write_graphviz_data(fig)
+
+print("Enhanced call graph visualization created!")
+print("Use codegen.sh to view the visualization.")
+```
+
+## Tips for Large Codebases
+
+When working with large codebases, consider these tips:
+
+1. **Limit Depth**: Start with a small depth (2-3) and increase as needed
+2. **Apply Filters**: Use filters to focus on specific aspects of the code
+3. **Exclude External Calls**: Set `include_external=False` to exclude calls to external modules
+4. **Focus on Modules**: Use the `MODULE` filter to focus on specific modules
+5. **Use Different Layouts**: Try different layouts to find the most readable representation
+
+## Troubleshooting
+
+If you encounter issues with the call graph visualization:
+
+- **Graph Too Large**: Reduce the depth or apply more filters
+- **Missing Connections**: Increase the depth or check if the functions are properly linked
+- **Performance Issues**: Reduce the number of nodes by applying more filters
+- **Visualization Not Showing**: Check the `codegen-graphviz` directory for the generated files
+
+## Next Steps
+
+Now that you understand how to use the enhanced call graph visualization, try:
+
+- Visualizing different parts of your codebase
+- Comparing call graphs between different functions
+- Using the call graph to identify refactoring opportunities
+- Combining call graph analysis with other Codegen features
+
