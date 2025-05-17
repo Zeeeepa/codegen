@@ -1,11 +1,11 @@
 [project]
-name = "slack-chatbot"
+name = "repo-analytics"
 version = "0.1.0"
-description = "Slack chatbot example for Codegen"
+description = "Repository analytics example for Codegen"
 requires-python = ">=3.13"
 dependencies = [
   "modal>=0.73.25",
-  "fastapi[standard]",
   "codegen>=0.52.19",
   "python-dotenv>=1.0.0",
 ]
+

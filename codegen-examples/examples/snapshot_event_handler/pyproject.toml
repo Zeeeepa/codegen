@@ -1,21 +1,19 @@
 [project]
-name = "codegen-examples"
-version = "0.0.0"
+name = "snapshot-event-handler"
+version = "0.1.0"
+description = "Snapshot event handler for Codegen"
 readme = "README.md"
-requires-python = ">=3.12, <3.14"
+requires-python = ">=3.13"
 dependencies = [
-  "fastapi-utils>=0.8.0",
-  "fastapi[standard]>=0.115.9",
-  "modal>=0.73.72",
-  "fastapi-restful[all]>=0.6.0",
-  "classy-fastapi>=0.6.1",
-  "codegen==0.42.1",
+  "modal>=0.73.25",
+  "fastapi[standard]",
+  "codegen>=0.52.19",
+  "python-dotenv>=1.0.0",
 ]
 license = { file = "LICENSE" }
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Topic :: Software Development",
   "Development Status :: 4 - Beta",

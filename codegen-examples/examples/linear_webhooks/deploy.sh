@@ -32,13 +32,16 @@ if [ ! -f .env ]; then
         cp .env.template .env
         echo "Please edit the .env file with your credentials before deploying."
         exit 1
+    else
+        echo "Neither .env nor .env.template file found. Please create a .env file with your credentials."
+        exit 1
     fi
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying Linear Webhooks to Modal..."
+python3 -m modal deploy webhooks.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status linear-webhooks'"
+echo "To view logs, run 'modal app logs linear-webhooks'"
 

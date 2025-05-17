@@ -36,9 +36,9 @@ if [ ! -f .env ]; then
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying PR Review Bot to Modal..."
+python3 -m modal deploy app.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status pr-review-bot'"
+echo "To view logs, run 'modal app logs pr-review-bot'"
 

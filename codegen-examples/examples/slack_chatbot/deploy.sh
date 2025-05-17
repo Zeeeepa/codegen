@@ -36,9 +36,9 @@ if [ ! -f .env ]; then
 fi
 
 # Deploy the application
-echo "Deploying SWEBench Agent Run to Modal..."
-python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
+echo "Deploying Slack Chatbot to Modal..."
+python3 -m modal deploy api.py
 
-echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
-echo "To view logs, run 'modal app logs swebench-agent-run'"
+echo "Deployment complete! You can check the status with 'modal app status slack-chatbot'"
+echo "To view logs, run 'modal app logs slack-chatbot'"
 
