@@ -122,4 +122,3 @@ After running the analysis, symbols in the codebase will have the following attr
 ## Contributing
 
 Feel free to submit issues and enhancement requests!
-

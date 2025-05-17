@@ -91,12 +91,12 @@ modal app stop linear-webhooks
 ## Configuring Linear Webhooks
 
 1. Go to your Linear workspace
-2. Go to Settings → API → Webhooks
-3. Click "New Webhook"
-4. Enter the URL provided by Modal when you deployed the application
-5. Select the events you want to receive (e.g., Issues, Comments)
-6. Copy the signing secret and add it to your `.env` file as `LINEAR_SIGNING_SECRET`
-7. Click "Create Webhook"
+1. Go to Settings → API → Webhooks
+1. Click "New Webhook"
+1. Enter the URL provided by Modal when you deployed the application
+1. Select the events you want to receive (e.g., Issues, Comments)
+1. Copy the signing secret and add it to your `.env` file as `LINEAR_SIGNING_SECRET`
+1. Click "Create Webhook"
 
 ## Usage
 
@@ -126,4 +126,3 @@ You can customize the application by modifying the event handlers in `webhooks.p
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [Linear API Documentation](https://developers.linear.app/docs/)
-

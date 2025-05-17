@@ -72,4 +72,3 @@ python3 -m modal deploy app.py
 
 echo "Deployment complete! You can check the status with 'modal app status codegen-import-cycles-github-check'"
 echo "To view logs, run 'modal app logs codegen-import-cycles-github-check'"
-

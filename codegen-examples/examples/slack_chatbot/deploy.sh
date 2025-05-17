@@ -41,4 +41,3 @@ python3 -m modal deploy api.py
 
 echo "Deployment complete! You can check the status with 'modal app status slack-chatbot'"
 echo "To view logs, run 'modal app logs slack-chatbot'"
-

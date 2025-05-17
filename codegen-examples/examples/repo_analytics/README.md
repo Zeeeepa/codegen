@@ -84,9 +84,9 @@ modal app stop repo-analytics
 Once deployed, you can use the repository analytics tool to:
 
 1. Analyze code complexity metrics
-2. Identify dependencies between modules
-3. Generate visualizations of code structure
-4. Track changes over time
+1. Identify dependencies between modules
+1. Generate visualizations of code structure
+1. Track changes over time
 
 To run an analysis, use the following command:
 
@@ -109,4 +109,3 @@ You can customize the application by modifying the `run.py` file to add new anal
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [GitHub API Documentation](https://docs.github.com/en/rest)
-

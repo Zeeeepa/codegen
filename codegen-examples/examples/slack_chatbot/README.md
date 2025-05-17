@@ -89,26 +89,26 @@ modal app stop slack-chatbot
 ## Configuring Slack App
 
 1. Go to [Slack API](https://api.slack.com/apps) and create a new app
-2. Go to "OAuth & Permissions" and add the following scopes:
+1. Go to "OAuth & Permissions" and add the following scopes:
    - `app_mentions:read`
    - `chat:write`
    - `im:history`
    - `im:read`
    - `im:write`
-3. Install the app to your workspace
-4. Go to "Event Subscriptions" and enable events
-5. Enter the URL provided by Modal when you deployed the application as the Request URL
-6. Subscribe to the following bot events:
+1. Install the app to your workspace
+1. Go to "Event Subscriptions" and enable events
+1. Enter the URL provided by Modal when you deployed the application as the Request URL
+1. Subscribe to the following bot events:
    - `app_mention`
    - `message.im`
-7. Save changes
+1. Save changes
 
 ## Usage
 
 Once the chatbot is deployed and configured, you can interact with it in two ways:
 
 1. **Direct Messages**: Send a direct message to the bot
-2. **Mentions**: Mention the bot in a channel using `@botname`
+1. **Mentions**: Mention the bot in a channel using `@botname`
 
 The bot will respond to your messages with information about the codebase you're asking about.
 
@@ -129,4 +129,3 @@ You can customize the application by modifying the following files:
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [Slack API Documentation](https://api.slack.com/)
-

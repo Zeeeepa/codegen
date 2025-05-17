@@ -82,13 +82,13 @@ modal app stop snapshot-event-handler
 ## Configuring GitHub Webhooks
 
 1. Go to your GitHub repository
-2. Go to Settings → Webhooks
-3. Click "Add webhook"
-4. Enter the URL provided by Modal when you deployed the application
-5. Select "application/json" as the content type
-6. Select "Let me select individual events"
-7. Check the events you want to receive (e.g., "Pull requests", "Issues")
-8. Click "Add webhook"
+1. Go to Settings → Webhooks
+1. Click "Add webhook"
+1. Enter the URL provided by Modal when you deployed the application
+1. Select "application/json" as the content type
+1. Select "Let me select individual events"
+1. Check the events you want to receive (e.g., "Pull requests", "Issues")
+1. Click "Add webhook"
 
 ## Usage
 
@@ -120,4 +120,3 @@ You can customize the application by modifying the event handlers in `event_hand
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)
 - [GitHub Webhooks Documentation](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks)
-

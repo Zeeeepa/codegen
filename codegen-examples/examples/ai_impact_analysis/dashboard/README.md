@@ -84,4 +84,3 @@ The dashboard will display:
 ## Contributing
 
 Feel free to submit issues and enhancement requests!
-

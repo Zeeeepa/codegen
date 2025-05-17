@@ -7,4 +7,3 @@ A minimal repository for testing SQLAlchemy type annotations and database patter
 - Test SQLAlchemy type annotations
 - Experiment with database patterns
 - Quick prototyping environment
-

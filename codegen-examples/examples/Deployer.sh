@@ -50,7 +50,7 @@ display_menu() {
     echo -e "${YELLOW}Enter 'all' to select all examples${NC}"
     echo -e "${YELLOW}Enter 'q' to quit${NC}"
     echo ""
-    
+
     local i=1
     for example in "${examples[@]}"; do
         if is_deployable "$example"; then
@@ -67,12 +67,12 @@ display_menu() {
 deploy_example() {
     local example=$1
     local status=0
-    
+
     echo -e "${BLUE}Deploying $example...${NC}"
-    
+
     if [ -d "$example" ] && [ -f "$example/deploy.sh" ]; then
         (cd "$example" && bash ./deploy.sh) || status=$?
-        
+
         if [ $status -eq 0 ]; then
             echo -e "${GREEN}Successfully deployed $example${NC}"
             return 0
@@ -92,9 +92,9 @@ deploy_examples() {
     local pids=()
     local results=()
     local example_names=()
-    
+
     echo -e "${BLUE}Starting deployment of ${#selected_examples[@]} examples...${NC}"
-    
+
     # Start all deployments in background
     for example in "${selected_examples[@]}"; do
         if is_deployable "$example"; then
@@ -106,7 +106,7 @@ deploy_examples() {
             echo -e "${RED}Skipping $example (not deployable)${NC}"
         fi
     done
-    
+
     # Wait for all deployments to finish
     for i in "${!pids[@]}"; do
         wait "${pids[$i]}"
@@ -117,13 +117,13 @@ deploy_examples() {
             echo -e "${RED}✗ ${example_names[$i]} deployment failed${NC}"
         fi
     done
-    
+
     # Print summary
     echo ""
     echo -e "${BLUE}=== Deployment Summary ===${NC}"
     local success_count=0
     local failure_count=0
-    
+
     for i in "${!results[@]}"; do
         if [ ${results[$i]} -eq 0 ]; then
             ((success_count++))
@@ -131,11 +131,11 @@ deploy_examples() {
             ((failure_count++))
         fi
     done
-    
+
     echo -e "${GREEN}Successfully deployed: $success_count${NC}"
     echo -e "${RED}Failed deployments: $failure_count${NC}"
     echo ""
-    
+
     if [ $failure_count -gt 0 ]; then
         echo -e "${YELLOW}Some deployments failed. Check the logs above for details.${NC}"
     else
@@ -147,7 +147,7 @@ deploy_examples() {
 while true; do
     display_menu
     read -p "Enter your selection: " selection
-    
+
     if [ "$selection" = "q" ]; then
         echo -e "${BLUE}Exiting...${NC}"
         exit 0
@@ -174,7 +174,7 @@ while true; do
                 echo -e "${RED}Invalid selection: $num. Please enter valid numbers.${NC}"
             fi
         done
-        
+
         if [ ${#selected_examples[@]} -gt 0 ]; then
             echo -e "${BLUE}Selected examples: ${selected_examples[*]}${NC}"
             read -p "Proceed with deployment? (y/n): " confirm
@@ -189,4 +189,3 @@ while true; do
         fi
     fi
 done
-

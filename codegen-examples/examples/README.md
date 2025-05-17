@@ -11,17 +11,20 @@ This directory contains examples of how to use the Codegen SDK with Modal for va
 ## Getting Started
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Zeeeepa/codegen.git
    cd codegen/codegen-examples/examples
    ```
 
-2. Install Modal CLI:
+1. Install Modal CLI:
+
    ```bash
    pip install modal
    ```
 
-3. Authenticate with Modal:
+1. Authenticate with Modal:
+
    ```bash
    modal token new
    ```
@@ -45,20 +48,20 @@ The deployer will show you a list of available examples and allow you to select 
 Here's a list of the available examples:
 
 1. **swebench_agent_run**: Run SWEBench agent tasks using Codegen and Modal.
-2. **snapshot_event_handler**: Handle snapshot events from GitHub.
-3. **slack_chatbot**: Create a Slack chatbot using Codegen and Modal.
-4. **repo_analytics**: Analyze GitHub repositories and generate insights.
-5. **pr_review_bot**: Automatically review pull requests on GitHub.
-6. **github_checks**: Create GitHub checks for your repositories.
-7. **linear_webhooks**: Handle Linear webhook events.
-8. **modal_repo_analytics**: Analyze Modal repositories.
-9. **deep_code_research**: Perform deep code research using Codegen.
-10. **cyclomatic_complexity**: Calculate cyclomatic complexity of code.
-11. **delete_dead_code**: Identify and delete dead code in repositories.
-12. **document_functions**: Automatically document functions in code.
-13. **codegen-mcp-server**: Run a Model Context Protocol server.
-14. **codegen_app**: Create a Codegen application.
-15. **ai_impact_analysis**: Analyze the impact of AI on code.
+1. **snapshot_event_handler**: Handle snapshot events from GitHub.
+1. **slack_chatbot**: Create a Slack chatbot using Codegen and Modal.
+1. **repo_analytics**: Analyze GitHub repositories and generate insights.
+1. **pr_review_bot**: Automatically review pull requests on GitHub.
+1. **github_checks**: Create GitHub checks for your repositories.
+1. **linear_webhooks**: Handle Linear webhook events.
+1. **modal_repo_analytics**: Analyze Modal repositories.
+1. **deep_code_research**: Perform deep code research using Codegen.
+1. **cyclomatic_complexity**: Calculate cyclomatic complexity of code.
+1. **delete_dead_code**: Identify and delete dead code in repositories.
+1. **document_functions**: Automatically document functions in code.
+1. **codegen-mcp-server**: Run a Model Context Protocol server.
+1. **codegen_app**: Create a Codegen application.
+1. **ai_impact_analysis**: Analyze the impact of AI on code.
 
 Each example has its own README.md file with detailed instructions on how to set it up and use it.
 
@@ -87,4 +90,3 @@ If you encounter issues with the examples, check the following:
 ## Contributing
 
 If you have ideas for new examples or improvements to existing ones, please open an issue or pull request on the [Codegen repository](https://github.com/Zeeeepa/codegen).
-

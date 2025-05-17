@@ -65,4 +65,3 @@ Here is an example mcp config that can be used with Cline or Claude desktop to i
 - `parse_codebase`: Parses a codebase located at the provided path.
 - `check_parse_status`: Provides the current parsing status for the provided codebase.
 - `execute_codemod`: Executes a codemod script on a parsed codebase. This is where the codegen sdk leveraged to run simple or sophisticated codemods on the codebase.
-

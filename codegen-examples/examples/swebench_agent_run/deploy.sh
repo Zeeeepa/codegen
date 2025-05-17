@@ -41,4 +41,3 @@ python3 -m modal deploy swebench_agent_run/modal_harness/entry_point.py
 
 echo "Deployment complete! You can check the status with 'modal app status swebench-agent-run'"
 echo "To view logs, run 'modal app logs swebench-agent-run'"
-

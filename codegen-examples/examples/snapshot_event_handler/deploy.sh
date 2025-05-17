@@ -41,4 +41,3 @@ python3 -m modal deploy event_handlers.py
 
 echo "Deployment complete! You can check the status with 'modal app status snapshot-event-handler'"
 echo "To view logs, run 'modal app logs snapshot-event-handler'"
-

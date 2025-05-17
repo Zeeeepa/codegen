@@ -178,4 +178,3 @@ Before submitting:
 1. Check that documentation is clear and accurate
 
 Remember: Your example might be used by both humans and AI to understand Codegen's capabilities. Clear structure and documentation help everyone use your code effectively.
-

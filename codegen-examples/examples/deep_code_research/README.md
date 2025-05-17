@@ -65,4 +65,3 @@ The agent maintains conversation history, so you can ask follow-up questions and
 ## Exit
 
 Type "exit" or "quit" to end the research session.
-

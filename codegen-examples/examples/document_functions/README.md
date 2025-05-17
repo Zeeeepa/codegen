@@ -98,4 +98,3 @@ The script provides detailed progress information:
 ## Contributing
 
 Feel free to submit issues and enhancement requests!
-
