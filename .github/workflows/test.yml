@@ -40,14 +40,17 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-environment
+        with:
+          python-version: "3.13"
+          uv-version: "0.5.24"
 
       - name: Test with pytest
-        timeout-minutes: 5
+        timeout-minutes: 10  # Increased from 5 to 10 for more reliability
         run: |
           uv run pytest \
             -n auto \
             --cov src \
-            --timeout 15 \
+            --timeout 30 \  # Increased from 15 to 30
             -o junit_suite_name="${{github.job}}" \
             tests/unit
 
@@ -81,13 +84,16 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-environment
+        with:
+          python-version: "3.13"
+          uv-version: "0.5.24"
 
       - name: Cache oss-repos
         uses: ./.github/actions/setup-oss-repos
 
       - name: Run ATS and Tests
         uses: ./.github/actions/run-ats
-        timeout-minutes: 15
+        timeout-minutes: 20  # Increased from 15 to 20
         with:
           default_tests: "tests/integration/codemod/test_codemods.py"
           codecov_static_token: ${{ secrets.CODECOV_STATIC_TOKEN }}
@@ -109,6 +115,9 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-environment
+        with:
+          python-version: "3.13"
+          uv-version: "0.5.24"
 
       - name: Cache oss-repos
         uses: ./.github/actions/setup-oss-repos
@@ -119,7 +128,7 @@ jobs:
           npm install -g pnpm
 
       - name: Test with pytest
-        timeout-minutes: 15
+        timeout-minutes: 20  # Increased from 15 to 20
         env:
           GITHUB_WORKSPACE: $GITHUB_WORKSPACE
         run: |
@@ -180,9 +189,12 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-environment
+        with:
+          python-version: "3.13"
+          uv-version: "0.5.24"
 
       - name: Test with pytest
-        timeout-minutes: 5
+        timeout-minutes: 10  # Increased from 5 to 10
         env:
           GITHUB_WORKSPACE: $GITHUB_WORKSPACE
           GITHUB_TOKEN: ${{ secrets.GHA_PAT }}

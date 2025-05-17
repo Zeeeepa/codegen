@@ -5,6 +5,10 @@ inputs:
     required: false
     description: "Python version to use"
     default: "3.13"
+  uv-version:
+    required: false
+    description: "UV version to use"
+    default: "0.5.24"
 runs:
   using: "composite"
   steps:
@@ -15,7 +19,7 @@ runs:
         enable-cache: true
         prune-cache: false
         python-version: ${{ inputs.python-version }}
-        version: '0.5.24'
+        version: ${{ inputs.uv-version }}
         cache-suffix: ${{inputs.python-version}}
 
     - name: Install dependencies

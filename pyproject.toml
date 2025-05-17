@@ -7,10 +7,10 @@ readme = "README.md"
 requires-python = ">=3.12, <3.14"
 dependencies = [
   "openai==1.66.5",
-  "tiktoken<1.0.0,>=0.5.1",
+  "tiktoken<1.0.0,>=0.5.2",  # Updated from 0.5.1
   "tabulate>=0.9.0,<1.0.0",
   "codeowners<1.0.0,>=0.6.0",
-  "anthropic",
+  "anthropic>=0.23.1",  # Added version constraint
   "dataclasses-json<1.0.0,>=0.6.4",
   "dicttoxml<2.0.0,>=1.7.16",
   "xmltodict<1.0.0,>=0.13.0",
@@ -36,7 +36,7 @@ dependencies = [
   "rustworkx>=0.15.1",
   "typing-extensions>=4.12.2",
   "termcolor>=2.4.0",
-  "sentry-sdk==2.23.1",
+  "sentry-sdk>=2.23.1",  # Removed pinning to allow security updates
   "click>=8.1.7",
   "requests>=2.32.3",
   "lazy-object-proxy>=0.0.0",
@@ -47,38 +47,38 @@ dependencies = [
   "pip>=24.3.1",                       # This is needed for some NPM/YARN/PNPM post-install scripts to work!
   "rich-click>=1.8.5",
   "python-dotenv>=1.0.1",
-  "giturlparse",
+  "giturlparse>=0.12.0",  # Added version constraint
   "pygit2>=1.16.0",
   "unidiff>=0.7.5",
   "datamodel-code-generator>=0.26.5",
-  "PyGithub==2.6.1",
-  "GitPython==3.1.44",
+  "PyGithub>=2.6.1",  # Removed pinning to allow security updates
+  "GitPython>=3.1.44",  # Removed pinning to allow security updates
   "psutil>=5.8.0",
   "fastapi[standard]<1.0.0,>=0.115.2",
   "starlette<1.0.0,>=0.16.0",
   "tqdm>=4.67.1",
   "tomlkit>=0.13.2",
-  "python-semantic-release",
+  "python-semantic-release>=8.7.0",  # Added version constraint
   "uvicorn[standard]>=0.30.0",
   "packaging>=24.2",
-  "langchain[openai]",
-  "langchain_core",
-  "langchain_openai",
-  "langgraph",
+  "langchain[openai]>=0.2.0",  # Added version constraint
+  "langchain_core>=0.2.0",  # Added version constraint
+  "langchain_openai>=0.2.0",  # Added version constraint
+  "langgraph>=0.2.0",  # Added version constraint
   "langgraph-prebuilt",
   "numpy>=2.2.2",
-  "mcp[cli]",
-  "neo4j",
+  "mcp[cli]>=0.1.0",  # Added version constraint
+  "neo4j>=5.18.0",  # Added version constraint
   "modal>=0.73.45",
-  "slack-sdk",
+  "slack-sdk>=3.27.1",  # Added version constraint
   "langchain-anthropic>=0.3.7",
   "lox>=0.12.0",
   "httpx>=0.28.1",
   "docker>=6.1.3",
   "urllib3>=2.0.0",
-  "datasets",
+  "datasets>=2.19.0",  # Added version constraint
   "colorlog>=6.9.0",
-  "langsmith",
+  "langsmith>=0.1.0",  # Added version constraint
   "langchain-xai>=0.2.1",
   "codegen-sdk-pink>=0.1.0",
 ]

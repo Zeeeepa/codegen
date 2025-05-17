@@ -29,6 +29,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           match_pattern: "(unit-tests|integration-tests)"
+          timeout: 1800  # 30 minutes timeout
 
       - uses: codfish/semantic-release-action@v3
         id: semantic
@@ -51,6 +52,9 @@ jobs:
 
       - name: Setup backend
         uses: ./.github/actions/setup-environment
+        with:
+          python-version: "3.13"
+          uv-version: "0.5.24"
 
       - name: Generate changelog
         env:
