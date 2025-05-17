@@ -129,22 +129,72 @@ codebase.visualize(component_tree, root=app)
 
 ### Inheritance Graphs
 
-Visualize class inheritance relationships:
+Visualize class inheritance relationships with enhanced features:
 
 ```python
 import networkx as nx
+from codegen.visualizations.inheritance_viz import create_inheritance_graph, highlight_multiple_inheritance
 
-G = nx.DiGraph()
+# Basic inheritance graph
 base = codebase.get_class("BaseModel")
+G = create_inheritance_graph(
+    root_class=base,
+    include_subclasses=True,
+    include_superclasses=True,
+    include_interfaces=True,
+    include_methods=True
+)
 
-def add_subclasses(cls):
-    for subclass in cls.subclasses:
-        G.add_edge(cls, subclass)
-        add_subclasses(subclass)
+# Highlight multiple inheritance relationships
+G = highlight_multiple_inheritance(G)
 
-add_subclasses(base)
-
+# Visualize the graph
 codebase.visualize(G, root=base)
+```
+
+#### Advanced Inheritance Visualization
+
+For more detailed inheritance visualization with filtering and interactive features:
+
+```python
+# Get the visualization manager
+viz_manager = codebase.visualization_manager
+
+# Create and visualize an inheritance hierarchy with advanced options
+base_class = codebase.get_class("BaseModel")
+viz_manager.visualize_inheritance_hierarchy(
+    root_class=base_class,
+    max_depth=3,                    # Limit depth to 3 levels
+    include_subclasses=True,        # Include subclasses
+    include_superclasses=True,      # Include superclasses
+    include_interfaces=True,        # Include interfaces
+    include_external=False,         # Exclude external modules
+    include_methods=True,           # Include method information
+    highlight_multiple=True,        # Highlight multiple inheritance
+    show_method_overrides=True,     # Show method override information
+    filter_packages=["src/models"]  # Only include classes from specific packages
+)
+```
+
+#### Analyzing Inheritance Relationships
+
+You can also analyze inheritance relationships programmatically:
+
+```python
+# Check for multiple inheritance
+class_a = codebase.get_class("ClassA")
+if class_a.has_multiple_inheritance():
+    print(f"{class_a.name} uses multiple inheritance")
+
+# Get overridden methods
+overridden_methods = class_a.get_overridden_methods()
+for method, superclass in overridden_methods:
+    print(f"{method.name} overrides method from {superclass.name}")
+
+# Find common superclasses between two classes
+class_b = codebase.get_class("ClassB")
+common = class_a.get_common_superclasses(class_b)
+print(f"Common superclasses: {[c.name for c in common]}")
 ```
 
 ### Module Dependencies
@@ -272,4 +322,3 @@ def create_custom_graph(codebase):
 - Complex relationships might need multiple views
 - Some graph layouts may take time to compute
 - Preview features only work when adding symbol objects directly
-
