@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from codegen.agents.agent import Agent
+from codegen.agents.agent import Agent, AgentTask
 from codegen.agents.constants import CODEGEN_BASE_API_URL
 
 
@@ -87,6 +87,32 @@ class TestAgent:
     def test_get_status_no_job(self, agent):
         """Test get_status when no job has been run."""
         assert agent.get_status() is None
+
+    def test_get_status_with_job(self, agent):
+        """Test get_status when a job has been run."""
+        # Create a mock job
+        mock_job = MagicMock(spec=AgentTask)
+        mock_job.id = "456"
+        mock_job.status = "completed"
+        mock_job.result = {"output": "Success!"}
+        mock_job.web_url = "https://example.com/agent/456"
+        
+        # Set the current job
+        agent.current_job = mock_job
+        
+        # Get the status
+        status = agent.get_status()
+        
+        # Verify the job was refreshed
+        mock_job.refresh.assert_called_once()
+        
+        # Verify the status
+        assert status == {
+            "id": "456",
+            "status": "completed",
+            "result": {"output": "Success!"},
+            "web_url": "https://example.com/agent/456"
+        }
 
     def test_exception_handling(self):
         """Test handling of API exceptions during agent run."""

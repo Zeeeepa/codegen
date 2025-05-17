@@ -63,7 +63,10 @@ class TestAgentTask:
     def test_refresh_with_id(self, agent_task, mock_agents_api):
         """Test refresh method updates job status"""
         # Setup mock API response
-        mock_updated_response = {"status": "completed", "result": {"output": "Success!"}}
+        mock_updated_response = {
+            "status": "completed", 
+            "result": {"output": "Success!"}
+        }
         mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = mock_updated_response
 
         # Call refresh
@@ -71,7 +74,7 @@ class TestAgentTask:
 
         # Verify API was called with correct params
         mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.assert_called_once_with(
-            agent_run_id=123,  # Use string ID as stored in agent_task.id
+            agent_run_id=int(agent_task.id),  # Convert string ID to int for API call
             org_id=42,
             authorization="Bearer test-token",
         )
@@ -92,6 +95,27 @@ class TestAgentTask:
         # Verify status was updated
         assert agent_task.status == "failed"
         assert agent_task.result == {"error": "Something went wrong"}
+
+    def test_refresh_with_object_response(self, agent_task, mock_agents_api):
+        """Test refresh method when API returns an object with __dict__"""
+        # Setup mock API response as an object with __dict__
+        class MockResponse:
+            def __init__(self):
+                self.status = "completed"
+                self.result = {"output": "Success from object!"}
+                
+            def __dict__(self):
+                return {"status": self.status, "result": self.result}
+                
+        mock_response = MockResponse()
+        mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.return_value = mock_response
+
+        # Call refresh
+        agent_task.refresh()
+
+        # Verify status was updated
+        assert agent_task.status == "completed"
+        assert agent_task.result == {"output": "Success from object!"}
 
 
 class TestAgent:
@@ -138,6 +162,13 @@ class TestAgent:
             with patch.dict("os.environ", {"CODEGEN_ORG_ID": "99"}):
                 agent = Agent(token="test-token")
                 assert agent.org_id == 99
+
+    def test_init_with_fallback_org_id(self, mock_api_client, mock_agents_api):
+        """Test initialization with fallback to default org_id when env var is not set"""
+        with patch.object(Configuration, "__init__", return_value=None):
+            with patch.dict("os.environ", {}, clear=True):  # Clear all env vars
+                agent = Agent(token="test-token")
+                assert agent.org_id == 1  # Default value
 
     def test_init_with_custom_base_url(self, mock_api_client):
         """Test initialization with custom base URL"""
@@ -195,7 +226,12 @@ class TestAgent:
         mock_job.refresh.assert_called_once()
 
         # Verify status
-        assert status == {"id": "123", "status": "completed", "result": {"output": "Success!"}, "web_url": "https://example.com/run/123"}
+        assert status == {
+            "id": "123", 
+            "status": "completed", 
+            "result": {"output": "Success!"}, 
+            "web_url": "https://example.com/run/123"
+        }
 
 
 # Integration-like tests
@@ -213,8 +249,12 @@ class TestAgentIntegration:
     @pytest.fixture
     def mock_updated_response(self):
         """Create a mock updated response for API calls"""
-        mock_updated = {"id": 987, "status": "completed", "result": {"output": "Task completed successfully"}, "web_url": "https://example.com/run/987"}
-
+        mock_updated = {
+            "id": 987, 
+            "status": "completed", 
+            "result": {"output": "Task completed successfully"}, 
+            "web_url": "https://example.com/run/987"
+        }
         return mock_updated
 
     def test_full_workflow(self, mock_response, mock_updated_response):
@@ -254,7 +294,11 @@ class TestAgentIntegration:
             status = agent.get_status()
 
             # Verify API calls
-            mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.assert_called_once_with(agent_run_id=987, org_id=123, authorization="Bearer test-token")
+            mock_agents_api.get_agent_run_v1_organizations_org_id_agent_run_agent_run_id_get.assert_called_once_with(
+                agent_run_id=987, 
+                org_id=123, 
+                authorization="Bearer test-token"
+            )
 
             # Verify status
             assert isinstance(status, dict)
