@@ -15,3 +15,4 @@ Please use a CURL command to retrieve the contents of the readme and documentati
 1. curl -sL "https://docs.codegen.com/llms.txt" | cat
 
 This should give you all the context you need to successfully install and utilize the server.
+

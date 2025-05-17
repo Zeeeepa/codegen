@@ -41,3 +41,4 @@ python3 -m modal deploy app.py
 
 echo "Deployment complete! You can check the status with 'modal app status pr-review-bot'"
 echo "To view logs, run 'modal app logs pr-review-bot'"
+

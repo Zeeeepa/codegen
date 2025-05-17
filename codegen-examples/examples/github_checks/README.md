@@ -108,3 +108,4 @@ The analysis results are posted as a markdown-formatted comment on the pull requ
 ## Contributing
 
 Feel free to submit issues and enhancement requests!
+

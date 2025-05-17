@@ -41,3 +41,4 @@ LINEAR_TEAM_ID=your_team_id
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
