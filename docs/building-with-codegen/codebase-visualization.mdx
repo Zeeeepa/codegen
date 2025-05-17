@@ -13,6 +13,8 @@ These visualizations have a number of applications, including:
 - Monitoring critical code paths
 - Analyzing dependencies
 - Understanding inheritance hierarchies
+- Exploring symbol relationships
+- Visualizing code impact and blast radius
 
 This guide provides a basic overview of graph creation and customization. Like the one below which displays the call_graph for the [modal/client.py](https://github.com/modal-labs/modal-client/blob/v0.72.49/modal/client.py) module.
 
@@ -69,6 +71,48 @@ graph.add_node(function.name)  # Will only show the name
   Adding symbols to the graph directly (as opposed to adding by name) enables
   automatic type information, code preview on hover, and more.
 </Tip>
+
+## Enhanced Visualization Features
+
+Codegen's visualization system has been enhanced with several new features to provide more detailed insights into your codebase:
+
+### Interactive Selection Row
+
+The visualization UI now includes a selection row that shows corresponding methods when selecting Symbols, Files, Functions, or Classes. This allows you to:
+
+- See all methods associated with a selected class
+- View related symbols when selecting a function
+- Explore file dependencies when selecting a file
+- Navigate between related elements with a single click
+
+### Improved Relationship Visualization
+
+The enhanced visualization system now provides more detailed representations of relationships between code elements:
+
+- Color-coded relationships based on type
+- Directional indicators showing dependency flow
+- Weighted edges representing relationship strength
+- Grouped related nodes for better organization
+
+### Advanced Filtering Options
+
+You can now filter visualizations based on various criteria:
+
+```python
+# Filter call graph by module
+filtered_graph = nx.DiGraph()
+for node, data in call_graph.nodes(data=True):
+    if isinstance(node, Function) and "api" in node.filepath:
+        filtered_graph.add_node(node, **data)
+        
+# Filter edges based on relationship type
+for u, v, data in call_graph.edges(data=True):
+    if u in filtered_graph.nodes and v in filtered_graph.nodes:
+        if data.get("type") == "direct_call":
+            filtered_graph.add_edge(u, v, **data)
+
+codebase.visualize(filtered_graph)
+```
 
 ## Common Visualization Types
 
@@ -194,6 +238,48 @@ modularity_graph = create_modularity_graph(funcs)
 codebase.visualize(modularity_graph)
 ```
 
+### Blast Radius Visualization
+
+Visualize the impact of changes to a specific function or symbol:
+
+```python
+def create_blast_radius_visualization(symbol: PySymbol, depth: int = 0, max_depth: int = 5):
+    """Create visualization of symbol usage relationships"""
+    graph = nx.DiGraph()
+    visited = set()
+    
+    def add_usages(sym, current_depth=0):
+        if current_depth >= max_depth or sym in visited:
+            return
+            
+        visited.add(sym)
+        
+        for usage in sym.usages:
+            usage_symbol = usage.usage_symbol
+            
+            # Add node and edge to graph
+            graph.add_node(usage_symbol)
+            graph.add_edge(sym, usage_symbol)
+            
+            # Recursively process usage symbol
+            add_usages(usage_symbol, current_depth + 1)
+    
+    # Add root node
+    graph.add_node(symbol)
+    
+    # Build the visualization
+    add_usages(symbol)
+    
+    return graph
+
+# Get target function to analyze
+target_func = codebase.get_function('process_data')
+
+# Create and visualize the blast radius
+blast_graph = create_blast_radius_visualization(target_func)
+codebase.visualize(blast_graph, root=target_func)
+```
+
 ## Customizing Visualizations
 
 You can customize your visualizations using NetworkX's attributes while still preserving the smart node features:
@@ -220,6 +306,41 @@ def create_custom_graph(codebase):
 
     return graph
 ```
+
+### Advanced Customization Options
+
+The enhanced visualization system supports additional customization options:
+
+```python
+# Group nodes into clusters
+for node in codebase.functions:
+    if "controller" in node.name.lower():
+        graph.add_node(node, cluster="controllers", color="#ff7e5f")
+    elif "service" in node.name.lower():
+        graph.add_node(node, cluster="services", color="#feb47b")
+    elif "model" in node.name.lower():
+        graph.add_node(node, cluster="models", color="#7ee8fa")
+
+# Add custom tooltips
+graph.add_node(function, 
+    tooltip=f"Function: {function.name}\nLines: {function.line_count}\nComplexity: {function.complexity}")
+
+# Add custom edge labels
+graph.add_edge(source_func, target_func, 
+    label=f"Calls {call_count} times", 
+    weight=call_count)
+```
+
+## Interactive Features
+
+The enhanced visualization system includes several interactive features:
+
+- **Zoom and Pan**: Navigate large graphs with zoom and pan controls
+- **Node Selection**: Click on nodes to see detailed information
+- **Expand/Collapse**: Expand or collapse node groups to manage complexity
+- **Search**: Search for specific nodes within the visualization
+- **Filtering**: Filter the visualization based on node or edge attributes
+- **Export**: Export the visualization as an image or JSON data
 
 ## Best Practices
 
@@ -266,10 +387,67 @@ def create_custom_graph(codebase):
            graph.add_node(node, color="blue")
    ```
 
+5. **Use Filtering for Large Graphs**
+   ```python
+   # Filter by module or package
+   filtered_nodes = [n for n in graph.nodes() if "core" in getattr(n, "filepath", "")]
+   subgraph = graph.subgraph(filtered_nodes)
+   codebase.visualize(subgraph)
+   ```
+
+6. **Combine Visualization Types**
+   ```python
+   # Combine call graph with dependency information
+   for u, v in call_graph.edges():
+       if v in u.dependencies:
+           combined_graph.add_edge(u, v, relationship="calls_and_depends")
+   ```
+
+## Visualization API Reference
+
+### Codebase.visualize
+
+```python
+def visualize(self, G: Graph | go.Figure, root: Editable | str | int | None = None) -> None:
+    """Visualizes a NetworkX graph or Plotly figure.
+
+    Creates a visualization of the provided graph using GraphViz. This is useful for visualizing 
+    dependency graphs, call graphs, directory structures, or other graph-based representations 
+    of code relationships.
+
+    Args:
+        G (Graph | go.Figure): A NetworkX graph or Plotly figure to visualize
+        root (Editable | str | int | None): The root node to visualize around. When specified, 
+            the visualization will be centered on this node. Defaults to None.
+
+    Returns:
+        None
+    """
+```
+
+### VizNode
+
+The `VizNode` class defines the attributes that can be used to customize node appearance:
+
+```python
+@dataclass(frozen=True)
+class VizNode:
+    name: str | None = None
+    text: str | None = None
+    code: str | None = None
+    color: str | None = None
+    shape: str | None = None
+    start_point: tuple | None = None
+    emoji: str | None = None
+    end_point: tuple | None = None
+    file_path: str | None = None
+    symbol_name: str | None = None
+```
+
 ## Limitations
 
 - Large graphs may become difficult to read
 - Complex relationships might need multiple views
 - Some graph layouts may take time to compute
 - Preview features only work when adding symbol objects directly
-
+- Very large codebases may require filtering to maintain performance
