@@ -65,7 +65,7 @@ cd codebase-analyzer
 2. Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 ## Usage
@@ -109,9 +109,49 @@ python codebase_analyzer.py --repo-url https://github.com/username/repo --output
 - `language_specific`: Language-specific analysis features
 - `code_metrics`: Commits, complexity, volume, maintainability
 
+## Testing
+
+The Codegen SDK has a comprehensive testing infrastructure to ensure code quality and reliability.
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+./scripts/run_tests_with_coverage.sh
+
+# Run specific tests
+pytest tests/unit/codegen/agents/test_agent.py
+```
+
+### Test Coverage
+
+The goal is to maintain high test coverage for critical components of the SDK. The coverage report can be generated using:
+
+```bash
+./scripts/run_tests_with_coverage.sh --format html
+```
+
+This will generate:
+- A text report in the console
+- An HTML report in `coverage_html_report/`
+- An analysis report in `reports/coverage_analysis.md`
+
+### Finding Flaky Tests
+
+To identify flaky tests that pass inconsistently:
+
+```bash
+./scripts/find_flaky_tests.py --test-path tests/unit/ --iterations 5
+```
+
+For more information about testing, see the [Testing Guide](docs/testing_guide.md).
+
 ## Requirements
 
-- Python 3.8+
+- Python 3.12+
 - Codegen SDK
 - NetworkX
 - Matplotlib
