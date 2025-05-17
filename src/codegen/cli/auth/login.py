@@ -1,3 +1,4 @@
+import logging
 import webbrowser
 
 import rich
@@ -8,9 +9,17 @@ from codegen.cli.auth.token_manager import TokenManager
 from codegen.cli.env.global_env import global_env
 from codegen.cli.errors import AuthError
 
+logger = logging.getLogger(__name__)
+
 
 def login_routine(token: str | None = None) -> str:
     """Guide user through login flow and return authenticated session.
+
+    This function handles the authentication flow for the Codegen CLI.
+    It tries to authenticate using a token provided in the following order:
+    1. Token provided as an argument
+    2. Token from environment variable
+    3. Token from browser flow
 
     Args:
         token: Codegen user access token associated with github account
@@ -20,7 +29,6 @@ def login_routine(token: str | None = None) -> str:
 
     Raises:
         click.ClickException: If login fails
-
     """
     # Try environment variable first
     token = token or global_env.CODEGEN_USER_ACCESS_TOKEN
@@ -28,7 +36,13 @@ def login_routine(token: str | None = None) -> str:
     # If no token provided, guide user through browser flow
     if not token:
         rich.print(f"Opening {USER_SECRETS_ROUTE} to get your authentication token...")
-        webbrowser.open_new(USER_SECRETS_ROUTE)
+        try:
+            webbrowser.open_new(USER_SECRETS_ROUTE)
+        except Exception as e:
+            logger.warning(f"Failed to open browser: {e}")
+            rich.print(f"[yellow]Could not open browser automatically. Please visit:[/yellow]")
+            rich.print(f"[blue]{USER_SECRETS_ROUTE}[/blue]")
+        
         token = click.prompt("Please enter your authentication token from the browser", hide_input=False)
 
     if not token:
@@ -44,5 +58,10 @@ def login_routine(token: str | None = None) -> str:
         rich.print("To opt out, set [green]telemetry_enabled = false[/green] in [cyan]~/.config/codegen-sh/analytics.json[/cyan] ✨")
         return token
     except AuthError as e:
+        logger.error(f"Authentication failed: {e}")
         msg = f"Error: {e!s}"
+        raise click.ClickException(msg)
+    except Exception as e:
+        logger.error(f"Unexpected error during login: {e}")
+        msg = f"Unexpected error: {e!s}"
         raise click.ClickException(msg)
