@@ -170,6 +170,56 @@ module_graph = create_module_graph(main)
 codebase.visualize(module_graph, root=main)
 ```
 
+#### Enhanced Module Dependency Visualization
+
+Codegen provides enhanced module dependency visualization with features for detailed relationship analysis, interactive navigation, filtering, and handling of complex dependency graphs:
+
+```python
+from codegen.visualizations.module_dependency_viz import build_module_dependency_graph
+
+# Build a comprehensive module dependency graph
+module_graph = build_module_dependency_graph(
+    codebase.files,
+    include_external=False,  # Whether to include external dependencies
+    path_filter="src/app"    # Optional path filter
+)
+
+# Detect circular dependencies
+circular_deps = module_graph.detect_circular_dependencies()
+if circular_deps:
+    print(f"Found {len(circular_deps)} circular dependencies")
+    
+# Filter by depth from a root module
+filtered_graph = module_graph.filter_by_depth(
+    root_module=codebase.get_file("src/app/main.py"),
+    max_depth=2  # Only show dependencies up to 2 levels deep
+)
+
+# Filter by module path
+api_graph = module_graph.filter_by_module_path("src/app/api")
+
+# Get module metrics for analysis
+metrics = module_graph.get_module_metrics()
+for module_id, data in metrics.items():
+    print(f"{module_id}: imports={data['imports_count']}, imported_by={data['imported_by_count']}")
+
+# Visualize with enhanced features
+codebase.visualize(module_graph)
+```
+
+The enhanced module dependency visualization includes:
+
+- **Detailed relationships**: Shows import counts, dependency types, and relationship strength
+- **Interactive features**: Supports zooming, panning, and node expansion/collapse
+- **Filtering options**: Filter by module path, dependency depth, or module attributes
+- **Visual enhancements**: Highlights circular dependencies, sizes nodes by importance, and provides detailed tooltips
+- **Metrics and analysis**: Calculates centrality measures, identifies key modules, and detects potential issues
+
+<Tip>
+  For large codebases, use path filtering or depth limiting to create more focused and readable visualizations.
+  Circular dependencies are automatically highlighted in red to help identify potential architectural issues.
+</Tip>
+
 ### Function Modularity
 
 Visualize function groupings by modularity:
@@ -221,6 +271,37 @@ def create_custom_graph(codebase):
     return graph
 ```
 
+### Enhanced Visualization Utilities
+
+Codegen provides utilities to enhance your visualizations with minimal effort:
+
+```python
+from codegen.visualizations.viz_utils import apply_visual_attributes, add_tooltips
+
+# Create a basic graph
+G = nx.DiGraph()
+# ... add nodes and edges ...
+
+# Apply visual attributes based on node/edge properties
+G_viz = apply_visual_attributes(
+    G,
+    node_size_attr="importance",  # Size nodes based on their importance attribute
+    node_color_attr="category",   # Color nodes based on their category
+    edge_width_attr="weight",     # Set edge width based on weight
+    default_node_color="#5555ff"  # Default color for nodes without a category
+)
+
+# Add tooltips with detailed information
+G_tooltip = add_tooltips(
+    G_viz,
+    node_tooltip_template="Module: {name}<br>Type: {type}<br>Lines: {lines}",
+    edge_tooltip_template="Imports: {weight}"
+)
+
+# Visualize the enhanced graph
+codebase.visualize(G_tooltip)
+```
+
 ## Best Practices
 
 1. **Use Symbol Objects for Rich Features**
@@ -266,6 +347,23 @@ def create_custom_graph(codebase):
            graph.add_node(node, color="blue")
    ```
 
+5. **Handle Large Dependency Graphs**
+   ```python
+   # For large module dependency graphs, use filtering
+   from codegen.visualizations.module_dependency_viz import build_module_dependency_graph
+   
+   # Build the full graph
+   full_graph = build_module_dependency_graph(codebase.files)
+   
+   # Create a focused view by filtering
+   core_graph = full_graph.filter_by_module_path("src/core")
+   # Or limit by depth
+   limited_graph = full_graph.filter_by_depth(codebase.get_file("src/main.py"), max_depth=2)
+   
+   # Visualize the filtered graph
+   codebase.visualize(core_graph)
+   ```
+
 ## Limitations
 
 - Large graphs may become difficult to read
@@ -273,3 +371,9 @@ def create_custom_graph(codebase):
 - Some graph layouts may take time to compute
 - Preview features only work when adding symbol objects directly
 
+## Advanced Visualization Examples
+
+For more advanced visualization examples, check out the example files in the `codegen-examples/examples/` directory:
+
+- `modules_dependencies/enhanced_module_viz.py`: Enhanced module dependency visualization
+- `modules_dependencies/run.py`: Basic module dependency visualization
