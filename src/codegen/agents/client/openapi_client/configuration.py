@@ -12,6 +12,7 @@ import copy
 import http.client as httplib
 import logging
 import multiprocessing
+import os
 import sys
 from logging import FileHandler
 from typing import Any, ClassVar, Literal, NotRequired, Self, TypedDict
@@ -173,7 +174,7 @@ class Configuration:
         debug: bool | None = None,
     ) -> None:
         """Constructor"""
-        self._base_path = "http://localhost" if host is None else host
+        self._base_path = "https://api.codegen.sh" if host is None else host
         """Default Base url
         """
         self.server_index = 0 if server_index is None and host is None else server_index
@@ -344,10 +345,24 @@ class Configuration:
         object of Configuration class or returns a copy of default
         configuration.
 
+        If the CODEGEN_API_KEY environment variable is set, it will be used
+        as the API key for authorization.
+
         :return: The configuration object.
         """
         if cls._default is None:
-            cls._default = cls()
+            config = cls()
+            
+            # Check for API key in environment variables
+            api_key = os.environ.get("CODEGEN_API_KEY")
+            if api_key:
+                config.api_key["Authorization"] = api_key
+                config.api_key_prefix["Authorization"] = "Bearer"
+            else:
+                config.api_key_prefix["Authorization"] = "Bearer
+                
+            cls._default = config
+            
         return cls._default
 
     @property
@@ -435,7 +450,7 @@ class Configuration:
         self.__logger_format = value
         self.logger_formatter = logging.Formatter(self.__logger_format)
 
-    def get_api_key_with_prefix(self, identifier: str, alias: str | None = None) -> str | None:
+    def get_api_key_with_prefix(self, identifier: str, alias: str | None = None) -> str:
         """Gets API key (with prefix if set).
 
         :param identifier: The identifier of apiKey.
@@ -452,7 +467,7 @@ class Configuration:
             else:
                 return key
 
-        return None
+        return ""
 
     def get_basic_auth_token(self) -> str | None:
         """Gets HTTP basic authentication header (string).
@@ -473,6 +488,16 @@ class Configuration:
         :return: The Auth Settings information dict.
         """
         auth: AuthSettings = {}
+        
+        # Add Authorization header if API key is set
+        if "Authorization" in self.api_key:
+            auth["Authorization"] = {
+                "type": "api_key",
+                "in": "header",
+                "key": "Authorization",
+                "value": self.get_api_key_with_prefix("Authorization"),
+            }
+            
         return auth
 
     def to_debug_report(self) -> str:
@@ -480,7 +505,7 @@ class Configuration:
 
         :return: The report for debugging.
         """
-        return f"Python SDK Debug Report:\nOS: {sys.platform}\nPython Version: {sys.version}\nVersion of the API: 1.0.0\nSDK Package Version: 1.0.0"
+        return f"Python SDK Debug Report:\nOS: {sys.platform}\nPython Version: {sys.version}\nVersion of the API: 1.0.0\nSDK Package Version: 1.0.0\nHost: {self.host}"
 
     def get_host_settings(self) -> list[HostSetting]:
         """Gets an array of host settings
@@ -489,8 +514,8 @@ class Configuration:
         """
         return [
             {
-                "url": "",
-                "description": "No description provided",
+                "url": "https://api.codegen.sh",
+                "description": "Codegen API Server",
             }
         ]
 
