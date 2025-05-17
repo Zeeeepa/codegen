@@ -1,47 +1,42 @@
-# SWE-bench Agent Runner
+# SWE-Bench Agent Run
 
-Tool for running and evaluating model fixes using SWE-bench.
+This example demonstrates how to run Codegen agents on the SWE-Bench benchmark using Modal.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+- Python 3.10+
+- [Modal CLI](https://modal.com/docs/guide/cli-reference)
+- [Codegen SDK](https://docs.codegen.com) version 0.52.19
+- [SWE-Bench](https://github.com/princeton-nlp/SWE-bench) dependencies
 
 ## Setup
 
-1. Using the `.env.template` reference, create a `.env` file in the project root and add your API keys:
+1. Install the required dependencies:
 
-   ```env
-   OPENAI_API_KEY=your_key_here
-   MODAL_TOKEN_ID=your_token_id
-   MODAL_TOKEN_SECRET=your_token_secret
-   ```
+```bash
+pip install modal codegen==0.52.19
+pip install -e .
+```
 
-1. Create and activate a virtual environment:
+2. Authenticate with Modal:
 
-   ```bash
-   uv venv
-   source .venv/bin/activate
-   ```
+```bash
+modal token new
+```
 
-1. Install the package:
+3. Configure your environment variables:
 
-   ```bash
-   # Basic installation
-   uv pip install -e .
+```bash
+cp .env.template .env
+```
 
-   # With metrics support
-   uv pip install -e ".[metrics]"
+Edit the `.env` file and add your API keys:
 
-   # With development tools
-   uv pip install -e ".[dev]"
-
-   # Install everything
-   uv pip install -e ".[all]"
-   ```
-
-1. Set up Modal:
-
-   - Create an account at https://modal.com/ if you don't have one
-   - Activate your Modal profile:
-     ```bash
-     python -m modal profile activate <profile_name>
-     ```
+```
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
 
 ## Usage
 

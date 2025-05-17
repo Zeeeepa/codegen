@@ -1,68 +1,85 @@
-# Repository Analyzer API
+# Modal Repository Analytics
 
-A simple Modal API endpoint that analyzes GitHub repositories using Codegen. The API returns basic metrics about any public GitHub repository including:
+This example demonstrates how to deploy a Modal application that uses Codegen to analyze GitHub repositories and extract code metrics.
 
-- Total number of files
-- Number of functions
-- Number of classes
+## Features
 
-## Running Locally
+- Analyze GitHub repositories using Codegen
+- Extract code statistics and metrics (files, functions, classes)
+- Web endpoint for API access
+- Easily deployable to Modal cloud
 
-1. Install dependencies:
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- Python 3.10+
+- [Modal CLI](https://modal.com/docs/guide/cli-reference)
+- [Codegen SDK](https://docs.codegen.com)
+
+## Setup
+
+1. Install the required dependencies:
 
 ```bash
-uv add modal
+pip install modal codegen==0.52.19
 ```
 
-2. Start the API server:
+2. Authenticate with Modal:
 
 ```bash
-modal serve src/codegen/extensions/modal/api.py
+modal token new
 ```
 
-3. Test with curl:
+## Deployment
+
+You can deploy this example to Modal using the provided deploy script:
 
 ```bash
-# Replace with your local Modal endpoint URL
-curl "{URL}?repo_name=fastapi/fastapi"
+./deploy.sh
 ```
 
-## Response Format
+This will deploy the application to Modal and provide you with a URL to access the API.
 
-The API returns JSON in this format:
+## Usage
+
+Once deployed, you can use the API to analyze GitHub repositories:
+
+```bash
+curl "https://codegen-repo-analyzer--analyze-repo.modal.run?repo_name=owner/repo"
+```
+
+Replace `owner/repo` with the GitHub repository you want to analyze.
+
+## API Response
+
+The API returns a JSON response with the following structure:
 
 ```json
 {
-  "status": "success",
-  "error": "",
   "num_files": 123,
   "num_functions": 456,
-  "num_classes": 78
+  "num_classes": 78,
+  "status": "success",
+  "error": ""
 }
 ```
 
-If there's an error, you'll get:
+If there's an error, the `status` field will be set to `"error"` and the `error` field will contain the error message.
 
-```json
-{
-  "status": "error",
-  "error": "Error message here",
-  "num_files": 0,
-  "num_functions": 0,
-  "num_classes": 0
-}
-```
+## Customization
 
-## Development
+You can customize this example by:
 
-The API is built using:
+1. Adding more metrics to the `RepoMetrics` model
+1. Extending the `analyze_repo` function to extract additional information
+1. Adding authentication to the API endpoint
 
-- Modal for serverless deployment
-- FastAPI for the web endpoint
-- Codegen for repository analysis
+## Troubleshooting
 
-To deploy changes:
+If you encounter issues:
 
-```bash
-modal deploy src/codegen/extensions/modal/api.py
-```
+1. Ensure you have the correct version of Modal and Codegen installed
+1. Check that you're authenticated with Modal
+1. Verify that the repository name is in the correct format (`owner/repo`)
+1. Check the Modal logs for detailed error information
