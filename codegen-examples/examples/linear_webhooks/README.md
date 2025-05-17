@@ -1,136 +1,135 @@
 # Linear Webhooks Example
 
-This example demonstrates how to set up a webhook handler for Linear events using the Codegen SDK and Modal. The webhook handler can process events from Linear such as issue creation, updates, comments, and more.
+This example demonstrates how to handle Linear webhook events using the Codegen SDK and Modal. It provides a simple webhook handler that processes different types of Linear events, such as Issue and Comment events.
+
+## Features
+
+- Receive and process Linear webhook events
+- Handle specific event types (Issues, Comments)
+- Deploy as a serverless application using Modal
+- Secure webhook verification using Linear's signing secret
 
 ## Prerequisites
 
-- [Modal](https://modal.com/) account
-- [Linear](https://linear.app/) account with admin access
 - Python 3.13 or higher
+- A Linear account with admin access
+- A Modal account (for deployment)
+- Codegen SDK (version 0.26.3 or higher)
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Clone the Repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/Zeeeepa/codegen.git
-cd codegen/codegen-examples/examples/linear_webhooks
-
-# Install dependencies
-pip install -e .
+git clone https://github.com/your-username/your-repo.git
+cd your-repo/examples/linear_webhooks
 ```
 
-### 2. Configure Environment Variables
-
-Copy the `.env.template` file to `.env` and fill in your credentials:
+### 2. Create a Virtual Environment
 
 ```bash
-cp .env.template .env
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-Edit the `.env` file with your Linear API credentials:
-
-```
-LINEAR_ACCESS_TOKEN="your_linear_api_token"
-LINEAR_SIGNING_SECRET="your_linear_webhook_signing_secret"
-LINEAR_TEAM_ID="your_linear_team_id"
-MODAL_API_KEY="your_modal_api_key"  # Optional
-```
-
-To get these credentials:
-
-- **LINEAR_ACCESS_TOKEN**: Go to Linear → Settings → API → Create Key
-- **LINEAR_SIGNING_SECRET**: Created when you set up a webhook in Linear
-- **LINEAR_TEAM_ID**: Found in Linear team settings or via the API
-- **MODAL_API_KEY**: Your Modal API key (if not using Modal CLI authentication)
-
-### 3. Authenticate with Modal
+### 3. Install Dependencies
 
 ```bash
-modal token new
+pip install -e ".[dev]"
 ```
 
-## Deployment Commands
+### 4. Set Up Environment Variables
+
+Create a `.env` file in the project root with the following variables:
+
+```
+LINEAR_API_KEY=your_linear_api_key
+LINEAR_SIGNING_SECRET=your_linear_webhook_signing_secret
+MODAL_API_KEY=your_modal_api_key
+```
+
+You can get your Linear API key from the Linear dashboard under Settings > API > Personal API Keys.
+
+## Local Development
+
+For local development and testing, you can run the webhook handler locally:
+
+```bash
+python webhooks.py
+```
+
+This will start a local server that you can use for testing. However, for Linear to send webhooks to your local machine, you'll need to use a tool like ngrok to expose your local server to the internet.
+
+## Deployment
 
 ### Deploy to Modal
 
+To deploy the webhook handler to Modal, run:
+
 ```bash
-# Deploy the webhook handler to Modal
-python webhooks.py
+modal deploy webhooks.py
 ```
 
-This will deploy the webhook handler to Modal and provide you with a URL that you can use to configure the webhook in Linear.
+This will deploy the webhook handler to Modal and provide you with a URL that you can use to configure the Linear webhook.
 
-### Get Deployment Status
+### Update the Deployment
+
+To update an existing deployment:
 
 ```bash
-# Check the status of your Modal deployment
-modal app status linear-webhooks
+modal deploy webhooks.py
 ```
 
-### View Logs
+### Stop the Deployment
+
+To stop the deployment:
 
 ```bash
-# View logs from your Modal deployment
-modal app logs linear-webhooks
-```
-
-### Update Deployment
-
-```bash
-# Update your Modal deployment after making changes
-python webhooks.py
-```
-
-### Stop Deployment
-
-```bash
-# Stop your Modal deployment
 modal app stop linear-webhooks
 ```
 
 ## Configuring Linear Webhooks
 
 1. Go to Linear → Settings → API → Webhooks
-2. Click "New Webhook"
-3. Enter the URL provided by Modal when you deployed the webhook handler
-4. Select the events you want to receive (e.g., Issues, Comments)
-5. Copy the signing secret and add it to your `.env` file as `LINEAR_SIGNING_SECRET`
-6. Click "Create Webhook"
+1. Click "New Webhook"
+1. Enter the URL provided by Modal when you deployed the webhook handler
+1. Select the events you want to receive (e.g., Issues, Comments)
+1. Copy the signing secret and add it to your `.env` file as `LINEAR_SIGNING_SECRET`
+1. Click "Create Webhook"
 
 ## Customizing Event Handlers
 
-The example includes handlers for Issue and Comment events. You can customize these handlers or add new ones by modifying the `webhooks.py` file:
+You can customize the event handlers in `webhooks.py` to handle different types of Linear events. The example includes handlers for Issue and Comment events, but you can add handlers for other event types as well.
+
+To add a new event handler, add a new method to the `LinearEventHandlers` class and decorate it with `@app.linear.event("EventType")`:
 
 ```python
-@modal.web_endpoint(method="POST")
-@app.linear.event("YourEventType")
-def handle_your_event(self, event: LinearEvent):
+@app.linear.event("Project")
+def handle_project(self, event: LinearEvent):
+    """Handle Linear Project events"""
+    logger.info(f"Received Linear Project event: {event.action}")
     # Process the event
-    return {"status": "success"}
+    return {"status": "success", "message": f"Processed Linear Project event: {event.action}"}
 ```
 
-## Available Event Types
+## Event Types
 
-Linear supports the following event types:
+Linear supports various event types, including:
 
-- `Issue`
-- `Comment`
-- `Project`
-- `Cycle`
-- `Reaction`
-- And more...
+- Issue
+- Comment
+- Project
+- Cycle
+- Team
+- User
+- Attachment
+- Reaction
+- Label
+- State
 
-Refer to the [Linear API documentation](https://developers.linear.app/docs/graphql/webhooks) for a complete list of event types.
+Refer to the [Linear API documentation](https://developers.linear.app/docs/graphql/webhooks) for a complete list of event types and their payloads.
 
-## Troubleshooting
-
-- **Webhook not receiving events**: Verify that your Linear webhook is configured correctly and that the URL is accessible.
-- **Authentication errors**: Check that your LINEAR_ACCESS_TOKEN and LINEAR_SIGNING_SECRET are correct.
-- **Modal deployment issues**: Run `modal app logs linear-webhooks` to view logs and diagnose issues.
-
-## Additional Resources
+## Resources
 
 - [Codegen Documentation](https://docs.codegen.sh/)
 - [Modal Documentation](https://modal.com/docs)

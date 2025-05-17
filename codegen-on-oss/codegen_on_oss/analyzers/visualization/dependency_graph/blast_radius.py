@@ -34,7 +34,13 @@ def generate_edge_meta(usage: Usage) -> dict:
     Returns:
         dict: Edge metadata including source location and symbol info
     """
-    return {"name": usage.match.source, "file_path": usage.match.filepath, "start_point": usage.match.start_point, "end_point": usage.match.end_point, "symbol_name": usage.match.__class__.__name__}
+    return {
+        "name": usage.match.source,
+        "file_path": usage.match.filepath,
+        "start_point": usage.match.start_point,
+        "end_point": usage.match.end_point,
+        "symbol_name": usage.match.__class__.__name__,
+    }
 
 
 def is_http_method(symbol: PySymbol) -> bool:
@@ -111,9 +117,14 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Initializing codebase...")
-    codebase = Codebase.from_repo("codegen-oss/posthog", commit="b174f2221ea4ae50e715eb6a7e70e9a2b0760800", language="python")
-    print(f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions.")
+    codebase = Codebase.from_repo(
+        "codegen-oss/posthog",
+        commit="b174f2221ea4ae50e715eb6a7e70e9a2b0760800",
+        language="python",
+    )
+    print(
+        f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions."
+    )
     print("Creating graph...")
 
     run(codebase)
-

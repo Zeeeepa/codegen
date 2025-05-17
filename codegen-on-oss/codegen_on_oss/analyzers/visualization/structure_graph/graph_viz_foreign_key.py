@@ -1,9 +1,9 @@
 from abc import ABC
 
 import networkx as nx
-
 from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
+
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
 from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile
@@ -104,7 +104,10 @@ class ForeignKeyGraph(Skill, ABC):
         # Iterate through all classes in the codebase
         for cls in codebase.classes:
             # Check if the class is a subclass of BaseModel and defined in the correct file
-            if cls.is_subclass_of("BaseModel") and "from app.models.base import BaseModel" in cls.file.content:
+            if (
+                cls.is_subclass_of("BaseModel")
+                and "from app.models.base import BaseModel" in cls.file.content
+            ):
                 # Initialize an empty list for the current class
                 foreign_key_mapping[cls.name] = []
 
@@ -175,4 +178,3 @@ class ForeignKeyGraph(Skill, ABC):
         print("Models mapping to 'Task':")
         for model in models_mapping_to_task:
             print(f"> {model}")
-

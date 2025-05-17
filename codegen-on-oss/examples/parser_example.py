@@ -8,16 +8,15 @@ import sys
 from pathlib import Path
 
 # Add the parent directory to the path so we can import the module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from codegen_on_oss.analyzers.parser import (
-    parse_file,
-    parse_code,
+    TypeScriptParser,
     create_parser,
-    PythonParser,
-    JavaScriptParser,
-    TypeScriptParser
+    parse_code,
+    parse_file,
 )
+
 
 def parse_file_example():
     """Example of parsing a file."""
@@ -36,33 +35,35 @@ def hello_world():
 class ExampleClass:
     def __init__(self, name):
         self.name = name
-    
+
     def greet(self):
         print(f"Hello, {self.name}!")
         return self.name
 """)
-    
+
     try:
         # Parse the file
         print(f"Parsing file: {sample_file}")
         ast = parse_file(sample_file)
-        
+
         # Get symbols
         parser = create_parser("python")
         symbols = parser.get_symbols(ast)
-        
+
         print(f"\nSymbols found ({len(symbols)}):")
         for symbol in symbols:
             if symbol["type"] == "class":
-                print(f"  Class: {symbol['name']} with methods: {', '.join(symbol['methods'])}")
+                print(
+                    f"  Class: {symbol['name']} with methods: {', '.join(symbol['methods'])}"
+                )
             elif symbol["type"] == "function":
                 print(f"  Function: {symbol['name']}")
             elif symbol["type"] == "variable":
                 print(f"  Variable: {symbol['name']}")
-        
+
         # Get dependencies
         dependencies = parser.get_dependencies(ast)
-        
+
         print(f"\nDependencies found ({len(dependencies)}):")
         for dep in dependencies:
             if dep["type"] == "import":
@@ -72,11 +73,12 @@ class ExampleClass:
                     print(f"  import {dep['module']}")
             elif dep["type"] == "from_import":
                 print(f"  from {dep['module']} import {dep['name']}")
-        
+
     finally:
         # Clean up
         if sample_file.exists():
             sample_file.unlink()
+
 
 def parse_code_example():
     """Example of parsing code directly."""
@@ -122,27 +124,29 @@ class DataProvider {
 
 export { FetchData, DataProvider };
 """
-    
+
     # Parse the code
     print("\nParsing JavaScript code:")
     ast = parse_code(js_code, "javascript", "example.js")
-    
+
     # Get symbols
     parser = create_parser("javascript")
     symbols = parser.get_symbols(ast)
-    
+
     print(f"\nSymbols found ({len(symbols)}):")
     for symbol in symbols:
         if symbol["type"] == "class":
-            print(f"  Class: {symbol['name']} with methods: {', '.join(symbol['methods'])}")
+            print(
+                f"  Class: {symbol['name']} with methods: {', '.join(symbol['methods'])}"
+            )
         elif symbol["type"] == "function":
             print(f"  Function: {symbol['name']}")
         elif symbol["type"] == "variable":
             print(f"  Variable: {symbol['name']}")
-    
+
     # Get dependencies
     dependencies = parser.get_dependencies(ast)
-    
+
     print(f"\nDependencies found ({len(dependencies)}):")
     for dep in dependencies:
         if dep["type"] == "import":
@@ -152,6 +156,7 @@ export { FetchData, DataProvider };
                 print(f"  import {dep['module']}")
         elif dep["type"] == "from_import":
             print(f"  from {dep['module']} import {dep['name']}")
+
 
 def language_specific_parsers_example():
     """Example of using language-specific parsers."""
@@ -174,13 +179,13 @@ interface User {
 export class UserListComponent {
     users: User[] = [];
     loading: boolean = false;
-    
+
     constructor(private http: HttpClient) {}
-    
+
     ngOnInit(): void {
         this.getUsers();
     }
-    
+
     getUsers(): void {
         this.loading = true;
         this.http.get<User[]>('/api/users')
@@ -197,27 +202,29 @@ export class UserListComponent {
     }
 }
 """
-    
+
     # Parse with TypeScript parser
     print("\nParsing TypeScript code with TypeScriptParser:")
     parser = TypeScriptParser()
     ast = parser.parse_code(ts_code, "example.ts")
-    
+
     # Get symbols
     symbols = parser.get_symbols(ast)
-    
+
     print(f"\nSymbols found ({len(symbols)}):")
     for symbol in symbols:
         if symbol["type"] == "class":
-            print(f"  Class: {symbol['name']} with methods: {', '.join(symbol['methods'])}")
+            print(
+                f"  Class: {symbol['name']} with methods: {', '.join(symbol['methods'])}"
+            )
         elif symbol["type"] == "function":
             print(f"  Function: {symbol['name']}")
         elif symbol["type"] == "variable":
             print(f"  Variable: {symbol['name']}")
-    
+
     # Get dependencies
     dependencies = parser.get_dependencies(ast)
-    
+
     print(f"\nDependencies found ({len(dependencies)}):")
     for dep in dependencies:
         if dep["type"] == "import":
@@ -228,10 +235,10 @@ export class UserListComponent {
         elif dep["type"] == "from_import":
             print(f"  from {dep['module']} import {dep['name']}")
 
+
 if __name__ == "__main__":
     print("=== Parser Examples ===")
     parse_file_example()
     parse_code_example()
     language_specific_parsers_example()
     print("\nAll examples completed successfully!")
-

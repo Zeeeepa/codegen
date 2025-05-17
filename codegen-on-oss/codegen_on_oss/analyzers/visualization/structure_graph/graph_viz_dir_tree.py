@@ -1,9 +1,9 @@
 from abc import ABC
 
 import networkx as nx
-
 from codegen.sdk.core.codebase import CodebaseType
 from codegen.shared.enums.programming_language import ProgrammingLanguage
+
 from tests.shared.skills.decorators import skill, skill_impl
 from tests.shared.skills.skill import Skill
 from tests.shared.skills.skill_test import SkillTestCase, SkillTestCasePyFile
@@ -74,7 +74,11 @@ node_modules/
 )
 
 
-@skill(eval_skill=False, prompt="Show me the directory structure of this codebase", uid="ef9a5a54-d793-4749-992d-63ea3958056b")
+@skill(
+    eval_skill=False,
+    prompt="Show me the directory structure of this codebase",
+    uid="ef9a5a54-d793-4749-992d-63ea3958056b",
+)
 class RepoDirTree(Skill, ABC):
     """This skill displays the directory or repository tree structure of a codebase. It analyzes the file paths within the codebase and constructs a hierarchical
     representation of the directory structure. The skill creates a visual graph where each node represents a directory or file, and edges represent the parent-child
@@ -108,4 +112,3 @@ class RepoDirTree(Skill, ABC):
                     G.add_edge(parent_path, path)
 
         codebase.visualize(G)
-

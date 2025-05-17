@@ -1,79 +1,102 @@
-from codegen import Codebase, CodeAgent
+import modal
 from codegen.extensions.linear.linear_client import LinearClient
 from codegen.extensions.events.app import CodegenApp
 from codegen.extensions.tools.github.create_pr import create_pr
 from codegen.shared.enums.programming_language import ProgrammingLanguage
-from codegen.extensions.linear.types import LinearEvent, LinearIssue, LinearComment, LinearUser
+from codegen.extensions.linear.types import LinearEvent
 from helpers import create_codebase, format_linear_message, has_codegen_label, process_update_event
 
 from fastapi import Request
-
-import os
 import modal
-import logging
 
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Create a Modal image with the necessary dependencies
-image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("fastapi[standard]", "codegen>=v0.26.3")
+# Create a Modal image with the required dependencies
+image = modal.Image.debian_slim(python_version="3.13").apt_install("git").pip_install("codegen>=0.26.3")
 
 # Initialize the CodegenApp with a name and the image
-app = CodegenApp("linear-bot", image=image, modal_api_key="")
+app = CodegenApp(name="linear-bot", modal_api_key="", image=image)
 
 
+# Define a Modal class to handle Linear events
 @app.cls(secrets=[modal.Secret.from_dotenv()], keep_warm=1)
-class LinearApp:
-    codebase: Codebase
+class LinearBot:
+    """Modal class for handling Linear webhook events and creating GitHub PRs.
 
-    @modal.enter()
-    def run_this_on_container_startup(self):
-        """Initialize the codebase and subscribe to Linear webhook handlers"""
-        self.codebase = create_codebase("codegen-sh/codegen-sdk", ProgrammingLanguage.PYTHON)
+    This class defines handlers for Linear Issue events, specifically looking for
+    issues labeled with "Codegen" to automatically create GitHub PRs.
+    """
 
-        # Subscribe web endpoints as linear webhook callbacks
-        app.linear.subscribe_all_handlers()
-
-    @modal.exit()
-    def run_this_on_container_exit(self):
-        """Unsubscribe from Linear webhook handlers when the app stops"""
-        app.linear.unsubscribe_all_handlers()
+    def __enter__(self):
+        """Initialize the Linear client when the class is instantiated."""
+        self.linear_client = LinearClient()
 
     @modal.web_endpoint(method="POST")
-    @app.linear.event("Issue", should_handle=has_codegen_label)
-    def handle_webhook(self, event: LinearEvent, request: Request):
-        """Handle incoming webhook events from Linear"""
-        linear_client = LinearClient(access_token=os.environ["LINEAR_ACCESS_TOKEN"])
+    @app.linear.webhook_endpoint()
+    def webhook(self, event: LinearEvent):
+        """Main webhook endpoint that receives all Linear events.
 
-        # Process the event data
-        update_event = process_update_event(event.data)
-        linear_client.comment_on_issue(update_event.issue_id, "I'm on it 👍")
+        This endpoint will be triggered for all Linear webhook events.
+        """
+        return {"status": "success", "message": "Webhook received"}
 
-        # Format the query for the agent
-        query = format_linear_message(update_event.title, update_event.description)
-        agent = CodeAgent(self.codebase)
+    @app.linear.event("Issue")
+    def handle_issue(self, event: LinearEvent):
+        """Handle Linear Issue events, specifically looking for issues labeled with "Codegen".
 
-        # Run the agent with the query
-        agent.run(query)
+        When an issue with the "Codegen" label is created or updated, this handler will:
+        1. Create a codebase object for the GitHub repository
+        2. Run a Codegen agent to analyze the issue and create a PR
+        3. Comment on the Linear issue with a link to the PR
+        """
+        # Only process events for issues with the "Codegen" label
+        if not has_codegen_label(event):
+            return {"status": "skipped", "message": "Issue does not have the Codegen label"}
 
-        # Create a PR with the agent's changes
-        pr_title = f"[{update_event.identifier}] " + update_event.title
-        pr_body = "Codegen generated PR for issue: " + update_event.issue_url
-        create_pr_result = create_pr(self.codebase, pr_title, pr_body)
+        # Process the event based on the action (created, updated, etc.)
+        if event.action == "create":
+            return self.process_create_event(event)
+        elif event.action == "update":
+            return process_update_event(event, self.linear_client)
+        else:
+            return {"status": "skipped", "message": f"Unsupported action: {event.action}"}
 
-        logger.info(f"PR created: {create_pr_result.model_dump_json()}")
+    def process_create_event(self, event: LinearEvent):
+        """Process a Linear Issue create event.
 
-        # Comment on the Linear issue with the PR link
-        linear_client.comment_on_issue(
-            update_event.issue_id, 
-            f"I've finished running, please review the PR: {create_pr_result.url}"
+        This method will:
+        1. Create a codebase object for the GitHub repository
+        2. Run a Codegen agent to analyze the issue and create a PR
+        3. Comment on the Linear issue with a link to the PR
+        """
+        # Create a codebase object for the GitHub repository
+        codebase = create_codebase()
+
+        # Format the issue description for the PR
+        issue_title = event.data.title
+        issue_description = event.data.description or ""
+        pr_title = f"Implement {issue_title}"
+        pr_body = format_linear_message(issue_description, event.data.id)
+
+        # Create a PR using the Codegen agent
+        pr_url = create_pr(
+            codebase=codebase,
+            title=pr_title,
+            body=pr_body,
+            programming_language=ProgrammingLanguage.PYTHON,
         )
-        
-        # Reset the codebase for the next request
-        self.codebase.reset()
 
-        return {"status": "success"}
+        # Comment on the Linear issue with a link to the PR
+        self.linear_client.comment_on_issue(
+            issue_id=event.data.id,
+            body=f"Created PR: {pr_url}",
+        )
+
+        return {
+            "status": "success",
+            "message": "Created PR for Linear issue",
+            "issue_id": event.data.id,
+            "pr_url": pr_url,
+        }
+
 
 # If running this file directly, this will deploy the app to Modal
 if __name__ == "__main__":

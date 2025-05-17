@@ -45,7 +45,10 @@ def create_dependencies_visualization(symbol: Symbol, depth: int = 0):
             dep_symbol = dep.resolved_symbol if dep.resolved_symbol else None
 
         if dep_symbol:
-            G.add_node(dep_symbol, color=COLOR_PALETTE.get(dep_symbol.__class__.__name__, "#f694ff"))
+            G.add_node(
+                dep_symbol,
+                color=COLOR_PALETTE.get(dep_symbol.__class__.__name__, "#f694ff"),
+            )
             G.add_edge(symbol, dep_symbol)
 
             if not isinstance(dep_symbol, Class):
@@ -75,9 +78,14 @@ def run(codebase: Codebase):
 
 if __name__ == "__main__":
     print("Initializing codebase...")
-    codebase = Codebase.from_repo("codegen-oss/posthog", commit="b174f2221ea4ae50e715eb6a7e70e9a2b0760800", language="python")
-    print(f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions.")
+    codebase = Codebase.from_repo(
+        "codegen-oss/posthog",
+        commit="b174f2221ea4ae50e715eb6a7e70e9a2b0760800",
+        language="python",
+    )
+    print(
+        f"Codebase with {len(codebase.files)} files and {len(codebase.functions)} functions."
+    )
     print("Creating graph...")
 
     run(codebase)
-
