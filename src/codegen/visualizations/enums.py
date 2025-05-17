@@ -14,6 +14,14 @@ class VizNode:
     end_point: tuple | None = None
     file_path: str | None = None
     symbol_name: str | None = None
+    # Enhanced visualization properties
+    methods: list | None = None
+    parent_class: str | None = None
+    children_classes: list | None = None
+    dependencies: list | None = None
+    dependents: list | None = None
+    is_selected: bool = False
+    description: str | None = None
 
 
 @dataclass(frozen=True)
@@ -25,3 +33,7 @@ class GraphJson:
 class GraphType(StrEnum):
     TREE = "tree"
     GRAPH = "graph"
+    INHERITANCE = "inheritance"
+    CALL_GRAPH = "call_graph"
+    DEPENDENCY_GRAPH = "dependency_graph"
+    MODULE_DEPENDENCIES = "module_dependencies"
