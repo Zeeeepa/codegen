@@ -5,19 +5,16 @@ import hmac
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import modal
 from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 # Create image with dependencies
-image = (
-    modal.Image.debian_slim(python_version="3.13")
-    .pip_install(
-        "codegen>=0.6.1",
-        "python-dotenv>=1.0.0",
-    )
+image = modal.Image.debian_slim(python_version="3.13").pip_install(
+    "codegen>=0.6.1",
+    "python-dotenv>=1.0.0",
 )
 
 # Create Modal app
@@ -137,7 +134,7 @@ def handle_comment_event(event: LinearEvent) -> Dict[str, str]:
     action = event.action
     comment_data = event.data
     comment_id = comment_data.get("id")
-    comment_body = comment_data.get("body")
+    comment_data.get("body")
 
     print(f"Handling comment event: {action} - {comment_id}")
 

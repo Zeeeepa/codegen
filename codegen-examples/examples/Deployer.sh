@@ -60,7 +60,7 @@ fi
 deploy_example() {
     local example_dir="$1"
     local example_name=$(basename "$example_dir")
-    
+
     if [ -f "$example_dir/deploy.sh" ]; then
         echo -e "${BLUE}Deploying $example_name...${NC}"
         (cd "$example_dir" && bash deploy.sh)
@@ -81,7 +81,7 @@ deploy_example() {
 verify_deployment() {
     local example_name="$1"
     local app_name="$2"
-    
+
     echo -e "${BLUE}Verifying deployment of $example_name...${NC}"
     if modal app status "$app_name" | grep -q "RUNNING"; then
         echo -e "${GREEN}✓ $example_name is running.${NC}"
@@ -126,7 +126,7 @@ echo ""
 selected_indices=()
 while true; do
     read -p "Select examples to deploy (e.g., '1 3 5' or 'a' for all, 'q' to quit, 'd' when done): " selection
-    
+
     if [ "$selection" == "q" ]; then
         echo -e "${YELLOW}Exiting without deployment.${NC}"
         exit 0
@@ -183,7 +183,7 @@ results=()
 for idx in "${selected_indices[@]}"; do
     example="${examples[$idx]}"
     example_dir="$SCRIPT_DIR/$example"
-    
+
     # Start deployment in background
     (deploy_example "$example_dir" && echo "SUCCESS: $example" || echo "FAILED: $example") &
     pids+=($!)
@@ -207,7 +207,7 @@ for i in "${!selected_indices[@]}"; do
     idx="${selected_indices[$i]}"
     example="${examples[$idx]}"
     result="${results[$i]}"
-    
+
     if [ "$result" -eq 0 ]; then
         echo -e "${GREEN}✓ ${example}: SUCCESS${NC}"
         ((success_count++))
@@ -246,20 +246,20 @@ if [ "$option" == "l" ]; then
         echo -e "${BLUE}[$((i+1))] ${examples[$idx]}${NC}"
     done
     echo ""
-    
+
     read -p "Enter number: " log_selection
     if [[ "$log_selection" =~ ^[0-9]+$ ]] && [ "$log_selection" -ge 1 ] && [ "$log_selection" -le ${#selected_indices[@]} ]; then
         log_idx=$((log_selection-1))
         selected_idx="${selected_indices[$log_idx]}"
         example="${examples[$selected_idx]}"
-        
+
         # Extract app name from deploy.sh
         app_name=$(grep -o "modal app [a-zA-Z0-9_-]*" "$SCRIPT_DIR/$example/deploy.sh" | head -1 | awk '{print $3}')
         if [ -z "$app_name" ]; then
             # Try to guess app name from example name
             app_name=$(echo "$example" | tr '_' '-')
         fi
-        
+
         echo -e "${BLUE}Viewing logs for $example (app: $app_name)...${NC}"
         modal app logs "$app_name"
     else
@@ -271,14 +271,14 @@ elif [ "$option" == "s" ]; then
     for i in "${!selected_indices[@]}"; do
         idx="${selected_indices[$i]}"
         example="${examples[$idx]}"
-        
+
         # Extract app name from deploy.sh
         app_name=$(grep -o "modal app [a-zA-Z0-9_-]*" "$SCRIPT_DIR/$example/deploy.sh" | head -1 | awk '{print $3}')
         if [ -z "$app_name" ]; then
             # Try to guess app name from example name
             app_name=$(echo "$example" | tr '_' '-')
         fi
-        
+
         echo -e "${BLUE}$example (app: $app_name):${NC}"
         modal app status "$app_name" | grep -E "RUNNING|STOPPED|FAILED"
     done

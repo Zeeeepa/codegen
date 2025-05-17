@@ -94,4 +94,3 @@ echo -e "${GREEN}Your app URL is:${NC}"
 modal app show $APP_NAME | grep -o "https://.*$APP_NAME.*" || echo -e "${YELLOW}URL not found. Run 'modal app show $APP_NAME' to get your app URL.${NC}"
 
 echo -e "${BLUE}Deployment process completed.${NC}"
-

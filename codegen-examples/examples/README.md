@@ -8,7 +8,7 @@ The examples in this directory fall into two main categories:
 
 1. **Code Transformation Examples**: One-time utilities that transform code in various ways (e.g., migrating from one library to another, converting code patterns, etc.)
 
-2. **Modal-based Service Examples**: Applications that can be deployed as services using [Modal](https://modal.com), such as chatbots, webhooks handlers, and analytics tools.
+1. **Modal-based Service Examples**: Applications that can be deployed as services using [Modal](https://modal.com), such as chatbots, webhooks handlers, and analytics tools.
 
 ## Using the Modal Deployer
 
@@ -35,11 +35,11 @@ bash Deployer.sh
 The deployer will:
 
 1. Check for required dependencies (Python, Modal)
-2. Display a list of deployable examples
-3. Allow you to select which examples to deploy
-4. Deploy the selected examples concurrently
-5. Provide a summary of deployment results
-6. Offer options to view logs or status of deployed examples
+1. Display a list of deployable examples
+1. Allow you to select which examples to deploy
+1. Deploy the selected examples concurrently
+1. Provide a summary of deployment results
+1. Offer options to view logs or status of deployed examples
 
 ### Available Modal Examples
 
@@ -75,4 +75,3 @@ If you'd like to add a new example, please follow the [Contributing Guide](../CO
 ## License
 
 All examples are licensed under the [Apache 2.0 license](../LICENSE).
-
