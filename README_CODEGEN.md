@@ -38,7 +38,7 @@ file_index = FileIndex(codebase)
 # Initialize the embedding manager with your preferred provider
 embedding_manager = CodegenEmbeddingManager(
     provider="deepseek",  # or "openai"
-    api_key="your_api_key_here"
+    api_key="your_api_key_here",
 )
 
 # Patch the FileIndex to use your provider
@@ -60,7 +60,7 @@ Since DeepSeek doesn't currently offer a direct embeddings API, the DeepSeek pro
 # Initialize with DeepSeek but it will use OpenAI for embeddings
 embedding_manager = CodegenEmbeddingManager(
     provider="deepseek",
-    api_key="your_openai_api_key_here"  # This should be an OpenAI API key
+    api_key="your_openai_api_key_here",  # This should be an OpenAI API key
 )
 ```
 
@@ -87,10 +87,11 @@ class CustomEmbeddingProvider(EmbeddingProvider):
     def __init__(self, api_key: str, base_url: str = "https://api.custom.com"):
         super().__init__(api_key)
         self.base_url = base_url
-        
+
     def get_embeddings(self, texts: List[str], model: str = None) -> List[List[float]]:
         # Implementation for your custom provider
         pass
+
 
 # Add to the PROVIDERS dictionary
 CodegenEmbeddingManager.PROVIDERS["custom"] = CustomEmbeddingProvider
