@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Generic, Literal, Self, overload, override
+from typing import TYPE_CHECKING, Dict, Generic, List, Literal, Optional, Self, Set, Tuple, overload, override
 
 from typing_extensions import TypeVar
 
@@ -167,6 +167,70 @@ class Class(Inherits[TType], HasBlock[TCodeBlock, TDecorator], Callable[TParamet
             list[Class]: A list of Class objects that inherit from this class.
         """
         return self._get_subclasses(max_depth)
+        
+    @reader
+    def get_inheritance_hierarchy(self, max_depth: int | None = None) -> Dict[str, List[Class]]:
+        """Returns a dictionary representing the inheritance hierarchy of this class.
+        
+        Gets both superclasses and subclasses organized by their relationship to this class.
+        
+        Args:
+            max_depth (int | None, optional): Maximum inheritance depth to search. If None, searches all depths. Defaults to None.
+            
+        Returns:
+            Dict[str, List[Class]]: A dictionary with keys 'superclasses' and 'subclasses', each containing a list of Class objects.
+        """
+        return {
+            "superclasses": self.superclasses(max_depth=max_depth),
+            "subclasses": self.subclasses(max_depth=max_depth)
+        }
+        
+    @reader
+    def get_common_superclasses(self, other_class: Class, max_depth: int | None = None) -> List[Class]:
+        """Returns a list of common superclasses between this class and another class.
+        
+        Args:
+            other_class (Class): The other class to compare with
+            max_depth (int | None, optional): Maximum inheritance depth to search. If None, searches all depths. Defaults to None.
+            
+        Returns:
+            List[Class]: A list of Class objects that are superclasses of both this class and the other class.
+        """
+        my_superclasses = set(self.superclasses(max_depth=max_depth))
+        other_superclasses = set(other_class.superclasses(max_depth=max_depth))
+        return list(my_superclasses.intersection(other_superclasses))
+        
+    @reader
+    def get_overridden_methods(self) -> List[Tuple[TFunction, Class]]:
+        """Returns a list of methods in this class that override methods in superclasses.
+        
+        Returns:
+            List[Tuple[TFunction, Class]]: A list of tuples containing the method and the superclass it overrides.
+        """
+        overridden_methods = []
+        
+        # Get all methods in this class
+        my_methods = {method.name: method for method in self.methods(max_depth=0)}
+        
+        # Check each superclass for methods with the same name
+        for superclass in self.superclasses(max_depth=1):
+            if not isinstance(superclass, Class):
+                continue
+                
+            for method in superclass.methods(max_depth=0):
+                if method.name in my_methods:
+                    overridden_methods.append((my_methods[method.name], superclass))
+        
+        return overridden_methods
+        
+    @reader
+    def has_multiple_inheritance(self) -> bool:
+        """Checks if this class uses multiple inheritance.
+        
+        Returns:
+            bool: True if the class inherits from multiple parent classes, False otherwise.
+        """
+        return len(self.parent_class_names) > 1
 
     @noapidoc
     @commiter

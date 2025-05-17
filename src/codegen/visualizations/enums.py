@@ -25,3 +25,18 @@ class GraphJson:
 class GraphType(StrEnum):
     TREE = "tree"
     GRAPH = "graph"
+
+
+class InheritanceRelationType(StrEnum):
+    """Types of inheritance relationships."""
+    EXTENDS = "extends"
+    IMPLEMENTS = "implements"
+    USES = "uses"
+
+
+class InheritanceNodeType(StrEnum):
+    """Types of nodes in inheritance hierarchies."""
+    CLASS = "class"
+    INTERFACE = "interface"
+    ABSTRACT_CLASS = "abstract_class"
+    EXTERNAL = "external"
