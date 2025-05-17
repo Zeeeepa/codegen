@@ -103,10 +103,7 @@ codebase.set_ai_key("your-openai-api-key")
 
 # Generate a test for a function
 function = codebase.get_function("calculate_total")
-test_code = codebase.ai(
-    f"Write a pytest test for the function {function.name}",
-    target=function
-)
+test_code = codebase.ai(f"Write a pytest test for the function {function.name}", target=function)
 
 # Create a new test file
 test_file = codebase.create_file(f"tests/test_{function.file.stem}.py")
@@ -128,4 +125,3 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ## License
 
 MIT
-

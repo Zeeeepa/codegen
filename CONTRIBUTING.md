@@ -70,9 +70,10 @@ mintlify dev --port 3333
 ```
 
 When adding new documentation:
+
 1. Create a new `.mdx` file in the appropriate directory
-2. Update `mint.json` to include the new page in the navigation
-3. Test the documentation locally before submitting a PR
+1. Update `mint.json` to include the new page in the navigation
+1. Test the documentation locally before submitting a PR
 
 ## Pull Request Process
 
@@ -95,4 +96,3 @@ git push origin v0.YOUR_VERSION
 ```
 
 This will trigger a release job to build this new version.
-
