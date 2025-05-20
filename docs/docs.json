@@ -1,6 +1,6 @@
 {
 	"$schema": "https://mintlify.com/docs.json",
-	"theme": "mint",
+	"theme": "maple",
 	"name": "Codegen",
 	"colors": {
 		"primary": "#a277ff",
@@ -32,8 +32,17 @@
 							"integrations/linear",
 							"integrations/github",
 							"integrations/web-search",
-							"integrations/sandboxes",
 							"integrations/postgres"
+						]
+					},
+					{
+						"group": "Sandboxes",
+						"pages": [
+							"sandboxes/overview",
+							"sandboxes/setup-commands",
+							"sandboxes/editor",
+							"sandboxes/environment-variables",
+							"sandboxes/web-preview"
 						]
 					}
 				]
