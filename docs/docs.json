@@ -14,10 +14,9 @@
 				"tab": "Documentation",
 				"groups": [
 					{
-						"group": "Introduction",
+						"group": "Overview",
 						"pages": [
 							"introduction/overview",
-							"introduction/capabilities",
 							"introduction/api",
 							"introduction/prompting",
 							"introduction/community",
@@ -26,11 +25,18 @@
 						]
 					},
 					{
+						"group": "Capabilities",
+						"pages": ["capabilities/capabilities", "capabilities/wake-up"]
+					},
+					{
 						"group": "Integrations",
 						"pages": [
+							"integrations/github",
 							"integrations/slack",
 							"integrations/linear",
-							"integrations/github",
+							"integrations/notion",
+							"integrations/figma",
+							"integrations/circleci",
 							"integrations/web-search",
 							"integrations/postgres"
 						]
@@ -40,20 +46,15 @@
 						"pages": [
 							"sandboxes/overview",
 							"sandboxes/setup-commands",
-							"sandboxes/base-image",
-							"sandboxes/editor",
 							"sandboxes/environment-variables",
+							"sandboxes/secrets",
+							"sandboxes/editor",
 							"sandboxes/web-preview"
 						]
 					},
 					{
 						"group": "Settings",
-						"pages": [
-							"settings/agent-permissions",
-							"settings/organization-rules",
-							"settings/repo-rules",
-							"settings/model-configuration"
-						]
+						"pages": ["settings/repo-rules", "settings/model-configuration"]
 					}
 				]
 			},
