@@ -192,6 +192,66 @@
 				}
 			}
 		},
+		"/v1/users/me": {
+			"get": {
+				"tags": ["users", "users", "users"],
+				"summary": "Get Current User Info",
+				"description": "Get current user information from API token.\n\nReturns detailed information about the user associated with the provided API token.\nThis is useful for applications that need to identify the current user from their API token.\n\nRate limit: 60 requests per 30 seconds.",
+				"operationId": "get_current_user_info_v1_users_me_get",
+				"parameters": [
+					{
+						"name": "authorization",
+						"in": "header",
+						"required": false,
+						"schema": {
+							"title": "Authorization"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserResponse"
+								}
+							}
+						}
+					},
+					"429": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/APIRateLimitErrorResponse"
+								}
+							}
+						},
+						"description": "Too Many Requests"
+					},
+					"403": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PermissionsErrorResponse"
+								}
+							}
+						},
+						"description": "Forbidden"
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/v1/organizations/{org_id}/agent/run": {
 			"post": {
 				"tags": ["agents", "agents", "agents"],
@@ -379,6 +439,134 @@
 				}
 			}
 		},
+		"/v1/organizations/{org_id}/agent/runs": {
+			"get": {
+				"tags": ["agents", "agents", "agents"],
+				"summary": "List Agent Runs",
+				"description": "List agent runs for an organization with optional user filtering.\n\nReturns a paginated list of agent runs for the specified organization.\nOptionally filter by user_id to get only agent runs initiated by a specific user.\nResults are ordered by creation date (newest first).\n\nRate limit: 60 requests per 30 seconds.",
+				"operationId": "list_agent_runs_v1_organizations__org_id__agent_runs_get",
+				"parameters": [
+					{
+						"name": "org_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"title": "Org Id"
+						}
+					},
+					{
+						"name": "user_id",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"anyOf": [
+								{
+									"type": "integer"
+								},
+								{
+									"type": "null"
+								}
+							],
+							"description": "Filter by user ID who initiated the agent runs",
+							"title": "User Id"
+						},
+						"description": "Filter by user ID who initiated the agent runs"
+					},
+					{
+						"name": "source_type",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/ApiAgentRunSourceType"
+								},
+								{
+									"type": "null"
+								}
+							],
+							"description": "Filter by source type of the agent runs",
+							"title": "Source Type"
+						},
+						"description": "Filter by source type of the agent runs"
+					},
+					{
+						"name": "skip",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"minimum": 0,
+							"default": 0,
+							"title": "Skip"
+						}
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"maximum": 100,
+							"minimum": 1,
+							"default": 100,
+							"title": "Limit"
+						}
+					},
+					{
+						"name": "authorization",
+						"in": "header",
+						"required": false,
+						"schema": {
+							"title": "Authorization"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Page_AgentRunResponse_"
+								}
+							}
+						}
+					},
+					"429": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/APIRateLimitErrorResponse"
+								}
+							}
+						},
+						"description": "Too Many Requests"
+					},
+					"403": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PermissionsErrorResponse"
+								}
+							}
+						},
+						"description": "Forbidden"
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/v1/organizations": {
 			"get": {
 				"tags": ["organizations", "organizations", "organizations"],
@@ -451,6 +639,117 @@
 					}
 				}
 			}
+		},
+		"/v1/alpha/organizations/{org_id}/agent/run/{agent_run_id}/logs": {
+			"get": {
+				"tags": ["agents-alpha", "agents-alpha", "agents-beta"],
+				"summary": "Get Agent Run Logs",
+				"description": "Retrieve an agent run with its logs using pagination. This endpoint is currently in ALPHA and IS subject to change.\n\nReturns the agent run details along with a paginated list of logs for the specified agent run.\nThe agent run must belong to the specified organization. Logs are returned in chronological order.\nUses standard pagination parameters (skip and limit) and includes pagination metadata in the response.\n\nRate limit: 60 requests per 60 seconds.",
+				"operationId": "get_agent_run_logs_v1_alpha_organizations__org_id__agent_run__agent_run_id__logs_get",
+				"parameters": [
+					{
+						"name": "agent_run_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"title": "Agent Run Id"
+						}
+					},
+					{
+						"name": "org_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer",
+							"title": "Org Id"
+						}
+					},
+					{
+						"name": "skip",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"minimum": 0,
+							"default": 0,
+							"title": "Skip"
+						}
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"maximum": 100,
+							"minimum": 1,
+							"default": 100,
+							"title": "Limit"
+						}
+					},
+					{
+						"name": "authorization",
+						"in": "header",
+						"required": false,
+						"schema": {
+							"title": "Authorization"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AgentRunWithLogsResponse"
+								}
+							}
+						}
+					},
+					"429": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/APIRateLimitErrorResponse"
+								}
+							}
+						},
+						"description": "Too Many Requests"
+					},
+					"403": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PermissionsErrorResponse"
+								}
+							}
+						},
+						"description": "Forbidden"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AgentRunNotFoundErrorResponse"
+								}
+							}
+						},
+						"description": "Not Found"
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	},
 	"components": {
@@ -486,6 +785,101 @@
 				},
 				"type": "object",
 				"title": "AgentRunLimitReachedErrorResponse"
+			},
+			"AgentRunLogResponse": {
+				"properties": {
+					"agent_run_id": {
+						"type": "integer",
+						"title": "Agent Run Id"
+					},
+					"created_at": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Created At"
+					},
+					"tool_name": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Name"
+					},
+					"message_type": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Message Type"
+					},
+					"thought": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Thought"
+					},
+					"observation": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Observation"
+					},
+					"tool_input": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Input"
+					},
+					"tool_output": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Output"
+					}
+				},
+				"type": "object",
+				"required": ["agent_run_id"],
+				"title": "AgentRunLogResponse",
+				"description": "Represents an agent run log in API responses"
 			},
 			"AgentRunNotFoundErrorResponse": {
 				"properties": {
@@ -556,12 +950,147 @@
 							}
 						],
 						"title": "Result"
+					},
+					"source_type": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ApiAgentRunSourceType"
+							},
+							{
+								"type": "null"
+							}
+						]
 					}
 				},
 				"type": "object",
 				"required": ["id", "organization_id"],
 				"title": "AgentRunResponse",
 				"description": "Represents an agent run in API responses"
+			},
+			"AgentRunWithLogsResponse": {
+				"properties": {
+					"id": {
+						"type": "integer",
+						"title": "Id"
+					},
+					"organization_id": {
+						"type": "integer",
+						"title": "Organization Id"
+					},
+					"status": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Status"
+					},
+					"created_at": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Created At"
+					},
+					"web_url": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Web Url"
+					},
+					"result": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Result"
+					},
+					"logs": {
+						"items": {
+							"$ref": "#/components/schemas/AgentRunLogResponse"
+						},
+						"type": "array",
+						"title": "Logs"
+					},
+					"total_logs": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Total Logs"
+					},
+					"page": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Page"
+					},
+					"size": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Size"
+					},
+					"pages": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Pages"
+					}
+				},
+				"type": "object",
+				"required": ["id", "organization_id", "logs"],
+				"title": "AgentRunWithLogsResponse",
+				"description": "Represents an agent run in API responses"
+			},
+			"ApiAgentRunSourceType": {
+				"type": "string",
+				"enum": [
+					"LOCAL",
+					"SLACK",
+					"GITHUB",
+					"GITHUB_CHECK_SUITE",
+					"LINEAR",
+					"API",
+					"CHAT",
+					"JIRA"
+				],
+				"title": "ApiAgentRunSourceType"
 			},
 			"CreateAgentRunInput": {
 				"properties": {
@@ -652,6 +1181,36 @@
 				},
 				"type": "object",
 				"title": "OrganizationSettings"
+			},
+			"Page_AgentRunResponse_": {
+				"properties": {
+					"items": {
+						"items": {
+							"$ref": "#/components/schemas/AgentRunResponse"
+						},
+						"type": "array",
+						"title": "Items"
+					},
+					"total": {
+						"type": "integer",
+						"title": "Total"
+					},
+					"page": {
+						"type": "integer",
+						"title": "Page"
+					},
+					"size": {
+						"type": "integer",
+						"title": "Size"
+					},
+					"pages": {
+						"type": "integer",
+						"title": "Pages"
+					}
+				},
+				"type": "object",
+				"required": ["items", "total", "page", "size", "pages"],
+				"title": "Page[AgentRunResponse]"
 			},
 			"Page_OrganizationResponse_": {
 				"properties": {
