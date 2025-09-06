@@ -10,29 +10,9 @@ import time
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 
-try:
-    from workflows import Context, Workflow, step
-    from workflows.events import StartEvent, StopEvent
-    WORKFLOWS_AVAILABLE = True
-except ImportError:
-    # Fallback implementations
-    WORKFLOWS_AVAILABLE = False
-    from typing import Protocol
-    
-    class Context(Protocol):
-        pass
-    
-    class Workflow:
-        pass
-    
-    def step(func):
-        return func
-    
-    class StartEvent:
-        pass
-    
-    class StopEvent:
-        pass
+# Import workflows-py components
+from workflows import Context, Workflow, step
+from workflows.events import StartEvent, StopEvent, Event
 
 from .events import (
     ValidationStatus,
@@ -91,7 +71,7 @@ class ValidationState:
         self.metadata: Dict[str, Any] = {}
 
 
-class CodegenValidationWorkflow(Workflow if WORKFLOWS_AVAILABLE else object):
+class CodegenValidationWorkflow(Workflow):
     """
     Main validation workflow for Codegen CI/CD completion.
     
@@ -104,8 +84,7 @@ class CodegenValidationWorkflow(Workflow if WORKFLOWS_AVAILABLE else object):
     """
     
     def __init__(self, config: Optional[ValidationConfig] = None):
-        if WORKFLOWS_AVAILABLE:
-            super().__init__()
+        super().__init__()
         self.config = config or ValidationConfig()
         self.state = ValidationState()
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
@@ -117,27 +96,37 @@ class CodegenValidationWorkflow(Workflow if WORKFLOWS_AVAILABLE else object):
         ev: StartEvent
     ) -> AgentRunValidationEvent:
         """Initialize validation workflow."""
-        self.logger.info(f"Starting validation workflow for agent run: {ev.agent_run_id}")
+        # Extract parameters from start event (workflows-py allows dynamic attributes)
+        agent_run_id = getattr(ev, 'agent_run_id', None)
+        organization_id = getattr(ev, 'organization_id', None)
+        
+        if not agent_run_id or not organization_id:
+            raise ValueError("agent_run_id and organization_id are required in StartEvent")
+        
+        self.logger.info(f"Starting validation workflow for agent run: {agent_run_id}")
         
         self.state.start_time = datetime.utcnow()
         self.state.current_step = "initialization"
         self.state.overall_status = ValidationStatus.RUNNING
         
+        # Store state in context for other steps
+        ctx.data["validation_state"] = self.state
+        
         # Extract validation parameters from start event
         return AgentRunValidationEvent(
-            agent_run_id=ev.agent_run_id,
-            organization_id=ev.organization_id,
-            repository_id=ev.get("repository_id"),
-            pr_number=ev.get("pr_number"),
-            commit_sha=ev.get("commit_sha"),
-            agent_type=ev.get("agent_type", "unknown"),
-            prompt=ev.get("prompt", ""),
-            source_type=ev.get("source_type", "api"),
-            execution_status=ev.get("execution_status", "completed"),
-            result_summary=ev.get("result_summary"),
-            output_files=ev.get("output_files", []),
-            tokens_used=ev.get("tokens_used"),
-            api_calls_made=ev.get("api_calls_made"),
+            agent_run_id=agent_run_id,
+            organization_id=organization_id,
+            repository_id=getattr(ev, "repository_id", None),
+            pr_number=getattr(ev, "pr_number", None),
+            commit_sha=getattr(ev, "commit_sha", None),
+            agent_type=getattr(ev, "agent_type", "unknown"),
+            prompt=getattr(ev, "prompt", ""),
+            source_type=getattr(ev, "source_type", "api"),
+            execution_status=getattr(ev, "execution_status", "completed"),
+            result_summary=getattr(ev, "result_summary", None),
+            output_files=getattr(ev, "output_files", []),
+            tokens_used=getattr(ev, "tokens_used", None),
+            api_calls_made=getattr(ev, "api_calls_made", None),
         )
     
     @step

@@ -2,6 +2,9 @@
 Codegen Workflows Integration Example
 
 This example demonstrates how to use the workflows-py integration for CI/CD completion validation.
+
+Prerequisites:
+    pip install -e /tmp/workflows-py  # Install workflows-py library
 """
 
 import asyncio
@@ -12,9 +15,15 @@ from typing import Dict, Any
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Import workflows-py components
+from workflows import Context, Workflow, step
+from workflows.events import StartEvent, StopEvent
+from workflows.server import WorkflowServer
+
 # Import Codegen workflows components
 from src.codegen.workflows import (
     CodegenValidationWorkflow,
+    ValidationConfig,
     ValidationResult,
     CodegenWorkflowServer,
     WorkflowManager,
@@ -30,14 +39,21 @@ from src.codegen.workflows.events import (
 
 
 async def basic_validation_example():
-    """Example of running a basic validation workflow."""
+    """Example of running a basic validation workflow using workflows-py."""
     logger.info("=== Basic Validation Example ===")
     
-    # Create a validation workflow
-    workflow = CodegenValidationWorkflow()
+    # Create a validation workflow with configuration
+    config = ValidationConfig(
+        timeout_seconds=300,
+        max_retries=2,
+        parallel_execution=True,
+        enable_security_validation=True,
+        enable_deployment_validation=False,
+    )
+    workflow = CodegenValidationWorkflow(config=config)
     
-    # Simulate an agent run validation event
-    agent_run_event = AgentRunValidationEvent(
+    # Create StartEvent with validation parameters (workflows-py pattern)
+    start_event = StartEvent(
         agent_run_id="agent-run-123",
         organization_id="org-456",
         repository_id="repo-789",
@@ -53,10 +69,18 @@ async def basic_validation_example():
         api_calls_made=5,
     )
     
-    logger.info(f"Starting validation for agent run: {agent_run_event.agent_run_id}")
+    logger.info(f"Starting validation for agent run: {start_event.agent_run_id}")
     
-    # In a real implementation, you would run this with workflows-py
-    # For this example, we'll simulate the validation steps
+    try:
+        # Execute validation workflow using workflows-py
+        result = await workflow.run(start_event)
+        
+        logger.info(f"Validation completed: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Validation failed: {e}")
+        raise
     
     # Simulate validation results
     validation_results = [
@@ -89,38 +113,47 @@ async def basic_validation_example():
 
 
 async def workflow_server_example():
-    """Example of running a workflow server."""
+    """Example of running a workflow server using workflows-py WorkflowServer."""
     logger.info("=== Workflow Server Example ===")
     
     try:
-        # Create workflow server
-        server = create_workflow_server(
-            host="localhost",
-            port=8080,
-            enable_auto_triggers=True,
+        # Create workflows-py server and add our validation workflow
+        server = WorkflowServer()
+        
+        # Add different validation workflow types
+        validation_config = ValidationConfig(
+            timeout_seconds=300,
+            max_retries=2,
+            parallel_execution=True,
+            enable_security_validation=True,
+            enable_deployment_validation=True,
         )
+        
+        fast_config = ValidationConfig(
+            timeout_seconds=120,
+            max_retries=1,
+            parallel_execution=True,
+            enable_security_validation=False,
+            enable_deployment_validation=False,
+        )
+        
+        # Add workflows to server
+        server.add_workflow("validation", CodegenValidationWorkflow(validation_config))
+        server.add_workflow("fast-validation", CodegenValidationWorkflow(fast_config))
         
         logger.info("Workflow server created successfully")
+        logger.info("Available workflows:")
+        logger.info("  validation - Full validation with security and deployment checks")
+        logger.info("  fast-validation - Quick validation for code quality only")
+        logger.info("")
+        logger.info("Example usage:")
+        logger.info("  curl -X POST http://localhost:8080/workflows/validation/run \\")
+        logger.info("    -H 'Content-Type: application/json' \\")
+        logger.info("    -d '{\"agent_run_id\": \"agent-123\", \"organization_id\": \"org-456\"}'")
         
-        # Simulate starting a validation workflow
-        workflow_result = await server.start_validation(
-            agent_run_id="agent-run-456",
-            organization_id="org-789",
-            workflow_type="fast-validation",
-            pr_number=123,
-            commit_sha="def456ghi789",
-        )
-        
-        logger.info(f"Started workflow: {workflow_result}")
-        
-        # Check workflow status
-        workflow_id = workflow_result["workflow_id"]
-        status = server.get_workflow_status(workflow_id)
-        logger.info(f"Workflow status: {status}")
-        
-        # Get server metrics
-        metrics = server.get_workflow_metrics()
-        logger.info(f"Server metrics: {metrics}")
+        # For demo purposes, we'll just show the server is ready
+        # In production, you would call: await server.serve(host="localhost", port=8080)
+        logger.info("Server ready to serve workflows!")
         
     except Exception as e:
         logger.error(f"Workflow server example failed: {e}")

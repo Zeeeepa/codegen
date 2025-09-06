@@ -38,12 +38,8 @@ class ValidationResult(BaseModel):
     metrics: Optional[Dict[str, Any]] = None
 
 
-# Base Event Classes (using workflows-py Event pattern)
-try:
-    from workflows.events import Event
-except ImportError:
-    # Fallback if workflows-py not available
-    from pydantic import BaseModel as Event
+# Import workflows-py Event base class
+from workflows.events import Event
 
 
 class CodegenValidationEvent(Event):

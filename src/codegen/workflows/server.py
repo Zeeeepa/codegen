@@ -9,14 +9,9 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
-try:
-    from workflows.server import WorkflowServer
-    from workflows import Context
-    WORKFLOWS_AVAILABLE = True
-except ImportError:
-    WORKFLOWS_AVAILABLE = False
-    WorkflowServer = object
-    Context = object
+# Import workflows-py components
+from workflows.server import WorkflowServer
+from workflows import Context
 
 from .validator import CodegenValidationWorkflow, ValidationConfig
 from .events import ValidationStatus
@@ -49,13 +44,9 @@ class CodegenWorkflowServer:
         self.enable_cors = enable_cors
         self.middleware = middleware or []
         
-        # Initialize workflow server if available
-        if WORKFLOWS_AVAILABLE:
-            self.server = WorkflowServer(middleware=self.middleware)
-            self._setup_workflows()
-        else:
-            self.server = None
-            logger.warning("workflows-py not available, server functionality limited")
+        # Initialize workflow server
+        self.server = WorkflowServer(middleware=self.middleware)
+        self._setup_workflows()
         
         # Database integration
         self.db_middleware = get_database_middleware()
@@ -126,9 +117,6 @@ class CodegenWorkflowServer:
         Returns:
             Dictionary with workflow execution details
         """
-        if not self.server:
-            raise RuntimeError("Workflow server not available (workflows-py not installed)")
-        
         try:
             # Get agent run details from database
             from ..database.models.agents import AgentRun
@@ -305,9 +293,6 @@ class CodegenWorkflowServer:
     
     async def serve(self) -> None:
         """Start the workflow server."""
-        if not self.server:
-            raise RuntimeError("Workflow server not available (workflows-py not installed)")
-        
         logger.info(f"Starting Codegen Workflow Server at http://{self.host}:{self.port}")
         
         await self.server.serve(
