@@ -419,6 +419,83 @@ def test_integration_workflow():
         
     return True
 
+def test_integrated_workflow():
+    """Test integrated workflow functionality."""
+    print("\n🔄 Testing Integrated Workflow...")
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        os.chdir(temp_dir)
+        
+        # Initialize project
+        project_state = TestProjectState()
+        project_state.state["project_name"] = "E-commerce Platform"
+        project_state.state["org_id"] = 323
+        
+        prd_file = Path("PRD.md")
+        prd_manager = TestPRDManager(prd_file)
+        prd_manager.create_default_prd("E-commerce Platform")
+        
+        # Create multiple tasks
+        tasks = [
+            {
+                "title": "User Authentication System",
+                "description": "Implement secure user login and registration",
+                "priority": "high"
+            },
+            {
+                "title": "Product Catalog API",
+                "description": "Build REST API for product management",
+                "priority": "high"
+            },
+            {
+                "title": "Shopping Cart Functionality",
+                "description": "Implement add to cart and checkout flow",
+                "priority": "medium"
+            }
+        ]
+        
+        # Add all tasks
+        for task in tasks:
+            project_state.add_task(task)
+        
+        assert len(project_state.state["tasks"]) == 3
+        print("✅ Multiple tasks created successfully")
+        
+        # Start some tasks
+        project_state.start_task(1, 10001)  # Auth system
+        project_state.start_task(2, 10002)  # Product API
+        
+        # Complete one task
+        project_state.complete_task(1)  # Auth system completed
+        
+        # Update PRD with current tasks
+        prd_manager.update_tasks_section(project_state.state["tasks"])
+        
+        # Verify final state
+        updated_prd = prd_manager.read_prd()
+        assert "User Authentication System ✅" in updated_prd
+        assert "Product Catalog API 🏃" in updated_prd
+        assert "Shopping Cart Functionality ⏳" in updated_prd
+        
+        # Check statistics
+        total_tasks = len(project_state.state["tasks"])
+        completed_tasks = len([t for t in project_state.state["tasks"] if t["status"] == "completed"])
+        running_tasks = len([t for t in project_state.state["tasks"] if t["status"] == "running"])
+        pending_tasks = len([t for t in project_state.state["tasks"] if t["status"] == "pending"])
+        
+        assert total_tasks == 3
+        assert completed_tasks == 1
+        assert running_tasks == 1
+        assert pending_tasks == 1
+        
+        progress = (completed_tasks / total_tasks) * 100
+        assert progress == 33.33333333333333
+        
+        print(f"✅ Project statistics: {total_tasks} total, {completed_tasks} completed, {running_tasks} running, {pending_tasks} pending")
+        print(f"✅ Progress: {progress:.1f}%")
+        
+    return True
+
 def test_workflows_integration():
     """Test workflows-py integration."""
     print("\n🔄 Testing Workflows Integration...")
@@ -588,4 +665,3 @@ def main():
 if __name__ == "__main__":
     success = main()
     exit(0 if success else 1)
-
