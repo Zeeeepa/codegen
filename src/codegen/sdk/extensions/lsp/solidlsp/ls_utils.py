@@ -15,9 +15,9 @@ from pathlib import Path, PurePath
 
 import requests
 
-from solidlsp.ls_exceptions import SolidLSPException
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.ls_types import UnifiedSymbolInformation
+from codegen.sdk.extensions.solidlsp.ls_exceptions import SolidLSPException
+from codegen.sdk.extensions.solidlsp.ls_logger import LanguageServerLogger
+from codegen.sdk.extensions.solidlsp.ls_types import UnifiedSymbolInformation
 
 
 class InvalidTextLocationError(Exception):

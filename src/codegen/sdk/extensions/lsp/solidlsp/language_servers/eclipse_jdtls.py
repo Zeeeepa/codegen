@@ -13,13 +13,13 @@ from pathlib import PurePath
 
 from overrides import override
 
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_config import LanguageServerConfig
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.ls_utils import FileUtils, PlatformUtils
-from solidlsp.lsp_protocol_handler.lsp_types import InitializeParams
-from solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
-from solidlsp.settings import SolidLSPSettings
+from codegen.sdk.extensions.solidlsp.ls import SolidLanguageServer
+from codegen.sdk.extensions.solidlsp.ls_config import LanguageServerConfig
+from codegen.sdk.extensions.solidlsp.ls_logger import LanguageServerLogger
+from codegen.sdk.extensions.solidlsp.ls_utils import FileUtils, PlatformUtils
+from codegen.sdk.extensions.solidlsp.lsp_protocol_handler.lsp_types import InitializeParams
+from codegen.sdk.extensions.solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
+from codegen.sdk.extensions.solidlsp.settings import SolidLSPSettings
 
 
 @dataclasses.dataclass
