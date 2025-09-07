@@ -674,3 +674,116 @@ class AutogenLibContextEnhancer(IContextEnhancer):
                 'cache_ttl': self._cache_ttl
             }
         }
+    
+    # Abstract method implementations
+    
+    async def get_context_for_diagnostic(self, diagnostic: UnifiedDiagnostic, file_path: str) -> 'ContextInformation':
+        """Get enhanced context for a diagnostic"""
+        try:
+            enhanced_context = await self.enhance_context(diagnostic, file_path)
+            
+            # Convert to ContextInformation format
+            from .integration_interfaces import ContextInformation
+            return ContextInformation(
+                symbol_definitions=enhanced_context.symbol_definitions,
+                type_information=enhanced_context.type_information,
+                related_symbols=enhanced_context.related_symbols,
+                impact_radius=enhanced_context.impact_radius,
+                suggested_fixes=enhanced_context.suggested_fixes,
+                confidence_score=enhanced_context.confidence_score
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to get context for diagnostic: {e}")
+            from .integration_interfaces import ContextInformation
+            return ContextInformation()
+    
+    async def get_context_for_symbol(self, symbol: UnifiedSymbol) -> 'ContextInformation':
+        """Get enhanced context for a symbol"""
+        try:
+            # Create a mock diagnostic for the symbol location
+            mock_diagnostic = UnifiedDiagnostic(
+                message=f"Context for symbol: {symbol.name}",
+                severity=DiagnosticSeverity.INFO,
+                range=symbol.location.range,
+                source="context_enhancer",
+                code="symbol_context"
+            )
+            
+            return await self.get_context_for_diagnostic(mock_diagnostic, symbol.location.absolute_path)
+            
+        except Exception as e:
+            logger.error(f"Failed to get context for symbol: {e}")
+            from .integration_interfaces import ContextInformation
+            return ContextInformation()
+    
+    async def get_context_for_position(self, file_path: str, position: UnifiedPosition) -> 'ContextInformation':
+        """Get enhanced context for a position in a file"""
+        try:
+            # Create a mock diagnostic for the position
+            mock_diagnostic = UnifiedDiagnostic(
+                message="Context for position",
+                severity=DiagnosticSeverity.INFO,
+                range=UnifiedRange(start=position, end=position),
+                source="context_enhancer",
+                code="position_context"
+            )
+            
+            return await self.get_context_for_diagnostic(mock_diagnostic, file_path)
+            
+        except Exception as e:
+            logger.error(f"Failed to get context for position: {e}")
+            from .integration_interfaces import ContextInformation
+            return ContextInformation()
+    
+    async def analyze_impact_radius(self, file_path: str, changes: List[Dict[str, Any]]) -> List[str]:
+        """Analyze which files might be affected by changes"""
+        try:
+            if not self._initialized:
+                return []
+            
+            affected_files = set()
+            
+            # For each change, analyze impact
+            for change in changes:
+                position = change.get('position')
+                if position:
+                    if isinstance(position, dict):
+                        pos = UnifiedPosition(line=position.get('line', 0), character=position.get('character', 0))
+                    else:
+                        pos = position
+                    
+                    impact_result = await self.get_impact_radius(file_path, pos)
+                    affected_files.update(impact_result.get('affected_files', []))
+            
+            return list(affected_files)
+            
+        except Exception as e:
+            logger.error(f"Failed to analyze impact radius: {e}")
+            return []
+    
+    def set_context_depth(self, depth: int) -> None:
+        """Set the maximum depth for context retrieval"""
+        try:
+            # Store depth setting for use in context enhancement
+            if not hasattr(self, '_context_depth'):
+                self._context_depth = depth
+            else:
+                self._context_depth = depth
+            
+            logger.debug(f"Context depth set to {depth}")
+            
+        except Exception as e:
+            logger.error(f"Failed to set context depth: {e}")
+    
+    def enable_context_feature(self, feature: str, enabled: bool) -> None:
+        """Enable or disable a context feature"""
+        try:
+            if not hasattr(self, '_context_features'):
+                self._context_features = {}
+            
+            self._context_features[feature] = enabled
+            logger.debug(f"Context feature '{feature}' {'enabled' if enabled else 'disabled'}")
+            
+        except Exception as e:
+            logger.error(f"Failed to enable/disable context feature: {e}")

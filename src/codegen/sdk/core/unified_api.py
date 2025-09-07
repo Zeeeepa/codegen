@@ -117,15 +117,16 @@ class UnifiedCodebaseAPI:
                 self._wire_dependencies()
                 
                 # Initialize project context
-                self._project_context = ProjectContext(self.config)
-                context_success = await self._project_context.initialize(str(self.project_root))
+                self._project_context = ProjectContext(str(self.project_root), self.config)
+                context_success = await self._project_context.initialize()
                 if not context_success:
                     self._initialization_error = "Failed to initialize project context"
                     logger.error(self._initialization_error)
                     return False
                 
                 # Set up file watching if enabled
-                if self.config.diagnostics and self.config.diagnostics.real_time:
+                if (self.config.diagnostics and 
+                    self.config.diagnostics_config.real_time):
                     self._setup_file_watching()
                 
                 initialization_time = time.time() - start_time
@@ -139,6 +140,8 @@ class UnifiedCodebaseAPI:
         except Exception as e:
             self._initialization_error = f"Failed to initialize unified API: {e}"
             logger.error(self._initialization_error)
+            import traceback
+            traceback.print_exc()
             return False
     
     async def analyze(self, include_graph: bool = True, include_context: bool = True) -> CodebaseAnalysisResult:
@@ -393,7 +396,7 @@ class UnifiedCodebaseAPI:
             
             # Initialize diagnostic collector
             if self.config.diagnostics:
-                self._diagnostic_collector = DiagnosticCollector(self.config.diagnostics)
+                self._diagnostic_collector = DiagnosticCollector(self.config.diagnostics_config)
             
             # Initialize context enhancer
             if self.config.enhancedcontext:
@@ -406,6 +409,8 @@ class UnifiedCodebaseAPI:
             
         except Exception as e:
             logger.error(f"Failed to initialize components: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def _wire_dependencies(self) -> None:

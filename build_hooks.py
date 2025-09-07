@@ -5,11 +5,13 @@ This module handles:
 1. Cython module compilation for performance-critical SDK components
 2. Tree-sitter parser compilation and integration
 3. Binary distribution preparation
+4. Serena and SolidLSP integration and installation
 """
 
 import os
 import sys
 import subprocess
+import shutil
 from pathlib import Path
 from typing import Any, Dict
 
@@ -24,13 +26,18 @@ class CodegenBuildHook:
         self.config = config
         self.sdk_path = self.root / "src" / "codegen" / "sdk"
         self.compiled_path = self.sdk_path / "compiled"
+        self.serena_path = self.root / "serena"
+        self.serena_src_path = self.serena_path / "src"
     
     def initialize(self, version: str, build_data: Dict[str, Any]) -> None:
         """Initialize the build process"""
-        print("🔧 Initializing codegen build with SDK integration...")
+        print("🔧 Initializing codegen build with SDK + Serena + SolidLSP integration...")
         
         # Ensure compiled directory exists
         self.compiled_path.mkdir(exist_ok=True)
+        
+        # Set up Serena and SolidLSP integration
+        self._setup_serena_integration()
         
         # Try to compile Cython modules if available
         self._compile_cython_modules()
@@ -39,6 +46,71 @@ class CodegenBuildHook:
         self._ensure_fallback_implementations()
         
         print("✅ Build initialization complete")
+    
+    def _setup_serena_integration(self) -> None:
+        """Set up Serena and SolidLSP integration"""
+        print("🔗 Setting up Serena and SolidLSP integration...")
+        
+        if not self.serena_path.exists():
+            print("⚠️  Serena directory not found - skipping integration")
+            return
+        
+        # Create symlinks or copy Serena packages to the SDK extensions
+        self._integrate_serena_packages()
+        
+        # Set up SolidLSP from Serena
+        self._integrate_solidlsp_from_serena()
+        
+        print("✅ Serena and SolidLSP integration complete")
+    
+    def _integrate_serena_packages(self) -> None:
+        """Integrate Serena packages into the SDK"""
+        serena_pkg_path = self.serena_src_path / "serena"
+        interprompt_pkg_path = self.serena_src_path / "interprompt"
+        
+        # Target paths in the SDK
+        sdk_serena_path = self.sdk_path / "serena"
+        sdk_interprompt_path = self.sdk_path / "interprompt"
+        
+        # Copy Serena packages to SDK
+        if serena_pkg_path.exists():
+            if sdk_serena_path.exists():
+                shutil.rmtree(sdk_serena_path)
+            shutil.copytree(serena_pkg_path, sdk_serena_path)
+            print("   ✅ Serena package integrated")
+        
+        if interprompt_pkg_path.exists():
+            if sdk_interprompt_path.exists():
+                shutil.rmtree(sdk_interprompt_path)
+            shutil.copytree(interprompt_pkg_path, sdk_interprompt_path)
+            print("   ✅ Interprompt package integrated")
+    
+    def _integrate_solidlsp_from_serena(self) -> None:
+        """Integrate SolidLSP from Serena into the SDK extensions"""
+        serena_solidlsp_path = self.serena_src_path / "solidlsp"
+        sdk_solidlsp_path = self.sdk_path / "extensions" / "lsp" / "solidlsp"
+        
+        if serena_solidlsp_path.exists():
+            # Update the existing SolidLSP with Serena's version
+            if sdk_solidlsp_path.exists():
+                # Backup existing files that might have local modifications
+                backup_files = ["__init__.py"]
+                backup_dir = sdk_solidlsp_path.parent / "solidlsp_backup"
+                backup_dir.mkdir(exist_ok=True)
+                
+                for backup_file in backup_files:
+                    src_file = sdk_solidlsp_path / backup_file
+                    if src_file.exists():
+                        shutil.copy2(src_file, backup_dir / backup_file)
+                
+                # Remove old SolidLSP
+                shutil.rmtree(sdk_solidlsp_path)
+            
+            # Copy Serena's SolidLSP
+            shutil.copytree(serena_solidlsp_path, sdk_solidlsp_path)
+            print("   ✅ SolidLSP from Serena integrated")
+        else:
+            print("   ⚠️  SolidLSP not found in Serena - using existing version")
     
     def _compile_cython_modules(self) -> None:
         """Attempt to compile Cython modules for performance"""

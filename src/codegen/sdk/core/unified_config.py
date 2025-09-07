@@ -13,9 +13,42 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 
-from solidlsp.ls_config import Language, LanguageServerConfig
-from solidlsp.settings import SolidLSPSettings
-from serena.config.serena_config import ProjectConfig as SerenaProjectConfig
+try:
+    from solidlsp.ls_config import Language, LanguageServerConfig
+except ImportError:
+    # Mock implementations for testing when solidlsp is not available
+    from enum import Enum
+    
+    class Language(Enum):
+        PYTHON = "python"
+        JAVASCRIPT = "javascript"
+        TYPESCRIPT = "typescript"
+        JAVA = "java"
+        GO = "go"
+        RUST = "rust"
+        CPP = "cpp"
+        C = "c"
+    
+    class LanguageServerConfig:
+        def __init__(self, **kwargs):
+            self.code_language = kwargs.get('code_language')
+            self.ignored_paths = kwargs.get('ignored_paths', [])
+            self.trace_lsp_communication = kwargs.get('trace_lsp_communication', False)
+
+try:
+    from solidlsp.settings import SolidLSPSettings
+except ImportError:
+    class SolidLSPSettings:
+        def __init__(self, **kwargs):
+            self.solidlsp_dir = kwargs.get('solidlsp_dir', '/tmp/solidlsp')
+
+try:
+    from serena.config.serena_config import ProjectConfig as SerenaProjectConfig
+except ImportError:
+    class SerenaProjectConfig:
+        def __init__(self, **kwargs):
+            self.project_root = kwargs.get('project_root', '.')
+            self.config_data = kwargs.get('config_data', {})
 
 
 class IntegrationMode(Enum):
