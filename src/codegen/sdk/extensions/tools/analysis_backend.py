@@ -48,10 +48,31 @@ try:
     from solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Range
     from solidlsp.ls_config import Language
 
+    # Additional Graph-Sitter core imports for direct usage
+    try:
+        from codegen.sdk.core.external_module import ExternalModule
+        from codegen.sdk.core.symbol import Symbol
+        from codegen.sdk.core.file import SourceFile
+        from codegen.sdk.core.function import Function
+        from codegen.sdk.core.class_definition import Class
+        from codegen.sdk.core.statements.statement import Statement
+        from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
+        from codegen.sdk.core.statements.while_statement import WhileStatement
+        from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
+        from codegen.sdk.core.import_resolution import Import
+        from codegen.sdk.core.assignment import Assignment
+        from codegen.sdk.core.detached_symbols.parameter import Parameter
+        from codegen.sdk.core.function_call import FunctionCall
+        from codegen.sdk.core.usage import Usage
+        GRAPH_SITTER_CORE_AVAILABLE = True
+    except ImportError:
+        GRAPH_SITTER_CORE_AVAILABLE = False
+
     UNIFIED_ANALYSIS_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Unified analysis components not available: {e}")
     UNIFIED_ANALYSIS_AVAILABLE = False
+    GRAPH_SITTER_CORE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -241,13 +262,17 @@ class UnifiedAnalysisEngine:
             raise Exception(f"Unified analysis failed: {str(e)}")
     
     async def _perform_graph_sitter_analysis(self) -> Dict[str, Any]:
-        """Perform comprehensive Graph-Sitter analysis using GraphSitterAnalyzer."""
+        """Perform comprehensive Graph-Sitter analysis using GraphSitterAnalyzer and core components."""
         results = {}
         
         # Use the actual GraphSitterAnalyzer methods
         results["codebase_overview"] = self.graph_sitter.get_codebase_overview()
         results["dead_code"] = self.graph_sitter.find_dead_code()
         results["documentation_analysis"] = self.graph_sitter.generate_docstrings_for_undocumented()
+        
+        # Enhanced analysis using Graph-Sitter core components
+        if GRAPH_SITTER_CORE_AVAILABLE:
+            results["core_analysis"] = await self._perform_core_graph_sitter_analysis()
         
         # Get detailed analysis for key files
         results["file_details"] = {}
@@ -280,7 +305,52 @@ class UnifiedAnalysisEngine:
             except Exception as e:
                 logger.warning(f"Could not analyze class {cls.name}: {e}")
         
+        # Advanced visualizations using GraphSitterAnalyzer
+        results["visualizations"] = await self._generate_comprehensive_visualizations()
+        
         return results
+    
+    async def _perform_core_graph_sitter_analysis(self) -> Dict[str, Any]:
+        """Perform analysis using Graph-Sitter core components directly."""
+        core_results = {}
+        
+        # Analyze external modules
+        external_modules = list(self.codebase.external_modules)
+        core_results["external_modules"] = {
+            "count": len(external_modules),
+            "details": [{"name": mod.name, "usage_count": len(list(mod.usages))} 
+                       for mod in external_modules[:10]]
+        }
+        
+        # Analyze symbols
+        symbols = list(self.codebase.symbols)
+        core_results["symbols"] = {
+            "count": len(symbols),
+            "by_type": self._categorize_symbols_by_type(symbols),
+            "usage_analysis": self._analyze_symbol_usage(symbols[:20])
+        }
+        
+        # Analyze imports
+        imports = list(self.codebase.imports)
+        core_results["imports"] = {
+            "count": len(imports),
+            "analysis": self._analyze_import_patterns(imports)
+        }
+        
+        # Analyze function calls
+        all_function_calls = []
+        for func in self.codebase.functions:
+            all_function_calls.extend(list(func.function_calls))
+        
+        core_results["function_calls"] = {
+            "count": len(all_function_calls),
+            "patterns": self._analyze_function_call_patterns(all_function_calls[:50])
+        }
+        
+        # Analyze statements
+        core_results["statements"] = await self._analyze_statement_patterns()
+        
+        return core_results
     
     async def _perform_lsp_analysis(self, 
                                   runtime_log_path: Optional[str] = None,
@@ -405,6 +475,79 @@ class UnifiedAnalysisEngine:
         )
         
         return results
+    
+    def _categorize_symbols_by_type(self, symbols: List[Symbol]) -> Dict[str, int]:
+        """Categorize symbols by their type."""
+        categories = defaultdict(int)
+        for symbol in symbols:
+            symbol_type = getattr(symbol, 'symbol_type', 'unknown')
+            categories[symbol_type] += 1
+        return dict(categories)
+    
+    def _analyze_symbol_usage(self, symbols: List[Symbol]) -> List[Dict[str, Any]]:
+        """Analyze symbol usage patterns."""
+        usage_analysis = []
+        for symbol in symbols:
+            usages = list(symbol.usages)
+            usage_analysis.append({
+                "name": symbol.name,
+                "usage_count": len(usages),
+                "file": symbol.file.filepath if symbol.file else None,
+                "is_heavily_used": len(usages) > 5
+            })
+        return usage_analysis
+    
+    def _analyze_import_patterns(self, imports: List[Import]) -> Dict[str, Any]:
+        """Analyze import patterns and dependencies."""
+        patterns = {
+            "unused_imports": [],
+            "external_dependencies": [],
+            "internal_dependencies": []
+        }
+        
+        for imp in imports:
+            usages = list(imp.usages)
+            if len(usages) == 0:
+                patterns["unused_imports"].append({
+                    "name": imp.name,
+                    "file": imp.file.filepath if imp.file else None
+                })
+            
+            # Categorize as external or internal
+            if hasattr(imp, 'from_external_module') and imp.from_external_module:
+                patterns["external_dependencies"].append(imp.name)
+            else:
+                patterns["internal_dependencies"].append(imp.name)
+        
+        return patterns
+    
+    def _analyze_function_call_patterns(self, function_calls: List[FunctionCall]) -> Dict[str, Any]:
+        """Analyze function call patterns."""
+        patterns = {
+            "most_called_functions": defaultdict(int),
+            "recursive_calls": []
+        }
+        
+        for call in function_calls:
+            function_name = call.name
+            patterns["most_called_functions"][function_name] += 1
+            
+            # Check for potential recursive calls
+            if hasattr(call, 'parent_function') and call.parent_function:
+                if call.parent_function.name == function_name:
+                    patterns["recursive_calls"].append({
+                        "function": function_name,
+                        "file": call.file.filepath if call.file else None
+                    })
+        
+        # Convert to sorted list
+        patterns["most_called_functions"] = sorted(
+            patterns["most_called_functions"].items(), 
+            key=lambda x: x[1], 
+            reverse=True
+        )[:10]
+        
+        return patterns
     
     def _categorize_diagnostics(self, enhanced_diagnostics: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Categorize diagnostics by type, severity, and patterns."""
