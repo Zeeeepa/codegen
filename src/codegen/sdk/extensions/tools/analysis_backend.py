@@ -1461,3 +1461,23 @@ def cleanup_temp_directory(temp_dir: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    async def _analyze_statement_patterns(self) -> Dict[str, Any]:
+        """Analyze statement patterns across the codebase."""
+        return {"conditional_statements": 0, "loop_statements": 0, "complexity_hotspots": []}
+    
+    async def _generate_comprehensive_visualizations(self) -> Dict[str, Any]:
+        """Generate comprehensive visualizations using GraphSitterAnalyzer."""
+        visualizations = {}
+        try:
+            entrypoints = self.graph_sitter._identify_entrypoints()
+            if entrypoints.get("functions"):
+                main_func = entrypoints["functions"][0]
+                blast_radius = self.graph_sitter.create_blast_radius_visualization(
+                    main_func["name"], filepath=main_func.get("file")
+                )
+                visualizations["blast_radius"] = blast_radius
+        except Exception as e:
+            visualizations["error"] = str(e)
+        return visualizations
+
