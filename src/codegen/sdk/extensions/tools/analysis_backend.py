@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Production Graph-Sitter Backend API
-Provides comprehensive codebase analysis, visualization, and transformation capabilities
-using actual graph-sitter library implementation
+Unified Analysis Backend API
+Provides comprehensive codebase analysis using Graph-Sitter, AutoGenLib, and LSP diagnostics
 """
 
 import os
@@ -14,13 +13,13 @@ import uuid
 import math
 import ast
 import re
+import asyncio
+import logging
+import networkx as nx
 from typing import Dict, List, Any, Optional, Tuple, Union
 from dataclasses import dataclass, field
 from collections import defaultdict, Counter
 from datetime import datetime
-import asyncio
-import logging
-import networkx as nx
 from pathlib import Path
 
 # FastAPI and web framework imports
@@ -29,23 +28,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uvicorn
 
-# Graph-sitter imports (actual implementation)
+# Core imports
 try:
     from codegen.sdk.core import Codebase
-    from codegen.sdk.core.external_module import ExternalModule
-    from codegen.sdk.core.symbol import Symbol
-    from codegen.sdk.core.file import SourceFile
-    from codegen.sdk.core.function import Function
-    from codegen.sdk.core.class_definition import Class
-    from codegen.sdk.core.statements.statement import Statement
-    from codegen.sdk.core.statements.if_block_statement import IfBlockStatement
-    from codegen.sdk.core.statements.while_statement import WhileStatement
-    from codegen.sdk.core.statements.try_catch_statement import TryCatchStatement
-    from codegen.sdk.core.import_resolution import Import
-    from codegen.sdk.core.assignment import Assignment
-    from codegen.sdk.core.detached_symbols.parameter import Parameter
     from codegen.sdk.extensions.tools.graph_sitter_analysis import GraphSitterAnalyzer
-    from codegen.sdk.extensions.lsp.lsp_diagnostics import LSPDiagnosticsManager
+    from codegen.sdk.extensions.lsp.lsp_diagnostics import LSPDiagnosticsManager, RuntimeErrorCollector
+    from codegen.sdk.extensions.autogenlib.autogenlib_context import (
+        get_enhanced_context_for_diagnostic,
+        get_autogenlib_context,
+        get_graph_sitter_context
+    )
     from codegen.sdk.extensions.autogenlib.autogenlib_ai_resolve import (
         resolve_diagnostic_with_ai,
         resolve_runtime_error_with_ai, 
@@ -56,11 +48,10 @@ try:
     from solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Range
     from solidlsp.ls_config import Language
 
-    GRAPH_SITTER_AVAILABLE = True
+    UNIFIED_ANALYSIS_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: graph-sitter or related modules not available: {e}")
-    print("Install with: pip install graph-sitter")
-    GRAPH_SITTER_AVAILABLE = False
+    print(f"Warning: Unified analysis components not available: {e}")
+    UNIFIED_ANALYSIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -159,94 +150,466 @@ class CodeQualityMetrics(BaseModel):
     file_metrics: Dict[str, Any]
 
 
-class AnalysisEngine:
+class UnifiedAnalysisEngine:
     """
-    Enhanced analysis engine integrating all Graph-Sitter modules, LSP, and AutoGenLib.
+    Unified analysis engine that properly integrates:
+    - GraphSitterAnalyzer (comprehensive codebase analysis)
+    - LSPDiagnosticsManager (real-time error detection)
+    - RuntimeErrorCollector (runtime error monitoring)
+    - AutoGenLib context functions (AI-driven context enrichment)
     """
 
-    def __init__(self, codebase: Codebase, language: str):
+    def __init__(self, codebase: Codebase, language: str = "python"):
         self.codebase = codebase
         self.language = language
-        self.analyzer = GraphSitterAnalyzer(codebase)
-        self.lsp_manager = LSPDiagnosticsManager(codebase, Language(language))
+        
+        # Initialize core components
+        self.graph_sitter = GraphSitterAnalyzer(codebase)
+        self.lsp_manager = LSPDiagnosticsManager(codebase, Language(language.upper()))
+        self.runtime_collector = RuntimeErrorCollector(codebase)
+        
+        # Caches
+        self.analysis_cache = {}
         self.context_cache = {}
-        self.insight_cache = {}
         self.visualization_cache = {}
 
-    async def perform_full_analysis(self) -> Dict[str, Any]:
-        """Perform comprehensive codebase analysis using all available tools."""
+    async def perform_full_analysis(self, 
+                                  include_lsp: bool = True,
+                                  include_runtime_monitoring: bool = False,
+                                  runtime_log_path: Optional[str] = None,
+                                  ui_log_path: Optional[str] = None) -> Dict[str, Any]:
+        """Perform comprehensive unified analysis using all available tools."""
+        logger.info("🚀 Starting comprehensive unified analysis...")
+        
+        analysis_results = {
+            "timestamp": datetime.now().isoformat(),
+            "codebase_path": str(self.codebase.root),
+            "language": self.language,
+            "components_used": []
+        }
+        
         try:
-            # Start LSP server
-            self.lsp_manager.start_server()
+            # 1. Graph-Sitter Analysis (using the actual GraphSitterAnalyzer)
+            logger.info("📊 Performing Graph-Sitter analysis...")
+            gs_results = await self._perform_graph_sitter_analysis()
+            analysis_results["graph_sitter"] = gs_results
+            analysis_results["components_used"].append("graph_sitter")
+            logger.info("✅ Graph-Sitter analysis completed")
             
-            # 1. Open files in LSP server for diagnostic collection
-            logger.info("Opening files in LSP server for diagnostic collection...")
-            file_contents = {}
-            for file_obj in list(self.codebase.files):
+            # 2. LSP Diagnostics Analysis
+            if include_lsp:
+                logger.info("🔍 Performing LSP diagnostics analysis...")
+                lsp_results = await self._perform_lsp_analysis(
+                    runtime_log_path=runtime_log_path,
+                    ui_log_path=ui_log_path
+                )
+                analysis_results["lsp_diagnostics"] = lsp_results
+                analysis_results["components_used"].append("lsp_diagnostics")
+                logger.info("✅ LSP diagnostics analysis completed")
+            
+            # 3. Runtime Error Collection
+            if include_runtime_monitoring:
+                logger.info("⚡ Collecting runtime errors...")
+                runtime_results = self._collect_runtime_errors(
+                    runtime_log_path=runtime_log_path,
+                    ui_log_path=ui_log_path
+                )
+                analysis_results["runtime_errors"] = runtime_results
+                analysis_results["components_used"].append("runtime_monitoring")
+                logger.info("✅ Runtime error collection completed")
+            
+            # 4. Unified Error Context Analysis
+            if "lsp_diagnostics" in analysis_results and "graph_sitter" in analysis_results:
+                logger.info("🔗 Performing unified error context analysis...")
+                unified_results = await self._perform_unified_error_analysis(
+                    analysis_results["lsp_diagnostics"],
+                    analysis_results["graph_sitter"]
+                )
+                analysis_results["unified_error_analysis"] = unified_results
+                analysis_results["components_used"].append("unified_error_analysis")
+                logger.info("✅ Unified error context analysis completed")
+            
+            # 5. Generate Summary
+            analysis_results["summary"] = self._generate_analysis_summary(analysis_results)
+            
+            logger.info("🎉 Comprehensive unified analysis completed!")
+            return analysis_results
+            
+        except Exception as e:
+            logger.error(f"Error in unified analysis: {e}")
+            logger.error(traceback.format_exc())
+            raise Exception(f"Unified analysis failed: {str(e)}")
+    
+    async def _perform_graph_sitter_analysis(self) -> Dict[str, Any]:
+        """Perform comprehensive Graph-Sitter analysis using GraphSitterAnalyzer."""
+        results = {}
+        
+        # Use the actual GraphSitterAnalyzer methods
+        results["codebase_overview"] = self.graph_sitter.get_codebase_overview()
+        results["dead_code"] = self.graph_sitter.find_dead_code()
+        results["documentation_analysis"] = self.graph_sitter.generate_docstrings_for_undocumented()
+        
+        # Get detailed analysis for key files
+        results["file_details"] = {}
+        for file_obj in list(self.codebase.files)[:10]:  # Limit to first 10 files
+            try:
+                file_details = self.graph_sitter.get_file_details(file_obj.filepath)
+                results["file_details"][file_obj.filepath] = file_details
+            except Exception as e:
+                logger.warning(f"Could not analyze file {file_obj.filepath}: {e}")
+        
+        # Get function and class details for key symbols
+        results["symbol_analysis"] = {
+            "functions": {},
+            "classes": {}
+        }
+        
+        # Analyze top functions
+        for func in list(self.codebase.functions)[:5]:  # Top 5 functions
+            try:
+                func_details = self.graph_sitter.get_function_details(func.name, func.file.filepath if func.file else None)
+                results["symbol_analysis"]["functions"][func.name] = func_details
+            except Exception as e:
+                logger.warning(f"Could not analyze function {func.name}: {e}")
+        
+        # Analyze top classes
+        for cls in list(self.codebase.classes)[:5]:  # Top 5 classes
+            try:
+                class_details = self.graph_sitter.get_class_details(cls.name, cls.file.filepath if cls.file else None)
+                results["symbol_analysis"]["classes"][cls.name] = class_details
+            except Exception as e:
+                logger.warning(f"Could not analyze class {cls.name}: {e}")
+        
+        return results
+    
+    async def _perform_lsp_analysis(self, 
+                                  runtime_log_path: Optional[str] = None,
+                                  ui_log_path: Optional[str] = None) -> Dict[str, Any]:
+        """Perform LSP diagnostics analysis."""
+        results = {}
+        
+        # Start LSP server
+        self.lsp_manager.start_server()
+        
+        try:
+            # Open all files in LSP server
+            logger.info("Opening files in LSP server...")
+            for file_obj in self.codebase.files:
                 try:
                     self.lsp_manager.open_file(file_obj.filepath, file_obj.source)
-                    file_contents[file_obj.filepath] = file_obj.source
                 except Exception as e:
-                    logger.warning(f"Could not open file {file_obj.filepath} with LSP: {e}")
-
-            # Give LSP server some time to process files and publish diagnostics
-            logger.info("Waiting for LSP server to process files and publish diagnostics (5 seconds)...")
-            await asyncio.sleep(5) # Adjust as needed for larger codebases
-
-            # 2. Retrieve Enhanced Diagnostics
-            logger.info("Retrieving enhanced diagnostics from LSP server...")
-            all_enhanced_diagnostics = self.lsp_manager.get_all_enhanced_diagnostics()
-
-            # 3. Perform Graph-Sitter Analysis
-            logger.info("Performing comprehensive Graph-Sitter analysis...")
-            codebase_summary = self.analyzer.get_codebase_overview()
-            tree_structure = self._build_tree_structure_from_graph_sitter(self.codebase, all_enhanced_diagnostics)
-            error_analysis = self._analyze_errors_comprehensive(self.codebase, all_enhanced_diagnostics)
-            dead_code_analysis = self.analyzer.find_dead_code()
-            entrypoint_analysis = self._analyze_entrypoints_with_graph_sitter_enhanced(self.codebase)
-            dependency_graph = self._build_dependency_graph_from_graph_sitter(self.codebase)
-            code_quality_metrics = self._calculate_code_quality_metrics(self.codebase)
-            architectural_insights = self._analyze_architectural_patterns(self.codebase)
-            security_analysis = self._analyze_security_patterns(self.codebase)
-            performance_analysis = self._analyze_performance_patterns(self.codebase)
+                    logger.warning(f"Could not open file {file_obj.filepath}: {e}")
             
-            # 4. Get error statistics
-            error_statistics = self.lsp_manager.get_error_statistics()
+            # Wait for LSP processing
+            await asyncio.sleep(3)
             
-            # 5. Generate visualizations
-            visualizations = self._generate_default_visualizations()
-
-            analysis = {
-                "codebase_summary": codebase_summary,
-                "tree_structure": tree_structure,
-                "error_analysis": error_analysis,
-                "error_statistics": error_statistics,
-                "dead_code_analysis": dead_code_analysis,
-                "entrypoint_analysis": entrypoint_analysis,
-                "dependency_graph": dependency_graph,
-                "code_quality_metrics": code_quality_metrics,
-                "architectural_insights": architectural_insights,
-                "security_analysis": security_analysis,
-                "performance_analysis": performance_analysis,
-                "visualizations": visualizations,
-                "metrics": {
-                    "files": len(list(self.codebase.files)),
-                    "functions": len(list(self.codebase.functions)),
-                    "classes": len(list(self.codebase.classes)),
-                    "symbols": len(list(self.codebase.symbols)),
-                    "imports": len(list(self.codebase.imports)),
-                    "external_modules": len(list(self.codebase.external_modules)),
-                },
-            }
-
-            return analysis
-
-        except Exception as e:
-            logger.error(f"Error analyzing codebase with graph-sitter: {e}")
-            logger.error(traceback.format_exc())
-            raise Exception(f"Graph-sitter analysis failed: {str(e)}")
+            # Get enhanced diagnostics
+            enhanced_diagnostics = self.lsp_manager.get_all_enhanced_diagnostics(
+                runtime_log_path=runtime_log_path,
+                ui_log_path=ui_log_path
+            )
+            
+            results["enhanced_diagnostics"] = enhanced_diagnostics
+            results["error_statistics"] = self.lsp_manager.get_error_statistics()
+            results["diagnostic_count"] = len(enhanced_diagnostics)
+            
+            # Categorize diagnostics
+            results["categorized_diagnostics"] = self._categorize_diagnostics(enhanced_diagnostics)
+            
         finally:
-            self.lsp_manager.shutdown_server() # Ensure LSP server is shut down
+            # Shutdown LSP server
+            self.lsp_manager.shutdown_server()
+        
+        return results
+    
+    def _collect_runtime_errors(self, 
+                               runtime_log_path: Optional[str] = None,
+                               ui_log_path: Optional[str] = None) -> Dict[str, Any]:
+        """Collect runtime errors from various sources."""
+        results = {}
+        
+        # Python runtime errors
+        python_errors = self.runtime_collector.collect_python_runtime_errors(runtime_log_path)
+        results["python_runtime_errors"] = python_errors
+        
+        # UI interaction errors
+        ui_errors = self.runtime_collector.collect_ui_interaction_errors(ui_log_path)
+        results["ui_errors"] = ui_errors
+        
+        # Network errors
+        network_errors = self.runtime_collector.collect_network_errors()
+        results["network_errors"] = network_errors
+        
+        # Summary
+        results["summary"] = {
+            "total_runtime_errors": len(python_errors),
+            "total_ui_errors": len(ui_errors),
+            "total_network_errors": len(network_errors),
+            "total_errors": len(python_errors) + len(ui_errors) + len(network_errors)
+        }
+        
+        return results
+    
+    async def _perform_unified_error_analysis(self, 
+                                            lsp_results: Dict[str, Any],
+                                            gs_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform unified error analysis combining LSP and Graph-Sitter data."""
+        results = {}
+        
+        enhanced_diagnostics = lsp_results.get("enhanced_diagnostics", [])
+        
+        # Enrich diagnostics with Graph-Sitter context and AutoGenLib context
+        enriched_diagnostics = []
+        for enhanced_diag in enhanced_diagnostics:
+            try:
+                # Get AutoGenLib context
+                autogenlib_context = get_enhanced_context_for_diagnostic(enhanced_diag)
+                
+                # Get Graph-Sitter context for the symbol
+                diag = enhanced_diag["diagnostic"]
+                file_path = enhanced_diag["relative_file_path"]
+                
+                # Try to extract symbol name from diagnostic
+                symbol_name = self._extract_symbol_from_diagnostic(diag)
+                if symbol_name:
+                    gs_context = get_graph_sitter_context(self.codebase, symbol_name, file_path)
+                else:
+                    gs_context = {}
+                
+                # Combine contexts
+                enriched_diag = {
+                    **enhanced_diag,
+                    "autogenlib_context": autogenlib_context,
+                    "graph_sitter_symbol_context": gs_context,
+                    "unified_context": {
+                        "has_autogenlib_context": bool(autogenlib_context),
+                        "has_graph_sitter_context": bool(gs_context),
+                        "context_completeness": self._calculate_context_completeness(
+                            enhanced_diag, autogenlib_context, gs_context
+                        )
+                    }
+                }
+                
+                enriched_diagnostics.append(enriched_diag)
+                
+            except Exception as e:
+                logger.warning(f"Failed to enrich diagnostic: {e}")
+                enriched_diagnostics.append(enhanced_diag)
+        
+        results["enriched_diagnostics"] = enriched_diagnostics
+        results["enrichment_statistics"] = self._calculate_enrichment_statistics(enriched_diagnostics)
+        
+        # Error resolution recommendations
+        results["resolution_recommendations"] = await self._generate_resolution_recommendations(
+            enriched_diagnostics
+        )
+        
+        return results
+    
+    def _categorize_diagnostics(self, enhanced_diagnostics: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Categorize diagnostics by type, severity, and patterns."""
+        categories = {
+            "by_severity": {"error": 0, "warning": 0, "info": 0, "hint": 0},
+            "by_category": {},
+            "by_file": {},
+            "patterns": []
+        }
+        
+        for enhanced_diag in enhanced_diagnostics:
+            diag = enhanced_diag["diagnostic"]
+            file_path = enhanced_diag["relative_file_path"]
+            
+            # By severity
+            severity = diag.severity.name.lower() if diag.severity else "unknown"
+            categories["by_severity"][severity] = categories["by_severity"].get(severity, 0) + 1
+            
+            # By category (using diagnostic code)
+            category = diag.code if diag.code else "uncategorized"
+            categories["by_category"][category] = categories["by_category"].get(category, 0) + 1
+            
+            # By file
+            categories["by_file"][file_path] = categories["by_file"].get(file_path, 0) + 1
+        
+        return categories
+    
+    def _extract_symbol_from_diagnostic(self, diagnostic: Diagnostic) -> Optional[str]:
+        """Extract symbol name from diagnostic message."""
+        message = diagnostic.message
+        
+        # Common patterns for extracting symbol names
+        patterns = [
+            r"'([^']+)' is not defined",
+            r"name '([^']+)' is not defined",
+            r"undefined name '([^']+)'",
+            r"'([^']+)' object has no attribute",
+            r"module '([^']+)' has no attribute",
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, message)
+            if match:
+                return match.group(1)
+        
+        return None
+    
+    def _calculate_context_completeness(self, 
+                                      enhanced_diag: Dict[str, Any],
+                                      autogenlib_context: Dict[str, Any],
+                                      gs_context: Dict[str, Any]) -> float:
+        """Calculate how complete the context is for error resolution."""
+        completeness_score = 0.0
+        
+        # Base diagnostic context (always present)
+        completeness_score += 0.2
+        
+        # Enhanced diagnostic context
+        if enhanced_diag.get("graph_sitter_context"):
+            completeness_score += 0.2
+        
+        # AutoGenLib context
+        if autogenlib_context:
+            completeness_score += 0.3
+        
+        # Graph-Sitter symbol context
+        if gs_context and not gs_context.get("error"):
+            completeness_score += 0.3
+        
+        return min(completeness_score, 1.0)
+    
+    def _calculate_enrichment_statistics(self, enriched_diagnostics: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate statistics about context enrichment."""
+        total = len(enriched_diagnostics)
+        if total == 0:
+            return {"total": 0}
+        
+        with_autogenlib = sum(1 for d in enriched_diagnostics if d.get("autogenlib_context"))
+        with_gs_context = sum(1 for d in enriched_diagnostics if d.get("graph_sitter_symbol_context"))
+        fully_enriched = sum(1 for d in enriched_diagnostics 
+                           if d.get("unified_context", {}).get("context_completeness", 0) >= 0.8)
+        
+        return {
+            "total": total,
+            "with_autogenlib_context": with_autogenlib,
+            "with_graph_sitter_context": with_gs_context,
+            "fully_enriched": fully_enriched,
+            "enrichment_rate": {
+                "autogenlib": with_autogenlib / total,
+                "graph_sitter": with_gs_context / total,
+                "fully_enriched": fully_enriched / total
+            }
+        }
+    
+    async def _generate_resolution_recommendations(self, 
+                                                 enriched_diagnostics: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Generate AI-powered resolution recommendations."""
+        recommendations = {
+            "individual_fixes": [],
+            "batch_fixes": [],
+            "comprehensive_strategy": None
+        }
+        
+        # Individual fixes for high-priority errors
+        high_priority_diagnostics = [
+            d for d in enriched_diagnostics 
+            if d["diagnostic"].severity and d["diagnostic"].severity.value <= 2  # Error or Warning
+        ][:5]  # Limit to top 5
+        
+        for enhanced_diag in high_priority_diagnostics:
+            try:
+                fix_recommendation = resolve_diagnostic_with_ai(enhanced_diag, self.codebase)
+                recommendations["individual_fixes"].append({
+                    "diagnostic": enhanced_diag,
+                    "recommendation": fix_recommendation
+                })
+            except Exception as e:
+                logger.warning(f"Failed to generate fix recommendation: {e}")
+        
+        # Batch fixes for similar errors
+        if len(enriched_diagnostics) > 1:
+            try:
+                batch_recommendation = resolve_multiple_errors_with_ai(
+                    enriched_diagnostics[:10], self.codebase, max_fixes=5
+                )
+                recommendations["batch_fixes"] = batch_recommendation
+            except Exception as e:
+                logger.warning(f"Failed to generate batch recommendations: {e}")
+        
+        return recommendations
+    
+    def _generate_analysis_summary(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate a comprehensive summary of the analysis."""
+        summary = {
+            "timestamp": analysis_results["timestamp"],
+            "components_analyzed": analysis_results["components_used"],
+            "codebase_metrics": {},
+            "error_summary": {},
+            "recommendations": [],
+            "health_score": 0.0
+        }
+        
+        # Codebase metrics from Graph-Sitter
+        if "graph_sitter" in analysis_results:
+            gs_data = analysis_results["graph_sitter"]
+            if "codebase_overview" in gs_data:
+                overview = gs_data["codebase_overview"]
+                summary["codebase_metrics"] = {
+                    "files": overview.get("files_count", 0),
+                    "functions": overview.get("functions_count", 0),
+                    "classes": overview.get("classes_count", 0),
+                    "symbols": overview.get("symbols_count", 0),
+                    "imports": overview.get("imports_count", 0),
+                    "external_modules": overview.get("external_modules_count", 0)
+                }
+        
+        # Error summary from LSP
+        if "lsp_diagnostics" in analysis_results:
+            lsp_data = analysis_results["lsp_diagnostics"]
+            if "error_statistics" in lsp_data:
+                summary["error_summary"] = lsp_data["error_statistics"]
+        
+        # Health score calculation
+        summary["health_score"] = self._calculate_health_score(analysis_results)
+        
+        # Top recommendations
+        if "unified_error_analysis" in analysis_results:
+            unified_data = analysis_results["unified_error_analysis"]
+            if "resolution_recommendations" in unified_data:
+                recommendations = unified_data["resolution_recommendations"]
+                summary["recommendations"] = [
+                    "Fix high-priority errors identified by LSP",
+                    "Address dead code identified by Graph-Sitter",
+                    "Improve documentation coverage",
+                    "Reduce complexity in identified hotspots"
+                ]
+        
+        return summary
+    
+    def _calculate_health_score(self, analysis_results: Dict[str, Any]) -> float:
+        """Calculate overall codebase health score (0-100)."""
+        score = 100.0
+        
+        # Deduct for errors
+        if "lsp_diagnostics" in analysis_results:
+            error_stats = analysis_results["lsp_diagnostics"].get("error_statistics", {})
+            critical_errors = error_stats.get("critical", 0)
+            major_errors = error_stats.get("major", 0)
+            minor_errors = error_stats.get("minor", 0)
+            
+            score -= critical_errors * 10  # -10 per critical error
+            score -= major_errors * 5      # -5 per major error
+            score -= minor_errors * 1      # -1 per minor error
+        
+        # Deduct for dead code
+        if "graph_sitter" in analysis_results:
+            dead_code = analysis_results["graph_sitter"].get("dead_code", {})
+            dead_functions = len(dead_code.get("unused_functions", []))
+            dead_classes = len(dead_code.get("unused_classes", []))
+            
+            score -= dead_functions * 2    # -2 per dead function
+            score -= dead_classes * 3      # -3 per dead class
+        
+        # Ensure score is between 0 and 100
+        return max(0.0, min(100.0, score))
 
     def _analyze_errors_comprehensive(self, codebase: Codebase, enhanced_diagnostics: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Enhanced comprehensive error analysis using Graph-sitter APIs and LSP diagnostics."""
@@ -719,3 +1082,239 @@ class AnalysisEngine:
     def _analyze_performance_patterns(self, codebase: Codebase) -> Dict[str, Any]:
         """Analyze performance patterns and bottlenecks."""
         return {"bottlenecks": [], "recommendations": []}
+
+
+# FastAPI Application
+app = FastAPI(
+    title="Unified Analysis Backend API",
+    description="Comprehensive codebase analysis using Graph-Sitter, AutoGenLib, and LSP diagnostics",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global analysis engines cache
+analysis_engines: Dict[str, UnifiedAnalysisEngine] = {}
+
+
+@app.post("/analyze", response_model=Dict[str, Any])
+async def analyze_codebase(request: AnalyzeRequest, background_tasks: BackgroundTasks):
+    """Perform comprehensive unified codebase analysis."""
+    if not UNIFIED_ANALYSIS_AVAILABLE:
+        raise HTTPException(status_code=500, detail="Unified analysis components not available")
+    
+    analysis_id = str(uuid.uuid4())
+    
+    try:
+        # Create temporary directory for codebase
+        temp_dir = tempfile.mkdtemp()
+        
+        # Clone repository if URL provided
+        if request.repo_url.startswith(('http://', 'https://', 'git@')):
+            logger.info(f"Cloning repository: {request.repo_url}")
+            subprocess.run([
+                'git', 'clone', '--depth', '1', '--branch', request.branch,
+                request.repo_url, temp_dir
+            ], check=True)
+            codebase_path = temp_dir
+        else:
+            # Assume it's a local path
+            codebase_path = request.repo_url
+        
+        # Initialize codebase and analysis engine
+        codebase = Codebase(codebase_path)
+        engine = UnifiedAnalysisEngine(codebase, request.language)
+        
+        # Store engine for later use
+        analysis_engines[analysis_id] = engine
+        
+        # Perform analysis
+        results = await engine.perform_full_analysis(
+            include_lsp=True,
+            include_runtime_monitoring=request.include_runtime_monitoring,
+            runtime_log_path=request.runtime_log_path,
+            ui_log_path=request.ui_log_path
+        )
+        
+        # Add analysis metadata
+        results["analysis_id"] = analysis_id
+        results["request_config"] = request.dict()
+        
+        # Schedule cleanup
+        background_tasks.add_task(cleanup_temp_directory, temp_dir)
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@app.get("/analysis/{analysis_id}/visualizations")
+async def get_visualizations(analysis_id: str, request: VisualizationRequest):
+    """Generate visualizations for analyzed codebase."""
+    if analysis_id not in analysis_engines:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    
+    engine = analysis_engines[analysis_id]
+    
+    try:
+        if request.viz_type == "blast_radius":
+            if not request.entry_point:
+                raise HTTPException(status_code=400, detail="Entry point required for blast radius visualization")
+            
+            result = engine.graph_sitter.create_blast_radius_visualization(
+                request.entry_point, 
+                max_depth=request.max_depth
+            )
+            
+        elif request.viz_type == "call_trace":
+            if not request.entry_point:
+                raise HTTPException(status_code=400, detail="Entry point required for call trace visualization")
+            
+            result = engine.graph_sitter.create_call_trace_visualization(
+                request.entry_point,
+                max_depth=request.max_depth
+            )
+            
+        elif request.viz_type == "dependency_trace":
+            if not request.entry_point:
+                raise HTTPException(status_code=400, detail="Entry point required for dependency trace visualization")
+            
+            result = engine.graph_sitter.create_dependency_trace_visualization(
+                request.entry_point,
+                max_depth=request.max_depth
+            )
+            
+        elif request.viz_type == "method_relationships":
+            if not request.entry_point:
+                raise HTTPException(status_code=400, detail="Class name required for method relationships visualization")
+            
+            result = engine.graph_sitter.create_method_relationships_visualization(
+                request.entry_point
+            )
+            
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown visualization type: {request.viz_type}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Visualization generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Visualization generation failed: {str(e)}")
+
+
+@app.post("/analysis/{analysis_id}/fix-errors")
+async def fix_errors(analysis_id: str, request: FixErrorsRequest):
+    """Generate AI-powered error fixes."""
+    if analysis_id not in analysis_engines:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    
+    engine = analysis_engines[analysis_id]
+    
+    try:
+        # Get enhanced diagnostics from LSP
+        enhanced_diagnostics = engine.lsp_manager.get_all_enhanced_diagnostics()
+        
+        if request.fix_strategy == "individual":
+            # Individual fixes
+            fixes = []
+            for enhanced_diag in enhanced_diagnostics[:request.max_fixes]:
+                try:
+                    fix = resolve_diagnostic_with_ai(enhanced_diag, engine.codebase)
+                    fixes.append({
+                        "diagnostic": enhanced_diag,
+                        "fix": fix,
+                        "applied": not request.dry_run
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to generate fix: {e}")
+            
+            return {"fixes": fixes, "strategy": "individual"}
+            
+        elif request.fix_strategy == "batch":
+            # Batch fixes
+            batch_fixes = resolve_multiple_errors_with_ai(
+                enhanced_diagnostics[:request.max_fixes], 
+                engine.codebase, 
+                max_fixes=request.max_fixes
+            )
+            return {"fixes": batch_fixes, "strategy": "batch"}
+            
+        elif request.fix_strategy == "comprehensive":
+            # Comprehensive strategy
+            strategy = generate_comprehensive_fix_strategy(
+                enhanced_diagnostics, 
+                engine.codebase
+            )
+            return {"strategy": strategy, "fixes": []}
+            
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown fix strategy: {request.fix_strategy}")
+        
+    except Exception as e:
+        logger.error(f"Error fixing failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fixing failed: {str(e)}")
+
+
+@app.get("/analysis/{analysis_id}/documentation")
+async def generate_documentation(analysis_id: str, request: DocumentationRequest):
+    """Generate documentation for analyzed codebase."""
+    if analysis_id not in analysis_engines:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    
+    engine = analysis_engines[analysis_id]
+    
+    try:
+        if request.target_type == "codebase":
+            # Generate comprehensive documentation
+            docs = engine.graph_sitter.generate_structured_docs()
+            return {"documentation": docs, "format": request.output_format}
+            
+        elif request.target_type == "class" and request.target_name:
+            # Generate class-specific documentation
+            class_details = engine.graph_sitter.get_class_details(request.target_name)
+            return {"documentation": class_details, "format": request.output_format}
+            
+        elif request.target_type == "function" and request.target_name:
+            # Generate function-specific documentation
+            func_details = engine.graph_sitter.get_function_details(request.target_name)
+            return {"documentation": func_details, "format": request.output_format}
+            
+        else:
+            raise HTTPException(status_code=400, detail="Invalid documentation request")
+        
+    except Exception as e:
+        logger.error(f"Documentation generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Documentation generation failed: {str(e)}")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "unified_analysis_available": UNIFIED_ANALYSIS_AVAILABLE,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def cleanup_temp_directory(temp_dir: str):
+    """Clean up temporary directory."""
+    try:
+        shutil.rmtree(temp_dir)
+        logger.info(f"Cleaned up temporary directory: {temp_dir}")
+    except Exception as e:
+        logger.warning(f"Failed to clean up temporary directory {temp_dir}: {e}")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
