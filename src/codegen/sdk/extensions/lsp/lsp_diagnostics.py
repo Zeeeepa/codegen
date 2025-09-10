@@ -20,7 +20,7 @@ from solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Ran
 from solidlsp.ls_utils import PathUtils
 
 # Import GraphSitterAnalyzer for context enrichment
-from graph_sitter import Codebase
+from codegen.sdk.core import Codebase
 
 logger = logging.getLogger(__name__)
 

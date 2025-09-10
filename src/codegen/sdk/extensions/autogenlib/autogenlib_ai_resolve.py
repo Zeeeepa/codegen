@@ -11,13 +11,13 @@ from typing import Dict, Any
 
 import openai
 
-from graph_sitter import Codebase
+from codegen.sdk.core import Codebase
 
 # Import autogenlib's core generation and utility functions
 from autogenlib._generator import extract_python_code, validate_code
 
 # Import enhanced context functions and EnhancedDiagnostic
-from lsp_diagnostics import EnhancedDiagnostic
+from codegen.sdk.extensions.lsp.lsp_diagnostics import EnhancedDiagnostic
 
 logger = logging.getLogger(__name__)
 
