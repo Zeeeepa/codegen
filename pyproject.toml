@@ -53,6 +53,19 @@ dependencies = [
   "tree-sitter-rust>=0.21.0",
   "tree-sitter-cpp>=0.22.0",
   "tree-sitter-c>=0.21.0",
+  # Serena integration dependencies
+  "overrides>=7.7.0,<8",
+  "mcp==1.12.3",
+  "flask>=3.0.0",
+  "sensai-utils>=1.5.0",
+  "ruamel.yaml>=0.18.0",
+  "jinja2>=3.1.6",
+  "pathspec>=0.12.1",
+  "docstring_parser>=0.16",
+  "joblib>=1.5.1",
+  "tqdm>=4.67.1",
+  "tiktoken>=0.9.0",
+  "anthropic>=0.54.0",
 ]
 # renovate: datasource=python-version depName=python
 license = { text = "Apache-2.0" }
@@ -227,7 +240,7 @@ requires = [
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-# Include all necessary files for both packages
+# Include all necessary files for codegen, serena, and solidlsp packages
 include = [
   "src/codegen/**/*.py",
   "src/codegen/**/*.pyx", 
@@ -237,12 +250,23 @@ include = [
   "src/codegen/sdk/**/*.dylib",
   "src/codegen/sdk/system-prompt.txt",
   "src/codegen/sdk/py.typed",
+  # Include Serena and SolidLSP from local directories
+  "serena/src/serena/**/*.py",
+  "serena/src/solidlsp/**/*.py",
+  "serena/src/interprompt/**/*.py",
+  # Include Serena configuration and resource files
+  "serena/resources/**/*",
+  "serena/public/**/*",
 ]
 exclude = [
   "src/codegen/**/__pycache__",
   "src/codegen/**/*.pyc",
   "src/codegen/**/test_*",
   "src/codegen/**/tests/",
+  "serena/**/__pycache__",
+  "serena/**/*.pyc",
+  "serena/**/test_*",
+  "serena/**/tests/",
 ]
 
 [tool.hatch.build.hooks.custom]
