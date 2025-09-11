@@ -12,17 +12,324 @@ import re
 import time
 from typing import Dict, List, Optional, TypedDict, Any
 from pathlib import Path
+from collections import Counter
+import inspect
+import traceback
+import hashlib
+import ast
 
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_config import Language, LanguageServerConfig
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Range
-from solidlsp.ls_utils import PathUtils
+from .solidlsp.ls import SolidLanguageServer
+from .solidlsp.ls_config import Language, LanguageServerConfig
+from .solidlsp.ls_logger import LanguageServerLogger
+from .solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Range
+from .solidlsp.ls_utils import PathUtils
 
 # Import GraphSitterAnalyzer for context enrichment
-from graph_sitter import Codebase
+from ...core.codebase import Codebase
 
 logger = logging.getLogger(__name__)
+
+
+class CallerContextExtractor:
+    """
+    Enhanced caller context extraction for comprehensive error diagnostics.
+    Based on autogenlib's caller context extraction with improvements for LSP diagnostics.
+    """
+    
+    def __init__(self, max_depth: int = 10, max_code_size: int = 8000):
+        self.max_depth = max_depth
+        self.max_code_size = max_code_size
+        self.logger = logging.getLogger(f"{__name__}.CallerContextExtractor")
+    
+    def get_caller_info(self) -> Dict[str, Any]:
+        """
+        Get comprehensive information about the calling code.
+        
+        Returns:
+            dict: Information about the caller including filename, code, and context.
+        """
+        try:
+            # Get the current stack frames
+            stack = inspect.stack()
+            
+            # Debug stack information
+            self.logger.debug(f"Stack depth: {len(stack)}")
+            for i, frame_info in enumerate(stack[:self.max_depth]):
+                filename = frame_info.filename
+                lineno = frame_info.lineno
+                function = frame_info.function
+                self.logger.debug(f"Frame {i}: {filename}:{lineno} in {function}")
+            
+            # Find the first frame that's not from internal modules and is a real file
+            caller_frame = None
+            caller_filename = None
+            
+            for i, frame_info in enumerate(stack[1:self.max_depth]):  # Skip the first frame (our function)
+                filename = frame_info.filename
+                
+                # Skip if it's internal to Python
+                if filename.startswith("<") or not os.path.exists(filename):
+                    continue
+                
+                # Skip if it's within our package (but allow _caller.py for testing)
+                if ("lsp_diagnostics" in filename or "solidlsp" in filename) and "_caller.py" not in filename:
+                    continue
+                
+                # We found a suitable caller
+                caller_frame = frame_info.frame
+                caller_filename = filename
+                self.logger.debug(f"Found caller at frame {i + 1}: {filename}")
+                break
+            
+            if not caller_filename:
+                # Try a different approach - look for an importing file
+                for i, frame_info in enumerate(stack[1:self.max_depth]):
+                    filename = frame_info.filename
+                    
+                    # Skip non-file frames
+                    if filename.startswith("<") or not os.path.exists(filename):
+                        continue
+                    
+                    # Check if this frame is doing an import or is at module level
+                    if (frame_info.function == "<module>" or 
+                        (frame_info.code_context and 
+                         any("import" in line.lower() for line in frame_info.code_context))):
+                        caller_frame = frame_info.frame
+                        caller_filename = filename
+                        self.logger.debug(f"Found importing caller at frame {i + 1}: {filename}")
+                        break
+            
+            # If we still didn't find a caller, use a simpler approach
+            if not caller_filename:
+                # Just use the top-level script
+                for frame_info in reversed(stack[:self.max_depth]):
+                    filename = frame_info.filename
+                    if os.path.exists(filename) and not filename.startswith("<"):
+                        caller_filename = filename
+                        self.logger.debug(f"Using top-level script as caller: {filename}")
+                        break
+            
+            if not caller_filename:
+                self.logger.debug("No suitable caller file found")
+                return {"code": "", "filename": "", "context": {}}
+            
+            # Read the file content and extract context
+            return self._extract_file_context(caller_filename)
+            
+        except Exception as e:
+            self.logger.debug(f"Error getting caller info: {e}")
+            self.logger.debug(traceback.format_exc())
+            return {"code": "", "filename": "", "context": {}}
+    
+    def _extract_file_context(self, filename: str) -> Dict[str, Any]:
+        """Extract comprehensive context from a file."""
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                code = f.read()
+            
+            # Get the relative path to make logs cleaner
+            try:
+                rel_path = Path(filename).relative_to(Path.cwd())
+                display_filename = str(rel_path)
+            except ValueError:
+                display_filename = filename
+            
+            # Extract AST-based context
+            ast_context = self._extract_ast_context(code)
+            
+            # Limit code size if it's too large to avoid excessive prompt size
+            if len(code) > self.max_code_size:
+                self.logger.debug(
+                    f"Truncating large caller file ({len(code)} chars) to {self.max_code_size} chars"
+                )
+                # Try to find a good place to cut (newline)
+                cut_point = code[:self.max_code_size].rfind("\n")
+                if cut_point == -1:
+                    cut_point = self.max_code_size
+                code = code[:cut_point] + "\n\n# ... [file truncated due to size] ..."
+            
+            self.logger.debug(
+                f"Successfully extracted caller code from {display_filename} ({len(code)} chars)"
+            )
+            
+            return {
+                "code": code,
+                "filename": display_filename,
+                "full_path": filename,
+                "context": ast_context,
+                "file_hash": hashlib.md5(code.encode()).hexdigest()
+            }
+            
+        except Exception as e:
+            self.logger.debug(f"Error reading caller file {filename}: {e}")
+            return {
+                "code": "", 
+                "filename": filename, 
+                "full_path": filename,
+                "context": {},
+                "file_hash": ""
+            }
+    
+    def _extract_ast_context(self, code: str) -> Dict[str, Any]:
+        """Extract context information using AST parsing."""
+        try:
+            tree = ast.parse(code)
+            context = {
+                "functions": [],
+                "classes": [],
+                "variables": [],
+                "imports": [],
+                "defined_names": set()
+            }
+            
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    func_info = {
+                        "name": node.name,
+                        "line": node.lineno,
+                        "args": [arg.arg for arg in node.args.args],
+                        "decorators": [ast.unparse(dec) for dec in node.decorator_list] if hasattr(ast, 'unparse') else []
+                    }
+                    context["functions"].append(func_info)
+                    context["defined_names"].add(node.name)
+                    
+                elif isinstance(node, ast.ClassDef):
+                    class_info = {
+                        "name": node.name,
+                        "line": node.lineno,
+                        "bases": [ast.unparse(base) for base in node.bases] if hasattr(ast, 'unparse') else [],
+                        "methods": []
+                    }
+                    
+                    # Extract methods
+                    for item in node.body:
+                        if isinstance(item, ast.FunctionDef):
+                            class_info["methods"].append({
+                                "name": item.name,
+                                "line": item.lineno
+                            })
+                    
+                    context["classes"].append(class_info)
+                    context["defined_names"].add(node.name)
+                    
+                elif isinstance(node, ast.Assign):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            context["variables"].append({
+                                "name": target.id,
+                                "line": node.lineno
+                            })
+                            context["defined_names"].add(target.id)
+                            
+                elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                    if isinstance(node, ast.Import):
+                        for alias in node.names:
+                            context["imports"].append({
+                                "module": alias.name,
+                                "alias": alias.asname,
+                                "line": node.lineno,
+                                "type": "import"
+                            })
+                    else:  # ImportFrom
+                        for alias in node.names:
+                            context["imports"].append({
+                                "module": node.module,
+                                "name": alias.name,
+                                "alias": alias.asname,
+                                "line": node.lineno,
+                                "type": "from_import"
+                            })
+            
+            # Convert set to list for JSON serialization
+            context["defined_names"] = list(context["defined_names"])
+            
+            return context
+            
+        except SyntaxError as e:
+            self.logger.debug(f"Syntax error parsing code: {e}")
+            return {"error": f"Syntax error: {e}"}
+        except Exception as e:
+            self.logger.debug(f"Error extracting AST context: {e}")
+            return {"error": f"AST extraction error: {e}"}
+
+
+class ModuleContextManager:
+    """
+    Manages context for modules and tracks their state.
+    Based on autogenlib's context management with enhancements for LSP diagnostics.
+    """
+    
+    def __init__(self):
+        self.module_contexts = {}
+        self.logger = logging.getLogger(f"{__name__}.ModuleContextManager")
+    
+    def get_module_context(self, fullname: str) -> Dict[str, Any]:
+        """Get the context of a module."""
+        return self.module_contexts.get(fullname, {})
+    
+    def set_module_context(self, fullname: str, code: str, additional_context: Optional[Dict[str, Any]] = None):
+        """Update the context of a module."""
+        context = {
+            "code": code,
+            "defined_names": self._extract_defined_names(code),
+            "last_updated": time.time(),
+            "code_hash": hashlib.md5(code.encode()).hexdigest()
+        }
+        
+        if additional_context:
+            context.update(additional_context)
+        
+        self.module_contexts[fullname] = context
+        self.logger.debug(f"Updated context for module {fullname}")
+    
+    def _extract_defined_names(self, code: str) -> set:
+        """Extract all defined names (functions, classes, variables) from the code."""
+        try:
+            tree = ast.parse(code)
+            names = set()
+            
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    names.add(node.name)
+                elif isinstance(node, ast.ClassDef):
+                    names.add(node.name)
+                elif isinstance(node, ast.Assign):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            names.add(target.id)
+            
+            return names
+        except SyntaxError:
+            return set()
+    
+    def is_name_defined(self, fullname: str) -> bool:
+        """Check if a name is defined in its module."""
+        if "." not in fullname:
+            return False
+        
+        module_path, name = fullname.rsplit(".", 1)
+        context = self.get_module_context(module_path)
+        
+        if not context:
+            # Module doesn't exist yet
+            return False
+        
+        return name in context.get("defined_names", set())
+    
+    def get_all_modules(self) -> Dict[str, Dict[str, Any]]:
+        """Get all cached modules."""
+        return self.module_contexts.copy()
+    
+    def clear_module_context(self, fullname: str):
+        """Clear the context for a specific module."""
+        if fullname in self.module_contexts:
+            del self.module_contexts[fullname]
+            self.logger.debug(f"Cleared context for module {fullname}")
+    
+    def clear_all_contexts(self):
+        """Clear all module contexts."""
+        self.module_contexts.clear()
+        self.logger.debug("Cleared all module contexts")
 
 class EnhancedDiagnostic(TypedDict):
     """
@@ -39,6 +346,11 @@ class EnhancedDiagnostic(TypedDict):
     autogenlib_context: Dict[str, Any]
     runtime_context: Dict[str, Any]
     ui_interaction_context: Dict[str, Any]
+    
+    # New enhanced context fields from autogenlib integration
+    caller_context: Dict[str, Any]  # Caller code context and AST analysis
+    module_context: Dict[str, Any]  # Module-level context and definitions
+    error_correlation: Dict[str, Any]  # Error correlation and pattern analysis
 
 class RuntimeErrorCollector:
     """Collects runtime errors from various sources."""
@@ -48,6 +360,9 @@ class RuntimeErrorCollector:
         self.runtime_errors = []
         self.ui_errors = []
         self.error_patterns = {}
+        self.caller_extractor = CallerContextExtractor()
+        self.module_manager = ModuleContextManager()
+        self.logger = logging.getLogger(f"{__name__}.RuntimeErrorCollector")
         
     def collect_python_runtime_errors(self, log_file_path: Optional[str] = None) -> List[Dict[str, Any]]:
         """Collect Python runtime errors from logs or exception handlers."""
@@ -215,6 +530,10 @@ class LSPDiagnosticsManager:
         self.error_history = []
         self.error_frequency = {}
         self.resolution_attempts = {}
+        
+        # Enhanced context extraction
+        self.caller_extractor = CallerContextExtractor()
+        self.module_manager = ModuleContextManager()
 
     def start_server(self) -> None:
         """Starts the LSP server and initializes it."""
@@ -310,6 +629,13 @@ class LSPDiagnosticsManager:
                 error_key = f"{diag.code}:{relative_file_path}:{diag.range.line}"
                 self.error_frequency[error_key] = self.error_frequency.get(error_key, 0) + 1
                 
+                # Extract enhanced context using autogenlib-inspired techniques
+                caller_context = self.caller_extractor.get_caller_info()
+                module_context = self.module_manager.get_module_context(relative_file_path)
+                
+                # Analyze error correlation and patterns
+                error_correlation = self._analyze_error_correlation(diag, related_runtime_errors, related_ui_errors)
+                
                 # Create a partial EnhancedDiagnostic
                 partial_enhanced_diag: EnhancedDiagnostic = {
                     "diagnostic": diag,
@@ -331,7 +657,10 @@ class LSPDiagnosticsManager:
                         "ui_error_frequency": len(related_ui_errors),
                         "last_ui_error": related_ui_errors[-1] if related_ui_errors else None,
                         "component_errors": self._extract_component_errors(related_ui_errors)
-                    }
+                    },
+                    "caller_context": caller_context,
+                    "module_context": module_context,
+                    "error_correlation": error_correlation
                 }
                 
                 # Get the full enhanced context using autogenlib_context
@@ -405,6 +734,83 @@ class LSPDiagnosticsManager:
                     "frequency": 1  # Could be enhanced with actual frequency tracking
                 })
         return component_errors
+
+    def _analyze_error_correlation(self, diagnostic, runtime_errors: List[Dict[str, Any]], ui_errors: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze error correlation and patterns using enhanced context."""
+        correlation_data = {
+            "error_patterns": {},
+            "cross_module_errors": [],
+            "frequency_analysis": {},
+            "temporal_patterns": {},
+            "severity_correlation": {}
+        }
+        
+        try:
+            # Analyze error patterns
+            error_signature = f"{diagnostic.code}:{diagnostic.message[:50]}"
+            correlation_data["error_patterns"][error_signature] = {
+                "count": self.error_frequency.get(error_signature, 0),
+                "related_runtime_count": len(runtime_errors),
+                "related_ui_count": len(ui_errors)
+            }
+            
+            # Cross-module error analysis
+            current_module = diagnostic.uri.split('/')[-1] if hasattr(diagnostic, 'uri') else "unknown"
+            for runtime_error in runtime_errors:
+                error_module = runtime_error.get("file_path", "").split('/')[-1]
+                if error_module != current_module:
+                    correlation_data["cross_module_errors"].append({
+                        "source_module": current_module,
+                        "error_module": error_module,
+                        "error_type": runtime_error.get("error_type", "unknown")
+                    })
+            
+            # Frequency analysis
+            error_types = [err.get("error_type", "unknown") for err in runtime_errors + ui_errors]
+            correlation_data["frequency_analysis"] = dict(Counter(error_types))
+            
+            # Severity correlation
+            if hasattr(diagnostic, 'severity'):
+                correlation_data["severity_correlation"] = {
+                    "diagnostic_severity": diagnostic.severity,
+                    "runtime_error_count": len(runtime_errors),
+                    "ui_error_count": len(ui_errors),
+                    "correlation_score": self._calculate_correlation_score(diagnostic, runtime_errors, ui_errors)
+                }
+                
+        except Exception as e:
+            self.logger.warning(f"Error analyzing error correlation: {e}")
+            correlation_data["analysis_error"] = str(e)
+            
+        return correlation_data
+    
+    def _calculate_correlation_score(self, diagnostic, runtime_errors: List[Dict[str, Any]], ui_errors: List[Dict[str, Any]]) -> float:
+        """Calculate a correlation score between diagnostic and runtime/UI errors."""
+        try:
+            # Simple correlation scoring based on proximity and frequency
+            score = 0.0
+            
+            # Base score for having related errors
+            if runtime_errors:
+                score += 0.3
+            if ui_errors:
+                score += 0.2
+                
+            # Boost score for high frequency errors
+            total_errors = len(runtime_errors) + len(ui_errors)
+            if total_errors > 5:
+                score += 0.3
+            elif total_errors > 2:
+                score += 0.2
+                
+            # Boost score for severity alignment
+            if hasattr(diagnostic, 'severity') and diagnostic.severity <= 2:  # Error or Warning
+                if any(err.get("error_type") == "exception" for err in runtime_errors):
+                    score += 0.2
+                    
+            return min(score, 1.0)  # Cap at 1.0
+        except Exception:
+            return 0.0
 
     def collect_runtime_diagnostics(self, 
                                   runtime_log_path: Optional[str] = None,

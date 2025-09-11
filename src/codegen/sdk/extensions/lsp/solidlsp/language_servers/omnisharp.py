@@ -11,14 +11,14 @@ from collections.abc import Iterable
 
 from overrides import override
 
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_config import LanguageServerConfig
-from solidlsp.ls_exceptions import SolidLSPException
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.ls_utils import DotnetVersion, FileUtils, PlatformId, PlatformUtils
-from solidlsp.lsp_protocol_handler.lsp_types import InitializeParams
-from solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
-from solidlsp.settings import SolidLSPSettings
+from .ls import SolidLanguageServer
+from .ls_config import LanguageServerConfig
+from .ls_exceptions import SolidLSPException
+from .ls_logger import LanguageServerLogger
+from .ls_utils import DotnetVersion, FileUtils, PlatformId, PlatformUtils
+from .lsp_protocol_handler.lsp_types import InitializeParams
+from .lsp_protocol_handler.server import ProcessLaunchInfo
+from .settings import SolidLSPSettings
 
 
 def breadth_first_file_scan(root) -> Iterable[str]:

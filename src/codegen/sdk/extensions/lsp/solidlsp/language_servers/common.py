@@ -7,9 +7,9 @@ import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.ls_utils import FileUtils, PlatformUtils
-from solidlsp.util.subprocess_util import subprocess_kwargs
+from .ls_logger import LanguageServerLogger
+from .ls_utils import FileUtils, PlatformUtils
+from .util.subprocess_util import subprocess_kwargs
 
 log = logging.getLogger(__name__)
 

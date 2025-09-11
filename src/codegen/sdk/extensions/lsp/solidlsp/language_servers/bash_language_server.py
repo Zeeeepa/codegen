@@ -10,13 +10,13 @@ import shutil
 import threading
 
 from solidlsp import ls_types
-from solidlsp.language_servers.common import RuntimeDependency, RuntimeDependencyCollection
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_config import LanguageServerConfig
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.lsp_protocol_handler.lsp_types import InitializeParams
-from solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
-from solidlsp.settings import SolidLSPSettings
+from .language_servers.common import RuntimeDependency, RuntimeDependencyCollection
+from .ls import SolidLanguageServer
+from .ls_config import LanguageServerConfig
+from .ls_logger import LanguageServerLogger
+from .lsp_protocol_handler.lsp_types import InitializeParams
+from .lsp_protocol_handler.server import ProcessLaunchInfo
+from .settings import SolidLSPSettings
 
 
 class BashLanguageServer(SolidLanguageServer):

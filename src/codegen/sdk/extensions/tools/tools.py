@@ -214,7 +214,6 @@ def get_workspace_tools(codebase: Codebase) -> list["BaseTool"]:
         List of initialized Langchain tools
     """
     return [
-,
         ListDirectoryTool(codebase),
         RevealSymbolTool(codebase),
         RunBashCommandTool(),  # Note: This tool doesn't need the codebase
