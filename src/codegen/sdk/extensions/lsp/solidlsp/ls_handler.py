@@ -14,11 +14,11 @@ from typing import Any
 import psutil
 from sensai.util.string import ToStringMixin
 
-from solidlsp.ls_exceptions import SolidLSPException
-from solidlsp.ls_request import LanguageServerRequest
-from solidlsp.lsp_protocol_handler.lsp_requests import LspNotification
-from solidlsp.lsp_protocol_handler.lsp_types import ErrorCodes
-from solidlsp.lsp_protocol_handler.server import (
+from .ls_exceptions import SolidLSPException
+from .ls_request import LanguageServerRequest
+from .lsp_protocol_handler.lsp_requests import LspNotification
+from .lsp_protocol_handler.lsp_types import ErrorCodes
+from .lsp_protocol_handler.server import (
     ENCODING,
     LSPError,
     MessageType,
@@ -32,7 +32,7 @@ from solidlsp.lsp_protocol_handler.server import (
     make_request,
     make_response,
 )
-from solidlsp.util.subprocess_util import subprocess_kwargs
+from .util.subprocess_util import subprocess_kwargs
 
 log = logging.getLogger(__name__)
 

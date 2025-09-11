@@ -2,10 +2,10 @@ import logging
 import os
 import pathlib
 
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
-from solidlsp.settings import SolidLSPSettings
+from .ls import SolidLanguageServer
+from .ls_logger import LanguageServerLogger
+from .lsp_protocol_handler.server import ProcessLaunchInfo
+from .settings import SolidLSPSettings
 
 from .common import RuntimeDependency, RuntimeDependencyCollection
 

@@ -18,14 +18,14 @@ import traceback
 import hashlib
 import ast
 
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_config import Language, LanguageServerConfig
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Range
-from solidlsp.ls_utils import PathUtils
+from .solidlsp.ls import SolidLanguageServer
+from .solidlsp.ls_config import Language, LanguageServerConfig
+from .solidlsp.ls_logger import LanguageServerLogger
+from .solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, DocumentUri, Range
+from .solidlsp.ls_utils import PathUtils
 
 # Import GraphSitterAnalyzer for context enrichment
-from graph_sitter import Codebase
+from ...core.codebase import Codebase
 
 logger = logging.getLogger(__name__)
 

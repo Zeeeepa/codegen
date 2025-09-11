@@ -16,12 +16,12 @@ from pathlib import Path
 from overrides import override
 
 from solidlsp import ls_types
-from solidlsp.ls import SolidLanguageServer
-from solidlsp.ls_config import LanguageServerConfig
-from solidlsp.ls_logger import LanguageServerLogger
-from solidlsp.lsp_protocol_handler.lsp_types import InitializeParams
-from solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
-from solidlsp.settings import SolidLSPSettings
+from .ls import SolidLanguageServer
+from .ls_config import LanguageServerConfig
+from .ls_logger import LanguageServerLogger
+from .lsp_protocol_handler.lsp_types import InitializeParams
+from .lsp_protocol_handler.server import ProcessLaunchInfo
+from .settings import SolidLSPSettings
 
 
 class NixLanguageServer(SolidLanguageServer):

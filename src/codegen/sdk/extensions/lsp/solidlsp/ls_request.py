@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Union
 
-from solidlsp.lsp_protocol_handler import lsp_types
+from .lsp_protocol_handler import lsp_types
 
 if TYPE_CHECKING:
     from .ls_handler import SolidLanguageServerHandler

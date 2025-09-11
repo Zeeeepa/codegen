@@ -9,7 +9,7 @@ import os
 from unittest.mock import Mock, patch, MagicMock
 from typing import Dict, Any, List
 
-from codegen.sdk.codebase import Codebase
+from codegen.sdk.core.codebase import Codebase
 from codegen.sdk.extensions.lsp.lsp_diagnostics import (
     LSPDiagnosticsManager,
     RuntimeErrorCollector,
@@ -17,7 +17,7 @@ from codegen.sdk.extensions.lsp.lsp_diagnostics import (
     ModuleContextManager,
     EnhancedDiagnostic
 )
-from codegen.sdk.extensions.lsp.solid_lsp import Language
+from codegen.sdk.extensions.lsp.solidlsp.ls_config import Language
 
 
 class TestCallerContextExtractor:

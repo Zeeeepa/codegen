@@ -31,7 +31,7 @@ SOFTWARE.
 
 from typing import Union
 
-from solidlsp.lsp_protocol_handler import lsp_types
+from .lsp_protocol_handler import lsp_types
 
 
 class LspRequest:
