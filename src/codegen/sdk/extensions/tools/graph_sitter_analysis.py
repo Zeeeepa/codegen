@@ -13,16 +13,16 @@ from pathlib import Path
 from collections import defaultdict, Counter
 
 # Import all graph-sitter modules
-from graph_sitter import Codebase
-from graph_sitter.core.symbol import Symbol
-from graph_sitter.core.function import Function
-from graph_sitter.core.class_definition import Class
-from graph_sitter.core.file import SourceFile
-from graph_sitter.core.import_resolution import Import
-from graph_sitter.core.external_module import ExternalModule
+from codegen.sdk.core import Codebase
+from codegen.sdk.core.symbol import Symbol
+from codegen.sdk.core.function import Function
+from codegen.sdk.core.class_definition import Class
+from codegen.sdk.core.file import SourceFile
+from codegen.sdk.core.import_resolution import Import
+from codegen.sdk.core.external_module import ExternalModule
 
 # Import all analysis functions from graph-sitter modules
-from graph_sitter.codebase_analysis import (
+from codegen.sdk.codebase.codebase_analysis import (
     get_codebase_summary,
     get_file_summary,
     get_class_summary,
@@ -31,13 +31,13 @@ from graph_sitter.codebase_analysis import (
 )
 
 # Import visualization and analysis tools
-from graph_sitter.view_file import (
+from codegen.sdk.extensions.tools.view_file import (
     ViewFileObservation,
     add_line_numbers,
     view_file
 )
 
-from graph_sitter.reveal_symbol import (
+from codegen.sdk.extensions.tools.reveal_symbol import (
     SymbolInfo,
     RevealSymbolObservation,
     get_symbol_info,
@@ -47,30 +47,30 @@ from graph_sitter.reveal_symbol import (
     hop_through_imports
 )
 
-from graph_sitter.list_directory import (
+from codegen.sdk.extensions.tools.list_directory import (
     DirectoryInfo,
     ListDirectoryObservation,
     list_directory
 )
 
-from graph_sitter.bash import (
+from codegen.sdk.extensions.tools.bash import (
     RunBashCommandObservation,
     validate_command,
     run_bash_command
 )
 
-from graph_sitter.reflection import (
+from codegen.sdk.extensions.tools.reflection import (
     ReflectionSection,
     ReflectionObservation,
     parse_reflection_response,
     perform_reflection
 )
 
-from graph_sitter.observation import Observation
+from codegen.sdk.extensions.tools.observation import Observation
 
-from graph_sitter.tools import get_workspace_tools
+from codegen.sdk.extensions.tools.tools import get_workspace_tools
 
-from graph_sitter.tool_output_types import (
+from codegen.sdk.extensions.tools.tool_output_types import (
     EditFileArtifacts,
     ViewFileArtifacts,
     ListDirectoryArtifacts,
@@ -81,8 +81,8 @@ from graph_sitter.tool_output_types import (
 )
 
 # Import documentation generation
-from graph_sitter.generate_docs_json import generate_docs_json
-from graph_sitter.mdx_docs_generation import (
+from codegen.sdk.extensions.tools.generate_docs_json import generate_docs_json
+from codegen.sdk.extensions.tools.mdx_docs_generation import (
     render_mdx_page_for_class,
     render_mdx_page_title,
     render_mdx_inheritence_section,
@@ -102,7 +102,7 @@ from graph_sitter.mdx_docs_generation import (
 )
 
 # Import codebase utilities
-from graph_sitter.current_code_codebase import (
+from codegen.sdk.extensions.tools.current_code_codebase import (
     get_current_code_codebase,
     get_codegen_codebase_base_path,
     get_graphsitter_repo_path,
@@ -110,38 +110,38 @@ from graph_sitter.current_code_codebase import (
     get_documented_objects
 )
 
-from graph_sitter.codegen_sdk_codebase import (
+from codegen.sdk.extensions.tools.codegen_sdk_codebase import (
     get_codegen_sdk_codebase,
     get_codegen_sdk_subdirectories
 )
 
 # Import document functions
-from graph_sitter.document_functions import (
+from codegen.sdk.extensions.tools.document_functions import (
     run as document_functions_run,
     get_extended_context as doc_get_extended_context,
     hop_through_imports as doc_hop_through_imports
 )
 
 # Import visualization modules
-from graph_sitter.blast_radius import (
+from codegen.sdk.extensions.tools.blast_radius import (
     generate_edge_meta as blast_generate_edge_meta,
     is_http_method,
     create_blast_radius_visualization,
     run as blast_radius_run
 )
 
-from graph_sitter.call_trace import (
+from codegen.sdk.extensions.tools.call_trace import (
     generate_edge_meta as call_generate_edge_meta,
     create_downstream_call_trace,
     run as call_trace_run
 )
 
-from graph_sitter.dependency_trace import (
+from codegen.sdk.extensions.tools.dependency_trace import (
     create_dependencies_visualization,
     run as dependency_trace_run
 )
 
-from graph_sitter.method_relationships import (
+from codegen.sdk.extensions.tools.method_relationships import (
     generate_edge_meta as method_generate_edge_meta,
     graph_class_methods,
     create_downstream_call_trace as method_create_downstream_call_trace,

@@ -8,11 +8,11 @@ import os
 import logging
 from typing import Dict, Optional, Any, List
 
-from graph_sitter import Codebase
+from codegen.sdk.core import Codebase
 from solidlsp.lsp_protocol_handler.lsp_types import Diagnostic, Range
 
 # Import LSPDiagnosticsManager's EnhancedDiagnostic
-from lsp_diagnostics import EnhancedDiagnostic
+from codegen.sdk.extensions.lsp.lsp_diagnostics import EnhancedDiagnostic
 
 # Import existing autogenlib components
 from autogenlib._caller import get_caller_info
@@ -21,9 +21,22 @@ from autogenlib._context import get_module_context, extract_defined_names
 from autogenlib._cache import get_all_modules, get_cached_code, get_cached_prompt
 
 # Import GraphSitterAnalyzer for codebase overview
-from graph_sitter_analysis import GraphSitterAnalyzer
+from codegen.sdk.extensions.tools.graph_sitter_analysis import GraphSitterAnalyzer
 
 logger = logging.getLogger(__name__)
+
+# Alias functions for backward compatibility and expected API
+def get_enhanced_context_for_diagnostic(enhanced_diagnostic: EnhancedDiagnostic) -> Dict[str, Any]:
+    """Get enhanced context for a diagnostic (alias for get_autogenlib_enhanced_context)."""
+    return get_autogenlib_enhanced_context(enhanced_diagnostic)
+
+def get_autogenlib_context(enhanced_diagnostic: EnhancedDiagnostic) -> Dict[str, Any]:
+    """Get AutoGenLib context for a diagnostic (alias for get_autogenlib_enhanced_context)."""
+    return get_autogenlib_enhanced_context(enhanced_diagnostic)
+
+def get_graph_sitter_context(codebase: Codebase, symbol_name: str, filepath: Optional[str] = None) -> Dict[str, Any]:
+    """Get Graph-Sitter context for a symbol (alias for get_comprehensive_symbol_context)."""
+    return get_comprehensive_symbol_context(codebase, symbol_name, filepath)
 
 def get_llm_codebase_overview(codebase: Codebase) -> Dict[str, str]:
     """
