@@ -1,0 +1,16 @@
+2025-09-16 01:37:47,843 - ai_endpoint_manager - INFO - [32mEndpoint Created: [37mwebdeepseek1 (web_chat_deepseek_1757986667)
+2025-09-16 01:37:47,843 - ai_endpoint_manager - INFO - [32mEndpoint Created: [37mwebdeepseek2 (web_chat_deepseek_1757986667)
+2025-09-16 01:37:47,843 - ai_endpoint_manager - INFO - [32mEndpoint Created: [37mwebdeepseek2 (web_chat_deepseek_1757986667)
+2025-09-16 01:37:47,844 - ai_endpoint_manager - INFO - [32mEndpoint Created: [37mwebtest openai1 (rest_api_test_openai_1757986667)
+2025-09-16 01:37:47,844 - ai_endpoint_manager - INFO - [32mEndpoint Created: [37mwebtest deepseek1 (web_chat_test_deepseek_1757986667)
+2025-09-16 01:37:47,844 - ai_endpoint_manager - INFO - [33mStarting server: [37mwebtest openai1
+2025-09-16 01:37:47,845 - ai_endpoint_manager - INFO - [32mServer started: [37mwebtest openai1
+2025-09-16 01:37:47,845 - ai_endpoint_manager - INFO - [33mStarting server: [37mwebtest deepseek1
+2025-09-16 01:37:47,895 - ai_endpoint_manager - INFO - [34m   Authenticating with credentials
+2025-09-16 01:37:47,896 - ai_endpoint_manager - INFO - [32mServer started: [37mwebtest deepseek1
+2025-09-16 01:37:47,896 - ai_endpoint_manager - INFO - [34mTesting endpoint: [37mwebtest openai1
+2025-09-16 01:37:49,051 - ai_endpoint_manager - INFO - [32mTest successful: [37mwebtest openai1 (1.15s)
+2025-09-16 01:37:49,051 - ai_endpoint_manager - INFO - [34mTesting endpoint: [37mwebtest deepseek1
+2025-09-16 01:37:50,125 - ai_endpoint_manager - INFO - [32mTest successful: [37mwebtest deepseek1 (1.07s)
+2025-09-16 01:37:50,126 - ai_endpoint_manager - INFO - [32mConfiguration saved to test_config.json
+2025-09-16 01:37:50,126 - ai_endpoint_manager - INFO - [32mLoaded 2 endpoints from test_config.json
