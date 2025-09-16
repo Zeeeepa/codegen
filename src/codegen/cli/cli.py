@@ -35,6 +35,7 @@ from codegen.cli.commands.login.main import login
 from codegen.cli.commands.logout.main import logout
 from codegen.cli.commands.org.main import org
 from codegen.cli.commands.profile.main import profile_app
+from codegen.cli.commands.project.main import project_app
 from codegen.cli.commands.repo.main import repo
 from codegen.cli.commands.style_debug.main import style_debug
 from codegen.cli.commands.tools.main import tools
@@ -111,6 +112,7 @@ main.add_typer(agents_app, name="agents")
 main.add_typer(config_command, name="config")
 main.add_typer(integrations_app, name="integrations")
 main.add_typer(profile_app, name="profile")
+main.add_typer(project_app, name="project")
 
 
 @main.callback(invoke_without_command=True)
