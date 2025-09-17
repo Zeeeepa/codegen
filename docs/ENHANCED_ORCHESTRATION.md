@@ -497,7 +497,7 @@ export ENVIRONMENT=production
 export ZAI_API_KEY=your_zai_api_key
 export WANDB_API_KEY=your_wandb_api_key
 export REDIS_URL=redis://redis:6379
-export DATABASE_URL=postgresql://user:pass@db:5432/orchestration
+export DATABASE_URL=postgresql://username:password@hostname:5432/orchestration
 ```
 
 ## 📈 Performance & Scaling
@@ -651,4 +651,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **🎉 Ready to revolutionize your CI/CD pipeline with AI-powered orchestration!**
-
