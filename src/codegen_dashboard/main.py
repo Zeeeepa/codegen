@@ -87,12 +87,9 @@ class CodegenDashboard:
             # Create main window
             self.main_window = MainWindow(
                 self.root,
-                self.config,
                 self.state_manager,
                 self.codegen_client,
-                self.chat_service,
-                self.notification_service,
-                self.database_manager
+                self.notification_service
             )
             
             # Set up event handlers
