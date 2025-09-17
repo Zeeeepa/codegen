@@ -9,6 +9,7 @@ from codegen.cli.api.endpoints import API_ENDPOINT
 from codegen.cli.auth.token_manager import get_current_token
 from codegen.cli.rich.spinners import create_spinner
 from codegen.cli.utils.org import resolve_org_id
+from codegen.cli.storage.dashboard_db import get_dashboard_db
 from codegen.shared.logging.get_logger import get_logger
 
 # Initialize logger
@@ -18,6 +19,14 @@ console = Console()
 
 # Create the agents app
 agents_app = typer.Typer(help="Manage Codegen agents")
+
+# Import starring commands
+from codegen.cli.commands.agents.starring import (
+    starring_app,
+    star_command,
+    unstar_command,
+    starred_command
+)
 
 
 @agents_app.command("list")
@@ -78,6 +87,9 @@ def list_agents(org_id: int | None = typer.Option(None, help="Organization ID (d
             console.print("[yellow]No API agent runs found for your user.[/yellow]")
             return
 
+        # Get dashboard database for starring info
+        db = get_dashboard_db()
+        
         # Create a table to display agent runs
         table = Table(
             title=f"Your Recent API Agent Runs (Page {page}, Total: {total})",
@@ -85,6 +97,8 @@ def list_agents(org_id: int | None = typer.Option(None, help="Organization ID (d
             show_header=True,
             title_justify="center",
         )
+        table.add_column("★", style="yellow", justify="center", width=3)
+        table.add_column("ID", style="cyan", no_wrap=True)
         table.add_column("Created", style="dim")
         table.add_column("Status", style="white", justify="center")
         table.add_column("Summary", style="green")
@@ -136,6 +150,10 @@ def list_agents(org_id: int | None = typer.Option(None, help="Organization ID (d
             # Truncate summary if too long
             summary_display = summary[:50] + "..." if summary and len(summary) > 50 else summary or "No summary"
 
+            # Check if agent is starred
+            is_starred = db.is_agent_starred(run_id)
+            star_display = "★" if is_starred else " "
+            
             # Create web link for the agent run
             web_url = agent_run.get("web_url")
             if not web_url:
@@ -143,10 +161,21 @@ def list_agents(org_id: int | None = typer.Option(None, help="Organization ID (d
                 web_url = f"https://codegen.com/traces/{run_id}"
             link_display = web_url
 
-            table.add_row(created_display, status_display, summary_display, link_display)
+            table.add_row(star_display, run_id, created_display, status_display, summary_display, link_display)
 
         console.print(table)
         console.print(f"\n[green]Showing {len(agent_runs)} of {total} API agent runs[/green]")
+        
+        # Show usage hints
+        starred_count = sum(1 for run in agent_runs if db.is_agent_starred(str(run.get("id", ""))))
+        if starred_count > 0:
+            console.print(f"[dim]★ {starred_count} starred agents shown[/dim]")
+        
+        console.print("\n[dim]Commands:[/dim]")
+        console.print("  [bold]codegen star <agent_id>[/bold] - Star an agent run")
+        console.print("  [bold]codegen agents starred[/bold] - Show only starred agents")
+        console.print("  [bold]codegen resume <agent_id>[/bold] - Resume an agent run")
+        console.print("  [bold]codegen tui[/bold] - Open interactive dashboard")
 
     except requests.RequestException as e:
         console.print(f"[red]Error fetching agent runs:[/red] {e}", style="bold red")
@@ -155,6 +184,21 @@ def list_agents(org_id: int | None = typer.Option(None, help="Organization ID (d
         console.print(f"[red]Unexpected error:[/red] {e}", style="bold red")
         raise typer.Exit(1)
 
+
+# Add starring commands to the agents app
+agents_app.add_typer(starring_app, name="star")
+agents_app.command("starred", help="List starred agent runs")(starred_command)
+
+# Add individual star commands for convenience
+@agents_app.command("star-add")
+def star_add_command(agent_id: str = typer.Argument(..., help="Agent run ID to star")):
+    """Star an agent run."""
+    star_command(agent_id)
+
+@agents_app.command("star-remove") 
+def star_remove_command(agent_id: str = typer.Argument(..., help="Agent run ID to unstar")):
+    """Unstar an agent run."""
+    unstar_command(agent_id)
 
 # Default callback for the agents app
 @agents_app.callback(invoke_without_command=True)

@@ -27,6 +27,7 @@ from codegen.compat import *
 from codegen import __version__
 from codegen.cli.commands.agent.main import agent
 from codegen.cli.commands.agents.main import agents_app
+from codegen.cli.commands.agents.starring import star_command, unstar_command, starred_command
 from codegen.cli.commands.claude.main import claude
 from codegen.cli.commands.config.main import config_command
 from codegen.cli.commands.init.main import init
@@ -105,6 +106,11 @@ main.command(
 main.command("tools", help="List available tools from the Codegen API.")(tools)
 main.command("tui", help="Launch the interactive TUI interface.")(tui)
 main.command("update", help="Update Codegen to the latest or specified version")(update)
+
+# Add starring commands to main CLI for convenience
+main.command("star", help="Star an agent run for easy access.")(star_command)
+main.command("unstar", help="Unstar an agent run.")(unstar_command)
+main.command("starred", help="List starred agent runs.")(starred_command)
 
 # Add Typer apps as sub-applications (these will handle their own sub-command logging)
 main.add_typer(agents_app, name="agents")
