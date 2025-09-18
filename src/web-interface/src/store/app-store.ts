@@ -12,9 +12,11 @@ import {
   AgentRun, 
   Project, 
   Workflow, 
-  Notification 
+  Notification,
+  RealTimeEvent
 } from '@/types/codegen';
 import { getCodegenClient } from '@/lib/api/codegen-client';
+import { getWebSocketClient } from '@/lib/websocket/websocket-client';
 
 interface AppStore extends AppState {
   // Auth actions
@@ -50,7 +52,9 @@ interface AppStore extends AppState {
   clearNotifications: () => void;
   
   // Real-time updates
-  handleRealTimeEvent: (event: any) => void;
+  initializeWebSocket: () => Promise<void>;
+  disconnectWebSocket: () => void;
+  handleRealTimeEvent: (event: RealTimeEvent) => void;
 }
 
 const useAppStore = create<AppStore>()(
@@ -117,6 +121,9 @@ const useAppStore = create<AppStore>()(
             // Fetch initial data
             get().fetchAgentRuns();
             get().fetchProjects();
+            
+            // Initialize WebSocket connection
+            get().initializeWebSocket();
           } catch (error) {
             console.error('Login failed:', error);
             set((state) => ({
@@ -129,6 +136,9 @@ const useAppStore = create<AppStore>()(
         logout: () => {
           const client = getCodegenClient();
           client.clearCache();
+          
+          // Disconnect WebSocket
+          get().disconnectWebSocket();
           
           set({
             auth: {
@@ -453,23 +463,113 @@ const useAppStore = create<AppStore>()(
           }));
         },
 
+        // WebSocket management
+        initializeWebSocket: async () => {
+          const { auth } = get();
+          if (!auth.token || !auth.organization) {
+            console.warn('Cannot initialize WebSocket: missing auth data');
+            return;
+          }
+
+          try {
+            const wsClient = getWebSocketClient();
+            await wsClient.connect(
+              {
+                url: process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:3001',
+                token: auth.token,
+                organizationId: auth.organization.id,
+              },
+              {
+                onConnect: () => {
+                  console.log('WebSocket connected');
+                  get().addNotification({
+                    type: 'success',
+                    title: 'Connected',
+                    message: 'Real-time updates are now active.',
+                  });
+                },
+                onDisconnect: (reason) => {
+                  console.log('WebSocket disconnected:', reason);
+                  get().addNotification({
+                    type: 'warning',
+                    title: 'Disconnected',
+                    message: 'Real-time updates are currently unavailable.',
+                  });
+                },
+                onError: (error) => {
+                  console.error('WebSocket error:', error);
+                  get().addNotification({
+                    type: 'error',
+                    title: 'Connection Error',
+                    message: 'Failed to connect to real-time updates.',
+                  });
+                },
+                onEvent: get().handleRealTimeEvent,
+              }
+            );
+          } catch (error) {
+            console.error('Failed to initialize WebSocket:', error);
+          }
+        },
+
+        disconnectWebSocket: () => {
+          try {
+            const wsClient = getWebSocketClient();
+            wsClient.disconnect();
+          } catch (error) {
+            console.error('Failed to disconnect WebSocket:', error);
+          }
+        },
+
         // Real-time event handling
-        handleRealTimeEvent: (event: any) => {
+        handleRealTimeEvent: (event: RealTimeEvent) => {
+          console.log('Handling real-time event:', event);
+          
           switch (event.type) {
             case 'agent_run_status_change':
               get().updateAgentRunStatus(event.data.id, event.data.status);
+              
+              // Show notification for status changes
+              get().addNotification({
+                type: event.data.status === 'COMPLETE' ? 'success' : 
+                      event.data.status === 'FAILED' ? 'error' : 'info',
+                title: 'Agent Run Update',
+                message: `Agent run ${event.data.id} is now ${event.data.status.toLowerCase()}.`,
+              });
               break;
+              
             case 'agent_run_log':
-              // Handle new log entries
+              // Handle new log entries - could trigger a refresh of logs
+              if (get().agents.currentRun?.id === event.data.agent_run_id) {
+                // Refresh current run data if it's being viewed
+                const { auth } = get();
+                if (auth.organization) {
+                  // Could implement a more efficient log update here
+                  console.log('New log entry for current run:', event.data);
+                }
+              }
               break;
+              
             case 'pr_update':
-              // Handle PR updates
+              // Handle PR updates - refresh agent runs that have PRs
+              get().addNotification({
+                type: 'info',
+                title: 'Pull Request Update',
+                message: `Pull request #${event.data.number} has been updated.`,
+                actions: event.data.html_url ? [{
+                  label: 'View PR',
+                  action: () => window.open(event.data.html_url, '_blank')
+                }] : undefined,
+              });
               break;
+              
             case 'workflow_update':
               // Handle workflow updates
+              console.log('Workflow updated:', event.data);
               break;
+              
             default:
-              console.log('Unknown real-time event:', event);
+              console.log('Unknown real-time event type:', event.type);
           }
         },
       }),

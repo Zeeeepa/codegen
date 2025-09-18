@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    appDir: true,
+    // appDir is no longer needed in Next.js 14
+    serverComponentsExternalPackages: [],
   },
   typescript: {
     // Enable strict type checking
@@ -13,12 +14,13 @@ const nextConfig = {
   },
   // API routes configuration
   async rewrites() {
-    return [
+    const apiUrl = process.env.CODEGEN_API_URL;
+    return apiUrl ? [
       {
         source: '/api/codegen/:path*',
-        destination: process.env.CODEGEN_API_URL + '/:path*',
+        destination: `${apiUrl}/:path*`,
       },
-    ];
+    ] : [];
   },
   // Environment variables
   env: {

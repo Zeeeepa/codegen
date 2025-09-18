@@ -1,6 +1,7 @@
 /**
  * Codegen API Client
  * Integrates with existing Codegen API while respecting rate limits and providing caching
+ * Enhanced with authentication management similar to VSCode extension structure
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -15,6 +16,68 @@ import {
   ApiResponse,
   Integration
 } from '@/types/codegen';
+
+// Enhanced interfaces to match VSCode extension structure
+export interface AgentRunsResponse {
+  items: AgentRun[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface CreateAgentRunRequest {
+  prompt: string;
+  model?: string;
+  repo_id?: number;
+}
+
+// AuthManager-like interface for web
+class WebAuthManager {
+  private token: string | null = null;
+  private orgId: string | null = null;
+
+  constructor() {
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage(): void {
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('codegen_token');
+      this.orgId = localStorage.getItem('codegen_org_id');
+    }
+  }
+
+  async getToken(): Promise<string | null> {
+    return this.token;
+  }
+
+  setToken(token: string): void {
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('codegen_token', token);
+    }
+  }
+
+  getOrgId(): string | null {
+    return this.orgId;
+  }
+
+  setOrgId(orgId: string): void {
+    this.orgId = orgId;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('codegen_org_id', orgId);
+    }
+  }
+
+  clearAuth(): void {
+    this.token = null;
+    this.orgId = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('codegen_token');
+      localStorage.removeItem('codegen_org_id');
+    }
+  }
+}
 
 // Rate limiting configuration based on Codegen API limits
 const RATE_LIMITS = {
@@ -34,10 +97,13 @@ class CodegenAPIClient {
   private rateLimitTrackers: Map<string, RateLimitTracker> = new Map();
   private cache: Map<string, { data: any; expires: number }> = new Map();
   private readonly cacheTimeout = 30000; // 30 seconds default cache
+  private authManager: WebAuthManager;
 
-  constructor(baseURL?: string, token?: string) {
+  constructor(baseURL?: string, authManager?: WebAuthManager) {
+    this.authManager = authManager || new WebAuthManager();
+    
     this.client = axios.create({
-      baseURL: baseURL || process.env.CODEGEN_API_URL || 'https://codegen-sh--rest-api.modal.run',
+      baseURL: baseURL || process.env.CODEGEN_API_URL || 'https://api.codegen.com',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -45,10 +111,10 @@ class CodegenAPIClient {
     });
 
     // Set up request interceptor for authentication
-    this.client.interceptors.request.use((config) => {
-      const authToken = token || this.getStoredToken();
-      if (authToken) {
-        config.headers.Authorization = `Bearer ${authToken}`;
+    this.client.interceptors.request.use(async (config) => {
+      const token = await this.authManager.getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
     });
@@ -59,30 +125,72 @@ class CodegenAPIClient {
       (error) => {
         if (error.response?.status === 401) {
           // Handle authentication errors
-          this.clearStoredToken();
-          window.location.href = '/login';
+          this.authManager.clearAuth();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }
     );
   }
 
-  private getStoredToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('codegen_token');
+  // Enhanced methods matching VSCode extension API
+  async getAgentRuns(page: number = 1, perPage: number = 10): Promise<AgentRunsResponse> {
+    const orgId = this.authManager.getOrgId();
+    if (!orgId) {
+      throw new Error('No organization ID found. Please login again.');
     }
-    return null;
+
+    try {
+      const response = await this.client.get(`/v1/organizations/${orgId}/agent/runs`, {
+        params: {
+          page,
+          per_page: perPage,
+          source_type: 'API' // Filter to API source type like the CLI does
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch agent runs:', error);
+      throw new Error(`Failed to fetch agent runs: ${error.response?.data?.message || error.message}`);
+    }
   }
 
-  private setStoredToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('codegen_token', token);
+  async createAgentRun(prompt: string, model?: string, repoId?: number): Promise<AgentRun> {
+    const orgId = this.authManager.getOrgId();
+    if (!orgId) {
+      throw new Error('No organization ID found. Please login again.');
+    }
+
+    const requestData: CreateAgentRunRequest = {
+      prompt,
+      ...(model && { model }),
+      ...(repoId && { repo_id: repoId })
+    };
+
+    try {
+      const response = await this.client.post(`/v1/organizations/${orgId}/agent/run`, requestData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to create agent run:', error);
+      throw new Error(`Failed to create agent run: ${error.response?.data?.message || error.message}`);
     }
   }
 
-  private clearStoredToken(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('codegen_token');
+  async getAgentRun(agentRunId: number): Promise<AgentRun> {
+    const orgId = this.authManager.getOrgId();
+    if (!orgId) {
+      throw new Error('No organization ID found. Please login again.');
+    }
+
+    try {
+      const response = await this.client.get(`/v1/organizations/${orgId}/agent/run/${agentRunId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch agent run:', error);
+      throw new Error(`Failed to fetch agent run: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -160,8 +268,13 @@ class CodegenAPIClient {
 
   // Authentication methods
   async authenticate(token: string): Promise<User> {
-    this.setStoredToken(token);
+    this.authManager.setToken(token);
     const user = await this.getCurrentUser();
+    // Set org ID from the user's organizations
+    const orgs = await this.getOrganizations();
+    if (orgs.length > 0) {
+      this.authManager.setOrgId(orgs[0].id);
+    }
     return user;
   }
 
@@ -262,9 +375,18 @@ class CodegenAPIClient {
     });
   }
 
-  // Utility methods
+  // Enhanced utility methods
   clearCache(): void {
     this.cache.clear();
+  }
+
+  logout(): void {
+    this.authManager.clearAuth();
+    this.clearCache();
+  }
+
+  getAuthManager(): WebAuthManager {
+    return this.authManager;
   }
 
   getRateLimitStatus(): Record<string, RateLimitTracker> {
@@ -292,14 +414,24 @@ class CodegenAPIClient {
   }
 }
 
-// Create singleton instance
+// Create singleton instance with auth manager
 let apiClient: CodegenAPIClient | null = null;
+let authManager: WebAuthManager | null = null;
 
-export const getCodegenClient = (baseURL?: string, token?: string): CodegenAPIClient => {
+export const getAuthManager = (): WebAuthManager => {
+  if (!authManager) {
+    authManager = new WebAuthManager();
+  }
+  return authManager;
+};
+
+export const getCodegenClient = (baseURL?: string): CodegenAPIClient => {
   if (!apiClient) {
-    apiClient = new CodegenAPIClient(baseURL, token);
+    apiClient = new CodegenAPIClient(baseURL, getAuthManager());
   }
   return apiClient;
 };
+
+export { WebAuthManager };
 
 export default CodegenAPIClient;
