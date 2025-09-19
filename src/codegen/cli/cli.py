@@ -33,6 +33,7 @@ from codegen.cli.commands.init.main import init
 from codegen.cli.commands.integrations.main import integrations_app
 from codegen.cli.commands.login.main import login
 from codegen.cli.commands.logout.main import logout
+from codegen.cli.commands.orchestrate.main import orchestrate_app
 from codegen.cli.commands.org.main import org
 from codegen.cli.commands.profile.main import profile_app
 from codegen.cli.commands.repo.main import repo
@@ -110,6 +111,7 @@ main.command("update", help="Update Codegen to the latest or specified version")
 main.add_typer(agents_app, name="agents")
 main.add_typer(config_command, name="config")
 main.add_typer(integrations_app, name="integrations")
+main.add_typer(orchestrate_app, name="orchestrate")
 main.add_typer(profile_app, name="profile")
 
 

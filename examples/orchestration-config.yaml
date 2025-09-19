@@ -1,0 +1,272 @@
+# Codegen Visual Orchestration Configuration
+# This file demonstrates how to configure project management integrations
+# and MCP server connections for the self-evolving CI/CD system
+
+# MCP (Model Context Protocol) server configurations
+mcp_servers:
+  linear:
+    url: "ws://localhost:8001"
+    token: "${LINEAR_API_TOKEN}"
+    capabilities:
+      - create_issue
+      - update_issue
+      - list_issues
+      - search_issues
+  
+  github:
+    url: "ws://localhost:8002" 
+    token: "${GITHUB_TOKEN}"
+    capabilities:
+      - create_issue
+      - create_pr
+      - update_pr
+      - list_repos
+      - search_code
+  
+  jira:
+    url: "ws://localhost:8003"
+    token: "${JIRA_API_TOKEN}"
+    capabilities:
+      - create_issue
+      - update_issue
+      - search_issues
+      - add_comment
+
+# Project management platform integrations
+integrations:
+  main_project:
+    platform: "linear"
+    project_id: "codegen-team"
+    auth_token: "${LINEAR_API_TOKEN}"
+    api_base_url: "https://api.linear.app"
+    webhook_url: "https://your-domain.com/webhooks/linear"
+    auto_create_tasks: true
+    auto_update_status: true
+    task_prefix: "[CI/CD]"
+    assignee_mapping:
+      build: "alice@team.com"
+      test: "bob@team.com"
+      deploy: "charlie@team.com"
+      security: "security-team"
+
+  github_issues:
+    platform: "github"
+    project_id: "org/codegen"
+    auth_token: "${GITHUB_TOKEN}"
+    api_base_url: "https://api.github.com"
+    webhook_url: "https://your-domain.com/webhooks/github"
+    auto_create_tasks: true
+    auto_update_status: true
+    task_prefix: "[Pipeline]"
+    assignee_mapping:
+      failures: "devops-team"
+      security: "security-team"
+
+  compliance_tracking:
+    platform: "jira"
+    project_id: "COMP"
+    auth_token: "${JIRA_API_TOKEN}"
+    api_base_url: "https://your-company.atlassian.net"
+    webhook_url: "https://your-domain.com/webhooks/jira"
+    auto_create_tasks: false  # Manual review required
+    auto_update_status: true
+    task_prefix: "[Compliance]"
+    assignee_mapping:
+      audit: "compliance-team"
+      security: "security-team"
+
+# Pipeline templates for intelligent creation
+pipeline_templates:
+  web_application:
+    stages:
+      - name: "Code Analysis"
+        parallel: true
+        tasks:
+          - name: "Static Analysis"
+            agent_type: "security-scanner"
+            timeout: 300
+          - name: "Dependency Check"
+            agent_type: "dependency-scanner"
+            timeout: 180
+          - name: "Code Quality"
+            agent_type: "quality-analyzer"
+            timeout: 240
+      
+      - name: "Build & Test"
+        depends_on: ["Code Analysis"]
+        parallel: true
+        tasks:
+          - name: "Frontend Build"
+            agent_type: "frontend-builder"
+            timeout: 600
+          - name: "Backend Build"
+            agent_type: "backend-builder"
+            timeout: 600
+          - name: "Unit Tests"
+            agent_type: "test-runner"
+            timeout: 900
+          - name: "Integration Tests"
+            agent_type: "integration-tester"
+            timeout: 1200
+      
+      - name: "Security & Compliance"
+        depends_on: ["Build & Test"]
+        tasks:
+          - name: "Security Scan"
+            agent_type: "security-scanner"
+            timeout: 600
+          - name: "Compliance Check"
+            agent_type: "compliance-checker"
+            timeout: 300
+      
+      - name: "Deployment"
+        depends_on: ["Security & Compliance"]
+        tasks:
+          - name: "Deploy to Staging"
+            agent_type: "deployment-agent"
+            timeout: 900
+          - name: "Smoke Tests"
+            agent_type: "smoke-tester"
+            timeout: 300
+          - name: "Deploy to Production"
+            agent_type: "deployment-agent"
+            timeout: 1200
+            depends_on: ["Smoke Tests"]
+
+  api_service:
+    stages:
+      - name: "Analysis"
+        tasks:
+          - name: "API Documentation Check"
+            agent_type: "api-doc-validator"
+            timeout: 180
+          - name: "Schema Validation"
+            agent_type: "schema-validator"
+            timeout: 120
+      
+      - name: "Build"
+        depends_on: ["Analysis"]
+        tasks:
+          - name: "Service Build"
+            agent_type: "service-builder"
+            timeout: 600
+          - name: "Container Build"
+            agent_type: "container-builder"
+            timeout: 900
+      
+      - name: "Testing"
+        depends_on: ["Build"]
+        parallel: true
+        tasks:
+          - name: "Unit Tests"
+            agent_type: "test-runner"
+            timeout: 600
+          - name: "API Tests"
+            agent_type: "api-tester"
+            timeout: 900
+          - name: "Load Tests"
+            agent_type: "load-tester"
+            timeout: 1800
+      
+      - name: "Deployment"
+        depends_on: ["Testing"]
+        tasks:
+          - name: "Deploy to Dev"
+            agent_type: "deployment-agent"
+            timeout: 600
+          - name: "Integration Tests"
+            agent_type: "integration-tester"
+            timeout: 1200
+          - name: "Deploy to Prod"
+            agent_type: "deployment-agent"
+            timeout: 900
+
+# Evolution and learning configuration
+evolution:
+  enabled: true
+  analysis_window: "7d"  # Days of data to analyze
+  optimization_triggers:
+    - "failure_rate > 10%"
+    - "avg_duration > 30min"
+    - "timeout_rate > 5%"
+  
+  learning_weights:
+    success_rate: 0.4
+    execution_time: 0.3
+    resource_usage: 0.2
+    user_satisfaction: 0.1
+  
+  auto_apply_threshold: 0.8  # Confidence threshold for auto-applying changes
+
+# Webhook configuration for real-time updates
+webhooks:
+  endpoints:
+    - name: "slack_notifications"
+      url: "${SLACK_WEBHOOK_URL}"
+      events: ["pipeline.started", "pipeline.completed", "pipeline.failed"]
+      authentication:
+        type: "bearer"
+        token: "${SLACK_BOT_TOKEN}"
+    
+    - name: "project_management"
+      url: "https://your-domain.com/webhooks/orchestration"
+      events: ["task.completed", "pipeline.failed", "evolution.applied"]
+      authentication:
+        type: "hmac"
+        secret: "${WEBHOOK_SECRET}"
+  
+  retry_config:
+    max_retries: 3
+    initial_delay: 1
+    max_delay: 60
+    backoff_multiplier: 2
+
+# Monitoring and observability
+monitoring:
+  metrics:
+    enabled: true
+    retention: "30d"
+    aggregation_interval: "5m"
+  
+  alerts:
+    - name: "High Failure Rate"
+      condition: "pipeline_failure_rate > 15%"
+      severity: "high"
+      channels: ["slack", "email"]
+    
+    - name: "Long Execution Time"
+      condition: "avg_pipeline_duration > 45min"
+      severity: "medium"
+      channels: ["slack"]
+    
+    - name: "Agent Timeout"
+      condition: "agent_timeout_count > 5"
+      severity: "high"
+      channels: ["slack", "email", "pagerduty"]
+
+# Security and access control
+security:
+  encryption:
+    secrets_at_rest: true
+    api_communications: true
+  
+  access_control:
+    rbac_enabled: true
+    roles:
+      admin:
+        permissions: ["*"]
+      developer:
+        permissions: ["pipeline.view", "pipeline.create", "pipeline.execute"]
+      viewer:
+        permissions: ["pipeline.view", "metrics.view"]
+
+# Resource limits and quotas
+resources:
+  max_concurrent_pipelines: 10
+  max_pipeline_duration: "2h"
+  max_agent_memory: "4Gi"
+  max_agent_cpu: "2"
+  
+  quotas:
+    daily_pipeline_executions: 100
+    monthly_compute_hours: 1000
