@@ -1,0 +1,277 @@
+version: "1.0"
+metadata:
+  name: "mistral-chat-interface"
+  description: "Mistral AI chat interface with automation"
+  version: "1.0.0"
+  created_at: "2025-01-01T00:00:00Z"
+
+# Chat Interface Definition
+interface:
+  name: "mistral_chat"
+  url: "https://chat.mistral.ai"
+  
+  # Authentication (optional)
+  auth:
+    type: "credentials"
+    email: "lukas.pukis@gmail.com"
+    password: "${MISTRAL_PASSWORD}" # Environment variable
+    
+  # Network settings (optional)  
+  network:
+    proxy: "${PROXY_URL}"
+    timeout: 30000
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    
+  # UI Element Selectors
+  selectors:
+    text_input: "textarea[data-testid='chat-input'], .chat-input, textarea"
+    send_button: "button[data-testid='send-button'], .send-btn, button[type='submit']"
+    response_area: ".message-list, .chat-messages, [data-testid='messages']"
+    new_chat_button: "button[data-testid='new-chat'], .new-chat-btn"
+    loading_indicator: ".loading, .spinner, [data-testid='loading']"
+    error_message: ".error, .alert-error, [data-testid='error']"
+    
+  # State Management
+  states:
+    initial: "completed"
+    pending: "processing"
+    error: "failed"
+    success: "completed"
+
+# Better-UI Tool Definitions
+tools:
+  - name: "sendMessage"
+    description: "Send message to Mistral chat interface"
+    input:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "Message to send to the chat"
+        wait_for_response:
+          type: "boolean"
+          description: "Whether to wait for response before returning"
+          default: true
+        timeout:
+          type: "number"
+          description: "Timeout in milliseconds for waiting"
+          default: 30000
+      required: ["message"]
+    execute: |
+      const { page } = await playwright.getInstance(config.interface.name);
+      
+      // Fill the message input
+      await page.fill(selectors.text_input, input.message);
+      
+      // Click send button
+      await page.click(selectors.send_button);
+      
+      if (input.wait_for_response) {
+        // Wait for response to appear
+        await page.waitForSelector(selectors.response_area + ' .message:last-child', {
+          timeout: input.timeout || 30000
+        });
+        
+        // Get the response text
+        const response = await page.textContent(selectors.response_area + ' .message:last-child');
+        
+        return { 
+          status: 'sent', 
+          message: input.message,
+          response: response || null
+        };
+      }
+      
+      return { 
+        status: 'sent', 
+        message: input.message 
+      };
+
+  - name: "saveSnapshot"
+    description: "Save browser state, cookies, and screenshot"
+    input:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Snapshot name/identifier"
+        include_screenshot:
+          type: "boolean"
+          description: "Whether to include screenshot"
+          default: true
+        include_cookies:
+          type: "boolean"
+          description: "Whether to include cookies"
+          default: true
+      required: ["name"]
+    execute: |
+      const instance = await playwright.getInstance(config.interface.name);
+      const { context, page } = instance;
+      
+      const snapshotData = {
+        url: page.url(),
+        timestamp: new Date().toISOString(),
+      };
+      
+      if (input.include_cookies) {
+        snapshotData.cookies = await context.cookies();
+      }
+      
+      if (input.include_screenshot) {
+        snapshotData.screenshot = await page.screenshot({ 
+          type: 'png',
+          fullPage: true 
+        });
+      }
+      
+      // Save to storage
+      const storageId = await storage.saveSnapshot(
+        config.interface.name,
+        snapshotData,
+        input.name
+      );
+      
+      log(`Saved snapshot: ${input.name} with ID: ${storageId}`);
+      
+      return { 
+        snapshot_saved: input.name,
+        storage_id: storageId,
+        timestamp: snapshotData.timestamp
+      };
+
+  - name: "loadSnapshot"
+    description: "Load and restore browser state from snapshot"
+    input:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Snapshot name to load"
+        restore_cookies:
+          type: "boolean"
+          description: "Whether to restore cookies"
+          default: true
+      required: ["name"]
+    execute: |
+      // Load snapshot data
+      const snapshotData = await storage.loadSnapshot(config.interface.name, input.name);
+      
+      if (!snapshotData) {
+        throw new Error(`Snapshot not found: ${input.name}`);
+      }
+      
+      const instance = await playwright.getInstance(config.interface.name);
+      const { context, page } = instance;
+      
+      if (input.restore_cookies && snapshotData.cookies) {
+        await context.addCookies(snapshotData.cookies);
+        log(`Restored ${snapshotData.cookies.length} cookies`);
+      }
+      
+      if (snapshotData.url) {
+        await page.goto(snapshotData.url);
+        log(`Navigated to: ${snapshotData.url}`);
+      }
+      
+      return {
+        snapshot_loaded: input.name,
+        url: snapshotData.url,
+        timestamp: snapshotData.timestamp,
+        cookies_restored: input.restore_cookies && !!snapshotData.cookies
+      };
+
+  - name: "waitForElement"
+    description: "Wait for a specific element to appear"
+    input:
+      type: "object"
+      properties:
+        selector:
+          type: "string"
+          description: "CSS selector to wait for"
+        timeout:
+          type: "number"
+          description: "Timeout in milliseconds"
+          default: 10000
+        state:
+          type: "string"
+          description: "Element state to wait for"
+          enum: ["attached", "detached", "visible", "hidden"]
+          default: "visible"
+      required: ["selector"]
+    execute: |
+      const { page } = await playwright.getInstance(config.interface.name);
+      
+      await page.waitForSelector(input.selector, {
+        timeout: input.timeout,
+        state: input.state
+      });
+      
+      const element = await page.$(input.selector);
+      const isVisible = await element?.isVisible();
+      
+      return {
+        selector: input.selector,
+        found: !!element,
+        visible: isVisible,
+        state: input.state
+      };
+
+# Browser Automation Settings
+automation:
+  browser: "chromium"
+  headless: false
+  viewport:
+    width: 1280
+    height: 720
+  cookies:
+    load_from: "cookies/mistral-cookies.json"
+    save_to: "cookies/mistral-cookies.json"
+    auto_save: true
+  screenshots:
+    auto_capture: true
+    path: "screenshots/mistral/"
+    format: "png"
+
+# Integration Settings
+integrations:
+  better_ui:
+    enabled: true
+    theme: "dark"
+    components:
+      - "chat-interface"
+      - "message-display"
+      - "file-upload"
+  
+  mcp_playwright:
+    enabled: true
+    port: 3001
+    timeout: 30000
+    max_contexts: 5
+    
+  zeeeepa_api:
+    enabled: true
+    base_url: "${ZEEEEPA_API_URL}"
+    api_key: "${ZEEEEPA_API_KEY}"
+
+# Monitoring & Testing
+monitoring:
+  health_check:
+    enabled: true
+    interval: 30000
+    endpoint: "/health/mistral"
+  logging:
+    level: "info"
+    file: "logs/mistral-interface.log"
+    console: true
+  metrics:
+    enabled: true
+    endpoint: "/metrics/mistral"
+    collection_interval: 10000
+
+testing:
+  auto_test: false
+  test_message: "Hello, this is a test message"
+  expected_response_time: 10000
+  test_interval: 60000
+  health_checks: true
