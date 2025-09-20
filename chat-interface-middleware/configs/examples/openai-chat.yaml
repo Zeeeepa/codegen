@@ -1,0 +1,129 @@
+version: "1.0"
+metadata:
+  name: "openai-chat-interface"
+  description: "OpenAI ChatGPT interface automation"
+  version: "1.0.0"
+
+interface:
+  name: "openai_chat"
+  url: "https://chat.openai.com"
+  
+  auth:
+    type: "credentials"
+    email: "${OPENAI_EMAIL}"
+    password: "${OPENAI_PASSWORD}"
+    
+  network:
+    timeout: 45000
+    
+  selectors:
+    text_input: "textarea[data-testid='prompt-textarea'], #prompt-textarea"
+    send_button: "button[data-testid='send-button'], [data-testid='send-button']"
+    response_area: "[data-testid='conversation-turn-3'], .markdown"
+    new_chat_button: "[data-testid='new-chat-button']"
+    loading_indicator: ".result-streaming"
+
+tools:
+  - name: "sendMessage"
+    description: "Send message to ChatGPT"
+    input:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          description: "Message to send"
+        model:
+          type: "string"
+          description: "Model to use (gpt-3.5-turbo, gpt-4, etc.)"
+          enum: ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"]
+        wait_for_response:
+          type: "boolean"
+          default: true
+      required: ["message"]
+    execute: |
+      const { page } = await playwright.getInstance(config.interface.name);
+      
+      // Select model if specified
+      if (input.model) {
+        try {
+          await page.click('[data-testid="model-switcher"]');
+          await page.click(`[data-testid="model-option-${input.model}"]`);
+        } catch (e) {
+          log(`Could not switch to model ${input.model}: ${e.message}`);
+        }
+      }
+      
+      // Send message
+      await page.fill(selectors.text_input, input.message);
+      await page.click(selectors.send_button);
+      
+      if (input.wait_for_response) {
+        // Wait for response to complete
+        await page.waitForSelector(selectors.loading_indicator, { state: 'detached', timeout: 60000 });
+        
+        // Get response
+        const response = await page.textContent(selectors.response_area + ':last-child');
+        
+        return {
+          status: 'sent',
+          message: input.message,
+          response: response?.trim() || null,
+          model: input.model
+        };
+      }
+      
+      return { status: 'sent', message: input.message };
+
+  - name: "newConversation"
+    description: "Start a new conversation"
+    input:
+      type: "object"
+      properties:
+        clear_context:
+          type: "boolean"
+          description: "Whether to clear conversation context"
+          default: true
+      required: []
+    execute: |
+      const { page } = await playwright.getInstance(config.interface.name);
+      
+      if (input.clear_context) {
+        await page.click(selectors.new_chat_button);
+        await wait(2000); // Wait for new conversation to initialize
+      }
+      
+      return { 
+        status: 'new_conversation_started',
+        cleared_context: input.clear_context 
+      };
+
+automation:
+  browser: "chromium"
+  headless: false
+  viewport:
+    width: 1440
+    height: 900
+  cookies:
+    load_from: "cookies/openai-cookies.json"
+    save_to: "cookies/openai-cookies.json"
+
+integrations:
+  better_ui:
+    enabled: true
+    theme: "auto"
+    components:
+      - "chat-interface"
+      - "model-selector"
+  
+  mcp_playwright:
+    enabled: true
+    port: 3002
+
+monitoring:
+  logging:
+    level: "debug"
+    file: "logs/openai-interface.log"
+
+testing:
+  auto_test: false
+  test_message: "What is the capital of France?"

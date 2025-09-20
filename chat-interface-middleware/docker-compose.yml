@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  chat-interface-middleware:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - CONFIG_DIR=/app/configs
+      - STORAGE_DIR=/app/storage
+      - LOG_LEVEL=info
+      - ENABLE_HOT_RELOAD=false
+    volumes:
+      - ./configs:/app/configs:ro
+      - storage-data:/app/storage
+      - logs-data:/app/logs
+      - screenshots-data:/app/screenshots
+      - traces-data:/app/traces
+    restart: unless-stopped
+    networks:
+      - middleware-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and session storage (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - middleware-network
+    command: redis-server --appendonly yes
+
+  # Zeeeepa API (if running locally)
+  zeeeepa-api:
+    build: ./zeeeepa-api
+    ports:
+      - "3011:3011"
+    environment:
+      - NODE_ENV=production
+      - PORT=3011
+    volumes:
+      - api-data:/app/data
+    restart: unless-stopped
+    networks:
+      - middleware-network
+    depends_on:
+      - postgres
+
+  # PostgreSQL for Zeeeepa API
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: zeeeepa_api
+      POSTGRES_USER: zeeeepa
+      POSTGRES_PASSWORD: your-postgres-password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - middleware-network
+    ports:
+      - "5432:5432"
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+    networks:
+      - middleware-network
+    depends_on:
+      - chat-interface-middleware
+
+volumes:
+  storage-data:
+  logs-data:
+  screenshots-data:
+  traces-data:
+  redis-data:
+  api-data:
+  postgres-data:
+
+networks:
+  middleware-network:
+    driver: bridge
