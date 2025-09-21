@@ -20,6 +20,9 @@ try:
 except ImportError as e:
     logger.warning(f"Z.ai SDK not available: {e}")
     ZAI_AVAILABLE = False
+    # Create dummy class to avoid NameError
+    class ZaiClient:
+        pass
 
 
 class ZAIWrapper:
@@ -46,7 +49,7 @@ class ZAIWrapper:
 class ChatCompletions:
     """OpenAI-compatible chat completions interface using z.ai"""
     
-    def __init__(self, client: ZaiClient):
+    def __init__(self, client):
         self.client = client
     
     def create(self, 

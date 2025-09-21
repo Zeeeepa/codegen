@@ -13,16 +13,9 @@ setup(
     long_description=open("README.md").read() if os.path.exists("README.md") else "",
     long_description_content_type="text/markdown",
     author="Graph-Sitter Tools Team",
-    packages=find_packages(),
+    packages=find_packages(where="tools"),
     package_dir={"": "tools"},
     install_requires=[
-        # Core graph-sitter dependency from GitHub
-        "graph-sitter @ git+https://github.com/Zeeeepa/graph-sitter.git@develop",
-        
-        # Extensions as separate packages
-        "autogenlib @ git+https://github.com/Zeeeepa/graph-sitter.git@develop#subdirectory=src/graph_sitter/extensions/autogenlib",
-        "solidlsp @ git+https://github.com/Zeeeepa/graph-sitter.git@develop#subdirectory=src/graph_sitter/extensions/lsp/solidlsp",
-        
         # AI and web dependencies
         "openai>=1.0.0",
         "fastapi>=0.104.0",
@@ -31,6 +24,8 @@ setup(
         "networkx>=3.0",
         "pathspec>=0.11.0",
         "rich>=13.0.0",
+        "tree-sitter>=0.20.0",
+        "requests>=2.25.0",
     ],
     extras_require={
         "dev": [

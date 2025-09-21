@@ -7,7 +7,7 @@ Provides comprehensive AI-driven error resolution with full context integration
 import os
 import logging
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # Try to import z.ai first, fallback to openai
 try:
@@ -186,6 +186,23 @@ def resolve_diagnostic_with_ai(
                 temperature=0.1,  # Keep it low for deterministic fixes
                 max_tokens=4000,  # Increased for comprehensive responses
             )
+
+        # Check if response contains an error (from z.ai wrapper)
+        if isinstance(response, dict) and "error" in response:
+            return {
+                "status": "error",
+                "message": f"AI API error: {response['error']['message']}",
+                "error_type": response["error"].get("type", "unknown"),
+                "error_code": response["error"].get("code", "unknown")
+            }
+
+        # Handle successful response
+        if not hasattr(response, 'choices') or not response.choices:
+            return {
+                "status": "error",
+                "message": "Invalid response format from AI provider",
+                "error_type": "response_format_error"
+            }
 
         content = response.choices[0].message.content.strip()
         fix_info = {}
