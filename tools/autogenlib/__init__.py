@@ -1,8 +1,15 @@
-"""Automatic code generation library using OpenAI."""
+"""Automatic code generation library using Z.ai and OpenAI."""
 
 import sys
 from ._finder import AutoLibFinder
 from ._exception_handler import setup_exception_handler
+
+# Import z.ai client functionality
+try:
+    from ._z_ai_client import get_z_ai_client, is_zai_available, test_zai_connection
+    ZAI_SUPPORT = True
+except ImportError:
+    ZAI_SUPPORT = False
 
 
 _sentinel = object()
@@ -62,6 +69,61 @@ def set_caching(enabled=True):
     _state.caching_enabled = enabled
 
 
-__all__ = ["init", "set_exception_handler", "setup_exception_handler", "set_caching"]
+def get_ai_client():
+    """Get the configured AI client (Z.ai preferred, OpenAI fallback)."""
+    if ZAI_SUPPORT and is_zai_available():
+        return get_z_ai_client()
+    else:
+        # Fallback to OpenAI or return None
+        try:
+            import openai
+            import os
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if api_key:
+                return openai.OpenAI(api_key=api_key)
+        except ImportError:
+            pass
+    return None
+
+
+def check_ai_availability():
+    """Check which AI services are available and configured."""
+    status = {
+        "zai_available": False,
+        "openai_available": False,
+        "recommended": None,
+        "active": None
+    }
+    
+    if ZAI_SUPPORT:
+        zai_status = test_zai_connection()
+        status["zai_available"] = zai_status["status"] == "success"
+        if status["zai_available"]:
+            status["active"] = "z.ai"
+            status["recommended"] = "z.ai"
+    
+    # Check OpenAI
+    try:
+        import openai
+        import os
+        if os.environ.get("OPENAI_API_KEY"):
+            status["openai_available"] = True
+            if not status["active"]:
+                status["active"] = "openai"
+            if not status["recommended"]:
+                status["recommended"] = "openai"
+    except ImportError:
+        pass
+    
+    return status
+
+
+# Add z.ai functions to exports if available
+if ZAI_SUPPORT:
+    __all__ = ["init", "set_exception_handler", "setup_exception_handler", "set_caching", 
+               "get_ai_client", "check_ai_availability", "get_z_ai_client", "is_zai_available"]
+else:
+    __all__ = ["init", "set_exception_handler", "setup_exception_handler", "set_caching",
+               "get_ai_client", "check_ai_availability"]
 
 init()
