@@ -1,0 +1,139 @@
+{
+  "autogenlib_ai_resolve.py": {
+    "file": "tools/autogenlib_ai_resolve.py",
+    "size_kb": 21.4755859375,
+    "syntax": {
+      "status": "\u2713 PASS",
+      "message": "Syntax is valid",
+      "lines": 603,
+      "characters": 21991
+    },
+    "imports": {
+      "status": "\u26a0 WARN",
+      "total_imports": 15,
+      "missing_critical": [
+        "graph_sitter",
+        "autogenlib"
+      ],
+      "message": "Found 15 imports, 2 missing critical"
+    },
+    "structure": {
+      "status": "\u2713 PASS",
+      "functions": 8,
+      "classes": 0,
+      "avg_function_complexity": 6.125,
+      "most_complex_function": "validate_fix_with_context",
+      "largest_class": null
+    }
+  },
+  "autogenlib_context.py": {
+    "file": "tools/autogenlib_context.py",
+    "size_kb": 27.466796875,
+    "syntax": {
+      "status": "\u2713 PASS",
+      "message": "Syntax is valid",
+      "lines": 677,
+      "characters": 28126
+    },
+    "imports": {
+      "status": "\u26a0 WARN",
+      "total_imports": 27,
+      "missing_critical": [
+        "graph_sitter",
+        "solidlsp",
+        "autogenlib"
+      ],
+      "message": "Found 27 imports, 3 missing critical"
+    },
+    "structure": {
+      "status": "\u2713 PASS",
+      "functions": 24,
+      "classes": 0,
+      "avg_function_complexity": 5.583333333333333,
+      "most_complex_function": "_determine_file_role",
+      "largest_class": null
+    }
+  },
+  "graph_sitter_analysis.py": {
+    "file": "tools/graph_sitter_analysis.py",
+    "size_kb": 78.4482421875,
+    "syntax": {
+      "status": "\u2713 PASS",
+      "message": "Syntax is valid",
+      "lines": 2034,
+      "characters": 80331
+    },
+    "imports": {
+      "status": "\u26a0 WARN",
+      "total_imports": 69,
+      "missing_critical": [
+        "graph_sitter"
+      ],
+      "message": "Found 69 imports, 1 missing critical"
+    },
+    "structure": {
+      "status": "\u2713 PASS",
+      "functions": 86,
+      "classes": 1,
+      "avg_function_complexity": 4.604651162790698,
+      "most_complex_function": "find_dead_code",
+      "largest_class": "GraphSitterAnalyzer"
+    }
+  },
+  "graph_sitter_backend.py": {
+    "file": "tools/graph_sitter_backend.py",
+    "size_kb": 155.529296875,
+    "syntax": {
+      "status": "\u2713 PASS",
+      "message": "Syntax is valid",
+      "lines": 3954,
+      "characters": 159262
+    },
+    "imports": {
+      "status": "\u26a0 WARN",
+      "total_imports": 79,
+      "missing_critical": [
+        "graph_sitter",
+        "solidlsp",
+        "autogenlib"
+      ],
+      "message": "Found 79 imports, 3 missing critical"
+    },
+    "structure": {
+      "status": "\u2713 PASS",
+      "functions": 86,
+      "classes": 11,
+      "avg_function_complexity": 6.616279069767442,
+      "most_complex_function": "_analyze_entrypoints_with_graph_sitter_enhanced",
+      "largest_class": "AnalysisEngine"
+    }
+  },
+  "lsp_diagnostics.py": {
+    "file": "tools/lsp_diagnostics.py",
+    "size_kb": 26.947265625,
+    "syntax": {
+      "status": "\u2713 PASS",
+      "message": "Syntax is valid",
+      "lines": 598,
+      "characters": 27594
+    },
+    "imports": {
+      "status": "\u26a0 WARN",
+      "total_imports": 31,
+      "missing_critical": [
+        "graph_sitter",
+        "solidlsp",
+        "autogenlib"
+      ],
+      "message": "Found 31 imports, 3 missing critical"
+    },
+    "structure": {
+      "status": "\u2713 PASS",
+      "functions": 24,
+      "classes": 3,
+      "avg_function_complexity": 3.5416666666666665,
+      "most_complex_function": "get_all_enhanced_diagnostics",
+      "largest_class": "LSPDiagnosticsManager"
+    }
+  }
+}

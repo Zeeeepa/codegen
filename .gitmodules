@@ -1,0 +1,3 @@
+[submodule "tools/autogenlib/z_ai_sdk"]
+	path = tools/autogenlib/z_ai_sdk
+	url = https://github.com/zai-org/z-ai-sdk-python.git

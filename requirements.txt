@@ -1,0 +1,53 @@
+# Graph-Sitter Tools Requirements
+# Install graph-sitter and extensions from GitHub repository
+
+# Main graph-sitter repository with all extensions
+-e git+https://github.com/Zeeeepa/graph-sitter.git@develop#egg=graph-sitter
+
+# AutoGenLib extension as separate package
+-e git+https://github.com/Zeeeepa/graph-sitter.git@develop#subdirectory=src/graph_sitter/extensions/autogenlib&egg=autogenlib
+
+# SolidLSP extension as separate package
+-e git+https://github.com/Zeeeepa/graph-sitter.git@develop#subdirectory=src/graph_sitter/extensions/lsp/solidlsp&egg=solidlsp
+
+# AI and ML dependencies - Z.ai preferred, OpenAI fallback
+# Z.ai SDK dependencies (SDK cloned into autogenlib/z_ai_sdk)
+httpx>=0.24.0  # Required by z.ai SDK
+typing-extensions>=4.0.0  # Required by z.ai SDK
+
+# OpenAI fallback
+openai>=1.0.0
+anthropic>=0.7.0  # For Claude API if needed
+
+# Web framework dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Data analysis and visualization
+networkx>=3.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.5.0
+
+# Utility packages
+pathspec>=0.11.0
+click>=8.1.0
+typer>=0.9.0
+rich>=13.0.0  # For beautiful CLI output
+
+# Async support
+asyncio-mqtt>=0.16.0
+aiofiles>=23.0.0
+
+# Additional LSP and language support
+tree-sitter>=0.20.0
+tree-sitter-python>=0.20.0
+pygments>=2.16.0

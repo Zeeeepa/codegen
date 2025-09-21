@@ -7,9 +7,19 @@ Provides comprehensive AI-driven error resolution with full context integration
 import os
 import logging
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 
-import openai
+# Try to import z.ai first, fallback to openai
+try:
+    from autogenlib._z_ai_client import get_z_ai_client, is_zai_available
+    ZAI_AVAILABLE = True
+except ImportError:
+    ZAI_AVAILABLE = False
+    try:
+        import openai
+        OPENAI_AVAILABLE = True
+    except ImportError:
+        OPENAI_AVAILABLE = False
 
 from graph_sitter import Codebase
 
@@ -27,18 +37,36 @@ def resolve_diagnostic_with_ai(
 ) -> Dict[str, Any]:
     """
     Generates a fix for a given LSP diagnostic using an AI model, with comprehensive context.
+    Uses z.ai by default, falls back to OpenAI if not available.
     """
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        logger.error("OPENAI_API_KEY environment variable not set.")
-        return {"status": "error", "message": "OpenAI API key not configured."}
+    # Try z.ai first
+    if ZAI_AVAILABLE and is_zai_available():
+        try:
+            client = get_z_ai_client()
+            model = os.environ.get("ZAI_MODEL", "glm-4")
+            logger.info("Using Z.ai for AI resolution")
+        except Exception as e:
+            logger.warning(f"Z.ai client initialization failed: {e}")
+            if not OPENAI_AVAILABLE:
+                return {"status": "error", "message": f"Z.ai failed and OpenAI not available: {e}"}
+            client = None
+    else:
+        client = None
+    
+    # Fallback to OpenAI if z.ai not available
+    if client is None:
+        if not OPENAI_AVAILABLE:
+            return {"status": "error", "message": "Neither Z.ai nor OpenAI available"}
+            
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            logger.error("OPENAI_API_KEY environment variable not set.")
+            return {"status": "error", "message": "OpenAI API key not configured."}
 
-    base_url = os.environ.get("OPENAI_API_BASE_URL")
-    model = os.environ.get(
-        "OPENAI_MODEL", "gpt-4o"
-    )  # Using gpt-4o for better code generation
-
-    client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        base_url = os.environ.get("OPENAI_API_BASE_URL")
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o")
+        client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        logger.info("Using OpenAI for AI resolution")
 
     # Prepare comprehensive context for the LLM
     diag = enhanced_diagnostic["diagnostic"]
@@ -133,16 +161,48 @@ def resolve_diagnostic_with_ai(
     """
 
     try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_prompt},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1,  # Keep it low for deterministic fixes
-            max_tokens=4000,  # Increased for comprehensive responses
-        )
+        # Handle both z.ai and OpenAI clients
+        if hasattr(client, 'chat') and hasattr(client.chat, 'create'):
+            # Z.ai client (wrapped)
+            response = client.chat.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.1,  # Keep it low for deterministic fixes
+                max_tokens=4000,  # Increased for comprehensive responses
+            )
+        else:
+            # OpenAI client
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.1,  # Keep it low for deterministic fixes
+                max_tokens=4000,  # Increased for comprehensive responses
+            )
+
+        # Check if response contains an error (from z.ai wrapper)
+        if isinstance(response, dict) and "error" in response:
+            return {
+                "status": "error",
+                "message": f"AI API error: {response['error']['message']}",
+                "error_type": response["error"].get("type", "unknown"),
+                "error_code": response["error"].get("code", "unknown")
+            }
+
+        # Handle successful response
+        if not hasattr(response, 'choices') or not response.choices:
+            return {
+                "status": "error",
+                "message": "Invalid response format from AI provider",
+                "error_type": "response_format_error"
+            }
 
         content = response.choices[0].message.content.strip()
         fix_info = {}
@@ -197,12 +257,17 @@ def resolve_diagnostic_with_ai(
             "related_changes": related_changes,
         }
 
-    except openai.APIError as e:
-        logger.error(f"OpenAI API error: {e}")
-        return {"status": "error", "message": f"OpenAI API error: {e}"}
     except Exception as e:
-        logger.error(f"Error resolving diagnostic with AI: {e}")
-        return {"status": "error", "message": f"An unexpected error occurred: {e}"}
+        # Handle both OpenAI and Z.ai errors
+        if "openai" in str(type(e)).lower() or "APIError" in str(type(e)):
+            logger.error(f"OpenAI API error: {e}")
+            return {"status": "error", "message": f"OpenAI API error: {e}"}
+        elif "zai" in str(type(e)).lower() or "ZAI" in str(type(e)):
+            logger.error(f"Z.ai API error: {e}")
+            return {"status": "error", "message": f"Z.ai API error: {e}"}
+        else:
+            logger.error(f"Error resolving diagnostic with AI: {e}")
+            return {"status": "error", "message": f"An unexpected error occurred: {e}"}
 
 
 def resolve_runtime_error_with_ai(

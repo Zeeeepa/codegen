@@ -76,6 +76,25 @@ except ImportError as e:
     print(f"Warning: graph-sitter or related modules not available: {e}")
     print("Install with: pip install graph-sitter")
     GRAPH_SITTER_AVAILABLE = False
+    
+    # Fallback placeholder classes
+    class Codebase:
+        def __init__(self, *args, **kwargs): pass
+    class Function:
+        def __init__(self, *args, **kwargs): pass
+    class Class:
+        def __init__(self, *args, **kwargs): 
+            self.superclasses = []
+    class Symbol:
+        def __init__(self, *args, **kwargs): pass
+    class SourceFile:
+        def __init__(self, *args, **kwargs): pass
+    class Range:
+        def __init__(self, *args, **kwargs): pass
+    class Diagnostic:
+        def __init__(self, *args, **kwargs): pass
+    class DocumentUri:
+        def __init__(self, *args, **kwargs): pass
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
