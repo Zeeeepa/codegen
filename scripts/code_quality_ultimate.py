@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""
-🚀 ULTIMATE Code Quality Management System - Comprehensive Unified Version
+"""🚀 ULTIMATE Code Quality Management System - Comprehensive Unified Version
 =============================================================================
 
 COMPLETE FEATURE SET:
 ✅ Beautiful color-coded, structured output with progress bars (NEW v3.0!)
 ✅ Parallel execution with ThreadPoolExecutor - 3-5x faster (NEW v3.0!)
-✅ Quality scoring and grading system A+/A/B+/B/C (NEW v3.0!)  
+✅ Quality scoring and grading system A+/A/B+/B/C (NEW v3.0!)
 ✅ Executive summary with visual box formatting (NEW v3.0!)
 ✅ Categorized results by type (Formatting/Linting/Typing) (NEW v3.0!)
 ✅ Poetry integration with --poetry flag (NEW v3.0!)
@@ -30,22 +29,22 @@ USAGE:
     python code_quality_ultimate.py                     # Full quality check
     python code_quality_ultimate.py --parallel          # Parallel execution (NEW!)
     python code_quality_ultimate.py --poetry            # With poetry run (NEW!)
-    
+
     # Basic usage
     python code_quality_ultimate.py lint                # Lint only
     python code_quality_ultimate.py format              # Format code
     python code_quality_ultimate.py scan                # Scan for missing packages
-    
+
     # With exports (NEW!)
     python code_quality_ultimate.py --json results.json       # JSON export
     python code_quality_ultimate.py --html report.html        # HTML report
     python code_quality_ultimate.py --csv issues.csv          # CSV export
     python code_quality_ultimate.py --all-formats output_dir  # All formats
-    
+
     # Git integration (NEW!)
     python code_quality_ultimate.py --git-diff main     # Check only changed files
     python code_quality_ultimate.py --git-staged        # Check staged files only
-    
+
     # Advanced options
     python code_quality_ultimate.py --auto-fix          # Auto-fix issues
     python code_quality_ultimate.py --auto-install      # Auto-install packages
@@ -85,10 +84,14 @@ import time
 import traceback
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
+from collections import defaultdict
+from enum import Enum
 from functools import lru_cache, wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
+from datetime import datetime
 # Try to import optional dependencies
 try:
     import requests
@@ -96,10 +99,11 @@ except ImportError:
     requests = None
 
 try:
+    from importlib.metadata import distributions
+
     from packaging.requirements import Requirement
     from packaging.specifiers import SpecifierSet
     from packaging.version import parse as parse_version
-    from importlib.metadata import distributions
 except ImportError:
     Requirement = None
     SpecifierSet = None
@@ -111,9 +115,6 @@ except ImportError:
 # ENHANCED OUTPUT SYSTEM - v3.0 Beautiful Colored Output
 # ============================================================================
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from enum import Enum
 
 # ANSI Color codes for beautiful terminal output
 class Colors:
@@ -121,7 +122,7 @@ class Colors:
     RESET = '\033[0m'
     BOLD = '\033[1m'
     DIM = '\033[2m'
-    
+
     # Foreground colors
     RED = '\033[31m'
     GREEN = '\033[32m'
@@ -129,7 +130,7 @@ class Colors:
     BLUE = '\033[34m'
     MAGENTA = '\033[35m'
     CYAN = '\033[36m'
-    
+
     # Bright colors
     BRIGHT_RED = '\033[91m'
     BRIGHT_GREEN = '\033[92m'
@@ -159,18 +160,18 @@ class Category(Enum):
 
 class ProgressBar:
     """Simple progress bar for terminal"""
-    
+
     def __init__(self, total: int, description: str = ""):
         self.total = total
         self.current = 0
         self.description = description
         self.start_time = time.time()
-    
+
     def update(self, increment: int = 1):
         """Update progress"""
         self.current += increment
         self._draw()
-    
+
     def _draw(self):
         """Draw the progress bar"""
         if self.total == 0:
@@ -179,13 +180,13 @@ class ProgressBar:
         filled = int(percent / 2)
         bar = "█" * filled + "░" * (50 - filled)
         elapsed = time.time() - self.start_time
-        
+
         sys.stdout.write(f"\r{Colors.CYAN}{self.description}{Colors.RESET} ")
         sys.stdout.write(f"[{bar}] {percent:.1f}% ")
         sys.stdout.write(f"({self.current}/{self.total}) ")
         sys.stdout.write(f"{Colors.DIM}{elapsed:.1f}s{Colors.RESET}")
         sys.stdout.flush()
-    
+
     def finish(self):
         """Complete the progress bar"""
         self._draw()
@@ -194,7 +195,7 @@ class ProgressBar:
 
 class BeautifulOutput:
     """Handles all formatted output with colors and structure"""
-    
+
     @staticmethod
     def header(text: str, color: str = Colors.CYAN):
         """Print a fancy header"""
@@ -202,19 +203,19 @@ class BeautifulOutput:
         print(f"\n{color}{Colors.BOLD}{line}{Colors.RESET}")
         print(f"{color}{Colors.BOLD}{text}{Colors.RESET}")
         print(f"{color}{Colors.BOLD}{line}{Colors.RESET}\n")
-    
+
     @staticmethod
     def section(emoji: str, title: str, color: str = Colors.BLUE):
         """Print a section header"""
         print(f"\n{color}{Colors.BOLD}{emoji} {title}{Colors.RESET}")
         print(f"{Colors.DIM}{'─' * 60}{Colors.RESET}")
-    
+
     @staticmethod
     def item(emoji: str, text: str, color: str = Colors.RESET, indent: int = 0):
         """Print an item with emoji and color"""
         prefix = "  " * indent
         print(f"{prefix}{emoji} {color}{text}{Colors.RESET}")
-    
+
     @staticmethod
     def box(lines: list, color: str = Colors.CYAN, title: str = ""):
         """Print content in a box"""
@@ -223,14 +224,14 @@ class BeautifulOutput:
         max_len = max(len(str(line)) for line in lines)
         top = f"╔{'═' * (max_len + 2)}╗"
         bottom = f"╚{'═' * (max_len + 2)}╝"
-        
+
         print(f"\n{color}{top}{Colors.RESET}")
         if title:
             title_str = str(title)
             padding = " " * (max_len - len(title_str))
             print(f"{color}║ {Colors.BOLD}{title_str}{Colors.RESET}{color}{padding} ║{Colors.RESET}")
             print(f"{color}╟{'─' * (max_len + 2)}╢{Colors.RESET}")
-        
+
         for line in lines:
             line_str = str(line)
             padding = " " * (max_len - len(line_str))
@@ -254,18 +255,18 @@ logger = logging.getLogger(__name__)
 
 class QualityIssue:
     """Represents a single quality issue found by a tool."""
-    
+
     def __init__(
         self,
         tool: str,
         file_path: str,
-        line: Optional[int] = None,
-        column: Optional[int] = None,
+        line: int | None = None,
+        column: int | None = None,
         severity: str = "warning",
-        code: Optional[str] = None,
+        code: str | None = None,
         message: str = "",
-        context: Optional[str] = None,
-        fix_suggestion: Optional[str] = None
+        context: str | None = None,
+        fix_suggestion: str | None = None
     ):
         self.tool = tool
         self.file_path = file_path
@@ -277,8 +278,8 @@ class QualityIssue:
         self.context = context
         self.fix_suggestion = fix_suggestion
         self.timestamp = datetime.now().isoformat()
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         """Convert issue to dictionary for JSON serialization."""
         return {
             "tool": self.tool,
@@ -292,7 +293,7 @@ class QualityIssue:
             "fix_suggestion": self.fix_suggestion,
             "timestamp": self.timestamp
         }
-    
+
     def __repr__(self):
         loc = f"{self.file_path}"
         if self.line:
@@ -304,15 +305,15 @@ class QualityIssue:
 
 class QualityResults:
     """Comprehensive results from all quality checks."""
-    
+
     def __init__(self):
         self.timestamp = datetime.now().isoformat()
-        self.tools_run: Dict[str, Dict] = {}
-        self.issues: List[QualityIssue] = []
-        self.files_checked: List[str] = []
-        self.summary: Dict = {}
+        self.tools_run: dict[str, dict] = {}
+        self.issues: list[QualityIssue] = []
+        self.files_checked: list[str] = []
+        self.summary: dict = {}
         self.duration: float = 0.0
-    
+
     def add_tool_result(self, tool: str, status: str, duration: float, output: str = ""):
         """Add result from a tool execution."""
         self.tools_run[tool] = {
@@ -320,22 +321,22 @@ class QualityResults:
             "duration": duration,
             "output": output
         }
-    
+
     def add_issue(self, issue: QualityIssue):
         """Add a quality issue."""
         self.issues.append(issue)
-    
+
     def generate_summary(self):
         """Generate summary statistics."""
         by_severity = defaultdict(int)
         by_tool = defaultdict(int)
         by_file = defaultdict(int)
-        
+
         for issue in self.issues:
             by_severity[issue.severity] += 1
             by_tool[issue.tool] += 1
             by_file[issue.file_path] += 1
-        
+
         self.summary = {
             "total_issues": len(self.issues),
             "by_severity": dict(by_severity),
@@ -346,8 +347,8 @@ class QualityResults:
             "tools_failed": sum(1 for r in self.tools_run.values() if r["status"] == "fail"),
             "tools_skipped": sum(1 for r in self.tools_run.values() if r["status"] == "skipped")
         }
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         """Convert results to dictionary for JSON serialization."""
         return {
             "timestamp": self.timestamp,
@@ -357,20 +358,20 @@ class QualityResults:
             "files_checked": self.files_checked,
             "summary": self.summary
         }
-    
+
     def save_json(self, output_path: Path):
         """Save results as JSON."""
         with open(output_path, 'w') as f:
             json.dump(self.to_dict(), f, indent=2)
         logger.info(f"JSON results saved to {output_path}")
-    
+
     def save_csv(self, output_path: Path):
         """Save issues as CSV."""
         import csv
         with open(output_path, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([
-                "Tool", "File", "Line", "Column", "Severity", 
+                "Tool", "File", "Line", "Column", "Severity",
                 "Code", "Message", "Timestamp"
             ])
             for issue in self.issues:
@@ -385,27 +386,27 @@ class QualityResults:
                     issue.timestamp
                 ])
         logger.info(f"CSV results saved to {output_path}")
-    
+
     def save_html(self, output_path: Path):
         """Generate comprehensive HTML report."""
         html = self._generate_html_report()
         with open(output_path, 'w') as f:
             f.write(html)
         logger.info(f"HTML report saved to {output_path}")
-    
+
     def _generate_html_report(self) -> str:
         """Generate HTML report with interactive features."""
         issues_by_severity = defaultdict(list)
         for issue in self.issues:
             issues_by_severity[issue.severity].append(issue)
-        
+
         severity_colors = {
             "critical": "#dc3545",
             "error": "#fd7e14",
             "warning": "#ffc107",
             "info": "#17a2b8"
         }
-        
+
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -449,7 +450,7 @@ class QualityResults:
         <h1>📊 Code Quality Report</h1>
         <div class="subtitle">Generated on {self.timestamp} • Duration: {self.duration:.2f}s</div>
     </div>
-    
+
     <div class="summary-grid">
         <div class="summary-card">
             <h3>Total Issues</h3>
@@ -469,7 +470,7 @@ class QualityResults:
         </div>
     </div>
 """
-        
+
         # Tool status section
         html += """
     <div class="tool-status">
@@ -485,7 +486,7 @@ class QualityResults:
         </div>
 """
         html += "    </div>\n"
-        
+
         # Top files with most issues
         if self.summary.get('by_file'):
             html += """
@@ -501,7 +502,7 @@ class QualityResults:
         </div>
 """
             html += "    </div>\n"
-        
+
         # Issues table
         html += """
     <div class="filter-bar">
@@ -515,7 +516,7 @@ class QualityResults:
         html += """
         </span>
     </div>
-    
+
     <div class="issues-table">
         <table id="issuesTable">
             <thead>
@@ -530,7 +531,7 @@ class QualityResults:
             </thead>
             <tbody>
 """
-        
+
         for issue in sorted(self.issues, key=lambda x: (
             {"critical": 0, "error": 1, "warning": 2, "info": 3}.get(x.severity, 4),
             x.file_path,
@@ -546,7 +547,7 @@ class QualityResults:
                     <td>{issue.message[:200]}</td>
                 </tr>
 """
-        
+
         html += """
             </tbody>
         </table>
@@ -559,7 +560,7 @@ function filterTable() {
     const filter = input.value.toLowerCase();
     const table = document.getElementById('issuesTable');
     const tr = table.getElementsByTagName('tr');
-    
+
     for (let i = 1; i < tr.length; i++) {
         const td = tr[i].getElementsByTagName('td');
         let found = false;
@@ -585,14 +586,14 @@ function filterTable() {
 
 class EnhancedErrorParser:
     """Parse tool outputs and extract detailed error information."""
-    
+
     @staticmethod
-    def parse_flake8(output: str, tool_name: str = "flake8") -> List[QualityIssue]:
+    def parse_flake8(output: str, tool_name: str = "flake8") -> list[QualityIssue]:
         """Parse flake8 output into QualityIssue objects."""
         issues = []
         # Format: file.py:123:45: E501 line too long
         pattern = r'^(.+?):(\d+):(\d+): ([A-Z]\d+) (.+)$'
-        
+
         for line in output.split('\n'):
             match = re.match(pattern, line.strip())
             if match:
@@ -608,14 +609,14 @@ class EnhancedErrorParser:
                     message=message
                 ))
         return issues
-    
+
     @staticmethod
-    def parse_pylint(output: str) -> List[QualityIssue]:
+    def parse_pylint(output: str) -> list[QualityIssue]:
         """Parse pylint output."""
         issues = []
         # Format: file.py:123:45: C0111: Missing docstring
         pattern = r'^(.+?):(\d+):(\d+): ([A-Z]\d+): (.+)$'
-        
+
         for line in output.split('\n'):
             match = re.match(pattern, line.strip())
             if match:
@@ -632,14 +633,14 @@ class EnhancedErrorParser:
                     message=message
                 ))
         return issues
-    
+
     @staticmethod
-    def parse_mypy(output: str) -> List[QualityIssue]:
+    def parse_mypy(output: str) -> list[QualityIssue]:
         """Parse mypy output."""
         issues = []
         # Format: file.py:123: error: Message
         pattern = r'^(.+?):(\d+): (error|warning|note): (.+)$'
-        
+
         for line in output.split('\n'):
             match = re.match(pattern, line.strip())
             if match:
@@ -653,9 +654,9 @@ class EnhancedErrorParser:
                     message=message
                 ))
         return issues
-    
+
     @staticmethod
-    def parse_ruff(output: str) -> List[QualityIssue]:
+    def parse_ruff(output: str) -> list[QualityIssue]:
         """Parse ruff output (JSON format)."""
         issues = []
         try:
@@ -675,14 +676,14 @@ class EnhancedErrorParser:
             # Fall back to text parsing
             issues = EnhancedErrorParser.parse_flake8(output, "ruff")
         return issues
-    
+
     @staticmethod
-    def parse_pyright(output: str) -> List[QualityIssue]:
+    def parse_pyright(output: str) -> list[QualityIssue]:
         """Parse pyright output."""
         issues = []
         # Format: file.py:123:45 - error: Message
         pattern = r'^  (.+?):(\d+):(\d+) - (error|warning|information): (.+)$'
-        
+
         for line in output.split('\n'):
             match = re.match(pattern, line.strip())
             if match:
@@ -697,9 +698,9 @@ class EnhancedErrorParser:
                     message=message
                 ))
         return issues
-    
+
     @staticmethod
-    def parse_black(output: str) -> List[QualityIssue]:
+    def parse_black(output: str) -> list[QualityIssue]:
         """Parse black output."""
         issues = []
         # Black outputs "would reformat file.py"
@@ -715,9 +716,9 @@ class EnhancedErrorParser:
                         message="File needs formatting"
                     ))
         return issues
-    
+
     @staticmethod
-    def parse_isort(output: str) -> List[QualityIssue]:
+    def parse_isort(output: str) -> list[QualityIssue]:
         """Parse isort output."""
         issues = []
         for line in output.split('\n'):
@@ -740,9 +741,9 @@ class EnhancedErrorParser:
 
 class GitIntegration:
     """Handle git-related operations for incremental checking."""
-    
+
     @staticmethod
-    def get_changed_files(base_branch: str = "main") -> List[str]:
+    def get_changed_files(base_branch: str = "main") -> list[str]:
         """Get list of files changed compared to base branch."""
         try:
             result = subprocess.run(
@@ -757,9 +758,9 @@ class GitIntegration:
         except subprocess.CalledProcessError:
             logger.warning("Git diff failed, checking all files")
             return []
-    
+
     @staticmethod
-    def get_staged_files() -> List[str]:
+    def get_staged_files() -> list[str]:
         """Get list of staged files."""
         try:
             result = subprocess.run(
@@ -774,7 +775,7 @@ class GitIntegration:
         except subprocess.CalledProcessError:
             logger.warning("Git diff --cached failed")
             return []
-    
+
     @staticmethod
     def is_git_repo() -> bool:
         """Check if current directory is a git repository."""
@@ -801,7 +802,7 @@ class ErrorHealer:
     def __init__(self, max_retries: int = 3, retry_delay: float = 1.0):
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self.error_log: List[Dict] = []
+        self.error_log: list[dict] = []
 
     def log_error(self, error: Exception, context: str = "", method_name: str = ""):
         """Log an error with context information."""
@@ -815,11 +816,11 @@ class ErrorHealer:
         }
         self.error_log.append(error_info)
         logger.error(
-            f"Error in {method_name}: {str(error)}\n"
+            f"Error in {method_name}: {error!s}\n"
             f"Context: {context}\n{traceback.format_exc()}"
         )
 
-    def with_retry(self, fallback_method: Optional[Callable] = None):
+    def with_retry(self, fallback_method: Callable | None = None):
         """Decorator to add retry logic with fallback to methods."""
         def decorator(func: Callable) -> Callable:
             @wraps(func)
@@ -862,7 +863,7 @@ class ErrorHealer:
             return wrapper
         return decorator
 
-    def safe_execute(self, func: Callable, *args, fallback_method: Optional[Callable] = None,
+    def safe_execute(self, func: Callable, *args, fallback_method: Callable | None = None,
                      context: str = "", **kwargs) -> Any:
         """Safely execute a function with error handling and fallback."""
         try:
@@ -887,7 +888,7 @@ class ErrorHealer:
 
             return None
 
-    def get_error_summary(self) -> Dict:
+    def get_error_summary(self) -> dict:
         """Get a summary of all errors that have occurred."""
         if not self.error_log:
             return {"total_errors": 0, "error_types": {}}
@@ -918,10 +919,10 @@ class PackageManager:
 
     def __init__(
         self,
-        mirror: Optional[str] = "https://pypi.tuna.tsinghua.edu.cn/simple",
+        mirror: str | None = "https://pypi.tuna.tsinghua.edu.cn/simple",
         trusted_host: bool = True,
         timeout: int = 300,
-        repo_dir: Optional[Path] = None
+        repo_dir: Path | None = None
     ):
         self.mirror = mirror
         self.trusted_host = trusted_host
@@ -932,24 +933,24 @@ class PackageManager:
     def dynamic_import_pkg(
         self,
         package_spec: str,
-        import_name: Optional[str] = None
+        import_name: str | None = None
     ) -> Any:
-        """
-        Dynamically install and import Python package.
-        
+        """Dynamically install and import Python package.
+
         Args:
             package_spec: Package specification (e.g., 'requests>=2.25,<3')
             import_name: Name to import (defaults to package name)
-            
+
         Returns:
             Imported module
-            
+
         Raises:
             RuntimeError: Installation failed
             ImportError: Import failed
         """
         if Requirement is None:
-            raise ImportError("packaging library not available")
+            msg = "packaging library not available"
+            raise ImportError(msg)
 
         req = self._parse_spec(package_spec)
         site_dir = self._ensure_repo(self.repo_dir)
@@ -964,7 +965,8 @@ class PackageManager:
         try:
             return Requirement(spec)
         except Exception as e:
-            raise ValueError(f"Invalid package specification {spec!r}: {e}") from e
+            msg = f"Invalid package specification {spec!r}: {e}"
+            raise ValueError(msg) from e
 
     def _ensure_repo(self, repo_dir: Path) -> Path:
         """Ensure repository directory exists."""
@@ -1015,7 +1017,8 @@ class PackageManager:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(self._parse_pip_error(e.stderr or e.stdout)) from e
         except subprocess.TimeoutExpired as e:
-            raise RuntimeError(f"Installation timeout for {req} ({self.timeout}s)") from e
+            msg = f"Installation timeout for {req} ({self.timeout}s)"
+            raise RuntimeError(msg) from e
 
     def _import_module(self, name: str, site_dir: Path) -> Any:
         """Import module with site directory refresh."""
@@ -1027,7 +1030,8 @@ class PackageManager:
             try:
                 return importlib.import_module(name)
             except ImportError as e:
-                raise ImportError(f"Installed successfully but cannot import {name}") from e
+                msg = f"Installed successfully but cannot import {name}"
+                raise ImportError(msg) from e
 
     def _parse_pip_error(self, output: str) -> str:
         """Parse pip error messages."""
@@ -1158,12 +1162,12 @@ class PackageErrorExtractor:
             "incompatible_version": "Package version conflict: {package1} {version1} is incompatible with {package2} {version2}. Create virtual environment or adjust dependency versions.",
         }
 
-    def extract_errors_from_text(self, text: str) -> List[Dict]:
+    def extract_errors_from_text(self, text: str) -> list[dict]:
         """Extract all package-related errors from text
-        
+
         Args:
             text: Text containing error information
-            
+
         Returns:
             List of error information, each item contains error type, match content and related details
         """
@@ -1201,38 +1205,38 @@ class PackageErrorExtractor:
 
         return results
 
-    def extract_errors_from_file(self, file_path: str) -> List[Dict]:
+    def extract_errors_from_file(self, file_path: str) -> list[dict]:
         """Extract package-related errors from file
-        
+
         Args:
             file_path: Error log file path
-            
+
         Returns:
             List of error information
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
             return self.extract_errors_from_text(content)
         except UnicodeDecodeError:
             # Try other encodings
             try:
-                with open(file_path, 'r', encoding='latin-1') as f:
+                with open(file_path, encoding='latin-1') as f:
                     content = f.read()
                 return self.extract_errors_from_text(content)
             except Exception as e:
-                logger.error(f"Error reading file: {e}")
+                logger.exception(f"Error reading file: {e}")
                 return []
         except Exception as e:
-            logger.error(f"Error processing file: {e}")
+            logger.exception(f"Error processing file: {e}")
             return []
 
-    def get_error_summary(self, errors: List[Dict]) -> Dict:
+    def get_error_summary(self, errors: list[dict]) -> dict:
         """Generate error summary information
-        
+
         Args:
             errors: List of error information
-            
+
         Returns:
             Dictionary containing error summary
         """
@@ -1263,12 +1267,12 @@ class PackageErrorExtractor:
 
         return summary
 
-    def generate_fix_commands(self, errors: List[Dict]) -> Tuple[List[str], List[str]]:
+    def generate_fix_commands(self, errors: list[dict]) -> tuple[list[str], list[str]]:
         """Generate possible fix commands
-        
+
         Args:
             errors: List of error information
-            
+
         Returns:
             Tuple of (fix_commands, install_packages)
         """
@@ -1321,9 +1325,9 @@ class PackageErrorExtractor:
 
         return fix_commands, install_packages
 
-    def print_errors(self, errors: List[Dict]):
+    def print_errors(self, errors: list[dict]):
         """Print error information to console
-        
+
         Args:
             errors: List of error information
         """
@@ -1332,7 +1336,7 @@ class PackageErrorExtractor:
             return
 
         summary = self.get_error_summary(errors)
-        fix_commands, install_packages = self.generate_fix_commands(errors)
+        fix_commands, _install_packages = self.generate_fix_commands(errors)
 
         print("=" * 80)
         print("Python Package Error Analysis Report")
@@ -1382,10 +1386,10 @@ class PackageErrorExtractor:
 
     def _friendly_error_name(self, error_type: str) -> str:
         """Convert error type to friendly description
-        
+
         Args:
             error_type: Error type code
-            
+
         Returns:
             Friendly description of error type
         """
@@ -1414,13 +1418,13 @@ class CodeAnalyzer:
 
     def __init__(self, directory: str = "."):
         self.directory = Path(directory).resolve()
-        self.import_statements: List[Dict] = []
-        self.code_elements: List[Dict] = []
+        self.import_statements: list[dict] = []
+        self.code_elements: list[dict] = []
 
-    def analyze_file(self, file_path: Path) -> Tuple[List[Dict], List[Dict]]:
+    def analyze_file(self, file_path: Path) -> tuple[list[dict], list[dict]]:
         """Analyze a single Python file and extract imports and code elements."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
 
             tree = ast.parse(content, filename=str(file_path))
@@ -1483,7 +1487,7 @@ class CodeAnalyzer:
             return imports, elements
 
         except (SyntaxError, UnicodeDecodeError, OSError) as e:
-            logger.error(f"Error analyzing {file_path}: {e}")
+            logger.exception(f"Error analyzing {file_path}: {e}")
             return [], []
 
     def analyze_directory(self) -> None:
@@ -1499,7 +1503,7 @@ class CodeAnalyzer:
         logger.info(f"Found {len(self.import_statements)} import statements")
         logger.info(f"Found {len(self.code_elements)} code elements")
 
-    def get_missing_packages(self) -> List[str]:
+    def get_missing_packages(self) -> list[str]:
         """Get list of packages that are imported but not installed."""
         missing_packages = []
 
@@ -1577,7 +1581,7 @@ class QualityChecker:
         self.installed_tools = set()
         self.all_errors = []
 
-    def check_and_install_tools(self) -> Dict[str, bool]:
+    def check_and_install_tools(self) -> dict[str, bool]:
         """Check for required tools and install missing ones."""
         print("\n🔧 Checking required quality tools...")
         print("=" * 60)
@@ -1633,10 +1637,10 @@ class QualityChecker:
             )
             return True
         except Exception as e:
-            logger.error(f"Failed to install {package_name}: {e}")
+            logger.exception(f"Failed to install {package_name}: {e}")
             return False
 
-    def scan_and_install_missing_packages(self) -> List[str]:
+    def scan_and_install_missing_packages(self) -> list[str]:
         """Scan codebase for missing packages and install them."""
         print("\n🔍 Scanning codebase for missing packages...")
         print("=" * 60)
@@ -1679,9 +1683,9 @@ class QualityChecker:
 
     def run_command_smart(
         self,
-        command: List[str],
+        command: list[str],
         description: str
-    ) -> Tuple[bool, str, int]:
+    ) -> tuple[bool, str, int]:
         """Intelligently run command with tool-specific handling."""
         try:
             result = subprocess.run(
@@ -1738,7 +1742,7 @@ class QualityChecker:
 
         return 0
 
-    def get_quality_checks(self) -> Dict[str, Tuple[List[str], Optional[str], bool]]:
+    def get_quality_checks(self) -> dict[str, tuple[list[str], str | None, bool]]:
         """Define all quality check configurations."""
         checks = {}
 
@@ -1829,10 +1833,10 @@ class QualityChecker:
     def run_single_check(
         self,
         description: str,
-        command: List[str],
-        fallback_msg: Optional[str],
+        command: list[str],
+        fallback_msg: str | None,
         can_auto_fix: bool
-    ) -> Tuple[str, Optional[bool], str, int]:
+    ) -> tuple[str, bool | None, str, int]:
         """Run a single quality check and return the result."""
         print(f"Running {description}...")
 
@@ -1864,22 +1868,22 @@ class QualityChecker:
 
             # Try to auto-fix if enabled and supported
             if self.auto_fix and can_auto_fix:
-                print(f"   🔧 Attempting auto-fix...")
+                print("   🔧 Attempting auto-fix...")
                 if self._auto_fix_check(description, command):
-                    print(f"   ✅ Auto-fix successful")
+                    print("   ✅ Auto-fix successful")
                     success = True
                 else:
-                    print(f"   ❌ Auto-fix failed")
+                    print("   ❌ Auto-fix failed")
 
         print("-" * 40)
         return description, success, output, error_count
 
     def _run_command_with_fallback(
         self,
-        command: List[str],
+        command: list[str],
         description: str,
-        fallback_msg: Optional[str]
-    ) -> Tuple[Optional[bool], str]:
+        fallback_msg: str | None
+    ) -> tuple[bool | None, str]:
         """Run command with fallback message."""
         try:
             success, output, _ = self.run_command_smart(command, description)
@@ -1894,7 +1898,7 @@ class QualityChecker:
                 return None, f"{fallback_msg} (Exception: {e})"
             return False, f"Exception: {e}"
 
-    def _auto_fix_check(self, description: str, command: List[str]) -> bool:
+    def _auto_fix_check(self, description: str, command: list[str]) -> bool:
         """Attempt to auto-fix issues for a given check."""
         fix_commands = {
             "Black formatting check": ["python", "-m", "black", "."],
@@ -1913,7 +1917,7 @@ class QualityChecker:
                 )
                 return result.returncode == 0
             except Exception as e:
-                logger.error(f"Auto-fix failed for {description}: {e}")
+                logger.exception(f"Auto-fix failed for {description}: {e}")
                 return False
 
         return False
@@ -1934,7 +1938,7 @@ class QualityChecker:
 
         # Get quality checks
         checks = self.get_quality_checks()
-        results: List[Tuple[str, Optional[bool], str, int]] = []
+        results: list[tuple[str, bool | None, str, int]] = []
 
         # Run all checks
         for description, (command, fallback_msg, can_auto_fix) in checks.items():
@@ -1956,7 +1960,7 @@ class QualityChecker:
             print("=" * 80)
             self.error_extractor.print_errors(self.all_errors)
 
-    def _print_results_summary(self, results: List[Tuple[str, Optional[bool], str, int]]) -> None:
+    def _print_results_summary(self, results: list[tuple[str, bool | None, str, int]]) -> None:
         """Print summary of all check results."""
         print("\n📊 Quality Check Results Summary:")
         print("=" * 60)
@@ -2132,14 +2136,14 @@ class QualityChecker:
 def main():
     """Enhanced main function with comprehensive argument parsing."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(
         description='🚀 Ultimate Code Quality Management System',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s                           # Full quality check
-  %(prog)s lint                      # Lint only  
+  %(prog)s lint                      # Lint only
   %(prog)s format                    # Format code
   %(prog)s scan                      # Scan for missing packages
   %(prog)s --json results.json       # Export to JSON
@@ -2150,11 +2154,11 @@ Examples:
   %(prog)s --auto-fix --auto-install # Auto-fix with auto-install
         """
     )
-    
+
     # Subcommands
     parser.add_argument('command', nargs='?', choices=['lint', 'format', 'scan', 'help'],
                        help='Command to execute')
-    
+
     # Output options
     parser.add_argument('--json', type=str, metavar='FILE',
                        help='Export results to JSON file')
@@ -2164,13 +2168,13 @@ Examples:
                        help='Export issues to CSV file')
     parser.add_argument('--all-formats', type=str, metavar='DIR',
                        help='Export all formats to directory')
-    
+
     # Git integration
     parser.add_argument('--git-diff', type=str, metavar='BRANCH', nargs='?', const='main',
                        help='Check only files changed vs branch (default: main)')
     parser.add_argument('--git-staged', action='store_true',
                        help='Check only staged files')
-    
+
     # Options
     parser.add_argument('--auto-fix', action='store_true',
                        help='Automatically fix issues where possible')
@@ -2178,24 +2182,24 @@ Examples:
                        help='Automatically install missing packages')
     parser.add_argument('--directory', type=str, default='.',
                        help='Directory to check (default: current)')
-    
+
     args = parser.parse_args()
-    
+
     # Handle help command
     if args.command == 'help':
         parser.print_help()
         return
-    
+
     # Create checker with options
     checker = QualityChecker(
         auto_fix=args.auto_fix,
         auto_install=args.auto_install
     )
-    
+
     # Override directory if specified
     if args.directory != '.':
         checker.directory = args.directory
-    
+
     # Set output paths
     if args.json:
         checker.output_json = Path(args.json)
@@ -2210,7 +2214,7 @@ Examples:
         checker.output_json = output_dir / f'results_{timestamp}.json'
         checker.output_html = output_dir / f'report_{timestamp}.html'
         checker.output_csv = output_dir / f'issues_{timestamp}.csv'
-    
+
     # Git integration - get file list
     target_files = None
     if args.git_diff and checker.git_integration.is_git_repo():
@@ -2221,14 +2225,14 @@ Examples:
         target_files = checker.git_integration.get_staged_files()
         if target_files:
             print(f"\n🔍 Git mode: Checking {len(target_files)} staged files")
-    
+
     # Store target files in checker if provided
     if target_files is not None:
         checker.target_files = target_files
-    
+
     # Start timing
     start_time = time.time()
-    
+
     # Execute command
     try:
         if args.command == 'lint':
@@ -2240,33 +2244,33 @@ Examples:
         else:
             # Run comprehensive checks
             checker.run_quality_checks()
-        
+
         # Set duration
         checker.results.duration = time.time() - start_time
-        
+
         # Generate summary
         checker.results.generate_summary()
-        
+
         # Export results
         if checker.output_json:
             checker.results.save_json(checker.output_json)
             print(f"\n📄 JSON results saved: {checker.output_json}")
-        
+
         if checker.output_html:
             checker.results.save_html(checker.output_html)
             print(f"\n🌐 HTML report generated: {checker.output_html}")
             print(f"   Open in browser: file://{checker.output_html.absolute()}")
-        
+
         if checker.output_csv:
             checker.results.save_csv(checker.output_csv)
             print(f"\n📊 CSV export saved: {checker.output_csv}")
-        
+
         # Print summary
         if checker.output_json or checker.output_html or checker.output_csv:
-            print(f"\n✅ Results exported successfully!")
+            print("\n✅ Results exported successfully!")
             print(f"   Total issues: {checker.results.summary.get('total_issues', 0)}")
             print(f"   Duration: {checker.results.duration:.2f}s")
-    
+
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")
         sys.exit(130)
