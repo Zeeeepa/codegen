@@ -138,8 +138,9 @@ echo -e "${YELLOW}🔍 Step 4/4: Running quality analysis...${NC}"
 echo "  Target directory: $TARGET_DIR"
 echo ""
 
-# Build command
-CMD="python3 code_quality_ultimate.py"
+# Build command - use absolute path to script
+SCRIPT_PATH="$TEMP_DIR/code_quality_ultimate.py"
+CMD="cd '$TARGET_DIR' && python3 '$SCRIPT_PATH'"
 
 # Add options
 if [ "$AUTO_FIX" = true ]; then
@@ -156,10 +157,7 @@ fi
 
 # Output file in target directory
 OUTPUT_PATH="$TARGET_DIR/$OUTPUT_FILE"
-CMD="$CMD --html $OUTPUT_PATH"
-
-# Change to target directory and run
-cd "$TARGET_DIR"
+CMD="$CMD --html '$OUTPUT_PATH'"
 
 echo "Running: $CMD"
 echo "=================================================="
