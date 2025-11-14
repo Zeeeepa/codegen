@@ -8,11 +8,13 @@ import { Command } from 'commander';
 import log from 'npmlog';
 import got from 'got';
 import PQueue from 'p-queue';
-import { stringify as csvStringify } from 'fast-csv';
+import fastcsv from 'fast-csv';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { Transform, Readable } from 'stream';
 import { ShardedStorage } from './storage.js';
+
+const { format: csvStringify } = fastcsv;
 
 // Configuration
 const REGISTRY_URL = 'https://registry.npmmirror.com';
@@ -32,7 +34,10 @@ class RegistryIndexer {
   }
 
   async getRegistryStatus() {
-    const { body } = await got(REGISTRY_URL, { responseType: 'json', timeout: REQUEST_TIMEOUT });
+    const { body } = await got(REGISTRY_URL, { 
+      responseType: 'json', 
+      timeout: { request: REQUEST_TIMEOUT } 
+    });
     return {
       update_seq: body.update_seq,
       doc_count: body.doc_count,
@@ -48,7 +53,7 @@ class RegistryIndexer {
       const { body } = await got(`${REGISTRY_CHANGES_URL}/_changes`, {
         searchParams: { since, limit, feed: 'longpoll' },
         responseType: 'json',
-        timeout: REQUEST_TIMEOUT
+        timeout: { request: REQUEST_TIMEOUT }
       });
       return body;
     } catch (error) {
@@ -57,7 +62,7 @@ class RegistryIndexer {
       const { body } = await got(`${REGISTRY_CHANGES_URL}/_changes`, {
         searchParams: { since, limit },
         responseType: 'json',
-        timeout: REQUEST_TIMEOUT
+        timeout: { request: REQUEST_TIMEOUT }
       });
       return body;
     }
@@ -145,7 +150,7 @@ class MetadataEnricher {
     try {
       const { body } = await got(`${REGISTRY_URL}/${encodeURIComponent(name)}`, {
         responseType: 'json',
-        timeout: REQUEST_TIMEOUT
+        timeout: { request: REQUEST_TIMEOUT }
       });
       return body;
     } catch (error) {
@@ -159,7 +164,7 @@ class MetadataEnricher {
     try {
       const { body } = await got(`https://api.npmjs.org/downloads/point/last-week/${encodeURIComponent(name)}`, {
         responseType: 'json',
-        timeout: 10000
+        timeout: { request: 10000 }
       });
       return body.downloads || 0;
     } catch {
@@ -457,4 +462,3 @@ async function main() {
 main();
 
 export { RegistryIndexer, MetadataEnricher, CSVExporter };
-
