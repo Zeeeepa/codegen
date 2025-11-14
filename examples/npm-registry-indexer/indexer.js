@@ -1,35 +1,24 @@
 #!/usr/bin/env node
+
 /**
- * NPM Registry Indexer - Production Version
+ * NPM Registry Indexer v3.0.0
  * 
- * A production-grade npm registry indexer with:
- * - JSONL file-based storage for efficient streaming
- * - Incremental sync with CNPM mirror
- * - Parallel metadata enrichment
- * - CSV export with filtering
- * - Comprehensive error handling and retry logic
- * 
- * Usage:
- *   node indexer.js --index    # Sync from registry
- *   node indexer.js --enrich   # Enrich metadata
- *   node indexer.js --export   # Export to CSV
- *   node indexer.js --status   # Show status
+ * Production-grade npm registry indexer with CNPM mirror support
+ * Features: Incremental sync, parallel enrichment, streaming CSV export
  */
 
 import fs from 'fs/promises';
 import { createReadStream, createWriteStream, existsSync } from 'fs';
 import path from 'path';
-import readline from 'readline';
 import log from 'npmlog';
 import PQueue from 'p-queue';
 import got from 'got';
 import registryFetch from 'npm-registry-fetch';
 import { Command } from 'commander';
-import fastcsv from 'fast-csv';
-import { pipeline } from 'stream/promises';
+import { format as csvFormat } from 'fast-csv';
+import { pipeline as streamPipeline } from 'stream/promises';
 import { Transform, Readable } from 'stream';
-
-const { format: csvFormat } = fastcsv;
+import readline from 'readline';
 
 // ============================================================================
 // CONFIGURATION
@@ -39,17 +28,17 @@ const CONFIG = {
   REGISTRY_URL: process.env.NPM_REGISTRY_URL || 'https://registry.npmmirror.com',
   REGISTRY_CHANGES_URL: process.env.NPM_CHANGES_URL || 'https://r.cnpmjs.org',
   DATA_DIR: process.env.DATA_DIR || './data',
-  BATCH_SIZE: parseInt(process.env.BATCH_SIZE || '1000', 10),
-  ENRICH_CONCURRENCY: parseInt(process.env.ENRICH_CONCURRENCY || '20', 10),
-  REQUEST_TIMEOUT: parseInt(process.env.REQUEST_TIMEOUT || '30000', 10),
-  MAX_RETRIES: parseInt(process.env.MAX_RETRIES || '3', 10),
+  BATCH_SIZE: parseInt(process.env.BATCH_SIZE || '1000'),
+  ENRICH_CONCURRENCY: parseInt(process.env.ENRICH_CONCURRENCY || '20'),
+  REQUEST_TIMEOUT: parseInt(process.env.REQUEST_TIMEOUT || '30000'),
+  MAX_RETRIES: parseInt(process.env.MAX_RETRIES || '3'),
   CHECKPOINT_INTERVAL: 100 // Save checkpoint every N batches
 };
 
 const CHECKPOINT_FILE = path.join(CONFIG.DATA_DIR, 'checkpoint.json');
 const PACKAGES_JSONL = path.join(CONFIG.DATA_DIR, 'packages.jsonl');
-const CSV_FILE = path.join(CONFIG.DATA_DIR, 'packages.csv');
 
+// Logging setup
 log.heading = 'NPMIndexer';
 log.level = process.env.LOG_LEVEL || 'info';
 
@@ -61,14 +50,36 @@ async function ensureDataDir() {
   await fs.mkdir(CONFIG.DATA_DIR, { recursive: true });
 }
 
+async function safeUnlink(filepath) {
+  try {
+    if (existsSync(filepath)) {
+      await fs.unlink(filepath);
+    }
+  } catch (error) {
+    log.warn('FileSystem', `Failed to delete ${filepath}: ${error.message}`);
+  }
+}
+
 async function atomicWrite(filepath, data) {
   const tempPath = `${filepath}.tmp`;
+  const backupPath = `${filepath}.backup`;
+  
   try {
     await fs.writeFile(tempPath, data);
+    
+    if (existsSync(filepath)) {
+      await fs.rename(filepath, backupPath);
+    }
+    
     await fs.rename(tempPath, filepath);
+    await safeUnlink(backupPath);
   } catch (error) {
-    if (existsSync(tempPath)) await fs.unlink(tempPath);
+    if (existsSync(backupPath)) {
+      await fs.rename(backupPath, filepath);
+    }
     throw error;
+  } finally {
+    await safeUnlink(tempPath);
   }
 }
 
@@ -76,25 +87,20 @@ function formatNumber(num) {
   return num.toLocaleString();
 }
 
-function formatDuration(ms) {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  
-  if (hours > 0) return `${hours}h ${minutes % 60}m`;
-  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-  return `${seconds}s`;
+function formatDuration(seconds) {
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  if (seconds < 3600) return `${(seconds / 60).toFixed(1)}min`;
+  return `${(seconds / 3600).toFixed(1)}h`;
 }
 
 // ============================================================================
-// FILE STORAGE CLASS
+// FILE STORAGE (JSONL-based with streaming)
 // ============================================================================
 
 class FileStorage {
   constructor() {
     this.checkpointPath = CHECKPOINT_FILE;
     this.packagesPath = PACKAGES_JSONL;
-    this.csvPath = CSV_FILE;
   }
 
   async getCheckpoint() {
@@ -105,9 +111,12 @@ class FileStorage {
       return {
         last_sequence: 0,
         total_packages: 0,
-        enriched_count: 0,
         last_updated: null,
-        version: '2.0.0'
+        enriched_count: 0,
+        last_enriched: null,
+        csv_last_export: null,
+        csv_row_count: 0,
+        version: '3.0.0'
       };
     }
   }
@@ -128,11 +137,13 @@ class FileStorage {
   }
 
   async *streamPackages() {
-    if (!existsSync(this.packagesPath)) return;
+    if (!existsSync(this.packagesPath)) {
+      return;
+    }
 
-    const fileStream = createReadStream(this.packagesPath, { 
+    const fileStream = createReadStream(this.packagesPath, {
       encoding: 'utf8',
-      highWaterMark: 64 * 1024 
+      highWaterMark: 64 * 1024
     });
     
     const rl = readline.createInterface({
@@ -145,23 +156,29 @@ class FileStorage {
       try {
         yield JSON.parse(line);
       } catch (error) {
-        log.warn('Storage', 'Invalid JSON line, skipping');
+        log.warn('Storage', `Invalid JSON: ${line.substring(0, 50)}...`);
       }
     }
   }
 
-  async getPackagesByState(state, limit = CONFIG.BATCH_SIZE) {
+  async getPackagesByState(state, limit = CONFIG.BATCH_SIZE, offset = 0) {
     const packages = [];
+    let count = 0;
+
     for await (const pkg of this.streamPackages()) {
       if (pkg.state === state) {
-        packages.push(pkg);
+        if (count >= offset && packages.length < limit) {
+          packages.push(pkg);
+        }
+        count++;
         if (packages.length >= limit) break;
       }
     }
+
     return packages;
   }
 
-  async countByState(state) {
+  async getPackageCountByState(state) {
     let count = 0;
     for await (const pkg of this.streamPackages()) {
       if (pkg.state === state) count++;
@@ -169,58 +186,68 @@ class FileStorage {
     return count;
   }
 
-  async getStats() {
-    const stats = { indexed: 0, synced: 0, enriched: 0, failed: 0, total: 0 };
-    for await (const pkg of this.streamPackages()) {
-      stats.total++;
-      if (pkg.state) stats[pkg.state] = (stats[pkg.state] || 0) + 1;
-    }
-    return stats;
-  }
-
   async updatePackagesBatch(updatesMap) {
+    await ensureDataDir();
     const tempPath = `${this.packagesPath}.tmp`;
-    const writeStream = createWriteStream(tempPath);
-    
-    const processed = new Set();
+    const tempStream = createWriteStream(tempPath);
+    let updated = 0;
 
     try {
-      // Update existing packages
       for await (const pkg of this.streamPackages()) {
         const update = updatesMap.get(pkg.name);
         const toWrite = update || pkg;
-        writeStream.write(JSON.stringify(toWrite) + '\n');
-        if (update) processed.add(pkg.name);
+        if (update) updated++;
+        tempStream.write(JSON.stringify(toWrite) + '\n');
       }
 
-      // Add new packages
+      // Add new packages not in original file
       for (const [name, pkg] of updatesMap) {
-        if (!processed.has(name)) {
-          writeStream.write(JSON.stringify(pkg) + '\n');
+        let found = false;
+        for await (const existing of this.streamPackages()) {
+          if (existing.name === name) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          tempStream.write(JSON.stringify(pkg) + '\n');
         }
       }
 
-      writeStream.end();
+      tempStream.end();
       await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
+        tempStream.on('finish', resolve);
+        tempStream.on('error', reject);
       });
 
       await fs.rename(tempPath, this.packagesPath);
-      return updatesMap.size;
+      return updated;
     } catch (error) {
-      if (existsSync(tempPath)) await fs.unlink(tempPath);
+      await safeUnlink(tempPath);
       throw error;
     }
   }
 
-  async csvExists() {
-    return existsSync(this.csvPath);
+  async getStats() {
+    const stats = { indexed: 0, synced: 0, enriched: 0, failed: 0, total: 0 };
+
+    for await (const pkg of this.streamPackages()) {
+      stats.total++;
+      if (pkg.state) {
+        stats[pkg.state] = (stats[pkg.state] || 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  csvExists() {
+    return existsSync(path.join(CONFIG.DATA_DIR, 'packages.csv'));
   }
 }
 
 // ============================================================================
-// REGISTRY INDEXER CLASS
+// REGISTRY INDEXER
 // ============================================================================
 
 class RegistryIndexer {
@@ -228,19 +255,26 @@ class RegistryIndexer {
     this.storage = new FileStorage();
     this.gotClient = got.extend({
       timeout: { request: CONFIG.REQUEST_TIMEOUT },
-      retry: { 
-        limit: CONFIG.MAX_RETRIES,
-        methods: ['GET'],
-        statusCodes: [408, 413, 429, 500, 502, 503, 504]
+      retry: { limit: CONFIG.MAX_RETRIES },
+      hooks: {
+        beforeRetry: [
+          (error, retryCount) => {
+            log.warn('INDEX', `Retry ${retryCount}: ${error.message}`);
+          }
+        ]
       }
     });
   }
 
   async getCurrentSequence() {
-    const response = await this.gotClient.get(CONFIG.REGISTRY_URL, { 
-      responseType: 'json' 
-    });
-    return response.body.update_seq;
+    try {
+      const response = await this.gotClient.get(CONFIG.REGISTRY_URL, {
+        responseType: 'json'
+      });
+      return response.body.update_seq;
+    } catch (error) {
+      throw new Error(`Cannot connect to registry: ${error.message}`);
+    }
   }
 
   async fetchChanges(since, limit = CONFIG.BATCH_SIZE) {
@@ -251,34 +285,24 @@ class RegistryIndexer {
     return response.body;
   }
 
-  async runFullIndex() {
+  async runFullIndex({ resume = true } = {}) {
     log.info('INDEX', '🌏 Registry: %s', CONFIG.REGISTRY_CHANGES_URL);
     await ensureDataDir();
 
     const checkpoint = await this.storage.getCheckpoint();
-    const startSeq = checkpoint.last_sequence;
+    const startSeq = resume ? checkpoint.last_sequence : 0;
     
-    let totalSeq;
-    try {
-      totalSeq = await this.getCurrentSequence();
-    } catch (error) {
-      log.error('INDEX', 'Failed to connect to registry: %s', error.message);
-      throw new Error('Cannot connect to registry. Please check your network connection.');
-    }
-
+    const totalSeq = await this.getCurrentSequence();
+    
     if (startSeq >= totalSeq) {
-      log.info('INDEX', '✅ Already up to date (seq: %d)', startSeq);
-      return { 
-        totalPackages: checkpoint.total_packages, 
-        lastSequence: startSeq,
-        skipped: true 
-      };
+      log.info('INDEX', '✅ Registry is up to date (seq: %s)', formatNumber(startSeq));
+      return { totalPackages: checkpoint.total_packages, lastSequence: startSeq, skipped: true };
     }
 
-    log.info('INDEX', 'Syncing from %d → %d (%d changes)', 
-      startSeq, totalSeq, totalSeq - startSeq);
+    log.info('INDEX', 'Syncing from %s → %s (%s changes)',
+      formatNumber(startSeq), formatNumber(totalSeq), formatNumber(totalSeq - startSeq));
 
-    // Load existing packages into Set for deduplication
+    // Build existing packages set
     const existingPackages = new Set();
     for await (const pkg of this.storage.streamPackages()) {
       existingPackages.add(pkg.name);
@@ -286,24 +310,19 @@ class RegistryIndexer {
 
     let currentSeq = startSeq;
     let newPackages = 0;
-    let totalRecords = 0;
-    let batchCount = 0;
+    let batchNum = 0;
     const startTime = Date.now();
 
     while (currentSeq < totalSeq) {
-      try {
-        const response = await this.fetchChanges(currentSeq, CONFIG.BATCH_SIZE);
-        
-        if (!response.results || response.results.length === 0) {
-          log.info('INDEX', 'Reached end of changes feed');
-          break;
-        }
+      batchNum++;
+      const response = await this.fetchChanges(currentSeq, CONFIG.BATCH_SIZE);
+      
+      if (!response.results || response.results.length === 0) break;
 
-        const batch = [];
-        for (const change of response.results) {
-          if (change.id && 
-              !change.id.startsWith('_design/') && 
-              !existingPackages.has(change.id)) {
+      const batch = [];
+      for (const change of response.results) {
+        if (change.id && !change.id.startsWith('_design/')) {
+          if (!existingPackages.has(change.id)) {
             batch.push({
               name: change.id,
               state: 'indexed',
@@ -313,72 +332,64 @@ class RegistryIndexer {
             existingPackages.add(change.id);
             newPackages++;
           }
-          totalRecords++;
-          currentSeq = change.seq;
         }
+        currentSeq = change.seq;
+      }
 
-        if (batch.length > 0) {
-          await this.storage.appendPackages(batch);
-        }
+      if (batch.length > 0) {
+        await this.storage.appendPackages(batch);
+      }
 
-        batchCount++;
-        const progress = ((currentSeq / totalSeq) * 100).toFixed(1);
-        const elapsed = Date.now() - startTime;
-        const rate = Math.round(totalRecords / (elapsed / 1000));
+      const rate = Math.round((currentSeq - startSeq) / ((Date.now() - startTime) / 1000));
+      
+      log.info('INDEX', 'Batch %d | Seq: %s/%s (%s%%) | New: %d | Total: %d | Rate: %d/s',
+        batchNum,
+        formatNumber(currentSeq),
+        formatNumber(totalSeq),
+        ((currentSeq / totalSeq) * 100).toFixed(1),
+        newPackages,
+        existingPackages.size,
+        rate
+      );
 
-        log.info('INDEX', 'Batch %d | Seq: %d/%d (%s%%) | New: %d | Total: %d | Rate: %d/s',
-          batchCount, currentSeq, totalSeq, progress, newPackages, 
-          existingPackages.size, rate);
-
-        // Save checkpoint periodically
-        if (batchCount % CONFIG.CHECKPOINT_INTERVAL === 0) {
-          await this.storage.saveCheckpoint({
-            ...checkpoint,
-            last_sequence: currentSeq,
-            total_packages: existingPackages.size,
-            last_updated: new Date().toISOString()
-          });
-          log.info('INDEX', '💾 Checkpoint saved');
-        }
-
-      } catch (error) {
-        log.error('INDEX', 'Error fetching changes: %s', error.message);
-        log.warn('INDEX', 'Retrying in 5 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+      // Save checkpoint periodically
+      if (batchNum % CONFIG.CHECKPOINT_INTERVAL === 0) {
+        await this.storage.saveCheckpoint({
+          ...checkpoint,
+          last_sequence: currentSeq,
+          total_packages: existingPackages.size,
+          last_updated: new Date().toISOString()
+        });
       }
     }
 
     // Final checkpoint
     await this.storage.saveCheckpoint({
+      ...checkpoint,
       last_sequence: currentSeq,
       total_packages: existingPackages.size,
-      last_updated: new Date().toISOString(),
-      enriched_count: checkpoint.enriched_count || 0
+      last_updated: new Date().toISOString()
     });
 
-    const duration = Date.now() - startTime;
-    log.info('INDEX', '✅ Complete!');
-    log.info('INDEX', 'Packages: %s (+%s new)', 
-      formatNumber(existingPackages.size), formatNumber(newPackages));
-    log.info('INDEX', 'Duration: %s', formatDuration(duration));
+    const duration = (Date.now() - startTime) / 1000;
+    log.info('INDEX', '✅ Complete! Packages: %s (+%s new) | Time: %s',
+      formatNumber(existingPackages.size),
+      formatNumber(newPackages),
+      formatDuration(duration)
+    );
 
-    return { 
-      totalPackages: existingPackages.size, 
-      newPackages,
-      lastSequence: currentSeq,
-      duration 
-    };
+    return { totalPackages: existingPackages.size, lastSequence: currentSeq, newPackages };
   }
 }
 
 // ============================================================================
-// METADATA ENRICHER CLASS
+// METADATA ENRICHER
 // ============================================================================
 
 class MetadataEnricher {
   constructor() {
     this.storage = new FileStorage();
-    this.queue = new PQueue({ 
+    this.queue = new PQueue({
       concurrency: CONFIG.ENRICH_CONCURRENCY,
       interval: 1000,
       intervalCap: CONFIG.ENRICH_CONCURRENCY * 2
@@ -397,7 +408,7 @@ class MetadataEnricher {
       if (error.statusCode === 404) {
         log.warn('ENRICH', 'Not found: %s', packageName);
       } else {
-        log.error('ENRICH', 'Failed: %s (%s)', packageName, error.message);
+        log.error('ENRICH', 'Failed %s: %s', packageName, error.message);
       }
       return null;
     }
@@ -412,12 +423,14 @@ class MetadataEnricher {
         latest_version: null,
         publish_time: null,
         dependencies_count: 0,
+        dev_dependencies_count: 0,
         file_count: 0,
         unpacked_size: 0,
         homepage: null,
         repository: null,
         license: null,
         author: null,
+        maintainers_count: 0,
         npm_url: `https://www.npmjs.com/package/${packageName}`,
         error: 'not_found'
       };
@@ -428,35 +441,26 @@ class MetadataEnricher {
       'dist-tags': distTags = {},
       homepage, repository, license, author, maintainers
     } = packageData;
-
+    
     const latestVersion = distTags.latest;
     const latestVersionData = latestVersion && versions ? versions[latestVersion] : null;
 
     return {
       name: packageName,
       description: description || latestVersionData?.description || null,
-      keywords: Array.isArray(keywords) 
-        ? keywords.join(',') 
-        : Array.isArray(latestVersionData?.keywords) 
-          ? latestVersionData.keywords.join(',') 
-          : null,
+      keywords: Array.isArray(keywords) ? keywords.join(',') :
+                Array.isArray(latestVersionData?.keywords) ? latestVersionData.keywords.join(',') : null,
       latest_version: latestVersion || null,
-      publish_time: latestVersion 
-        ? time?.[latestVersion] 
-        : time?.modified || time?.created || null,
+      publish_time: latestVersion ? time?.[latestVersion] : time?.modified || time?.created || null,
       dependencies_count: Object.keys(latestVersionData?.dependencies || {}).length,
+      dev_dependencies_count: Object.keys(latestVersionData?.devDependencies || {}).length,
       file_count: latestVersionData?.dist?.fileCount || 0,
       unpacked_size: latestVersionData?.dist?.unpackedSize || 0,
       homepage: homepage || latestVersionData?.homepage || null,
-      repository: typeof repository === 'string' 
-        ? repository 
-        : repository?.url || null,
-      license: typeof license === 'string' 
-        ? license 
-        : license?.type || latestVersionData?.license || null,
-      author: typeof author === 'string' 
-        ? author 
-        : author?.name || null,
+      repository: typeof repository === 'string' ? repository : repository?.url || null,
+      license: typeof license === 'string' ? license :
+               license?.type || latestVersionData?.license || null,
+      author: typeof author === 'string' ? author : author?.name || null,
       maintainers_count: Array.isArray(maintainers) ? maintainers.length : 0,
       npm_url: `https://www.npmjs.com/package/${packageName}`
     };
@@ -468,7 +472,7 @@ class MetadataEnricher {
     // Count packages to enrich
     let totalToEnrich = 0;
     for (const state of targetStates) {
-      const count = await this.storage.countByState(state);
+      const count = await this.storage.getPackageCountByState(state);
       totalToEnrich += count;
       log.info('ENRICH', 'State "%s": %s packages', state, formatNumber(count));
     }
@@ -488,14 +492,11 @@ class MetadataEnricher {
 
     while (processed < totalToEnrich) {
       batchNum++;
-
+      
       // Fetch batch from all target states
       let batch = [];
       for (const state of targetStates) {
-        const stateBatch = await this.storage.getPackagesByState(
-          state,
-          CONFIG.BATCH_SIZE
-        );
+        const stateBatch = await this.storage.getPackagesByState(state, CONFIG.BATCH_SIZE, processed);
         batch = batch.concat(stateBatch);
         if (batch.length >= CONFIG.BATCH_SIZE) break;
       }
@@ -504,34 +505,25 @@ class MetadataEnricher {
 
       // Process batch with queue
       const updatesMap = new Map();
-
+      
       await Promise.all(
         batch.map(pkg =>
           this.queue.add(async () => {
             try {
               const packageData = await this.fetchPackageMetadata(pkg.name);
               const metadata = this.extractMetadata(packageData, pkg.name);
-
+              
               updatesMap.set(pkg.name, {
                 ...pkg,
                 ...metadata,
-                state: packageData ? 'enriched' : 'failed',
+                state: 'enriched',
                 enriched_at: new Date().toISOString()
               });
 
-              if (packageData) {
-                this.stats.success++;
-              } else {
-                this.stats.failed++;
-              }
+              this.stats.success++;
             } catch (error) {
-              log.error('ENRICH', 'Error: %s - %s', pkg.name, error.message);
+              log.error('ENRICH', 'Error %s: %s', pkg.name, error.message);
               this.stats.failed++;
-              updatesMap.set(pkg.name, {
-                ...pkg,
-                state: 'failed',
-                error: error.message
-              });
             }
           })
         )
@@ -542,43 +534,58 @@ class MetadataEnricher {
       processed += batch.length;
 
       // Progress reporting
-      const progress = ((processed / totalToEnrich) * 100).toFixed(1);
-      const elapsed = Date.now() - startTime;
-      const rate = (this.stats.success / (elapsed / 1000)).toFixed(1);
-      const eta = totalToEnrich > processed
-        ? formatDuration(((totalToEnrich - processed) / rate) * 1000)
-        : '0s';
-
-      log.info('ENRICH', 'Batch %d | Progress: %s/%s (%s%%) | Success: %s | Failed: %s | Rate: %s/s | ETA: %s',
-        batchNum, formatNumber(processed), formatNumber(totalToEnrich), progress,
-        formatNumber(this.stats.success), formatNumber(this.stats.failed), rate, eta);
+      const elapsed = (Date.now() - startTime) / 1000;
+      const rate = (this.stats.success / elapsed).toFixed(1);
+      const eta = totalToEnrich > processed ?
+        ((totalToEnrich - processed) / rate / 60).toFixed(1) : 0;
+      
+      log.info('ENRICH', 'Batch %d | Progress: %s/%s (%s%%) | Enriched: %s | Failed: %s | Rate: %s/s | ETA: %s min',
+        batchNum,
+        formatNumber(processed),
+        formatNumber(totalToEnrich),
+        ((processed / totalToEnrich) * 100).toFixed(1),
+        formatNumber(this.stats.success),
+        formatNumber(this.stats.failed),
+        rate,
+        eta
+      );
 
       // Save checkpoint
-      const checkpoint = await this.storage.getCheckpoint();
-      await this.storage.saveCheckpoint({
-        ...checkpoint,
-        enriched_count: this.stats.success,
-        last_enriched: new Date().toISOString()
-      });
+      if (batchNum % 10 === 0) {
+        const checkpoint = await this.storage.getCheckpoint();
+        await this.storage.saveCheckpoint({
+          ...checkpoint,
+          enriched_count: this.stats.success,
+          last_enriched: new Date().toISOString()
+        });
+      }
     }
 
-    const duration = Date.now() - startTime;
-    log.info('ENRICH', '✅ Complete!');
-    log.info('ENRICH', 'Success: %s | Failed: %s | Duration: %s',
-      formatNumber(this.stats.success), formatNumber(this.stats.failed), 
-      formatDuration(duration));
+    const duration = (Date.now() - startTime) / 1000;
+    log.info('ENRICH', '✅ Complete! Success: %s | Failed: %s | Time: %s',
+      formatNumber(this.stats.success),
+      formatNumber(this.stats.failed),
+      formatDuration(duration)
+    );
+
+    // Final checkpoint
+    const checkpoint = await this.storage.getCheckpoint();
+    await this.storage.saveCheckpoint({
+      ...checkpoint,
+      enriched_count: this.stats.success,
+      last_enriched: new Date().toISOString()
+    });
 
     return {
       processed,
       enriched: this.stats.success,
-      failed: this.stats.failed,
-      duration
+      failed: this.stats.failed
     };
   }
 }
 
 // ============================================================================
-// CSV EXPORTER CLASS
+// CSV EXPORTER
 // ============================================================================
 
 class CSVExporter {
@@ -590,75 +597,81 @@ class CSVExporter {
     if (filters.state && pkg.state !== filters.state) return false;
     if (filters.minSize && (pkg.unpacked_size || 0) < filters.minSize) return false;
     if (filters.maxSize && (pkg.unpacked_size || 0) > filters.maxSize) return false;
-    if (filters.minDeps && (pkg.dependencies_count || 0) < filters.minDeps) return false;
-    if (filters.maxDeps && (pkg.dependencies_count || 0) > filters.maxDeps) return false;
-
+    if (filters.minDependencies && (pkg.dependencies_count || 0) < filters.minDependencies) return false;
+    if (filters.maxDependencies && (pkg.dependencies_count || 0) > filters.maxDependencies) return false;
+    
     if (filters.publishedAfter && pkg.publish_time) {
       if (new Date(pkg.publish_time) < new Date(filters.publishedAfter)) return false;
     }
-
+    
     if (filters.publishedBefore && pkg.publish_time) {
       if (new Date(pkg.publish_time) > new Date(filters.publishedBefore)) return false;
     }
 
+    if (filters.keyword && pkg.keywords) {
+      if (!pkg.keywords.toLowerCase().includes(filters.keyword.toLowerCase())) return false;
+    }
+
+    if (filters.hasLicense && !pkg.license) return false;
+    
     return true;
   }
 
-  async export({ filters = {}, output = CSV_FILE } = {}) {
+  async export({ filters = {}, output = path.join(CONFIG.DATA_DIR, 'packages.csv') } = {}) {
     log.info('EXPORT', '📄 Exporting to: %s', output);
-
+    
     let rowCount = 0;
     const startTime = Date.now();
-
-    const writeStream = createWriteStream(output);
+    
+    const writeStream = createWriteStream(output, { flags: 'w' });
     const csvStream = csvFormat({
       headers: true,
       quoteColumns: true,
       quoteHeaders: true
     });
 
-    // Progress tracking transform
+    // Progress tracking
     const progressTransform = new Transform({
       objectMode: true,
       transform(chunk, encoding, callback) {
         rowCount++;
         if (rowCount % 10000 === 0) {
-          const elapsed = Date.now() - startTime;
-          const rate = Math.round(rowCount / (elapsed / 1000));
-          log.info('EXPORT', 'Progress: %s rows | Rate: %d rows/s',
-            formatNumber(rowCount), rate);
+          const elapsed = (Date.now() - startTime) / 1000;
+          const rate = (rowCount / elapsed).toFixed(0);
+          log.info('EXPORT', 'Progress: %s rows | Rate: %s/s', formatNumber(rowCount), rate);
         }
         callback(null, chunk);
       }
     });
 
-    // Create readable stream from storage
+    // Create readable stream
     const storage = this.storage;
     const shouldInclude = this.shouldIncludePackage.bind(this);
-
+    
     const packagesStream = new Readable({
       objectMode: true,
       async read() {
         try {
           for await (const pkg of storage.streamPackages()) {
             if (!shouldInclude(pkg, filters)) continue;
-
+            
             this.push({
               package_name: pkg.name,
               state: pkg.state || 'unknown',
               npm_url: pkg.npm_url || `https://www.npmjs.com/package/${pkg.name}`,
               latest_version: pkg.latest_version || '',
-              file_count: pkg.file_count || 0,
+              file_number: pkg.file_count || 0,
               unpacked_size: pkg.unpacked_size || 0,
               dependencies: pkg.dependencies_count || 0,
-              publish_time: pkg.publish_time || '',
-              description: (pkg.description || '').substring(0, 500),
-              keywords: (pkg.keywords || '').substring(0, 200),
+              dev_dependencies: pkg.dev_dependencies_count || 0,
+              latest_release_published_at: pkg.publish_time || '',
+              description: pkg.description || '',
+              keywords: pkg.keywords || '',
               homepage: pkg.homepage || '',
               repository: pkg.repository || '',
               license: pkg.license || '',
               author: pkg.author || '',
-              maintainers: pkg.maintainers_count || 0
+              maintainers_count: pkg.maintainers_count || 0
             });
           }
           this.push(null);
@@ -669,69 +682,63 @@ class CSVExporter {
     });
 
     try {
-      await pipeline(
-        packagesStream,
-        progressTransform,
-        csvStream,
-        writeStream
-      );
+      await streamPipeline(packagesStream, progressTransform, csvStream, writeStream);
 
-      const duration = Date.now() - startTime;
-      log.info('EXPORT', '✅ Complete!');
-      log.info('EXPORT', 'Rows: %s | Duration: %s',
+      const duration = (Date.now() - startTime) / 1000;
+      log.info('EXPORT', '✅ Complete! Rows: %s | Time: %s',
         formatNumber(rowCount), formatDuration(duration));
 
       // Update checkpoint
       const checkpoint = await this.storage.getCheckpoint();
       await this.storage.saveCheckpoint({
         ...checkpoint,
-        csv_exported: true,
-        csv_row_count: rowCount,
-        csv_last_export: new Date().toISOString()
+        csv_last_export: new Date().toISOString(),
+        csv_row_count: rowCount
       });
 
       return { rowCount, output, duration };
     } catch (error) {
-      log.error('EXPORT', 'Export failed: %s', error.message);
+      log.error('EXPORT', 'Failed: %s', error.message);
       throw error;
     }
   }
 }
 
 // ============================================================================
-// CLI SETUP
+// CLI
 // ============================================================================
 
 const program = new Command();
 
 program
   .name('npm-indexer')
-  .description('Production-grade NPM registry indexer with CNPM mirror support')
-  .version('2.0.0')
-  .option('--index', 'Run full index or incremental sync')
+  .description('Production NPM Registry Indexer')
+  .version('3.0.0')
+  .option('--index', 'Run indexing (incremental sync)')
   .option('--enrich', 'Enrich package metadata')
   .option('--export', 'Export to CSV')
   .option('--auto', 'Run full workflow: index → enrich → export')
   .option('--status', 'Show current status')
-  .option('--output <file>', 'CSV output file path', CSV_FILE)
-  .option('--state <state>', 'Filter by state (indexed/synced/enriched/failed)')
+  .option('--stats', 'Show package statistics')
+  .option('--output <file>', 'CSV output file')
+  .option('--state <state>', 'Filter by state')
   .option('--published-after <date>', 'Filter by publish date (YYYY-MM-DD)')
   .option('--published-before <date>', 'Filter by publish date (YYYY-MM-DD)')
   .option('--min-size <bytes>', 'Minimum package size', parseInt)
   .option('--max-size <bytes>', 'Maximum package size', parseInt)
   .option('--min-deps <count>', 'Minimum dependencies', parseInt)
   .option('--max-deps <count>', 'Maximum dependencies', parseInt)
+  .option('--keyword <keyword>', 'Filter by keyword')
+  .option('--has-license', 'Only packages with license')
   .parse(process.argv);
 
 const opts = program.opts();
 
 // ============================================================================
-// MAIN EXECUTION
+// MAIN
 // ============================================================================
 
 async function main() {
-  const startTime = Date.now();
-
   try {
     await ensureDataDir();
 
@@ -740,9 +747,26 @@ async function main() {
     const enricher = new MetadataEnricher();
     const exporter = new CSVExporter();
 
+    // Show statistics
+    if (opts.stats) {
+      log.info('STATS', '📊 Calculating...');
+      const stats = await storage.getStats();
+      console.log('\n═══════════════════════════════════════════════════════');
+      console.log('📊 Package Statistics');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('  Indexed:', formatNumber(stats.indexed || 0));
+      console.log('  Synced:', formatNumber(stats.synced || 0));
+      console.log('  Enriched:', formatNumber(stats.enriched || 0));
+      console.log('  Failed:', formatNumber(stats.failed || 0));
+      console.log('  Total:', formatNumber(stats.total || 0));
+      console.log('═══════════════════════════════════════════════════════');
+      return;
+    }
+
     // Show status
     if (opts.status) {
       const checkpoint = await storage.getCheckpoint();
+      const csvExists = storage.csvExists();
       const stats = await storage.getStats();
 
       console.log('\n═══════════════════════════════════════════════════════');
@@ -753,67 +777,66 @@ async function main() {
       console.log('  Total packages:', formatNumber(checkpoint.total_packages));
       console.log('  Last updated:', checkpoint.last_updated || 'Never');
       console.log('\n📈 Packages by State:');
-      console.log('  Indexed:', formatNumber(stats.indexed));
-      console.log('  Synced:', formatNumber(stats.synced));
-      console.log('  Enriched:', formatNumber(stats.enriched));
-      console.log('  Failed:', formatNumber(stats.failed));
+      console.log('  Indexed:', formatNumber(stats.indexed || 0));
+      console.log('  Synced:', formatNumber(stats.synced || 0));
+      console.log('  Enriched:', formatNumber(stats.enriched || 0));
+      console.log('  Failed:', formatNumber(stats.failed || 0));
       console.log('  Total:', formatNumber(stats.total));
       console.log('\n🔍 Enrichment Progress:');
-      console.log('  Enriched count:', formatNumber(checkpoint.enriched_count || 0));
+      console.log('  Enriched count:', formatNumber(checkpoint.enriched_count));
       console.log('  Last enriched:', checkpoint.last_enriched || 'Never');
       console.log('\n📄 CSV Export:');
       console.log('  Last export:', checkpoint.csv_last_export || 'Never');
       console.log('  Last row count:', formatNumber(checkpoint.csv_row_count || 0));
-      console.log('═══════════════════════════════════════════════════════\n');
+      console.log('═══════════════════════════════════════════════════════');
       return;
     }
 
-    // Auto workflow
-    if (opts.auto || (!opts.index && !opts.enrich && !opts.export)) {
-      log.info('MAIN', '🚀 Running full workflow');
-
+    // Run workflow
+    if (opts.auto) {
+      log.info('MAIN', '🚀 Running full workflow...');
       await indexer.runFullIndex();
-      await enricher.enrichAll(['indexed', 'synced']);
-      await exporter.export({ filters: {}, output: opts.output });
-
-      const duration = Date.now() - startTime;
-      log.info('MAIN', '✅ Workflow complete! Duration: %s', formatDuration(duration));
+      await enricher.enrichAll();
+      await exporter.export({ output: opts.output });
+      log.info('MAIN', '✅ Full workflow complete!');
       return;
     }
 
-    // Individual operations
     if (opts.index) {
       await indexer.runFullIndex();
     }
 
     if (opts.enrich) {
-      await enricher.enrichAll(['indexed', 'synced']);
+      await enricher.enrichAll();
     }
 
     if (opts.export) {
-      const filters = {};
-      if (opts.state) filters.state = opts.state;
-      if (opts.publishedAfter) filters.publishedAfter = opts.publishedAfter;
-      if (opts.publishedBefore) filters.publishedBefore = opts.publishedBefore;
-      if (opts.minSize) filters.minSize = opts.minSize;
-      if (opts.maxSize) filters.maxSize = opts.maxSize;
-      if (opts.minDeps) filters.minDeps = opts.minDeps;
-      if (opts.maxDeps) filters.maxDeps = opts.maxDeps;
+      const filters = {
+        state: opts.state,
+        minSize: opts.minSize,
+        maxSize: opts.maxSize,
+        minDependencies: opts.minDeps,
+        maxDependencies: opts.maxDeps,
+        publishedAfter: opts.publishedAfter,
+        publishedBefore: opts.publishedBefore,
+        keyword: opts.keyword,
+        hasLicense: opts.hasLicense
+      };
 
       await exporter.export({ filters, output: opts.output });
     }
 
-    const duration = Date.now() - startTime;
-    log.info('MAIN', '✅ Done! Duration: %s', formatDuration(duration));
+    // Default: show help
+    if (!opts.index && !opts.enrich && !opts.export && !opts.auto && !opts.status && !opts.stats) {
+      program.help();
+    }
 
   } catch (error) {
-    log.error('MAIN', '❌ Fatal error: %s', error.message);
-    console.error('\nStack trace:');
-    console.error(error.stack);
+    log.error('MAIN', 'Fatal error: %s', error.message);
+    console.error(error);
     process.exit(1);
   }
 }
 
-// Run main function
 main();
 
