@@ -1,0 +1,54 @@
+{
+  "name": "npm-registry-indexer",
+  "version": "2.0.0",
+  "description": "Production-grade npm registry indexer with CNPM mirror support, intelligent enrichment, and CSV export",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "index": "node src/index.js --index",
+    "sync": "node src/index.js --sync",
+    "enrich": "node src/index.js --enrich",
+    "export": "node src/index.js --export",
+    "status": "node src/index.js --status",
+    "full": "node src/index.js --index --enrich --export",
+    "update": "node src/index.js --sync",
+    "help": "node src/index.js --help",
+    "examples": "node src/index.js --examples",
+    "clean": "rm -rf ./data",
+    "setup": "mkdir -p data && echo 'Data directory created'",
+    "dev": "node --watch src/index.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "npm",
+    "registry",
+    "indexer",
+    "csv",
+    "export",
+    "metadata",
+    "packages",
+    "cnpm",
+    "mirror",
+    "enrichment",
+    "sharded-storage"
+  ],
+  "author": "NPM Registry Indexer Contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "fast-csv": "^5.0.1",
+    "got": "^14.0.0",
+    "npmlog": "^7.0.1",
+    "p-queue": "^8.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0"
+  }
+}
+
