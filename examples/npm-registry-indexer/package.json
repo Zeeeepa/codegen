@@ -1,0 +1,39 @@
+{
+  "name": "npm-registry-indexer",
+  "version": "2.0.0",
+  "description": "Production-grade NPM registry indexer with CNPM mirror support",
+  "type": "module",
+  "main": "indexer.js",
+  "scripts": {
+    "start": "node indexer.js",
+    "status": "node indexer.js --status",
+    "index": "node indexer.js --index",
+    "enrich": "node indexer.js --enrich",
+    "export": "node indexer.js --export",
+    "auto": "node indexer.js --auto"
+  },
+  "keywords": [
+    "npm",
+    "registry",
+    "indexer",
+    "cnpm",
+    "mirror",
+    "metadata",
+    "csv",
+    "export"
+  ],
+  "author": "NPM Registry Indexer",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "fast-csv": "^5.0.1",
+    "got": "^14.0.0",
+    "npm-registry-fetch": "^18.0.2",
+    "npmlog": "^7.0.1",
+    "p-queue": "^8.0.1"
+  }
+}
+
