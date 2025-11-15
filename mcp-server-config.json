@@ -1,0 +1,364 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/mcp-config.json",
+  "mcpServers": {
+    "codegen-agent": {
+      "name": "Codegen AI Agent Platform",
+      "version": "1.0.0",
+      "description": "MCP server for interacting with Codegen's AI-powered development agents. Create, manage, and monitor autonomous coding agents that can write code, fix bugs, and automate development workflows.",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "codegen",
+        "codegen-mcp-server"
+      ],
+      "env": {
+        "CODEGEN_API_KEY": "sk-92083737-4e5b-4a48-a2a1-f870a3a096a6",
+        "CODEGEN_ORG_ID": "323",
+        "CODEGEN_API_BASE_URL": "https://dev--rest-api.modal.run"
+      },
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false,
+        "streaming": false
+      },
+      "transport": "stdio",
+      "timeout": 300000,
+      "metadata": {
+        "category": "development",
+        "tags": [
+          "ai-agents",
+          "code-generation",
+          "development",
+          "automation",
+          "github"
+        ],
+        "homepage": "https://codegen.com",
+        "documentation": "https://docs.codegen.com",
+        "repository": "https://github.com/codegen-sh/codegen"
+      },
+      "tools": [
+        {
+          "name": "create_agent_run",
+          "description": "Create a new autonomous agent run to execute a development task. The agent will autonomously write code, make changes, create PRs, and complete the requested task.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "org_id": {
+                "type": "integer",
+                "description": "Organization ID where the agent run will be created",
+                "default": 323
+              },
+              "prompt": {
+                "type": "string",
+                "description": "The task or instruction for the agent to execute (e.g., 'Fix the login bug in auth.py', 'Add unit tests for the API', 'Implement user profile feature')"
+              },
+              "repo_name": {
+                "type": "string",
+                "description": "Optional: Target repository name for the agent to work in",
+                "default": null
+              },
+              "branch_name": {
+                "type": "string",
+                "description": "Optional: Target branch for the agent to work on",
+                "default": null
+              }
+            },
+            "required": [
+              "org_id",
+              "prompt"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Unique ID of the created agent run"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "ACTIVE",
+                  "RUNNING",
+                  "COMPLETE",
+                  "ERROR",
+                  "FAILED",
+                  "CANCELLED",
+                  "STOPPED"
+                ],
+                "description": "Current status of the agent run"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp when the agent run was created"
+              },
+              "prompt": {
+                "type": "string",
+                "description": "The original task prompt"
+              },
+              "repo_name": {
+                "type": "string",
+                "description": "Repository the agent is working in"
+              },
+              "branch_name": {
+                "type": "string",
+                "description": "Branch the agent is working on"
+              },
+              "web_url": {
+                "type": "string",
+                "description": "URL to view the agent run in the Codegen dashboard"
+              }
+            }
+          }
+        },
+        {
+          "name": "get_agent_run",
+          "description": "Get detailed status and results of a specific agent run. Use this to check progress, view results, and see what the agent has accomplished.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "org_id": {
+                "type": "integer",
+                "description": "Organization ID",
+                "default": 323
+              },
+              "agent_run_id": {
+                "type": "integer",
+                "description": "ID of the agent run to retrieve"
+              }
+            },
+            "required": [
+              "org_id",
+              "agent_run_id"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "ACTIVE",
+                  "RUNNING",
+                  "COMPLETE",
+                  "ERROR",
+                  "FAILED",
+                  "CANCELLED",
+                  "STOPPED"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "prompt": {
+                "type": "string"
+              },
+              "result": {
+                "type": "object",
+                "description": "Detailed results of the agent run including files modified, PRs created, etc."
+              },
+              "repo_name": {
+                "type": "string"
+              },
+              "branch_name": {
+                "type": "string"
+              },
+              "web_url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "name": "list_agent_runs",
+          "description": "List all agent runs for an organization with filtering and pagination options. Use this to see active agents, completed tasks, and monitor progress.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "org_id": {
+                "type": "integer",
+                "description": "Organization ID",
+                "default": 323
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "ACTIVE",
+                  "RUNNING",
+                  "COMPLETE",
+                  "ERROR",
+                  "FAILED",
+                  "CANCELLED",
+                  "STOPPED"
+                ],
+                "description": "Optional: Filter by status"
+              },
+              "page": {
+                "type": "integer",
+                "description": "Page number for pagination",
+                "default": 1,
+                "minimum": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "description": "Number of results per page",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "org_id"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "description": "Total number of agent runs"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "page_size": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "name": "get_organizations",
+          "description": "Get list of organizations the authenticated user has access to.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "description": "Page number",
+                "default": 1
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Results per page",
+                "default": 10
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "organizations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "total": {
+                "type": "integer"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "name": "get_users",
+          "description": "Get list of users in an organization.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "org_id": {
+                "type": "integer",
+                "description": "Organization ID",
+                "default": 323
+              },
+              "page": {
+                "type": "integer",
+                "default": 1
+              },
+              "limit": {
+                "type": "integer",
+                "default": 10
+              }
+            },
+            "required": [
+              "org_id"
+            ]
+          }
+        },
+        {
+          "name": "get_user",
+          "description": "Get details of a specific user in an organization.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "org_id": {
+                "type": "integer",
+                "description": "Organization ID",
+                "default": 323
+              },
+              "user_id": {
+                "type": "integer",
+                "description": "User ID"
+              }
+            },
+            "required": [
+              "org_id",
+              "user_id"
+            ]
+          }
+        }
+      ],
+      "resources": {
+        "agent_runs": {
+          "description": "Access agent run data and results",
+          "uri_template": "codegen://agent-runs/{run_id}"
+        },
+        "organizations": {
+          "description": "Access organization information",
+          "uri_template": "codegen://organizations/{org_id}"
+        }
+      }
+    }
+  }
+}
+
