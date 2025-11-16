@@ -1,0 +1,26 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/mcp.json",
+  "mcpServers": {
+    "codegen": {
+      "command": "python",
+      "args": ["/tmp/Zeeeepa/codegen/src/codegen/cli/mcp/server.py"],
+      "env": {
+        "PYTHONPATH": "/tmp/Zeeeepa/codegen/src"
+      },
+      "disabled": false
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp"],
+      "env": {},
+      "disabled": false
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["@upstash/context7-mcp"],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
+
