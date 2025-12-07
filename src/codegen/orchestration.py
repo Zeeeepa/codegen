@@ -95,7 +95,7 @@ class CodegenAgentExecutor:
             while elapsed < timeout:
                 await asyncio.get_event_loop().run_in_executor(None, task.refresh)
 
-                if task.status in ["completed", "failed", "error"]:
+                if task.status in ["COMPLETE", "FAILED", "ERROR", "completed", "failed", "error"]:
                     break
 
                 await asyncio.sleep(poll_interval)
@@ -104,7 +104,7 @@ class CodegenAgentExecutor:
             if elapsed >= timeout:
                 result.status = AgentStatus.TIMEOUT
                 result.error = f"Timeout after {timeout}s"
-            elif task.status == "completed":
+            elif task.status in ["COMPLETE", "completed"]:
                 result.status = AgentStatus.COMPLETED
                 result.response = task.result or ""
             else:
@@ -373,4 +373,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
