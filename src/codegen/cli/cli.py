@@ -8,6 +8,7 @@ from codegen.cli.commands.agent.main import agent
 from codegen.cli.commands.agents.main import agents_app
 from codegen.cli.commands.claude.main import claude
 from codegen.cli.commands.config.main import config_command
+from codegen.cli.commands.council.main import council_app
 from codegen.cli.commands.init.main import init
 from codegen.cli.commands.integrations.main import integrations_app
 from codegen.cli.commands.login.main import login
@@ -83,6 +84,7 @@ main.command("update", help="Update Codegen to the latest or specified version")
 # Add Typer apps as sub-applications (these will handle their own sub-command logging)
 main.add_typer(agents_app, name="agents")
 main.add_typer(config_command, name="config")
+main.add_typer(council_app, name="council")
 main.add_typer(integrations_app, name="integrations")
 main.add_typer(profile_app, name="profile")
 
