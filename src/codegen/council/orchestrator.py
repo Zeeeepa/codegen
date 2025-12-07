@@ -132,9 +132,15 @@ class CouncilOrchestrator:
         # Convert to CandidateResponse objects
         candidates = []
         for task, (model, _) in zip(tasks, run_configs):
-            status = self._get_task_status(task)
-            if status and status.get("status") == "COMPLETE":
-                result_content = status.get("result", {}).get("content", "")
+            if task.status == "COMPLETE" and task.result:
+                # task.result can be either a string or a dict with 'content'
+                if isinstance(task.result, str):
+                    result_content = task.result
+                elif isinstance(task.result, dict):
+                    result_content = task.result.get("content", "")
+                else:
+                    result_content = str(task.result)
+                
                 if result_content:
                     candidates.append(
                         CandidateResponse(
@@ -176,9 +182,15 @@ class CouncilOrchestrator:
         # Parse rankings
         rankings = []
         for task, (model, _) in zip(tasks, run_configs):
-            status = self._get_task_status(task)
-            if status and status.get("status") == "COMPLETE":
-                ranking_text = status.get("result", {}).get("content", "")
+            if task.status == "COMPLETE" and task.result:
+                # task.result can be either a string or a dict with 'content'
+                if isinstance(task.result, str):
+                    ranking_text = task.result
+                elif isinstance(task.result, dict):
+                    ranking_text = task.result.get("content", "")
+                else:
+                    ranking_text = str(task.result)
+                
                 if ranking_text:
                     parsed = self._parse_ranking_from_text(ranking_text)
                     rankings.append(
@@ -233,10 +245,14 @@ class CouncilOrchestrator:
         self._wait_for_single_task(task, poll_interval)
         
         # Get result
-        status = self._get_task_status(task)
         content = ""
-        if status and status.get("status") == "COMPLETE":
-            content = status.get("result", {}).get("content", "")
+        if task.status == "COMPLETE" and task.result:
+            if isinstance(task.result, str):
+                content = task.result
+            elif isinstance(task.result, dict):
+                content = task.result.get("content", "")
+            else:
+                content = str(task.result)
         
         return SynthesisResult(
             agent_run_id=task.id,
@@ -277,9 +293,14 @@ class CouncilOrchestrator:
             task = agent.run(group_prompt)
             self._wait_for_single_task(task, poll_interval)
             
-            status = self._get_task_status(task)
-            if status and status.get("status") == "COMPLETE":
-                content = status.get("result", {}).get("content", "")
+            if task.status == "COMPLETE" and task.result:
+                if isinstance(task.result, str):
+                    content = task.result
+                elif isinstance(task.result, dict):
+                    content = task.result.get("content", "")
+                else:
+                    content = str(task.result)
+                    
                 if content:
                     group_winners.append(
                         CandidateResponse(
@@ -298,10 +319,14 @@ class CouncilOrchestrator:
         task = agent.run(final_prompt)
         self._wait_for_single_task(task, poll_interval)
         
-        status = self._get_task_status(task)
         content = ""
-        if status and status.get("status") == "COMPLETE":
-            content = status.get("result", {}).get("content", "")
+        if task.status == "COMPLETE" and task.result:
+            if isinstance(task.result, str):
+                content = task.result
+            elif isinstance(task.result, dict):
+                content = task.result.get("content", "")
+            else:
+                content = str(task.result)
         
         return SynthesisResult(
             agent_run_id=task.id,
@@ -501,4 +526,3 @@ Do not mention the candidates, synthesis process, or ranking. Just provide the b
         
         aggregate.sort(key=lambda x: x["average_rank"])
         return aggregate
-
