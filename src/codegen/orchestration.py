@@ -67,6 +67,202 @@ class AgentExecutionResult:
     end_time: Optional[datetime] = None
 
 
+@dataclass
+class AgentState:
+    """Track individual agent state and history."""
+    agent_id: str
+    task_id: Optional[int] = None
+    status: AgentStatus = AgentStatus.PENDING
+    created_at: datetime = field(default_factory=datetime.now)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    execution_time: Optional[float] = None
+    prompt: str = ""
+    response: Optional[str] = None
+    error: Optional[str] = None
+    model: Optional[str] = None
+    iteration: int = 0
+    specialization: Optional[str] = None  # What this agent is good at
+    success_count: int = 0
+    failure_count: int = 0
+    total_execution_time: float = 0.0
+    
+    def to_dict(self) -> Dict:
+        """Serialize to dict."""
+        return {
+            "agent_id": self.agent_id,
+            "task_id": self.task_id,
+            "status": self.status.value,
+            "created_at": self.created_at.isoformat(),
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "execution_time": self.execution_time,
+            "prompt": self.prompt[:200] + "..." if len(self.prompt) > 200 else self.prompt,
+            "response": self.response[:200] + "..." if self.response and len(self.response) > 200 else self.response,
+            "error": self.error,
+            "model": self.model,
+            "iteration": self.iteration,
+            "specialization": self.specialization,
+            "success_count": self.success_count,
+            "failure_count": self.failure_count,
+            "total_execution_time": self.total_execution_time
+        }
+    
+    @property
+    def success_rate(self) -> float:
+        """Calculate success rate."""
+        total = self.success_count + self.failure_count
+        return self.success_count / total if total > 0 else 0.0
+    
+    @property
+    def avg_execution_time(self) -> float:
+        """Calculate average execution time."""
+        return self.total_execution_time / self.success_count if self.success_count > 0 else 0.0
+
+
+class AgentStateManager:
+    """Manage and track all agent states across iterations."""
+    
+    def __init__(self, persistence_path: Optional[Path] = None):
+        self.agents: Dict[str, AgentState] = {}
+        self.iteration_history: List[Dict[str, Any]] = []
+        self.persistence_path = persistence_path or Path("agent_state.json")
+        
+        # Load existing state if available
+        self.load_state()
+    
+    def create_agent(self, prompt: str, model: Optional[str] = None, 
+                    specialization: Optional[str] = None, iteration: int = 0) -> AgentState:
+        """Create a new agent and track it."""
+        agent_id = f"agent_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
+        
+        state = AgentState(
+            agent_id=agent_id,
+            prompt=prompt,
+            model=model,
+            specialization=specialization,
+            iteration=iteration
+        )
+        
+        self.agents[agent_id] = state
+        print(f"[StateManager] Created agent {agent_id} (specialization: {specialization or 'general'})")
+        return state
+    
+    def update_agent(self, agent_id: str, **kwargs) -> AgentState:
+        """Update agent state."""
+        if agent_id not in self.agents:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        state = self.agents[agent_id]
+        
+        for key, value in kwargs.items():
+            if hasattr(state, key):
+                setattr(state, key, value)
+        
+        # Update statistics based on status changes
+        if "status" in kwargs:
+            if kwargs["status"] == AgentStatus.COMPLETED:
+                state.success_count += 1
+                if state.execution_time:
+                    state.total_execution_time += state.execution_time
+            elif kwargs["status"] in (AgentStatus.FAILED, AgentStatus.TIMEOUT):
+                state.failure_count += 1
+        
+        return state
+    
+    def get_agent(self, agent_id: str) -> Optional[AgentState]:
+        """Get agent state by ID."""
+        return self.agents.get(agent_id)
+    
+    def get_all_agents(self, iteration: Optional[int] = None) -> List[AgentState]:
+        """Get all agents, optionally filtered by iteration."""
+        if iteration is None:
+            return list(self.agents.values())
+        return [a for a in self.agents.values() if a.iteration == iteration]
+    
+    def get_agent_by_specialization(self, specialization: str) -> List[AgentState]:
+        """Get all agents with a specific specialization."""
+        return [a for a in self.agents.values() if a.specialization == specialization]
+    
+    def get_best_performers(self, limit: int = 5) -> List[AgentState]:
+        """Get top performing agents by success rate and speed."""
+        agents = [a for a in self.agents.values() if a.success_count > 0]
+        agents.sort(key=lambda x: (x.success_rate, -x.avg_execution_time), reverse=True)
+        return agents[:limit]
+    
+    def record_iteration(self, iteration: int, metrics: Dict[str, Any]):
+        """Record metrics for an iteration."""
+        iteration_data = {
+            "iteration": iteration,
+            "timestamp": datetime.now().isoformat(),
+            "metrics": metrics,
+            "agents": [a.to_dict() for a in self.get_all_agents(iteration)]
+        }
+        self.iteration_history.append(iteration_data)
+        self.save_state()
+    
+    def save_state(self):
+        """Persist state to disk."""
+        try:
+            state_data = {
+                "agents": {aid: a.to_dict() for aid, a in self.agents.items()},
+                "iteration_history": self.iteration_history,
+                "last_updated": datetime.now().isoformat()
+            }
+            
+            self.persistence_path.write_text(json.dumps(state_data, indent=2))
+            print(f"[StateManager] Saved state to {self.persistence_path}")
+        except Exception as e:
+            print(f"[StateManager] Failed to save state: {e}")
+    
+    def load_state(self):
+        """Load state from disk."""
+        if not self.persistence_path.exists():
+            print(f"[StateManager] No existing state found at {self.persistence_path}")
+            return
+        
+        try:
+            state_data = json.loads(self.persistence_path.read_text())
+            
+            # Reconstruct agent states
+            for agent_id, agent_dict in state_data.get("agents", {}).items():
+                state = AgentState(
+                    agent_id=agent_dict["agent_id"],
+                    task_id=agent_dict.get("task_id"),
+                    status=AgentStatus(agent_dict["status"]),
+                    prompt=agent_dict.get("prompt", ""),
+                    response=agent_dict.get("response"),
+                    error=agent_dict.get("error"),
+                    model=agent_dict.get("model"),
+                    iteration=agent_dict.get("iteration", 0),
+                    specialization=agent_dict.get("specialization"),
+                    success_count=agent_dict.get("success_count", 0),
+                    failure_count=agent_dict.get("failure_count", 0),
+                    total_execution_time=agent_dict.get("total_execution_time", 0.0)
+                )
+                self.agents[agent_id] = state
+            
+            self.iteration_history = state_data.get("iteration_history", [])
+            print(f"[StateManager] Loaded {len(self.agents)} agents from {self.persistence_path}")
+        except Exception as e:
+            print(f"[StateManager] Failed to load state: {e}")
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get overall statistics."""
+        total_agents = len(self.agents)
+        successful = sum(1 for a in self.agents.values() if a.success_count > 0)
+        failed = sum(1 for a in self.agents.values() if a.failure_count > 0)
+        
+        return {
+            "total_agents": total_agents,
+            "successful_agents": successful,
+            "failed_agents": failed,
+            "total_iterations": len(self.iteration_history),
+            "avg_success_rate": sum(a.success_rate for a in self.agents.values()) / total_agents if total_agents > 0 else 0.0,
+            "best_performers": [a.agent_id for a in self.get_best_performers(3)]
+        }
+
+
 # ============================================================================
 # CODEGEN AGENT EXECUTOR
 # ============================================================================
