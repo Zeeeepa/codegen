@@ -18,10 +18,16 @@ from codegen.orchestration import SelfImprovementLoop
 
 async def main():
     """Run the self-improvement loop."""
+    import sys
+    
+    # Check if infinite mode requested
+    infinite = "--infinite" in sys.argv or "-i" in sys.argv
+    
     print("🚀 Starting Self-Improvement Loop for Codegen Repository")
     print("="*80)
     print("Target: Optimize multi-agent orchestration system")
     print("Goal: <60s per agent, >90% success rate, production-ready CICD loop")
+    print(f"Mode: {'INFINITE ♾️ (Ctrl+C to stop)' if infinite else 'LIMITED (3 iterations)'}")
     print("="*80)
     
     loop = SelfImprovementLoop(
@@ -29,7 +35,8 @@ async def main():
         target_files=["src/codegen/orchestration.py"]
     )
     
-    results = await loop.run_improvement_cycle(max_iterations=3)
+    # Run infinitely if --infinite flag, otherwise 3 iterations
+    results = await loop.run_improvement_cycle(max_iterations=None if infinite else 3)
     
     print("\n\n" + "="*80)
     print("📊 FINAL RESULTS")
@@ -57,4 +64,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -38,7 +38,7 @@ CODEGEN_ORG_ID = int(os.getenv("CODEGEN_ORG_ID", "323"))
 COUNCIL_SIZE = 3  # Number of agents in council
 MAX_PARALLEL_AGENTS = 3  # Reduced from 9 to avoid resource limits
 MAX_LOOP_ITERATIONS = 5
-AGENT_TIMEOUT_SECONDS = 120  # Reduced from 300s
+AGENT_TIMEOUT_SECONDS = 300  # Increased back - agents need more time for complex tasks
 TOURNAMENT_THRESHOLD = 20
 GROUP_SIZE = 10
 
@@ -429,10 +429,10 @@ class SelfImprovementLoop:
         self.metrics_history: List[ImprovementMetrics] = []
         self.iteration = 0
         
-    async def run_improvement_cycle(self, max_iterations: int = 5) -> Dict:
-        """Run the self-improvement loop for N iterations."""
+    async def run_improvement_cycle(self, max_iterations: Optional[int] = None) -> Dict:
+        """Run the self-improvement loop. If max_iterations is None, runs infinitely."""
         print("="*80)
-        print("🔄 STARTING SELF-IMPROVEMENT LOOP")
+        print("🔄 STARTING INFINITE SELF-IMPROVEMENT LOOP")
         print("="*80)
         
         results = {
@@ -441,10 +441,17 @@ class SelfImprovementLoop:
             "improvements_applied": []
         }
         
-        for i in range(max_iterations):
-            self.iteration = i + 1
+        iteration = 0
+        while True:
+            iteration += 1
+            self.iteration = iteration
+            
+            # Check if we should stop (if max_iterations is set)
+            if max_iterations is not None and iteration > max_iterations:
+                break
+            
             print(f"\n\n{'='*80}")
-            print(f"🔁 ITERATION {self.iteration}/{max_iterations}")
+            print(f"🔁 ITERATION {self.iteration}" + (f"/{max_iterations}" if max_iterations else " (INFINITE)"))
             print("="*80)
             
             # Step 1: Analyze current code
@@ -468,6 +475,10 @@ class SelfImprovementLoop:
                 
                 if keep_change:
                     print(f"✅ KEEPING improvement: {proposals[0].title}")
+                    
+                    # Commit the improvement
+                    await self._commit_improvement(proposals[0])
+                    
                     results["improvements_applied"].append(proposals[0].title)
                     self.metrics_history.append(new_metrics)
                 else:
@@ -591,7 +602,30 @@ Format as JSON."""
         print(f"   Confidence: {proposal.confidence_score:.0%}")
         print(f"   Impact: {proposal.expected_impact}")
         
+        # TODO: Actually apply the code changes from proposal.implementation_code
+        # This would involve parsing the code and using text_editor or similar
+        
         return True
+    
+    async def _commit_improvement(self, proposal: ImprovementProposal):
+        """Commit the improvement to git."""
+        import subprocess
+        
+        print(f"\n📝 Committing improvement: {proposal.title}")
+        
+        try:
+            # Add all changes
+            subprocess.run(["git", "add", "-A"], cwd=self.repo_path, check=True)
+            
+            # Commit with descriptive message
+            commit_msg = f"feat: {proposal.title}\n\n{proposal.description}\n\nConfidence: {proposal.confidence_score:.0%}\nImpact: {proposal.expected_impact}\n\nIteration: {self.iteration}"
+            subprocess.run(["git", "commit", "-m", commit_msg], cwd=self.repo_path, check=True)
+            
+            print(f"✅ Committed improvement to git")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Failed to commit: {e}")
+            return False
     
     def _should_keep_change(self, before: ImprovementMetrics, after: ImprovementMetrics) -> bool:
         """Decide if improvement should be kept."""
