@@ -317,16 +317,13 @@ class MultiAgentOrchestrator:
     def __init__(self, api_key: str = CODEGEN_API_KEY, org_id: int = CODEGEN_ORG_ID):
         self.executor = CodegenAgentExecutor(api_key, org_id)
 
-    async def orchestrate(self, prompt: str, num_agents: int = 9, models: Optional[List[str]] = None) -> Dict:
+    async def orchestrate(self, prompt: str, num_agents: int = 3, models: Optional[List[str]] = None) -> Dict:
         """Basic orchestration: run N agents and synthesize."""
-        models = models or COUNCIL_MODELS
-
-        # Create prompts for all agents
+        # Don't specify models, let Codegen choose
         prompts = [prompt] * num_agents
-        agent_models = [models[i % len(models)] for i in range(num_agents)]
 
-        # Execute all in parallel
-        results = await self.executor.execute_agents_parallel(prompts, agent_models)
+        # Execute all agents
+        results = await self.executor.execute_agents_parallel(prompts, models=None)
 
         # Get successful responses
         responses = [r.response for r in results if r.status == AgentStatus.COMPLETED and r.response]
