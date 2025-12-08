@@ -28,13 +28,17 @@ from codegen.agents.agent import Agent, AgentTask
 # CONFIGURATION
 # ============================================================================
 
-CODEGEN_API_KEY = "sk-92083737-4e5b-4a48-a2a1-f870a3a096a6"
-CODEGEN_ORG_ID = 323
-COUNCIL_MODELS = ["gpt-4o", "claude-sonnet-4.5", "gemini-3-pro"]
-SYNTHESIS_MODEL = "claude-sonnet-4.5"
-MAX_PARALLEL_AGENTS = 9
+import os
+
+CODEGEN_API_KEY = os.getenv("CODEGEN_API_KEY", "sk-92083737-4e5b-4a48-a2a1-f870a3a096a6")
+CODEGEN_ORG_ID = int(os.getenv("CODEGEN_ORG_ID", "323"))
+
+# Simplified: Don't specify models, let Codegen choose
+# The previous model names were incorrect/unavailable
+COUNCIL_SIZE = 3  # Number of agents in council
+MAX_PARALLEL_AGENTS = 3  # Reduced from 9 to avoid resource limits
 MAX_LOOP_ITERATIONS = 5
-AGENT_TIMEOUT_SECONDS = 300
+AGENT_TIMEOUT_SECONDS = 120  # Reduced from 300s
 TOURNAMENT_THRESHOLD = 20
 GROUP_SIZE = 10
 
@@ -81,21 +85,24 @@ class CodegenAgentExecutor:
         """Execute a single Codegen agent."""
         start_time = datetime.now()
         result = AgentExecutionResult(
-            agent_id=agent_id, model=model, variation_index=0, status=AgentStatus.RUNNING, start_time=start_time
+            agent_id=agent_id, model=model or "default", variation_index=0, status=AgentStatus.RUNNING, start_time=start_time
         )
 
         try:
-            # Start agent run
+            print(f"[{agent_id}] Starting agent execution...")
+            # Start agent run (models not specified - let Codegen choose)
             task = await asyncio.get_event_loop().run_in_executor(None, self.agent.run, prompt)
+            print(f"[{agent_id}] Task created: {task.id}")
 
             # Poll for completion
             elapsed = 0
-            poll_interval = 2
+            poll_interval = 3  # Increased to reduce API calls
 
             while elapsed < timeout:
                 await asyncio.get_event_loop().run_in_executor(None, task.refresh)
 
                 if task.status in ["COMPLETE", "FAILED", "ERROR", "completed", "failed", "error"]:
+                    print(f"[{agent_id}] Status: {task.status} after {elapsed}s")
                     break
 
                 await asyncio.sleep(poll_interval)
@@ -104,29 +111,37 @@ class CodegenAgentExecutor:
             if elapsed >= timeout:
                 result.status = AgentStatus.TIMEOUT
                 result.error = f"Timeout after {timeout}s"
+                print(f"[{agent_id}] TIMEOUT after {timeout}s")
             elif task.status in ["COMPLETE", "completed"]:
                 result.status = AgentStatus.COMPLETED
                 result.response = task.result or ""
+                print(f"[{agent_id}] COMPLETED: {len(result.response)} chars")
             else:
                 result.status = AgentStatus.FAILED
                 result.error = f"Failed with status: {task.status}"
+                print(f"[{agent_id}] FAILED: {task.status}")
 
         except Exception as e:
             result.status = AgentStatus.FAILED
             result.error = str(e)
+            print(f"[{agent_id}] EXCEPTION: {e}")
 
         result.end_time = datetime.now()
         return result
 
     async def execute_agents_parallel(self, prompts: List[str], models: Optional[List[str]] = None) -> List[AgentExecutionResult]:
-        """Execute multiple agents in parallel."""
-        tasks = []
+        """Execute multiple agents (actually sequentially to avoid resource limits)."""
+        results = []
         for i, prompt in enumerate(prompts):
-            agent_id = f"agent_{i}_{int(time.time())}"
+            agent_id = f"agent_{i}_{int(time.time() * 1000)}"
             model = models[i] if models and i < len(models) else None
-            tasks.append(self.execute_agent(prompt, agent_id, model))
-
-        return await asyncio.gather(*tasks, return_exceptions=False)
+            print(f"\n=== Executing agent {i+1}/{len(prompts)} ===")
+            result = await self.execute_agent(prompt, agent_id, model)
+            results.append(result)
+            # Small delay between agents to avoid rate limiting
+            if i < len(prompts) - 1:
+                await asyncio.sleep(2)
+        return results
 
 
 # ============================================================================
@@ -134,23 +149,26 @@ class CodegenAgentExecutor:
 # ============================================================================
 
 async def stage1_collect_responses(
-    user_query: str, executor: CodegenAgentExecutor, models: Optional[List[str]] = None
+    user_query: str, executor: CodegenAgentExecutor, num_agents: int = COUNCIL_SIZE
 ) -> List[Dict]:
     """Stage 1: Collect individual responses from council members."""
-    models = models or COUNCIL_MODELS
-    results = await executor.execute_agents_parallel([user_query] * len(models), models)
+    print(f"\n🔹 STAGE 1: Collecting {num_agents} responses...")
+    results = await executor.execute_agents_parallel([user_query] * num_agents, models=None)
 
-    return [
+    responses = [
         {"model": r.model or "unknown", "agent_id": r.agent_id, "response": r.response}
         for r in results
         if r.status == AgentStatus.COMPLETED and r.response
     ]
+    print(f"✅ Stage 1 complete: {len(responses)}/{num_agents} agents responded")
+    return responses
 
 
 async def stage2_collect_rankings(
-    user_query: str, stage1_results: List[Dict], executor: CodegenAgentExecutor
+    user_query: str, stage1_results: List[Dict], executor: CodegenAgentExecutor, num_rankers: int = COUNCIL_SIZE
 ) -> Tuple[List[Dict], Dict[str, str]]:
     """Stage 2: Agents rank anonymized responses."""
+    print(f"\n🔹 STAGE 2: Collecting {num_rankers} peer rankings...")
     labels = [chr(65 + i) for i in range(len(stage1_results))]
     label_to_model = {f"Response {label}": r["model"] for label, r in zip(labels, stage1_results)}
 
@@ -165,7 +183,7 @@ Evaluate each response, then provide FINAL RANKING:
 2. Response Y
 3. Response Z"""
 
-    results = await executor.execute_agents_parallel([ranking_prompt] * len(COUNCIL_MODELS), COUNCIL_MODELS)
+    results = await executor.execute_agents_parallel([ranking_prompt] * num_rankers, models=None)
 
     rankings = []
     for r in results:
@@ -173,6 +191,7 @@ Evaluate each response, then provide FINAL RANKING:
             parsed = _parse_ranking(r.response)
             rankings.append({"model": r.model, "ranking_text": r.response, "parsed": parsed})
 
+    print(f"✅ Stage 2 complete: {len(rankings)}/{num_rankers} rankings collected")
     return rankings, label_to_model
 
 
@@ -180,6 +199,7 @@ async def stage3_synthesize_final(
     user_query: str, stage1_results: List[Dict], stage2_results: List[Dict], executor: CodegenAgentExecutor
 ) -> Dict:
     """Stage 3: Chairman synthesizes final answer."""
+    print(f"\n🔹 STAGE 3: Synthesizing final answer...")
     stage1_text = "\n\n".join([f"Model: {r['model']}\n{r['response']}" for r in stage1_results])
     stage2_text = "\n\n".join([f"Model: {r['model']}\n{r['ranking_text']}" for r in stage2_results])
 
@@ -195,10 +215,13 @@ Stage 2 Rankings:
 
 Provide final synthesized answer:"""
 
-    results = await executor.execute_agents_parallel([chairman_prompt], [SYNTHESIS_MODEL])
+    results = await executor.execute_agents_parallel([chairman_prompt], models=None)
 
     if results and results[0].status == AgentStatus.COMPLETED:
-        return {"model": SYNTHESIS_MODEL, "response": results[0].response}
+        print(f"✅ Stage 3 complete: {len(results[0].response)} chars synthesized")
+        return {"model": results[0].model, "response": results[0].response}
+    
+    print(f"❌ Stage 3 failed")
     return {"model": "error", "response": "Synthesis failed"}
 
 
