@@ -394,5 +394,237 @@ async def main():
     print("=" * 80)
 
 
+# ============================================================================
+# SELF-IMPROVEMENT LOOP
+# ============================================================================
+
+@dataclass
+class ImprovementMetrics:
+    """Metrics for benchmarking improvements."""
+    iteration: int
+    execution_time_seconds: float
+    agent_success_rate: float
+    response_quality_score: float  # 1-10
+    code_coverage: float  # percentage
+    error_count: int
+    improvement_description: str
+    timestamp: datetime = field(default_factory=datetime.now)
+
+@dataclass  
+class ImprovementProposal:
+    """A proposed code improvement."""
+    id: str
+    title: str
+    description: str
+    confidence_score: float  # 0-1
+    expected_impact: str  # "high", "medium", "low"
+    implementation_code: str
+    target_file: str
+    rationale: str
+
+class SelfImprovementLoop:
+    """Continuously improve codebase through analysis → improve → benchmark → integrate cycle."""
+    
+    def __init__(self, repo_path: str = ".", target_files: Optional[List[str]] = None):
+        self.repo_path = Path(repo_path)
+        self.target_files = target_files or ["src/codegen/orchestration.py"]
+        self.orchestrator = MultiAgentOrchestrator()
+        self.metrics_history: List[ImprovementMetrics] = []
+        self.iteration = 0
+        
+    async def run_improvement_cycle(self, max_iterations: int = 5) -> Dict:
+        """Run the self-improvement loop for N iterations."""
+        print("="*80)
+        print("🔄 STARTING SELF-IMPROVEMENT LOOP")
+        print("="*80)
+        
+        results = {
+            "iterations": [],
+            "metrics": [],
+            "improvements_applied": []
+        }
+        
+        for i in range(max_iterations):
+            self.iteration = i + 1
+            print(f"\n\n{'='*80}")
+            print(f"🔁 ITERATION {self.iteration}/{max_iterations}")
+            print("="*80)
+            
+            # Step 1: Analyze current code
+            analysis = await self._analyze_code()
+            
+            # Step 2: Propose improvements
+            proposals = await self._generate_improvements(analysis)
+            
+            # Step 3: Benchmark current state
+            baseline_metrics = await self._benchmark_current_state()
+            
+            # Step 4: Apply best improvement
+            if proposals:
+                applied = await self._apply_improvement(proposals[0])
+                
+                # Step 5: Test and benchmark new state
+                new_metrics = await self._benchmark_current_state()
+                
+                # Step 6: Compare and decide
+                keep_change = self._should_keep_change(baseline_metrics, new_metrics)
+                
+                if keep_change:
+                    print(f"✅ KEEPING improvement: {proposals[0].title}")
+                    results["improvements_applied"].append(proposals[0].title)
+                    self.metrics_history.append(new_metrics)
+                else:
+                    print(f"❌ REVERTING improvement: {proposals[0].title}")
+                    await self._revert_changes()
+                    self.metrics_history.append(baseline_metrics)
+            else:
+                print("⚠️ No improvements proposed this iteration")
+                self.metrics_history.append(baseline_metrics)
+            
+            results["iterations"].append({
+                "iteration": self.iteration,
+                "analysis": analysis,
+                "proposals_count": len(proposals),
+                "applied": proposals[0].title if proposals else None
+            })
+            
+            # Check if target achieved
+            if self._target_achieved():
+                print(f"\n🎯 TARGET ACHIEVED after {self.iteration} iterations!")
+                break
+        
+        results["metrics"] = [vars(m) for m in self.metrics_history]
+        return results
+    
+    async def _analyze_code(self) -> Dict:
+        """Use council to analyze current codebase."""
+        print("\n📊 Step 1: Analyzing current code...")
+        
+        code_content = ""
+        for file in self.target_files:
+            file_path = self.repo_path / file
+            if file_path.exists():
+                code_content += f"\n\n# {file}\n{file_path.read_text()}"
+        
+        analysis_prompt = f"""Analyze this codebase for improvements:
+
+{code_content[:5000]}
+
+Identify:
+1. Performance bottlenecks
+2. Code quality issues  
+3. Missing features for CICD loop
+4. Architecture improvements
+
+Be specific and actionable."""
+
+        result = await self.orchestrator.run_pro_mode(analysis_prompt, num_runs=2)
+        print(f"✅ Analysis complete: {len(result['final'])} chars")
+        return {"analysis": result['final'], "timestamp": datetime.now()}
+    
+    async def _generate_improvements(self, analysis: Dict) -> List[ImprovementProposal]:
+        """Generate specific improvement proposals."""
+        print("\n💡 Step 2: Generating improvement proposals...")
+        
+        prompt = f"""Based on this analysis:
+
+{analysis['analysis']}
+
+Generate 1 HIGH-IMPACT improvement proposal with:
+1. Title
+2. Description  
+3. Confidence score (0-1)
+4. Expected impact (high/medium/low)
+5. Specific code changes
+6. Rationale
+
+Format as JSON."""
+
+        result = await self.orchestrator.orchestrate(prompt, num_agents=1)
+        
+        # Parse proposals (simplified - would use proper JSON parsing)
+        proposals = [
+            ImprovementProposal(
+                id=str(uuid.uuid4()),
+                title="Optimize Agent Execution",
+                description="Implement caching for repeated requests",
+                confidence_score=0.8,
+                expected_impact="high",
+                implementation_code="# Add caching logic here",
+                target_file="src/codegen/orchestration.py",
+                rationale=result['final'][:200]
+            )
+        ]
+        
+        print(f"✅ Generated {len(proposals)} proposals")
+        return proposals
+    
+    async def _benchmark_current_state(self) -> ImprovementMetrics:
+        """Benchmark current performance."""
+        print("\n⏱️ Step 3: Benchmarking current state...")
+        
+        start_time = time.time()
+        
+        # Run a simple test
+        test_result = await self.orchestrator.orchestrate("Test: Say BENCHMARK", num_agents=1)
+        
+        execution_time = time.time() - start_time
+        success_rate = 1.0 if test_result['responses'] else 0.0
+        
+        metrics = ImprovementMetrics(
+            iteration=self.iteration,
+            execution_time_seconds=execution_time,
+            agent_success_rate=success_rate,
+            response_quality_score=8.0,  # Would calculate properly
+            code_coverage=75.0,  # Would measure properly
+            error_count=0,
+            improvement_description=f"Iteration {self.iteration} baseline"
+        )
+        
+        print(f"✅ Benchmark: {execution_time:.1f}s, success={success_rate:.0%}")
+        return metrics
+    
+    async def _apply_improvement(self, proposal: ImprovementProposal) -> bool:
+        """Apply the improvement to codebase."""
+        print(f"\n🔧 Step 4: Applying improvement: {proposal.title}")
+        
+        # Would actually modify code here
+        # For now, just simulate
+        print(f"   Confidence: {proposal.confidence_score:.0%}")
+        print(f"   Impact: {proposal.expected_impact}")
+        
+        return True
+    
+    def _should_keep_change(self, before: ImprovementMetrics, after: ImprovementMetrics) -> bool:
+        """Decide if improvement should be kept."""
+        print("\n🤔 Step 5: Comparing metrics...")
+        
+        # Simple comparison - keep if faster OR higher success rate
+        improved = (
+            after.execution_time_seconds < before.execution_time_seconds * 0.9 or
+            after.agent_success_rate > before.agent_success_rate
+        )
+        
+        print(f"   Time: {before.execution_time_seconds:.1f}s → {after.execution_time_seconds:.1f}s")
+        print(f"   Success: {before.agent_success_rate:.0%} → {after.agent_success_rate:.0%}")
+        
+        return improved
+    
+    async def _revert_changes(self):
+        """Revert to previous state."""
+        print("   Reverting via git...")
+        # Would use git reset here
+        return True
+    
+    def _target_achieved(self) -> bool:
+        """Check if improvement target is reached."""
+        if len(self.metrics_history) < 2:
+            return False
+        
+        latest = self.metrics_history[-1]
+        # Target: <60s execution, >90% success rate
+        return latest.execution_time_seconds < 60 and latest.agent_success_rate > 0.9
+
+
 if __name__ == "__main__":
     asyncio.run(main())
