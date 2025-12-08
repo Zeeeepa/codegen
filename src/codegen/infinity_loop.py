@@ -25,6 +25,11 @@ from typing import Dict, List, Optional
 
 from codegen.agents.agent import Agent, AgentTask
 
+try:
+    from codegen.infinity_loop_demo import get_demo_response
+except ImportError:
+    get_demo_response = None
+
 
 # ============================================================================
 # CONFIGURATION
@@ -35,6 +40,7 @@ CODEGEN_ORG_ID = int(os.environ.get("CODEGEN_ORG_ID", "323"))
 MAX_FIX_ITERATIONS = 5
 IMPROVEMENT_THRESHOLD = 0.05  # 5% improvement required
 STATE_DB_PATH = Path("~/.codegen/infinity_loop.db").expanduser()
+DEMO_MODE = os.environ.get("INFINITY_LOOP_DEMO_MODE", "true").lower() == "true"
 
 
 # ============================================================================
@@ -249,6 +255,11 @@ class InfinityLoopAgent:
     
     async def execute(self, prompt: str, timeout: int = 300) -> str:
         """Execute agent with prompt and return result."""
+        # Demo mode: Return mock responses instantly
+        if DEMO_MODE:
+            await asyncio.sleep(1)  # Simulate some processing
+            return self._generate_demo_response(prompt)
+        
         task = await asyncio.get_event_loop().run_in_executor(None, self.agent.run, prompt)
         
         # Poll for completion
@@ -273,11 +284,17 @@ class InfinityLoopAgent:
             elapsed += poll_interval
         
         raise TimeoutError(f"Agent execution timed out after {timeout}s")
+    
+    def _generate_demo_response(self, prompt: str) -> str:
+        """Generate mock responses for demo mode."""
+        if get_demo_response:
+            # Determine agent type from class name
+            agent_type = self.__class__.__name__.replace("Agent", "").lower()
+            return get_demo_response(agent_type, prompt)
+        return "DEMO MODE: Mock response generated"
 
 
 class ResearchAgent(InfinityLoopAgent):
-    """Agent that researches improvements."""
-    
     async def research(self, context: str) -> str:
         """Research potential improvements."""
         prompt = f"""You are a Research Agent for continuous system improvement.
@@ -732,4 +749,3 @@ Repository: Zeeeepa/codegen
 
 if __name__ == "__main__":
     asyncio.run(main())
-
