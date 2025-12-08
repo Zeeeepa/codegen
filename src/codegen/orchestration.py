@@ -513,9 +513,10 @@ Identify:
 3. Missing features for CICD loop
 4. Architecture improvements
 
-Be specific and actionable."""
+Be specific and actionable. Keep answer under 500 words."""
 
-        result = await self.orchestrator.run_pro_mode(analysis_prompt, num_runs=2)
+        # Use simple orchestration (1 agent) instead of pro mode to avoid timeouts
+        result = await self.orchestrator.orchestrate(analysis_prompt, num_agents=1)
         print(f"✅ Analysis complete: {len(result['final'])} chars")
         return {"analysis": result['final'], "timestamp": datetime.now()}
     
