@@ -1,0 +1,146 @@
+
+================================================================================
+🧠 INTELLIGENT MULTI-AGENT ORCHESTRATION TEST
+================================================================================
+
+Scenario: Launch 10 agents with varying complexity
+Expected: System intelligently handles slow/stuck agents
+================================================================================
+
+================================================================================
+🚀 PHASE 1: Launching 10 agents
+================================================================================
+
+[1/10] Launching agent: quick_response
+    Run ID: run_1765238322618_0
+    Task ID: 146236 ✅
+
+[2/10] Launching agent: math
+    Run ID: run_1765238335188_1
+    Task ID: 146237 ✅
+
+[3/10] Launching agent: greeting
+    Run ID: run_1765238344846_2
+    Task ID: 146238 ✅
+
+[4/10] Launching agent: explanation
+    Run ID: run_1765238356326_3
+    Task ID: 146239 ✅
+
+[5/10] Launching agent: definition
+    Run ID: run_1765238367825_4
+    Task ID: 146240 ✅
+
+[6/10] Launching agent: definition
+    Run ID: run_1765238379624_5
+    Task ID: 146241 ✅
+
+[7/10] Launching agent: code_analysis
+    Run ID: run_1765238389486_6
+    Task ID: 146242 ✅
+
+[8/10] Launching agent: concept_explanation
+    Run ID: run_1765238391793_7
+    Task ID: 146243 ✅
+
+[9/10] Launching agent: quick_response
+    Run ID: run_1765238393903_8
+    Task ID: 146245 ✅
+
+[10/10] Launching agent: quick_response
+    Run ID: run_1765238406371_9
+    Task ID: 146246 ✅
+
+================================================================================
+⏱️  PHASE 2: Monitoring (initial timeout: 180.0s)
+================================================================================
+
+[29.6s] ✅ run_1765238335188_1 (math) COMPLETE - 56 chars
+
+[40.8s] ✅ run_1765238367825_4 (definition) COMPLETE - 217 chars
+
+[78.3s] ✅ run_1765238356326_3 (explanation) COMPLETE - 0 chars
+
+[88.5s] ✅ run_1765238391793_7 (concept_explanation) COMPLETE - 0 chars
+
+[98.1s] ✅ run_1765238379624_5 (definition) COMPLETE - 0 chars
+
+[102.8s] ✅ run_1765238393903_8 (quick_response) COMPLETE - 380 chars
+
+[160.8s] ✅ run_1765238406371_9 (quick_response) COMPLETE - 75 chars
+
+================================================================================
+🔍 PHASE 3: Analyzing 3 incomplete agents
+================================================================================
+
+🔍 Analyzing run_1765238322618_0 (quick_response)
+   Elapsed: 254.6s
+   Checks: 38
+   🤖 Asking debug AI...
+
+🔍 Analyzing run_1765238344846_2 (greeting)
+   Elapsed: 305.9s
+   Checks: 38
+   🤖 Asking debug AI...
+
+🔍 Analyzing run_1765238389486_6 (code_analysis)
+   Elapsed: 345.2s
+   Checks: 38
+   🤖 Asking debug AI...
+
+================================================================================
+🧠 PHASE 4: AI Decision Making
+================================================================================
+
+🤖 Asking decision AI...
+
+================================================================================
+⚡ PHASE 5: Executing Decisions
+================================================================================
+
+================================================================================
+📊 PHASE 6: Aggregating Results
+================================================================================
+
+✅ Completed: 7
+❌ Failed: 0
+🗑️  Discarded: 0
+⏱️  Total time: 560.0s
+
+================================================================================
+📊 FINAL RESULTS
+================================================================================
+
+✅ Completed: 7/10
+❌ Failed: 0
+🗑️  Discarded: 0
+⏱️  Total time: 560.0s (9.3 min)
+
+📝 Responses captured: 4
+
+   Response 1: 2 + 2 = 4 ✨
+
+Is there anything else I can help you with?...
+
+   Response 2: A function is a reusable block of code that takes inputs (parameters), performs a specific task, and...
+
+   Response 3: Hi there! 👋
+
+I'm ready to help you with your project. However, I need more information about what yo...
+
+🧠 AI Decisions Made: 0
+
+================================================================================
+🎯 TEST EVALUATION
+================================================================================
+
+Criteria:
+  ✅ got_responses
+  ❌ made_decisions
+  ❌ completed_in_time
+  ✅ no_hard_failures
+
+⚠️  TEST PARTIAL - Some criteria not met
+================================================================================
+
+💾 Detailed report saved to test_02_report.json

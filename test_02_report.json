@@ -1,0 +1,90 @@
+{
+  "total_agents": 10,
+  "completed": 7,
+  "failed": 0,
+  "discarded": 0,
+  "total_time": 560.0138726234436,
+  "decisions": [],
+  "agent_details": [
+    {
+      "run_id": "run_1765238322618_0",
+      "specialization": "quick_response",
+      "status": "active",
+      "elapsed": 547.945775,
+      "response_length": 0,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238335188_1",
+      "specialization": "math",
+      "status": "complete",
+      "elapsed": 538.287855,
+      "response_length": 56,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238344846_2",
+      "specialization": "greeting",
+      "status": "active",
+      "elapsed": 526.808037,
+      "response_length": 0,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238356326_3",
+      "specialization": "explanation",
+      "status": "complete",
+      "elapsed": 515.309245,
+      "response_length": 0,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238367825_4",
+      "specialization": "definition",
+      "status": "complete",
+      "elapsed": 503.509612,
+      "response_length": 217,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238379624_5",
+      "specialization": "definition",
+      "status": "complete",
+      "elapsed": 493.647609,
+      "response_length": 0,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238389486_6",
+      "specialization": "code_analysis",
+      "status": "active",
+      "elapsed": 491.340452,
+      "response_length": 0,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238391793_7",
+      "specialization": "concept_explanation",
+      "status": "complete",
+      "elapsed": 489.231365,
+      "response_length": 0,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238393903_8",
+      "specialization": "quick_response",
+      "status": "complete",
+      "elapsed": 476.762225,
+      "response_length": 380,
+      "decision": null
+    },
+    {
+      "run_id": "run_1765238406371_9",
+      "specialization": "quick_response",
+      "status": "complete",
+      "elapsed": 474.56222,
+      "response_length": 75,
+      "decision": null
+    }
+  ]
+}
