@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from codegen.agents.agent import Agent, AgentTask
+from codegen.agent_profiles import AgentProfileManager, AgentProfile
 
 try:
     from codegen.infinity_loop_demo import get_demo_response
@@ -255,17 +256,43 @@ class LoopStateManager:
 class InfinityLoopAgent:
     """Base agent executor for infinity loop stages."""
     
-    def __init__(self, api_key: str = CODEGEN_API_KEY, org_id: int = CODEGEN_ORG_ID):
+    def __init__(self, api_key: str = CODEGEN_API_KEY, org_id: int = CODEGEN_ORG_ID, profile: Optional[AgentProfile] = None):
+        """
+        Initialize agent executor.
+        
+        Args:
+            api_key: Codegen API key
+            org_id: Organization ID
+            profile: Optional AgentProfile with instructions/rules
+        """
         self.agent = Agent(token=api_key, org_id=org_id)
+        self.profile = profile
+    
+    def _format_prompt(self, base_prompt: str) -> str:
+        """
+        Format prompt with profile instructions if available.
+        
+        Args:
+            base_prompt: Base prompt/query
+            
+        Returns:
+            Formatted prompt with profile instructions injected
+        """
+        if self.profile:
+            return self.profile.format_instructions(base_prompt)
+        return base_prompt
     
     async def execute(self, prompt: str, timeout: int = 300) -> str:
         """Execute agent with prompt and return result."""
+        # Format prompt with profile instructions if available
+        formatted_prompt = self._format_prompt(prompt)
+        
         # Demo mode: Return mock responses instantly
         if DEMO_MODE:
             await asyncio.sleep(1)  # Simulate some processing
-            return self._generate_demo_response(prompt)
+            return self._generate_demo_response(formatted_prompt)
         
-        task = await asyncio.get_event_loop().run_in_executor(None, self.agent.run, prompt)
+        task = await asyncio.get_event_loop().run_in_executor(None, self.agent.run, formatted_prompt)
         
         # Poll for completion
         elapsed = 0
@@ -578,18 +605,53 @@ Output ONLY valid JSON:
 class InfinityLoopOrchestrator:
     """Orchestrates the complete infinity CICD loop."""
     
-    def __init__(self, api_key: str = CODEGEN_API_KEY, org_id: int = CODEGEN_ORG_ID):
+    def __init__(
+        self, 
+        api_key: str = CODEGEN_API_KEY, 
+        org_id: int = CODEGEN_ORG_ID,
+        profiles: Optional[Dict[str, AgentProfile]] = None
+    ):
+        """
+        Initialize orchestrator.
+        
+        Args:
+            api_key: Codegen API key
+            org_id: Organization ID
+            profiles: Optional dict of agent profiles {"research": profile, ...}
+        """
         self.api_key = api_key
         self.org_id = org_id
+        self.profiles = profiles or {}
         
-        # Initialize agents
-        self.research_agent = ResearchAgent(api_key, org_id)
-        self.analysis_agent = AnalysisAgent(api_key, org_id)
-        self.implementation_agent = ImplementationAgent(api_key, org_id)
-        self.test_agent = TestAgent(api_key, org_id)
-        self.fix_agent = FixAgent(api_key, org_id)
-        self.benchmark_agent = BenchmarkAgent(api_key, org_id)
-        self.integration_agent = IntegrationAgent(api_key, org_id)
+        # Initialize agents with optional profiles
+        self.research_agent = ResearchAgent(
+            api_key, org_id, 
+            profile=self.profiles.get("research")
+        )
+        self.analysis_agent = AnalysisAgent(
+            api_key, org_id,
+            profile=self.profiles.get("analysis")
+        )
+        self.implementation_agent = ImplementationAgent(
+            api_key, org_id,
+            profile=self.profiles.get("implementation")
+        )
+        self.test_agent = TestAgent(
+            api_key, org_id,
+            profile=self.profiles.get("test")
+        )
+        self.fix_agent = FixAgent(
+            api_key, org_id,
+            profile=self.profiles.get("fix")
+        )
+        self.benchmark_agent = BenchmarkAgent(
+            api_key, org_id,
+            profile=self.profiles.get("benchmark")
+        )
+        self.integration_agent = IntegrationAgent(
+            api_key, org_id,
+            profile=self.profiles.get("integration")
+        )
         
         # State manager
         self.state_mgr = LoopStateManager()
