@@ -1,0 +1,71 @@
+
+🔬 DIAGNOSTIC TIMEOUT TESTS
+================================================================================
+Goal: Understand WHERE the time goes
+================================================================================
+================================================================================
+TEST 1: MINIMAL AGENT CALL
+================================================================================
+
+📝 Prompt: Hello, respond with 'OK'
+⏱️  Starting timer...
+
+[0.0s] Running agent...
+[12.5s] Task created: 146223
+[12.5s] Polling for completion...
+[43.8s] Status: ACTIVE (poll #10)
+[78.1s] Status: ACTIVE (poll #20)
+[112.0s] Status: ACTIVE (poll #30)
+
+[125.5s] ✅ COMPLETE
+
+📤 Response (98 chars):
+   👋 Hi there! I'm ready to help you with your coding tasks. What would you like me to work on today?...
+
+💾 Saved full response to test_output_minimal.txt
+
+
+================================================================================
+TEST 2: SMALL CODE ANALYSIS
+================================================================================
+
+📝 Prompt length: 140 chars
+⏱️  Starting timer...
+
+[0.0s] Running agent...
+[12.4s] Task created: 146224
+[12.4s] Polling for completion...
+[43.3s] Status: ACTIVE (poll #10)
+[77.5s] Status: ACTIVE (poll #20)
+[111.4s] Status: ACTIVE (poll #30)
+[145.5s] Status: ACTIVE (poll #40)
+
+[148.9s] ✅ COMPLETE
+
+📤 Response (724 chars):
+   ## Code Analysis Complete ✅
+
+I've analyzed your `hello()` function and identified **3 key improvements**:
+
+1. **Add Docstring** - Document the function's purpose for better maintainability
+2. **Make it Parameterized** - Accept a `name` parameter instead of hardcoding "Hello World"
+3. **Return Instea...
+
+💾 Saved full response to test_output_code_analysis.txt
+
+
+================================================================================
+📊 SUMMARY
+================================================================================
+
+✅ Test 1 (Minimal): 125.5s - COMPLETE
+   Response: 98 chars
+
+✅ Test 2 (Code Analysis): 148.9s - COMPLETE
+   Response: 724 chars
+
+================================================================================
+🎯 CONCLUSION:
+   Average completion time: 137.2s
+   ⚠️  Agents are slow but completing
+================================================================================
