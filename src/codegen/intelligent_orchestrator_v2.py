@@ -115,13 +115,13 @@ class IntelligentOrchestratorV2:
             response.raise_for_status()
             
             data = response.json()
-            agent_run_id = data.get("agent_run_id")
+            agent_run_id = data.get("id")
             
             if agent_run_id:
                 print(f"   ✅ Created agent_run_id: {agent_run_id}")
                 return agent_run_id
             else:
-                print(f"   ❌ No agent_run_id in response: {data}")
+                print(f"   ❌ No id in response: {data}")
                 return None
                 
         except Exception as e:
