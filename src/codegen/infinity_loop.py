@@ -66,8 +66,13 @@ class LoopExecution:
     loop_id: str
     stage: LoopStage
     iteration: int
-    start_time: datetime
+    start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
+    
+    def __post_init__(self):
+        """Set start_time to now if not provided."""
+        if self.start_time is None:
+            self.start_time = datetime.now()
     
     # Stage outputs
     research_report: Optional[str] = None
