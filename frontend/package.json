@@ -22,7 +22,9 @@
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.5",
     "date-fns": "^4.1.0",
-    "react-hot-toast": "^2.4.1"
+    "react-hot-toast": "^2.4.1",
+    "@xyflow/react": "^12.3.5",
+    "dagre": "^0.8.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
