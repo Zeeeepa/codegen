@@ -110,12 +110,12 @@ function WorkflowCanvasInner({ chain, onSave, onExecute }: WorkflowCanvasProps) 
     const steps: ChainStep[] = nodes
       .sort((a, b) => a.position.y - b.position.y)
       .map((node) => ({
-        type: node.data.type || 'sequential',
-        prompt: node.data.prompt || '',
-        model: node.data.model || 'Sonnet 4.5',
-        taskType: node.data.taskType,
+        type: (node.data.type as string) || 'sequential',
+        prompt: (node.data.prompt as string) || '',
+        model: (node.data.model as string) || 'Sonnet 4.5',
+        taskType: node.data.taskType as string | undefined,
         waitForPrevious: true,
-      }));
+      } as ChainStep));
 
     const updatedChain: ChainConfig = {
       ...chain,
@@ -131,12 +131,12 @@ function WorkflowCanvasInner({ chain, onSave, onExecute }: WorkflowCanvasProps) 
     const steps: ChainStep[] = nodes
       .sort((a, b) => a.position.y - b.position.y)
       .map((node) => ({
-        type: node.data.type || 'sequential',
-        prompt: node.data.prompt || '',
-        model: node.data.model || 'Sonnet 4.5',
-        taskType: node.data.taskType,
+        type: (node.data.type as string) || 'sequential',
+        prompt: (node.data.prompt as string) || '',
+        model: (node.data.model as string) || 'Sonnet 4.5',
+        taskType: node.data.taskType as string | undefined,
         waitForPrevious: true,
-      }));
+      } as ChainStep));
 
     const updatedChain: ChainConfig = {
       ...chain,

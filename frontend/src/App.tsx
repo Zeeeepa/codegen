@@ -1,39 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { 
-  RefreshCw, Play, Settings, Zap, Loader, 
+  RefreshCw, Play, Settings as SettingsIcon, Zap, Loader, 
   Link, Plus, X, AlertCircle, CheckCircle, XCircle, Clock 
 } from 'lucide-react';
 import { codegenApi } from './services/api';
 import { chainExecutor } from './services/chainExecutor';
 import { chainTemplates } from './templates/chainTemplates';
+import { useStore, selectHasCredentials } from './store';
+import Settings from './components/Settings';
+import WorkflowCanvas from './components/WorkflowCanvas';
 import type { 
   Repository, AgentRun, ChainConfig, ChainExecution, 
   RunStatus, ChainStep 
 } from './types';
 
 const App: React.FC = () => {
-  const [orgId, setOrgId] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  // Get credentials from Zustand store
+  const apiToken = useStore((state) => state.apiToken);
+  const organizationId = useStore((state) => state.organizationId);
+  const hasCredentials = useStore(selectHasCredentials);
+  const isSettingsOpen = useStore((state) => state.isSettingsOpen);
+  const setSettingsOpen = useStore((state) => state.setSettingsOpen);
+  
   const [repos, setRepos] = useState<Repository[]>([]);
   const [allRuns, setAllRuns] = useState<AgentRun[]>([]);
   const [activeRuns, setActiveRuns] = useState<AgentRun[]>([]);
   const [chains, setChains] = useState<ChainConfig[]>([]);
   const [activeChains, setActiveChains] = useState<ChainExecution[]>([]);
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState('chains');
+  const [view, setView] = useState('visual'); // Start with visual editor
   const [error, setError] = useState('');
   const [showChainDialog, setShowChainDialog] = useState(false);
   const [editingChain, setEditingChain] = useState<ChainConfig | null>(null);
 
   useEffect(() => {
-    if (orgId && apiKey) {
+    if (hasCredentials) {
       fetchRepos();
       fetchAllRuns();
       const interval = setInterval(fetchAllRuns, 5000);
       return () => clearInterval(interval);
     }
-  }, [orgId, apiKey]);
+  }, [hasCredentials]);
 
   useEffect(() => {
     const savedChains = localStorage.getItem('codegen-chains');
@@ -47,8 +55,9 @@ const App: React.FC = () => {
   }, [chains]);
 
   const fetchRepos = async () => {
+    if (!organizationId || !apiToken) return;
     try {
-      const data = await codegenApi.fetchRepos(orgId, apiKey);
+      const data = await codegenApi.fetchRepos(organizationId, apiToken);
       setRepos(data);
     } catch (err) {
       setError(`Failed to fetch repos: ${err instanceof Error ? err.message : String(err)}`);
@@ -56,9 +65,10 @@ const App: React.FC = () => {
   };
 
   const fetchAllRuns = async () => {
+    if (!organizationId || !apiToken) return;
     try {
       setLoading(true);
-      const data = await codegenApi.fetchAllRuns(orgId, apiKey);
+      const data = await codegenApi.fetchAllRuns(organizationId, apiToken);
       setAllRuns(data);
       setActiveRuns(data.filter(r => r.status === 'running' || r.status === 'pending'));
       setError('');
@@ -70,11 +80,15 @@ const App: React.FC = () => {
   };
 
   const executeChain = async (chain: ChainConfig) => {
+    if (!organizationId || !apiToken) {
+      setError('Please configure API credentials in Settings');
+      return;
+    }
     try {
       await chainExecutor.executeChain(
         chain,
-        orgId,
-        apiKey,
+        organizationId,
+        apiToken,
         (execution) => {
           setActiveChains(prev => {
             const idx = prev.findIndex(e => e.id === execution.id);
@@ -126,49 +140,29 @@ const App: React.FC = () => {
     }
   };
 
-  if (!orgId || !apiKey) {
+  // Show setup prompt if no credentials
+  if (!hasCredentials) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-        <div className="bg-gray-900 rounded-lg shadow-2xl border border-gray-800 p-8 w-full max-w-md">
-          <h1 className="text-2xl font-bold mb-6 text-green-400">CodeGen Chain Dashboard</h1>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Organization ID
-              </label>
-              <input
-                type="text"
-                value={orgId}
-                onChange={(e) => setOrgId(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Enter org ID"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                API Key
-              </label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Enter API key"
-              />
-            </div>
-            <button
-              onClick={() => {
-                if (orgId && apiKey) {
-                  fetchRepos();
-                  fetchAllRuns();
-                }
-              }}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Connect
-            </button>
-          </div>
+        <Toaster position="top-right" />
+        <div className="bg-gray-900 rounded-lg shadow-2xl border border-gray-800 p-8 w-full max-w-md text-center">
+          <h1 className="text-2xl font-bold mb-4 text-green-400">Welcome to CodeGen Visual Orchestration</h1>
+          <p className="text-gray-300 mb-6">
+            Get started by configuring your API credentials
+          </p>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <SettingsIcon className="w-5 h-5" />
+            Configure Settings
+          </button>
         </div>
+        
+        {/* Settings Modal */}
+        {isSettingsOpen && (
+          <Settings onClose={() => setSettingsOpen(false)} />
+        )}
       </div>
     );
   }
@@ -181,8 +175,10 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-green-400">CodeGen Chain Dashboard</h1>
-              <p className="text-sm text-gray-400 mt-1">Org: {orgId}</p>
+              <h1 className="text-2xl font-bold text-green-400">CodeGen Visual Orchestration Platform</h1>
+              <p className="text-sm text-gray-400 mt-1">
+                {organizationId ? `Org: ${organizationId}` : 'No organization configured'}
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-4 py-2 bg-purple-950 border border-purple-900 rounded-lg">
@@ -205,8 +201,16 @@ const App: React.FC = () => {
                 onClick={fetchAllRuns}
                 disabled={loading}
                 className="p-2 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-lg transition-colors"
+                aria-label="Refresh runs"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-800 rounded-lg transition-colors"
+                aria-label="Open settings"
+              >
+                <SettingsIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -226,6 +230,17 @@ const App: React.FC = () => {
         <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-lg mb-6">
           <div className="border-b border-gray-800">
             <nav className="flex gap-4 px-6">
+              <button
+                onClick={() => setView('visual')}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                  view === 'visual'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Visual Workflow Editor
+              </button>
               <button
                 onClick={() => setView('chains')}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
@@ -262,6 +277,12 @@ const App: React.FC = () => {
           </div>
 
           <div className="p-6">
+            {view === 'visual' && (
+              <div className="h-[calc(100vh-280px)]">
+                <WorkflowCanvas />
+              </div>
+            )}
+            
             {view === 'chains' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -335,7 +356,7 @@ const App: React.FC = () => {
                                 }}
                                 className="text-gray-400 hover:text-gray-300"
                               >
-                                <Settings className="w-4 h-4" />
+                                <SettingsIcon className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => deleteChain(chain.id)}
@@ -454,9 +475,13 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <Settings onClose={() => setSettingsOpen(false)} />
+      )}
     </div>
   );
 };
 
 export default App;
-
