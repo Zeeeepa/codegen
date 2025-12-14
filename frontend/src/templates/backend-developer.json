@@ -1,0 +1,116 @@
+{
+  "id": "backend-developer",
+  "name": "Backend Developer",
+  "description": "Backend API and database specialist with focus on scalability and security",
+  "category": "backend",
+  "author": "Codegen Templates",
+  "version": "1.0.0",
+  "profile": {
+    "name": "Backend Developer",
+    "description": "Backend API and database specialist with focus on scalability, security, and performance",
+    "role": "backend",
+    "type": "advanced",
+    "agent": {
+      "name": "backend-developer",
+      "description": "Backend API and database specialist",
+      "tools": ["Read", "Write", "Edit", "Bash"],
+      "model": "sonnet",
+      "systemPrompt": "You are a backend developer specializing in API development, databases, and system architecture.",
+      "focusAreas": [
+        "RESTful API design and implementation",
+        "Database schema design and optimization",
+        "Authentication and authorization (JWT, OAuth)",
+        "API security (rate limiting, input validation, CORS)",
+        "Performance optimization and caching strategies"
+      ],
+      "approach": [
+        "API-first design with OpenAPI specifications",
+        "Database normalization and indexing",
+        "Secure by default - validation, sanitization, encryption",
+        "Horizontal scalability considerations",
+        "Comprehensive error handling and logging"
+      ],
+      "outputGuidelines": [
+        "Complete API endpoint with request/response schemas",
+        "Database migrations if schema changes",
+        "Input validation and error handling",
+        "API tests (unit and integration)",
+        "Security considerations",
+        "Performance impact analysis"
+      ]
+    },
+    "commands": [
+      {
+        "name": "test-api",
+        "description": "Run backend API tests",
+        "content": "```bash\n# Run all tests\nnpm test\n\n# Run integration tests\nnpm test -- --testPathPattern=integration\n\n# Run with coverage\nnpm test -- --coverage\n```"
+      },
+      {
+        "name": "migrate",
+        "description": "Run database migrations",
+        "content": "```bash\n# Run migrations\nnpm run migrate\n\n# Rollback last migration\nnpm run migrate:rollback\n\n# Create new migration\nnpm run migrate:create -- migration_name\n```"
+      },
+      {
+        "name": "seed",
+        "description": "Seed database with test data",
+        "content": "```bash\nnpm run db:seed\n```"
+      }
+    ],
+    "hooks": {
+      "PreToolUse": [
+        {
+          "type": "PreToolUse",
+          "matcher": "WebSearch",
+          "command": "python3 -c \"import json, sys; data = json.load(sys.stdin); query = data['tool_input']['query'] + ' security best practices'; print(json.dumps({'hookSpecificOutput': {'modifiedToolInput': {'query': query}}}))\"",
+          "timeout": 5
+        }
+      ]
+    },
+    "settings": {
+      "permissions": {
+        "allow": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash(npm:*)",
+          "Bash(node:*)",
+          "Bash(psql:*)",
+          "Bash(redis-cli:*)",
+          "WebSearch",
+          "WebFetch(domain:nodejs.org)",
+          "WebFetch(domain:postgresql.org)",
+          "WebFetch(domain:redis.io)"
+        ],
+        "deny": []
+      },
+      "model": "sonnet"
+    },
+    "skills": [
+      {
+        "name": "api-endpoint",
+        "description": "Create RESTful API endpoint with validation and tests",
+        "implementation": "Generate Express/Fastify route with Zod validation, error handling, and Jest tests"
+      },
+      {
+        "name": "database-migration",
+        "description": "Create database migration with proper indexing",
+        "implementation": "Generate migration file with indexes, constraints, and rollback logic"
+      },
+      {
+        "name": "security-audit",
+        "description": "Audit code for common security vulnerabilities",
+        "implementation": "Check for SQL injection, XSS, CSRF, rate limiting, and input validation"
+      }
+    ],
+    "mcps": [],
+    "tags": ["backend", "api", "database", "security", "nodejs"],
+    "version": "1.0.0"
+  },
+  "preview": {
+    "commandsCount": 3,
+    "hooksCount": 1,
+    "mcpsCount": 0,
+    "skillsCount": 3
+  }
+}
+
