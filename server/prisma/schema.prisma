@@ -1,0 +1,175 @@
+// Prisma schema for CodeGen Agentic Profiles System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Core profile model matching frontend schema
+model Profile {
+  id          String   @id @default(uuid())
+  name        String
+  role        String   // researcher, developer, analyst, qa-engineer, devops, security, api-manager, custom
+  description String?
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  profileTools      ProfileTool[]
+  profileMcpTools   ProfileMcpTool[]
+  profileSkills     ProfileSkill[]
+  profileTemplates  ProfileTemplate[]
+  sandboxes         Sandbox[]
+
+  @@map("profiles")
+}
+
+// Dynamic template system - replaces static chainTemplates.ts
+model Template {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  category     String?  // e.g., "research", "development", "analysis"
+  description  String?
+  systemPrompt String?
+  userPrompt   String?
+  variables    String   // JSON array of variable names: ["query", "context", ...]
+  tags         String?  // JSON array: ["parallel", "sequential", ...]
+  version      Int      @default(1)
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  profileTemplates ProfileTemplate[]
+
+  @@map("templates")
+}
+
+// Task templates (pre-settable, selectable workflows)
+model TaskTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  steps       String   // JSON array of step definitions
+  config      String?  // JSON configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("task_templates")
+}
+
+// MCP tool catalog with deployment instructions
+model McpTool {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  description       String?
+  repoUrl           String?
+  docsUrl           String?
+  installCommands   String?  // JSON array of commands
+  runCommands       String?  // JSON array of commands
+  envVarsSchema     String?  // JSON schema for required env vars
+  healthcheck       String?  // Command to verify installation
+  instructions      String?  // Markdown deployment guide
+  version           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  profileMcpTools ProfileMcpTool[]
+
+  @@map("mcp_tools")
+}
+
+// Plugin/skill definitions
+model Skill {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  type        String?  // e.g., "command", "hook", "plugin"
+  content     String?  // Skill implementation or reference
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  profileSkills ProfileSkill[]
+
+  @@map("skills")
+}
+
+// Sandbox configuration for multi-sandbox isolation
+model Sandbox {
+  id            String   @id @default(uuid())
+  profileId     String
+  name          String
+  setupCommands String?  // JSON array of setup commands
+  env           String?  // JSON object of environment variables
+  status        String   @default("pending") // pending, ready, error
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("sandboxes")
+}
+
+// Junction tables for many-to-many relationships
+
+model ProfileTool {
+  id        String   @id @default(uuid())
+  profileId String
+  toolName  String
+  config    String?  // JSON configuration for this tool
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, toolName])
+  @@map("profile_tools")
+}
+
+model ProfileMcpTool {
+  id        String   @id @default(uuid())
+  profileId String
+  mcpToolId String
+  config    String?  // JSON configuration
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  mcpTool McpTool @relation(fields: [mcpToolId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, mcpToolId])
+  @@map("profile_mcp_tools")
+}
+
+model ProfileSkill {
+  id        String   @id @default(uuid())
+  profileId String
+  skillId   String
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, skillId])
+  @@map("profile_skills")
+}
+
+model ProfileTemplate {
+  id         String   @id @default(uuid())
+  profileId  String
+  templateId String
+  createdAt  DateTime @default(now())
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, templateId])
+  @@map("profile_templates")
+}
+
