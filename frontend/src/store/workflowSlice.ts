@@ -7,6 +7,9 @@ import {
   safeParse,
   validateArray,
 } from '../schemas';
+import { databaseApi } from '../services/databaseApi';
+import type { Workflow } from '../types/database';
+import { chainConfigToWorkflowDefinition, workflowDefinitionToChainConfig } from '../utils/workflowMigration';
 
 /**
  * Workflow Slice - Manages saved workflows and chains
@@ -194,5 +197,37 @@ export const createWorkflowSlice: StateCreator<WorkflowSlice> = (set, get) => ({
     const chain = get().chains.find((c) => c.id === id);
     return chain || null;
   },
-});
 
+  // Database persistence methods
+  syncWithDatabase: async () => {
+    try {
+      const response = await databaseApi.workflows.list({ page: 1, limit: 100 });
+      const workflows = response.data.map((w: Workflow) => ({
+        id: w.id,
+        name: w.name,
+        description: w.description || '',
+        definition: w.definition,
+        metadata: w.context,
+        createdAt: w.created_at,
+      }));
+      set({ savedWorkflows: workflows });
+    } catch (error) {
+      console.error('Failed to sync with database:', error);
+    }
+  },
+
+  saveToDatabase: async (workflow: SavedWorkflow) => {
+    try {
+      const definition = workflow.definition || chainConfigToWorkflowDefinition(workflow as any);
+      await databaseApi.workflows.create({
+        name: workflow.name,
+        description: workflow.description || '',
+        definition,
+        context: workflow.metadata || {},
+      });
+    } catch (error) {
+      console.error('Failed to save to database:', error);
+      throw error;
+    }
+  },
+});
