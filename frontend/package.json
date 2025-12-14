@@ -19,6 +19,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\""
   },
   "dependencies": {
+    "@foxruv/iris": "^1.8.19",
     "@types/uuid": "^10.0.0",
     "@xyflow/react": "^12.3.5",
     "axios": "^1.7.9",
