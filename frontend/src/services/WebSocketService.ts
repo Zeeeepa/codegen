@@ -475,8 +475,78 @@ export class WebSocketService {
       queuedMessages: this.messageQueue.length
     };
   }
+
+  /**
+   * Subscribe to webhook events
+   * These events come from the backend webhook system
+   */
+  subscribeToWebhookEvents(): void {
+    // Workflow events
+    this.on('workflow:created', (data) => {
+      console.log('📝 Workflow created:', data);
+      this.emit('data_refresh', { type: 'workflows', payload: data });
+    });
+
+    this.on('workflow:updated', (data) => {
+      console.log('✏️ Workflow updated:', data);
+      this.emit('data_refresh', { type: 'workflows', payload: data });
+    });
+
+    this.on('workflow:deleted', (data) => {
+      console.log('🗑️ Workflow deleted:', data);
+      this.emit('data_refresh', { type: 'workflows', payload: data });
+    });
+
+    // Execution events
+    this.on('execution:started', (data) => {
+      console.log('▶️ Execution started:', data);
+      this.emit('execution_update', { type: 'started', payload: data });
+    });
+
+    this.on('execution:completed', (data) => {
+      console.log('✅ Execution completed:', data);
+      this.emit('execution_update', { type: 'completed', payload: data });
+    });
+
+    this.on('execution:failed', (data) => {
+      console.log('❌ Execution failed:', data);
+      this.emit('execution_update', { type: 'failed', payload: data });
+    });
+
+    this.on('execution:updated', (data) => {
+      console.log('🔄 Execution updated:', data);
+      this.emit('execution_update', { type: 'updated', payload: data });
+    });
+  }
+
+  /**
+   * Enable real-time updates for workflows and executions
+   */
+  enableRealTimeUpdates(): void {
+    if (!this.isConnected) {
+      console.warn('⚠️ Cannot enable real-time updates: not connected');
+      return;
+    }
+
+    this.subscribeToWebhookEvents();
+    
+    // Subscribe to relevant channels
+    this.subscribe('workflows');
+    this.subscribe('executions');
+    
+    console.log('🔔 Real-time updates enabled');
+  }
+
+  /**
+   * Disable real-time updates
+   */
+  disableRealTimeUpdates(): void {
+    this.unsubscribe('workflows');
+    this.unsubscribe('executions');
+    
+    console.log('🔕 Real-time updates disabled');
+  }
 }
 
 // Export singleton instance
 export const webSocketService = new WebSocketService();
-
