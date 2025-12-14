@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { 
   RefreshCw, Play, Settings as SettingsIcon, Zap, Loader, 
-  Link, Plus, X, AlertCircle, CheckCircle, XCircle, Clock 
+  Link, Plus, X, AlertCircle, CheckCircle, XCircle, Clock, Users 
 } from 'lucide-react';
 import { codegenApi } from './services/api';
 import { chainExecutor } from './services/chainExecutor';
@@ -10,6 +10,7 @@ import { chainTemplates } from './templates/chainTemplates';
 import { useAppStore, selectHasValidCredentials } from './store';
 import Settings from './components/Settings';
 import WorkflowCanvas from './components/WorkflowCanvas';
+import { ProfileManagement } from './components/ProfileManagement';
 import type { 
   Repository, AgentRun, ChainConfig, ChainExecution, 
   RunStatus, ChainStep 
@@ -265,6 +266,18 @@ const App: React.FC = () => {
                 Active Chains ({activeChains.length})
               </button>
               <button
+                onClick={() => setView('profiles')}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                  view === 'profiles'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+                data-testid="profiles-tab"
+              >
+                <Users className="w-4 h-4" />
+                Profiles
+              </button>
+              <button
                 onClick={() => setView('runs')}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   view === 'runs'
@@ -441,6 +454,10 @@ const App: React.FC = () => {
                   ))
                 )}
               </div>
+            )}
+
+            {view === 'profiles' && (
+              <ProfileManagement />
             )}
 
             {view === 'runs' && (

@@ -5,6 +5,7 @@ import { createWorkflowSlice, type WorkflowSlice } from './workflowSlice';
 import { createExecutionSlice, type ExecutionSlice } from './executionSlice';
 import { createRunHistorySlice, type RunHistorySlice } from './runHistorySlice';
 import { createUISlice, type UISlice } from './uiSlice';
+import { createProfileSlice, type ProfileSlice } from './profileSlice';
 
 /**
  * Combined Store Type
@@ -14,7 +15,8 @@ export type AppStore = CredentialsSlice &
   WorkflowSlice &
   ExecutionSlice &
   RunHistorySlice &
-  UISlice;
+  UISlice &
+  ProfileSlice;
 
 /**
  * Main Application Store
@@ -41,6 +43,7 @@ export const useAppStore = create<AppStore>()(
       ...createExecutionSlice(...args),
       ...createRunHistorySlice(...args),
       ...createUISlice(...args),
+      ...createProfileSlice(...args),
     }),
     {
       name: 'codegen-app-store',
@@ -60,6 +63,10 @@ export const useAppStore = create<AppStore>()(
         
         // Persist run history (but NOT active executions - too large)
         runs: state.runs,
+        
+        // Persist profiles
+        profiles: state.profiles,
+        activeProfileId: state.activeProfileId,
         
         // DO NOT persist:
         // - activeExecutions (too large, runtime only)
@@ -130,4 +137,3 @@ export type {
   RunHistorySlice,
   UISlice,
 };
-
