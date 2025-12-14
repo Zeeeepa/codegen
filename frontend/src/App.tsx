@@ -7,7 +7,7 @@ import {
 import { codegenApi } from './services/api';
 import { chainExecutor } from './services/chainExecutor';
 import { chainTemplates } from './templates/chainTemplates';
-import { useStore, selectHasCredentials } from './store';
+import { useAppStore, selectHasValidCredentials } from './store';
 import Settings from './components/Settings';
 import WorkflowCanvas from './components/WorkflowCanvas';
 import type { 
@@ -17,11 +17,12 @@ import type {
 
 const App: React.FC = () => {
   // Get credentials from Zustand store
-  const apiToken = useStore((state) => state.apiToken);
-  const organizationId = useStore((state) => state.organizationId);
-  const hasCredentials = useStore(selectHasCredentials);
-  const isSettingsOpen = useStore((state) => state.isSettingsOpen);
-  const setSettingsOpen = useStore((state) => state.setSettingsOpen);
+  const apiToken = useAppStore((state) => state.apiToken);
+  const organizationId = useAppStore((state) => state.organizationId);
+  const hasCredentials = useAppStore(selectHasValidCredentials);
+  const isSettingsOpen = useAppStore((state) => state.isSettingsOpen);
+  const openSettings = useAppStore((state) => state.openSettings);
+  const closeSettings = useAppStore((state) => state.closeSettings);
   
   const [repos, setRepos] = useState<Repository[]>([]);
   const [allRuns, setAllRuns] = useState<AgentRun[]>([]);
@@ -151,7 +152,7 @@ const App: React.FC = () => {
             Get started by configuring your API credentials
           </p>
           <button
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => openSettings()}
             className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
           >
             <SettingsIcon className="w-5 h-5" />
@@ -161,7 +162,7 @@ const App: React.FC = () => {
         
         {/* Settings Modal */}
         {isSettingsOpen && (
-          <Settings onClose={() => setSettingsOpen(false)} />
+          <Settings onClose={() => closeSettings()} />
         )}
       </div>
     );
@@ -206,7 +207,7 @@ const App: React.FC = () => {
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
               <button
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => openSettings()}
                 className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-800 rounded-lg transition-colors"
                 aria-label="Open settings"
               >
@@ -478,7 +479,7 @@ const App: React.FC = () => {
       
       {/* Settings Modal */}
       {isSettingsOpen && (
-        <Settings onClose={() => setSettingsOpen(false)} />
+        <Settings onClose={() => closeSettings()} />
       )}
     </div>
   );

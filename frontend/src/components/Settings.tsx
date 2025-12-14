@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { useStore } from '../store';
+import { useAppStore } from '../store';
 import toast from 'react-hot-toast';
 
 interface SettingsProps {
@@ -8,7 +8,9 @@ interface SettingsProps {
 }
 
 export default function Settings({ onClose }: SettingsProps) {
-  const { apiToken, organizationId, setApiToken, setOrganizationId } = useStore();
+  const apiToken = useAppStore((state) => state.apiToken);
+  const organizationId = useAppStore((state) => state.organizationId);
+  const setCredentials = useAppStore((state) => state.setCredentials);
   
   const [token, setToken] = useState(apiToken || '');
   const [orgId, setOrgId] = useState(organizationId || '');
@@ -65,10 +67,16 @@ export default function Settings({ onClose }: SettingsProps) {
     const isValid = await validateToken();
     
     if (isValid) {
-      setApiToken(token);
-      setOrganizationId(orgId);
-      toast.success('✅ Settings saved!');
-      onClose();
+      try {
+        setCredentials({
+          apiToken: token,
+          organizationId: orgId,
+        });
+        toast.success('✅ Settings saved!');
+        onClose();
+      } catch (error: any) {
+        toast.error(`❌ Failed to save: ${error.message}`);
+      }
     }
   };
 
@@ -205,4 +213,3 @@ export default function Settings({ onClose }: SettingsProps) {
     </div>
   );
 }
-
