@@ -3,7 +3,16 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright E2E Test Configuration
  * Comprehensive testing for autonomous agent UI and CI/CD visualization
+ * 
+ * Port Configuration:
+ * - Defaults to 5173 (Vite's default port)
+ * - Can be overridden via VITE_PORT environment variable
  */
+
+// Use environment variable for port, default to Vite's default (5173)
+const PORT = process.env.VITE_PORT || process.env.PORT || '5173';
+const BASE_URL = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: './tests/e2e',
   
@@ -32,7 +41,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: 'http://localhost:3000',
+    baseURL: BASE_URL,
     
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -85,7 +94,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: BASE_URL,
     reuseExistingServer: true, // Always reuse existing server
     timeout: 120 * 1000,
   },

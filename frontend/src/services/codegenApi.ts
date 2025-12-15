@@ -1,14 +1,30 @@
 /**
- * Codegen REST API Service - REAL API IMPLEMENTATION
+ * Codegen REST API Service - Environment-Based Configuration
  * 
- * Using ACTUAL Codegen API with real credentials
- * Organization ID: 323
- * API Token: sk-92083737-4e5b-4a48-a2a1-f870a3a096a6
+ * Configuration via environment variables:
+ * - VITE_CODEGEN_API_BASE: API base URL (default: https://api.codegen.com/v1)
+ * - VITE_CODEGEN_ORG_ID: Organization ID (required)
+ * - VITE_CODEGEN_API_TOKEN: API authentication token (required)
  */
 
 const CODEGEN_API_BASE = import.meta.env.VITE_CODEGEN_API_BASE || 'https://api.codegen.com/v1';
-const ORG_ID = import.meta.env.VITE_CODEGEN_ORG_ID || '323';
-const API_TOKEN = import.meta.env.VITE_CODEGEN_API_TOKEN || 'sk-92083737-4e5b-4a48-a2a1-f870a3a096a6';
+const ORG_ID = import.meta.env.VITE_CODEGEN_ORG_ID;
+const API_TOKEN = import.meta.env.VITE_CODEGEN_API_TOKEN;
+
+// Validate required environment variables at module load time
+if (!ORG_ID) {
+  throw new Error(
+    'VITE_CODEGEN_ORG_ID environment variable is required. ' +
+    'Please set it in your .env.local file.'
+  );
+}
+
+if (!API_TOKEN) {
+  throw new Error(
+    'VITE_CODEGEN_API_TOKEN environment variable is required. ' +
+    'Please set it in your .env.local file.'
+  );
+}
 
 // ============================================================================
 // Types
@@ -339,4 +355,3 @@ export const codegenApi = {
   testConnection: () => 
     testConnection(ORG_ID, API_TOKEN)
 };
-
