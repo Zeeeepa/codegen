@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Save, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store';
 import toast from 'react-hot-toast';

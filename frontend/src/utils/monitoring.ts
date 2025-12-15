@@ -37,16 +37,22 @@ export function initializeMonitoring(): void {
         tracesSampleRate: config.tracesSampleRate,
         
         integrations: [
-          new Sentry.BrowserTracing({
-            tracePropagationTargets: [
-              'localhost',
-              /^https:\/\/.*\.codegen\.com/,
-            ],
-          }),
-          new Sentry.Replay({
-            maskAllText: true,
-            blockAllMedia: true,
-          }),
+          // Use browserTracingIntegration() for Sentry v8+
+          ...(Sentry.browserTracingIntegration ? [
+            Sentry.browserTracingIntegration({
+              tracePropagationTargets: [
+                'localhost',
+                /^https:\/\/.*\.codegen\.com/,
+              ],
+            })
+          ] : []),
+          // Use replayIntegration() for Sentry v8+
+          ...(Sentry.replayIntegration ? [
+            Sentry.replayIntegration({
+              maskAllText: true,
+              blockAllMedia: true,
+            })
+          ] : []),
         ],
 
         // Performance Monitoring
@@ -117,4 +123,3 @@ declare global {
     gtag?: (...args: any[]) => void;
   }
 }
-

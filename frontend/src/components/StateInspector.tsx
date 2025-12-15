@@ -356,3 +356,5 @@ export const StateInspector: React.FC = () => {
   );
 };
 
+// Add default export for lazy loading
+export default StateInspector;

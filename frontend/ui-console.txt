@@ -1,0 +1,6 @@
+DEBUG: [vite] connecting...
+DEBUG: [vite] connected.
+INFO: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+MOBILE DEBUG: [vite] connecting...
+MOBILE DEBUG: [vite] connected.
+MOBILE INFO: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold

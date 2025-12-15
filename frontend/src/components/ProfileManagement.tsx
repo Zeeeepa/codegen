@@ -295,3 +295,5 @@ export const ProfileManagement: React.FC = () => {
   );
 };
 
+// Add default export for lazy loading
+export default ProfileManagement;

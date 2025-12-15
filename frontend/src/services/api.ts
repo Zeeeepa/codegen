@@ -98,3 +98,30 @@ class CodeGenAPI {
 
 export const codegenApi = CodeGenAPI.getInstance();
 
+// Export standalone functions for backward compatibility with tests
+export async function createAgentRun(
+  orgId: string,
+  apiKey: string,
+  prompt: string,
+  model: string = 'Sonnet 4.5',
+  repoId?: string
+): Promise<AgentRun> {
+  return codegenApi.createRun(orgId, apiKey, prompt, model, repoId);
+}
+
+export async function getAgentRunStatus(
+  orgId: string,
+  apiKey: string,
+  runId: string
+): Promise<AgentRun> {
+  return codegenApi.getRunDetails(orgId, apiKey, runId);
+}
+
+export async function resumeAgentRun(
+  orgId: string,
+  apiKey: string,
+  runId: string,
+  prompt: string
+): Promise<void> {
+  return codegenApi.resumeRun(orgId, apiKey, runId, prompt);
+}

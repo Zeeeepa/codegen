@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { Settings, AlertCircle, CheckCircle, Clock, Loader } from 'lucide-react';
 
