@@ -5,7 +5,7 @@
   - generic [ref=e3]:
     - heading "Web Preview Starting" [level=1] [ref=e6]
     - paragraph [ref=e7]: The process on port 3000 is starting...
-    - generic [ref=e11]: Starting... (3s)
+    - generic [ref=e11]: Starting... (18s)
   - generic [ref=e13]:
     - generic [ref=e19]: Terminal
     - generic [ref=e20]:

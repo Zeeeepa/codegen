@@ -1,0 +1,241 @@
+{
+  "config": {
+    "configFile": "/tmp/Zeeeepa/codegen/frontend/playwright.config.ts",
+    "rootDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 1,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      },
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      },
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      },
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      },
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      },
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Microsoft Edge",
+        "name": "Microsoft Edge",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      },
+      {
+        "outputDir": "/tmp/Zeeeepa/codegen/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "/tmp/Zeeeepa/codegen/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 0
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "autonomous-agent.spec.ts",
+      "file": "autonomous-agent.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Autonomous Agent UI",
+          "file": "autonomous-agent.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display unified dashboard on load",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 0,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4,
+                      "error": {
+                        "message": "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n╔════════════════════════════════════════════════════════════════════════════════════════════════╗\n║ Looks like you launched a headed browser without having a XServer running.                     ║\n║ Set either 'headless: true' or use 'xvfb-run <your-playwright-app>' before running Playwright. ║\n║                                                                                                ║\n║ <3 Playwright Team                                                                             ║\n╚════════════════════════════════════════════════════════════════════════════════════════════════╝\nCall log:\n\u001b[2m  - <launching> /root/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-cFStD4 --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=8635\u001b[22m\n\u001b[2m  - [pid=8635][err] [8647:8647:1215/003655.759222:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8648:8648:1215/003655.759470:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8659:1215/003655.857253:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8657:1215/003655.857602:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8635:1215/003655.872265:ERROR:ui/ozone/platform/x11/ozone_platform_x11.cc:259] Missing X server or $DISPLAY\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8635:1215/003655.872286:ERROR:ui/aura/env.cc:257] The platform failed to initialize.  Exiting.\u001b[22m\n\u001b[2m  - [pid=8635] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=8635] <kill>\u001b[22m\n\u001b[2m  - [pid=8635] <will force kill>\u001b[22m\n\u001b[2m  - [pid=8635][err] [1215/003655.908600:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:182] incorrect payload size 0\u001b[22m\n\u001b[2m  - [pid=8635][err] [1215/003655.915071:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:182] incorrect payload size 0\u001b[22m\n\u001b[2m  - [pid=8635] <process did exit: exitCode=1, signal=null>\u001b[22m\n\u001b[2m  - [pid=8635] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=8635] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=8635] <gracefully close end>\u001b[22m\n",
+                        "stack": "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n╔════════════════════════════════════════════════════════════════════════════════════════════════╗\n║ Looks like you launched a headed browser without having a XServer running.                     ║\n║ Set either 'headless: true' or use 'xvfb-run <your-playwright-app>' before running Playwright. ║\n║                                                                                                ║\n║ <3 Playwright Team                                                                             ║\n╚════════════════════════════════════════════════════════════════════════════════════════════════╝\nCall log:\n\u001b[2m  - <launching> /root/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-cFStD4 --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=8635\u001b[22m\n\u001b[2m  - [pid=8635][err] [8647:8647:1215/003655.759222:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8648:8648:1215/003655.759470:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8659:1215/003655.857253:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8657:1215/003655.857602:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8635:1215/003655.872265:ERROR:ui/ozone/platform/x11/ozone_platform_x11.cc:259] Missing X server or $DISPLAY\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8635:1215/003655.872286:ERROR:ui/aura/env.cc:257] The platform failed to initialize.  Exiting.\u001b[22m\n\u001b[2m  - [pid=8635] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=8635] <kill>\u001b[22m\n\u001b[2m  - [pid=8635] <will force kill>\u001b[22m\n\u001b[2m  - [pid=8635][err] [1215/003655.908600:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:182] incorrect payload size 0\u001b[22m\n\u001b[2m  - [pid=8635][err] [1215/003655.915071:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:182] incorrect payload size 0\u001b[22m\n\u001b[2m  - [pid=8635] <process did exit: exitCode=1, signal=null>\u001b[22m\n\u001b[2m  - [pid=8635] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=8635] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=8635] <gracefully close end>\u001b[22m\n"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n╔════════════════════════════════════════════════════════════════════════════════════════════════╗\n║ Looks like you launched a headed browser without having a XServer running.                     ║\n║ Set either 'headless: true' or use 'xvfb-run <your-playwright-app>' before running Playwright. ║\n║                                                                                                ║\n║ <3 Playwright Team                                                                             ║\n╚════════════════════════════════════════════════════════════════════════════════════════════════╝\nCall log:\n\u001b[2m  - <launching> /root/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-cFStD4 --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=8635\u001b[22m\n\u001b[2m  - [pid=8635][err] [8647:8647:1215/003655.759222:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8648:8648:1215/003655.759470:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8659:1215/003655.857253:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8657:1215/003655.857602:ERROR:base/files/file_path_watcher_inotify.cc:923] Failed to read /proc/sys/fs/inotify/max_user_watches\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8635:1215/003655.872265:ERROR:ui/ozone/platform/x11/ozone_platform_x11.cc:259] Missing X server or $DISPLAY\u001b[22m\n\u001b[2m  - [pid=8635][err] [8635:8635:1215/003655.872286:ERROR:ui/aura/env.cc:257] The platform failed to initialize.  Exiting.\u001b[22m\n\u001b[2m  - [pid=8635] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=8635] <kill>\u001b[22m\n\u001b[2m  - [pid=8635] <will force kill>\u001b[22m\n\u001b[2m  - [pid=8635][err] [1215/003655.908600:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:182] incorrect payload size 0\u001b[22m\n\u001b[2m  - [pid=8635][err] [1215/003655.915071:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:182] incorrect payload size 0\u001b[22m\n\u001b[2m  - [pid=8635] <process did exit: exitCode=1, signal=null>\u001b[22m\n\u001b[2m  - [pid=8635] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=8635] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=8635] <gracefully close end>\u001b[22m\n"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-15T00:36:53.705Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "74ffe5ed4dcb58285a4f-daa7f315424987aeea6e",
+              "file": "autonomous-agent.spec.ts",
+              "line": 14,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "message": "\u001b[31mTesting stopped early after 1 maximum allowed failures.\u001b[39m"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-12-15T00:36:51.381Z",
+    "duration": 4577.716,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

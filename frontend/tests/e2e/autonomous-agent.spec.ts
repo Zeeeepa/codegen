@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Autonomous Agent UI', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
   });
 
@@ -91,7 +91,7 @@ test.describe('Autonomous Agent UI', () => {
 
 test.describe('Agent Control Panel', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     // Navigate to Agent tab (if exists)
@@ -203,7 +203,7 @@ test.describe('Agent Control Panel', () => {
 
 test.describe('Agent Logging and Monitoring', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
   });
 
@@ -291,7 +291,7 @@ test.describe('Telemetry Integration', () => {
       }
     });
 
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Navigate to Profiles to trigger AI functions
@@ -310,7 +310,7 @@ test.describe('Telemetry Integration', () => {
   });
 
   test('should store telemetry in localStorage', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Trigger some AI functions
@@ -334,7 +334,7 @@ test.describe('Performance & Optimization', () => {
   test('should load dashboard quickly', async ({ page }) => {
     const startTime = Date.now();
     
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     const loadTime = Date.now() - startTime;
@@ -344,7 +344,7 @@ test.describe('Performance & Optimization', () => {
   });
 
   test('should lazy load heavy components', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('domcontentloaded');
 
     // Initially on Dashboard
@@ -373,7 +373,7 @@ test.describe('Performance & Optimization', () => {
       errors.push(error.message);
     });
 
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Navigate through all tabs
@@ -397,7 +397,7 @@ test.describe('Performance & Optimization', () => {
 test.describe('Mobile Responsiveness', () => {
   test('should work on mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Main content should be visible
@@ -416,7 +416,7 @@ test.describe('Mobile Responsiveness', () => {
 
   test('should work on tablet viewport', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Sidebar should be visible

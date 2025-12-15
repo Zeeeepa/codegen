@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('CI/CD Pipeline Overview', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     // Navigate to Workflows or CI/CD section
@@ -81,7 +81,7 @@ test.describe('CI/CD Pipeline Overview', () => {
 
 test.describe('Pipeline Detail View', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     await page.click('text=Workflows');
     await page.waitForTimeout(500);
@@ -142,7 +142,7 @@ test.describe('Pipeline Detail View', () => {
 
 test.describe('Real-time Pipeline Updates', () => {
   test('should update pipeline status in real-time', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     // Monitor for WebSocket connections
@@ -168,7 +168,7 @@ test.describe('Real-time Pipeline Updates', () => {
   });
 
   test('should show loading states during updates', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     await page.click('text=Workflows');
@@ -198,7 +198,7 @@ test.describe('Real-time Pipeline Updates', () => {
   });
 
   test('should handle WebSocket reconnection', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Simulate network offline/online
@@ -215,7 +215,7 @@ test.describe('Real-time Pipeline Updates', () => {
 
 test.describe('Pipeline Actions', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     await page.click('text=Workflows');
     await page.waitForTimeout(500);
@@ -275,7 +275,7 @@ test.describe('Pipeline Actions', () => {
 
 test.describe('Pipeline Configuration', () => {
   test('should display pipeline settings', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     // Look for settings/config button
@@ -302,7 +302,7 @@ test.describe('Pipeline Configuration', () => {
   });
 
   test('should allow environment variable configuration', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     // Navigate to settings
@@ -324,7 +324,7 @@ test.describe('Pipeline Configuration', () => {
 
 test.describe('Deployment Status', () => {
   test('should show deployment environments', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     await page.click('text=Analytics');
@@ -345,7 +345,7 @@ test.describe('Deployment Status', () => {
   });
 
   test('should display deployment history', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     await page.click('text=Analytics');
@@ -360,7 +360,7 @@ test.describe('Deployment Status', () => {
   });
 
   test('should show current deployment version', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
     // Look for version information
@@ -374,7 +374,7 @@ test.describe('Deployment Status', () => {
 
 test.describe('Integration with Agent Workflows', () => {
   test('should link pipelines to agent tasks', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     await page.click('text=Workflows');
@@ -394,7 +394,7 @@ test.describe('Integration with Agent Workflows', () => {
   });
 
   test('should show agent-triggered builds', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     await page.click('text=Analytics');
@@ -411,7 +411,7 @@ test.describe('Integration with Agent Workflows', () => {
 
 test.describe('Error Handling', () => {
   test('should display pipeline errors', async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
     
     await page.click('text=Workflows');
@@ -439,7 +439,7 @@ test.describe('Error Handling', () => {
       route.fulfill({ status: 500, body: 'Internal Server Error' });
     });
 
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     
     // Page should still load with error handling
     await expect(page.locator('h1')).toBeVisible({ timeout: 5000 });
@@ -457,7 +457,7 @@ test.describe('Error Handling', () => {
       }
     });
 
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:3000');
     await page.click('text=Workflows');
     await page.waitForTimeout(2000);
 
