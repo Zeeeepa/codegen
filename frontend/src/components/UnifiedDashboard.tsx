@@ -12,6 +12,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import AgentRunDialog from './AgentRunDialog';
 
 // Lazy load heavy components for performance
 const WorkflowCanvas = lazy(() => import('./WorkflowCanvas'));
@@ -103,11 +104,18 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAgentRunDialogOpen, setIsAgentRunDialogOpen] = useState(false);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
     onTabChange?.(tab);
+  };
+
+  const handleAgentRunSuccess = (agentRunId: string) => {
+    console.log('[UnifiedDashboard] Agent run created:', agentRunId);
+    // Optionally switch to executions tab
+    // handleTabChange('workflows');
   };
 
   const activeTabInfo = TABS.find(t => t.key === activeTab);
@@ -231,7 +239,10 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({
             <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors hidden md:block">
               Export
             </button>
-            <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <button 
+              onClick={() => setIsAgentRunDialogOpen(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
               + New
             </button>
           </div>
@@ -260,6 +271,13 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({
           </Suspense>
         </div>
       </main>
+
+      {/* Agent Run Dialog */}
+      <AgentRunDialog
+        isOpen={isAgentRunDialogOpen}
+        onClose={() => setIsAgentRunDialogOpen(false)}
+        onSuccess={handleAgentRunSuccess}
+      />
     </div>
   );
 };
@@ -471,4 +489,3 @@ const ActivityItem: React.FC<{
 };
 
 export default UnifiedDashboard;
-

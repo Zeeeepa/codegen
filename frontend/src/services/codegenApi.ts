@@ -30,11 +30,32 @@ if (!API_TOKEN) {
 // Types
 // ============================================================================
 
+export interface Repository {
+  id: number;
+  name: string;
+  full_name: string;
+  description?: string;
+  github_id?: string;
+  organization_id: number;
+  visibility?: string;
+  archived: boolean;
+  setup_status?: string;
+  language?: string;
+}
+
+export interface RepositoriesResponse {
+  items: Repository[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
 export interface CreateAgentRunRequest {
   task: string;
   context?: Record<string, any>;
   metadata?: Record<string, any>;
-  repo_id?: string;
+  repo_id?: number;  // Updated to number to match API
   model?: string;
 }
 
@@ -96,7 +117,7 @@ export async function createAgentRun(
       prompt: request.task,
       model: request.model || 'Sonnet 4.5',
       agent_type: 'codegen',
-      repo_id: request.metadata?.repository,
+      repo_id: request.repo_id || request.metadata?.repository,
       context: request.context,
       metadata: request.metadata
     }),
@@ -268,16 +289,18 @@ export async function cancelAgentRun(
 /**
  * List repositories - REAL API CALL
  * 
- * GET /organizations/{orgId}/repositories
+ * GET /v1/organizations/{orgId}/repos
  */
 export async function listRepositories(
   orgId: string = ORG_ID,
-  token: string = API_TOKEN
-): Promise<Array<{ id: string; name: string; fullName: string }>> {
-  console.log('[CodegenAPI] Fetching repositories:', { orgId });
+  token: string = API_TOKEN,
+  skip: number = 0,
+  limit: number = 100
+): Promise<RepositoriesResponse> {
+  console.log('[CodegenAPI] Fetching repositories:', { orgId, skip, limit });
 
   const response = await fetch(
-    `${CODEGEN_API_BASE}/organizations/${orgId}/repositories`,
+    `${CODEGEN_API_BASE}/organizations/${orgId}/repos?skip=${skip}&limit=${limit}`,
     {
       method: 'GET',
       headers: {
@@ -297,14 +320,10 @@ export async function listRepositories(
     throw new Error(`Failed to list repositories: ${response.status} ${errorText}`);
   }
 
-  const data = await response.json();
-  console.log('[CodegenAPI] Repositories loaded:', data.length);
+  const data: RepositoriesResponse = await response.json();
+  console.log('[CodegenAPI] Repositories loaded:', data.total, 'total,', data.items.length, 'in page');
 
-  return (data.repositories || data || []).map((repo: any) => ({
-    id: repo.id || repo.repo_id,
-    name: repo.name,
-    fullName: repo.full_name || repo.fullName || repo.name
-  }));
+  return data;
 }
 
 /**
