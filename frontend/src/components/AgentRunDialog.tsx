@@ -14,6 +14,17 @@ interface AgentRunDialogProps {
   onSuccess?: (agentRunId: string) => void;
 }
 
+// Cache configuration
+const REPOS_CACHE_KEY = 'agent_run_repos_cache';
+const REPOS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const RECENT_REPOS_KEY = 'agent_run_recent_repos';
+const MAX_RECENT_REPOS = 5;
+
+interface CachedRepos {
+  data: Repository[];
+  timestamp: number;
+}
+
 const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSuccess }) => {
   const [task, setTask] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState<number | undefined>();
@@ -24,11 +35,13 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [recentRepos, setRecentRepos] = useState<number[]>([]);
 
-  // Load repositories when dialog opens
+  // Load recent repositories from localStorage
   useEffect(() => {
     if (isOpen) {
       loadRepositories();
+      loadRecentRepos();
       // Reset form
       setTask('');
       setSelectedRepoId(undefined);
@@ -38,6 +51,79 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
       setValidationError(null);
     }
   }, [isOpen]);
+
+  // Helper: Load recent repos from localStorage
+  const loadRecentRepos = () => {
+    try {
+      const stored = localStorage.getItem(RECENT_REPOS_KEY);
+      if (stored) {
+        const recent = JSON.parse(stored) as number[];
+        setRecentRepos(recent.slice(0, MAX_RECENT_REPOS));
+      }
+    } catch (err) {
+      console.error('[AgentRunDialog] Failed to load recent repos:', err);
+    }
+  };
+
+  // Helper: Save recent repo to localStorage
+  const saveRecentRepo = (repoId: number) => {
+    try {
+      const stored = localStorage.getItem(RECENT_REPOS_KEY);
+      let recent: number[] = stored ? JSON.parse(stored) : [];
+      
+      // Remove if already exists
+      recent = recent.filter(id => id !== repoId);
+      
+      // Add to front
+      recent.unshift(repoId);
+      
+      // Keep only MAX_RECENT_REPOS
+      recent = recent.slice(0, MAX_RECENT_REPOS);
+      
+      localStorage.setItem(RECENT_REPOS_KEY, JSON.stringify(recent));
+      setRecentRepos(recent);
+    } catch (err) {
+      console.error('[AgentRunDialog] Failed to save recent repo:', err);
+    }
+  };
+
+  // Helper: Get cached repositories
+  const getCachedRepos = (): Repository[] | null => {
+    try {
+      const stored = localStorage.getItem(REPOS_CACHE_KEY);
+      if (!stored) return null;
+
+      const cached = JSON.parse(stored) as CachedRepos;
+      const now = Date.now();
+
+      // Check if cache is still valid
+      if (now - cached.timestamp < REPOS_CACHE_TTL) {
+        console.log('[AgentRunDialog] Using cached repositories');
+        return cached.data;
+      }
+
+      // Cache expired, remove it
+      localStorage.removeItem(REPOS_CACHE_KEY);
+      return null;
+    } catch (err) {
+      console.error('[AgentRunDialog] Failed to load cache:', err);
+      return null;
+    }
+  };
+
+  // Helper: Save repositories to cache
+  const setCachedRepos = (repos: Repository[]) => {
+    try {
+      const cache: CachedRepos = {
+        data: repos,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(REPOS_CACHE_KEY, JSON.stringify(cache));
+      console.log('[AgentRunDialog] Cached repositories');
+    } catch (err) {
+      console.error('[AgentRunDialog] Failed to cache repos:', err);
+    }
+  };
 
   // Filter repositories based on search term
   const filteredRepositories = repositories.filter(repo =>
@@ -93,12 +179,26 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
   };
 
   const loadRepositories = async () => {
+    // Try to load from cache first
+    const cached = getCachedRepos();
+    if (cached) {
+      setRepositories(cached);
+      console.log('[AgentRunDialog] Loaded repositories from cache:', cached.length);
+      return;
+    }
+
+    // Cache miss - fetch from API
     setIsLoadingRepos(true);
     setError(null);
     try {
       const response = await listRepositories();
-      setRepositories(response.items || []);
-      console.log('[AgentRunDialog] Loaded repositories:', response.items.length);
+      const repos = response.items || [];
+      setRepositories(repos);
+      
+      // Save to cache
+      setCachedRepos(repos);
+      
+      console.log('[AgentRunDialog] Loaded repositories from API:', repos.length);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load repositories';
       setError(errorMsg);
@@ -139,6 +239,11 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
 
       console.log('[AgentRunDialog] Agent run created:', response.agentRunId);
       toast.success('🎉 Agent run created successfully!');
+      
+      // Save to recent repositories if a repo was selected
+      if (selectedRepoId) {
+        saveRecentRepo(selectedRepoId);
+      }
       
       onSuccess?.(response.agentRunId);
       
@@ -184,6 +289,8 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               disabled={isCreating}
+              aria-label="Close dialog"
+              aria-disabled={isCreating}
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>
@@ -229,14 +336,17 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                 rows={4}
                 disabled={isCreating}
                 required
+                aria-label="Task description"
+                aria-invalid={!!validationError}
+                aria-describedby={validationError ? "task-error" : "task-hint"}
               />
               {validationError && (
-                <p className="mt-2 text-sm text-red-600 flex items-center">
+                <p id="task-error" className="mt-2 text-sm text-red-600 flex items-center" role="alert">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {validationError}
                 </p>
               )}
-              <p className="mt-2 text-xs text-gray-500">
+              <p id="task-hint" className="mt-2 text-xs text-gray-500">
                 Be specific about the task (10-5000 characters). The agent will analyze your codebase and implement the requested changes.
               </p>
             </div>
@@ -273,6 +383,8 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       disabled={isCreating}
+                      aria-label="Search repositories"
+                      aria-describedby="repo-search-results"
                     />
                   )}
                   
@@ -282,6 +394,7 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                     onChange={(e) => setSelectedRepoId(e.target.value ? Number(e.target.value) : undefined)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     disabled={isCreating}
+                    aria-label="Select repository"
                   >
                     <option value="">No specific repository</option>
                     {filteredRepositories.map((repo) => (
@@ -298,7 +411,7 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                   )}
                   
                   {searchTerm && filteredRepositories.length > 0 && (
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p id="repo-search-results" className="mt-2 text-xs text-gray-500" aria-live="polite">
                       Showing {filteredRepositories.length} of {repositories.length} repositories
                     </p>
                   )}
@@ -320,6 +433,7 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                 onChange={(e) => setModel(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 disabled={isCreating}
+                aria-label="Select AI model"
               >
                 <option value="Sonnet 4.5">Claude Sonnet 4.5 (Recommended)</option>
                 <option value="Sonnet 3.5">Claude Sonnet 3.5</option>
@@ -338,6 +452,8 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                 onClick={onClose}
                 className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 disabled={isCreating}
+                aria-label="Cancel"
+                aria-disabled={isCreating}
               >
                 Cancel
               </button>
@@ -345,6 +461,8 @@ const AgentRunDialog: React.FC<AgentRunDialogProps> = ({ isOpen, onClose, onSucc
                 type="submit"
                 disabled={isCreating || !task.trim()}
                 className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                aria-label={isCreating ? "Creating agent run" : "Create agent run"}
+                aria-disabled={isCreating || !task.trim()}
               >
                 {isCreating ? (
                   <>
