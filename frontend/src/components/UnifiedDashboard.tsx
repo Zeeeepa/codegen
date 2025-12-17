@@ -16,6 +16,8 @@ import AgentRunDialog from './AgentRunDialog';
 
 // Lazy load heavy components for performance
 const WorkflowCanvas = lazy(() => import('./WorkflowCanvas'));
+const WorkflowControl = lazy(() => import('./dashboard/WorkflowControl'));
+const MonitorDashboard = lazy(() => import('./dashboard/MonitorDashboard'));
 const TemplateMarketplace = lazy(() => import('./TemplateMarketplace'));
 const ExecutionAnalytics = lazy(() => import('./ExecutionAnalytics'));
 const WebhookConfig = lazy(() => import('./WebhookConfig'));
@@ -26,6 +28,8 @@ const StateInspector = lazy(() => import('./StateInspector'));
 type TabKey =
   | 'dashboard'
   | 'workflows'
+  | 'control'
+  | 'monitor'
   | 'templates'
   | 'analytics'
   | 'webhooks'
@@ -53,6 +57,18 @@ const TABS: Tab[] = [
     label: 'Workflows',
     icon: Workflow,
     description: 'Visual workflow editor and execution'
+  },
+  {
+    key: 'control',
+    label: 'Control',
+    icon: SettingsIcon,
+    description: 'Enable/disable workflows and trigger execution'
+  },
+  {
+    key: 'monitor',
+    label: 'Monitor',
+    icon: BarChart3,
+    description: 'Real-time execution monitoring and logs'
   },
   {
     key: 'templates',
@@ -262,6 +278,8 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({
           >
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'workflows' && <WorkflowCanvas chains={[]} />}
+            {activeTab === 'control' && <WorkflowControl />}
+            {activeTab === 'monitor' && <MonitorDashboard />}
             {activeTab === 'templates' && <TemplateMarketplace />}
             {activeTab === 'analytics' && <ExecutionAnalytics />}
             {activeTab === 'webhooks' && <WebhookConfig />}
