@@ -340,7 +340,7 @@ export async function testConnection(
     
     return {
       success: true,
-      message: `Connected successfully! Found ${repos.length} repositories.`
+      message: `Connected successfully! Found ${repos.total} repositories.`
     };
   } catch (error: any) {
     console.error('[CodegenAPI] Connection test failed:', error);
