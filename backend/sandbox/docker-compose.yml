@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: codegen-sandbox:latest
+    container_name: codegen-sandbox
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WORKFLOW_ID=${WORKFLOW_ID:-default}
+      - OUTPUT_DIR=/output
+      - MAX_TOKENS=${MAX_TOKENS:-4096}
+      - TIMEOUT=${TIMEOUT:-300000}
+    volumes:
+      # Mount workflow definition (read-only)
+      - ./workflow.json:/app/workflow.json:ro
+      # Mount output directory
+      - ./sandbox-output:/output
+    restart: "no"
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+    name: codegen-network

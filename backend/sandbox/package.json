@@ -1,0 +1,17 @@
+{
+  "name": "codegen-sandbox",
+  "version": "1.0.0",
+  "description": "Simplified Docker sandbox for Claude Code agent execution",
+  "main": "execute.js",
+  "scripts": {
+    "start": "node execute.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "author": "Codegen",
+  "license": "MIT"
+}
