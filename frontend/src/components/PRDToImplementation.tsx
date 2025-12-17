@@ -9,10 +9,19 @@
  * 5. View results
  */
 
-import React, { useState } from 'react';
-import { Play, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
-import { AgentChainExecutor, createFeatureImplementationChain, type ChainExecutionState } from '@/orchestration/agentChain';
-import { useAppStore } from '@/store';
+import React, { useState, useEffect } from 'react';
+import { Play, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+// Temporarily commented out - agentChain module to be implemented
+// import { AgentChainExecutor, createFeatureImplementationChain, type ChainExecutionState } from '@/orchestration/agentChain';
+
+// Stub type for now
+type ChainExecutionState = {
+  status: 'idle' | 'running' | 'completed' | 'failed';
+  currentStep?: number;
+  totalSteps?: number;
+  results?: any[];
+  error?: string;
+};
 
 export const PRDToImplementation: React.FC = () => {
   // Use REAL credentials from .env

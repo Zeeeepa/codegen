@@ -8,6 +8,10 @@ import frontendDeveloper from './frontend-developer.json';
 import backendDeveloper from './backend-developer.json';
 import mcpExpert from './mcp-expert.json';
 
+// Export chain templates
+export { chainTemplates } from './chainTemplates';
+export * from './productionTemplates';
+
 // Template registry
 export const TEMPLATES: ProfileTemplate[] = [
   frontendDeveloper as ProfileTemplate,
@@ -190,4 +194,3 @@ export default {
   getTemplateMetadata,
   getAllTemplatesMetadata
 };
-

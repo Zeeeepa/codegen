@@ -10,7 +10,10 @@ export type TaskType =
   | 'documentation'
   | 'review'
   | 'deployment'
-  | 'custom';
+  | 'custom'
+  | 'code-review'
+  | 'design'
+  | 'security-audit';
 
 export interface Repository {
   id: number;
@@ -159,7 +162,7 @@ export interface ChainTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'workflow' | 'quality' | 'deployment' | 'debugging' | 'custom';
+  category: 'workflow' | 'quality' | 'deployment' | 'debugging' | 'custom' | 'code-quality' | 'integration' | 'implementation' | 'security';
   steps: ChainStep[];
   tags: string[];
   popularity?: number;
@@ -175,4 +178,3 @@ export interface TaskPromptTemplate {
   variables: string[];
   examples: string[];
 }
-

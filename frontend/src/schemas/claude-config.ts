@@ -38,7 +38,7 @@ export const ClaudeMCPSchema = z.object({
   name: z.string().min(1, 'MCP name is required'),
   command: z.string().min(1, 'MCP command is required'),
   args: z.array(z.string()).default([]),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   disabled: z.boolean().default(false)
 });
 
@@ -49,7 +49,7 @@ export const ClaudePluginSchema = z.object({
   name: z.string().min(1, 'Plugin name is required'),
   version: z.string().optional(),
   enabled: z.boolean().default(true),
-  config: z.record(z.any()).optional()
+  config: z.record(z.string(), z.any()).optional()
 });
 
 export type ClaudePlugin = z.infer<typeof ClaudePluginSchema>;
@@ -71,7 +71,7 @@ export const ClaudeSettingsSchema = z.object({
     allow: z.array(z.string()).default([]),
     deny: z.array(z.string()).default([])
   }).optional(),
-  preferences: z.record(z.any()).optional(),
+  preferences: z.record(z.string(), z.any()).optional(),
   model: z.enum(['sonnet', 'opus', 'haiku', 'claude-3-sonnet', 'claude-3-opus', 'claude-3-haiku']).default('sonnet'),
   temperature: z.number().min(0).max(1).optional(),
   maxTokens: z.number().positive().optional()
@@ -183,7 +183,7 @@ export const ClaudeExportSchema = z.object({
   settings: ClaudeSettingsSchema,
   agents: z.array(ClaudeAgentSchema).default([]),
   commands: z.array(ClaudeCommandSchema).default([]),
-  mcps: z.record(ClaudeMCPSchema).optional(),
+  mcps: z.record(z.string(), ClaudeMCPSchema).optional(),
   hooks: z.object({
     PreToolUse: z.array(ClaudeHookSchema).default([]),
     PostToolUse: z.array(ClaudeHookSchema).default([]),
@@ -296,4 +296,3 @@ export const DEFAULT_PROFILE_ADVANCED: Partial<ProfileAdvanced> = {
     syncOnChange: false
   }
 };
-
