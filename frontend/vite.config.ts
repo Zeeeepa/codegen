@@ -13,6 +13,14 @@ export default defineConfig({
     port: 3001,
     host: true,
     strictPort: false,
+    proxy: {
+      '/api/v1': {
+        target: 'https://api.codegen.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path
+      }
+    }
   },
   preview: {
     port: 3001,

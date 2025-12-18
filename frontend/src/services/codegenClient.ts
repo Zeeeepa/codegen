@@ -6,7 +6,8 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
 // API Configuration
-const API_BASE_URL = 'https://api.codegen.com/v1';
+// Use proxy in development to avoid CORS issues
+const API_BASE_URL = import.meta.env.DEV ? '/api/v1' : 'https://api.codegen.com/v1';
 
 // Types for API responses
 export interface Workflow {
@@ -276,4 +277,3 @@ export function getCodegenClient(token?: string, orgId?: string): CodegenClient 
 }
 
 export default CodegenClient;
-
