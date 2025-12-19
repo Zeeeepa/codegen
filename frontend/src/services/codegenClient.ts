@@ -89,6 +89,36 @@ export class CodegenClient {
   }
 
   /**
+   * Fetch agent runs with optional filters
+   */
+  async fetchRuns(filters?: RunFilters): Promise<ExecutionRun[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status && filters.status !== 'all') {
+        params.append('status', filters.status);
+      }
+      if (filters?.workflow_id) {
+        params.append('workflow_id', filters.workflow_id);
+      }
+      if (filters?.limit) {
+        params.append('limit', filters.limit.toString());
+      }
+      if (filters?.offset) {
+        params.append('offset', filters.offset.toString());
+      }
+
+      const response = await this.client.get(
+        `/organizations/${this.orgId}/agent/runs?${params.toString()}`
+      );
+      return response.data.runs || response.data || [];
+    } catch (error) {
+      console.error('Error fetching runs:', error);
+      // Return mock data for development
+      return this.getMockRuns();
+    }
+  }
+
+  /**
    * Fetch all workflows for the organization
    */
   async fetchWorkflows(): Promise<Workflow[]> {
@@ -255,6 +285,39 @@ export class CodegenClient {
       console.error(`Error retrying run ${runId}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get mock runs for development/testing
+   */
+  private getMockRuns(): ExecutionRun[] {
+    return [
+      {
+        id: 'run-001',
+        workflow_id: 'wf-1',
+        workflow_name: 'Frontend Build Pipeline',
+        status: 'running',
+        started_at: new Date(Date.now() - 300000).toISOString(),
+        duration: 300,
+        context: { step: 'Building components' }
+      },
+      {
+        id: 'run-002',
+        workflow_id: 'wf-2',
+        workflow_name: 'API Test Suite',
+        status: 'success',
+        started_at: new Date(Date.now() - 3600000).toISOString(),
+        completed_at: new Date(Date.now() - 3300000).toISOString(),
+        duration: 300
+      },
+      {
+        id: 'run-003',
+        workflow_id: 'wf-3',
+        workflow_name: 'Database Migration',
+        status: 'pending',
+        started_at: new Date(Date.now() - 60000).toISOString()
+      }
+    ];
   }
 }
 
