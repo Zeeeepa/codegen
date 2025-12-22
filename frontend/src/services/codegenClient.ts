@@ -206,26 +206,7 @@ export class CodegenClient {
     }
   }
 
-  /**
-   * Fetch all runs with optional filters
-   */
-  async fetchRuns(filters?: RunFilters): Promise<ExecutionRun[]> {
-    try {
-      const params: any = {
-        org_id: this.orgId,
-        ...filters,
-      };
 
-      const response = await this.client.get(
-        `/organizations/${this.orgId}/runs`,
-        { params }
-      );
-      return response.data.runs || response.data.agent_runs || response.data || [];
-    } catch (error) {
-      console.error('Error fetching runs:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get a specific run by ID

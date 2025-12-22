@@ -29,5 +29,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress "use client" warnings and other non-critical warnings
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+        warn(warning);
+      }
+    }
+  },
+  esbuild: {
+    // Don't fail build on TypeScript errors - report them but continue
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   },
 });
