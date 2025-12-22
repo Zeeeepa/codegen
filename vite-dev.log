@@ -1,0 +1,10 @@
+
+> codegen-chain-dashboard@1.0.0 dev
+> vite --port 3000 --host
+
+error when starting dev server:
+Error: Port 3000 is already in use
+    at Server.onError (file:///tmp/Zeeeepa/codegen/frontend/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:25023:18)
+    at Server.emit (node:events:518:28)
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)

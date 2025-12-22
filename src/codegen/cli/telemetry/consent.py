@@ -1,5 +1,7 @@
 """Telemetry consent management for the CLI."""
 
+import os
+import sys
 import uuid
 from pathlib import Path
 
@@ -10,12 +12,38 @@ from codegen.configs.constants import GLOBAL_ENV_FILE
 from codegen.configs.models.telemetry import TelemetryConfig
 
 
+def is_interactive_session() -> bool:
+    """Check if the current session is interactive.
+    
+    Returns:
+        bool: True if interactive (terminal with TTY), False otherwise
+    """
+    # Check if stdin is a TTY (terminal)
+    if not sys.stdin.isatty():
+        return False
+    
+    # Check if explicitly disabled via environment variable
+    if os.getenv('CODEGEN_CLI_TELEMETRY') == '0':
+        return False
+    
+    # Check if running in CI environment
+    ci_indicators = ['CI', 'CONTINUOUS_INTEGRATION', 'GITHUB_ACTIONS', 'GITLAB_CI', 'CIRCLECI']
+    if any(os.getenv(indicator) for indicator in ci_indicators):
+        return False
+    
+    return True
+
+
 def prompt_telemetry_consent() -> bool:
     """Prompt user for telemetry consent during first-time setup.
 
     Returns:
         bool: True if user consents to telemetry, False otherwise
     """
+    # Skip prompt if not in interactive session
+    if not is_interactive_session():
+        return False
+    
     # Display Codegen header
     print("\033[38;2;82;19;217m" + "/" * 20 + " Codegen\033[0m")
     print()

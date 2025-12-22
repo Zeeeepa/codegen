@@ -1,0 +1,33 @@
+{
+  "name": "codegen-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests with AI-powered error recovery for Codegen Dashboard",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:agent-run": "playwright test tests/01-agent-run-creation.spec.ts",
+    "test:workflows": "playwright test tests/02-workflow-creation.spec.ts",
+    "test:templates": "playwright test tests/03-template-management.spec.ts",
+    "test:all-features": "playwright test tests/04-all-dashboard-features.spec.ts",
+    "test:ci": "playwright test --reporter=html,json,junit",
+    "show:report": "playwright show-report test-results/html-report",
+    "install:browsers": "playwright install"
+  },
+  "keywords": ["playwright", "e2e", "testing", "ai", "vision", "automation"],
+  "author": "Codegen",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  }
+}
