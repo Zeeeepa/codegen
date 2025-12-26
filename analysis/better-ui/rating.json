@@ -1,0 +1,26 @@
+{
+  "repo_name": "better-ui",
+  "analyzed_at": "2025-12-26T01:30:17.915924Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 4,
+    "agent_runtime": 2,
+    "github_automation": 4,
+    "pr_analysis": 6,
+    "quality_gates": 8,
+    "learning_memory": 5,
+    "prd_creation": 0,
+    "project_management": 2,
+    "code_analysis": 2,
+    "codebase_interface": 8,
+    "event_system": 4,
+    "parallel_execution": 5,
+    "persistence": 4,
+    "visual_flow": 6
+  },
+  "overall_score": 4.29,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}

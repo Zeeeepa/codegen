@@ -1,0 +1,26 @@
+{
+  "repo_name": "vscode-deepscan",
+  "analyzed_at": "2025-12-26T01:30:21.499783Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 5,
+    "agent_runtime": 2,
+    "github_automation": 6,
+    "pr_analysis": 8,
+    "quality_gates": 10,
+    "learning_memory": 5,
+    "prd_creation": 4,
+    "project_management": 5,
+    "code_analysis": 2,
+    "codebase_interface": 6,
+    "event_system": 5,
+    "parallel_execution": 3,
+    "persistence": 5,
+    "visual_flow": 8
+  },
+  "overall_score": 5.29,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}

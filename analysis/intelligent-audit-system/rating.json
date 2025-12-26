@@ -1,0 +1,26 @@
+{
+  "repo_name": "intelligent-audit-system",
+  "analyzed_at": "2025-12-26T01:29:54.159097Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 3,
+    "agent_runtime": 5,
+    "github_automation": 5,
+    "pr_analysis": 3,
+    "quality_gates": 10,
+    "learning_memory": 10,
+    "prd_creation": 2,
+    "project_management": 2,
+    "code_analysis": 4,
+    "codebase_interface": 3,
+    "event_system": 2,
+    "parallel_execution": 2,
+    "persistence": 4,
+    "visual_flow": 3
+  },
+  "overall_score": 4.14,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}

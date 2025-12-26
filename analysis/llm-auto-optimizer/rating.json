@@ -1,0 +1,26 @@
+{
+  "repo_name": "llm-auto-optimizer",
+  "analyzed_at": "2025-12-26T01:30:14.536491Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 10,
+    "agent_runtime": 6,
+    "github_automation": 8,
+    "pr_analysis": 8,
+    "quality_gates": 10,
+    "learning_memory": 10,
+    "prd_creation": 5,
+    "project_management": 8,
+    "code_analysis": 5,
+    "codebase_interface": 8,
+    "event_system": 8,
+    "parallel_execution": 8,
+    "persistence": 8,
+    "visual_flow": 10
+  },
+  "overall_score": 8.0,
+  "category": "Sandbox Environment",
+  "recommendation": "Suitable for Sandbox Environment",
+  "repomix_analyzed": true
+}

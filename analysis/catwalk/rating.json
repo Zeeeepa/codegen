@@ -1,0 +1,26 @@
+{
+  "repo_name": "catwalk",
+  "analyzed_at": "2025-12-26T01:30:37.919767Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 6,
+    "agent_runtime": 2,
+    "github_automation": 8,
+    "pr_analysis": 2,
+    "quality_gates": 8,
+    "learning_memory": 2,
+    "prd_creation": 0,
+    "project_management": 5,
+    "code_analysis": 2,
+    "codebase_interface": 2,
+    "event_system": 1,
+    "parallel_execution": 2,
+    "persistence": 1,
+    "visual_flow": 5
+  },
+  "overall_score": 3.29,
+  "category": "Github Automation",
+  "recommendation": "Suitable for Github Automation",
+  "repomix_analyzed": true
+}

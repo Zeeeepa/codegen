@@ -1,0 +1,26 @@
+{
+  "repo_name": "callcenter.js-mcp",
+  "analyzed_at": "2025-12-26T01:30:41.684984Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 4,
+    "agent_runtime": 2,
+    "github_automation": 7,
+    "pr_analysis": 8,
+    "quality_gates": 10,
+    "learning_memory": 8,
+    "prd_creation": 5,
+    "project_management": 2,
+    "code_analysis": 5,
+    "codebase_interface": 10,
+    "event_system": 5,
+    "parallel_execution": 2,
+    "persistence": 4,
+    "visual_flow": 6
+  },
+  "overall_score": 5.57,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}

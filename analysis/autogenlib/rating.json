@@ -1,0 +1,26 @@
+{
+  "repo_name": "autogenlib",
+  "analyzed_at": "2025-12-26T01:30:34.214051Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 0,
+    "agent_runtime": 0,
+    "github_automation": 4,
+    "pr_analysis": 3,
+    "quality_gates": 7,
+    "learning_memory": 3,
+    "prd_creation": 2,
+    "project_management": 2,
+    "code_analysis": 2,
+    "codebase_interface": 2,
+    "event_system": 0,
+    "parallel_execution": 0,
+    "persistence": 0,
+    "visual_flow": 3
+  },
+  "overall_score": 2.0,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}
