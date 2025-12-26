@@ -1,0 +1,26 @@
+{
+  "repo_name": "computesdk",
+  "analyzed_at": "2025-12-26T01:38:11.804219Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 10,
+    "agent_runtime": 2,
+    "github_automation": 8,
+    "pr_analysis": 8,
+    "quality_gates": 10,
+    "learning_memory": 8,
+    "prd_creation": 2,
+    "project_management": 5,
+    "code_analysis": 5,
+    "codebase_interface": 8,
+    "event_system": 5,
+    "parallel_execution": 8,
+    "persistence": 7,
+    "visual_flow": 9
+  },
+  "overall_score": 6.79,
+  "category": "Sandbox Environment",
+  "recommendation": "Suitable for Sandbox Environment",
+  "repomix_analyzed": true
+}

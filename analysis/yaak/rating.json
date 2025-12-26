@@ -1,0 +1,26 @@
+{
+  "repo_name": "yaak",
+  "analyzed_at": "2025-12-26T01:37:48.104601Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 10,
+    "agent_runtime": 2,
+    "github_automation": 8,
+    "pr_analysis": 8,
+    "quality_gates": 10,
+    "learning_memory": 6,
+    "prd_creation": 2,
+    "project_management": 4,
+    "code_analysis": 5,
+    "codebase_interface": 7,
+    "event_system": 5,
+    "parallel_execution": 4,
+    "persistence": 6,
+    "visual_flow": 9
+  },
+  "overall_score": 6.14,
+  "category": "Sandbox Environment",
+  "recommendation": "Suitable for Sandbox Environment",
+  "repomix_analyzed": true
+}

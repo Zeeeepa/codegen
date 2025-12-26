@@ -1,0 +1,26 @@
+{
+  "repo_name": "comfydeploy",
+  "analyzed_at": "2025-12-26T01:37:50.357679Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 2,
+    "agent_runtime": 0,
+    "github_automation": 6,
+    "pr_analysis": 3,
+    "quality_gates": 8,
+    "learning_memory": 2,
+    "prd_creation": 2,
+    "project_management": 2,
+    "code_analysis": 2,
+    "codebase_interface": 5,
+    "event_system": 2,
+    "parallel_execution": 0,
+    "persistence": 2,
+    "visual_flow": 4
+  },
+  "overall_score": 2.86,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}

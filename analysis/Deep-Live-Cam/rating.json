@@ -1,0 +1,26 @@
+{
+  "repo_name": "Deep-Live-Cam",
+  "analyzed_at": "2025-12-26T01:37:59.451928Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 3,
+    "agent_runtime": 0,
+    "github_automation": 7,
+    "pr_analysis": 6,
+    "quality_gates": 10,
+    "learning_memory": 4,
+    "prd_creation": 2,
+    "project_management": 4,
+    "code_analysis": 3,
+    "codebase_interface": 5,
+    "event_system": 2,
+    "parallel_execution": 0,
+    "persistence": 0,
+    "visual_flow": 8
+  },
+  "overall_score": 3.86,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}
