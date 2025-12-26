@@ -1,0 +1,26 @@
+{
+  "repo_name": "browser-echo",
+  "analyzed_at": "2025-12-26T01:50:32.220876Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 8,
+    "agent_runtime": 2,
+    "github_automation": 8,
+    "pr_analysis": 5,
+    "quality_gates": 8,
+    "learning_memory": 4,
+    "prd_creation": 0,
+    "project_management": 4,
+    "code_analysis": 2,
+    "codebase_interface": 10,
+    "event_system": 5,
+    "parallel_execution": 2,
+    "persistence": 1,
+    "visual_flow": 4
+  },
+  "overall_score": 4.5,
+  "category": "Codebase Interface",
+  "recommendation": "Suitable for Codebase Interface",
+  "repomix_analyzed": true
+}

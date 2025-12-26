@@ -1,0 +1,26 @@
+{
+  "repo_name": "agentapi",
+  "analyzed_at": "2025-12-26T01:50:27.593028Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 5,
+    "agent_runtime": 2,
+    "github_automation": 8,
+    "pr_analysis": 8,
+    "quality_gates": 8,
+    "learning_memory": 5,
+    "prd_creation": 0,
+    "project_management": 5,
+    "code_analysis": 2,
+    "codebase_interface": 10,
+    "event_system": 5,
+    "parallel_execution": 7,
+    "persistence": 0,
+    "visual_flow": 6
+  },
+  "overall_score": 5.07,
+  "category": "Codebase Interface",
+  "recommendation": "Suitable for Codebase Interface",
+  "repomix_analyzed": true
+}
