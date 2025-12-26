@@ -1,0 +1,26 @@
+{
+  "repo_name": "dashcam",
+  "analyzed_at": "2025-12-26T01:29:32.397195Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 8,
+    "agent_runtime": 2,
+    "github_automation": 8,
+    "pr_analysis": 6,
+    "quality_gates": 10,
+    "learning_memory": 5,
+    "prd_creation": 2,
+    "project_management": 6,
+    "code_analysis": 5,
+    "codebase_interface": 8,
+    "event_system": 5,
+    "parallel_execution": 8,
+    "persistence": 6,
+    "visual_flow": 6
+  },
+  "overall_score": 6.07,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}

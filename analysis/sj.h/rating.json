@@ -1,0 +1,26 @@
+{
+  "repo_name": "sj.h",
+  "analyzed_at": "2025-12-26T01:29:46.694925Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 0,
+    "agent_runtime": 0,
+    "github_automation": 2,
+    "pr_analysis": 1,
+    "quality_gates": 2,
+    "learning_memory": 1,
+    "prd_creation": 0,
+    "project_management": 0,
+    "code_analysis": 1,
+    "codebase_interface": 0,
+    "event_system": 0,
+    "parallel_execution": 0,
+    "persistence": 0,
+    "visual_flow": 2
+  },
+  "overall_score": 0.64,
+  "category": "Github Automation",
+  "recommendation": "Limited",
+  "repomix_analyzed": true
+}

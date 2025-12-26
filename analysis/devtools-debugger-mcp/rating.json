@@ -1,0 +1,26 @@
+{
+  "repo_name": "devtools-debugger-mcp",
+  "analyzed_at": "2025-12-26T01:29:26.749438Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 2,
+    "agent_runtime": 0,
+    "github_automation": 5,
+    "pr_analysis": 2,
+    "quality_gates": 6,
+    "learning_memory": 2,
+    "prd_creation": 0,
+    "project_management": 1,
+    "code_analysis": 2,
+    "codebase_interface": 9,
+    "event_system": 2,
+    "parallel_execution": 2,
+    "persistence": 0,
+    "visual_flow": 4
+  },
+  "overall_score": 2.64,
+  "category": "Codebase Interface",
+  "recommendation": "Suitable for Codebase Interface",
+  "repomix_analyzed": true
+}

@@ -1,0 +1,26 @@
+{
+  "repo_name": "Microsoft.Unity.Analyzers",
+  "analyzed_at": "2025-12-26T01:29:43.777361Z",
+  "total_loc": 0,
+  "languages": {},
+  "enterprise_ratings": {
+    "sandbox_environment": 5,
+    "agent_runtime": 0,
+    "github_automation": 8,
+    "pr_analysis": 5,
+    "quality_gates": 10,
+    "learning_memory": 5,
+    "prd_creation": 0,
+    "project_management": 5,
+    "code_analysis": 2,
+    "codebase_interface": 8,
+    "event_system": 2,
+    "parallel_execution": 5,
+    "persistence": 4,
+    "visual_flow": 8
+  },
+  "overall_score": 4.79,
+  "category": "Quality Gates",
+  "recommendation": "Suitable for Quality Gates",
+  "repomix_analyzed": true
+}
