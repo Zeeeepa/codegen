@@ -1,0 +1,59 @@
+# Test: GitHub Navigation - Multi-page + Waits + State checks
+# Validates: navigate, wait_for_network_idle, click, check_visible, extract_text
+
+name: GitHub Navigation Test
+description: Tests multi-page navigation, wait strategies, and state verification on GitHub
+
+metadata:
+  tags:
+    - navigation
+    - multi-page
+    - state-checks
+  priority: high
+  timeout_ms: 90000
+
+steps:
+  - name: Navigate to GitHub homepage
+    action: navigate
+    url: https://github.com
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Verify main content is visible
+    action: check_visible
+    selector: "main, [role='main'], .application-main"
+    timeout: 5000
+
+  - name: Extract page title
+    action: extract_text
+    selector: "title"
+    capture_as: page_title
+
+  - name: Click on Explore link
+    action: click
+    selector: "a[href='/explore']"
+    timeout: 5000
+    retry_count: 2
+    retry_delay_ms: 500
+
+  - name: Wait for Explore page selector
+    action: wait_for_selector
+    selector: "main, [role='main'], .application-main"
+    timeout: 5000
+
+  - name: Verify explore page content exists
+    action: assert
+    assertion:
+      selector: "main, [role='main'], .application-main"
+      operator: exists
+      timeout: 5000
+      message: "Explore page main content should exist"
+
+  - name: Extract explore heading text
+    action: extract_text
+    selector: "h1, h2"
+    capture_as: explore_heading
+
+  - name: Take screenshot of explore page
+    action: screenshot
+    filename: github_explore.png

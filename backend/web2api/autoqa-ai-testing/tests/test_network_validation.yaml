@@ -1,0 +1,92 @@
+# Test: Network/API Validation
+# Validates: navigate to API endpoints, assert response content
+
+name: Network Request Validation Test
+description: Tests API endpoint navigation and response content assertions
+
+metadata:
+  tags:
+    - network
+    - api
+    - validation
+  priority: high
+  timeout_ms: 60000
+
+steps:
+  - name: Navigate to HTTPBin GET endpoint
+    action: navigate
+    url: https://httpbin.org/get
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Wait for JSON response to render
+    action: wait_for_selector
+    selector: "body, pre"
+    timeout: 5000
+
+  - name: Assert response body contains origin
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "origin"
+      timeout: 3000
+      message: "Response should contain origin field"
+
+  - name: Assert response contains headers
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "headers"
+      timeout: 3000
+      message: "Response should contain headers field"
+
+  - name: Navigate to HTTPBin headers endpoint
+    action: navigate
+    url: https://httpbin.org/headers
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Assert response contains User-Agent
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "User-Agent"
+      timeout: 3000
+      message: "Response should contain User-Agent header info"
+
+  - name: Navigate to HTTPBin IP endpoint
+    action: navigate
+    url: https://httpbin.org/ip
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Assert IP response contains origin
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "origin"
+      timeout: 3000
+      message: "IP endpoint should return origin"
+
+  - name: Navigate to HTTPBin user-agent endpoint
+    action: navigate
+    url: https://httpbin.org/user-agent
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Assert user-agent response
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "user-agent"
+      timeout: 3000
+      message: "User-agent endpoint should return user-agent"
+
+  - name: Take final screenshot
+    action: screenshot
+    filename: network_validation_final.png

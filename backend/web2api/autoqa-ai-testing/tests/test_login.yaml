@@ -1,0 +1,24 @@
+name: Login Form Test
+description: Validates login functionality
+
+steps:
+  - action: navigate
+    url: http://10.0.0.4:8050/login
+
+  - action: type
+    selector: "username"
+    text: "testuser"
+
+  - action: type
+    selector: "password"
+    text: "password123"
+
+  - action: click
+    selector: "Sign In"
+
+  - action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "Login successful"
+      timeout: 10000

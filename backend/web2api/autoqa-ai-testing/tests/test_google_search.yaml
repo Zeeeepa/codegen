@@ -1,0 +1,52 @@
+# Test: Google Search - Navigation + Forms + Assertions
+# Validates: navigate, wait_for_selector, type, click, assert (contains)
+
+name: Google Search Test
+description: Validates navigation, form input, submission, and text assertions on Google
+
+metadata:
+  tags:
+    - search
+    - forms
+    - navigation
+  priority: high
+  timeout_ms: 60000
+
+steps:
+  - name: Navigate to Google
+    action: navigate
+    url: https://www.google.com
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Wait for search box to appear
+    action: wait_for_selector
+    selector: "textarea[name='q'], input[name='q']"
+    timeout: 5000
+
+  - name: Type search query
+    action: type
+    selector: "textarea[name='q'], input[name='q']"
+    text: "AutoQA testing"
+
+  - name: Submit search
+    action: press_key
+    key: Enter
+
+  - name: Wait for search results
+    action: wait_for_selector
+    selector: "#search, #rso, #main"
+    timeout: 5000
+
+  - name: Assert search results contain relevant text
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "AutoQA"
+      timeout: 5000
+      message: "Search results should contain the search term"
+
+  - name: Take screenshot of results
+    action: screenshot
+    filename: google_search_results.png
