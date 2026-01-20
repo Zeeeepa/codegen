@@ -1,0 +1,177 @@
+# Example AutoQA Test Specification
+# This demonstrates the full capabilities of the AutoQA DSL
+
+name: Complete E-Commerce Flow Test
+description: End-to-end test for shopping cart functionality
+metadata:
+  tags:
+    - e2e
+    - critical
+    - shopping
+  priority: critical
+  owner: qa-team
+  jira_ticket: SHOP-1234
+  retry_count: 2
+  timeout_ms: 300000
+
+# Environment-specific configuration
+environment:
+  base_url: https://shop.example.com
+  variables:
+    api_endpoint: https://api.example.com
+  timeouts:
+    navigation: 30000
+    interaction: 5000
+  headers:
+    X-Test-Mode: "true"
+
+# Variables with secret references
+variables:
+  username: testuser@example.com
+  password: ${env:TEST_PASSWORD}
+  payment_token: ${vault:payment/test-token}
+
+# Setup hook - runs once before all tests
+before_all:
+  steps:
+    - name: Clear browser state
+      action: delete_cookies
+
+# Setup for each test step
+before_each:
+  steps:
+    - name: Wait for page ready
+      action: wait_for_network_idle
+      timeout: 5000
+
+# Main test steps
+steps:
+  - name: Navigate to homepage
+    action: navigate
+    url: ${base_url}
+    wait_until: networkidle
+    timeout: 30000
+
+  - name: Verify homepage loaded
+    action: visual_assert
+    visual_assertion:
+      baseline_name: homepage_baseline
+      mode: semantic
+      threshold: 0.05
+      ignore_regions:
+        - x: 0
+          y: 0
+          width: 200
+          height: 50
+
+  - name: Search for product
+    action: type
+    selector: "#search-input"
+    text: "laptop"
+    description: "Enter search term in search box"
+
+  - name: Submit search
+    action: click
+    selector: "button[type='submit']"
+
+  - name: Wait for results
+    action: wait_for_selector
+    selector: ".product-grid"
+    timeout: 10000
+
+  - name: Verify search results
+    action: assert
+    assertion:
+      selector: ".product-card"
+      operator: exists
+      message: "Product cards should be visible"
+
+  - name: Count product results
+    action: extract_text
+    selector: ".results-count"
+    capture_as: result_count
+
+  - name: Click first product
+    action: ai_click
+    text: "First laptop product card"
+    description: "Use AI to find and click the first product"
+
+  - name: Verify product page
+    action: assert
+    assertion:
+      selector: ".product-details"
+      operator: is_visible
+
+  - name: Extract product price
+    action: extract_text
+    selector: ".product-price"
+    capture_as: product_price
+
+  - name: Add to cart
+    action: click
+    selector: "#add-to-cart"
+    retry_count: 2
+    retry_delay_ms: 1000
+
+  - name: Verify cart notification
+    action: assert
+    assertion:
+      selector: ".cart-notification"
+      operator: contains
+      expected: "Added to cart"
+      timeout: 5000
+
+  - name: Navigate to cart
+    action: click
+    selector: ".cart-icon"
+
+  - name: Verify cart page
+    action: network_assert
+    network_assertion:
+      url_pattern: "/api/cart"
+      method: GET
+      status_code: 200
+      max_response_time_ms: 2000
+
+  - name: Verify cart item
+    action: assert
+    assertion:
+      selector: ".cart-item"
+      operator: exists
+
+  - name: Proceed to checkout
+    action: click
+    selector: "#checkout-button"
+
+  - name: Fill shipping info
+    action: execute_nla
+    text: "Fill in the shipping form with test address data"
+
+  - name: Verify checkout loaded
+    action: visual_assert
+    visual_assertion:
+      baseline_name: checkout_page
+      mode: structural
+      threshold: 0.1
+
+  - name: Custom validation
+    action: custom
+    custom_assertion:
+      script: |
+        const cartTotal = document.querySelector('.cart-total');
+        const subtotal = document.querySelector('.subtotal');
+        return parseFloat(cartTotal.textContent.replace('$', '')) > 0;
+      operator: is_truthy
+      message: "Cart total should be greater than 0"
+
+  - name: Take final screenshot
+    action: screenshot
+    filename: checkout_complete.png
+
+# Cleanup hook
+after_all:
+  steps:
+    - name: Clear test data
+      action: evaluate
+      script: "localStorage.clear(); sessionStorage.clear();"
+  on_failure_only: false

@@ -1,0 +1,67 @@
+# Test: Visual + ML Color Assertions
+# Validates: navigate, screenshot, color_assert (dominant colors), layout_assert (element count)
+
+name: Visual and Color Analysis Test
+description: Tests ML-based visual assertions including color analysis and layout checking
+
+metadata:
+  tags:
+    - visual
+    - ml-assertions
+    - color
+  priority: medium
+  timeout_ms: 60000
+
+steps:
+  - name: Navigate to Google homepage
+    action: navigate
+    url: https://www.google.com
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Wait for page to fully render
+    action: wait_for_selector
+    selector: "body"
+    timeout: 5000
+
+  - name: Take screenshot for analysis
+    action: screenshot
+    filename: google_visual_analysis.png
+
+  - name: Assert white is dominant background color
+    action: color_assert
+    color_assertion:
+      dominant_color: "#FFFFFF"
+      tolerance: 60
+      message: "Google homepage should have white as dominant color"
+
+  - name: Assert page has blue color (Google logo)
+    action: color_assert
+    color_assertion:
+      has_color: "#4285F4"
+      tolerance: 50
+      min_percentage: 0.0005
+      message: "Google homepage should contain Google blue color"
+    continue_on_failure: true
+
+  - name: Check layout has some elements
+    action: layout_assert
+    layout_assertion:
+      min_count: 1
+      message: "Page should have at least one UI element"
+
+  - name: Navigate to colorful test page
+    action: navigate
+    url: https://httpbin.org
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Take screenshot of httpbin
+    action: screenshot
+    filename: httpbin_visual.png
+
+  - name: Verify httpbin page has elements
+    action: layout_assert
+    layout_assertion:
+      min_count: 3
+      message: "HTTPBin page should have multiple UI elements"

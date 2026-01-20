@@ -1,0 +1,78 @@
+# Test Versioning Feature
+# This test demonstrates the versioned test tracking capability
+# Run with: autoqa run tests/test_versioning.yaml --versioned
+
+name: Version Tracking Demo
+description: |
+  This test demonstrates version tracking capabilities.
+  Run it multiple times with --versioned flag to build up history,
+  then use 'autoqa history' and 'autoqa diff' to compare runs.
+
+metadata:
+  tags:
+    - versioning
+    - demo
+    - regression
+  priority: medium
+  owner: qa-team
+
+# Enable versioning in the test spec itself
+versioning:
+  enabled: true
+  storage_path: .autoqa/history
+  retention_days: 90
+  capture_screenshots: true
+  capture_network: true
+  capture_elements: true
+  element_selectors:
+    - "h1"
+    - "nav"
+    - "footer"
+    - ".main-content"
+    - "#search-input"
+  auto_compare_previous: false
+  diff_threshold: 0.05
+
+variables:
+  search_term: "test automation"
+  target_url: "https://example.com"
+
+steps:
+  - name: Navigate to target page
+    action: navigate
+    url: ${target_url}
+    wait_until: networkidle
+    description: Navigate to the example page for tracking
+
+  - name: Wait for page load
+    action: wait
+    timeout: 2000
+    description: Give page time to fully render
+
+  - name: Capture page title
+    action: extract_text
+    selector: "h1"
+    capture_as: page_heading
+    description: Extract main heading for comparison
+
+  - name: Screenshot for visual baseline
+    action: screenshot
+    filename: versioning_test_screenshot.png
+    description: Capture screenshot for visual diff
+
+  - name: Extract page text
+    action: get_markdown
+    capture_as: page_content
+    description: Get full page content for text comparison
+
+  - name: Verify page loaded
+    action: assert
+    assertion:
+      selector: "body"
+      operator: exists
+      message: Page body should exist
+
+  - name: Final wait
+    action: wait
+    timeout: 1000
+    description: Allow any final rendering

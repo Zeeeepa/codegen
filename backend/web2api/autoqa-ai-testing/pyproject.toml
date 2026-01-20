@@ -1,0 +1,191 @@
+[project]
+name = "autoqa-ai-testing"
+version = "1.0.0"
+description = "Production AutoQA AI Testing System with natural language YAML test definitions and self-healing capabilities"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [
+    { name = "Olib AI", email = "support@owlbrowser.net" }
+]
+keywords = [
+    "testing",
+    "automation",
+    "ai",
+    "qa",
+    "browser",
+    "selenium",
+    "playwright",
+    "self-healing",
+    "visual-regression",
+    "ci-cd"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+    "Framework :: FastAPI",
+    "Typing :: Typed"
+]
+dependencies = [
+    # SDK v2 - async-first with context_id pattern
+    # Install from local path: pip install -e /path/to/olib-browser/python-sdk-v2
+    "owl-browser>=2.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "pyyaml>=6.0.2",
+    "jinja2>=3.1.4",
+    "httpx>=0.28.0",
+    "boto3>=1.35.0",
+    "asyncpg>=0.30.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "alembic>=1.14.0",
+    "pillow>=11.0.0",
+    "imagehash>=4.3.1",
+    "scikit-image>=0.24.0",
+    "numpy>=2.1.0",
+    "structlog>=24.4.0",
+    "tenacity>=9.0.0",
+    "aiofiles>=24.1.0",
+    "python-multipart>=0.0.17",
+    "orjson>=3.10.0",
+    "redis>=5.2.0",
+    "kubernetes>=31.0.0",
+    "python-dotenv>=1.0.0",
+    # ML-based UI assertions (no LLM required)
+    "opencv-python>=4.10.0",
+    "easyocr>=1.7.0",
+    "pytesseract>=0.3.10",
+    "scikit-learn>=1.5.0",
+    # Visual regression enterprise features
+    "scipy>=1.14.0",
+]
+
+[project.optional-dependencies]
+# LLM integration for enhanced test generation and semantic assertions
+llm = [
+    "httpx>=0.28.0",  # Already included in main deps, listed for clarity
+]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "mypy>=1.13.0",
+    "ruff>=0.8.0",
+    "black>=24.10.0",
+    "types-pyyaml>=6.0.12",
+    "types-aiofiles>=24.1.0",
+    "types-pillow>=10.2.0",
+    "types-redis>=4.6.0",
+]
+
+[project.scripts]
+autoqa = "autoqa.cli:main"
+autoqa-server = "autoqa.api.main:run_server"
+
+[project.urls]
+Homepage = "https://owlbrowser.net"
+Documentation = "https://docs.owlbrowser.net/autoqa"
+Repository = "https://github.com/Olib-AI/owl-projects"
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/autoqa"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "owl_browser.*",
+    "imagehash.*",
+    "skimage.*",
+    "kubernetes.*",
+    "boto3.*",
+    "botocore.*",
+    "cv2.*",
+    "easyocr.*",
+    "pytesseract.*",
+    "sklearn.*",
+    "scipy.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "C4",     # flake8-comprehensions
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "C901",   # too complex
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["autoqa"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "-ra",
+    "-q",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks integration tests",
+]
+
+[tool.coverage.run]
+source = ["src/autoqa"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]

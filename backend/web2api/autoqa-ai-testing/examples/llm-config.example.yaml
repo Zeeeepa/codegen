@@ -1,0 +1,82 @@
+# AutoQA LLM Configuration Example
+# Copy this file to .autoqa/llm.yaml and customize for your environment
+#
+# Environment variables can also be used:
+#   AUTOQA_LLM_ENABLED=true
+#   AUTOQA_LLM_API_KEY=sk-xxx
+#   AUTOQA_LLM_MODEL=gpt-4o-mini
+#   AUTOQA_LLM_TEST_BUILDER_ENABLED=true
+
+# Global LLM enable flag (must be true for any tool to use LLM)
+enabled: true
+
+# Default endpoint configuration (used by all tools unless overridden)
+default_endpoint:
+  # OpenAI API (default)
+  base_url: "https://api.openai.com/v1"
+  # api_key: from env var AUTOQA_LLM_API_KEY (recommended) or set here
+  model: "gpt-4o-mini"
+  provider: "openai"
+
+  # Request parameters
+  temperature: 0.3
+  max_tokens: 2048
+  timeout_ms: 30000
+
+  # Retry configuration
+  retry:
+    max_retries: 3
+    initial_delay_ms: 1000
+    max_delay_ms: 30000
+    exponential_base: 2.0
+    jitter: true
+
+  # Rate limiting
+  rate_limit:
+    requests_per_minute: 60
+    tokens_per_minute: 90000
+    concurrent_requests: 5
+
+# Per-tool configuration
+# Each tool can be independently enabled/disabled
+
+test_builder:
+  enabled: true
+  # Optional: override temperature for more creative test names
+  temperature: 0.4
+  # Optional: custom system prompt
+  # system_prompt: "You are an expert QA engineer..."
+
+step_transformer:
+  enabled: true
+  # Natural language to action translation enhancement
+  temperature: 0.2
+
+assertions:
+  enabled: true
+  # LLM-based semantic validation
+  temperature: 0.2
+
+self_healing:
+  enabled: false
+  # Enhanced selector recovery (more expensive, only enable if needed)
+  temperature: 0.3
+
+chaos_agents:
+  enabled: false
+  # Chaos/generative testing (experimental)
+  temperature: 0.7
+
+# Azure OpenAI Example
+# default_endpoint:
+#   base_url: "https://your-resource.openai.azure.com"
+#   provider: "azure"
+#   azure_deployment: "your-deployment-name"
+#   azure_api_version: "2024-02-15-preview"
+
+# Local LLM Example (Ollama, LM Studio, etc.)
+# default_endpoint:
+#   base_url: "http://localhost:11434/v1"
+#   provider: "local"
+#   model: "llama3.2"
+#   api_key: ""  # Often not needed for local models

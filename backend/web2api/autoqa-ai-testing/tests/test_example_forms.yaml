@@ -1,0 +1,95 @@
+# Test: Form Handling + Cookies
+# Validates: navigate, type, set_cookie, click, submit, assert (response contains data)
+
+name: HTTPBin Forms Test
+description: Tests form filling, cookie management, and form submission on httpbin.org
+
+metadata:
+  tags:
+    - forms
+    - cookies
+    - submission
+  priority: high
+  timeout_ms: 60000
+
+steps:
+  - name: Navigate to HTTPBin forms page
+    action: navigate
+    url: https://httpbin.org/forms/post
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Wait for form to load
+    action: wait_for_selector
+    selector: "form"
+    timeout: 5000
+
+  - name: Set a test cookie
+    action: set_cookie
+    cookie_name: autoqa_test
+    cookie_value: test_value_12345
+    cookie_domain: httpbin.org
+    cookie_path: /
+
+  - name: Fill customer name field
+    action: type
+    selector: "input[name='custname']"
+    text: "AutoQA Test User"
+
+  - name: Fill telephone field
+    action: type
+    selector: "input[name='custtel']"
+    text: "+1234567890"
+
+  - name: Fill email field
+    action: type
+    selector: "input[name='custemail']"
+    text: "autoqa@test.example.com"
+
+  - name: Select pizza size
+    action: click
+    selector: "input[name='size'][value='medium']"
+    continue_on_failure: true
+
+  - name: Select topping bacon
+    action: click
+    selector: "input[name='topping'][value='bacon']"
+    continue_on_failure: true
+
+  - name: Fill delivery time
+    action: type
+    selector: "input[name='delivery']"
+    text: "18:30"
+    continue_on_failure: true
+
+  - name: Fill delivery instructions
+    action: type
+    selector: "textarea[name='comments']"
+    text: "Please ring doorbell twice. AutoQA automated test delivery."
+
+  - name: Take screenshot before submission
+    action: screenshot
+    filename: httpbin_form_filled.png
+
+  - name: Submit the form
+    action: click
+    selector: "button[type='submit'], input[type='submit']"
+    timeout: 5000
+
+  - name: Wait for response page
+    action: wait_for_selector
+    selector: "body"
+    timeout: 5000
+
+  - name: Assert response contains submitted customer name
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "AutoQA Test User"
+      timeout: 5000
+      message: "Response should contain the submitted customer name"
+
+  - name: Take screenshot of response
+    action: screenshot
+    filename: httpbin_form_response.png

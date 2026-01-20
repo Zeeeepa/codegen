@@ -1,0 +1,74 @@
+# Test: Wikipedia Content - Text extraction + Scrolling
+# Validates: navigate, wait_for_selector, scroll_to_element, extract_text, assert (contains), screenshot
+
+name: Wikipedia Content Extraction Test
+description: Tests text extraction, scrolling, and content assertions on Wikipedia
+
+metadata:
+  tags:
+    - content
+    - scrolling
+    - extraction
+  priority: medium
+  timeout_ms: 60000
+
+steps:
+  - name: Navigate to Wikipedia Software Testing article
+    action: navigate
+    url: https://en.wikipedia.org/wiki/Software_testing
+    wait_until: domcontentloaded
+    timeout: 10000
+
+  - name: Wait for main content to load
+    action: wait_for_selector
+    selector: "#mw-content-text, .mw-body-content, #content"
+    timeout: 5000
+
+  - name: Verify article title exists
+    action: assert
+    assertion:
+      selector: "h1"
+      operator: exists
+      timeout: 3000
+      message: "Article title should exist"
+
+  - name: Extract first paragraph text
+    action: extract_text
+    selector: "#mw-content-text p"
+    capture_as: first_paragraph
+
+  - name: Assert content contains testing keywords
+    action: assert
+    assertion:
+      selector: "#mw-content-text, .mw-body-content"
+      operator: contains
+      expected: "testing"
+      timeout: 3000
+      message: "Article should contain the word 'testing'"
+
+  - name: Scroll down page
+    action: scroll
+    scroll_x: 0
+    scroll_y: 500
+
+  - name: Wait after scroll
+    action: wait
+    timeout: 1000
+
+  - name: Scroll down more
+    action: scroll
+    scroll_x: 0
+    scroll_y: 500
+
+  - name: Assert body has content
+    action: assert
+    assertion:
+      selector: "body"
+      operator: contains
+      expected: "software"
+      timeout: 3000
+      message: "Page should contain software-related content"
+
+  - name: Take screenshot of article
+    action: screenshot
+    filename: wikipedia_software_testing.png

@@ -1,0 +1,271 @@
+# Visual Regression Enterprise Features Test Suite
+# Tests all enterprise-grade visual regression capabilities
+name: Visual Regression Enterprise Features
+
+description: |
+  Comprehensive test suite validating enterprise visual regression features:
+  - Anti-aliasing tolerance with Gaussian blur preprocessing
+  - Automatic dynamic region detection
+  - Device/breakpoint-specific baselines
+  - Scroll position normalization
+  - Multi-threshold modes (strict, normal, loose, custom)
+  - Enhanced diff reporting with HTML reports
+  - Selector-based element screenshots
+
+metadata:
+  tags:
+    - visual-regression
+    - enterprise
+    - smoke-test
+  priority: high
+  owner: autoqa-team
+
+environment:
+  base_url: https://example.com
+  timeouts:
+    navigation: 30000
+    visual: 10000
+
+steps:
+  # ==========================================================================
+  # Test 1: Basic Visual Assertion with Threshold Modes
+  # ==========================================================================
+  - name: Navigate to test page
+    action: navigate
+    url: https://example.com
+
+  - name: Wait for page load
+    action: wait_for_network_idle
+    timeout: 5000
+
+  # Test STRICT mode (99% similarity required)
+  - name: Visual assertion - STRICT mode
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_homepage_strict
+      mode: semantic
+      threshold_mode: strict
+      update_baseline: true
+      message: "Strict mode visual check failed"
+
+  # Test NORMAL mode (95% similarity required)
+  - name: Visual assertion - NORMAL mode
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_homepage_normal
+      mode: structural
+      threshold_mode: normal
+      update_baseline: true
+
+  # Test LOOSE mode (85% similarity required)
+  - name: Visual assertion - LOOSE mode
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_homepage_loose
+      mode: perceptual
+      threshold_mode: loose
+      update_baseline: true
+
+  # Test CUSTOM mode with explicit threshold
+  - name: Visual assertion - CUSTOM threshold
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_homepage_custom
+      mode: pixel
+      threshold_mode: custom
+      threshold: 0.10
+      update_baseline: true
+
+  # ==========================================================================
+  # Test 2: Anti-Aliasing Tolerance for Cross-Platform Testing
+  # ==========================================================================
+  - name: Visual with anti-aliasing tolerance
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_antialiased
+      mode: semantic
+      threshold_mode: normal
+      anti_aliasing_tolerance: 0.5
+      anti_aliasing_sigma: 1.5
+      update_baseline: true
+      message: "Anti-aliased comparison failed - font rendering differences detected"
+
+  - name: High anti-aliasing tolerance for problematic fonts
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_high_aa
+      mode: structural
+      anti_aliasing_tolerance: 0.8
+      anti_aliasing_sigma: 2.0
+      threshold_mode: loose
+      update_baseline: true
+
+  # ==========================================================================
+  # Test 3: Auto-Mask Dynamic Regions
+  # ==========================================================================
+  - name: Visual with auto dynamic region masking
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_auto_masked
+      mode: semantic
+      auto_mask_dynamic: true
+      threshold_mode: normal
+      update_baseline: true
+      message: "Auto-masked comparison failed - dynamic content detected"
+
+  # ==========================================================================
+  # Test 4: Scroll Position Normalization
+  # ==========================================================================
+  - name: Visual with scroll normalization enabled
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_scroll_normalized
+      mode: semantic
+      normalize_scroll: true
+      threshold_mode: normal
+      update_baseline: true
+
+  - name: Visual without scroll normalization
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_no_scroll_norm
+      mode: semantic
+      normalize_scroll: false
+      threshold_mode: normal
+      update_baseline: true
+
+  # ==========================================================================
+  # Test 5: HTML Diff Report Generation
+  # ==========================================================================
+  - name: Visual with HTML report generation
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_with_report
+      mode: semantic
+      threshold_mode: normal
+      generate_html_report: true
+      update_baseline: true
+      message: "Visual check with HTML report generation"
+
+  # ==========================================================================
+  # Test 6: Selector-Based Element Screenshots
+  # ==========================================================================
+  - name: Element-specific visual assertion
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_h1_element
+      selector: "h1"
+      mode: semantic
+      threshold_mode: strict
+      update_baseline: true
+      message: "H1 element visual mismatch"
+
+  - name: Container element visual assertion
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_body_element
+      selector: "body"
+      mode: structural
+      threshold_mode: normal
+      update_baseline: true
+
+  # ==========================================================================
+  # Test 7: Ignore Regions with Enterprise Features
+  # ==========================================================================
+  - name: Visual with manual ignore regions
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_ignore_regions
+      mode: semantic
+      threshold_mode: normal
+      ignore_regions:
+        - x: 0
+          y: 0
+          width: 100
+          height: 50
+        - x: 200
+          y: 100
+          width: 150
+          height: 80
+      update_baseline: true
+
+  # ==========================================================================
+  # Test 8: Ignore Colors Mode
+  # ==========================================================================
+  - name: Visual ignoring color differences
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_grayscale
+      mode: semantic
+      ignore_colors: true
+      threshold_mode: normal
+      update_baseline: true
+      message: "Grayscale comparison failed"
+
+  # ==========================================================================
+  # Test 9: Combined Enterprise Features
+  # ==========================================================================
+  - name: Full enterprise visual assertion
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_enterprise_full
+      mode: semantic
+      threshold_mode: normal
+      threshold: 0.08
+      anti_aliasing_tolerance: 0.3
+      anti_aliasing_sigma: 1.2
+      auto_mask_dynamic: true
+      normalize_scroll: true
+      generate_html_report: true
+      ignore_regions:
+        - x: 0
+          y: 0
+          width: 50
+          height: 30
+      update_baseline: true
+      message: "Full enterprise visual check with all features enabled"
+
+  # ==========================================================================
+  # Test 10: Different Viewport Sizes (Responsive Testing)
+  # ==========================================================================
+  - name: Set mobile viewport
+    action: set_viewport
+    width: 375
+    height: 812
+
+  - name: Mobile viewport visual assertion
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_responsive
+      mode: semantic
+      threshold_mode: normal
+      update_baseline: true
+      message: "Mobile viewport visual mismatch"
+
+  - name: Set tablet viewport
+    action: set_viewport
+    width: 768
+    height: 1024
+
+  - name: Tablet viewport visual assertion
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_responsive
+      mode: semantic
+      threshold_mode: normal
+      update_baseline: true
+      message: "Tablet viewport visual mismatch"
+
+  - name: Set desktop viewport
+    action: set_viewport
+    width: 1920
+    height: 1080
+
+  - name: Desktop viewport visual assertion
+    action: visual_assert
+    visual_assertion:
+      baseline_name: example_responsive
+      mode: semantic
+      threshold_mode: normal
+      update_baseline: true
+      message: "Desktop viewport visual mismatch"
