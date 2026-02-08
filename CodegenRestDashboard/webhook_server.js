@@ -33,10 +33,20 @@ export default {
     // Here, we simply log and return 200.
     console.log('Codegen webhook:', bodyText.slice(0, 500));
 
+    // Optional forward to another endpoint (e.g., your local proxy /webhook)
+    const forwardUrl = env.WEBHOOK_FORWARD_URL || '';
+    if (forwardUrl) {
+      try {
+        await fetch(forwardUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bodyText });
+      } catch (e) {
+        console.log('Forward failed:', e.message || e);
+      }
+    }
+
+
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 };
-

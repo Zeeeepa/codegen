@@ -11,6 +11,32 @@ const TOKEN = process.env.CODEGEN_TOKEN || '';
 const ORG_ID = process.env.CODEGEN_ORG_ID || '';
 const OFFLINE = String(process.env.CODEGEN_OFFLINE || '0') === '1';
 
+// In-memory webhook events cache (best-effort; dev only)
+const webhookEvents = [];
+
+function serveWebhook(req, res){
+  let body = '';
+  req.on('data', c => body += c);
+  req.on('end', ()=>{
+    try {
+      const json = JSON.parse(body || '{}');
+      webhookEvents.push({ ts: Date.now(), body: json });
+    } catch(_) {
+      webhookEvents.push({ ts: Date.now(), raw: body });
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+  });
+}
+
+function serveEvents(req, res){
+  // Return and clear (so each event is processed once). Client can poll /api/events frequently.
+  const copy = webhookEvents.splice(0, webhookEvents.length);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ events: copy }));
+}
+
+
 function contentType(filePath) {
   if (filePath.endsWith('.html')) return 'text/html; charset=utf-8';
   if (filePath.endsWith('.css')) return 'text/css; charset=utf-8';
@@ -64,6 +90,8 @@ async function proxyApi(req, res) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/api/events') && req.method==='GET') return serveEvents(req, res);
+  if (req.url === '/webhook' && req.method==='POST') return serveWebhook(req, res);
   if (req.url.startsWith('/api/')) return proxyApi(req, res);
   return serveStatic(req, res);
 });
@@ -71,4 +99,3 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`[CodegenRestDashboard] Server listening on http://localhost:${PORT}`);
 });
-
