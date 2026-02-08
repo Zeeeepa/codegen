@@ -22,4 +22,11 @@ header { position: sticky; top: 0; background: #0f172a; color: white; padding: 1
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e5e7eb; }
 .dialog-body { padding: 10px 14px; overflow: auto; }
 .logs { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; }
+.status-active::before, .status-completed::before, .status-failed::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
+.status-active::before { background: #06b6d4; }
+.status-completed::before { background: #10b981; }
+.status-failed::before { background: #ef4444; }
+.run-row { padding: 4px 8px; gap: 6px; }
+.btn { padding: 4px 8px; font-size: 12px; }
+.controls { gap: 8px; }
 

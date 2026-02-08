@@ -9,8 +9,12 @@
     if (window.CGTabControl.active==='runs') CGRunList.render(state);
   });
 
+  // Request Notification permission (optional)
+  if ('Notification' in window && Notification.permission==='default'){
+    try { Notification.requestPermission().catch(()=>{}); } catch(_){}
+  }
+
   // Start background watchers (auto-refresh; no manual refresh button)
   CGWatcher.start();
   CGFollowUp.start();
 })();
-

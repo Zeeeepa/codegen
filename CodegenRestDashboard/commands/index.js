@@ -8,6 +8,8 @@ module.exports = {
   resume: require('./resume_agent_run'),
   list: require('./list_agent_runs'),
   get: require('./get_agent_run'),
+  logs: require('./get_agent_run_logs'),
   genSetup: require('./generate_setup_commands'),
+  ban: require('./ban_agent_run'),
+  unban: require('./unban_agent_run'),
 };
-

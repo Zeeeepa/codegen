@@ -58,13 +58,42 @@
     filtered.forEach(r=>{
       const row = document.createElement('div'); row.className='run-row';
       const title = document.createElement('div'); title.textContent=`#${r.id} ${r.title||''}`; title.style.flex='1';
-      const status = document.createElement('div'); status.textContent=r.status; status.className = r.status==='ACTIVE'?'status-active': (r.status==='COMPLETED'?'status-completed':'');
+      const status = document.createElement('div'); status.textContent=''; status.className = r.status==='ACTIVE'?'status-active': (r.status==='COMPLETED'?'status-completed':''); status.title=r.status;
       const pinBtn = document.createElement('button'); pinBtn.className='btn'; pinBtn.textContent = CGStore.state.pinned.includes(r.id)?'Unpin':'Pin';
       pinBtn.onclick = ()=> CGStore.state.pinned.includes(r.id) ? CGStore.unpin(r.id) : CGStore.pin(r.id);
       const watchBtn = document.createElement('button'); watchBtn.className='btn'; watchBtn.textContent = CGStore.state.watched[r.id]?'Unwatch':'Watch';
       watchBtn.onclick = ()=> CGStore.setWatched(r.id, !CGStore.state.watched[r.id]);
-      const openBtn = document.createElement('button'); openBtn.className='btn'; openBtn.textContent='Open'; openBtn.onclick=()=> CGRunDialog.open(r.id);
-      row.appendChild(title); row.appendChild(status); row.appendChild(pinBtn); row.appendChild(watchBtn); row.appendChild(openBtn);
+
+      // If ACTIVE: show inline chain selector; if not: clicking row opens dialog for resume/logs
+      const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='6px';
+      if (r.status==='ACTIVE' || r.status==='PENDING') {
+        const chainWrap = document.createElement('div'); chainWrap.style.position='relative';
+        const chainBtn = document.createElement('button'); chainBtn.className='btn'; chainBtn.textContent='Chain';
+        const panel = document.createElement('div'); panel.style.display='none'; panel.style.position='absolute'; panel.style.top='28px'; panel.style.right='0'; panel.style.background='white'; panel.style.border='1px solid #e5e7eb'; panel.style.padding='8px'; panel.style.borderRadius='6px'; panel.style.zIndex='5';
+        const listBox = document.createElement('div'); listBox.style.maxHeight='200px'; listBox.style.overflow='auto';
+        const tpls = CGStore.state.templates || [];
+        const selected = new Set((CGStore.getChain(r.id)||[]).map(Number));
+        tpls.forEach((t,i)=>{
+          const lbl = document.createElement('label'); lbl.style.display='flex'; lbl.style.alignItems='center'; lbl.style.gap='6px'; lbl.style.fontSize='12px';
+          const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=selected.has(i);
+          cb.onchange = ()=>{ if (cb.checked) selected.add(i); else selected.delete(i); };
+          const span = document.createElement('span'); span.textContent=t.name||`Template ${i+1}`;
+          lbl.appendChild(cb); lbl.appendChild(span); listBox.appendChild(lbl);
+        });
+        const saveBtn = document.createElement('button'); saveBtn.className='btn primary'; saveBtn.textContent='Save'; saveBtn.style.marginTop='6px';
+        saveBtn.onclick = ()=>{ CGStore.setChain(r.id, Array.from(selected)); panel.style.display='none'; CGToast.toast('Chain updated'); };
+        panel.appendChild(listBox); panel.appendChild(saveBtn);
+        chainBtn.onclick = ()=>{ panel.style.display = panel.style.display==='none'?'block':'none'; };
+        chainWrap.appendChild(chainBtn); chainWrap.appendChild(panel);
+        actions.appendChild(chainWrap);
+        // Clicking title opens dialog too for logs
+        title.style.cursor='pointer'; title.onclick=()=> CGRunDialog.open(r.id);
+      } else {
+        // Completed or failed: clicking title resumes via dialog
+        title.style.cursor='pointer'; title.onclick=()=> CGRunDialog.open(r.id);
+      }
+      actions.appendChild(pinBtn); actions.appendChild(watchBtn);
+      row.appendChild(title); row.appendChild(status); row.appendChild(actions);
       list.appendChild(row);
     });
     runsRoot.appendChild(list);
@@ -73,4 +102,3 @@
   function render(state){ renderControls(state); renderList(state); }
   window.CGRunList = { render };
 })();
-

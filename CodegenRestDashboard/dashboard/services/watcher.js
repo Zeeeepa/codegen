@@ -15,6 +15,9 @@
           const old = CGStore.state.runs.find(x=>x.id===id);
           if (old && old.status!==r.status && (r.status==='COMPLETED'||r.status==='FAILED'||r.status==='CANCELLED')){
             CGToast.toast(`Run #${id} ${r.status}`);
+            if ('Notification' in window && Notification.permission==='granted'){
+              try { new Notification(`Run #${id} ${r.status}`); } catch(_){}
+            }
           }
         } catch (e){ /* ignore individual errors */ }
       }
@@ -24,4 +27,3 @@
   function start(){ if (interval) clearInterval(interval); tick(); interval = setInterval(tick, 3000); }
   window.CGWatcher = { start };
 })();
-

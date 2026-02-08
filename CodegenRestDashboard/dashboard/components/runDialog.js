@@ -16,6 +16,11 @@
       </div>
       <div class="dialog-body">
         <div id="runMeta"></div>
+        <div style="margin:8px 0; display:flex; gap:8px; align-items:center;">
+          <label for="tplSel">Template:</label>
+          <select id="tplSel"></select>
+          <button class="btn" id="applyTplBtn">Set Default</button>
+        </div>
         <div class="logs" id="logBox"></div>
       </div>
     </div>`;
@@ -24,18 +29,30 @@
     wrapper.querySelector('#closeBtn').onclick = close;
 
     wrapper.querySelector('#resumeBtn').onclick = async ()=>{
-      // Use template if selected in Templates tab, or prompt user
       const tpls = CGStore.state.templates || [];
+      const chain = CGStore.getChain(id) || [];
       let prompt = '';
-      if (tpls.length) {
-        const names = tpls.map((t,i)=>`${i+1}) ${t.name}`).join('\n');
-        const pick = promptWindow(`Pick template index (1..${tpls.length}) or leave empty to type: \n${names}`);
-        if (pick) {
-          const idx = Number(pick)-1; if (idx>=0 && idx<tpls.length) prompt = tpls[idx].text;
-        }
+      if (chain.length>0 && tpls[chain[0]]) {
+        prompt = tpls[chain[0]].text || '';
+      } else {
+        const pick = promptWindow('Follow-up prompt (leave empty to cancel):');
+        if (!pick) return;
+        prompt = pick;
       }
-      if (!prompt) prompt = promptWindow('Follow-up prompt:');
-      if (!prompt) return;
+    // Populate template selector and persist default single-template selection
+    const sel = wrapper.querySelector('#tplSel');
+    const tpls = CGStore.state.templates || [];
+    sel.innerHTML = '';
+    const noneOpt = document.createElement('option'); noneOpt.value = ''; noneOpt.textContent = 'None'; sel.appendChild(noneOpt);
+    tpls.forEach((t,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=t.name||`Template ${i+1}`; sel.appendChild(o); });
+    const existing = (CGStore.getChain(id)||[]);
+    if (existing.length>0) sel.value = String(existing[0]);
+    wrapper.querySelector('#applyTplBtn').onclick = ()=>{
+      const v = sel.value; const arr = v===''? [] : [Number(v)];
+      CGStore.setChain(id, arr);
+      CGToast.toast('Default template updated');
+    };
+
       await CGApi.resumeAgentRun({ agent_run_id: id, prompt });
       CGToast.toast('Resume requested');
     };
@@ -72,4 +89,3 @@
 
   window.CGRunDialog = { open };
 })();
-

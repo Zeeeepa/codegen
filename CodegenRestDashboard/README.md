@@ -52,4 +52,18 @@ CODEGEN_OFFLINE=1 node CodegenRestDashboard/server.js
 - Configure your DNS so https://www.pixelium.uk/webhook points to the Worker
 - Optionally set CODEGEN_WEBHOOK_SECRET and verify HMAC in the worker
 
+## New features
+- Auto-refresh only UI (no manual refresh button)
+- Header shows only Active count (hover reveals top active runs)
+- Compact run cards with status dots; click a completed run to open logs/resume dialog; click an active run’s “Chain” to configure multi-template chaining
+- Per-run template selection and chaining (Templates tab manages templates)
+- Follow-up automation sends templates in sequence on each completion cycle
+- Desktop notifications (optional, via browser permission) + in-app toasts
+
+## Extra commands
+```
+node CodegenRestDashboard/commands/get_agent_run_logs.js --id 123 --skip 0 --limit 100
+node CodegenRestDashboard/commands/ban_agent_run.js --id 123 [--before <order>] [--after <order>]
+node CodegenRestDashboard/commands/unban_agent_run.js --id 123 [--before <order>] [--after <order>]
+```
 
