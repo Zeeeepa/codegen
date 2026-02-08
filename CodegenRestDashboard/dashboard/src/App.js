@@ -20,6 +20,8 @@ import RunsList from './components/RunsList';
 import RunLogsDialog from './components/RunLogsDialog';
 import NewRunForm from './components/NewRunForm';
 import TemplatesTab from './components/TemplatesTab';
+import ChainSelector from './components/ChainSelector';
+import { resumeAgentRun } from './services/apiService';
 
 // Hooks
 import useAutoRefresh from './hooks/useAutoRefresh';
@@ -50,6 +52,11 @@ function App() {
   const [activeRunsTooltipOpen, setActiveRunsTooltipOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('active'); // 'active', 'past', 'templates'
   const [socket, setSocket] = useState(null);
+  const [chainAnchorEl, setChainAnchorEl] = useState(null);
+  const [chainRun, setChainRun] = useState(null);
+  const [runChains, setRunChains] = useState({}); // { [runId]: Template[] }
+  const [executedChains, setExecutedChains] = useState({}); // { [runId]: true }
+  const prevAllRunsRef = React.useRef([]);
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -98,14 +105,31 @@ function App() {
   // Setup notifications
   useNotifications(activeRuns);
 
-  const handleRunClick = (run) => {
+  const handleOpenLogs = (run) => {
     setSelectedRun(run);
     setLogsDialogOpen(true);
-
-    // Subscribe to run updates
     if (socket) {
       socket.emit('subscribe', { runId: run.id });
     }
+  };
+
+  const handleResumeRun = async (run) => {
+    try {
+      await resumeAgentRun(run.id, {});
+      toast.success(`Resumed run ${run.id}`);
+    } catch (e) {
+      toast.error(`Failed to resume run ${run.id}: ${e.message}`);
+    }
+  };
+
+  const handleOpenChain = (run, anchorEl) => {
+    setChainRun(run);
+    setChainAnchorEl(anchorEl);
+  };
+
+  const handleApplyChainTemplates = (templates) => {
+    if (!chainRun) return;
+    setRunChains((prev) => ({ ...prev, [chainRun.id]: templates }));
   };
 
   const handleNewRun = () => {
@@ -125,6 +149,40 @@ function App() {
     ).length;
   };
 
+  // Execute chains when runs transition to completed
+  useEffect(() => {
+    const prev = prevAllRunsRef.current;
+    const wasActive = (r) => r && !r.result && (r.status === 'running' || r.status === 'in_progress' || r.status === 'pending');
+    const isCompleted = (r) => r && (r.result || r.status === 'completed' || r.status === 'success');
+
+    const transitioned = allRuns.filter((curr) => {
+      const prevRun = prev.find((p) => p.id === curr.id);
+      return prevRun && wasActive(prevRun) && isCompleted(curr);
+    });
+
+    const runSequential = async (runId, templates) => {
+      for (const t of templates) {
+        try {
+          await resumeAgentRun(runId, { prompt: t.prompt });
+          toast.success(`Queued follow-up: ${t.name || 'template'} for run ${runId}`);
+        } catch (e) {
+          toast.error(`Failed to queue follow-up for run ${runId}: ${e.message}`);
+          break;
+        }
+      }
+    };
+
+    transitioned.forEach((r) => {
+      const templates = runChains[r.id];
+      if (templates && templates.length && !executedChains[r.id]) {
+        setExecutedChains((prevExec) => ({ ...prevExec, [r.id]: true }));
+        runSequential(r.id, templates);
+      }
+    });
+
+    prevAllRunsRef.current = allRuns;
+  }, [allRuns, runChains]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -139,7 +197,43 @@ function App() {
             <ClickAwayListener onClickAway={() => setActiveRunsTooltipOpen(false)}>
               <div>
                 <Tooltip
-                  title={<ActiveRunsTooltip runs={activeRuns} onRunClick={handleRunClick} />}
+  // Execute chains when runs transition to completed
+  useEffect(() => {
+    const prev = prevAllRunsRef.current;
+
+    const wasActive = (r) =>
+      r && !r.result && (r.status === 'running' || r.status === 'in_progress' || r.status === 'pending');
+    const isCompleted = (r) => r && (r.result || r.status === 'completed' || r.status === 'success');
+
+    const transitioned = allRuns.filter((curr) => {
+      const prevRun = prev.find((p) => p.id === curr.id);
+      return prevRun && wasActive(prevRun) && isCompleted(curr);
+    });
+
+    const runSequential = async (runId, templates) => {
+      for (const t of templates) {
+        try {
+          await resumeAgentRun(runId, { prompt: t.prompt });
+          toast.success(`Queued follow-up: ${t.name || 'template'} for run ${runId}`);
+        } catch (e) {
+          toast.error(`Failed to queue follow-up for run ${runId}: ${e.message}`);
+          break; // stop chain on error
+        }
+      }
+    };
+
+    transitioned.forEach((r) => {
+      const templates = runChains[r.id];
+      if (templates && templates.length && !executedChains[r.id]) {
+        setExecutedChains((prevExec) => ({ ...prevExec, [r.id]: true }));
+        runSequential(r.id, templates);
+      }
+    });
+
+    prevAllRunsRef.current = allRuns;
+  }, [allRuns, runChains]);
+
+                  title={<ActiveRunsTooltip runs={activeRuns} onRunClick={handleOpenLogs} />}
                   open={activeRunsTooltipOpen}
                   onClose={() => setActiveRunsTooltipOpen(false)}
                   disableFocusListener
@@ -160,16 +254,27 @@ function App() {
               </div>
             </ClickAwayListener>
           </Toolbar>
+        {/* Chain Selector Popover */}
+        <ChainSelector
+          open={Boolean(chainAnchorEl)}
+          anchorEl={chainAnchorEl}
+          onClose={() => { setChainAnchorEl(null); setChainRun(null); }}
+          onApply={handleApplyChainTemplates}
+        />
+
         </AppBar>
 
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
           <RunsList
             runs={allRuns}
+
             activeRuns={activeRuns}
             currentTab={currentTab}
             onTabChange={setCurrentTab}
-            onRunClick={handleRunClick}
             onNewRun={handleNewRun}
+            onOpenLogs={handleOpenLogs}
+            onResumeRun={handleResumeRun}
+            onOpenChain={handleOpenChain}
           />
         </Container>
 
@@ -200,4 +305,3 @@ function App() {
 }
 
 export default App;
-
