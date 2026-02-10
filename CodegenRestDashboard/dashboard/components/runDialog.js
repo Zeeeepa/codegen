@@ -28,32 +28,53 @@
     function close(){ clearInterval(t); dialogs.removeChild(wrapper); }
     wrapper.querySelector('#closeBtn').onclick = close;
 
-    wrapper.querySelector('#resumeBtn').onclick = async ()=>{
-      const tpls = CGStore.state.templates || [];
-      const chain = CGStore.getChain(id) || [];
-      let prompt = '';
-      if (chain.length>0 && tpls[chain[0]]) {
-        prompt = tpls[chain[0]].text || '';
-      } else {
-        const pick = promptWindow('Follow-up prompt (leave empty to cancel):');
-        if (!pick) return;
-        prompt = pick;
-      }
     // Populate template selector and persist default single-template selection
     const sel = wrapper.querySelector('#tplSel');
-    const tpls = CGStore.state.templates || [];
-    sel.innerHTML = '';
-    const noneOpt = document.createElement('option'); noneOpt.value = ''; noneOpt.textContent = 'None'; sel.appendChild(noneOpt);
-    tpls.forEach((t,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=t.name||`Template ${i+1}`; sel.appendChild(o); });
-    const existing = (CGStore.getChain(id)||[]);
-    if (existing.length>0) sel.value = String(existing[0]);
+    function refreshTemplateSelector(){
+      const tpls = CGStore.state.templates || [];
+      sel.innerHTML = '';
+      const noneOpt = document.createElement('option'); noneOpt.value = ''; noneOpt.textContent = 'None'; sel.appendChild(noneOpt);
+      tpls.forEach((t,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=t.name||`Template ${i+1}`; sel.appendChild(o); });
+      const existing = (CGStore.getChain(id)||[]);
+      if (existing.length>0) sel.value = String(existing[0]);
+    }
+    refreshTemplateSelector();
+
     wrapper.querySelector('#applyTplBtn').onclick = ()=>{
       const v = sel.value; const arr = v===''? [] : [Number(v)];
       CGStore.setChain(id, arr);
       CGToast.toast('Default template updated');
     };
 
-      await CGApi.resumeAgentRun({ agent_run_id: id, prompt });
+    wrapper.querySelector('#resumeBtn').onclick = async ()=>{
+      const tpls = CGStore.state.templates || [];
+      const chain = CGStore.getChain(id) || [];
+      let promptText = '';
+      if (chain.length>0 && tpls[chain[0]]) {
+        promptText = tpls[chain[0]].text || '';
+      } else {
+        const pick = promptWindow('Follow-up prompt (leave empty to cancel):');
+        if (!pick) return;
+        promptText = pick;
+      }
+      // Resolve template variables using current run meta
+      let meta = {};
+      try { meta = await CGApi.getAgentRun(id); } catch(_){}
+      const vars = {
+        run_id: id,
+        status: meta.status,
+        title: meta.title,
+        summary: meta.summary,
+        result: meta.result,
+        created_at: meta.created_at,
+        now: new Date().toISOString(),
+        agent_run: meta,
+      };
+      const finalPrompt = (window.CGTemplate && CGTemplate.renderTemplate)
+        ? CGTemplate.renderTemplate(promptText, vars)
+        : promptText;
+
+      await CGApi.resumeAgentRun({ agent_run_id: id, prompt: finalPrompt });
       CGToast.toast('Resume requested');
     };
 
@@ -89,3 +110,4 @@
 
   window.CGRunDialog = { open };
 })();
+

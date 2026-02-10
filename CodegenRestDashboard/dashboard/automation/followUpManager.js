@@ -18,7 +18,20 @@
             if (tpls[tplIdx]){
               const text = tpls[tplIdx].text || '';
               if (text){
-                await CGApi.resumeAgentRun({ agent_run_id: id, prompt: text });
+                const vars = {
+                  run_id: id,
+                  status: cur.status,
+                  title: cur.title,
+                  summary: cur.summary,
+                  result: cur.result,
+                  created_at: cur.created_at,
+                  now: new Date().toISOString(),
+                  agent_run: cur,
+                };
+                const prompt = (window.CGTemplate && CGTemplate.renderTemplate)
+                  ? CGTemplate.renderTemplate(text, vars)
+                  : text;
+                await CGApi.resumeAgentRun({ agent_run_id: id, prompt });
                 CGStore.setChainProgress(id, prog+1);
                 CGToast.toast(`Auto-follow-up ${prog+1}/${chain.length} sent for #${id}`);
               }

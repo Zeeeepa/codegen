@@ -1,5 +1,6 @@
 // Minimal API client (Node-only)
 const { loadEnv } = require('./env');
+const http = require('http');
 const https = require('https');
 
 loadEnv();
@@ -16,9 +17,11 @@ function nodeFetch(url, options) {
   }
   return new Promise((resolve, reject) => {
     const u = new URL(url);
-    const req = https.request({
+    const mod = u.protocol === 'http:' ? http : https;
+    const req = mod.request({
       method: options?.method || 'GET',
       hostname: u.hostname,
+      port: u.port || (u.protocol === 'http:' ? 80 : 443),
       path: u.pathname + u.search,
       headers: options?.headers || {},
     }, (res) => {
@@ -121,4 +124,3 @@ module.exports = {
   pathLogs,
   pathGenerateSetup,
 };
-

@@ -46,10 +46,13 @@ function contentType(filePath) {
 }
 
 function serveStatic(req, res) {
-  let file = req.url.split('?')[0];
+  let file = req.url.split('?')[0] || '/index.html';
   if (file === '/' || file === '') file = '/index.html';
-  const p = path.join(__dirname, 'dashboard', file);
-  if (!p.startsWith(path.join(__dirname, 'dashboard'))) {
+  // Prevent path traversal and fix leading slash
+  const baseDir = path.join(__dirname, 'dashboard');
+  const rel = file.replace(/^\/+/, '');
+  const p = path.normalize(path.join(baseDir, rel));
+  if (!p.startsWith(baseDir)) {
     res.writeHead(403); return res.end('Forbidden');
   }
   fs.readFile(p, (err, data) => {
