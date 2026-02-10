@@ -1,0 +1,199 @@
+diff --git a/README.md b/README.md
+index 17f8007..0efe6b4 100644
+--- a/README.md
++++ b/README.md
+@@ -17,6 +17,8 @@
+   <a href="https://github.com/CoWork-OS/CoWork-OS/actions/workflows/ci.yml"><img src="https://github.com/CoWork-OS/CoWork-OS/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+   <a href="https://www.apple.com/macos/"><img src="https://img.shields.io/badge/platform-macOS-blue.svg" alt="macOS"></a>
++  <a href="https://www.linux.org/"><img src="https://img.shields.io/badge/platform-Linux-green.svg" alt="Linux"></a>
++  <a href="https://www.microsoft.com/windows/"><img src="https://img.shields.io/badge/platform-Windows-blue.svg" alt="Windows"></a>
+   <a href="https://www.electronjs.org/"><img src="https://img.shields.io/badge/electron-40.0.0-47848F.svg" alt="Electron"></a>
+ </p>
+ 
+@@ -36,13 +38,13 @@ Your AI needs a secure home. CoWork OS provides the runtime, security layers, an
+ | **Security-First** | 2350+ unit tests, configurable guardrails, approval workflows, gateway hardening |
+ | **Local-First** | Your data stays on your machine. BYOK (Bring Your Own Key) |
+ 
+-> **Status**: macOS desktop app (cross-platform support planned)
++> **Status**: Cross-platform desktop app (macOS, Linux, Windows)
+ 
+ ---
+ 
+ ## Installation
+ 
+-### macOS App (Recommended)
++### Cross-Platform Installation
+ 
+ - Download DMG (Apple Silicon): [CoWork OS 0.3.28](https://github.com/CoWork-OS/CoWork-OS/releases/download/v0.3.28/CoWork-OS-0.3.28-arm64.dmg)
+ - Latest releases: [GitHub Releases](https://github.com/CoWork-OS/CoWork-OS/releases/latest)
+@@ -59,6 +61,8 @@ Your AI needs a secure home. CoWork OS provides the runtime, security layers, an
+ 
+ - Node.js 18+ and npm
+ - macOS 12 (Monterey) or later
++- Linux (Ubuntu 18.04+, Fedora 30+, etc.) with Docker installed
++- Windows 10/11 with Docker Desktop
+ - One of: any supported LLM provider credentials (API key/token or AWS credentials) or Ollama installed locally
+ 
+ ```bash
+diff --git a/package.json b/package.json
+index fe0c8a2..7f0d3c2 100644
+--- a/package.json
++++ b/package.json
+@@ -49,6 +49,9 @@
+     "build:electron": "tsc -p tsconfig.electron.json",
+     "build:connectors": "concurrently -n salesforce,jira,hubspot,zendesk,servicenow,linear,asana,okta \"tsc -p connectors/salesforce-mcp/tsconfig.json\" \"tsc -p connectors/jira-mcp/tsconfig.json\" \"tsc -p connectors/hubspot-mcp/tsconfig.json\" \"tsc -p connectors/zendesk-mcp/tsconfig.json\" \"tsc -p connectors/servicenow-mcp/tsconfig.json\" \"tsc -p connectors/linear-mcp/tsconfig.json\" \"tsc -p connectors/asana-mcp/tsconfig.json\" \"tsc -p connectors/okta-mcp/tsconfig.json\"",
+     "package": "npm run build && electron-builder",
++    "package:linux": "npm run build && electron-builder --linux",
++    "package:mac": "npm run build && electron-builder --mac",
++    "package:win": "npm run build && electron-builder --win",
+     "lint": "eslint src --ext ts,tsx",
+     "type-check": "tsc --noEmit",
+     "test": "vitest run",
+@@ -162,6 +165,21 @@
+       "entitlements": "build/entitlements.mac.plist",
+       "entitlementsInherit": "build/entitlements.mac.plist"
+     },
++    "linux": {
++      "target": [
++        "AppImage",
++        "deb",
++        "rpm"
++      ],
++      "category": "Utility",
++      "synopsis": "The operating system for personal AI assistants"
++    },
++    "win": {
++      "target": [
++        "nsis",
++        "zip"
++      ]
++    },
+     "publish": {
+       "provider": "github",
+       "owner": "CoWork-OS",
+diff --git a/scripts/build-linux.sh b/scripts/build-linux.sh
+new file mode 100755
+index 0000000..68c2512
+--- /dev/null
++++ b/scripts/build-linux.sh
+@@ -0,0 +1,34 @@
++#!/bin/bash
++
++# CoWork OS Linux Build Script
++# This script builds CoWork OS for Linux platforms
++
++set -e
++
++echo "🏗️  Building CoWork OS for Linux..."
++
++# Ensure we're in the project root
++cd "$(dirname "$0")/.."
++
++# Install dependencies if node_modules doesn't exist
++if [ ! -d "node_modules" ]; then
++    echo "📦 Installing dependencies..."
++    npm install
++fi
++
++# Build the application
++echo "🔨 Building application..."
++npm run build
++
++# Package for Linux
++echo "📦 Creating Linux packages..."
++npm run package:linux
++
++echo "✅ Linux build complete!"
++echo "📁 Packages available in: release/"
++
++# List the generated files
++if [ -d "release" ]; then
++    echo "📋 Generated packages:"
++    ls -la release/ | grep -E "\.(AppImage|deb|rpm)$" || echo "No Linux packages found"
++fi
+diff --git a/src/electron/agent/sandbox/sandbox-factory.ts b/src/electron/agent/sandbox/sandbox-factory.ts
+index 1097e20..982cee6 100644
+--- a/src/electron/agent/sandbox/sandbox-factory.ts
++++ b/src/electron/agent/sandbox/sandbox-factory.ts
+@@ -268,7 +268,7 @@ export async function detectAvailableSandbox(): Promise<SandboxType> {
+     return 'macos';
+   }
+ 
+-  // On other platforms, check for Docker
++  // On Linux and other platforms, prefer Docker for cross-platform compatibility
+   if (await isDockerAvailable()) {
+     return 'docker';
+   }
+diff --git a/src/electron/main.ts b/src/electron/main.ts
+index 145b299..436c2bb 100644
+--- a/src/electron/main.ts
++++ b/src/electron/main.ts
+@@ -79,24 +79,36 @@ if (!gotTheLock) {
+   });
+ 
+ function createWindow() {
+-  mainWindow = new BrowserWindow({
++  // Platform-specific window configuration
++  const isMacOS = process.platform === 'darwin';
++  const windowConfig: any = {
+     width: 1600,
+     height: 1000,
+     minWidth: 1200,
+     minHeight: 800,
+     center: true,
+-    titleBarStyle: 'hiddenInset',
+-    vibrancy: 'under-window',
+-    visualEffectState: 'active',
+-    transparent: true,
+-    backgroundColor: '#00000000',
+     webPreferences: {
+       nodeIntegration: false,
+       contextIsolation: true,
+       webviewTag: true, // Enable webview for canvas interactive mode
+       preload: path.join(__dirname, 'preload.js'),
+     },
+-  });
++  };
++
++  // macOS-specific features
++  if (isMacOS) {
++    windowConfig.titleBarStyle = 'hiddenInset';
++    windowConfig.vibrancy = 'under-window';
++    windowConfig.visualEffectState = 'active';
++    windowConfig.transparent = true;
++    windowConfig.backgroundColor = '#00000000';
++  } else {
++    // Cross-platform defaults (Linux/Windows)
++    windowConfig.titleBarStyle = 'default';
++    windowConfig.backgroundColor = '#ffffff';
++  }
++
++  mainWindow = new BrowserWindow(windowConfig);
+ 
+   // Load the app
+   if (process.env.NODE_ENV === 'development') {
+@@ -546,9 +558,12 @@ app.whenReady().then(async () => {
+     // Initialize control plane (WebSocket gateway)
+     setupControlPlaneHandlers(mainWindow, { agentDaemon, dbManager });
+ 
+-    // Initialize menu bar tray (macOS native companion)
+-    if (process.platform === 'darwin') {
++    // Initialize system tray (cross-platform support)
++    // Note: Tray functionality may have limitations on some Linux desktop environments
++    try {
+       await trayManager.initialize(mainWindow, channelGateway, dbManager, agentDaemon);
++    } catch (error) {
++      console.warn('[Main] Tray initialization failed, continuing without tray:', error);
+     }
+ 
+     // Show migration notification after window is ready
+@@ -577,6 +592,8 @@ app.whenReady().then(async () => {
+ });
+ 
+ app.on('window-all-closed', () => {
++  // On macOS, keep app running with tray/dock icon
++  // On other platforms, quit when all windows are closed
+   if (process.platform !== 'darwin') {
+     app.quit();
+   }
