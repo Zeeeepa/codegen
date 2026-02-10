@@ -1,0 +1,32 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; color: #1f2937; }
+header { position: sticky; top: 0; background: #0f172a; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 16px; z-index: 10; }
+#app-main { padding: 16px; }
+.badge { background: #10b981; color: white; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+.header-item { position: relative; }
+.hover-card { position: absolute; top: 30px; left: 0; background: white; border: 1px solid #e5e7eb; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-radius: 8px; min-width: 240px; display: none; }
+.header-item:hover .hover-card { display: block; }
+.run-row { display: flex; gap: 8px; padding: 6px 10px; border-bottom: 1px solid #f3f4f6; align-items: center; }
+.run-row:last-child { border-bottom: none; }
+.btn { border: 1px solid #d1d5db; background: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.btn.primary { background: #2563eb; color: white; border-color: #1d4ed8; }
+.controls { display: flex; gap: 12px; align-items: center; margin: 10px 0 16px; }
+#pinned { margin-bottom: 16px; }
+.pin-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+.status-active { color: #0891b2; }
+.status-completed { color: #059669; }
+.status-failed { color: #dc2626; }
+.toast { position: fixed; right: 16px; bottom: 16px; background: #111827; color: white; padding: 10px 14px; border-radius: 8px; opacity: 0.96; }
+.dialog { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+.dialog .panel { width: min(900px, 92vw); max-height: 80vh; background: white; border-radius: 12px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+.dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e5e7eb; }
+.dialog-body { padding: 10px 14px; overflow: auto; }
+.logs { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; }
+.status-active::before, .status-completed::before, .status-failed::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
+.status-active::before { background: #06b6d4; }
+.status-completed::before { background: #10b981; }
+.status-failed::before { background: #ef4444; }
+.run-row { padding: 4px 8px; gap: 6px; }
+.btn { padding: 4px 8px; font-size: 12px; }
+.controls { gap: 8px; }
+

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Codegen REST Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header id="app-header"></header>
+  <main id="app-main">
+    <section id="pinned"></section>
+    <section id="controls"></section>
+    <section id="runs"></section>
+  </main>
+  <div id="dialogs"></div>
+  <div id="toasts"></div>
+
+  <script src="/state/store.js"></script>
+  <script src="/api/client.js"></script>
+  <script src="/components/notifications.js"></script>
+  <script src="/components/header.js"></script>
+  <script src="/components/runDialog.js"></script>
+  <script src="/components/runList.js"></script>
+  <script src="/components/pinnedRuns.js"></script>
+  <script src="/components/templateManager.js"></script>
+  <script src="/components/tabControl.js"></script>
+  <script src="/utils/templateEngine.js"></script>
+  <script src="/services/watcher.js"></script>
+  <script src="/automation/followUpManager.js"></script>
+  <script src="/main.js"></script>
+</body>
+</html>

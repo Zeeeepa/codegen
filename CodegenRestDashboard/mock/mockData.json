@@ -1,0 +1,7 @@
+{
+  "runs": [
+    { "id": 1, "status": "ACTIVE", "title": "Demo active" },
+    { "id": 2, "status": "COMPLETED", "title": "Demo past" }
+  ]
+}
+
