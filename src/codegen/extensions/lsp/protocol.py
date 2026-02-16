@@ -34,7 +34,23 @@ class CodegenLanguageServerProtocol(LanguageServerProtocol):
         progress.finish_initialization()
 
     @lsp_method(INITIALIZE)
-    def lsp_initialize(self, params: InitializeParams) -> InitializeResult:
-        ret = super().lsp_initialize(params)
+    def lsp_initialize(self, params: InitializeParams):
+        # Call parent's generator and consume it to initialize workspace
+        gen = super().lsp_initialize(params)
+        # The generator yields (handler, args, kwargs) tuples
+        # We need to consume the generator to let it initialize the workspace
+        try:
+            handler, args, kwargs = next(gen)
+            # Call the handler if it exists
+            if handler is not None:
+                if kwargs:
+                    handler(*args, **kwargs)
+                else:
+                    handler(*args)
+        except StopIteration as e:
+            # Generator finished, get the return value
+            ret = e.value
+        
+        # Now workspace is initialized, we can init codebase
         self._init_codebase(params)
         return ret
