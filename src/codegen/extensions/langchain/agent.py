@@ -2,9 +2,9 @@
 
 from typing import TYPE_CHECKING, Any
 
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from langchain_core.messages import SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.graph import CompiledGraph
 
 from codegen.agents.utils import AgentConfig
@@ -89,7 +89,7 @@ def create_codebase_agent(
         tools = [t for t in tools if t.get_name() not in additional_names]
         tools.extend(additional_tools)
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
 
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
 
@@ -139,7 +139,7 @@ def create_chat_agent(
     if additional_tools:
         tools.extend(additional_tools)
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
 
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
 
@@ -178,7 +178,7 @@ def create_codebase_inspector_agent(
         RevealSymbolTool(codebase),
     ]
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
 
 
@@ -212,6 +212,6 @@ def create_agent_with_tools(
     """
     llm = LLM(model_provider=model_provider, model_name=model_name, **kwargs)
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
 
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
