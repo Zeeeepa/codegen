@@ -7,9 +7,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from py_mini_racer import MiniRacer
+from py_mini_racer import MiniRacer, JSEvalException
 from py_mini_racer._objects import JSMappedObject
-from py_mini_racer._types import JSEvalException
 
 from codegen.sdk.core.external.language_engine import LanguageEngine
 from codegen.sdk.typescript.external.mega_racer import MegaRacer
