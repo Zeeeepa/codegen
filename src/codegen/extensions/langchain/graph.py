@@ -15,7 +15,7 @@ from langchain_core.messages import (
 )
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.stores import InMemoryBaseStore
-from langgraph.checkpoint.memory import InInMemorySaver
+from langgraph.checkpoint.memory import MemorySaver as InMemorySaver
 from langgraph.graph import END, START
 from langgraph.graph.state import CompiledGraph, StateGraph
 from langgraph.pregel import RetryPolicy

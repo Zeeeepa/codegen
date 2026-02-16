@@ -16,8 +16,24 @@ import os
 import sys
 from pathlib import Path
 
-# Add src to path
+# Add src to path - but import modules directly to avoid Cython issues
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Import langchain modules directly without going through codegen.__init__
+import importlib.util
+spec = importlib.util.spec_from_file_location(
+    "llm_module",
+    Path(__file__).parent.parent / "src" / "codegen" / "extensions" / "langchain" / "llm.py"
+)
+llm_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(llm_module)
+
+spec_agent = importlib.util.spec_from_file_location(
+    "agent_module",
+    Path(__file__).parent.parent / "src" / "codegen" / "extensions" / "langchain" / "agent.py"
+)
+agent_module = importlib.util.module_from_spec(spec_agent)
+# Don't load agent module yet as it has dependencies
 
 logging.basicConfig(
     level=logging.INFO,
@@ -69,7 +85,8 @@ def test_llm_initialization():
     logger.info("=" * 60)
     
     try:
-        from codegen.extensions.langchain.llm import LLM
+        # Use the directly imported module
+        LLM = llm_module.LLM
         
         # Get custom model name if set
         model_name = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
@@ -152,7 +169,9 @@ def test_agent_creation():
     logger.info("=" * 60)
     
     try:
-        from codegen.extensions.langchain.agent import create_agent_with_tools
+        # Load agent module now that we need it
+        spec_agent.loader.exec_module(agent_module)
+        create_agent_with_tools = agent_module.create_agent_with_tools
         from langchain_core.tools import tool
         
         @tool
@@ -223,4 +242,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
