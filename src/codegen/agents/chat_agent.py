@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from langchain_core.messages import AIMessage
 
 from codegen.extensions.langchain.agent import create_chat_agent

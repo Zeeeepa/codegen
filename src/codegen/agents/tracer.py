@@ -1,9 +1,9 @@
 from collections.abc import Generator
 from typing import Any, Optional
 
-from langchain.schema import AIMessage, HumanMessage
-from langchain.schema import FunctionMessage as LCFunctionMessage
-from langchain.schema import SystemMessage as LCSystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import FunctionMessage as LCFunctionMessage
+from langchain_core.messages import SystemMessage as LCSystemMessage
 from langchain_core.messages import ToolMessage as LCToolMessage
 
 from .data import AssistantMessage, BaseMessage, FunctionMessageData, SystemMessageData, ToolCall, ToolMessageData, UnknownMessage, UserMessage

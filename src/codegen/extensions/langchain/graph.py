@@ -17,8 +17,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.stores import InMemoryBaseStore
 from langgraph.checkpoint.memory import MemorySaver as InMemorySaver
 from langgraph.graph import END, START
-from langgraph.graph.state import CompiledGraph, StateGraph
-from langgraph.pregel import RetryPolicy
+from langgraph.graph.state import CompiledStateGraph, StateGraph
+from langgraph.types import RetryPolicy
 
 from codegen.agents.utils import AgentConfig
 from codegen.extensions.langchain.llm import LLM
@@ -229,7 +229,7 @@ class AgentGraph:
         return END
 
     # =================================== COMPILE GRAPH ====================================
-    def create(self, checkpointer: Optional[InMemorySaver] = None, debug: bool = False) -> CompiledGraph:
+    def create(self, checkpointer: Optional[InMemorySaver] = None, debug: bool = False) -> CompiledStateGraph:
         """Create and compile the graph."""
         builder = StateGraph(GraphState)
 
@@ -510,7 +510,7 @@ def create_react_agent(
     checkpointer: Optional[InMemorySaver] = None,
     debug: bool = False,
     config: Optional[dict[str, Any]] = None,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create a reactive agent graph."""
     graph = AgentGraph(model, tools, system_message, config=config)
     return graph.create(checkpointer=checkpointer, debug=debug)

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from langchain_core.tools import BaseTool
 from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from codegen.agents.utils import AgentConfig
 from codegen.extensions.langchain.llm import LLM
@@ -13,6 +13,7 @@ from codegen.extensions.langchain.prompts import REASONER_SYSTEM_MESSAGE
 from codegen.extensions.langchain.tools import (
     CreateFileTool,
     DeleteFileTool,
+    EditFileTool,
     GlobalReplacementEditTool,
     ListDirectoryTool,
     MoveSymbolTool,
@@ -43,7 +44,7 @@ def create_codebase_agent(
     additional_tools: list[BaseTool] | None = None,
     config: AgentConfig | None = None,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with all codebase tools.
 
     Args:
@@ -104,7 +105,7 @@ def create_chat_agent(
     additional_tools: list[BaseTool] | None = None,
     config: dict[str, Any] | None = None,  # over here you can pass in the max length of the number of messages
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with all codebase tools.
 
     Args:
@@ -153,7 +154,7 @@ def create_codebase_inspector_agent(
     debug: bool = True,
     config: dict[str, Any] | None = None,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an inspector agent with read-only codebase tools.
 
     Args:
@@ -191,7 +192,7 @@ def create_agent_with_tools(
     debug: bool = True,
     config: dict[str, Any] | None = None,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with a specific set of tools.
 
     Args:
