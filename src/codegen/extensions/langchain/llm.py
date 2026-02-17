@@ -1,5 +1,6 @@
 """LLM implementation supporting both OpenAI and Anthropic models."""
 
+import logging
 import os
 from collections.abc import Sequence
 from typing import Any, Optional
@@ -15,6 +16,8 @@ from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langchain_xai import ChatXAI
 from pydantic import Field
+
+logger = logging.getLogger(__name__)
 
 
 class LLM(BaseChatModel):
@@ -84,13 +87,36 @@ class LLM(BaseChatModel):
             return {**base_kwargs, "model": self.model_name}
 
     def _get_model(self) -> BaseChatModel:
-        """Get the appropriate model instance based on configuration."""
+        """Get the appropriate model instance based on configuration.
+        
+        Supports custom Anthropic-compatible endpoints via ANTHROPIC_BASE_URL environment variable.
+        This enables using alternative models like GLM that implement the Anthropic API.
+        """
         if self.model_provider == "anthropic":
-            if not os.getenv("ANTHROPIC_API_KEY"):
+            # Check for API key
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
                 msg = "ANTHROPIC_API_KEY not found in environment. Please set it in your .env file or environment variables."
                 raise ValueError(msg)
+            
+            # Get base kwargs
+            kwargs = self._get_model_kwargs()
+            
+            # Check for custom base URL (e.g., for GLM or other Anthropic-compatible endpoints)
+            base_url = os.getenv("ANTHROPIC_BASE_URL")
+            if base_url:
+                logger.info(f"Using custom Anthropic endpoint: {base_url}")
+                kwargs["base_url"] = base_url
+                kwargs["api_key"] = api_key  # Explicitly set API key when using custom endpoint
+            
+            # Check for custom model name override
+            custom_model = os.getenv("ANTHROPIC_MODEL")
+            if custom_model:
+                logger.info(f"Using custom Anthropic model: {custom_model}")
+                kwargs["model"] = custom_model
+            
             max_tokens = 8192
-            return ChatAnthropic(**self._get_model_kwargs(), max_tokens=max_tokens, max_retries=10, timeout=1000)
+            return ChatAnthropic(**kwargs, max_tokens=max_tokens, max_retries=10, timeout=1000)
 
         elif self.model_provider == "openai":
             if not os.getenv("OPENAI_API_KEY"):

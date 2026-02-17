@@ -38,7 +38,7 @@ async def client(lsp_client: LanguageClient, codebase: Codebase):
         )
     )
 
-    yield
+    yield lsp_client
 
     # Teardown
     await lsp_client.shutdown_session()

@@ -19,7 +19,7 @@ from codegen.extensions.langchain.tools import (
 )
 from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 
 
 def create_codebase_agent(
@@ -30,7 +30,7 @@ def create_codebase_agent(
     memory: bool = True,
     debug: bool = True,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with all codebase tools.
 
     Args:

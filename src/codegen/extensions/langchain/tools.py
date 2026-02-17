@@ -4,10 +4,10 @@ from collections.abc import Callable
 from typing import Annotated, ClassVar, Literal, Optional
 
 from langchain_core.messages import ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.stores import InMemoryBaseStore
 from langchain_core.tools import InjectedToolCallId
 from langchain_core.tools.base import BaseTool
-from langgraph.prebuilt import InjectedStore
 from pydantic import BaseModel, Field
 
 from codegen.extensions.linear.linear_client import LinearClient
@@ -199,7 +199,6 @@ class CreateFileInput(BaseModel):
 
     model_config = {"arbitrary_types_allowed": True}
     filepath: str = Field(..., description="Path where to create the file")
-    store: Annotated[InMemoryBaseStore, InjectedStore()]
     content: str = Field(
         default="",
         description="""
@@ -233,12 +232,20 @@ missing content, you are likely trying to pass a dictionary instead of a string.
     def __init__(self, codebase: Codebase) -> None:
         super().__init__(codebase=codebase)
 
-    def _run(self, filepath: str, store: InMemoryBaseStore, content: str = "") -> str:
-        create_file_tool_status = store.mget([self.name])[0]
-        if create_file_tool_status and create_file_tool_status.get("max_tokens_reached", False):
-            max_tokens = create_file_tool_status.get("max_tokens", None)
-            store.mset([(self.name, {"max_tokens": max_tokens, "max_tokens_reached": False})])
-            result = create_file(self.codebase, filepath, content, max_tokens=max_tokens)
+    def _run(self, filepath: str, content: str = "", config: Optional[RunnableConfig] = None) -> str:
+        # Check token limits from store if available (accessed via config)
+        store = None
+        if config:
+            store = config.get("configurable", {}).get("store")
+        
+        if store:
+            create_file_tool_status = store.mget([self.name])[0]
+            if create_file_tool_status and create_file_tool_status.get("max_tokens_reached", False):
+                max_tokens = create_file_tool_status.get("max_tokens", None)
+                store.mset([(self.name, {"max_tokens": max_tokens, "max_tokens_reached": False})])
+                result = create_file(self.codebase, filepath, content, max_tokens=max_tokens)
+            else:
+                result = create_file(self.codebase, filepath, content)
         else:
             result = create_file(self.codebase, filepath, content)
 

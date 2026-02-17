@@ -2,10 +2,10 @@
 
 from typing import TYPE_CHECKING, Any
 
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from langchain_core.messages import SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph.graph import CompiledGraph
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph.state import CompiledStateGraph
 
 from codegen.agents.utils import AgentConfig
 from codegen.extensions.langchain.llm import LLM
@@ -13,6 +13,7 @@ from codegen.extensions.langchain.prompts import REASONER_SYSTEM_MESSAGE
 from codegen.extensions.langchain.tools import (
     CreateFileTool,
     DeleteFileTool,
+    EditFileTool,
     GlobalReplacementEditTool,
     ListDirectoryTool,
     MoveSymbolTool,
@@ -43,7 +44,7 @@ def create_codebase_agent(
     additional_tools: list[BaseTool] | None = None,
     config: AgentConfig | None = None,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with all codebase tools.
 
     Args:
@@ -89,7 +90,7 @@ def create_codebase_agent(
         tools = [t for t in tools if t.get_name() not in additional_names]
         tools.extend(additional_tools)
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
 
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
 
@@ -104,7 +105,7 @@ def create_chat_agent(
     additional_tools: list[BaseTool] | None = None,
     config: dict[str, Any] | None = None,  # over here you can pass in the max length of the number of messages
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with all codebase tools.
 
     Args:
@@ -139,7 +140,7 @@ def create_chat_agent(
     if additional_tools:
         tools.extend(additional_tools)
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
 
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
 
@@ -153,7 +154,7 @@ def create_codebase_inspector_agent(
     debug: bool = True,
     config: dict[str, Any] | None = None,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an inspector agent with read-only codebase tools.
 
     Args:
@@ -178,7 +179,7 @@ def create_codebase_inspector_agent(
         RevealSymbolTool(codebase),
     ]
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)
 
 
@@ -191,7 +192,7 @@ def create_agent_with_tools(
     debug: bool = True,
     config: dict[str, Any] | None = None,
     **kwargs,
-) -> CompiledGraph:
+) -> CompiledStateGraph:
     """Create an agent with a specific set of tools.
 
     Args:
@@ -212,6 +213,6 @@ def create_agent_with_tools(
     """
     llm = LLM(model_provider=model_provider, model_name=model_name, **kwargs)
 
-    memory = MemorySaver() if memory else None
+    memory = InMemorySaver() if memory else None
 
     return create_react_agent(model=llm, tools=tools, system_message=system_message, checkpointer=memory, debug=debug, config=config)

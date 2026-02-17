@@ -2,10 +2,10 @@ import os
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables.config import RunnableConfig
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 from langsmith import Client
 
 from codegen.agents.loggers import ExternalLogger
@@ -25,7 +25,7 @@ class CodeAgent:
     """Agent for interacting with a codebase."""
 
     codebase: "Codebase"
-    agent: CompiledGraph
+    agent: CompiledStateGraph
     langsmith_client: Client
     project_name: str
     thread_id: str | None = None
