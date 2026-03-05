@@ -1,0 +1,396 @@
+# ============================================================================
+# OmniNode Full-Stack Agent Deployment Manifest
+#
+# This YAML manifest is designed for Claude Code operator and other AI agents
+# to parse, plan, execute, and verify the OmniNode full-stack deployment.
+#
+# Usage:
+#   ./agent_orchestrator.sh --manifest agent_manifest.yaml --agent-mode
+#   ./deploy_all.sh --agent-mode --execute --profile full
+#
+# Structure:
+#   Each phase has: preconditions, steps, postconditions, rollback
+#   Steps emit JSON-line output in agent-mode for structured parsing.
+# ============================================================================
+
+meta:
+  name: OmniNode Full-Stack Deployment
+  version: "2.0.0"
+  repositories: 8
+  services: 17
+  phases: 5
+  profiles: [minimal, standard, full]
+
+repositories:
+  - name: omnibase_spi
+    url: https://github.com/OmniNode-ai/omnibase_spi.git
+    type: python
+    role: Service Provider Interface contracts
+    phase: 1
+
+  - name: omnibase_core
+    url: https://github.com/OmniNode-ai/omnibase_core.git
+    type: python
+    role: ONEX 4-node execution protocol engine
+    phase: 1
+
+  - name: omnibase_infra
+    url: https://github.com/OmniNode-ai/omnibase_infra.git
+    type: docker-compose
+    role: Infrastructure (PostgreSQL, Redpanda, Valkey, Infisical, Keycloak)
+    phase: 2
+
+  - name: omnimemory
+    url: https://github.com/OmniNode-ai/omnimemory.git
+    type: docker-compose
+    role: Vector DB + Graph DB + semantic retrieval
+    phase: 4
+
+  - name: omniintelligence
+    url: https://github.com/OmniNode-ai/omniintelligence.git
+    type: python
+    role: 21 ONEX nodes, pattern learning, drift detection
+    phase: 4
+
+  - name: onex_change_control
+    url: https://github.com/OmniNode-ai/onex_change_control.git
+    type: python
+    role: Schema governance, drift detection, contract validation
+    phase: 4
+
+  - name: omnidash
+    url: https://github.com/OmniNode-ai/omnidash.git
+    type: node
+    role: Real-time observability dashboard (React + Kafka + WebSocket)
+    phase: 5
+
+  - name: omniclaude
+    url: https://github.com/OmniNode-ai/omniclaude.git
+    type: python
+    role: Claude Code plugin (90+ skills, 54 agents, 5 hooks)
+    phase: 5
+
+phases:
+  - number: 1
+    name: Foundation
+    description: Install SPI contracts and core execution engine
+    profiles: [minimal, standard, full]
+    preconditions:
+      - python3 --version >= 3.12
+      - command -v uv
+      - command -v git
+    steps:
+      - id: "1.1"
+        action: clone_and_install
+        target: omnibase_spi
+        command: "git clone {url} {workspace}/omnibase_spi && cd {workspace}/omnibase_spi && uv sync"
+      - id: "1.2"
+        action: clone_and_install
+        target: omnibase_core
+        command: "git clone {url} {workspace}/omnibase_core && cd {workspace}/omnibase_core && uv sync"
+      - id: "1.3"
+        action: validate
+        check: python_import
+        command: "python3 -c 'import omnibase_spi; import omnibase_core'"
+    postconditions:
+      - "python3 -c 'import omnibase_spi' exits 0"
+      - "python3 -c 'import omnibase_core' exits 0"
+    rollback:
+      - "rm -rf {workspace}/omnibase_spi {workspace}/omnibase_core"
+
+  - number: 2
+    name: Infrastructure
+    description: Deploy PostgreSQL, Redpanda, Valkey, Infisical, Keycloak
+    profiles: [minimal, standard, full]
+    preconditions:
+      - docker info exits 0
+      - docker compose version exits 0
+      - Phase 1 postconditions met
+    steps:
+      - id: "2.1"
+        action: docker_compose_up
+        target: omnibase_infra
+        command: "docker compose -f {workspace}/omnibase_infra/docker-compose.yml up -d"
+      - id: "2.2"
+        action: wait_for_service
+        target: postgresql
+        check: "pg_isready -h localhost -p 5436"
+      - id: "2.3"
+        action: run_migrations
+        command: "cd {workspace}/omnibase_infra && ./run_migrations.sh"
+      - id: "2.4"
+        action: validate
+        check: db_roles
+        description: "Validate 6 least-privilege roles exist"
+      - id: "2.5"
+        action: validate
+        check: omnidash_db
+        description: "Validate omnidash_analytics database exists"
+      - id: "2.6"
+        action: wait_for_service
+        target: redpanda
+        check: "rpk cluster health --brokers localhost:29092"
+      - id: "2.7"
+        action: create_kafka_topics
+        description: "Create 4 OmniDash topics"
+        topics:
+          - agent-routing-decisions
+          - agent-transformation-events
+          - router-performance-metrics
+          - agent-actions
+      - id: "2.8"
+        action: validate
+        check: kafka_topics
+        description: "Verify all 4 topics exist"
+    postconditions:
+      - "pg_isready -h localhost -p 5436 exits 0"
+      - "All 6 database roles exist"
+      - "omnidash_analytics database exists"
+      - "4 Kafka topics created"
+      - "Valkey PONG on port 16379"
+    rollback:
+      - "docker compose -f {workspace}/omnibase_infra/docker-compose.yml down -v"
+
+  - number: 3
+    name: Runtime Services
+    description: Start ONEX runtime, workers, consumers, intelligence-api
+    profiles: [standard, full]
+    preconditions:
+      - Phase 2 postconditions met
+      - PostgreSQL accepting connections
+      - Kafka broker reachable
+    steps:
+      - id: "3.1"
+        action: docker_compose_up
+        target: omnibase_infra runtime profile
+        command: "docker compose -f {workspace}/omnibase_infra/docker-compose.yml --profile runtime up -d"
+      - id: "3.2"
+        action: wait_for_service
+        target: omninode-runtime
+        check: "curl -sf http://localhost:8085/health"
+      - id: "3.3"
+        action: wait_for_service
+        target: intelligence-api
+        check: "curl -sf http://localhost:8053/health"
+    postconditions:
+      - "omninode-runtime healthy on port 8085"
+      - "intelligence-api healthy on port 8053"
+      - "contract-resolver healthy on port 8091"
+
+  - number: 4
+    name: Intelligence Layer
+    description: Deploy OmniMemory, OmniIntelligence, ONEX Change Control
+    profiles: [full]
+    preconditions:
+      - Phase 3 postconditions met
+      - intelligence-api healthy
+    steps:
+      - id: "4.1"
+        action: docker_compose_up
+        target: omnimemory
+        command: "docker compose -f {workspace}/omnimemory/docker-compose.yml up -d"
+      - id: "4.2"
+        action: clone_and_install
+        target: omniintelligence
+        command: "git clone {url} {workspace}/omniintelligence && cd {workspace}/omniintelligence && uv sync"
+      - id: "4.3"
+        action: validate
+        check: plugin_discoverability
+        description: "Verify PluginIntelligence importable by RuntimeHostProcess"
+      - id: "4.4"
+        action: clone_and_install
+        target: onex_change_control
+        command: "git clone {url} {workspace}/onex_change_control && cd {workspace}/onex_change_control && uv sync"
+      - id: "4.5"
+        action: validate
+        check: contracts
+        description: "Run validate-yaml + check-schema-purity"
+      - id: "4.6"
+        action: install_hooks
+        description: "Install pre-commit + pre-push hooks"
+        command: "cd {workspace}/onex_change_control && poetry run pre-commit install && poetry run pre-commit install --hook-type pre-push"
+    postconditions:
+      - "Qdrant healthy on port 6333"
+      - "Memgraph reachable on port 7687"
+      - "PluginIntelligence importable"
+      - "YAML contracts valid"
+      - "Schema purity check passes"
+    rollback:
+      - "docker compose -f {workspace}/omnimemory/docker-compose.yml down -v"
+
+  - number: 5
+    name: Interface Layer
+    description: Deploy OmniDash, OmniClaude
+    profiles: [full]
+    preconditions:
+      - Phase 4 postconditions met
+      - All 4 Kafka topics exist
+      - omnidash_analytics database exists
+    steps:
+      - id: "5.1"
+        action: validate
+        check: kafka_topics
+        description: "Pre-check: verify all 4 Kafka topics exist (fail-fast)"
+      - id: "5.2"
+        action: validate
+        check: omnidash_db
+        description: "Pre-check: verify omnidash_analytics exists"
+      - id: "5.3"
+        action: clone_and_build
+        target: omnidash
+        command: "git clone {url} {workspace}/omnidash && cd {workspace}/omnidash && npm install && npm run db:push && npm run db:migrate && npm run build && PORT=3000 npm start"
+      - id: "5.4"
+        action: clone_and_install
+        target: omniclaude
+        command: "git clone {url} {workspace}/omniclaude && cd {workspace}/omniclaude && uv sync"
+      - id: "5.5"
+        action: start_daemon
+        target: emit_daemon
+        description: "Start OmniClaude emit daemon (Unix socket for hook->Kafka bridge)"
+        command: "cd {workspace}/omniclaude && python3 -m omniclaude.emit.daemon --socket /tmp/omniclaude-emit.sock &"
+      - id: "5.6"
+        action: validate
+        check: emit_daemon
+        description: "Verify emit daemon socket at /tmp/omniclaude-emit.sock"
+      - id: "5.7"
+        action: validate
+        check: claude_hooks
+        description: "Verify all 5 hook scripts exist and are executable"
+      - id: "5.8"
+        action: deploy_plugin
+        target: omniclaude
+        description: "Deploy plugin to ~/.claude/plugins/cache/"
+      - id: "5.9"
+        action: capability_probe
+        description: "Detect integration tier (Standalone / Event Bus / Full ONEX)"
+        checks:
+          - "Kafka: localhost:29092"
+          - "Intelligence: http://localhost:8053"
+          - "Qdrant: localhost:6333"
+    postconditions:
+      - "OmniDash accessible on port 3000"
+      - "Emit daemon socket present"
+      - "5 Claude hooks executable"
+      - "OmniClaude tier: FULL_ONEX"
+    rollback:
+      - "kill emit daemon PID"
+      - "npm stop in omnidash"
+
+service_ports:
+  - port: 5436
+    service: PostgreSQL
+    protocol: postgresql
+    health: "pg_isready -h localhost -p 5436"
+  - port: 16379
+    service: "Valkey (Infra Cache)"
+    protocol: redis
+    health: "redis-cli -p 16379 ping"
+    note: "Platform-wide cache for runtime services"
+  - port: 19092
+    service: "Redpanda (Internal)"
+    protocol: kafka
+  - port: 29092
+    service: "Redpanda (External)"
+    protocol: kafka
+    health: "rpk cluster health --brokers localhost:29092"
+  - port: 8880
+    service: Infisical
+    protocol: http
+    health: "curl -sf http://localhost:8880/api/status"
+  - port: 28080
+    service: Keycloak
+    protocol: http
+    health: "curl -sf http://localhost:28080"
+  - port: 8085
+    service: omninode-runtime
+    protocol: http
+    health: "curl -sf http://localhost:8085/health"
+  - port: 8086
+    service: runtime-effects
+    protocol: http
+  - port: 8087
+    service: agent-actions-consumer
+    protocol: http
+  - port: 8053
+    service: intelligence-api
+    protocol: http
+    health: "curl -sf http://localhost:8053/health"
+  - port: 8091
+    service: contract-resolver
+    protocol: http
+    health: "curl -sf http://localhost:8091/health"
+  - port: 8092
+    service: skill-lifecycle-consumer
+    protocol: http
+  - port: 6006
+    service: Phoenix OTLP
+    protocol: http
+    health: "curl -sf http://localhost:6006"
+  - port: 6333
+    service: Qdrant HTTP
+    protocol: http
+    health: "curl -sf http://localhost:6333"
+  - port: 6334
+    service: Qdrant gRPC
+    protocol: grpc
+  - port: 7687
+    service: Memgraph Bolt
+    protocol: bolt
+  - port: 7444
+    service: Memgraph HTTP
+    protocol: http
+  - port: 6379
+    service: "Valkey (Memory)"
+    protocol: redis
+    health: "redis-cli -p 6379 ping"
+    note: "Dedicated to OmniMemory semantic/graph cache (separate from infra cache)"
+  - port: 8090
+    service: Kreuzberg
+    protocol: http
+    health: "curl -sf http://localhost:8090"
+  - port: 3000
+    service: OmniDash
+    protocol: http
+    health: "curl -sf http://localhost:3000"
+  - port: 28500
+    service: Consul
+    protocol: http
+    health: "curl -sf http://localhost:28500/v1/status/leader"
+
+validation_matrix:
+  critical:
+    - check: db_roles
+      phase: 2
+      description: "6 least-privilege PostgreSQL roles exist"
+      fix: "Re-run migrations in omnibase_infra"
+    - check: kafka_topics
+      phase: 2
+      description: "4 OmniDash Kafka topics created"
+      fix: "rpk topic create <topic> --brokers localhost:29092"
+    - check: plugin_discoverability
+      phase: 4
+      description: "PluginIntelligence importable by runtime"
+      fix: "Reinstall omniintelligence: cd omniintelligence && uv sync"
+    - check: emit_daemon
+      phase: 5
+      description: "Unix socket /tmp/omniclaude-emit.sock exists"
+      fix: "Start emit daemon: python3 -m omniclaude.emit.daemon --socket /tmp/omniclaude-emit.sock"
+    - check: omnidash_db
+      phase: 5
+      description: "omnidash_analytics database exists"
+      fix: "CREATE DATABASE omnidash_analytics in PostgreSQL"
+
+  high:
+    - check: infisical_bootstrap
+      phase: 2
+      description: "6-step Infisical bootstrap completed"
+      fix: "Re-run bootstrap script in omnibase_infra"
+    - check: contracts
+      phase: 4
+      description: "YAML + schema purity pass"
+      fix: "cd onex_change_control && poetry run validate-yaml"
+    - check: claude_hooks
+      phase: 5
+      description: "5 hook scripts exist and are executable"
+      fix: "chmod +x hooks/*.sh in omniclaude"
+
