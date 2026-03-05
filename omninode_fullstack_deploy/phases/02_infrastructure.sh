@@ -110,6 +110,14 @@ phase_02_infrastructure() {
         log_info "Database migrations complete ✓"
     fi
 
+    # ── 2.4a Validate Database Roles (Gap #4) ─────────────────────────────
+    log_step "2.4a — Validating 6 least-privilege database roles"
+    validate_db_roles || log_warn "Role validation incomplete — check migration logs"
+
+    # ── 2.4b Validate omnidash_analytics Database (Gap #5) ────────────────
+    log_step "2.4b — Validating omnidash_analytics database exists"
+    validate_omnidash_db || log_warn "omnidash_analytics DB missing — OmniDash Phase 5 may fail"
+
     # ── 2.5 Start Valkey Cache ─────────────────────────────────────────────
     log_step "2.5 — Starting Valkey cache (port ${VALKEY_PORT:-16379})"
 
@@ -148,6 +156,10 @@ phase_02_infrastructure() {
         log_info "Kafka topics configured ✓"
     fi
 
+    # ── 2.7a Validate OmniDash Kafka Topics (Gap #2) ─────────────────────
+    log_step "2.7a — Creating and validating 4 OmniDash Kafka topics"
+    validate_kafka_topics || log_warn "Kafka topic validation incomplete — OmniDash may fail"
+
     # ── 2.8 Start Infisical (optional) ────────────────────────────────────
     if [[ "${SKIP_SECRETS}" != "true" ]]; then
         log_step "2.8 — Starting Infisical secrets manager (port 8880)"
@@ -166,6 +178,9 @@ phase_02_infrastructure() {
                 }
             fi
             log_info "Infisical is ready ✓"
+
+            # Validate bootstrap (Gap #6)
+            validate_infisical_bootstrap || log_warn "Infisical bootstrap incomplete"
         fi
     else
         log_step "2.8 — Skipping Infisical (--skip-secrets)"
@@ -188,4 +203,3 @@ phase_02_infrastructure() {
 
     log_info "Phase 2 complete — Infrastructure services running ✓"
 }
-

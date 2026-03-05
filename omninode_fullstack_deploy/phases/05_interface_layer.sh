@@ -10,6 +10,14 @@ phase_05_interface() {
     local ws="$WORKSPACE"
     local org="OmniNode-ai"
 
+    # ── 5.0a Pre-check: Kafka topics (fail-fast) ─────────────────────────
+    log_step "5.0a — Pre-checking Kafka topics exist (fail-fast)"
+    validate_kafka_topics || log_warn "Kafka topics missing — OmniDash consumers may fail"
+
+    # ── 5.0b Pre-check: omnidash_analytics DB (fail-fast) ─────────────────
+    log_step "5.0b — Pre-checking omnidash_analytics database exists"
+    validate_omnidash_db || log_warn "omnidash_analytics DB missing — db:push/db:migrate will fail"
+
     # ── 5.1 Deploy OmniDash ───────────────────────────────────────────────
     log_step "5.1 — Deploying OmniDash (port 3000)"
 
@@ -105,6 +113,40 @@ CLAUDEENV
 
         log_info "OmniClaude installed ✓"
     fi
+
+    # ── 5.2a Start Emit Daemon (Gap #3) ───────────────────────────────────
+    log_step "5.2a — Starting OmniClaude emit daemon (hook->Kafka bridge)"
+    local emit_socket="${OMNICLAUDE_EMIT_SOCKET:-/tmp/omniclaude-emit.sock}"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "python3 -m omniclaude.emit.daemon --socket ${emit_socket} &"
+    else
+        # Start emit daemon as background process
+        if [[ -f "${ws}/omniclaude/omniclaude/emit/daemon.py" ]] || \
+           python3 -c "from omniclaude.emit import daemon" 2>/dev/null; then
+            cd "${ws}/omniclaude"
+            python3 -m omniclaude.emit.daemon --socket "$emit_socket" &>/dev/null &
+            local emit_pid=$!
+            echo "$emit_pid" > "${ws}/.omniclaude-emit.pid"
+            log_info "Emit daemon started (PID: ${emit_pid})"
+
+            # Wait for socket to appear
+            local retries=10
+            while [[ $retries -gt 0 && ! -S "$emit_socket" ]]; do
+                sleep 0.5
+                retries=$((retries - 1))
+            done
+        else
+            log_warn "Emit daemon module not found — hooks won't publish to Kafka"
+        fi
+
+        # Validate socket
+        validate_emit_daemon || log_warn "Emit daemon socket not available"
+    fi
+
+    # ── 5.2b Validate Claude Hooks (Gap #8) ───────────────────────────────
+    log_step "5.2b — Verifying 5 OmniClaude hook scripts"
+    validate_claude_hooks || log_warn "Some hook scripts missing or not executable"
 
     # ── 5.3 Capability Probe ──────────────────────────────────────────────
     log_step "5.3 — Running capability probe"

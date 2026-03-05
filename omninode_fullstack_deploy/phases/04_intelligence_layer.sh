@@ -66,6 +66,10 @@ phase_04_intelligence() {
         log_info "OmniIntelligence installed (21 nodes) ✓"
     fi
 
+    # ── 4.2a Validate Plugin Discoverability (Gap #1) ─────────────────────
+    log_step "4.2a — Validating PluginIntelligence is importable by runtime"
+    validate_plugin_discoverability || log_warn "PluginIntelligence not discoverable — dashboard may be empty"
+
     # ── 4.3 Verify intelligence-api ────────────────────────────────────────
     log_step "4.3 — Verifying intelligence-api (from Phase 3)"
 
@@ -103,10 +107,16 @@ phase_04_intelligence() {
         # Install pre-commit hooks (optional, uses poetry run)
         if command -v pre-commit &>/dev/null; then
             poetry run pre-commit install 2>/dev/null || true
+            # Install pre-push hook (Gap #9)
+            poetry run pre-commit install --hook-type pre-push 2>/dev/null || true
         fi
 
         log_info "ONEX Change Control installed (Poetry) ✓"
     fi
+
+    # ── 4.4a Validate ONEX Contracts (Gap #7) ─────────────────────────────
+    log_step "4.4a — Running contract validators (validate-yaml + check-schema-purity)"
+    validate_contracts || log_warn "Contract validation incomplete — check onex_change_control"
 
     log_info "Phase 4 complete — Intelligence layer deployed ✓"
 }

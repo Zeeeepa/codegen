@@ -53,8 +53,9 @@ SKIP_SECRETS="false"
 SKIP_KEYCLOAK="false"
 SKIP_PORT_CHECK="false"
 VERBOSE="false"
+AGENT_MODE="${AGENT_MODE:-false}"
 
-export DRY_RUN PROFILE PHASE WORKSPACE SKIP_SECRETS SKIP_KEYCLOAK SKIP_PORT_CHECK VERBOSE
+export DRY_RUN PROFILE PHASE WORKSPACE SKIP_SECRETS SKIP_KEYCLOAK SKIP_PORT_CHECK VERBOSE AGENT_MODE
 
 # ── Parse Arguments ───────────────────────────────────────────────────────
 usage() {
@@ -71,6 +72,8 @@ Options:
   --skip-keycloak           Skip Keycloak deployment
   --skip-port-check         Skip pre-flight port scan
   --verbose                 Enable verbose logging
+  --agent-mode              JSON-line output for AI agent parsing
+  --emit-manifest           Print deployment plan (agent_manifest.yaml) and exit
   --stop                    Stop all OmniNode services
   -h, --help                Show this help
 
@@ -107,6 +110,8 @@ while [[ $# -gt 0 ]]; do
         --skip-keycloak) SKIP_KEYCLOAK="true"; shift ;;
         --skip-port-check) SKIP_PORT_CHECK="true"; shift ;;
         --verbose)       VERBOSE="true"; set -x; shift ;;
+        --agent-mode)    AGENT_MODE="true"; shift ;;
+        --emit-manifest) cat "${DEPLOY_ROOT}/agent_manifest.yaml"; exit 0 ;;
         --stop)          stop_all; exit 0 ;;
         -h|--help)       usage ;;
         *) log_error "Unknown option: $1"; usage ;;
@@ -234,4 +239,3 @@ should_run_phase() {
 
 # ── Run ───────────────────────────────────────────────────────────────────
 main "$@"
-
