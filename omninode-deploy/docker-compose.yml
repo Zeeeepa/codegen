@@ -1,0 +1,164 @@
+# =============================================================================
+# OmniNode AI — Infrastructure Docker Compose
+# =============================================================================
+# Provides the complete infrastructure layer for the OmniNode platform:
+#   - PostgreSQL 16 (primary data store, multiple databases)
+#   - Redpanda (Kafka-compatible event bus)
+#   - Qdrant (vector search for semantic memory)
+#   - Valkey (Redis-compatible cache)
+#
+# Usage:
+#   docker compose up -d                    # Start all infrastructure
+#   docker compose up -d postgres redpanda  # Start minimal (no vectors/cache)
+#   docker compose down                     # Stop all
+#   docker compose down -v                  # Stop + destroy data
+#
+# Ports:
+#   PostgreSQL:  5436 → 5432
+#   Redpanda:    19092 → 9092 (Kafka API)
+#                18081 → 8081 (Schema Registry)
+#                18082 → 8082 (Admin API)
+#   Qdrant:      6333 → 6333 (HTTP)
+#                6334 → 6334 (gRPC)
+#   Valkey:      16379 → 6379
+#   Redpanda UI: 8080 → 8080
+# =============================================================================
+name: omninode-infra
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 15s
+
+services:
+  # ==========================================================================
+  # PostgreSQL — Primary Data Store
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: omninode-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omninode-dev-password}
+      POSTGRES_DB: postgres
+      # Multiple databases created by init script
+      OMNIBASE_INFRA_DB: ${OMNIBASE_INFRA_DB:-omnibase_infra}
+      OMNIINTELLIGENCE_DB: ${OMNIINTELLIGENCE_DB:-omniintelligence}
+      OMNIMEMORY_DB: ${OMNIMEMORY_DB:-omnimemory}
+      OMNIDASH_ANALYTICS_DB: ${OMNIDASH_ANALYTICS_DB:-omnidash_analytics}
+    ports:
+      - "${POSTGRES_PORT:-5436}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres-init.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+    restart: unless-stopped
+    networks:
+      - omninode-network
+
+  # ==========================================================================
+  # Redpanda — Kafka-Compatible Event Bus
+  # ==========================================================================
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    container_name: omninode-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092,EXTERNAL://localhost:19092
+      - --schema-registry-addr 0.0.0.0:8081
+      - --pandaproxy-addr 0.0.0.0:8082
+    ports:
+      - "19092:19092"   # Kafka API (external/host)
+      - "18081:8081"    # Schema Registry
+      - "18082:8082"    # Pandaproxy (REST)
+      - "9644:9644"     # Admin API
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy.*true'"]
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - omninode-network
+
+  # ==========================================================================
+  # Qdrant — Vector Search (Semantic Memory)
+  # ==========================================================================
+  qdrant:
+    image: qdrant/qdrant:v1.12.6
+    container_name: omninode-qdrant
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:6333/healthz || exit 1"]
+    restart: unless-stopped
+    networks:
+      - omninode-network
+
+  # ==========================================================================
+  # Valkey — Redis-Compatible Cache
+  # ==========================================================================
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: omninode-valkey
+    command: >
+      valkey-server
+      --requirepass ${VALKEY_PASSWORD:-valkey-dev-password}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "${VALKEY_PORT:-16379}:6379"
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD:-valkey-dev-password}", "ping"]
+    restart: unless-stopped
+    networks:
+      - omninode-network
+
+  # ==========================================================================
+  # Redpanda Console — Kafka Monitoring UI (Optional)
+  # ==========================================================================
+  redpanda-console:
+    image: redpandadata/console:v2.7.2
+    container_name: omninode-redpanda-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      REDPANDA_ADMINAPI_URLS: http://redpanda:9644
+    ports:
+      - "${REDPANDA_CONSOLE_PORT:-8080}:8080"
+    restart: unless-stopped
+    networks:
+      - omninode-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redpanda_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  valkey_data:
+    driver: local
+
+networks:
+  omninode-network:
+    driver: bridge
+    name: omninode-network
+

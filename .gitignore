@@ -73,3 +73,4 @@ results.*.json
 codegen-examples/examples/swebench_agent_run/results/*
 codegen-examples/examples/swebench_agent_run/predictions/*
 codegen-examples/examples/swebench_agent_run/logs/*
+omninode-deploy/deploy.log
