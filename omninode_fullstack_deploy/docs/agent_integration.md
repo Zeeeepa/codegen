@@ -4,9 +4,9 @@
 
 OmniClaude is the top-of-stack agent system that bridges Claude Code with the entire OmniNode platform. It provides:
 
-- **73 skills** — Reusable capabilities invokable by agents
+- **90+ skills** — Reusable capabilities invokable by agents
 - **54 agent configurations** — Specialized agents for different tasks
-- **4 hooks** — SessionStart, UserPromptSubmit, PostToolUse, SessionEnd
+- **5 hooks** — SessionStart, UserPromptSubmit, PreToolUse (Edit/Write), PostToolUse, SessionEnd
 - **3-tier integration** — Automatic capability detection
 
 ## Integration Tiers
@@ -18,7 +18,7 @@ cd omniclaude && uv sync
 # In Claude Code: /deploy-local-plugin
 ```
 
-**What works:** All 73 skills, 54 agents, hooks fire normally.
+**What works:** All 90+ skills, 54 agents, hooks fire normally.
 **What doesn't:** Events silently dropped (no Kafka), no intelligence enrichment.
 
 ### Tier 1: EVENT_BUS (15 min)
@@ -68,6 +68,15 @@ Trigger → stdin read → agent routing (5s timeout)
                      → [background: Kafka emit, intelligence requests]
 ```
 
+### PreToolUse Hook (<100ms budget)
+
+```
+Trigger → stdin read → authorization check (Edit | Write)
+                     → [background: audit logging]
+```
+
+Fires before Edit and Write tool invocations, enabling pre-validation and policy checks before file modifications.
+
 ### PostToolUse Hook (<100ms budget)
 
 ```
@@ -111,7 +120,7 @@ This ensures:
 
 ## Skill Library
 
-OmniClaude includes 73 skills organized by category. Skills are automatically registered with the skill-lifecycle-consumer (port 8092) in FULL_ONEX tier.
+OmniClaude includes 90+ skills organized by category. Skills are automatically registered with the skill-lifecycle-consumer (port 8092) in FULL_ONEX tier.
 
 Key skill categories:
 - **Code Analysis** — Static analysis, complexity metrics, refactoring suggestions
@@ -212,4 +221,3 @@ claude -p "Analyze this codebase for security issues"
 ```
 
 In headless mode, all hooks fire normally and events are emitted to Kafka. The capability probe runs at SessionStart as usual.
-

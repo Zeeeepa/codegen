@@ -70,7 +70,7 @@ DASHENV
         log_dry "git clone https://github.com/${org}/omniclaude.git ${ws}/omniclaude"
         log_dry "cd ${ws}/omniclaude && uv sync"
         log_dry "Deploy plugin to ~/.claude/plugins/cache/"
-        log_dry "Expected tier: FULL_ONEX (73 skills, 54 agents)"
+        log_dry "Expected tier: FULL_ONEX (90+ skills, 54 agents)"
     else
         ensure_repo "$org" "omniclaude" "${ws}/omniclaude"
         cd "${ws}/omniclaude"
@@ -148,7 +148,7 @@ CLAUDEENV
 
         echo ""
         echo -e "  ${CYAN}═══ Expected OmniClaude banner on next SessionStart: ═══${NC}"
-        echo -e "  ${BOLD}─── OmniClaude: FULL_ONEX (73 skills, 54 agents) ───${NC}"
+        echo -e "  ${BOLD}─── OmniClaude: FULL_ONEX (90+ skills, 54 agents) ───${NC}"
         echo ""
     fi
 

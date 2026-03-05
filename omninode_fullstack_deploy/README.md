@@ -14,7 +14,7 @@
                     ┌──────────────────────────────────────────────┐
                     │              OmniNode Platform                │
                     │                                              │
-  Phase 5 ──────── │  OmniClaude ← 73 skills, 54 agents, FULL_ONEX│
+  Phase 5 ──────── │  OmniClaude ← 90+ skills, 54 agents, FULL_ONEX│
   (Interface)       │  OmniDash   ← Real-time observability UI    │
                     │                                              │
   Phase 4 ──────── │  OmniIntelligence ← 21 ONEX intelligence nodes│
@@ -126,6 +126,7 @@ Deploys core platform services via `omnibase_infra`:
 | PostgreSQL | 5436 | 7 databases, 6 roles, 36 migrations |
 | Redpanda | 19092 / 29092 | Kafka-compatible event bus |
 | Valkey | 16379 | Platform-wide cache |
+| Consul | 28500 | Service discovery (opt-in) |
 | Infisical | 8880 | Secrets management (opt-in) |
 | Keycloak | 28080 | OIDC authentication (opt-in) |
 
@@ -182,7 +183,7 @@ Deploys the dashboard and Claude Code integration:
 | Component | Port | Description |
 |-----------|------|-------------|
 | OmniDash | 3000 | Real-time observability dashboard (React + Drizzle) |
-| OmniClaude | — | Claude Code plugin with 73 skills, 54 agents |
+| OmniClaude | — | Claude Code plugin with 90+ skills, 54 agents |
 
 ```bash
 ./deploy_all.sh --execute --phase 5
@@ -198,14 +199,14 @@ OmniClaude auto-detects available services and sets its tier:
 
 | Tier | Requirements | Capabilities |
 |------|-------------|-------------|
-| **STANDALONE** | Nothing | 73 skills, 54 agents, hooks — events silently dropped |
+| **STANDALONE** | Nothing | 90+ skills, 54 agents, hooks — events silently dropped |
 | **EVENT_BUS** | Kafka reachable | + routing telemetry, session events, Kafka observability |
 | **FULL_ONEX** | + Intelligence API + Memory | + context enrichment, semantic recall, pattern enforcement |
 
 With all 5 phases deployed, OmniClaude reaches **FULL_ONEX**:
 
 ```
-─── OmniClaude: FULL_ONEX (73 skills, 54 agents) (probe: 2s ago) ───
+─── OmniClaude: FULL_ONEX (90+ skills, 54 agents) (probe: 2s ago) ───
 ```
 
 ### Multi-Agent Orchestration
@@ -236,6 +237,7 @@ Task(
 |------|--------|-------------|
 | SessionStart | <50ms | Daemon check, stdin read |
 | UserPromptSubmit | <500ms | Routing, injection, advisory |
+| PreToolUse | <100ms | stdin read, authorization (Edit/Write) |
 | PostToolUse | <100ms | stdin read, quality check |
 | SessionEnd | <50ms | stdin read |
 
@@ -249,6 +251,7 @@ Infrastructure (Phase 2):
   16379  Valkey (platform cache)
   19092  Redpanda (internal)
   29092  Redpanda (external/client)
+  28500  Consul (service discovery, opt-in)
   8880   Infisical (opt-in)
   28080  Keycloak (opt-in)
 
@@ -399,4 +402,3 @@ omninode_fullstack_deploy/
 ## License
 
 MIT — See individual OmniNode repositories for their respective licenses.
-

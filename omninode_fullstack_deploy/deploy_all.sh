@@ -8,7 +8,7 @@
 #    Phase 2: Infrastructure — PostgreSQL, Redpanda, Valkey, Infisical, Keycloak
 #    Phase 3: Runtime      — omninode-runtime, workers, consumers, intelligence-api
 #    Phase 4: Intelligence — OmniMemory, OmniIntelligence, ONEX Change Control
-#    Phase 5: Interface    — OmniDash, OmniClaude (73 skills, 54 agents)
+#    Phase 5: Interface    — OmniDash, OmniClaude (90+ skills, 54 agents)
 #
 #  Usage:
 #    ./deploy_all.sh --dry-run                    Preview all actions
@@ -84,7 +84,7 @@ Phases:
   2  Infrastructure  — PostgreSQL, Redpanda, Valkey, Infisical, Keycloak
   3  Runtime         — ONEX runtime, workers, consumers, intelligence-api
   4  Intelligence    — OmniMemory, OmniIntelligence, Change Control
-  5  Interface       — OmniDash (React), OmniClaude (73 skills, 54 agents)
+  5  Interface       — OmniDash (React), OmniClaude (90+ skills, 54 agents)
 
 Examples:
   $(basename "$0") --dry-run                              # Preview full deployment

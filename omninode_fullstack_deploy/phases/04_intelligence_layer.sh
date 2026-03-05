@@ -84,18 +84,29 @@ phase_04_intelligence() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_dry "git clone https://github.com/${org}/onex_change_control.git ${ws}/onex_change_control"
-        log_dry "cd ${ws}/onex_change_control && uv sync"
+        log_dry "cd ${ws}/onex_change_control && poetry install"
     else
         ensure_repo "$org" "onex_change_control" "${ws}/onex_change_control"
         cd "${ws}/onex_change_control"
 
-        uv sync 2>/dev/null || pip install -e "." 2>/dev/null || {
-            log_warn "onex_change_control install deferred"
+        # onex_change_control uses Poetry (NOT uv) per upstream README
+        if ! command -v poetry &>/dev/null; then
+            log_warn "Poetry not found — installing..."
+            curl -sSL https://install.python-poetry.org | python3 -
+            export PATH="$HOME/.local/bin:$PATH"
+        fi
+
+        poetry install 2>/dev/null || {
+            log_warn "onex_change_control poetry install deferred"
         }
 
-        log_info "ONEX Change Control installed ✓"
+        # Install pre-commit hooks (optional, uses poetry run)
+        if command -v pre-commit &>/dev/null; then
+            poetry run pre-commit install 2>/dev/null || true
+        fi
+
+        log_info "ONEX Change Control installed (Poetry) ✓"
     fi
 
     log_info "Phase 4 complete — Intelligence layer deployed ✓"
 }
-

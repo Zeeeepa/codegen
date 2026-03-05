@@ -58,21 +58,17 @@ phase_03_runtime() {
         log_dry "Health check: http://localhost:8091/health"
         log_dry "Health check: http://localhost:6006"
     else
-        local services=(
-            "http://localhost:${RUNTIME_PORT:-8085}/health:omninode-runtime"
-            "http://localhost:${INTELLIGENCE_API_PORT:-8053}/health:intelligence-api"
-            "http://localhost:${CONTRACT_RESOLVER_PORT:-8091}/health:contract-resolver"
-        )
-
-        for entry in "${services[@]}"; do
-            local url="${entry%%:*}:${entry#*:}"
-            local svc_url="${entry%:*}"
-            local svc_name="${entry##*:}"
-            # Try health check, but don't fail the whole deployment
+        # Health check each service — use pipe delimiter to avoid URL colon conflicts
+        check_runtime_health() {
+            local svc_name="$1" svc_url="$2"
             wait_for_service "$svc_url" "$svc_name" 15 || {
                 log_warn "${svc_name} health check failed — service may still be starting"
             }
-        done
+        }
+
+        check_runtime_health "omninode-runtime"   "http://localhost:${RUNTIME_PORT:-8085}/health"
+        check_runtime_health "intelligence-api"    "http://localhost:${INTELLIGENCE_API_PORT:-8053}/health"
+        check_runtime_health "contract-resolver"   "http://localhost:${CONTRACT_RESOLVER_PORT:-8091}/health"
 
         # Port-level checks for services without HTTP health endpoints
         wait_for_port localhost "${RUNTIME_EFFECTS_PORT:-8086}" "runtime-effects" 20 || true
@@ -83,4 +79,3 @@ phase_03_runtime() {
         log_info "Phase 3 complete — Runtime services running ✓"
     fi
 }
-

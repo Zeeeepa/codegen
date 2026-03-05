@@ -6,7 +6,7 @@
                             ┌─────────────────────┐
                             │    Claude Code IDE   │
                             │   (OmniClaude Plugin)│
-                            │  73 skills, 54 agents│
+                            │  90+ skills, 54 agents│
                             └──────────┬──────────┘
                                        │
                             ┌──────────▼──────────┐
@@ -103,11 +103,26 @@ OmniDash:3000 (real-time visualization)
 
 Topics are **contract-driven** — extracted from node `contract.yaml` files at startup.
 
+### ONEX Event Topics (Preview-Safe)
+
 | Topic Pattern | Access | Purpose |
 |--------------|--------|---------|
 | `onex.evt.*` | Broad | Preview-safe observability events |
 | `onex.cmd.omniintelligence.*` | Restricted | Full prompts for intelligence processing |
 | `onex.cmd.omnimemory.*` | Restricted | Memory operations |
+
+### OmniDash Observability Topics
+
+OmniDash consumes these application-level Kafka topics for real-time dashboard visualization:
+
+| Topic | Purpose |
+|-------|---------|
+| `agent-routing-decisions` | Agent selection with confidence scores |
+| `agent-transformation-events` | Polymorphic agent transformations |
+| `router-performance-metrics` | Routing performance and latency data |
+| `agent-actions` | Tool calls, decisions, execution errors |
+
+Topics are created dynamically by services based on their `contract.yaml` declarations at runtime.
 
 ## Database Schema
 
@@ -115,12 +130,13 @@ Topics are **contract-driven** — extracted from node `contract.yaml` files at 
 
 | Database | Owner Role | Purpose |
 |----------|-----------|---------|
-| `omnibase_infra` | `role_omnibase` | Platform metadata, sessions |
-| `omniintelligence` | `role_omniintelligence` | Intelligence state, patterns |
-| `omniclaude` | `role_omniclaude` | Plugin state, agent configs |
-| `omnimemory` | `role_omnimemory` | Memory metadata, indices |
-| `omninode_cloud` | `role_omninode` | Cloud deployment state |
-| `omnidash_analytics` | `role_omnidash` | Dashboard analytics |
+| `omnibase_infra` | `role_omnibase` | Platform metadata, sessions, Kafka state |
+| `omniintelligence` | `role_omniintelligence` | Intelligence state, patterns, learning |
+| `omniclaude` | `role_omniclaude` | Plugin state, agent configs, session logs |
+| `omnimemory` | `role_omnimemory` | Memory metadata, indices, embeddings |
+| `omninode_cloud` | `role_omninode` | Cloud deployment state, provisioning |
+| `omnidash_analytics` | `role_omnidash` | Dashboard analytics, read model |
+| `system` | `postgres` | PostgreSQL system state |
 
 ### DB-SPLIT-05 / OMN-2056
 
@@ -129,4 +145,3 @@ The database split ensures each service has:
 - Its own role (least-privilege)
 - Schema fingerprint validation (SHA256)
 - Migration state tracking
-
