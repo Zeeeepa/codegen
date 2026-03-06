@@ -124,7 +124,7 @@ Deploys core platform services via `omnibase_infra`:
 | Service | Port | Purpose |
 |---------|------|---------|
 | PostgreSQL | 5436 | 7 databases, 6 roles, 36 migrations |
-| Redpanda | 19092 / 29092 | Kafka-compatible event bus |
+| Redpanda | 19092 (ext) / 9092 (int) | Kafka-compatible event bus |
 | Valkey | 16379 | Platform-wide cache |
 | Consul | 28500 | Service discovery (opt-in) |
 | Infisical | 8880 | Secrets management (opt-in) |
@@ -249,8 +249,8 @@ Task(
 Infrastructure (Phase 2):
   5436   PostgreSQL
   16379  Valkey (platform cache)
-  19092  Redpanda (internal)
-  29092  Redpanda (external/client)
+  9092   Redpanda (Docker-internal: redpanda:9092)
+  19092  Redpanda (host-external: localhost:19092)
   28500  Consul (service discovery, opt-in)
   8880   Infisical (opt-in)
   28080  Keycloak (opt-in)
@@ -313,7 +313,7 @@ docker logs omninode-infra-postgres-1
 ```bash
 docker logs omninode-infra-redpanda-1
 # Common: port already in use, insufficient memory (needs 512M+)
-# Fix: check `ss -tlnp | grep 29092` and kill conflicting process
+# Fix: check `ss -tlnp | grep 19092` and kill conflicting process
 ```
 
 ### Migrations fail
@@ -326,7 +326,7 @@ psql -h localhost -p 5436 -U postgres -d omnibase_infra \
 ### OmniClaude shows STANDALONE instead of FULL_ONEX
 ```bash
 # Check if Kafka is reachable:
-echo "KAFKA_BOOTSTRAP_SERVERS=localhost:29092" >> ~/omninode-workspace/omniclaude/.env
+echo "KAFKA_BOOTSTRAP_SERVERS=localhost:19092" >> ~/omninode-workspace/omniclaude/.env
 
 # Check if intelligence-api is reachable:
 curl -sf http://localhost:8053/health

@@ -105,7 +105,7 @@ verify_sandbox() {
     declare -A port_map
     local conflicts=0
     local ports=(
-        5436 16379 19092 29092 8880 28080
+        5436 16379 19092 19092 8880 28080
         8085 8086 8087 8053 8091 8092 6006
         6333 6334 7687 7444 6379 8090 3000
     )
@@ -253,8 +253,8 @@ verify_live() {
     # ── 3. Event Bus ──────────────────────────────────────────────────────
     echo -e "${BOLD}3. Event Bus (Redpanda/Kafka)${NC}"
 
-    if (echo >/dev/tcp/localhost/"${REDPANDA_EXTERNAL_PORT:-29092}") 2>/dev/null; then
-        check_pass "Redpanda broker reachable on port ${REDPANDA_EXTERNAL_PORT:-29092}"
+    if (echo >/dev/tcp/localhost/"${REDPANDA_EXTERNAL_PORT:-19092}") 2>/dev/null; then
+        check_pass "Redpanda broker reachable on port ${REDPANDA_EXTERNAL_PORT:-19092}"
     else
         check_fail "Redpanda not reachable"
     fi

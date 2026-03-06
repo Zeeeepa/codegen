@@ -27,7 +27,7 @@ Requires: Kafka (Redpanda) reachable.
 
 ```bash
 # Set in .env:
-KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+KAFKA_BOOTSTRAP_SERVERS=localhost:19092
 ```
 
 **What works:** Everything in Standalone + routing telemetry, session events, Kafka-backed observability through OmniDash.
@@ -38,7 +38,7 @@ Requires: Kafka + intelligence-api + memory services.
 
 ```bash
 # All these must be reachable:
-KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+KAFKA_BOOTSTRAP_SERVERS=localhost:19092
 INTELLIGENCE_SERVICE_URL=http://localhost:8053
 QDRANT_HOST=localhost
 QDRANT_HTTP_PORT=6333
@@ -166,7 +166,7 @@ OmniClaude (hooks)
 
 ```bash
 # Event Bus
-KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+KAFKA_BOOTSTRAP_SERVERS=localhost:19092
 
 # Intelligence
 INTELLIGENCE_SERVICE_URL=http://localhost:8053

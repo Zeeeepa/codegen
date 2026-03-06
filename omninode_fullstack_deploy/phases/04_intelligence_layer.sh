@@ -88,30 +88,25 @@ phase_04_intelligence() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_dry "git clone https://github.com/${org}/onex_change_control.git ${ws}/onex_change_control"
-        log_dry "cd ${ws}/onex_change_control && poetry install"
+        log_dry "cd ${ws}/onex_change_control && uv sync"
     else
         ensure_repo "$org" "onex_change_control" "${ws}/onex_change_control"
         cd "${ws}/onex_change_control"
 
-        # onex_change_control uses Poetry (NOT uv) per upstream README
-        if ! command -v poetry &>/dev/null; then
-            log_warn "Poetry not found — installing..."
-            curl -sSL https://install.python-poetry.org | python3 -
-            export PATH="$HOME/.local/bin:$PATH"
-        fi
-
-        poetry install 2>/dev/null || {
-            log_warn "onex_change_control poetry install deferred"
+        # All OmniNode repos use uv as their package manager
+        uv sync 2>/dev/null || {
+            log_warn "onex_change_control uv sync deferred — falling back to pip"
+            pip install -e "." 2>/dev/null || true
         }
 
-        # Install pre-commit hooks (optional, uses poetry run)
+        # Install pre-commit hooks (optional)
         if command -v pre-commit &>/dev/null; then
-            poetry run pre-commit install 2>/dev/null || true
+            uv run pre-commit install 2>/dev/null || true
             # Install pre-push hook (Gap #9)
-            poetry run pre-commit install --hook-type pre-push 2>/dev/null || true
+            uv run pre-commit install --hook-type pre-push 2>/dev/null || true
         fi
 
-        log_info "ONEX Change Control installed (Poetry) ✓"
+        log_info "ONEX Change Control installed ✓"
     fi
 
     # ── 4.4a Validate ONEX Contracts (Gap #7) ─────────────────────────────

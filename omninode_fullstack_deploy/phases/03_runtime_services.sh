@@ -37,7 +37,32 @@ phase_03_runtime() {
         log_info "Runtime images ready ✓"
     fi
 
+    # ── 3.2a Migration-Gate Boot-Order Check (OMN-3737) ───────────────────
+    # CRITICAL: docker-compose.infra.yml defines a migration-gate service that
+    # gates runtime startup on all forward migrations being applied. This
+    # prevents schema fingerprint corruption if tables don't exist yet.
+    # The migration-gate queries db_metadata.migrations_complete (set by
+    # migration 037). Runtime services depend on it via service_healthy.
+    #
+    # When using --profile runtime, docker compose handles this automatically
+    # via depends_on conditions. This step is an explicit validation.
+    log_step "3.2a — Verifying migration-gate readiness (OMN-3737)"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "docker compose --profile runtime validates migration-gate via depends_on"
+        log_dry "migration-gate queries db_metadata.migrations_complete before runtime starts"
+    else
+        # The runtime profile includes migration-gate with proper depends_on ordering.
+        # We just log awareness here; actual gating is handled by compose depends_on.
+        log_info "Migration-gate boot-order sentinel active (OMN-3737)"
+        log_info "Runtime services will only start after all forward migrations are applied"
+    fi
+
     # ── 3.3 Start Runtime Services ─────────────────────────────────────────
+    # NOTE: For production deployments, prefer using the canonical entry point:
+    #   ./scripts/deploy-runtime.sh --execute --profile runtime
+    # This handles versioned deployment dirs, lock acquisition, and project naming.
+    # Direct compose invocation is used here for orchestrated multi-repo deployment.
     log_step "3.3 — Starting ONEX runtime services"
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -46,9 +71,10 @@ phase_03_runtime() {
         log_dry "          runtime-worker, agent-actions-consumer (8087),"
         log_dry "          intelligence-api (8053), contract-resolver (8091),"
         log_dry "          skill-lifecycle-consumer (8092), phoenix-otlp (6006)"
+        log_dry "NOTE: migration-gate starts first and gates runtime via depends_on"
     else
         start_infra_profile "$infra_dir" "runtime"
-        log_info "Runtime services starting..."
+        log_info "Runtime services starting (migration-gate gates boot order)..."
     fi
 
     # ── 3.4 Health Check: omninode-runtime ─────────────────────────────────

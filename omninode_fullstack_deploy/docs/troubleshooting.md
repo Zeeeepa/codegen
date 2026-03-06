@@ -22,11 +22,11 @@ docker volume rm omninode-infra_postgres_data
 
 ### 2. Redpanda Broker Unreachable
 
-**Symptom:** Services can't connect to Kafka on port 29092.
+**Symptom:** Services can't connect to Kafka on port 19092.
 
 ```bash
 # Check if port is in use by something else
-ss -tlnp | grep 29092
+ss -tlnp | grep 19092
 
 # Check Redpanda logs
 docker logs omninode-infra-redpanda-1
@@ -110,7 +110,7 @@ sed -i 's/RUNTIME_PORT=8085/RUNTIME_PORT=8185/' ~/omninode-workspace/omnibase_in
 
 ```bash
 # Step 1: Check Kafka connectivity
-(echo >/dev/tcp/localhost/29092) && echo "OK" || echo "FAIL"
+(echo >/dev/tcp/localhost/19092) && echo "OK" || echo "FAIL"
 
 # Step 2: Check intelligence-api
 curl -sf http://localhost:8053/health && echo "OK" || echo "FAIL"
@@ -224,7 +224,7 @@ pg_isready -h localhost -p 5436 -U postgres
 docker exec omninode-infra-redpanda-1 rpk topic list
 
 # Verify all ports
-ss -tlnp | grep -E '(5436|16379|29092|8085|8053|6333|7687|3000)'
+ss -tlnp | grep -E '(5436|16379|19092|8085|8053|6333|7687|3000)'
 
 # Run comprehensive verification
 ./verify_deployment.sh --live

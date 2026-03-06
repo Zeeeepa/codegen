@@ -261,8 +261,8 @@ cmd_status() {
     fi
 
     # Kafka
-    if (echo >/dev/tcp/localhost/"${REDPANDA_EXTERNAL_PORT:-29092}") 2>/dev/null; then
-        emit_status "redpanda" "healthy" "Port ${REDPANDA_EXTERNAL_PORT:-29092}"
+    if (echo >/dev/tcp/localhost/"${REDPANDA_EXTERNAL_PORT:-19092}") 2>/dev/null; then
+        emit_status "redpanda" "healthy" "Port ${REDPANDA_EXTERNAL_PORT:-19092}"
     else
         emit_status "redpanda" "down" "Not responding"
     fi

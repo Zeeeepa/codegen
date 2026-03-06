@@ -111,7 +111,7 @@ check_all_ports() {
         "5436:PostgreSQL"
         "16379:Valkey (Infra Cache)"
         "19092:Redpanda (Internal)"
-        "29092:Redpanda (External)"
+        "19092:Redpanda (External)"
         "8880:Infisical"
         "28080:Keycloak"
         "8085:omninode-runtime"
@@ -260,7 +260,7 @@ validate_db_roles() {
 # Topics: agent-routing-decisions, agent-transformation-events,
 #         router-performance-metrics, agent-actions
 validate_kafka_topics() {
-    local broker="${KAFKA_BOOTSTRAP_SERVERS:-localhost:29092}"
+    local broker="${KAFKA_BOOTSTRAP_SERVERS:-localhost:19092}"
     local topics=(
         "agent-routing-decisions"
         "agent-transformation-events"
@@ -516,14 +516,14 @@ validate_contracts() {
 
     cd "$cc_dir" || return 1
 
-    if poetry run validate-yaml 2>/dev/null; then
+    if uv run validate-yaml 2>/dev/null; then
         log_info "YAML contract validation passed [OK]"
     else
         log_error "YAML contract validation FAILED"
         return 1
     fi
 
-    if poetry run check-schema-purity 2>/dev/null; then
+    if uv run check-schema-purity 2>/dev/null; then
         log_info "Schema purity check passed [OK]"
     else
         log_error "Schema purity check FAILED"
@@ -553,4 +553,3 @@ validate_omnidash_db() {
         return 1
     fi
 }
-

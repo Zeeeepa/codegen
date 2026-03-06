@@ -204,7 +204,7 @@ main() {
     if [[ "$DRY_RUN" != "true" ]]; then
         print_service_table
         print_service_row "PostgreSQL"             "${POSTGRES_PORT:-5436}"    "localhost:${POSTGRES_PORT:-5436}"
-        print_service_row "Redpanda (Kafka)"       "${REDPANDA_EXTERNAL_PORT:-29092}" "localhost:${REDPANDA_EXTERNAL_PORT:-29092}"
+        print_service_row "Redpanda (Kafka)"       "${REDPANDA_EXTERNAL_PORT:-19092}" "localhost:${REDPANDA_EXTERNAL_PORT:-19092}"
         print_service_row "Valkey"                 "${VALKEY_PORT:-16379}"     "localhost:${VALKEY_PORT:-16379}"
 
         if [[ "$SKIP_SECRETS" != "true" ]]; then

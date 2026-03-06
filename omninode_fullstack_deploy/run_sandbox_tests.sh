@@ -140,17 +140,19 @@ echo ""
 MOCKEOF
     chmod +x "${MOCK_DIR}/ss"
 
-    # Mock poetry
-    cat > "${MOCK_DIR}/poetry" <<'MOCKEOF'
+    # Mock uv (all OmniNode repos use uv, not poetry)
+    cat > "${MOCK_DIR}/uv" <<'MOCKEOF'
 #!/usr/bin/env bash
 case "$*" in
+    "sync"*) exit 0 ;;
     "run validate-yaml") exit 0 ;;
     "run check-schema-purity") exit 0 ;;
     "run pre-commit"*) exit 0 ;;
+    "run python"*) exit 0 ;;
     *) exit 0 ;;
 esac
 MOCKEOF
-    chmod +x "${MOCK_DIR}/poetry"
+    chmod +x "${MOCK_DIR}/uv"
 
     export PATH="${MOCK_DIR}:$PATH"
 }
@@ -492,7 +494,7 @@ WORKSPACE="${TMPDIR:-/tmp}/omninode-test-workspace"
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5436
 POSTGRES_USER=postgres
-KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+KAFKA_BOOTSTRAP_SERVERS=localhost:19092
 OMNICLAUDE_EMIT_SOCKET=/tmp/omniclaude-test.sock
 OMNICLAUDE_HOOKS_DIR="${TMPDIR:-/tmp}/omninode-test-hooks"
 OMNIINTELLIGENCE_PLUGIN_MODULE=omniintelligence.runtime.plugin
@@ -787,4 +789,3 @@ main() {
 }
 
 main "$@"
-

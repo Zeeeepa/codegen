@@ -175,35 +175,48 @@ SEDEOF
     fi
 
     # ── 2.6 Start Redpanda (Kafka) ────────────────────────────────────────
-    log_step "2.6 — Starting Redpanda event bus (port ${REDPANDA_EXTERNAL_PORT:-29092})"
+    log_step "2.6 — Starting Redpanda event bus (port ${REDPANDA_EXTERNAL_PORT:-19092})"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_dry "docker compose up -d redpanda"
-        log_dry "wait_for_port localhost 29092 Redpanda"
+        log_dry "wait_for_port localhost 19092 Redpanda"
     else
         omni_compose_infra "$infra_dir" up -d redpanda
-        wait_for_port localhost "${REDPANDA_EXTERNAL_PORT:-29092}" "Redpanda" 30
+        wait_for_port localhost "${REDPANDA_EXTERNAL_PORT:-19092}" "Redpanda" 30
         log_info "Redpanda is ready ✓"
     fi
 
-    # ── 2.7 Create Kafka Topics from Contracts ─────────────────────────────
-    log_step "2.7 — Creating Kafka topics (contract-driven)"
+    # ── 2.7 Kafka Topic Provisioning ─────────────────────────────────────────
+    # NOTE: Topics are auto-provisioned by TopicProvisioner on runtime boot
+    # (service_kernel.py). The single source of truth for topic names is
+    # ALL_PLATFORM_TOPIC_SPECS in src/omnibase_infra/topics/platform_topic_suffixes.py.
+    #
+    # Manual topic creation is available via:
+    #   uv run python -m omnibase_infra.event_bus.service_topic_manager
+    #
+    # This step validates that Redpanda is healthy and ready to accept topics
+    # when runtime starts (Phase 3). No manual topic creation needed here.
+    log_step "2.7 — Verifying Redpanda topic readiness"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_dry "python3 ${infra_dir}/scripts/create_kafka_topics.py"
+        log_dry "Redpanda ready — TopicProvisioner will auto-create topics at runtime boot"
+        log_dry "Source of truth: ALL_PLATFORM_TOPIC_SPECS in platform_topic_suffixes.py"
     else
-        if [[ -f "${infra_dir}/scripts/create_kafka_topics.py" ]]; then
-            cd "$infra_dir"
-            python3 scripts/create_kafka_topics.py 2>/dev/null || {
-                log_warn "Topic creation deferred — will be handled at runtime"
-            }
+        # Verify Redpanda is accepting admin requests (schema registry)
+        if curl -sf "http://localhost:${SCHEMA_REGISTRY_PORT:-18081}/subjects" >/dev/null 2>&1; then
+            log_info "Redpanda schema registry reachable — ready for topic provisioning ✓"
+        else
+            log_warn "Schema registry not responding — topics will be created when runtime starts"
         fi
-        log_info "Kafka topics configured ✓"
     fi
 
-    # ── 2.7a Validate OmniDash Kafka Topics (Gap #2) ─────────────────────
-    log_step "2.7a — Creating and validating 4 OmniDash Kafka topics"
-    validate_kafka_topics || log_warn "Kafka topic validation incomplete — OmniDash may fail"
+    # ── 2.7a Validate Kafka Topic Availability (post-runtime) ─────────────
+    # NOTE: This validates topics AFTER runtime has started and TopicProvisioner
+    # has run. During Phase 2, topics don't exist yet — that's expected.
+    log_step "2.7a — Kafka topic pre-check (topics created at runtime boot)"
+    if [[ "$DRY_RUN" != "true" ]]; then
+        log_info "Topics will be validated after Phase 3 runtime boot (TopicProvisioner)"
+    fi
 
     # ── 2.8 Start Infisical (optional) ────────────────────────────────────
     if [[ "${SKIP_SECRETS}" != "true" ]]; then

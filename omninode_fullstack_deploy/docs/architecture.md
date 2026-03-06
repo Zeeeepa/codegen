@@ -30,7 +30,7 @@
     └─────────┬────────────────────────┬────────────────────────┬──────────┘
               │                        │                        │
     ┌─────────▼──────────┐  ┌─────────▼──────────┐  ┌─────────▼──────────┐
-    │  PostgreSQL :5436   │  │  Redpanda :29092    │  │  Valkey :16379     │
+    │  PostgreSQL :5436   │  │  Redpanda :19092    │  │  Valkey :16379     │
     │  7 databases        │  │  Kafka event bus    │  │  Platform cache    │
     │  6 roles            │  │  Contract topics    │  │                    │
     │  36 migrations      │  │                     │  │                    │

@@ -35,7 +35,7 @@ phase_05_interface() {
             cat > .env <<DASHENV
 PORT=${OMNIDASH_PORT:-3000}
 OMNIDASH_ANALYTICS_DB_URL=${OMNIDASH_ANALYTICS_DB_URL:-postgresql://postgres:postgres@localhost:5436/omnidash_analytics}
-KAFKA_BROKERS=${KAFKA_BOOTSTRAP_SERVERS:-localhost:29092}
+KAFKA_BROKERS=${KAFKA_BOOTSTRAP_SERVERS:-localhost:19092}
 KAFKA_CLIENT_ID=${OMNIDASH_KAFKA_CLIENT_ID:-omnidash-dashboard}
 KAFKA_CONSUMER_GROUP=${OMNIDASH_KAFKA_CONSUMER_GROUP:-omnidash-consumers-v2}
 ENABLE_REAL_TIME_EVENTS=${ENABLE_REAL_TIME_EVENTS:-true}
@@ -86,7 +86,7 @@ DASHENV
         # Create .env for OmniClaude
         if [[ ! -f .env ]]; then
             cat > .env <<CLAUDEENV
-KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-localhost:29092}
+KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-localhost:19092}
 INTELLIGENCE_SERVICE_URL=${INTELLIGENCE_SERVICE_URL:-http://localhost:8053}
 ENABLE_POSTGRES=${ENABLE_POSTGRES:-true}
 OMNICLAUDE_DB_URL=${OMNICLAUDE_DB_URL:-postgresql://postgres:postgres@localhost:5436/omniclaude}
@@ -152,7 +152,7 @@ CLAUDEENV
     log_step "5.3 — Running capability probe"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_dry "Checking Kafka: ${KAFKA_BOOTSTRAP_SERVERS:-localhost:29092}"
+        log_dry "Checking Kafka: ${KAFKA_BOOTSTRAP_SERVERS:-localhost:19092}"
         log_dry "Checking Intelligence: ${INTELLIGENCE_SERVICE_URL:-http://localhost:8053}"
         log_dry "Checking Qdrant: ${QDRANT_HOST:-localhost}:${QDRANT_HTTP_PORT:-6333}"
         log_dry "Expected result: FULL_ONEX tier"
@@ -163,7 +163,7 @@ CLAUDEENV
         # Check Kafka → EVENT_BUS tier
         # ONEX-TODO: Replace TCP probing with MCP health endpoints (OMN-1288)
         local kafka_host="${KAFKA_HOST:-${REDPANDA_HOST:-localhost}}"
-        if (echo >/dev/tcp/"${kafka_host}"/"${REDPANDA_EXTERNAL_PORT:-29092}") 2>/dev/null; then
+        if (echo >/dev/tcp/"${kafka_host}"/"${REDPANDA_EXTERNAL_PORT:-19092}") 2>/dev/null; then
             echo -e "    ✓ Kafka reachable → ${GREEN}EVENT_BUS tier available${NC}"
         else
             echo -e "    ✗ Kafka unreachable → ${YELLOW}STANDALONE tier only${NC}"

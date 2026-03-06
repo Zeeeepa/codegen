@@ -129,7 +129,7 @@ phases:
       - id: "2.6"
         action: wait_for_service
         target: redpanda
-        check: "rpk cluster health --brokers localhost:29092"
+        check: "rpk cluster health --brokers localhost:19092"
       - id: "2.7"
         action: create_kafka_topics
         description: "Create 4 OmniDash topics"
@@ -208,7 +208,7 @@ phases:
       - id: "4.6"
         action: install_hooks
         description: "Install pre-commit + pre-push hooks"
-        command: "cd {workspace}/onex_change_control && poetry run pre-commit install && poetry run pre-commit install --hook-type pre-push"
+        command: "cd {workspace}/onex_change_control && uv run pre-commit install && uv run pre-commit install --hook-type pre-push"
     postconditions:
       - "Qdrant healthy on port 6333"
       - "Memgraph reachable on port 7687"
@@ -264,7 +264,7 @@ phases:
         action: capability_probe
         description: "Detect integration tier (Standalone / Event Bus / Full ONEX)"
         checks:
-          - "Kafka: localhost:29092"
+          - "Kafka: localhost:19092"
           - "Intelligence: http://localhost:8053"
           - "Qdrant: localhost:6333"
     postconditions:
@@ -289,10 +289,10 @@ service_ports:
   - port: 19092
     service: "Redpanda (Internal)"
     protocol: kafka
-  - port: 29092
+  - port: 19092
     service: "Redpanda (External)"
     protocol: kafka
-    health: "rpk cluster health --brokers localhost:29092"
+    health: "rpk cluster health --brokers localhost:19092"
   - port: 8880
     service: Infisical
     protocol: http
@@ -366,7 +366,7 @@ validation_matrix:
     - check: kafka_topics
       phase: 2
       description: "4 OmniDash Kafka topics created"
-      fix: "rpk topic create <topic> --brokers localhost:29092"
+      fix: "rpk topic create <topic> --brokers localhost:19092"
     - check: plugin_discoverability
       phase: 4
       description: "PluginIntelligence importable by runtime"
@@ -388,7 +388,7 @@ validation_matrix:
     - check: contracts
       phase: 4
       description: "YAML + schema purity pass"
-      fix: "cd onex_change_control && poetry run validate-yaml"
+      fix: "cd onex_change_control && uv run validate-yaml"
     - check: claude_hooks
       phase: 5
       description: "5 hook scripts exist and are executable"
