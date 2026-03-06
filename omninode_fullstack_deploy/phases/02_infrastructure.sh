@@ -92,31 +92,61 @@ phase_02_infrastructure() {
         log_info "PostgreSQL is ready ✓"
     fi
 
-    # ── 2.4 Run Database Migrations (36 migrations) ────────────────────────
-    log_step "2.4 — Applying database migrations (36 forward migrations)"
+    # ── 2.4 Database Initialization & Migrations ────────────────────────────────
+    # HOW IT WORKS (verified against actual omnibase_infra):
+    #   On FIRST start, PostgreSQL runs scripts from docker-entrypoint-initdb.d/:
+    #     000_create_multiple_databases.sh — Creates 7 databases + 6 least-privilege roles
+    #     001_create_omniintelligence_schema.sh — Full schema (tables, triggers, views, indexes)
+    #     001_registration_projection.sql ... 036_create_schema_migrations.sql — 22 SQL migrations
+    #     02-keycloak-db.sql — Keycloak database
+    #   On SUBSEQUENT starts, entrypoint is skipped (data directory exists).
+    #   Post-startup, run-migrations.py handles incremental migrations with:
+    #     --dry-run, --target N (run up to version N), duplicate detection, checksum tracking
+    log_step "2.4 — Database initialization (Docker entrypoint + post-startup migrations)"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_dry "python3 ${infra_dir}/scripts/run-migrations.py --apply"
-        log_dry "Creates: 7 databases, 6 roles, schema evolution 000-036"
+        log_dry "Docker entrypoint auto-runs: 000_create_multiple_databases.sh (7 DBs, 6 roles)"
+        log_dry "Docker entrypoint auto-runs: 001_create_omniintelligence_schema.sh (full schema)"
+        log_dry "Docker entrypoint auto-runs: 22 SQL migrations (001-036)"
+        log_dry "Post-startup: python3 ${infra_dir}/scripts/run-migrations.py (incremental)"
     else
+        # The entrypoint scripts ran automatically when postgres container started (step 2.3).
+        # Now run the Python migration runner for any incremental migrations not in entrypoint.
         if [[ -f "${infra_dir}/scripts/run-migrations.py" ]]; then
+            log_info "Running incremental migration check (run-migrations.py)..."
             cd "$infra_dir"
-            python3 scripts/run-migrations.py --apply 2>/dev/null || {
-                log_warn "Migration script failed — migrations may already be applied"
+            python3 scripts/run-migrations.py 2>&1 | tail -5 || {
+                log_warn "run-migrations.py had issues — entrypoint may have applied all migrations"
             }
         else
-            log_warn "Migration script not found — migrations handled by container entrypoint"
+            log_info "run-migrations.py not found — relying on Docker entrypoint for migrations"
         fi
-        log_info "Database migrations complete ✓"
+        log_info "Database initialization complete ✓"
     fi
 
-    # ── 2.4a Validate Database Roles (Gap #4) ─────────────────────────────
-    log_step "2.4a — Validating 6 least-privilege database roles"
-    validate_db_roles || log_warn "Role validation incomplete — check migration logs"
+    # ── 2.4a Cross-repo table provisioning (OMN-3531) ─────────────────────────
+    log_step "2.4a — Provisioning cross-repo tables (idempotency records)"
 
-    # ── 2.4b Validate omnidash_analytics Database (Gap #5) ────────────────
-    log_step "2.4b — Validating omnidash_analytics database exists"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "python3 ${infra_dir}/scripts/provision-cross-repo-tables.py"
+    else
+        if [[ -f "${infra_dir}/scripts/provision-cross-repo-tables.py" ]]; then
+            cd "$infra_dir"
+            python3 scripts/provision-cross-repo-tables.py 2>&1 || {
+                log_warn "Cross-repo table provisioning skipped — OMNIINTELLIGENCE_DB_URL may not be set"
+            }
+        fi
+    fi
+
+    # ── 2.4b Validate Database Roles ──────────────────────────────────────────
+    # NOTE: Roles are only created when their ROLE_*_PASSWORD env var is non-empty.
+    log_step "2.4b — Validating 6 least-privilege database roles"
+    validate_db_roles || log_warn "Role validation incomplete — some ROLE_*_PASSWORD may be empty"
+
+    # ── 2.4c Validate omnidash_analytics Database ─────────────────────────────
+    log_step "2.4c — Validating omnidash_analytics database exists"
     validate_omnidash_db || log_warn "omnidash_analytics DB missing — OmniDash Phase 5 may fail"
+
 
     # ── 2.5 Start Valkey Cache ─────────────────────────────────────────────
     log_step "2.5 — Starting Valkey cache (port ${VALKEY_PORT:-16379})"

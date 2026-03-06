@@ -387,7 +387,7 @@ validate_claude_hooks() {
 # ── Infisical Bootstrap Validation (High Gap #6) ─────────────────────────
 # Validates the 6-step Infisical bootstrap completed correctly.
 validate_infisical_bootstrap() {
-    local addr="${INFISICAL_ADDR:-http://localhost:8880}"
+    local addr="${INFISICAL_ADDR-http://localhost:8880}"
 
     if [[ "${DRY_RUN:-true}" == "true" ]]; then
         log_dry "Validate Infisical 6-step bootstrap at ${addr}"
@@ -399,28 +399,102 @@ validate_infisical_bootstrap() {
         return 0
     fi
 
-    local steps=(
-        "health:${addr}/api/status"
-        "admin:check admin user exists"
-        "organization:check organization exists"
-        "project:check project exists"
-        "machine_identity:check machine identity bound"
-        "service_token:check service token active"
-    )
+    # Bootstrap chain (from actual bootstrap-infisical.sh, OMN-2287):
+    #   Step 1:   PostgreSQL starts (POSTGRES_PASSWORD from .env)
+    #   Step 1b:  Pending migrations applied (run-migrations.py)
+    #   Step 1c:  Cross-repo tables provisioned (provision-cross-repo-tables.py)
+    #   Step 2:   Valkey starts
+    #   Step 3:   Infisical starts (depends_on: postgres + valkey healthy)
+    #   Step 3.5: Keycloak starts (--profile auth)
+    #   Step 4:   Identity provisioning (first-time only)
+    #   Step 5:   Seed runs (populates Infisical from contracts + .env values)
+    #   Step 6:   Runtime services start (prefetch from Infisical)
 
-    # Simplified: just check health endpoint
+    local pass=0
+    local total=4
+
+    # Check 1: Health endpoint
     if curl -sf --max-time 5 "${addr}/api/status" >/dev/null 2>&1; then
         log_info "Infisical responding at ${addr} [OK]"
+        pass=$((pass + 1))
     else
         log_error "Infisical NOT responding at ${addr}"
         return 1
     fi
 
-    # Check machine identity is configured
+    # Check 2: Machine identity configured (Step 4 output)
     if [[ -n "${INFISICAL_CLIENT_ID:-}" && -n "${INFISICAL_CLIENT_SECRET:-}" ]]; then
         log_info "Infisical machine identity configured [OK]"
+        pass=$((pass + 1))
     else
         log_warn "Infisical machine identity not configured (INFISICAL_CLIENT_ID/SECRET empty)"
+        log_warn "  Run: ${OMNI_INFRA_DIR:-omnibase_infra}/scripts/bootstrap-infisical.sh"
+    fi
+
+    # Check 3: ~/.omnibase/.env exists (created by bootstrap Step 4/5)
+    if [[ -f "${HOME}/.omnibase/.env" ]]; then
+        log_info "~/.omnibase/.env exists (bootstrap credentials file) [OK]"
+        pass=$((pass + 1))
+    else
+        log_warn "~/.omnibase/.env not found — bootstrap may not have completed"
+        log_warn "  Expected after running: scripts/bootstrap-infisical.sh"
+    fi
+
+    # Check 4: DB connection URI set for Infisical
+    if [[ -n "${INFISICAL_DB_CONNECTION_URI:-}" ]]; then
+        log_info "INFISICAL_DB_CONNECTION_URI set [OK]"
+        pass=$((pass + 1))
+    else
+        log_warn "INFISICAL_DB_CONNECTION_URI not set"
+    fi
+
+    log_info "Infisical bootstrap: ${pass}/${total} checks passed"
+    [[ $pass -ge 2 ]]  # At minimum health + one config check
+}
+
+# ── Autoheal Validation ──────────────────────────────────────────────────────
+# willfarrell/autoheal:1.2.0 watches containers with label autoheal=true
+# Active in: runtime and full profiles
+validate_autoheal() {
+    if [[ "${DRY_RUN:-true}" == "true" ]]; then
+        log_dry "Validate autoheal container running"
+        return 0
+    fi
+
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "autoheal"; then
+        log_info "Autoheal container running [OK]"
+
+        # Check it has access to docker socket
+        if docker inspect omnibase-infra-autoheal 2>/dev/null |            grep -q "/var/run/docker.sock"; then
+            log_info "Autoheal has Docker socket access [OK]"
+        else
+            log_warn "Autoheal may not have Docker socket access"
+        fi
+        return 0
+    else
+        log_info "Autoheal not running (only active in runtime/full profiles)"
+        return 0
+    fi
+}
+
+# ── Keycloak Validation ──────────────────────────────────────────────────────
+validate_keycloak() {
+    local addr="${KEYCLOAK_ADDR:-http://localhost:28080}"
+
+    if [[ "${DRY_RUN:-true}" == "true" ]]; then
+        log_dry "Validate Keycloak at ${addr}"
+        return 0
+    fi
+
+    if [[ "${SKIP_KEYCLOAK:-false}" == "true" ]]; then
+        log_info "Keycloak skipped (--skip-keycloak)"
+        return 0
+    fi
+
+    if curl -sf --max-time 5 "${addr}" >/dev/null 2>&1; then
+        log_info "Keycloak responding at ${addr} [OK]"
+    else
+        log_warn "Keycloak not responding at ${addr} (may need --profile auth)"
     fi
 }
 

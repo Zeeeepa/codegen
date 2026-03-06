@@ -539,42 +539,39 @@ EOF
     fi
 
     # Test: validate_emit_daemon (socket does NOT exist -> should fail)
-    (
+    if ! (
         source "${test_env}/test_helpers.sh"
         source "${SCRIPT_DIR}/lib/validation.sh"
         DRY_RUN=false
         OMNICLAUDE_EMIT_SOCKET=/tmp/nonexistent-socket-$$
         validate_emit_daemon 2>&1
-    ) >/dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
+    ) >/dev/null 2>&1; then
         tap_ok "mock/validate_emit_daemon fails when socket missing"
     else
         tap_fail "mock/validate_emit_daemon fails when socket missing"
     fi
 
     # Test: validate_claude_hooks (hooks don't exist -> should fail)
-    (
+    if ! (
         source "${test_env}/test_helpers.sh"
         source "${SCRIPT_DIR}/lib/validation.sh"
         DRY_RUN=false
         OMNICLAUDE_HOOKS_DIR=/tmp/nonexistent-hooks-$$
         validate_claude_hooks 2>&1
-    ) >/dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
+    ) >/dev/null 2>&1; then
         tap_ok "mock/validate_claude_hooks fails when hooks missing"
     else
         tap_fail "mock/validate_claude_hooks fails when hooks missing"
     fi
 
     # Test: validate_infisical_bootstrap with empty INFISICAL_ADDR (should skip)
-    (
+    if (
         source "${test_env}/test_helpers.sh"
         source "${SCRIPT_DIR}/lib/validation.sh"
         DRY_RUN=false
         INFISICAL_ADDR=""
         validate_infisical_bootstrap 2>&1
-    ) >/dev/null 2>&1
-    if [[ $? -eq 0 ]]; then
+    ) >/dev/null 2>&1; then
         tap_ok "mock/validate_infisical_bootstrap skips when disabled"
     else
         tap_fail "mock/validate_infisical_bootstrap skips when disabled"
@@ -601,9 +598,12 @@ test_dry_run() {
         tap_ok "dry-run/mode-indicated (banner shown)"
     fi
 
-    # Check no actual docker compose up was called (would be in stdout)
-    if echo "$output" | grep -q "docker compose.*up -d" 2>/dev/null; then
-        tap_fail "dry-run/no-actual-docker-up" "Found docker compose up -d in output"
+    # Check no actual docker compose up was called (dry-run logs have [DRY-RUN] prefix with ANSI codes)
+    # Strip ANSI escape codes, then filter out [DRY-RUN] lines
+    local stripped
+    stripped=$(echo "$output" | sed 's/\[[0-9;]*m//g')
+    if echo "$stripped" | grep -v '\[DRY' | grep -q "docker compose.*up -d" 2>/dev/null; then
+        tap_fail "dry-run/no-actual-docker-up" "Found docker compose up -d outside [DRY-RUN] logs"
     else
         tap_ok "dry-run/no-actual-docker-up"
     fi

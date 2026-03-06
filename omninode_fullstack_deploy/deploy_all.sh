@@ -79,15 +79,24 @@ Options:
 
 Profiles:
   minimal     Core infrastructure only (PostgreSQL, Redpanda, Valkey)
-  standard    Infrastructure + runtime services
+  standard    Infrastructure + runtime services + autoheal
   full        Everything including intelligence, dashboard, and Claude Code
 
 Phases:
   1  Foundation      — omnibase_spi + omnibase_core (Python packages)
   2  Infrastructure  — PostgreSQL, Redpanda, Valkey, Infisical, Keycloak
-  3  Runtime         — ONEX runtime, workers, consumers, intelligence-api
+  3  Runtime         — ONEX runtime, workers, consumers, intelligence-api, autoheal
   4  Intelligence    — OmniMemory, OmniIntelligence, Change Control
   5  Interface       — OmniDash (React), OmniClaude (90+ skills, 54 agents)
+
+Docker Compose Profiles (in omnibase_infra):
+  (default)   PostgreSQL + Redpanda + Valkey (always start)
+  consul      + Consul service discovery (port 28500)
+  secrets     + Infisical secrets manager (port 8880)
+  auth        + Keycloak OIDC (port 28080)
+  runtime     + All runtime services + autoheal
+  full        Everything above
+  bootstrap   Infrastructure + secrets (for initial bootstrap chain)
 
 Examples:
   $(basename "$0") --dry-run                              # Preview full deployment
@@ -96,8 +105,10 @@ Examples:
   $(basename "$0") --execute --profile minimal             # Just databases + event bus
   $(basename "$0") --stop                                  # Stop all services
 EOF
-    exit 0
 }
+
+# die() — print error and exit non-zero (for consistent error handling)
+die() { log_error "$*"; exit 1; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -113,8 +124,8 @@ while [[ $# -gt 0 ]]; do
         --agent-mode)    AGENT_MODE="true"; shift ;;
         --emit-manifest) cat "${DEPLOY_ROOT}/agent_manifest.yaml"; exit 0 ;;
         --stop)          stop_all; exit 0 ;;
-        -h|--help)       usage ;;
-        *) log_error "Unknown option: $1"; usage ;;
+        -h|--help)       usage; exit 0 ;;
+        *) log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
 
