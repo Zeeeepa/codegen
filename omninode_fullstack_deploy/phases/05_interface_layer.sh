@@ -161,28 +161,33 @@ CLAUDEENV
         echo -e "  ${BOLD}Capability Detection:${NC}"
 
         # Check Kafka → EVENT_BUS tier
-        if (echo >/dev/tcp/localhost/"${REDPANDA_EXTERNAL_PORT:-29092}") 2>/dev/null; then
+        # ONEX-TODO: Replace TCP probing with MCP health endpoints (OMN-1288)
+        local kafka_host="${KAFKA_HOST:-${REDPANDA_HOST:-localhost}}"
+        if (echo >/dev/tcp/"${kafka_host}"/"${REDPANDA_EXTERNAL_PORT:-29092}") 2>/dev/null; then
             echo -e "    ✓ Kafka reachable → ${GREEN}EVENT_BUS tier available${NC}"
         else
             echo -e "    ✗ Kafka unreachable → ${YELLOW}STANDALONE tier only${NC}"
         fi
 
         # Check Intelligence API → FULL_ONEX tier
-        if curl -sf "http://localhost:${INTELLIGENCE_API_PORT:-8053}/health" >/dev/null 2>&1; then
+        local intel_host="${INTELLIGENCE_HOST:-localhost}"
+        if curl -sf "http://${intel_host}:${INTELLIGENCE_API_PORT:-8053}/health" >/dev/null 2>&1; then
             echo -e "    ✓ Intelligence API reachable → ${GREEN}FULL_ONEX tier available${NC}"
         else
             echo -e "    △ Intelligence API unreachable → ${YELLOW}EVENT_BUS tier only${NC}"
         fi
 
         # Check Qdrant → Memory enrichment
-        if curl -sf "http://localhost:${QDRANT_HTTP_PORT:-6333}" >/dev/null 2>&1; then
+        local qdrant_host="${QDRANT_HOST:-localhost}"
+        if curl -sf "http://${qdrant_host}:${QDRANT_HTTP_PORT:-6333}" >/dev/null 2>&1; then
             echo -e "    ✓ Qdrant reachable → ${GREEN}Memory enrichment available${NC}"
         else
             echo -e "    △ Qdrant unreachable → ${YELLOW}No vector memory${NC}"
         fi
 
         # Check Memgraph → Intent graphs
-        if (echo >/dev/tcp/localhost/"${MEMGRAPH_BOLT_PORT:-7687}") 2>/dev/null; then
+        local memgraph_host="${MEMGRAPH_HOST:-localhost}"
+        if (echo >/dev/tcp/"${memgraph_host}"/"${MEMGRAPH_BOLT_PORT:-7687}") 2>/dev/null; then
             echo -e "    ✓ Memgraph reachable → ${GREEN}Intent graphs available${NC}"
         else
             echo -e "    △ Memgraph unreachable → ${YELLOW}No intent graphs${NC}"

@@ -16,11 +16,13 @@ phase_03_runtime() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_dry "cd ${infra_dir} && uv sync"
     else
-        cd "$infra_dir"
-        uv sync 2>/dev/null || pip install -e "." 2>/dev/null || {
-            log_warn "omnibase_infra Python install deferred"
-        }
-        log_info "omnibase_infra Python libraries installed ✓"
+        # Use subshell to avoid mutating caller's working directory (Cubic #4).
+        # Only log success when install actually succeeds (Cubic #10).
+        if (cd "$infra_dir" && { uv sync 2>/dev/null || pip install -e "." 2>/dev/null; }); then
+            log_info "omnibase_infra Python libraries installed ✓"
+        else
+            log_warn "omnibase_infra Python install failed — may need manual intervention"
+        fi
     fi
 
     # ── 3.2 Build Runtime Docker Images ────────────────────────────────────

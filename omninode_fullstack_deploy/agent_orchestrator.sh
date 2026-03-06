@@ -40,8 +40,13 @@ emit_json() {
     while [[ $# -gt 0 ]]; do
         local key="$1"
         local value="$2"
-        # Escape quotes in value
-        value=$(echo "$value" | sed 's/"/\\"/g')
+        # Escape special characters for valid JSON output
+        # Order matters: backslashes first, then quotes, then control chars
+        value="${value//\\/\\\\}"      # Escape backslashes first
+        value="${value//\"/\\\"}"        # Escape double quotes
+        value="${value//$'\n'/\\n}"       # Escape newlines
+        value="${value//$'\t'/\\t}"       # Escape tabs
+        value="${value//$'\r'/\\r}"       # Escape carriage returns
         printf ',"%s":"%s"' "$key" "$value"
         shift 2
     done
@@ -218,7 +223,7 @@ cmd_verify() {
 
     if bash "$VERIFY_SCRIPT" "--${VERIFY_MODE:-sandbox}" 2>&1 | while IFS= read -r line; do
         # Parse check results from verification output
-        if echo "$line" | grep -q '[OK]'; then
+        if echo "$line" | grep -qF '[OK]'; then
             local check_name
             check_name=$(echo "$line" | sed 's/.*\] //' | sed 's/ \[OK\]//')
             emit_validation "$check_name" "pass" ""

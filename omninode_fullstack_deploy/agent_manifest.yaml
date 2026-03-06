@@ -238,7 +238,7 @@ phases:
       - id: "5.3"
         action: clone_and_build
         target: omnidash
-        command: "git clone {url} {workspace}/omnidash && cd {workspace}/omnidash && npm install && npm run db:push && npm run db:migrate && npm run build && PORT=3000 npm start"
+        command: "git clone {url} {workspace}/omnidash && cd {workspace}/omnidash && npm install && npm run db:push && npm run db:migrate && npm run build && PORT=3000 npm start > /var/log/omnidash.log 2>&1 & sleep 3 && curl -sf http://localhost:3000 >/dev/null"
       - id: "5.4"
         action: clone_and_install
         target: omniclaude

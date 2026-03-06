@@ -114,9 +114,9 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --dry-run)       DRY_RUN="true"; shift ;;
         --execute)       DRY_RUN="false"; shift ;;
-        --phase)         PHASE="$2"; shift 2 ;;
-        --profile)       PROFILE="$2"; shift 2 ;;
-        --workspace)     WORKSPACE="$2"; shift 2 ;;
+        --phase)         [[ $# -ge 2 ]] || die "--phase requires an argument"; PHASE="$2"; shift 2 ;;
+        --profile)       [[ $# -ge 2 ]] || die "--profile requires an argument"; PROFILE="$2"; shift 2 ;;
+        --workspace)     [[ $# -ge 2 ]] || die "--workspace requires an argument"; WORKSPACE="$2"; shift 2 ;;
         --skip-secrets)  SKIP_SECRETS="true"; shift ;;
         --skip-keycloak) SKIP_KEYCLOAK="true"; shift ;;
         --skip-port-check) SKIP_PORT_CHECK="true"; shift ;;

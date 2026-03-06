@@ -52,18 +52,28 @@ phase_02_infrastructure() {
             local role_node_pass; role_node_pass=$(gen_password 32)
             local role_dash_pass; role_dash_pass=$(gen_password 32)
 
-            # Apply substitutions
-            sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${pg_pass}|" "$env_file"
-            sed -i "s|^VALKEY_PASSWORD=.*|VALKEY_PASSWORD=${valkey_pass}|" "$env_file"
-            sed -i "s|^INFISICAL_ENCRYPTION_KEY=.*|INFISICAL_ENCRYPTION_KEY=${infisical_enc}|" "$env_file"
-            sed -i "s|^INFISICAL_AUTH_SECRET=.*|INFISICAL_AUTH_SECRET=${infisical_auth}|" "$env_file"
-            sed -i "s|^KEYCLOAK_ADMIN_PASSWORD=.*|KEYCLOAK_ADMIN_PASSWORD=${kc_pass}|" "$env_file"
-            sed -i "s|^ROLE_OMNIBASE_PASSWORD=.*|ROLE_OMNIBASE_PASSWORD=${role_omnibase_pass}|" "$env_file"
-            sed -i "s|^ROLE_OMNIINTELLIGENCE_PASSWORD=.*|ROLE_OMNIINTELLIGENCE_PASSWORD=${role_intelligence_pass}|" "$env_file"
-            sed -i "s|^ROLE_OMNICLAUDE_PASSWORD=.*|ROLE_OMNICLAUDE_PASSWORD=${role_claude_pass}|" "$env_file"
-            sed -i "s|^ROLE_OMNIMEMORY_PASSWORD=.*|ROLE_OMNIMEMORY_PASSWORD=${role_memory_pass}|" "$env_file"
-            sed -i "s|^ROLE_OMNINODE_PASSWORD=.*|ROLE_OMNINODE_PASSWORD=${role_node_pass}|" "$env_file"
-            sed -i "s|^ROLE_OMNIDASH_PASSWORD=.*|ROLE_OMNIDASH_PASSWORD=${role_dash_pass}|" "$env_file"
+            # Apply substitutions via sed script file (avoids exposing secrets
+            # in process listing — passwords never appear in argv/cmdline).
+            # ONEX-TODO: Replace .env+sed approach with Infisical ContractConfigExtractor
+            #            once OMN-2287 bootstrap chain is fully operational.
+            local sed_script
+            sed_script=$(mktemp "${TMPDIR:-/tmp}/omni-env-XXXXXX.sed")
+            chmod 0600 "$sed_script"
+            cat > "$sed_script" <<SEDEOF
+s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${pg_pass}|
+s|^VALKEY_PASSWORD=.*|VALKEY_PASSWORD=${valkey_pass}|
+s|^INFISICAL_ENCRYPTION_KEY=.*|INFISICAL_ENCRYPTION_KEY=${infisical_enc}|
+s|^INFISICAL_AUTH_SECRET=.*|INFISICAL_AUTH_SECRET=${infisical_auth}|
+s|^KEYCLOAK_ADMIN_PASSWORD=.*|KEYCLOAK_ADMIN_PASSWORD=${kc_pass}|
+s|^ROLE_OMNIBASE_PASSWORD=.*|ROLE_OMNIBASE_PASSWORD=${role_omnibase_pass}|
+s|^ROLE_OMNIINTELLIGENCE_PASSWORD=.*|ROLE_OMNIINTELLIGENCE_PASSWORD=${role_intelligence_pass}|
+s|^ROLE_OMNICLAUDE_PASSWORD=.*|ROLE_OMNICLAUDE_PASSWORD=${role_claude_pass}|
+s|^ROLE_OMNIMEMORY_PASSWORD=.*|ROLE_OMNIMEMORY_PASSWORD=${role_memory_pass}|
+s|^ROLE_OMNINODE_PASSWORD=.*|ROLE_OMNINODE_PASSWORD=${role_node_pass}|
+s|^ROLE_OMNIDASH_PASSWORD=.*|ROLE_OMNIDASH_PASSWORD=${role_dash_pass}|
+SEDEOF
+            sed -i -f "$sed_script" "$env_file"
+            rm -f "$sed_script"
 
             log_info ".env generated with secure random passwords ✓"
         fi
@@ -114,8 +124,13 @@ phase_02_infrastructure() {
         # Now run the Python migration runner for any incremental migrations not in entrypoint.
         if [[ -f "${infra_dir}/scripts/run-migrations.py" ]]; then
             log_info "Running incremental migration check (run-migrations.py)..."
-            cd "$infra_dir"
-            python3 scripts/run-migrations.py 2>&1 | tail -5 || {
+            # Use subshell to avoid mutating caller's working directory (Cubic #4).
+            # Use process substitution to preserve migration exit code (Cubic #2).
+            # ONEX-TODO: Replace with EFFECT handler node for migration orchestration.
+            (
+                cd "$infra_dir" || exit 1
+                python3 scripts/run-migrations.py > >(tail -5) 2>&1
+            ) || {
                 log_warn "run-migrations.py had issues — entrypoint may have applied all migrations"
             }
         else

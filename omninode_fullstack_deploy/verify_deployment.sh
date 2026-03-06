@@ -237,7 +237,8 @@ verify_live() {
             omninode_cloud omnidash_analytics
         )
         for db in "${databases[@]}"; do
-            if psql -h localhost -p "$pg_port" -U postgres -d "$db" \
+            # Use PGPASSWORD for secured deployments (Cubic #7 fix)
+            if PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -h localhost -p "$pg_port" -U postgres -d "$db" \
                 -c "SELECT 1" &>/dev/null; then
                 check_pass "Database '${db}' accessible"
             else
