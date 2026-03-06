@@ -1,39 +1,41 @@
 # OmniNode Full-Stack Deployment Guide
 
-> **One command to deploy all 8 OmniNode repositories — 17+ services, 5 phases, FULL_ONEX tier.**
+> **Authority**: This guide wraps the deployment tools in `omnibase_infra`. When in doubt, consult `CLAUDE.md` (authoritative rules) → `docs/` (explanations) → this guide.
 
-```bash
-./deploy_all.sh --execute --profile full
-```
+> ⚠️ **Critical**: Never run `docker compose up` directly from the `docker/` directory — use `scripts/deploy-runtime.sh` instead. Direct compose invocation causes project name collisions (OMN-2233).
 
 ---
 
 ## Architecture Overview
 
 ```
-                    ┌──────────────────────────────────────────────┐
-                    │              OmniNode Platform                │
-                    │                                              │
-  Phase 5 ──────── │  OmniClaude ← 90+ skills, 54 agents, FULL_ONEX│
-  (Interface)       │  OmniDash   ← Real-time observability UI    │
-                    │                                              │
-  Phase 4 ──────── │  OmniIntelligence ← 21 ONEX intelligence nodes│
-  (Intelligence)    │  OmniMemory      ← Qdrant + Memgraph + Valkey│
-                    │  ONEX CC         ← Cross-repo governance     │
-                    │                                              │
-  Phase 3 ──────── │  omninode-runtime  ← ONEX execution engine    │
-  (Runtime)         │  intelligence-api ← Pattern + intent API     │
-                    │  7 more services  ← workers, consumers, OTLP │
-                    │                                              │
-  Phase 2 ──────── │  PostgreSQL ← 7 databases, 6 roles, 36 migrations│
-  (Infrastructure)  │  Redpanda   ← Kafka event bus                │
-                    │  Valkey     ← Platform cache                 │
-                    │  Infisical  ← Secrets management (opt-in)    │
-                    │  Keycloak   ← OIDC authentication (opt-in)   │
-                    │                                              │
-  Phase 1 ──────── │  omnibase_spi  ← Protocol interfaces         │
-  (Foundation)      │  omnibase_core ← ONEX 4-node framework       │
-                    └──────────────────────────────────────────────┘
+                    ┌──────────────────────────────────────────────────┐
+                    │              OmniNode Platform                    │
+                    │                                                  │
+  Interface ─────── │  OmniClaude ← 90+ skills, 54 agents, FULL_ONEX │
+                    │  OmniDash   ← Real-time observability UI        │
+                    │                                                  │
+  Intelligence ──── │  OmniIntelligence ← 21 ONEX intelligence nodes  │
+                    │  OmniMemory      ← Qdrant + Memgraph + Valkey   │
+                    │  ONEX CC         ← Cross-repo governance        │
+                    │                                                  │
+  Runtime ───────── │  omninode-runtime    ← ONEX execution engine    │
+                    │  migration-gate      ← Startup sentinel (OMN-3737)│
+                    │  intelligence-api    ← Pattern + intent API     │
+                    │  contract-resolver   ← HTTP bridge for contracts│
+                    │  skill-lifecycle-consumer ← Skill registry      │
+                    │  phoenix             ← OTLP observability       │
+                    │  + workers, consumers                           │
+                    │                                                  │
+  Infrastructure ── │  PostgreSQL ← 7 databases, 6 roles              │
+                    │  Redpanda   ← Kafka event bus                   │
+                    │  Valkey     ← Platform cache                    │
+                    │  Infisical  ← Secrets management (opt-in)       │
+                    │  Keycloak   ← OIDC authentication (opt-in)      │
+                    │                                                  │
+  Foundation ────── │  omnibase_spi  ← Protocol interfaces            │
+                    │  omnibase_core ← ONEX 4-node framework          │
+                    └──────────────────────────────────────────────────┘
 ```
 
 ### Dependency Graph
@@ -41,13 +43,15 @@
 ```
 omnibase_spi (contracts)
   └→ omnibase_core (execution protocol)
-       └→ omnibase_infra (deployment + infrastructure)
+       └→ omnibase_infra (deployment center — ALL repos deploy through here)
             ├→ omnimemory (Qdrant, Memgraph, Valkey, Kreuzberg)
             ├→ omniintelligence (21 intelligence nodes)
             ├→ onex_change_control (governance)
             ├→ omnidash (React dashboard)
             └→ omniclaude (Claude Code agent — top of stack)
 ```
+
+**Key insight**: `omnibase_infra` is the deployment center-of-gravity. All services deploy through its compose file and scripts — not through separate per-repo compose files.
 
 ---
 
@@ -56,11 +60,12 @@ omnibase_spi (contracts)
 | Tool | Minimum Version | Check Command |
 |------|----------------|---------------|
 | Docker | 20.10+ | `docker --version` |
-| Docker Compose | v2.20+ | `docker compose version` |
+| Docker Compose | **v2.20+** (required by deploy-runtime.sh) | `docker compose version` |
 | Python | 3.12+ | `python3 --version` |
 | Node.js | 18+ | `node --version` |
 | uv | latest | `uv --version` |
 | Git | 2.0+ | `git --version` |
+| openssl | any | `openssl version` |
 | Disk Space | 10GB+ | `df -h .` |
 | RAM | 4GB+ (8GB recommended) | `free -h` |
 
@@ -69,125 +74,216 @@ omnibase_spi (contracts)
 ## Quick Start
 
 ```bash
-# 1. Clone this deploy package
-git clone https://github.com/Zeeeepa/codegen.git
-cd codegen/omninode_fullstack_deploy
+# 1. Clone omnibase_infra (the deployment center)
+git clone https://github.com/OmniNode-ai/omnibase_infra.git
+cd omnibase_infra
 
-# 2. Make scripts executable
-chmod +x deploy_all.sh verify_deployment.sh
+# 2. Generate credentials from template
+cp docker/.env.example docker/.env
+# Generate secure passwords:
+openssl rand -hex 32  # Use output for each password field
 
-# 3. Preview what will happen
-./deploy_all.sh --dry-run
+# 3. Store credentials permanently (survives docker volume rm)
+mkdir -p ~/.omnibase
+cp docker/.env ~/.omnibase/.env
 
-# 4. Deploy everything
-./deploy_all.sh --execute --profile full
+# 4. Preview what will happen (dry-run)
+./docker/scripts/deploy-runtime.sh --dry-run --profile full
 
-# 5. Verify deployment
+# 5. Deploy infrastructure (correct entry point)
+./docker/scripts/deploy-runtime.sh --execute --profile full
+
+# 6. Run migrations
+uv run python scripts/run-migrations.py --db-url "postgresql://postgres:<password>@localhost:5436/omnibase_infra"
+
+# 7. Verify deployment
 ./verify_deployment.sh --live
 ```
 
 ---
 
-## Deployment Profiles
+## Compose Profiles (Actual)
 
-| Profile | Services | Use Case |
-|---------|----------|----------|
-| `minimal` | PostgreSQL, Redpanda, Valkey | Backend development, testing infra |
-| `standard` | + Runtime services (8 containers) | API development, service testing |
-| `full` | + Intelligence + Dashboard + Claude Code | Full platform, production-like |
+> ⚠️ These are the **real** Docker Compose profiles from `docker/docker-compose.infra.yml`. PR #218's `minimal`/`standard` profiles do NOT exist.
+
+| Profile | Services Included | Use Case |
+|---------|-------------------|----------|
+| `(default)` | PostgreSQL, Redpanda, Valkey | Core infrastructure only |
+| `runtime` | + All ONEX runtime services | API development, service testing |
+| `secrets` | + Infisical | When you need centralized secret management |
+| `auth` | + Keycloak | When you need OIDC authentication |
+| `full` | Everything above combined | Full platform, production-like |
+| `bootstrap` | First-time setup sequence | Initial deployment only |
 
 ```bash
-./deploy_all.sh --execute --profile minimal     # Just databases + event bus
-./deploy_all.sh --execute --profile standard     # + runtime services
-./deploy_all.sh --execute --profile full          # Everything
+# Infrastructure only (PostgreSQL + Redpanda + Valkey)
+./docker/scripts/deploy-runtime.sh --execute
+
+# Infrastructure + runtime services
+./docker/scripts/deploy-runtime.sh --execute --profile runtime
+
+# Everything including secrets + auth
+./docker/scripts/deploy-runtime.sh --execute --profile full
+
+# First-time bootstrap (handles circular dependencies)
+./docker/scripts/deploy-runtime.sh --execute --profile bootstrap
 ```
 
 ---
 
-## Phase-by-Phase Walkthrough
+## Deployment via deploy-runtime.sh
 
-### Phase 1: Foundation
+> **This is THE entry point.** Not `docker compose up`. Not custom scripts. This tool encodes operational knowledge from production incidents.
 
-Installs the Python packages that everything else depends on:
+### What deploy-runtime.sh Provides
 
-- **omnibase_spi** — Service Provider Interface protocols (typed contracts)
-- **omnibase_core** — ONEX 4-node execution protocol (Effect → Compute → Reducer → Orchestrator)
+| Feature | Description |
+|---------|-------------|
+| **Versioned deployments** | Each deploy creates `~/.omnibase/infra/deployed/{version}/` |
+| **Atomic locks** | Prevents concurrent deploys with stale PID detection |
+| **Registry tracking** | `registry.json` tracks which deployment is currently active |
+| **Orphan cleanup** | Automatically removes old deployments (keeps max 5) |
+| **Full rollback** | On failure, restores previous deployment state |
+| **Docker version check** | Requires Compose v2.20+ |
+| **Git SHA labeling** | Tags deployed images with VCS_REF for tracking |
+| **Dry-run mode** | `--dry-run` previews without executing |
+| **Profile validation** | Only allows alphanumeric/hyphen/underscore profile names |
+| **OMN-2233 prevention** | Avoids project name collision via controlled project naming |
 
-```bash
-./deploy_all.sh --execute --phase 1
-```
-
-### Phase 2: Infrastructure
-
-Deploys core platform services via `omnibase_infra`:
-
-| Service | Port | Purpose |
-|---------|------|---------|
-| PostgreSQL | 5436 | 7 databases, 6 roles, 36 migrations |
-| Redpanda | 19092 (ext) / 9092 (int) | Kafka-compatible event bus |
-| Valkey | 16379 | Platform-wide cache |
-| Consul | 28500 | Service discovery (opt-in) |
-| Infisical | 8880 | Secrets management (opt-in) |
-| Keycloak | 28080 | OIDC authentication (opt-in) |
+### Usage
 
 ```bash
-./deploy_all.sh --execute --phase 2
-./deploy_all.sh --execute --phase 2 --skip-secrets --skip-keycloak  # Minimal infra
+# Dry run (preview everything)
+./docker/scripts/deploy-runtime.sh --dry-run --profile full
+
+# Execute deployment
+./docker/scripts/deploy-runtime.sh --execute --profile runtime
+
+# For exact flags and options:
+./docker/scripts/deploy-runtime.sh --help
 ```
 
-**Databases created:**
-- `omnibase_infra`, `omniintelligence`, `omniclaude`, `omnimemory`
-- `omninode_cloud`, `omnidash_analytics`
+---
 
-**Roles created (least-privilege):**
-- `role_omnibase`, `role_omniintelligence`, `role_omniclaude`
-- `role_omnimemory`, `role_omninode`, `role_omnidash`
+## Bootstrap Sequence (Correct 6-Step)
 
-### Phase 3: Runtime Services
+> Source: `docker/scripts/bootstrap-infisical.sh` — handles circular dependency where Postgres migrations must run BEFORE Infisical can seal secrets.
 
-Starts the ONEX execution engine and supporting consumers:
-
-| Service | Port | Purpose |
-|---------|------|---------|
-| omninode-runtime | 8085 | ONEX execution engine |
-| runtime-effects | 8086 | Effect node execution |
-| runtime-worker | — | Background task processing |
-| agent-actions-consumer | 8087 | Agent action handling |
-| intelligence-api | 8053 | Intelligence + pattern API |
-| contract-resolver | 8091 | HTTP bridge for contracts |
-| skill-lifecycle-consumer | 8092 | Skill registry management |
-| Phoenix OTLP | 6006 | OpenTelemetry observability |
-
-```bash
-./deploy_all.sh --execute --phase 3
+```
+Step 1:   PostgreSQL starts
+Step 1b:  Migrations run (omnibase_infra, omniintelligence, omniclaude)
+Step 1c:  Cross-repo provisioning (omnimemory, omnidash databases + roles)
+Step 1d:  OmniDash read-model migrations (NON-FATAL — warns and continues)
+Step 2:   Valkey starts
+Step 3:   Infisical starts
+Step 3.5: Keycloak + provisioning (optional, skip with --skip-keycloak)
+Step 4:   Identity provisioning
+Step 5:   Seed Infisical with secrets
+Step 6:   Runtime services start (gated by migration-gate OMN-3737)
 ```
 
-### Phase 4: Intelligence Layer
+### Circular Dependency Handling
 
-Deploys memory, intelligence, and governance:
+The bootstrap has a chicken-and-egg problem: Infisical needs Postgres for its own data, but services need Infisical for their secrets. The solution:
 
-| Component | Services | Ports |
-|-----------|----------|-------|
-| OmniMemory | Qdrant, Memgraph, Valkey, Kreuzberg | 6333, 7687, 6379, 8090 |
-| OmniIntelligence | 21 ONEX nodes (FastAPI) | Uses :8053 |
-| ONEX Change Control | Governance tooling | — |
+1. Bootstrap credentials live in `.env` only (the "bootstrap transport exception")
+2. Postgres starts first with those credentials
+3. Migrations run using those credentials
+4. Infisical starts after Postgres is healthy
+5. Runtime services then fetch their config from Infisical via CONFIG_DISCOVERY
 
-```bash
-./deploy_all.sh --execute --phase 4
-```
+### Non-Fatal Error Handling
 
-### Phase 5: Interface Layer
+Step 1d (omnidash read-model migrations) is **advisory during bootstrap**:
+- At **bootstrap time**: Warns and continues if DB not available
+- At **deploy time** (via deploy-runtime.sh): Fails closed — pod won't start if schema mismatch
 
-Deploys the dashboard and Claude Code integration:
+---
 
-| Component | Port | Description |
-|-----------|------|-------------|
-| OmniDash | 3000 | Real-time observability dashboard (React + Drizzle) |
-| OmniClaude | — | Claude Code plugin with 90+ skills, 54 agents |
+## Complete Service Inventory
 
-```bash
-./deploy_all.sh --execute --phase 5
-```
+### Infrastructure Services (default profile)
+
+| Service | Port | Health Check |
+|---------|------|-------------|
+| PostgreSQL | 5436 | `pg_isready -h localhost -p 5436` |
+| Redpanda (internal) | 9092 | — |
+| Redpanda (external) | **19092** | `rpk cluster health --brokers localhost:19092` |
+| Valkey (platform cache) | 16379 | `redis-cli -p 16379 ping` |
+
+### Runtime Services (runtime profile)
+
+| Service | Port | Health Check |
+|---------|------|-------------|
+| **migration-gate** (OMN-3737) | — | Startup sentinel, gates all runtime services |
+| omninode-runtime | 8085 | `curl -sf http://localhost:8085/health` |
+| runtime-effects | 8086 | `curl -sf http://localhost:8086/health` |
+| agent-actions-consumer | 8087 | — |
+| intelligence-api | 8053 | `curl -sf http://localhost:8053/health` |
+| contract-resolver | 8091 | `curl -sf http://localhost:8091/health` |
+| skill-lifecycle-consumer | 8092 | — |
+| Phoenix OTLP | 6006 | `curl -sf http://localhost:6006` |
+
+### Optional Services
+
+| Service | Port | Profile | Health Check |
+|---------|------|---------|-------------|
+| Infisical | 8880 | `secrets` | `curl -sf http://localhost:8880/api/status` |
+| Keycloak | 28080 | `auth` | `curl -sf http://localhost:28080` |
+| Consul | 28500 | — | `curl -sf http://localhost:28500/v1/status/leader` |
+
+### Memory/Intelligence Services (deployed separately)
+
+| Service | Port | Health Check |
+|---------|------|-------------|
+| Qdrant HTTP | 6333 | `curl -sf http://localhost:6333` |
+| Qdrant gRPC | 6334 | — |
+| Memgraph Bolt | 7687 | — |
+| Memgraph HTTP | 7444 | — |
+| Valkey (memory-local) | 6379 | `redis-cli -p 6379 ping` |
+| Kreuzberg parser | 8090 | `curl -sf http://localhost:8090` |
+
+### Interface Services
+
+| Service | Port | Health Check |
+|---------|------|-------------|
+| OmniDash | 3000 | `curl -sf http://localhost:3000` |
+
+---
+
+## Configuration Model (CONFIG_DISCOVERY)
+
+> Source: `docs/architecture/CONFIG_DISCOVERY.md`
+
+**Problem**: The `.env` file expanded from 60 to 660 lines, creating maintenance hell.
+
+**Solution**: Contracts declare what they need → runtime auto-fetches from Infisical.
+
+### How It Works
+
+1. Each node's `contract.yaml` declares dependencies:
+   ```yaml
+   dependencies:
+     - type: environment
+       key: DATABASE_URL
+   ```
+
+2. Three contract fields are scanned:
+   - `metadata.transport_type`
+   - `handler_routing.handlers[].handler_type`
+   - `dependencies[].type == "environment"`
+
+3. Transport slugs: `db`, `kafka`, `consul`, `infisical` (bootstrap only), `http`, `mcp`, `qdrant`, `env`
+
+4. **Key rule**: Environment variables ALWAYS override Infisical (local dev flexibility)
+
+### Credential Storage
+
+| Location | Purpose | Survives Volume Rm? |
+|----------|---------|-------------------|
+| `docker/.env` | Active compose environment | No |
+| `~/.omnibase/.env` | Permanent credential store | Yes |
+| Infisical (`/shared/<transport>/KEY`) | Production secrets | Yes |
 
 ---
 
@@ -200,36 +296,26 @@ OmniClaude auto-detects available services and sets its tier:
 | Tier | Requirements | Capabilities |
 |------|-------------|-------------|
 | **STANDALONE** | Nothing | 90+ skills, 54 agents, hooks — events silently dropped |
-| **EVENT_BUS** | Kafka reachable | + routing telemetry, session events, Kafka observability |
+| **EVENT_BUS** | Kafka reachable on 19092 | + routing telemetry, session events, Kafka observability |
 | **FULL_ONEX** | + Intelligence API + Memory | + context enrichment, semantic recall, pattern enforcement |
 
-With all 5 phases deployed, OmniClaude reaches **FULL_ONEX**:
+### Deploy Plugin to Claude Code
 
+```bash
+# From omniclaude repo:
+# Dry run (preview what changes)
+/deploy-local-plugin
+
+# Execute deployment (syncs files + builds venv)
+/deploy-local-plugin --execute
+
+# With tier filtering
+/deploy-local-plugin --execute --level basic        # Daily driver skills only
+/deploy-local-plugin --execute --level intermediate  # + intermediate skills
+/deploy-local-plugin --execute --include-debug       # Everything including debug
 ```
-─── OmniClaude: FULL_ONEX (90+ skills, 54 agents) (probe: 2s ago) ───
-```
 
-### Multi-Agent Orchestration
-
-Within FULL_ONEX tier, the system supports:
-
-1. **Skill Routing** — Prompts are classified and routed to the best-match agent
-2. **Context Injection** — Learned patterns injected into prompts automatically
-3. **Pattern Enforcement** — Code patterns enforced via intelligence-api
-4. **Cost Tracking** — LLM inference costs tracked through OmniDash
-5. **Memory Retrieval** — Semantic memory from Qdrant enriches responses
-6. **Intent Classification** — OmniIntelligence classifies user intents
-
-### Agent Dispatch Pattern
-
-```python
-# Dispatch to polymorphic-agent for ONEX capabilities
-Task(
-    subagent_type="onex:polymorphic-agent",
-    description="Review PR #30",
-    prompt="..."
-)
-```
+Plugin files deploy to: `~/.claude/plugins/cache/omninode-tools/onex/{version}/`
 
 ### Performance Budgets
 
@@ -243,60 +329,43 @@ Task(
 
 ---
 
-## Port Allocation Map
+## Migrations
 
-```
-Infrastructure (Phase 2):
-  5436   PostgreSQL
-  16379  Valkey (platform cache)
-  9092   Redpanda (Docker-internal: redpanda:9092)
-  19092  Redpanda (host-external: localhost:19092)
-  28500  Consul (service discovery, opt-in)
-  8880   Infisical (opt-in)
-  28080  Keycloak (opt-in)
+> Source: `docs/runbooks/apply-migrations.md`
 
-Runtime (Phase 3):
-  8085   omninode-runtime
-  8086   runtime-effects
-  8087   agent-actions-consumer
-  8053   intelligence-api
-  8091   contract-resolver
-  8092   skill-lifecycle-consumer
-  6006   Phoenix OTLP
+### When to Run
 
-Intelligence (Phase 4):
-  6333   Qdrant HTTP
-  6334   Qdrant gRPC
-  7687   Memgraph Bolt
-  7444   Memgraph HTTP
-  6379   Valkey (memory-local)
-  8090   Kreuzberg parser
+- After pulling new code
+- After fresh rebuild
+- After incident recovery
+- When fingerprint mismatch detected
 
-Interface (Phase 5):
-  3000   OmniDash
+### Commands
+
+```bash
+# Dry run (preview changes)
+uv run python scripts/run-migrations.py --db-url "postgresql://postgres:<pw>@localhost:5436/omnibase_infra" --dry-run
+
+# Apply all migrations
+uv run python scripts/run-migrations.py --db-url "postgresql://postgres:<pw>@localhost:5436/omnibase_infra"
+
+# Apply to specific target
+uv run python scripts/run-migrations.py --db-url "..." --target omniintelligence
+
+# Fingerprint verification
+uv run python scripts/run-migrations.py --db-url "..." --verify-fingerprint
 ```
 
-**Zero port conflicts** — all allocations are unique.
+### OmniDash Special Handling
 
----
+OmniDash uses **TypeScript migrations** (not Python):
+```bash
+cd omnidash
+npx tsx scripts/run-migrations.ts
+```
 
-## Environment Configuration
-
-All configuration lives in a single `.env.template`. The deploy script auto-generates secure passwords.
-
-Key variable groups:
-
-| Group | Count | Purpose |
-|-------|-------|---------|
-| PostgreSQL | ~12 | Host, port, passwords, 6 role passwords |
-| Kafka/Redpanda | ~4 | Bootstrap servers, ports |
-| Valkey | ~3 | Host, port, password |
-| Infisical | ~6 | Bootstrap credentials (circular dep) |
-| Keycloak | ~4 | Admin credentials, DB URL |
-| Runtime | ~8 | Service ports |
-| Memory | ~8 | Qdrant, Memgraph, Kreuzberg |
-| OmniDash | ~5 | DB URL, Kafka config |
-| OmniClaude | ~6 | DB URL, service URLs |
+- **Bootstrap**: Advisory (warn and continue if DB unavailable)
+- **Deploy time**: Fail-closed (pod won't start on schema mismatch)
 
 ---
 
@@ -306,68 +375,52 @@ Key variable groups:
 ```bash
 docker logs omninode-infra-postgres-1
 # Common: permissions on data volume, insufficient shared memory
-# Fix: docker volume rm omninode-infra_postgres_data && redeploy Phase 2
+# Fix: docker volume rm omninode-infra_postgres_data && redeploy
 ```
 
 ### Redpanda broker unreachable
 ```bash
 docker logs omninode-infra-redpanda-1
-# Common: port already in use, insufficient memory (needs 512M+)
-# Fix: check `ss -tlnp | grep 19092` and kill conflicting process
+# Common: port already in use (check 19092, not 29092)
+ss -tlnp | grep 19092
 ```
 
 ### Migrations fail
 ```bash
 # Check migration state:
-psql -h localhost -p 5436 -U postgres -d omnibase_infra \
-  -c "SELECT * FROM schema_migrations ORDER BY version DESC LIMIT 5"
+uv run python scripts/run-migrations.py --db-url "..." --verify-fingerprint
+
+# Emergency rollback:
+uv run python scripts/run-migrations.py --db-url "..." --rollback
 ```
 
 ### OmniClaude shows STANDALONE instead of FULL_ONEX
 ```bash
-# Check if Kafka is reachable:
-echo "KAFKA_BOOTSTRAP_SERVERS=localhost:19092" >> ~/omninode-workspace/omniclaude/.env
+# Check Kafka (note: port 19092, not 29092):
+rpk cluster health --brokers localhost:19092
 
-# Check if intelligence-api is reachable:
+# Check intelligence-api:
 curl -sf http://localhost:8053/health
 
-# Delete cached capabilities to force re-probe:
+# Force re-probe:
 rm ~/.claude/.onex_capabilities
 # Start new Claude Code session
 ```
 
-### Port already in use
+### Runtime services won't start
 ```bash
-# Find what's using a port:
-ss -tlnp | grep :8085
-# Kill the process or change the port in .env
+# Check migration-gate (OMN-3737):
+docker logs omninode-infra-migration-gate-1
+# Migration gate must be healthy before runtime services can start
 ```
 
-### OmniDash database error
+### Rollback a failed deployment
 ```bash
-cd ~/omninode-workspace/omnidash
-npm run db:push   # Push Drizzle schema
-npm run db:migrate # Run SQL migrations
-```
-
----
-
-## Verification
-
-```bash
-# Sandbox mode (no Docker required):
-./verify_deployment.sh --sandbox
-
-# Live mode (checks all running services):
-./verify_deployment.sh --live
-```
-
----
-
-## Stopping Services
-
-```bash
-./deploy_all.sh --stop
+# deploy-runtime.sh handles this automatically on failure
+# To manually rollback, consult:
+./docker/scripts/deploy-runtime.sh --help
+# Review active deployment in registry:
+cat ~/.omnibase/infra/deployed/registry.json
 ```
 
 ---
@@ -376,21 +429,24 @@ npm run db:migrate # Run SQL migrations
 
 ```
 omninode_fullstack_deploy/
-├── deploy_all.sh                    # Master orchestration (single entry point)
-├── verify_deployment.sh             # Health check + sandbox validation
+├── deploy_all.sh                    # Wrapper that calls deploy-runtime.sh
+├── verify_deployment.sh             # Read-only health check (all services)
 ├── README.md                        # This guide
 ├── config/
-│   └── .env.template                # Master environment (all 8 repos)
+│   └── .env.template                # Reference environment (all 8 repos)
 ├── phases/
-│   ├── 01_foundation.sh             # SPI + Core
-│   ├── 02_infrastructure.sh         # PostgreSQL, Redpanda, Valkey, Infisical, Keycloak
-│   ├── 03_runtime_services.sh       # 7 runtime services
+│   ├── 01_foundation.sh             # SPI + Core (pip/uv install)
+│   ├── 02_infrastructure.sh         # Calls deploy-runtime.sh (default profile)
+│   ├── 03_runtime_services.sh       # Calls deploy-runtime.sh (runtime profile)
 │   ├── 04_intelligence_layer.sh     # Memory + Intelligence + Governance
 │   └── 05_interface_layer.sh        # OmniDash + OmniClaude
 ├── lib/
 │   ├── common.sh                    # Logging, health checks, retry logic
-│   ├── docker_helpers.sh            # Compose wrappers
-│   └── validation.sh               # Pre-flight checks
+│   ├── docker_helpers.sh            # deploy-runtime.sh wrappers
+│   └── validation.sh                # Pre-flight checks
+├── agent_manifest.yaml              # Machine-readable deployment plan
+├── agent_orchestrator.sh            # AI agent wrapper (plan/execute/verify/status)
+├── run_sandbox_tests.sh             # TAP test suite (no Docker needed)
 └── docs/
     ├── architecture.md              # System architecture details
     ├── troubleshooting.md           # Extended troubleshooting
@@ -399,6 +455,20 @@ omninode_fullstack_deploy/
 
 ---
 
+## Key References
+
+| Document | Location | Authority |
+|----------|----------|-----------|
+| **CLAUDE.md** | `omnibase_infra/CLAUDE.md` | **Highest** — non-negotiable rules |
+| **docker/README.md** | `omnibase_infra/docker/README.md` | Deployment authority |
+| **deploy-runtime.sh** | `omnibase_infra/docker/scripts/` | Single deployment entry point |
+| **bootstrap-infisical.sh** | `omnibase_infra/docker/scripts/` | 6-step bootstrap |
+| **CONFIG_DISCOVERY.md** | `omnibase_infra/docs/architecture/` | Config resolution pattern |
+| **apply-migrations.md** | `omnibase_infra/docs/runbooks/` | Migration operations |
+
+---
+
 ## License
 
 MIT — See individual OmniNode repositories for their respective licenses.
+

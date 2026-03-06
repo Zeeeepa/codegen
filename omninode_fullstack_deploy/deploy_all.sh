@@ -66,7 +66,7 @@ Options:
   --dry-run                 Preview all actions without executing (default)
   --execute                 Actually deploy services
   --phase N                 Run specific phase only (1-5)
-  --profile PROFILE         Service profile: minimal|standard|full (default: full)
+  --profile PROFILE         Compose profile: (default)|runtime|secrets|auth|full|bootstrap (default: full)
   --workspace DIR           Workspace directory (default: ~/omninode-workspace)
   --skip-secrets            Skip Infisical deployment
   --skip-keycloak           Skip Keycloak deployment
@@ -78,8 +78,8 @@ Options:
   -h, --help                Show this help
 
 Profiles:
-  minimal     Core infrastructure only (PostgreSQL, Redpanda, Valkey)
-  standard    Infrastructure + runtime services + autoheal
+  (default)   Core infrastructure only (PostgreSQL, Redpanda, Valkey)
+  runtime     Infrastructure + runtime services
   full        Everything including intelligence, dashboard, and Claude Code
 
 Phases:
@@ -102,7 +102,7 @@ Examples:
   $(basename "$0") --dry-run                              # Preview full deployment
   $(basename "$0") --execute --profile full                # Deploy everything
   $(basename "$0") --execute --phase 2 --skip-secrets      # Deploy infra only, no Infisical
-  $(basename "$0") --execute --profile minimal             # Just databases + event bus
+  $(basename "$0") --execute --profile runtime             # Infra + runtime services
   $(basename "$0") --stop                                  # Stop all services
 EOF
 }
