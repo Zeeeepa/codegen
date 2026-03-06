@@ -1,0 +1,521 @@
+# ============================================================================
+# OmniNode Full-Stack Agent Deployment Manifest (Corrected)
+#
+# Authority: omnibase_infra/CLAUDE.md → omnibase_infra/docs/ → this manifest
+#
+# CRITICAL:
+#   - Do NOT run `docker compose up` directly (OMN-2233)
+#   - Use scripts/deploy-runtime.sh as the deployment entry point
+#   - Compose file: docker/docker-compose.infra.yml (NOT docker-compose.yml)
+#   - Redpanda external port: 19092 (NOT 29092)
+#   - Bootstrap: 6 ordered steps (NOT 5 arbitrary phases)
+#
+# Usage:
+#   ./agent_orchestrator.sh --manifest agent_manifest.yaml --agent-mode
+#   ./deploy_all.sh --agent-mode --execute --profile full
+# ============================================================================
+
+meta:
+  name: OmniNode Full-Stack Deployment
+  version: "3.0.0"
+  repositories: 8
+  services: 21  # Including migration-gate, skill-lifecycle-consumer, contract-resolver, phoenix
+  deployment_entry_point: scripts/deploy-runtime.sh
+  compose_file: docker/docker-compose.infra.yml  # NOT docker-compose.yml
+  authority_chain:
+    - CLAUDE.md (authoritative rules)
+    - docs/ (explanations)
+    - this manifest (wrapper)
+  profiles_actual:
+    - "(default): PostgreSQL, Redpanda, Valkey"
+    - "runtime: + all ONEX runtime services"
+    - "secrets: + Infisical"
+    - "auth: + Keycloak"
+    - "full: everything"
+    - "bootstrap: first-time setup"
+
+repositories:
+  - name: omnibase_spi
+    url: https://github.com/OmniNode-ai/omnibase_spi.git
+    type: python
+    role: Service Provider Interface contracts
+    phase: 1
+
+  - name: omnibase_core
+    url: https://github.com/OmniNode-ai/omnibase_core.git
+    type: python
+    role: ONEX 4-node execution protocol engine
+    phase: 1
+
+  - name: omnibase_infra
+    url: https://github.com/OmniNode-ai/omnibase_infra.git
+    type: docker-compose
+    role: "Infrastructure AND deployment center — all repos deploy through here"
+    compose_file: docker/docker-compose.infra.yml
+    deploy_script: docker/scripts/deploy-runtime.sh
+    bootstrap_script: docker/scripts/bootstrap-infisical.sh
+    phase: 2
+
+  - name: omnimemory
+    url: https://github.com/OmniNode-ai/omnimemory.git
+    type: python
+    role: Vector DB + Graph DB + semantic retrieval
+    phase: 4
+
+  - name: omniintelligence
+    url: https://github.com/OmniNode-ai/omniintelligence.git
+    type: python
+    role: 21 ONEX nodes, pattern learning, drift detection
+    migrations: 22  # 000-022 SQL files with rollbacks
+    phase: 4
+
+  - name: onex_change_control
+    url: https://github.com/OmniNode-ai/onex_change_control.git
+    type: python
+    role: Schema governance, drift detection, contract validation
+    phase: 4
+
+  - name: omnidash
+    url: https://github.com/OmniNode-ai/omnidash.git
+    type: node
+    role: Real-time observability dashboard (React + Kafka + WebSocket)
+    migrations: "TypeScript: npx tsx scripts/run-migrations.ts"
+    phase: 5
+    special_handling:
+      bootstrap: "advisory — warn and continue if DB unavailable"
+      deploy_time: "fail-closed — pod won't start on schema mismatch"
+
+  - name: omniclaude
+    url: https://github.com/OmniNode-ai/omniclaude.git
+    type: python
+    role: Claude Code plugin (90+ skills, 54 agents, 5 hooks)
+    phase: 5
+
+phases:
+  - number: 1
+    name: Foundation
+    description: Install SPI contracts and core execution engine
+    preconditions:
+      - python3 --version >= 3.12
+      - command -v uv
+      - command -v git
+    steps:
+      - id: "1.1"
+        action: clone_and_install
+        target: omnibase_spi
+        command: "git clone {url} {workspace}/omnibase_spi && cd {workspace}/omnibase_spi && uv sync"
+      - id: "1.2"
+        action: clone_and_install
+        target: omnibase_core
+        command: "git clone {url} {workspace}/omnibase_core && cd {workspace}/omnibase_core && uv sync"
+      - id: "1.3"
+        action: validate
+        check: python_import
+        command: "python3 -c 'import omnibase_spi; import omnibase_core'"
+    postconditions:
+      - "python3 -c 'import omnibase_spi' exits 0"
+      - "python3 -c 'import omnibase_core' exits 0"
+    rollback:
+      - "rm -rf {workspace}/omnibase_spi {workspace}/omnibase_core"
+
+  - number: 2
+    name: Infrastructure
+    description: "Deploy via deploy-runtime.sh (NOT docker compose up directly)"
+    preconditions:
+      - docker info exits 0
+      - "docker compose version >= 2.20"
+      - Phase 1 postconditions met
+    steps:
+      - id: "2.0"
+        action: generate_credentials
+        description: "Generate .env from template with openssl rand"
+        command: "cp docker/.env.example docker/.env && mkdir -p ~/.omnibase && cp docker/.env ~/.omnibase/.env"
+        note: "Credentials stored at ~/.omnibase/.env (survives docker volume rm)"
+      - id: "2.1"
+        action: deploy_via_script
+        target: omnibase_infra
+        description: "⚠️ Use deploy-runtime.sh, NOT docker compose up"
+        command: "cd {workspace}/omnibase_infra && ./docker/scripts/deploy-runtime.sh --execute"
+        forbidden: "docker compose -f docker/docker-compose.infra.yml up -d"
+        reason: "OMN-2233: direct compose up causes project name collision"
+      - id: "2.2"
+        action: wait_for_service
+        target: postgresql
+        check: "pg_isready -h localhost -p 5436"
+      - id: "2.3"
+        action: run_migrations
+        description: "Use uv + Python migration runner (NOT bash script)"
+        command: "cd {workspace}/omnibase_infra && uv run python scripts/run-migrations.py --db-url 'postgresql://postgres:$POSTGRES_PASSWORD@localhost:5436/omnibase_infra'"
+        wrong_command: "./run_migrations.sh  # This does NOT exist"
+      - id: "2.4"
+        action: validate
+        check: db_roles
+        description: "Validate 6 least-privilege roles exist"
+      - id: "2.5"
+        action: validate
+        check: omnidash_db
+        description: "Validate omnidash_analytics database exists"
+      - id: "2.6"
+        action: wait_for_service
+        target: redpanda
+        check: "rpk cluster health --brokers localhost:19092"
+        note: "Port is 19092 (external), NOT 29092"
+      - id: "2.7"
+        action: note
+        description: "Kafka topics are auto-created by TopicProvisioner on kernel startup"
+        note: "Do NOT create topics manually — this causes duplicate provisioning"
+    postconditions:
+      - "pg_isready -h localhost -p 5436 exits 0"
+      - "All 6 database roles exist"
+      - "omnidash_analytics database exists"
+      - "Redpanda healthy on port 19092"
+      - "Valkey PONG on port 16379"
+    rollback:
+      - "cd {workspace}/omnibase_infra && ./docker/scripts/deploy-runtime.sh --rollback"
+
+  - number: 3
+    name: Runtime Services
+    description: Start ONEX runtime via deploy-runtime.sh runtime profile
+    preconditions:
+      - Phase 2 postconditions met
+      - PostgreSQL accepting connections
+      - Kafka broker reachable on 19092
+    steps:
+      - id: "3.1"
+        action: deploy_via_script
+        target: "omnibase_infra runtime profile"
+        description: "Deploy with runtime profile — includes migration-gate"
+        command: "cd {workspace}/omnibase_infra && ./docker/scripts/deploy-runtime.sh --execute --profile runtime"
+      - id: "3.1b"
+        action: wait_for_service
+        target: migration-gate
+        description: "OMN-3737: migration-gate must be healthy before runtime services start"
+        note: "Other runtime services have depends_on: migration-gate: condition: service_healthy"
+      - id: "3.2"
+        action: wait_for_service
+        target: omninode-runtime
+        check: "curl -sf http://localhost:8085/health"
+      - id: "3.3"
+        action: wait_for_service
+        target: intelligence-api
+        check: "curl -sf http://localhost:8053/health"
+      - id: "3.4"
+        action: wait_for_service
+        target: contract-resolver
+        check: "curl -sf http://localhost:8091/health"
+      - id: "3.5"
+        action: wait_for_service
+        target: skill-lifecycle-consumer
+        note: "Port 8092 — manages skill registry"
+      - id: "3.6"
+        action: wait_for_service
+        target: phoenix-otlp
+        check: "curl -sf http://localhost:6006"
+    postconditions:
+      - "migration-gate healthy"
+      - "omninode-runtime healthy on port 8085"
+      - "intelligence-api healthy on port 8053"
+      - "contract-resolver healthy on port 8091"
+      - "skill-lifecycle-consumer running on port 8092"
+      - "phoenix OTLP on port 6006"
+    rollback:
+      - "cd {workspace}/omnibase_infra && ./docker/scripts/deploy-runtime.sh --rollback"
+
+  - number: 4
+    name: Intelligence Layer
+    description: Deploy OmniMemory, OmniIntelligence, ONEX Change Control
+    preconditions:
+      - Phase 3 postconditions met
+      - intelligence-api healthy
+    steps:
+      - id: "4.1"
+        action: clone_and_install
+        target: omnimemory
+        command: "git clone {url} {workspace}/omnimemory && cd {workspace}/omnimemory && uv sync"
+      - id: "4.1b"
+        action: run_migrations
+        target: omnimemory
+        command: "cd {workspace}/omnimemory && uv run python scripts/run-migrations.py --db-url 'postgresql://postgres:$POSTGRES_PASSWORD@localhost:5436/omnimemory'"
+      - id: "4.2"
+        action: clone_and_install
+        target: omniintelligence
+        command: "git clone {url} {workspace}/omniintelligence && cd {workspace}/omniintelligence && uv sync"
+      - id: "4.2b"
+        action: run_migrations
+        target: omniintelligence
+        description: "22 migration files (000-022) with rollbacks"
+        command: "cd {workspace}/omniintelligence && uv run python scripts/run-migrations.py --db-url 'postgresql://postgres:$POSTGRES_PASSWORD@localhost:5436/omniintelligence'"
+      - id: "4.3"
+        action: validate
+        check: plugin_discoverability
+        description: "Verify PluginIntelligence importable by RuntimeHostProcess"
+      - id: "4.4"
+        action: clone_and_install
+        target: onex_change_control
+        command: "git clone {url} {workspace}/onex_change_control && cd {workspace}/onex_change_control && uv sync"
+      - id: "4.5"
+        action: validate
+        check: contracts
+        description: "Run validate-yaml + check-schema-purity"
+    postconditions:
+      - "Qdrant healthy on port 6333 (if using memory services)"
+      - "PluginIntelligence importable"
+      - "YAML contracts valid"
+      - "Schema purity check passes"
+    rollback:
+      - "rm -rf {workspace}/omnimemory {workspace}/omniintelligence {workspace}/onex_change_control"
+
+  - number: 5
+    name: Interface Layer
+    description: Deploy OmniDash, OmniClaude
+    preconditions:
+      - Phase 4 postconditions met
+      - omnidash_analytics database exists
+    steps:
+      - id: "5.1"
+        action: clone_and_build
+        target: omnidash
+        command: "git clone {url} {workspace}/omnidash && cd {workspace}/omnidash && npm install"
+      - id: "5.1b"
+        action: run_migrations
+        target: omnidash
+        description: "TypeScript migrations (NOT Python)"
+        command: "cd {workspace}/omnidash && npx tsx scripts/run-migrations.ts"
+      - id: "5.2"
+        action: start_service
+        target: omnidash
+        command: "cd {workspace}/omnidash && npm run build && PORT=3000 npm start &"
+      - id: "5.3"
+        action: clone_and_install
+        target: omniclaude
+        command: "git clone {url} {workspace}/omniclaude && cd {workspace}/omniclaude && uv sync"
+      - id: "5.4"
+        action: start_daemon
+        target: emit_daemon
+        description: "Start OmniClaude emit daemon (Unix socket for hook→Kafka bridge)"
+        command: "cd {workspace}/omniclaude && python3 -m omniclaude.emit.daemon --socket /tmp/omniclaude-emit.sock &"
+      - id: "5.5"
+        action: deploy_plugin
+        target: omniclaude
+        description: "Deploy to ~/.claude/plugins/cache/ via deploy-local-plugin skill"
+        command: "cd {workspace}/omniclaude && ./plugins/onex/skills/deploy-local-plugin/deploy.sh --execute"
+      - id: "5.6"
+        action: capability_probe
+        description: "Detect integration tier"
+        checks:
+          - "Kafka: localhost:19092"  # Fixed from 29092
+          - "Intelligence: http://localhost:8053"
+          - "Qdrant: localhost:6333"
+    postconditions:
+      - "OmniDash accessible on port 3000"
+      - "Emit daemon socket present at /tmp/omniclaude-emit.sock"
+      - "5 Claude hooks executable"
+      - "OmniClaude tier: FULL_ONEX (if all services running)"
+    rollback:
+      - "kill emit daemon PID"
+      - "npm stop in omnidash"
+
+service_ports:
+  # Infrastructure (default profile)
+  - port: 5436
+    service: PostgreSQL
+    protocol: postgresql
+    health: "pg_isready -h localhost -p 5436"
+
+  - port: 16379
+    service: "Valkey (Infra Cache)"
+    protocol: redis
+    health: "redis-cli -p 16379 ping"
+    note: "Platform-wide cache for runtime services"
+
+  - port: 9092
+    service: "Redpanda (Internal)"
+    protocol: kafka
+    note: "Internal broker port — use 19092 for external access"
+
+  - port: 19092
+    service: "Redpanda (External)"
+    protocol: kafka
+    health: "rpk cluster health --brokers localhost:19092"
+    note: "CORRECTED: was 29092 in PR #218 v2"
+
+  # Runtime (runtime profile)
+  - port: 8085
+    service: omninode-runtime
+    protocol: http
+    health: "curl -sf http://localhost:8085/health"
+
+  - port: 8086
+    service: runtime-effects
+    protocol: http
+
+  - port: 8087
+    service: agent-actions-consumer
+    protocol: http
+
+  - port: 8053
+    service: intelligence-api
+    protocol: http
+    health: "curl -sf http://localhost:8053/health"
+
+  - port: 8091
+    service: contract-resolver
+    protocol: http
+    health: "curl -sf http://localhost:8091/health"
+    note: "ADDED: was missing from PR #218 v2"
+
+  - port: 8092
+    service: skill-lifecycle-consumer
+    protocol: http
+    note: "ADDED: was missing from PR #218 v2"
+
+  - port: 6006
+    service: Phoenix OTLP
+    protocol: http
+    health: "curl -sf http://localhost:6006"
+    note: "ADDED: was missing from PR #218 v2"
+
+  # Optional (secrets/auth profiles)
+  - port: 8880
+    service: Infisical
+    protocol: http
+    health: "curl -sf http://localhost:8880/api/status"
+
+  - port: 28080
+    service: Keycloak
+    protocol: http
+    health: "curl -sf http://localhost:28080"
+
+  - port: 28500
+    service: Consul
+    protocol: http
+    health: "curl -sf http://localhost:28500/v1/status/leader"
+
+  # Memory services (Phase 4)
+  - port: 6333
+    service: Qdrant HTTP
+    protocol: http
+    health: "curl -sf http://localhost:6333"
+
+  - port: 6334
+    service: Qdrant gRPC
+    protocol: grpc
+
+  - port: 7687
+    service: Memgraph Bolt
+    protocol: bolt
+
+  - port: 7444
+    service: Memgraph HTTP
+    protocol: http
+
+  - port: 6379
+    service: "Valkey (Memory)"
+    protocol: redis
+    health: "redis-cli -p 6379 ping"
+    note: "Dedicated to OmniMemory semantic/graph cache (separate from infra cache on 16379)"
+
+  - port: 8090
+    service: Kreuzberg
+    protocol: http
+    health: "curl -sf http://localhost:8090"
+
+  # Interface (Phase 5)
+  - port: 3000
+    service: OmniDash
+    protocol: http
+    health: "curl -sf http://localhost:3000"
+
+# Corrections log (for audit trail)
+corrections_from_v2:
+  - field: "Redpanda external port"
+    was: 29092
+    now: 19092
+    source: "docker/docker-compose.infra.yml"
+
+  - field: "Compose file path"
+    was: "docker-compose.yml"
+    now: "docker/docker-compose.infra.yml"
+    source: "docker/README.md"
+
+  - field: "Deployment entry point"
+    was: "docker compose up directly"
+    now: "scripts/deploy-runtime.sh"
+    source: "docker/README.md (WARNING: Do not run docker compose up directly)"
+
+  - field: "Migration command"
+    was: "./run_migrations.sh"
+    now: "uv run python scripts/run-migrations.py --db-url ..."
+    source: "docs/runbooks/apply-migrations.md"
+
+  - field: "Profile names"
+    was: "minimal, standard, full"
+    now: "(default), runtime, secrets, auth, full, bootstrap"
+    source: "docker/README.md"
+
+  - field: "Bootstrap sequence"
+    was: "5 arbitrary phases"
+    now: "6 ordered steps (1→1b→1c→1d→2→3→3.5→4→5→6)"
+    source: "docker/scripts/bootstrap-infisical.sh"
+
+  - field: "Missing services"
+    added:
+      - "migration-gate (OMN-3737 — startup sentinel)"
+      - "skill-lifecycle-consumer (8092)"
+      - "contract-resolver (8091)"
+      - "phoenix OTLP (6006)"
+    source: "docker/docker-compose.infra.yml"
+
+  - field: "Topic creation"
+    was: "Manual step via rpk topic create"
+    now: "Auto-created by TopicProvisioner on kernel startup"
+    source: "docs/architecture/overview.md"
+
+
+# Validation matrix (service → health check mapping)
+validation_matrix:
+  infrastructure:
+    postgresql:
+      check: "pg_isready -h localhost -p 5436"
+      required: true
+    redpanda:
+      check: "rpk cluster health --brokers localhost:19092"
+      required: true
+      note: "Port 19092 (external), NOT 29092"
+    valkey:
+      check: "redis-cli -p 16379 ping"
+      required: true
+  runtime:
+    migration_gate:
+      check: "docker inspect --format='{{.State.Health.Status}}' omninode-infra-migration-gate-1"
+      required: true
+      note: "OMN-3737 — must be healthy before any runtime service starts"
+    omninode_runtime:
+      check: "curl -sf http://localhost:8085/health"
+      required: true
+    intelligence_api:
+      check: "curl -sf http://localhost:8053/health"
+      required: true
+    contract_resolver:
+      check: "curl -sf http://localhost:8091/health"
+      required: true
+    skill_lifecycle_consumer:
+      check: "docker ps --filter name=skill-lifecycle --format '{{.Status}}'"
+      required: false
+    phoenix_otlp:
+      check: "curl -sf http://localhost:6006"
+      required: false
+  memory:
+    qdrant:
+      check: "curl -sf http://localhost:6333"
+      required: false
+    memgraph:
+      check: "echo '' | nc -w2 localhost 7687"
+      required: false
+  interface:
+    omnidash:
+      check: "curl -sf http://localhost:3000"
+      required: false
+    emit_daemon:
+      check: "test -S /tmp/omniclaude-emit.sock"
+      required: false

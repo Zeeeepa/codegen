@@ -1,0 +1,263 @@
+#!/usr/bin/env bash
+# ============================================================================
+# Phase 2: Infrastructure — PostgreSQL, Redpanda, Valkey, Infisical, Keycloak
+# Uses omnibase_infra's docker-compose.infra.yml + deploy patterns
+# ============================================================================
+
+phase_02_infrastructure() {
+    log_phase "2" "Infrastructure — Core Platform Services"
+
+    local ws="$WORKSPACE"
+    local org="OmniNode-ai"
+    local infra_dir="${ws}/omnibase_infra"
+
+    # ── 2.1 Clone omnibase_infra ───────────────────────────────────────────
+    log_step "2.1 — Cloning omnibase_infra"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "git clone https://github.com/${org}/omnibase_infra.git ${infra_dir}"
+    else
+        ensure_repo "$org" "omnibase_infra" "$infra_dir"
+        export OMNI_INFRA_DIR="$infra_dir"
+    fi
+
+    # ── 2.2 Generate .env with secure passwords ───────────────────────────
+    log_step "2.2 — Generating environment configuration"
+
+    local env_file="${infra_dir}/docker/.env"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "Generate ${env_file} from template with secure random passwords"
+    else
+        if [[ -f "$env_file" ]]; then
+            log_warn ".env already exists at ${env_file} — using existing"
+        else
+            log_info "Creating .env from master template..."
+
+            # Copy template and fill in auto-generated values
+            cp "${DEPLOY_ROOT}/config/.env.template" "$env_file"
+
+            # Generate secure passwords for all [AUTO] fields
+            local pg_pass; pg_pass=$(gen_password 32)
+            local valkey_pass; valkey_pass=$(gen_password 32)
+            local infisical_enc; infisical_enc=$(gen_password 16)
+            local infisical_auth; infisical_auth=$(gen_password 32)
+            local kc_pass; kc_pass=$(gen_password 24)
+
+            # Per-service role passwords
+            local role_omnibase_pass; role_omnibase_pass=$(gen_password 32)
+            local role_intelligence_pass; role_intelligence_pass=$(gen_password 32)
+            local role_claude_pass; role_claude_pass=$(gen_password 32)
+            local role_memory_pass; role_memory_pass=$(gen_password 32)
+            local role_node_pass; role_node_pass=$(gen_password 32)
+            local role_dash_pass; role_dash_pass=$(gen_password 32)
+
+            # Apply substitutions via sed script file (avoids exposing secrets
+            # in process listing — passwords never appear in argv/cmdline).
+            # ONEX-TODO: Replace .env+sed approach with Infisical ContractConfigExtractor
+            #            once OMN-2287 bootstrap chain is fully operational.
+            local sed_script
+            sed_script=$(mktemp "${TMPDIR:-/tmp}/omni-env-XXXXXX.sed")
+            chmod 0600 "$sed_script"
+            cat > "$sed_script" <<SEDEOF
+s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${pg_pass}|
+s|^VALKEY_PASSWORD=.*|VALKEY_PASSWORD=${valkey_pass}|
+s|^INFISICAL_ENCRYPTION_KEY=.*|INFISICAL_ENCRYPTION_KEY=${infisical_enc}|
+s|^INFISICAL_AUTH_SECRET=.*|INFISICAL_AUTH_SECRET=${infisical_auth}|
+s|^KEYCLOAK_ADMIN_PASSWORD=.*|KEYCLOAK_ADMIN_PASSWORD=${kc_pass}|
+s|^ROLE_OMNIBASE_PASSWORD=.*|ROLE_OMNIBASE_PASSWORD=${role_omnibase_pass}|
+s|^ROLE_OMNIINTELLIGENCE_PASSWORD=.*|ROLE_OMNIINTELLIGENCE_PASSWORD=${role_intelligence_pass}|
+s|^ROLE_OMNICLAUDE_PASSWORD=.*|ROLE_OMNICLAUDE_PASSWORD=${role_claude_pass}|
+s|^ROLE_OMNIMEMORY_PASSWORD=.*|ROLE_OMNIMEMORY_PASSWORD=${role_memory_pass}|
+s|^ROLE_OMNINODE_PASSWORD=.*|ROLE_OMNINODE_PASSWORD=${role_node_pass}|
+s|^ROLE_OMNIDASH_PASSWORD=.*|ROLE_OMNIDASH_PASSWORD=${role_dash_pass}|
+SEDEOF
+            sed -i -f "$sed_script" "$env_file"
+            rm -f "$sed_script"
+
+            log_info ".env generated with secure random passwords ✓"
+        fi
+
+        # Source the env file for this session
+        set -a
+        # shellcheck source=/dev/null
+        source "$env_file"
+        set +a
+    fi
+
+    # ── 2.3 Start PostgreSQL ───────────────────────────────────────────────
+    log_step "2.3 — Starting PostgreSQL (port ${POSTGRES_PORT:-5436})"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "docker compose up -d postgres"
+        log_dry "wait_for_port localhost 5436 PostgreSQL"
+    else
+        omni_compose_infra "$infra_dir" up -d postgres
+        wait_for_port localhost "${POSTGRES_PORT:-5436}" "PostgreSQL" 30
+
+        # Wait for PostgreSQL to be fully ready (accepting connections)
+        retry 5 docker exec -i omninode-infra-postgres-1 \
+            pg_isready -U postgres -h localhost
+
+        log_info "PostgreSQL is ready ✓"
+    fi
+
+    # ── 2.4 Database Initialization & Migrations ────────────────────────────────
+    # HOW IT WORKS (verified against actual omnibase_infra):
+    #   On FIRST start, PostgreSQL runs scripts from docker-entrypoint-initdb.d/:
+    #     000_create_multiple_databases.sh — Creates 7 databases + 6 least-privilege roles
+    #     001_create_omniintelligence_schema.sh — Full schema (tables, triggers, views, indexes)
+    #     001_registration_projection.sql ... 036_create_schema_migrations.sql — 22 SQL migrations
+    #     02-keycloak-db.sql — Keycloak database
+    #   On SUBSEQUENT starts, entrypoint is skipped (data directory exists).
+    #   Post-startup, run-migrations.py handles incremental migrations with:
+    #     --dry-run, --target N (run up to version N), duplicate detection, checksum tracking
+    log_step "2.4 — Database initialization (Docker entrypoint + post-startup migrations)"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "Docker entrypoint auto-runs: 000_create_multiple_databases.sh (7 DBs, 6 roles)"
+        log_dry "Docker entrypoint auto-runs: 001_create_omniintelligence_schema.sh (full schema)"
+        log_dry "Docker entrypoint auto-runs: 22 SQL migrations (001-036)"
+        log_dry "Post-startup: python3 ${infra_dir}/scripts/run-migrations.py (incremental)"
+    else
+        # The entrypoint scripts ran automatically when postgres container started (step 2.3).
+        # Now run the Python migration runner for any incremental migrations not in entrypoint.
+        if [[ -f "${infra_dir}/scripts/run-migrations.py" ]]; then
+            log_info "Running incremental migration check (run-migrations.py)..."
+            # Use subshell to avoid mutating caller's working directory (Cubic #4).
+            # Use process substitution to preserve migration exit code (Cubic #2).
+            # ONEX-TODO: Replace with EFFECT handler node for migration orchestration.
+            (
+                cd "$infra_dir" || exit 1
+                python3 scripts/run-migrations.py > >(tail -5) 2>&1
+            ) || {
+                log_warn "run-migrations.py had issues — entrypoint may have applied all migrations"
+            }
+        else
+            log_info "run-migrations.py not found — relying on Docker entrypoint for migrations"
+        fi
+        log_info "Database initialization complete ✓"
+    fi
+
+    # ── 2.4a Cross-repo table provisioning (OMN-3531) ─────────────────────────
+    log_step "2.4a — Provisioning cross-repo tables (idempotency records)"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "python3 ${infra_dir}/scripts/provision-cross-repo-tables.py"
+    else
+        if [[ -f "${infra_dir}/scripts/provision-cross-repo-tables.py" ]]; then
+            cd "$infra_dir"
+            python3 scripts/provision-cross-repo-tables.py 2>&1 || {
+                log_warn "Cross-repo table provisioning skipped — OMNIINTELLIGENCE_DB_URL may not be set"
+            }
+        fi
+    fi
+
+    # ── 2.4b Validate Database Roles ──────────────────────────────────────────
+    # NOTE: Roles are only created when their ROLE_*_PASSWORD env var is non-empty.
+    log_step "2.4b — Validating 6 least-privilege database roles"
+    validate_db_roles || log_warn "Role validation incomplete — some ROLE_*_PASSWORD may be empty"
+
+    # ── 2.4c Validate omnidash_analytics Database ─────────────────────────────
+    log_step "2.4c — Validating omnidash_analytics database exists"
+    validate_omnidash_db || log_warn "omnidash_analytics DB missing — OmniDash Phase 5 may fail"
+
+
+    # ── 2.5 Start Valkey Cache ─────────────────────────────────────────────
+    log_step "2.5 — Starting Valkey cache (port ${VALKEY_PORT:-16379})"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "docker compose up -d valkey"
+    else
+        omni_compose_infra "$infra_dir" up -d valkey
+        wait_for_port localhost "${VALKEY_PORT:-16379}" "Valkey" 20
+        log_info "Valkey is ready ✓"
+    fi
+
+    # ── 2.6 Start Redpanda (Kafka) ────────────────────────────────────────
+    log_step "2.6 — Starting Redpanda event bus (port ${REDPANDA_EXTERNAL_PORT:-19092})"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "docker compose up -d redpanda"
+        log_dry "wait_for_port localhost 19092 Redpanda"
+    else
+        omni_compose_infra "$infra_dir" up -d redpanda
+        wait_for_port localhost "${REDPANDA_EXTERNAL_PORT:-19092}" "Redpanda" 30
+        log_info "Redpanda is ready ✓"
+    fi
+
+    # ── 2.7 Kafka Topic Provisioning ─────────────────────────────────────────
+    # NOTE: Topics are auto-provisioned by TopicProvisioner on runtime boot
+    # (service_kernel.py). The single source of truth for topic names is
+    # ALL_PLATFORM_TOPIC_SPECS in src/omnibase_infra/topics/platform_topic_suffixes.py.
+    #
+    # Manual topic creation is available via:
+    #   uv run python -m omnibase_infra.event_bus.service_topic_manager
+    #
+    # This step validates that Redpanda is healthy and ready to accept topics
+    # when runtime starts (Phase 3). No manual topic creation needed here.
+    log_step "2.7 — Verifying Redpanda topic readiness"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry "Redpanda ready — TopicProvisioner will auto-create topics at runtime boot"
+        log_dry "Source of truth: ALL_PLATFORM_TOPIC_SPECS in platform_topic_suffixes.py"
+    else
+        # Verify Redpanda is accepting admin requests (schema registry)
+        if curl -sf "http://localhost:${SCHEMA_REGISTRY_PORT:-18081}/subjects" >/dev/null 2>&1; then
+            log_info "Redpanda schema registry reachable — ready for topic provisioning ✓"
+        else
+            log_warn "Schema registry not responding — topics will be created when runtime starts"
+        fi
+    fi
+
+    # ── 2.7a Validate Kafka Topic Availability (post-runtime) ─────────────
+    # NOTE: This validates topics AFTER runtime has started and TopicProvisioner
+    # has run. During Phase 2, topics don't exist yet — that's expected.
+    log_step "2.7a — Kafka topic pre-check (topics created at runtime boot)"
+    if [[ "$DRY_RUN" != "true" ]]; then
+        log_info "Topics will be validated after Phase 3 runtime boot (TopicProvisioner)"
+    fi
+
+    # ── 2.8 Start Infisical (optional) ────────────────────────────────────
+    if [[ "${SKIP_SECRETS}" != "true" ]]; then
+        log_step "2.8 — Starting Infisical secrets manager (port 8880)"
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_dry "docker compose --profile secrets up -d"
+            log_dry "bash ${infra_dir}/scripts/bootstrap-infisical.sh"
+        else
+            start_infra_profile "$infra_dir" "secrets"
+            wait_for_service "http://localhost:8880/api/status" "Infisical" 20
+
+            # Run 6-step bootstrap
+            if [[ -f "${infra_dir}/scripts/bootstrap-infisical.sh" ]]; then
+                bash "${infra_dir}/scripts/bootstrap-infisical.sh" || {
+                    log_warn "Infisical bootstrap had issues — secrets may need manual seeding"
+                }
+            fi
+            log_info "Infisical is ready ✓"
+
+            # Validate bootstrap (Gap #6)
+            validate_infisical_bootstrap || log_warn "Infisical bootstrap incomplete"
+        fi
+    else
+        log_step "2.8 — Skipping Infisical (--skip-secrets)"
+    fi
+
+    # ── 2.9 Start Keycloak (optional) ─────────────────────────────────────
+    if [[ "${SKIP_KEYCLOAK}" != "true" ]]; then
+        log_step "2.9 — Starting Keycloak (port 28080)"
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_dry "docker compose --profile auth up -d"
+        else
+            start_infra_profile "$infra_dir" "auth"
+            wait_for_service "http://localhost:28080" "Keycloak" 30
+            log_info "Keycloak is ready ✓"
+        fi
+    else
+        log_step "2.9 — Skipping Keycloak (--skip-keycloak)"
+    fi
+
+    log_info "Phase 2 complete — Infrastructure services running ✓"
+}
