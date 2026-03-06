@@ -260,6 +260,12 @@ validate_db_roles() {
 # Topics: agent-routing-decisions, agent-transformation-events,
 #         router-performance-metrics, agent-actions
 validate_kafka_topics() {
+    # NOTE: Topics are auto-provisioned by TopicProvisioner on runtime boot
+    # (service_kernel.py). This function ONLY verifies they exist — it does
+    # NOT create them. Manual creation would bypass the canonical provisioning
+    # path and could mask TopicProvisioner failures.
+    #
+    # Source of truth: ALL_PLATFORM_TOPIC_SPECS in platform_topic_suffixes.py
     local broker="${KAFKA_BOOTSTRAP_SERVERS:-localhost:19092}"
     local topics=(
         "agent-routing-decisions"
@@ -269,20 +275,13 @@ validate_kafka_topics() {
     )
 
     if [[ "${DRY_RUN:-true}" == "true" ]]; then
-        log_dry "Create and validate ${#topics[@]} Kafka topics: ${topics[*]}"
+        log_dry "Validate ${#topics[@]} Kafka topics exist: ${topics[*]}"
         return 0
     fi
 
     local missing=0
     for topic in "${topics[@]}"; do
-        # Create topic idempotently (Redpanda rpk or kafka-topics.sh)
-        if command -v rpk &>/dev/null; then
-            rpk topic create "$topic" --brokers "$broker" 2>/dev/null || true
-        else
-            docker exec omninode-redpanda rpk topic create "$topic" 2>/dev/null || true
-        fi
-
-        # Verify topic exists
+        # Read-only check — do NOT create topics here
         local exists
         if command -v rpk &>/dev/null; then
             exists=$(rpk topic list --brokers "$broker" 2>/dev/null | grep -c "^${topic}\b" || echo 0)
@@ -293,14 +292,15 @@ validate_kafka_topics() {
         if [[ "$exists" -gt 0 ]]; then
             log_info "  Topic '${topic}' exists [OK]"
         else
-            log_error "  Topic '${topic}' MISSING after creation attempt"
+            log_warn "  Topic '${topic}' not found — will be created by TopicProvisioner on runtime boot"
             missing=$((missing + 1))
         fi
     done
 
     if [[ $missing -gt 0 ]]; then
-        log_error "${missing}/${#topics[@]} Kafka topics missing. Check Redpanda status."
-        return 1
+        log_warn "${missing}/${#topics[@]} topics not yet present. Ensure runtime has started (TopicProvisioner creates topics at boot)."
+        # Return 0 — missing topics pre-runtime is expected behavior
+        return 0
     fi
     log_info "All ${#topics[@]} Kafka topics validated [OK]"
 }
