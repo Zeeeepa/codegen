@@ -14,13 +14,14 @@ Key features:
 """
 
 import asyncio
+import os
 import time
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from loguru import logger
-from urllib.parse import urlparse # Added import
+from urllib.parse import urlparse
 
 try:
     from openai import AsyncOpenAI
@@ -194,6 +195,24 @@ class LLMFallbackChain:
         if self._qwen_client:
             await self._qwen_client.aclose()
             self._qwen_client = None
+
+    def _looks_like_ollama_endpoint(self, url: str) -> bool:
+        """Heuristic: return True if *url* looks like a local Ollama server."""
+        try:
+            parsed = urlparse(url if '://' in url else f'http://{url}')
+            # Ollama default port or explicit /api/ path
+            if parsed.port == 11434:
+                return True
+            if '/api/' in (parsed.path or ''):
+                return True
+            host = (parsed.hostname or '').lower()
+            if host in ('localhost', '127.0.0.1', '0.0.0.0', '::1'):
+                # Local endpoint with no explicit /v1 path → likely Ollama
+                if '/v1' not in (parsed.path or ''):
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _should_escalate_to_kimi(self) -> bool:
         """Decide if we should escalate to Kimi after repeated qwen failures."""

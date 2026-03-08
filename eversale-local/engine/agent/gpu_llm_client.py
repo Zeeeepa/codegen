@@ -2,13 +2,15 @@
 GPU LLM Client - Routes inference to a remote GPU endpoint.
 
 Supports:
+- Local proxy server (auto-launched): `http://127.0.0.1:8765`
 - Eversale proxy (OpenAI-compatible): `https://eversale.io/api/llm`
 - Direct OpenAI-compatible endpoints: `<base_url>/v1/chat/completions`
 - Ollama-compatible endpoints: `<base_url>/api/chat` (e.g. `http://localhost:11434`)
 - RunPod Serverless endpoints: `https://api.runpod.ai/v2/<endpoint_id>` (uses `/runsync`)
 
 Configuration:
-- GPU_LLM_URL: Inference endpoint base URL (default: https://eversale.io/api/llm)
+- GPU_LLM_URL: Inference endpoint base URL (default: http://127.0.0.1:8765 via local proxy)
+- OPENAI_API_KEY / ANTHROPIC_API_KEY: API keys (managed by proxy, not sent directly)
 - RUNPOD_API_KEY: RunPod API key (required for `api.runpod.ai/v2/...`)
 - EVERSALE_LLM_TOKEN / GPU_LLM_TOKEN: Bearer token for non-eversale OpenAI-compatible endpoints
 - MOONSHOT_API_KEY: Kimi API key for high-quality tasks (fallback/escalation)
@@ -23,10 +25,16 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from loguru import logger
 
-# GPU Server Configuration
+# Proxy port (must match proxy_config.py default)
+_PROXY_PORT = int(os.environ.get('EVERSALE_PROXY_PORT', '8765'))
+_PROXY_HOST = os.environ.get('EVERSALE_PROXY_HOST', '127.0.0.1')
+_PROXY_URL = f'http://{_PROXY_HOST}:{_PROXY_PORT}'
+
+# GPU Server Configuration — defaults to local proxy
+# The proxy handles routing to the actual backend (Anthropic/OpenAI/Ollama/etc.)
 GPU_LLM_URL = os.environ.get(
     'GPU_LLM_URL',
-    os.environ.get('ANTHROPIC_BASE_URL', os.environ.get('LLM_BASE_URL', 'https://api.z.ai/api/anthropic'))
+    os.environ.get('ANTHROPIC_BASE_URL', os.environ.get('LLM_BASE_URL', _PROXY_URL))
 )
 GPU_LLM_TIMEOUT = int(os.environ.get('GPU_LLM_TIMEOUT_MS', '60000')) / 1000  # Convert to seconds
 
@@ -98,6 +106,18 @@ class GPULLMClient:
     def _is_eversale_proxy(self) -> bool:
         return 'eversale.io' in self.base_url and 'z.ai' not in self.base_url
 
+    def _is_local_proxy(self) -> bool:
+        """True if base_url points to the local eversale proxy server."""
+        try:
+            parsed = urlparse(self.base_url if '://' in self.base_url else f"http://{self.base_url}")
+            host = (parsed.hostname or '').lower()
+            port = parsed.port
+            if host in ('localhost', '127.0.0.1', '0.0.0.0', '::1') and port == _PROXY_PORT:
+                return True
+        except Exception:
+            pass
+        return False
+
     def _looks_like_ollama(self) -> bool:
         """
         Heuristic for Ollama-compatible endpoints.
@@ -114,15 +134,25 @@ class GPULLMClient:
 
     def _get_auth_header_value(self) -> Optional[str]:
         """
-        Choose the correct bearer token for the active endpoint:
+        Choose the correct bearer token for the active endpoint.
+
+        - local proxy: no auth needed (proxy handles backend auth)
         - eversale proxy: license key
-        - runpod serverless: RUNPOD_API_KEY (or EVERSALE_LLM_TOKEN/GPU_LLM_TOKEN if set)
-        - other: EVERSALE_LLM_TOKEN/GPU_LLM_TOKEN (or license key if provided)
+        - runpod serverless: RUNPOD_API_KEY
+        - other: api_token or license_key
         """
+        # Local proxy handles auth internally — no token needed from client
+        if self._is_local_proxy():
+            return None
+
         if self._is_eversale_proxy():
             token = self.license_key
         elif self._is_runpod_serverless():
-            token = os.environ.get('ANTHROPIC_API_KEY', '').strip() or os.environ.get('RUNPOD_API_KEY', '').strip() or self.api_token
+            token = (
+                os.environ.get('ANTHROPIC_API_KEY', '').strip()
+                or os.environ.get('RUNPOD_API_KEY', '').strip()
+                or self.api_token
+            )
         else:
             token = self.api_token or self.license_key
 

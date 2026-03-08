@@ -8,29 +8,41 @@ fast_mode:
   enabled: true
   verbose: false
 
+# ─── Local Proxy Server ────────────────────────────────────────────────
+# The proxy auto-launches on startup and routes LLM calls to your
+# configured backend (Anthropic, OpenAI, Ollama, or custom).
+# Set LLM_BACKEND env var to choose: anthropic / openai / ollama / custom
+proxy:
+  enabled: true
+  host: "127.0.0.1"
+  port: 8765
+  auto_start: true
+  health_timeout: 15
+
 llm:
-  # LOCAL MODE - uses custom API endpoint
+  # LOCAL MODE — all traffic goes through the local proxy
   mode: local
 
-  # Custom API endpoint (Anthropic-compatible via Z.AI)
-  local_url: https://api.z.ai/api/anthropic
-  base_url: https://api.z.ai/api/anthropic
+  # Local proxy endpoint (auto-launched)
+  local_url: http://127.0.0.1:8765
+  base_url: http://127.0.0.1:8765
 
-  # Remote GPU URL (disabled for local mode)
+  # Remote URL (fallback if proxy is down)
   remote_url: https://api.z.ai/api/anthropic
 
-  # MODEL CONFIGURATION - using GLM-5 via Z.AI Anthropic-compatible API
+  # MODEL CONFIGURATION — the proxy maps these to actual backend models.
+  # e.g., "glm-5" → "claude-sonnet-4-20250514" (Anthropic) or "gpt-4o" (OpenAI)
   main_model: glm-5
   fast_model: glm-5
   tool_calling_model: glm-5
   vision_model: glm-5
   web_vision_model: glm-5
-
-  # Complex reasoning - also using GLM-5
   complex_model: glm-5
-  kimi_api_url: https://api.z.ai/api/anthropic
 
-# Strategic Planner Configuration - using GLM-5 for all planning
+  # Kimi API URL (via proxy)
+  kimi_api_url: http://127.0.0.1:8765
+
+# Strategic Planner Configuration
 strategic_planner:
   enabled: true
   primary_llm: glm-5
@@ -48,7 +60,7 @@ planning:
   use_templates: true
   checkpoint_interval: 5
 
-# LLM Call Strategy - All calls use GLM-5
+# LLM Call Strategy
 llm_strategy:
   first_call_model: glm-5
   execution_model: glm-5
@@ -79,7 +91,7 @@ timing:
 logging:
   level: INFO
 
-# Dual-LLM Architecture - both use GLM-5
+# Dual-LLM Architecture
 dual_llm:
   enabled: true
   orchestrator_model: glm-5
@@ -116,3 +128,4 @@ safety:
     - permanently_delete_data
     - unsubscribe_all
   destructive_confirmation: true
+
